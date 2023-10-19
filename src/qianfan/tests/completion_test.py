@@ -125,6 +125,28 @@ def test_priority():
     ut_meta = resp["_for_ut"]
     assert ut_meta["model"] == "custom_endpoint_4"
     assert ut_meta["type"] == "chat"
+    # if both model and endpoint are set when initialization,
+    # endpoint will be used as default
+    qfg = qianfan.Completion(model="ERNIE-Bot", endpoint="custom_endpoint_5")
+    resp = qfg.do(prompt="test")
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_5"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = qfg.do(endpoint="custom_endpoint_6", prompt="test")
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_6"
+    assert ut_meta["type"] == "completion"
+    # model as argument will override default endpoint
+    resp = qfg.do(model="ERNIE-Bot-turbo", prompt="test")
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, will override default endpoint
+    resp = qfg.do(model="ERNIE-Bot-turbo", endpoint="custom_endpoint_7", prompt="test")
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_7"
+    assert ut_meta["type"] == "chat"
 
 
 def test_generate_stream():

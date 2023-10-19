@@ -16,7 +16,7 @@ documentation = "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wlmhm7vuo"
 keywords = ["baidu", "qianfan"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4"
+python = ">=3.7,<4"
 requests = ">=2.24"
 aiohttp = ">=3.7.0"
 aiolimiter = ">=1.1.0"

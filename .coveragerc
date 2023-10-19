@@ -1,0 +1,11 @@
+# .coveragerc 
+[run]
+branch = True
+source = ./src/qianfan
+omit = *test.py, test*.py, Test*.py, qianfan/tests/*
+[report]
+omit = *test.py, test*.py, Test*.py
+[html]
+directory = htmlcov
+[xml]
+output = coverage.xml

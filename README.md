@@ -356,6 +356,16 @@ svc = qianfan.Service.get(id = 2047)
 print(svc['result']['id'])
 ```
 
+### 接口流控
+千帆 SDK 支持对用户接口的请求进行限流，以防止超额请求带来的潜在问题。
+所有接口的默认 QPS 为 1。若用户有自行配置的需求，只需要在创建对象时传入名为 `query_per_period` 的浮点参数即可
+
+一个构造案例如下所示
+```python
+import qianfan
+chat_comp = qianfan.ChatCompletion(query_per_period=0.5)
+```
+
 ## License
 
 Apache-2.0

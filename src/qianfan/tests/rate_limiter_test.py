@@ -28,17 +28,23 @@ def test_sync_rate_limiter():
     rl = RateLimiter()
     for i in range(0, 5):
         with rl:
-            time.sleep(1)
+            pass
     end_timestamp = time.time()
-    assert end_timestamp - start_timestamp >= 5
+    assert end_timestamp - start_timestamp >= 4
 
 
 @pytest.mark.asyncio
 async def test_async_rate_limiter():
+    async def async_sleep(rl):
+        async with rl:
+            pass
+
     start_timestamp = time.time()
     rl = RateLimiter()
+    task_list = []
     for i in range(0, 5):
-        async with rl:
-            await asyncio.sleep(1)
+        task_list.append(asyncio.create_task(async_sleep(rl)))
+
+    await asyncio.wait(task_list)
     end_timestamp = time.time()
-    assert end_timestamp - start_timestamp >= 5
+    assert end_timestamp - start_timestamp >= 4

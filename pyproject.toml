@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "qianfan"
+version = "0.0.8"
+description = "文心千帆大模型平台 Python SDK"
+authors = []
+license = "Apache-2.0"
+readme = "README.md"
+exclude = [
+    "src/qianfan/tests",
+    "src/qianfan/docs",
+    "src/qianfan/resources/llm/eb_plugin.py"
+]
+homepage = "https://cloud.baidu.com/product/wenxinworkshop"
+keywords = ["baidu", "qianfan"]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<4"
+requests = ">=2.24"
+aiohttp = ">=3.7.0"
+aiolimiter = ">=1.1.0"
+importlib-metadata = { version = ">=1.4.0", markers = "python_version <= '3.7'" }
+bce-python-sdk = ">=0.8.79"
+typing-extensions = { version = ">=4.0.0", markers = "python_version <= '3.10'"}
+
+
+[[tool.poetry.source]]
+name = "mirrors"
+url = "http://mirrors.baidubce.com/pypi/simple/"
+priority = "default"
+
+
+[tool.poetry.group.dev.dependencies]
+sphinx = ">=5"
+pytest = ">=7.0.0"
+flask = ">=2.0.0"
+pytest-asyncio = ">=0.16.0"
+coverage = ">=7.0.0"
+black = "^23.1.0"
+ruff = ">=0.0.290"
+sphinx-rtd-theme = ">=1.2.0"
+mypy = ">=1.4.0"
+
+[tool.ruff]
+select = [
+  "E",  # pycodestyle
+  "F",  # pyflakes
+  "I",  # isort
+]
+
+[tool.black]
+preview = true
+
+[tool.mypy]
+ignore_missing_imports = "True"
+disallow_untyped_defs = "True"
+exclude = ["qianfan/tests"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

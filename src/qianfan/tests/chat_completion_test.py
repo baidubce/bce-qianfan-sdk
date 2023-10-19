@@ -348,3 +348,156 @@ def test_chat_completion_auth():
         assert "result" in resp.body
         resp = c.do(messages=TEST_MESSAGE[:1], model="ERNIE-Bot")
         assert "result" in resp.body
+
+
+def test_priority():
+    """
+    Test priority between model and endpoint
+    """
+    qfg = qianfan.ChatCompletion()
+    # when both model and endpoint are provided, will use endpoint as default
+    resp = qfg.do(
+        model="ERNIE-Bot", endpoint="custom_endpoint_1", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_1"
+    assert ut_meta["type"] == "chat"
+    # if endpoint is set when initialization, will use it as default
+    qfg = qianfan.ChatCompletion(endpoint="custom_endpoint_2")
+    resp = qfg.do(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_2"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = qfg.do(endpoint="custom_endpoint_3", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_3"
+    assert ut_meta["type"] == "chat"
+    # model as argument will override default endpoint
+    resp = qfg.do(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # if model is set when initialization, will use it as default
+    qfg = qianfan.ChatCompletion(model="ERNIE-Bot")
+    resp = qfg.do(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "completions"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = qfg.do(endpoint="custom_endpoint_3", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_3"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = qfg.do(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, endpoint will override default endpoint
+    resp = qfg.do(
+        model="ERNIE-Bot-turbo", endpoint="custom_endpoint_4", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_4"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, endpoint will override default endpoint
+    qfg = qianfan.ChatCompletion(model="ERNIE-Bot", endpoint="custom_endpoint_5")
+    resp = qfg.do(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_5"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = qfg.do(endpoint="custom_endpoint_6", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_6"
+    assert ut_meta["type"] == "chat"
+    # model as argument will override default endpoint
+    resp = qfg.do(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, will override default endpoint
+    resp = qfg.do(
+        model="ERNIE-Bot-turbo", endpoint="custom_endpoint_7", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_7"
+    assert ut_meta["type"] == "chat"
+
+
+@pytest.mark.asyncio
+async def test_async_priority():
+    """
+    Test priority between model and endpoint
+    """
+    qfg = qianfan.ChatCompletion()
+    # when both model and endpoint are provided, will use endpoint as default
+    resp = await qfg.ado(
+        model="ERNIE-Bot", endpoint="custom_endpoint_1", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_1"
+    assert ut_meta["type"] == "chat"
+    # if endpoint is set when initialization, will use it as default
+    qfg = qianfan.ChatCompletion(endpoint="custom_endpoint_2")
+    resp = await qfg.ado(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_2"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = await qfg.ado(endpoint="custom_endpoint_3", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_3"
+    assert ut_meta["type"] == "chat"
+    # model as argument will override default endpoint
+    resp = await qfg.ado(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # if model is set when initialization, will use it as default
+    qfg = qianfan.ChatCompletion(model="ERNIE-Bot")
+    resp = await qfg.ado(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "completions"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = await qfg.ado(endpoint="custom_endpoint_3", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_3"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = await qfg.ado(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, endpoint will override default endpoint
+    resp = await qfg.ado(
+        model="ERNIE-Bot-turbo", endpoint="custom_endpoint_4", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_4"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, endpoint will override default endpoint
+    qfg = qianfan.ChatCompletion(model="ERNIE-Bot", endpoint="custom_endpoint_5")
+    resp = await qfg.ado(messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_5"
+    assert ut_meta["type"] == "chat"
+    # endpoint as argument will override default endpoint
+    resp = await qfg.ado(endpoint="custom_endpoint_6", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_6"
+    assert ut_meta["type"] == "chat"
+    # model as argument will override default endpoint
+    resp = await qfg.ado(model="ERNIE-Bot-turbo", messages=TEST_MESSAGE[:1])
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "eb-instant"
+    assert ut_meta["type"] == "chat"
+    # when both are provided, will override default endpoint
+    resp = await qfg.ado(
+        model="ERNIE-Bot-turbo", endpoint="custom_endpoint_7", messages=TEST_MESSAGE[:1]
+    )
+    ut_meta = resp["_for_ut"]
+    assert ut_meta["model"] == "custom_endpoint_7"
+    assert ut_meta["type"] == "chat"

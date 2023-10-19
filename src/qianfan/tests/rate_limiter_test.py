@@ -20,12 +20,42 @@ import time
 
 import pytest
 
+import qianfan
 from qianfan.resources.rate_limiter import RateLimiter
+
+from qianfan.tests.chat_completion_test import TEST_MESSAGE
+
+
+def test_not_sync_rate_limiter():
+    start_timestamp = time.time()
+    rl = RateLimiter()
+    for i in range(0, 5):
+        with rl:
+            pass
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp < 1
+
+
+@pytest.mark.asyncio
+async def test_not_async_rate_limiter():
+    async def async_sleep(rl):
+        async with rl:
+            pass
+
+    start_timestamp = time.time()
+    rl = RateLimiter()
+    task_list = []
+    for i in range(0, 5):
+        task_list.append(asyncio.create_task(async_sleep(rl)))
+
+    await asyncio.wait(task_list)
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp < 1
 
 
 def test_sync_rate_limiter():
     start_timestamp = time.time()
-    rl = RateLimiter()
+    rl = RateLimiter(query_per_period=1)
     for i in range(0, 5):
         with rl:
             pass
@@ -40,7 +70,7 @@ async def test_async_rate_limiter():
             pass
 
     start_timestamp = time.time()
-    rl = RateLimiter()
+    rl = RateLimiter(query_per_period=1)
     task_list = []
     for i in range(0, 5):
         task_list.append(asyncio.create_task(async_sleep(rl)))
@@ -48,3 +78,40 @@ async def test_async_rate_limiter():
     await asyncio.wait(task_list)
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 4
+
+
+def test_sync_rate_limiter_in_call():
+    chat = qianfan.ChatCompletion(query_in_period=2)
+
+    start_timestamp = time.time()
+    for i in range(2):
+        chat.do(messages=TEST_MESSAGE)
+    end_time = time.time()
+    assert end_time - start_timestamp < 2
+
+    start_timestamp = time.time()
+    for i in range(3):
+        chat.do(messages=TEST_MESSAGE)
+    end_time = time.time()
+    assert end_time - start_timestamp > 1
+
+
+@pytest.mark.asyncio
+async def test_async_rate_limiter_in_call():
+    chat = qianfan.ChatCompletion(query_in_period=2)
+
+    start_timestamp = time.time()
+    task = []
+    for i in range(2):
+        task.append(chat.ado(messages=TEST_MESSAGE))
+    await asyncio.wait(task)
+    end_time = time.time()
+    assert end_time - start_timestamp < 2
+
+    start_timestamp = time.time()
+    task = []
+    for i in range(3):
+        task.append(chat.ado(messages=TEST_MESSAGE))
+    await asyncio.wait(task)
+    end_time = time.time()
+    assert end_time - start_timestamp > 1

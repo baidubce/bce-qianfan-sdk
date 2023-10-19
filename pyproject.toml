@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.0.8"
+version = "0.1.0"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -11,6 +11,8 @@ exclude = [
     "src/qianfan/resources/llm/eb_plugin.py"
 ]
 homepage = "https://cloud.baidu.com/product/wenxinworkshop"
+repository = "https://github.com/baidubce/bce-qianfan-sdk"
+documentation = "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wlmhm7vuo"
 keywords = ["baidu", "qianfan"]
 
 [tool.poetry.dependencies]
@@ -21,13 +23,6 @@ aiolimiter = ">=1.1.0"
 importlib-metadata = { version = ">=1.4.0", markers = "python_version <= '3.7'" }
 bce-python-sdk = ">=0.8.79"
 typing-extensions = { version = ">=4.0.0", markers = "python_version <= '3.10'"}
-
-
-[[tool.poetry.source]]
-name = "mirrors"
-url = "http://mirrors.baidubce.com/pypi/simple/"
-priority = "default"
-
 
 [tool.poetry.group.dev.dependencies]
 sphinx = ">=5"

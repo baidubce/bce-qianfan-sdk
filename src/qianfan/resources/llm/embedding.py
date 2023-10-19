@@ -90,7 +90,7 @@ class Embedding(BaseResource):
         del kwargs["texts"]
         return super()._generate_body(model, endpoint, stream, **kwargs)
 
-    def _convert_endpoint(self, endpoint: str) -> str:
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert endpoint to Embedding API endpoint
         """

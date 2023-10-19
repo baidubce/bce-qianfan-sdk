@@ -55,7 +55,6 @@ jobs:
           bash .src/scripts/release_github.sh
   # Single deploy job since we're just deploying
   docs:
-    needs: release
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

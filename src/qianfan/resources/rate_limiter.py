@@ -105,12 +105,19 @@ class RateLimiter:
             query_per_second (float): query times in one second, default to 0, meaning rate limiter close.
         """
 
-        self._is_closed = query_per_second == 0
+        self._is_closed = query_per_second <= 0
         if self._check_is_closed():
             return
 
-        self._async_limiter = AsyncLimiter(query_per_second, 1)
-        self._sync_limiter = self.__class__._SyncLimiter(query_per_second, 1)
+        if query_per_second > 1:
+            query_per_period = query_per_second
+            period_length = 1
+        else:
+            query_per_period = 1
+            period_length = 1 / query_per_second
+
+        self._async_limiter = AsyncLimiter(query_per_period, period_length)
+        self._sync_limiter = self._SyncLimiter(query_per_period, period_length)
 
     def __enter__(self) -> None:
         """

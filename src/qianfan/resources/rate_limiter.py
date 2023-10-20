@@ -108,9 +108,10 @@ class RateLimiter:
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():
             return
-        period_length: float = 1
+        period_length: float
         if query_per_second > 1:
             query_per_period = query_per_second
+            period_length = 1
         else:
             query_per_period = 1
             period_length = 1 / query_per_second

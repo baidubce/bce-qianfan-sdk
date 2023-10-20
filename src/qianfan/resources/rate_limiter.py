@@ -93,7 +93,7 @@ class RateLimiter:
             """
             return
 
-    def _check_is_closed(self):
+    def _check_is_closed(self) -> bool:
         return self._is_closed
 
     def __init__(self, query_per_second: float = 0, **kwargs: Any):
@@ -101,16 +101,16 @@ class RateLimiter:
         initialize rate limiter
 
         Args:
-            query_per_second (float): query times in one second, default to 0, meaning rate limiter close.
+            query_per_second (float): query times in one second, default to 0,
+            meaning rate limiter close.
         """
 
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():
             return
-
+        period_length: float = 1
         if query_per_second > 1:
             query_per_period = query_per_second
-            period_length = 1
         else:
             query_per_period = 1
             period_length = 1 / query_per_second

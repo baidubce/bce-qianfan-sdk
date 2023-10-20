@@ -1,4 +1,4 @@
-# 千帆大模型平台 Python SDK
+# 百度千帆大模型平台 SDK
 
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 
@@ -208,7 +208,7 @@ async for r in resp:
     print(r)
 ```
 
-### SFT 大模型调优
+### 大模型调优
 
 SFT 相关操作使用“安全认证/Access Key”中的 Access Key ID 和 Secret Access Key 进行鉴权，无法使用获取Access Token的方式鉴权，相关 key 可以在百度智能云控制台中 [安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 获取，详细流程可以参见 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 

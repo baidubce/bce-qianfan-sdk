@@ -12,7 +12,7 @@ exclude = [
 ]
 homepage = "https://cloud.baidu.com/product/wenxinworkshop"
 repository = "https://github.com/baidubce/bce-qianfan-sdk"
-documentation = "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wlmhm7vuo"
+documentation = "https://qianfan.readthedocs.io/en/stable/qianfan.html"
 keywords = ["baidu", "qianfan"]
 
 [tool.poetry.dependencies]

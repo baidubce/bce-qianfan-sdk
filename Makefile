@@ -20,7 +20,7 @@ format: install
 lint: install
 	poetry run black ./src/qianfan --check 
 	poetry run ruff check ./src/qianfan
-	poetry run mypy ./src/qianfan
+	poetry run mypy ./src/qianfan --install-types --non-interactive
 
 test: clean install 
 	cd src && bash scripts/run_test.sh

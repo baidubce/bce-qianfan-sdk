@@ -37,7 +37,7 @@ class EBPlugin(BaseResource):
         super().__init__(model, endpoint, **kwargs)
 
     @classmethod
-    def _supported_models(cls) -> dict[str, QfLLMInfo]:
+    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
         Only one endpoint provided for plugins
 

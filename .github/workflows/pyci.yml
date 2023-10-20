@@ -49,6 +49,8 @@ jobs:
         if: steps.cache-deps.cache-hit != 'true'
         run: |
           make install
+      - name: run lint
+        run: make lint
       - name: Run tests
         run: make test
       - name: Build artifacts

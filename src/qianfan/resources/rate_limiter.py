@@ -66,7 +66,7 @@ class RateLimiter:
             delta = timestamp - self._last_leak_timestamp
             self._last_leak_timestamp = timestamp
             self._token_count = min(
-                self._query_per_period, delta * self._query_per_second
+                self._query_per_period, self._token_count + delta * self._query_per_second
             )
 
         def __enter__(self) -> None:
@@ -92,25 +92,40 @@ class RateLimiter:
             """
             return
 
+    def _check_is_closed(self):
+        return self._is_closed
+
     def __init__(
-        self, query_per_period: float = 1, period_in_second: float = 1, **kwargs: Any
+        self, query_per_second: float = 0, **kwargs: Any
     ):
         """
         initialize rate limiter
 
         Args:
-            query_per_period (float): query times in one period, default to 1.0.
-            period_in_second (float): time of period, default to 1.0.
+            query_per_second (float): query times in one second, default to 0, meaning rate limiter close.
         """
-        self._async_limiter = AsyncLimiter(query_per_period, period_in_second)
-        self._sync_limiter = self.__class__._SyncLimiter(
-            query_per_period, period_in_second
-        )
+
+        self._is_closed = query_per_second <= 0
+        if self._check_is_closed():
+            return
+
+        if query_per_second > 1:
+            query_per_period = query_per_second
+            period_length = 1
+        else:
+            query_per_period = 1
+            period_length = 1 / query_per_second
+
+        self._async_limiter = AsyncLimiter(query_per_period, period_length)
+        self._sync_limiter = self._SyncLimiter(query_per_period, period_length)
 
     def __enter__(self) -> None:
         """
         synchronous entrance of rate limiter
         """
+        if self._check_is_closed():
+            return
+
         with self._sync_limiter:
             return
 
@@ -129,6 +144,9 @@ class RateLimiter:
         """
         asynchronous entrance of rate limiter
         """
+        if self._check_is_closed():
+            return
+
         async with self._async_limiter:
             return
 

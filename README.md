@@ -1,6 +1,6 @@
 # 百度千帆大模型平台 SDK
 
-[![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
+[![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/) [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/qianfan.html)
 
 针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
 

@@ -14,8 +14,9 @@
 
 import logging
 import os
-import requests
 import time
+
+import requests
 
 import qianfan
 from qianfan.tests.utils.mock_server import start_mock_server

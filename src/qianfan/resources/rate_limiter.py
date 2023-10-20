@@ -66,7 +66,8 @@ class RateLimiter:
             delta = timestamp - self._last_leak_timestamp
             self._last_leak_timestamp = timestamp
             self._token_count = min(
-                self._query_per_period, self._token_count + delta * self._query_per_second
+                self._query_per_period,
+                self._token_count + delta * self._query_per_second,
             )
 
         def __enter__(self) -> None:
@@ -95,9 +96,7 @@ class RateLimiter:
     def _check_is_closed(self):
         return self._is_closed
 
-    def __init__(
-        self, query_per_second: float = 0, **kwargs: Any
-    ):
+    def __init__(self, query_per_second: float = 0, **kwargs: Any):
         """
         initialize rate limiter
 

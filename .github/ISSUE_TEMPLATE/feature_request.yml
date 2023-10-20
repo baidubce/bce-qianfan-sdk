@@ -1,0 +1,21 @@
+name: "\U0001F680 Feature request"
+description: Submit a proposal/request for a new qianfan feature
+labels: ["03 Feature Request"]
+body:
+  - type: textarea
+    id: feature-request
+    validations:
+      required: true
+    attributes:
+      label: Feature request
+      description: |
+        A clear and concise description of the feature proposal. Please provide links to any relevant GitHub repos, papers, or other resources if relevant.
+
+  - type: textarea
+    id: contribution or solutions
+    validations:
+      required: false
+    attributes:
+      label: contribution or solutions
+      description: |
+        Feel free to submit a pull request (PR).

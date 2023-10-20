@@ -1,5 +1,23 @@
 # Release Note
 
+## 0.1.0
+
+Feature：
+- 增加ChatCompletion，Completion
+对于[ERNIE-Bot-4](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t)的支持，通过`model=ERNIE-Bot-4`进行调用
+- `qianfan` SDK正式开源
+- 增加对 `模型管理` API 支持（`qianfan.Model`）
+- 增加对 `模型服务发布` API支持 （`qianfan.Service`）
+
+- 开放[SDK API接口文档](https://qianfan.readthedocs.io/en/stable/qianfan.html)
+
+Bug修复：
+- 修复同时使用model，endpoint导致的模型使用错误的问题
+
+优化：
+- 增加 `模型SFT调优` 任务控制支持
+- 限流接口优化，支持传入QPS限制配置
+
 ## 0.0.7
 
 Feature:

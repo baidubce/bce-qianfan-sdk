@@ -7,7 +7,6 @@ poetry build
 mkdir output
 mv dist/* output
 rm -rf dist
-cp src/scripts/release_agile.sh ./output
 
 # build docs
 make doc

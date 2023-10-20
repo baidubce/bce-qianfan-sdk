@@ -54,7 +54,7 @@ class BaseResource(object):
         """
         # if user do not provide new model and endpoint,
         # use the model and endpoint from constructor
-        if not (model is not None or endpoint is not None):
+        if model is None and endpoint is None:
             model = self._model
             endpoint = self._endpoint
         if endpoint is None:

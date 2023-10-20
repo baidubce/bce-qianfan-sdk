@@ -14,6 +14,7 @@
 
 import logging
 import os
+import requests
 import time
 
 import qianfan
@@ -34,7 +35,12 @@ def init_test_env():
         os.environ.pop("QIANFAN_SK")
     start_mock_server()
     # ensure the mock server is ready
-    time.sleep(0.1)
+    for _ in range(10):
+        try:
+            requests.get("http://127.0.0.1:8866/")
+            break
+        except Exception:
+            time.sleep(1)
 
 
 class EnvHelper(object):

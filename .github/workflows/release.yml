@@ -43,8 +43,8 @@ jobs:
       # - name: Create Release
       #   uses: ncipollo/release-action@v1
       #   with:
-      #     artifacts: "dist/*"
-      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     artifacts: "output/*"
+      #     token: ${{ secrets.QF_GITHUB_TOKEN }}
       #     draft: false
       #     generateReleaseNotes: true
       #     tag: ${{ steps.check-version.outputs.version }}

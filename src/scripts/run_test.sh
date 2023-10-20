@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -xe
 
-poetry run coverage run -m pytest -v -r A --continue-on-collection-errors --full-trace qianfan
+poetry run coverage run -m pytest -v -r A --full-trace qianfan
 poetry run coverage report --omit="qianfan/tests/*"

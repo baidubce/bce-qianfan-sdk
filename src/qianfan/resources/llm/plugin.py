@@ -74,7 +74,7 @@ class Plugin(BaseResource):
         """
         return UNSPECIFIED_MODEL
 
-    def _convert_endpoint(self, endpoint: str) -> str:
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert endpoint to ChatCompletion API endpoint
         """

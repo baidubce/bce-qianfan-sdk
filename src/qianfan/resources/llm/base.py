@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Set, Union
+from typing import Any, AsyncIterator, Dict, Iterator, Optional, Set, Tuple, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultValue
@@ -43,13 +43,26 @@ class BaseResource(object):
         init resource
         """
         self._model = model
+        self._endpoint = endpoint
         self._client = QfAPIRequestor(**kwargs)
-        self._model = model
-        if endpoint is not None:
-            self._endpoint = self._convert_endpoint(endpoint)
+
+    def _update_model_and_endpoint(
+        self, model: Optional[str], endpoint: Optional[str]
+    ) -> Tuple[Optional[str], str]:
+        """
+        update model and endpoint from constructor
+        """
+        # if user do not provide new model and endpoint,
+        # use the model and endpoint from constructor
+        if model is None and endpoint is None:
+            model = self._model
+            endpoint = self._endpoint
+        if endpoint is None:
+            m = self._default_model() if model is None else model
+            endpoint = self._supported_models()[m].endpoint
         else:
-            model = model if model is not None else self._default_model()
-            self._endpoint = self._supported_models()[model].endpoint
+            endpoint = self._convert_endpoint(model, endpoint)
+        return model, endpoint
 
     def _do(
         self,
@@ -68,8 +81,7 @@ class BaseResource(object):
             **kwargs (dict): kv dict data。
 
         """
-        if self._model is not None and model is None and endpoint is None:
-            model = self._model
+        model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
             endpoint,
@@ -116,8 +128,7 @@ class BaseResource(object):
             None
 
         """
-        if self._model is not None and model is None and endpoint is None:
-            model = self._model
+        model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
             endpoint,
@@ -229,10 +240,10 @@ class BaseResource(object):
 
         """
         if endpoint is not None:
-            return self._convert_endpoint(endpoint)
+            return endpoint
         if model is not None:
             return self._get_endpoint(model).endpoint
-        return self._endpoint
+        return self._get_endpoint(self._default_model()).endpoint
 
     def _generate_header(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
@@ -298,7 +309,7 @@ class BaseResource(object):
         """
         return data
 
-    def _convert_endpoint(self, endpoint: str) -> str:
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert user-provided endpoint to real endpoint
         """

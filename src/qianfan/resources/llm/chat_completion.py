@@ -174,7 +174,7 @@ class ChatCompletion(BaseResource):
         """
         return DefaultLLMModel.ChatCompletion
 
-    def _convert_endpoint(self, endpoint: str) -> str:
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert endpoint to ChatCompletion API endpoint
         """

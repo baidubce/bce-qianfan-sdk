@@ -193,35 +193,13 @@ class Completion(BaseResource):
             data.body["object"] = "completion"
         return super()._data_postprocess(data)
 
-    def _convert_endpoint(self, endpoint: str) -> str:
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert endpoint to Completion API endpoint
         """
-        return f"/completions/{endpoint}"
-
-    def _get_endpoint_from_dict(
-        self,
-        model: Optional[str],
-        endpoint: Optional[str],
-        stream: bool,
-        **kwargs: Dict[str, Any],
-    ) -> str:
-        """
-        extract the endpoint of the model in kwargs, or use the endpoint defined
-        in __init__
-
-        Args:
-            **kwargs (dict): any dict
-
-        Returns:
-            str: the endpoint of the model in kwargs
-
-        """
         if model is not None and model in ChatCompletion._supported_models():
-            return ChatCompletion()._get_endpoint_from_dict(
-                model, endpoint, stream, **kwargs
-            )
-        return super()._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
+            return ChatCompletion()._convert_endpoint(model, endpoint)
+        return f"/completions/{endpoint}"
 
     def do(
         self,

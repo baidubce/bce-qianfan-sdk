@@ -82,71 +82,85 @@ def test_priority():
     """
     Test priority between model and endpoint
     """
-    qfg = qianfan.Completion()
-    # if model is a chat model, will use chat api to mock
-    resp = qfg.do(model="ERNIE-Bot", endpoint="custom_endpoint_1", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_1"
-    assert ut_meta["type"] == "chat"
-    # if endpoint is set when initialization, will use it as default
-    qfg = qianfan.Completion(endpoint="custom_endpoint_2")
-    resp = qfg.do(prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_2"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = qfg.do(endpoint="custom_endpoint_3", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_3"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = qfg.do(model="ERNIE-Bot-turbo", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "eb-instant"
-    assert ut_meta["type"] == "chat"
-    # if model is set when initialization, will use it as default
-    qfg = qianfan.Completion(model="ERNIE-Bot")
-    resp = qfg.do(prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "completions"
-    assert ut_meta["type"] == "chat"
-    # endpoint as argument will override default endpoint
-    resp = qfg.do(endpoint="custom_endpoint_3", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_3"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = qfg.do(model="ERNIE-Bot-turbo", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "eb-instant"
-    assert ut_meta["type"] == "chat"
-    # when both are provided, will override default endpoint
-    resp = qfg.do(model="ERNIE-Bot-turbo", endpoint="custom_endpoint_4", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_4"
-    assert ut_meta["type"] == "chat"
-    # if both model and endpoint are set when initialization,
-    # endpoint will be used as default
-    qfg = qianfan.Completion(model="ERNIE-Bot", endpoint="custom_endpoint_5")
-    resp = qfg.do(prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_5"
-    assert ut_meta["type"] == "chat"
-    # endpoint as argument will override default endpoint
-    resp = qfg.do(endpoint="custom_endpoint_6", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_6"
-    assert ut_meta["type"] == "completion"
-    # model as argument will override default endpoint
-    resp = qfg.do(model="ERNIE-Bot-turbo", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "eb-instant"
-    assert ut_meta["type"] == "chat"
-    # when both are provided, will override default endpoint
-    resp = qfg.do(model="ERNIE-Bot-turbo", endpoint="custom_endpoint_7", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_7"
-    assert ut_meta["type"] == "chat"
+    # cls means the argument from constructor
+    # do means the argument from do method
+    # M: model
+    # E: endpoint
+    # NM: invalid model
+    # CM: the chat model which is used to mock completion
+    prompt = TEST_PROMPT[0]
+    qfg_list = [
+        qianfan.Completion(endpoint="endpoint_from_init_1"),  # cls.E
+        qianfan.Completion(model="invalid_model"),  # cls.NM
+        qianfan.Completion(
+            model="invalid_model", endpoint="endpoint_from_init_3"
+        ),  # cls.NM+E
+        qianfan.Completion(),  # cls.None
+        qianfan.Completion(model="ERNIE-Bot"),  # cls.CM
+        qianfan.Completion(
+            model="ERNIE-Bot", endpoint="endpoint_from_init_2"
+        ),  # cls.CM+E
+    ]
+    for qfg in qfg_list:
+        # do.E
+        resp = qfg.do(endpoint="custom_endpoint_1", prompt=prompt)
+        assert resp["_for_ut"]["model"] == "custom_endpoint_1"
+        assert resp["_for_ut"]["type"] == "completion"
+        # do.NM
+        try:
+            resp = qfg.do(model="invalid_model", prompt=prompt)
+            # exception should be raised and here is unreachable
+            assert False
+        except Exception:
+            pass
+
+        # do.NM+E
+        resp = qfg.do(
+            model="invalid_model", endpoint="custom_endpoint_2", prompt=prompt
+        )
+        assert resp["_for_ut"]["model"] == "custom_endpoint_2"
+        assert resp["_for_ut"]["type"] == "completion"
+        # do.CM
+        resp = qfg.do(model="ERNIE-Bot", prompt=prompt)
+        assert resp["_for_ut"]["model"] == "completions"
+        assert resp["_for_ut"]["type"] == "chat"
+        # do.CM+E
+        resp = qfg.do(model="ERNIE-Bot", endpoint="custom_endpoint_3", prompt=prompt)
+        assert resp["_for_ut"]["model"] == "custom_endpoint_3"
+        assert resp["_for_ut"]["type"] == "chat"
+
+    # do.None
+    # cls.E
+    resp = qianfan.Completion(endpoint="endpoint_from_init_1").do(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_1"
+    assert resp["_for_ut"]["type"] == "completion"
+    # cls.NM
+    try:
+        resp = qianfan.Completion(model="invalid_model").do(prompt=prompt)
+        # exception should be raised and here is unreachable
+        assert False
+    except Exception:
+        pass
+    # cls.NM+E
+    resp = qianfan.Completion(
+        model="invalid_model", endpoint="endpoint_from_init_2"
+    ).do(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_2"
+    assert resp["_for_ut"]["type"] == "completion"
+    # cls.None
+    resp = qianfan.Completion().do(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["type"] == "chat"
+    # cls.CM
+    resp = qianfan.Completion(model="ERNIE-Bot").do(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "completions"
+    assert resp["_for_ut"]["type"] == "chat"
+    # cls.CM+E
+    resp = qianfan.Completion(model="ERNIE-Bot", endpoint="endpoint_from_init_3").do(
+        prompt=prompt
+    )
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_3"
+    assert resp["_for_ut"]["type"] == "chat"
 
 
 def test_generate_stream():
@@ -233,51 +247,87 @@ async def test_async_priority():
     """
     Test priority between model and endpoint
     """
-    qfg = qianfan.Completion()
-    # if model is a chat model, will use chat api to mock
-    resp = await qfg.ado(model="ERNIE-Bot", endpoint="custom_endpoint_1", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_1"
-    assert ut_meta["type"] == "chat"
-    # if endpoint is set when initialization, will use it as default
-    qfg = qianfan.Completion(endpoint="custom_endpoint_2")
-    resp = await qfg.ado(prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_2"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = await qfg.ado(endpoint="custom_endpoint_3", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_3"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = await qfg.ado(model="ERNIE-Bot-turbo", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "eb-instant"
-    assert ut_meta["type"] == "chat"
-    # if model is set when initialization, will use it as default
-    qfg = qianfan.Completion(model="ERNIE-Bot")
-    resp = await qfg.ado(prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "completions"
-    assert ut_meta["type"] == "chat"
-    # endpoint as argument will override default endpoint
-    resp = await qfg.ado(endpoint="custom_endpoint_3", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_3"
-    assert ut_meta["type"] == "completion"
-    # endpoint as argument will override default endpoint
-    resp = await qfg.ado(model="ERNIE-Bot-turbo", prompt="test")
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "eb-instant"
-    assert ut_meta["type"] == "chat"
-    # when both are provided, will override default endpoint
-    resp = await qfg.ado(
-        model="ERNIE-Bot-turbo", endpoint="custom_endpoint_4", prompt="test"
-    )
-    ut_meta = resp["_for_ut"]
-    assert ut_meta["model"] == "custom_endpoint_4"
-    assert ut_meta["type"] == "chat"
+    # cls means the argument from constructor
+    # do means the argument from do method
+    # M: model
+    # E: endpoint
+    # NM: invalid model
+    # CM: the chat model which is used to mock completion
+    prompt = TEST_PROMPT[0]
+    qfg_list = [
+        qianfan.Completion(endpoint="endpoint_from_init_1"),  # cls.E
+        qianfan.Completion(model="invalid_model"),  # cls.NM
+        qianfan.Completion(
+            model="invalid_model", endpoint="endpoint_from_init_3"
+        ),  # cls.NM+E
+        qianfan.Completion(),  # cls.None
+        qianfan.Completion(model="ERNIE-Bot"),  # cls.CM
+        qianfan.Completion(
+            model="ERNIE-Bot", endpoint="endpoint_from_init_2"
+        ),  # cls.CM+E
+    ]
+    for qfg in qfg_list:
+        # do.E
+        resp = await qfg.ado(endpoint="custom_endpoint_1", prompt=prompt)
+        assert resp["_for_ut"]["model"] == "custom_endpoint_1"
+        assert resp["_for_ut"]["type"] == "completion"
+        # do.NM
+        try:
+            resp = await qfg.ado(model="invalid_model", prompt=prompt)
+            # exception should be raised and here is unreachable
+            assert False
+        except Exception:
+            pass
+
+        # do.NM+E
+        resp = await qfg.ado(
+            model="invalid_model", endpoint="custom_endpoint_2", prompt=prompt
+        )
+        assert resp["_for_ut"]["model"] == "custom_endpoint_2"
+        assert resp["_for_ut"]["type"] == "completion"
+        # do.CM
+        resp = await qfg.ado(model="ERNIE-Bot", prompt=prompt)
+        assert resp["_for_ut"]["model"] == "completions"
+        assert resp["_for_ut"]["type"] == "chat"
+        # do.CM+E
+        resp = await qfg.ado(
+            model="ERNIE-Bot", endpoint="custom_endpoint_3", prompt=prompt
+        )
+        assert resp["_for_ut"]["model"] == "custom_endpoint_3"
+        assert resp["_for_ut"]["type"] == "chat"
+
+    # do.None
+    # cls.E
+    resp = await qianfan.Completion(endpoint="endpoint_from_init_1").ado(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_1"
+    assert resp["_for_ut"]["type"] == "completion"
+    # cls.NM
+    try:
+        resp = await qianfan.Completion(model="invalid_model").ado(prompt=prompt)
+        # exception should be raised and here is unreachable
+        assert False
+    except Exception:
+        pass
+    # cls.NM+E
+    resp = await qianfan.Completion(
+        model="invalid_model", endpoint="endpoint_from_init_2"
+    ).ado(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_2"
+    assert resp["_for_ut"]["type"] == "completion"
+    # cls.None
+    resp = await qianfan.Completion().ado(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["type"] == "chat"
+    # cls.CM
+    resp = await qianfan.Completion(model="ERNIE-Bot").ado(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "completions"
+    assert resp["_for_ut"]["type"] == "chat"
+    # cls.CM+E
+    resp = await qianfan.Completion(
+        model="ERNIE-Bot", endpoint="endpoint_from_init_3"
+    ).ado(prompt=prompt)
+    assert resp["_for_ut"]["model"] == "endpoint_from_init_3"
+    assert resp["_for_ut"]["type"] == "chat"
 
 
 def test_completion_auth():

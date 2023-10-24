@@ -74,7 +74,7 @@ def async_qianfan_api_request(
     """
 
     @functools.wraps(func)
-    async def inner(*args: Any, **kwargs: Any) -> Awaitable[QfResponse]:
+    async def inner(*args: Any, **kwargs: Any) -> QfResponse:
         """
         inner function of wrapper
         """

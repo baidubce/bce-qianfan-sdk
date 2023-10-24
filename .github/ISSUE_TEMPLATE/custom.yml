@@ -1,7 +1,7 @@
-name: Custom Issue
+name: "\U0001f4dd Custom Issue"
 description: Raise an issue other
-title: "Issue: <Title for breif intro about this issue. 'Issue: ' prefix>"
-labels: ["02 Custom"]
+title: "Issue: <Title for brief intro about this issue. 'Issue: ' prefix>"
+labels: ["Custom"]
 
 body:
   - type: textarea

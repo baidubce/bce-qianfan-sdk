@@ -12,7 +12,7 @@ body:
         A clear and concise description of the feature proposal. Please provide links to any relevant GitHub repos, papers, or other resources if relevant.
 
   - type: textarea
-    id: contribution or solutions
+    id: solutions
     validations:
       required: false
     attributes:

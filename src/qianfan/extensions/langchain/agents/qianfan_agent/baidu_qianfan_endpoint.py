@@ -92,18 +92,19 @@ class QianfanBaseAgent(BaseModel, ABC):
             if not isinstance(tool_result, dict):
                 dicts = {"result": tool_result}
 
-            messages.append(
-                FunctionMessage(name=step.tool, content=json.dumps(dicts))
-            )
+            messages.append(FunctionMessage(name=step.tool, content=json.dumps(dicts)))
         return messages
 
     @classmethod
-    def _generate_prompt_template(cls, system_prompt: Optional[SystemMessage]) -> ChatPromptTemplate:
+    def _generate_prompt_template(
+        cls, system_prompt: Optional[SystemMessage]
+    ) -> ChatPromptTemplate:
         system_prompt = system_prompt if system_prompt else cls._default_system_prompt()
         user_input_template = HumanMessagePromptTemplate.from_template("{input}")
         chat_history_template = MessagesPlaceholder(variable_name="history")
         return ChatPromptTemplate(
-            messages=[system_prompt, user_input_template, chat_history_template], input_variables=["input", "history"]
+            messages=[system_prompt, user_input_template, chat_history_template],
+            input_variables=["input", "history"],
         )
 
     @classmethod
@@ -187,6 +188,26 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
             tool_inputs = tool_inputs
         return AgentAction(tool=tool_name, tool_input=tool_inputs, log=str(result))
 
+    def plan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
+    ) -> Union[AgentAction, AgentFinish]:
+        result = super().plan(intermediate_steps, callbacks, **kwargs)
+        assert isinstance(result, (AgentAction, AgentFinish))
+        return result
+
+    async def aplan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
+    ) -> Union[AgentAction, AgentFinish]:
+        result = await super().aplan(intermediate_steps, callbacks, **kwargs)
+        assert isinstance(result, (AgentAction, AgentFinish))
+        return result
+
 
 class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
     """multi action implementation"""
@@ -266,3 +287,23 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
             tool_inputs = action
             actions.append(AgentAction(tool=tool_name, tool_input=tool_inputs, log=""))
         return actions
+
+    def plan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
+    ) -> Union[List[AgentAction], AgentFinish]:
+        result = super().plan(intermediate_steps, callbacks, **kwargs)
+        assert isinstance(result, (list, AgentFinish))
+        return result
+
+    async def aplan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
+    ) -> Union[List[AgentAction], AgentFinish]:
+        result = await super().aplan(intermediate_steps, callbacks, **kwargs)
+        assert isinstance(result, (list, AgentFinish))
+        return result

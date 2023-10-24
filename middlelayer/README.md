@@ -1,1 +1,1 @@
-The introduction for qianfan middle layer.
+该包是千帆 Python SDK 对第三方组件的适配扩展集，依赖于 qianfan 。请按需安装

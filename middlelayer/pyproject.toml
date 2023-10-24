@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "qianfan-middlelayer"
+version = "0.0.1"
+description = "文心千帆大模型平台 Python SDK 三方适配拓展包"
+authors = []
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://cloud.baidu.com/product/wenxinworkshop"
+repository = "https://github.com/baidubce/bce-qianfan-sdk"
+documentation = "https://qianfan.readthedocs.io/en/stable/qianfan.html"
+keywords = ["baidu", "qianfan"]
+packages = [
+    { include = "langchain"}
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8.1,<4"
+pydantic = { version = "<2" }
+langchain = { version = ">=0.0.321" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -193,17 +193,27 @@ def chat(model_name):
                     "result": "",
                     "need_clear_history": False,
                     "function_call": {
-                        "name": "paper_search" if r["functions"][0]["name"] == "paper_search" else "tool_selection",
+                        "name": (
+                            "paper_search"
+                            if r["functions"][0]["name"] == "paper_search"
+                            else "tool_selection"
+                        ),
                         "thoughts": "用户提到了搜索论文，需要搜索论文来返回结果",
-                        "arguments": "{\"__arg1\":\"physics\"}" if r["functions"][0]["name"] == "paper_search" else
-                        "{\"actions\": [{\"action\": \"paper_search\", \"query\":\"physics\"}]}"
+                        "arguments": (
+                            '{"__arg1":"physics"}'
+                            if r["functions"][0]["name"] == "paper_search"
+                            else (
+                                '{"actions": [{"action": "paper_search",'
+                                ' "query":"physics"}]}'
+                            )
+                        ),
                     },
                     "is_safe": 0,
                     "usage": {
                         "prompt_tokens": 8,
                         "completion_tokens": 46,
-                        "total_tokens": 54
-                    }
+                        "total_tokens": 54,
+                    },
                 }
             )
         else:
@@ -221,8 +231,8 @@ def chat(model_name):
                     "usage": {
                         "prompt_tokens": 26,
                         "completion_tokens": 8,
-                        "total_tokens": 42
-                    }
+                        "total_tokens": 42,
+                    },
                 }
             )
 

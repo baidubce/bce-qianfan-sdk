@@ -25,6 +25,7 @@ import threading
 from functools import wraps
 
 import flask
+import requests
 from flask import Flask, request
 
 from qianfan.consts import APIErrorCode, Consts
@@ -83,7 +84,8 @@ def json_response(data):
     wrapper of the response
     """
     return flask.Response(
-        json.dumps({**data, "_request": request.json}), mimetype="application/json"
+        json.dumps({**data, "_request": request.json, "_params": request.args}),
+        mimetype="application/json",
     )
 
 
@@ -270,6 +272,31 @@ def embedding(model_name):
             "data": data,
             "usage": {"prompt_tokens": 12, "total_tokens": 12},
             "_for_ut": {"model": model_name, "type": "embedding", "stream": False},
+        }
+    )
+
+
+@app.route(Consts.PromptRenderAPI, methods=["GET"])
+@access_token_checker
+def prompt():
+    """
+    mock prompt render api
+    """
+    return json_response(
+        {
+            "log_id": "e9d3f283-1091-405b-568e-862e824e679e",
+            "result": {
+                "templateId": 632,
+                "templateName": "原创改写",
+                "templateContent": "用{number}种不同的方式改写以下段落，以避免重复，同时保持其含义：{text}。",
+                "content": (
+                    "用2种不同的方式改写以下段落，以避免重复，"
+                    "同时保持其含义：千帆大模型平台是面向企业开发者的一站式大模型开发及服务运行平台。"
+                ),
+                "templateVariables": "number,text",
+            },
+            "status": 200,
+            "success": True,
         }
     )
 
@@ -727,10 +754,10 @@ def _start_mock_server():
     run mock server
     """
     try:
+        requests.get("http://127.0.0.1:8866")
+    except Exception:
+        # mock server is not running, start it
         app.run(host="0.0.0.0", port=8866, debug=True, use_reloader=False)
-    except:  # noqa: E722
-        # the server might be running, ignore
-        pass
 
 
 def start_mock_server():

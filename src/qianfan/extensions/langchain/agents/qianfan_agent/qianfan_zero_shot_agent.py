@@ -1,10 +1,16 @@
 import json
 import re
-from typing import List, Tuple, Any, Union
+from typing import Any, List, Tuple, Union
 
 from langchain.agents import BaseSingleActionAgent
 from langchain.callbacks.base import Callbacks
-from langchain.schema import AgentAction, AgentFinish, BaseMessage, HumanMessage, AIMessage
+from langchain.schema import (
+    AgentAction,
+    AgentFinish,
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+)
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.tools import BaseTool
 
@@ -32,16 +38,21 @@ class QianfanZeroShotAgent(BaseSingleActionAgent):
     def _generate_initial_prompt(self):
         tool_string = ""
         for tool in self.tools:
-            tool_string += "名称: {tool_name}\n" \
-                           "描述: {tool_description}\n" \
-                           "参数: {{\"type\": \"object\", \"properties\": {tool_args_dict}}}\n" \
-                           "-\n".format(tool_name=tool.name,
-                                        tool_description=tool.description,
-                                        tool_args_dict=tool.args)
-        return INITIAL_PROMPT.format(tool_list=tool_string[:-2]).replace("\'", "\"")
+            tool_string += (
+                "名称: {tool_name}\n"
+                "描述: {tool_description}\n"
+                '参数: {{"type": "object", "properties": {tool_args_dict}}}\n'
+                "-\n".format(
+                    tool_name=tool.name,
+                    tool_description=tool.description,
+                    tool_args_dict=tool.args,
+                )
+            )
+        return INITIAL_PROMPT.format(tool_list=tool_string[:-2]).replace("'", '"')
 
-    def _convert_intermediate_steps_into_message(self, steps: List[Tuple[AgentAction, str]], user_input: str)\
-            -> List[BaseMessage]:
+    def _convert_intermediate_steps_into_message(
+        self, steps: List[Tuple[AgentAction, str]], user_input: str
+    ) -> List[BaseMessage]:
         messages = [
             HumanMessage(content=self._generate_initial_prompt()),
             AIMessage(content="好的"),
@@ -49,30 +60,54 @@ class QianfanZeroShotAgent(BaseSingleActionAgent):
         ]
         for action, tool_result in steps:
             messages += [
-                AIMessage(content="Action: {}\nAction Input: {}".format(action.tool, action.tool_input)),
+                AIMessage(
+                    content="Action: {}\nAction Input: {}".format(
+                        action.tool, action.tool_input
+                    )
+                ),
                 HumanMessage(content=tool_result),
             ]
         return messages
 
-    def _parse_output(self, return_message: AIMessage) -> Union[AgentAction, AgentFinish]:
+    def _parse_output(
+        self, return_message: AIMessage
+    ) -> Union[AgentAction, AgentFinish]:
         exp = re.match(r"^Action: (.*?)\nAction Input: (.*)$", return_message.content)
         if not exp or len(exp.groups()) == 0:
-            return AgentFinish(return_values={"output": return_message.content},
-                               log=str(return_message.additional_kwargs))
+            return AgentFinish(
+                return_values={"output": return_message.content},
+                log=str(return_message.additional_kwargs),
+            )
         if len(exp.groups()) != 2:
             raise ValueError("incorrect group counter: " + str(len(exp.groups())))
 
         print(f"\ntool used: {exp.group(1)}\ntool input: {exp.group(2)}")
-        return AgentAction(tool=exp.group(1), tool_input=json.loads(exp.group(2).replace("\'", "\"")), log="")
+        return AgentAction(
+            tool=exp.group(1),
+            tool_input=json.loads(exp.group(2).replace("'", '"')),
+            log="",
+        )
 
-    def plan(self, intermediate_steps: List[Tuple[AgentAction, str]], callbacks: Callbacks = None, **kwargs: Any) -> \
-            Union[AgentAction, AgentFinish]:
-        messages = self._convert_intermediate_steps_into_message(intermediate_steps, **kwargs)
+    def plan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any,
+    ) -> Union[AgentAction, AgentFinish]:
+        messages = self._convert_intermediate_steps_into_message(
+            intermediate_steps, **kwargs
+        )
         return self._parse_output(self.llm.predict_messages(messages))
 
-    async def aplan(self, intermediate_steps: List[Tuple[AgentAction, str]], callbacks: Callbacks = None,
-                    **kwargs: Any) -> Union[AgentAction, AgentFinish]:
-        messages = self._convert_intermediate_steps_into_message(intermediate_steps, **kwargs)
+    async def aplan(
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any,
+    ) -> Union[AgentAction, AgentFinish]:
+        messages = self._convert_intermediate_steps_into_message(
+            intermediate_steps, **kwargs
+        )
         return self._parse_output(await self.llm.apredict_messages(messages))
 
     @property

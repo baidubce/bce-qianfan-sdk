@@ -3,7 +3,7 @@ from langchain.agents import AgentExecutor
 from langchain.chat_models import QianfanChatEndpoint
 from langchain.tools import tool
 
-from middlelayer.langchain.agents import (
+from qianfan.extensions.langchain.agents import (
     QianfanMultiActionAgent,
     QianfanSingleActionAgent,
 )

@@ -24,10 +24,8 @@ aiolimiter = ">=1.1.0"
 importlib-metadata = { version = ">=1.4.0", markers = "python_version <= '3.7'" }
 bce-python-sdk = ">=0.8.79"
 typing-extensions = { version = ">=4.0.0", markers = "python_version <= '3.10'" }
-qianfan-middlelayer = { version = ">=0.0.1", markers = "python_version >= '3.8.1'", optional = true }
-
-[tool.poetry.extras]
-middlelayer = ["qianfan-middlelayer"]
+pydantic = { version = "<2", markers = "python_version >= '3.8.1'" }
+langchain = { version = ">=0.0.321", markers = "python_version >= '3.8.1'" }
 
 [tool.poetry.group.dev.dependencies]
 sphinx = ">=5"
@@ -39,8 +37,6 @@ black = "^23.1.0"
 ruff = ">=0.0.290"
 sphinx-rtd-theme = ">=1.2.0"
 mypy = ">=1.4.0"
-pydantic = { version = "<2", markers = "python_version >= '3.8.1'" }
-langchain = { version = ">=0.0.321", markers = "python_version >= '3.8.1'" }
 
 [tool.ruff]
 select = [

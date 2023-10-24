@@ -4,17 +4,27 @@
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Sequence, List, Tuple, Union, Optional
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
-from langchain.agents import BaseSingleActionAgent, BaseMultiActionAgent
+from langchain.agents import BaseMultiActionAgent, BaseSingleActionAgent
 from langchain.callbacks.base import Callbacks
 from langchain.chat_models import QianfanChatEndpoint
-from langchain.prompts import HumanMessagePromptTemplate, MessagesPlaceholder, ChatPromptTemplate
-from langchain.schema import BasePromptTemplate, AgentAction, AgentFinish, SystemMessage, BaseMessage, AIMessage, \
-    FunctionMessage
-from langchain.tools import BaseTool, format_tool_to_openai_function
+from langchain.prompts import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    MessagesPlaceholder,
+)
+from langchain.schema import (
+    AgentAction,
+    AgentFinish,
+    AIMessage,
+    BaseMessage,
+    BasePromptTemplate,
+    FunctionMessage,
+    SystemMessage,
+)
 from langchain.schema.language_model import BaseLanguageModel
-
+from langchain.tools import BaseTool, format_tool_to_openai_function
 from pydantic import BaseModel, root_validator
 
 
@@ -37,7 +47,9 @@ class QianfanBaseAgent(BaseModel, ABC):
 
     @classmethod
     @abstractmethod
-    def _parse_message_to_action(cls, result: AIMessage) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+    def _parse_message_to_action(
+        cls, result: AIMessage
+    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
         """parse returned messages into action(s)"""
 
     @property
@@ -50,18 +62,27 @@ class QianfanBaseAgent(BaseModel, ABC):
         """check if llm is valid"""
         if not isinstance(values["llm"], QianfanChatEndpoint):
             raise ValueError("Only supported with QianfanChatEndpoint models.")
-        if not (values["llm"].model == "ERNIE-Bot" or values["llm"].model == "ERNIE-Bot-4"):
+        if not (
+            values["llm"].model == "ERNIE-Bot" or values["llm"].model == "ERNIE-Bot-4"
+        ):
             raise ValueError("Model could only be ERNIE-Bot")
         return values
 
     @staticmethod
-    def _convert_action_into_message(intermediate_steps: List[Tuple[AgentAction, str]]) -> List[BaseMessage]:
+    def _convert_action_into_message(
+        intermediate_steps: List[Tuple[AgentAction, str]]
+    ) -> List[BaseMessage]:
         messages = []
         for step, tool_result in intermediate_steps:
             messages.append(
                 AIMessage(
                     content="",
-                    additional_kwargs={"function_call": {"name": step.tool, "arguments": json.dumps(step.tool_input)}}
+                    additional_kwargs={
+                        "function_call": {
+                            "name": step.tool,
+                            "arguments": json.dumps(step.tool_input),
+                        }
+                    },
                 )
             )
             try:
@@ -71,75 +92,75 @@ class QianfanBaseAgent(BaseModel, ABC):
             if not isinstance(tool_result, dict):
                 tool_result = {"result": tool_result}
 
-            messages.append(FunctionMessage(name=step.tool, content=json.dumps(tool_result)))
+            messages.append(
+                FunctionMessage(name=step.tool, content=json.dumps(tool_result))
+            )
         return messages
 
     @classmethod
     def _generate_prompt_template(cls, system_prompt: Optional[SystemMessage]):
-        system_prompt = (
-            system_prompt
-            if system_prompt else
-            cls._default_system_prompt()
-        )
+        system_prompt = system_prompt if system_prompt else cls._default_system_prompt()
         user_input_template = HumanMessagePromptTemplate.from_template("{input}")
         chat_history_template = MessagesPlaceholder(variable_name="history")
-        return ChatPromptTemplate(messages=[system_prompt, user_input_template, chat_history_template])
+        return ChatPromptTemplate(
+            messages=[system_prompt, user_input_template, chat_history_template]
+        )
 
     @classmethod
     def from_system_prompt(
-            cls,
-            tools: List[BaseTool],
-            llm: BaseLanguageModel,
-            system_prompt: Optional[SystemMessage] = None,
+        cls,
+        tools: List[BaseTool],
+        llm: BaseLanguageModel,
+        system_prompt: Optional[SystemMessage] = None,
     ) -> Union[BaseMultiActionAgent, BaseSingleActionAgent]:
         """construct a agent"""
         return cls(
-            llm=llm,
-            tools=tools,
-            prompt=cls._generate_prompt_template(system_prompt)
+            llm=llm, tools=tools, prompt=cls._generate_prompt_template(system_prompt)
         )
 
     def plan(
-            self,
-            intermediate_steps: List[Tuple[AgentAction, str]],
-            callbacks: Callbacks = None,
-            **kwargs: Any
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
     ) -> Union[List[AgentAction], AgentFinish]:
         """plan a action"""
         tool_history = self._convert_action_into_message(intermediate_steps)
-        messages = self.prompt.format_prompt(history=tool_history, **kwargs).to_messages()
+        messages = self.prompt.format_prompt(
+            history=tool_history, **kwargs
+        ).to_messages()
         result: AIMessage = self.llm.predict_messages(
-            messages,
-            callbacks=callbacks,
-            functions=self._wrapper_function,
-            **kwargs
+            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
         return self._parse_message_to_action(result)
 
     async def aplan(
-            self,
-            intermediate_steps: List[Tuple[AgentAction, str]],
-            callbacks: Callbacks = None,
-            **kwargs: Any
+        self,
+        intermediate_steps: List[Tuple[AgentAction, str]],
+        callbacks: Callbacks = None,
+        **kwargs: Any
     ) -> Union[List[AgentAction], AgentFinish]:
         """plan a action asynchronously"""
         tool_history = self._convert_action_into_message(intermediate_steps)
-        messages = self.prompt.format_prompt(history=tool_history, **kwargs).to_messages()
+        messages = self.prompt.format_prompt(
+            history=tool_history, **kwargs
+        ).to_messages()
         result: AIMessage = await self.llm.apredict_messages(
-            messages,
-            callbacks=callbacks,
-            functions=self._wrapper_function,
-            **kwargs
+            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
         return self._parse_message_to_action(result)
 
 
 class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
     """single action implementation"""
+
     @classmethod
     def _default_system_prompt(cls) -> SystemMessage:
         return SystemMessage(
-            content="你是一个擅长使用工具以解决问题的智能助理，你应该使用工具逐步解决问题。在解决问题之前，你不需要和用户进行对话"
+            content=(
+                "你是一个擅长使用工具以解决问题的智能助理，你应该使用工具逐步解决问题。"
+                "在解决问题之前，你不需要和用户进行对话"
+            )
         )
 
     @property
@@ -147,9 +168,13 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
         return [dict(format_tool_to_openai_function(t)) for t in self.tools]
 
     @classmethod
-    def _parse_message_to_action(cls, result: AIMessage) -> Union[AgentAction, AgentFinish]:
+    def _parse_message_to_action(
+        cls, result: AIMessage
+    ) -> Union[AgentAction, AgentFinish]:
         if result.content:
-            return AgentFinish(return_values={"output": result.content}, log=str(result))
+            return AgentFinish(
+                return_values={"output": result.content}, log=str(result)
+            )
 
         tool_json = result.additional_kwargs.get("function_call", {})
         if not tool_json:
@@ -165,11 +190,15 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
 
 class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
     """multi action implementation"""
+
     @classmethod
     def _default_system_prompt(cls) -> SystemMessage:
         return SystemMessage(
-            content="你是一个擅长使用工具以解决问题的智能助理，"
-                    "你在解决用户问题时，应该一次性使用尽可能多的工具完成任务，在返回正确结果前无需与用户对话"
+            content=(
+                "你是一个擅长使用工具以解决问题的智能助理，"
+                "你在解决用户问题时，应该一次性使用尽可能多的工具完成任务，"
+                "在返回正确结果前无需与用户对话"
+            )
         )
 
     @property
@@ -198,7 +227,7 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
                                             "title": t.name,
                                             "type": "object",
                                             "properties": t.args,
-                                            "description": t.description
+                                            "description": t.description,
                                         }
                                         for t in self.tools
                                     ],
@@ -214,9 +243,13 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
         return [tool_selection]
 
     @classmethod
-    def _parse_message_to_action(cls, result: AIMessage) -> Union[List[AgentAction], AgentFinish]:
+    def _parse_message_to_action(
+        cls, result: AIMessage
+    ) -> Union[List[AgentAction], AgentFinish]:
         if result.content:
-            return AgentFinish(return_values={"output": result.content}, log=str(result))
+            return AgentFinish(
+                return_values={"output": result.content}, log=str(result)
+            )
 
         arg_str = result.additional_kwargs.get("function_call", {}).get("arguments", "")
         if not arg_str:

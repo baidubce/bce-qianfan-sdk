@@ -23,7 +23,7 @@ lint: install
 	poetry run mypy ./src/qianfan --install-types --non-interactive
 
 test: clean install 
-	bash src/scripts/run_test.sh
+	cd src && bash scripts/run_test.sh
 
 
 .PHONY: build install uninstall clean 

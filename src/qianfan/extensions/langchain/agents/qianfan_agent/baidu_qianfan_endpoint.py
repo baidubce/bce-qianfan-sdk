@@ -42,7 +42,7 @@ class QianfanBaseAgent(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def _wrapper_function(self) -> list[dict]:
+    def _wrapper_function(self) -> List[dict]:
         """provide serialized tool string"""
 
     @classmethod
@@ -165,7 +165,7 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
         )
 
     @property
-    def _wrapper_function(self) -> list[dict]:
+    def _wrapper_function(self) -> List[dict]:
         return [dict(format_tool_to_openai_function(t)) for t in self.tools]
 
     @classmethod
@@ -223,7 +223,7 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
         )
 
     @property
-    def _wrapper_function(self) -> list[dict]:
+    def _wrapper_function(self) -> List[dict]:
         tool_selection = {
             "name": "tool_selection",
             "description": "需要采取的行动列表。",

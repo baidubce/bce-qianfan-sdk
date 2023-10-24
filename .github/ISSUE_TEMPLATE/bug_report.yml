@@ -3,6 +3,7 @@ about: Submit a bug report to help us improve qianfan.
 labels: ["01 Bug"]
 assignees: ''
 
+description:
 **Describe the bug**
 Thank you for taking the time to file a bug report! Before you do so, please take a look at existing open issues and make sure that your issue is not already documented. If it isn't, please provide us with a clear and concise description of what the bug is.
 

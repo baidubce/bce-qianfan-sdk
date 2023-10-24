@@ -36,12 +36,12 @@ def init_test_env():
         os.environ.pop("QIANFAN_SK")
     start_mock_server()
     # ensure the mock server is ready
-    for _ in range(10):
+    for _ in range(50):
         try:
             requests.get("http://127.0.0.1:8866/")
             break
         except Exception:
-            time.sleep(1)
+            time.sleep(0.2)
 
 
 class EnvHelper(object):

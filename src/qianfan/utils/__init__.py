@@ -26,6 +26,7 @@ from qianfan.utils.logging import (
 from qianfan.utils.utils import (
     _get_console_ak_sk,
     _get_from_env_or_default,
+    _get_qianfan_ak_sk,
     _get_value_from_dict_or_var_or_env,
     _none_if_empty,
     _set_val_if_key_exists,
@@ -41,6 +42,7 @@ __all__ = [
     "enable_log",
     "disable_log",
     "_get_console_ak_sk",
+    "_get_qianfan_ak_sk",
     "_get_from_env_or_default",
     "_get_value_from_dict_or_var_or_env",
     "_none_if_empty",

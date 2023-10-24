@@ -41,7 +41,7 @@ class Prompt(object):
             method="GET", url=GLOBAL_CONFIG.BASE_URL + Consts.PromptRenderAPI
         )
         req.query = {
-            "id": template_id,
+            "id": str(template_id),
             **params,
             **kwargs,
         }

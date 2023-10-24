@@ -35,7 +35,7 @@ class QianfanZeroShotAgent(BaseSingleActionAgent):
     tools: List[BaseTool]
     llm: BaseLanguageModel
 
-    def _generate_initial_prompt(self):
+    def _generate_initial_prompt(self) -> str:
         tool_string = ""
         for tool in self.tools:
             tool_string += (
@@ -70,7 +70,7 @@ class QianfanZeroShotAgent(BaseSingleActionAgent):
         return messages
 
     def _parse_output(
-        self, return_message: AIMessage
+        self, return_message: BaseMessage
     ) -> Union[AgentAction, AgentFinish]:
         exp = re.match(r"^Action: (.*?)\nAction Input: (.*)$", return_message.content)
         if not exp or len(exp.groups()) == 0:

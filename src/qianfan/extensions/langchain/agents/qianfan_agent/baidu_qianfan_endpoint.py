@@ -48,7 +48,7 @@ class QianfanBaseAgent(BaseModel, ABC):
     @classmethod
     @abstractmethod
     def _parse_message_to_action(
-        cls, result: AIMessage
+        cls, result: BaseMessage
     ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
         """parse returned messages into action(s)"""
 
@@ -72,7 +72,7 @@ class QianfanBaseAgent(BaseModel, ABC):
     def _convert_action_into_message(
         intermediate_steps: List[Tuple[AgentAction, str]]
     ) -> List[BaseMessage]:
-        messages = []
+        messages: List[BaseMessage] = []
         for step, tool_result in intermediate_steps:
             messages.append(
                 AIMessage(
@@ -86,24 +86,24 @@ class QianfanBaseAgent(BaseModel, ABC):
                 )
             )
             try:
-                tool_result = json.loads(tool_result)
+                dicts = json.loads(tool_result)
             except Exception:
                 ...
             if not isinstance(tool_result, dict):
-                tool_result = {"result": tool_result}
+                dicts = {"result": tool_result}
 
             messages.append(
-                FunctionMessage(name=step.tool, content=json.dumps(tool_result))
+                FunctionMessage(name=step.tool, content=json.dumps(dicts))
             )
         return messages
 
     @classmethod
-    def _generate_prompt_template(cls, system_prompt: Optional[SystemMessage]):
+    def _generate_prompt_template(cls, system_prompt: Optional[SystemMessage]) -> ChatPromptTemplate:
         system_prompt = system_prompt if system_prompt else cls._default_system_prompt()
         user_input_template = HumanMessagePromptTemplate.from_template("{input}")
         chat_history_template = MessagesPlaceholder(variable_name="history")
         return ChatPromptTemplate(
-            messages=[system_prompt, user_input_template, chat_history_template]
+            messages=[system_prompt, user_input_template, chat_history_template], input_variables=["input", "history"]
         )
 
     @classmethod
@@ -112,8 +112,8 @@ class QianfanBaseAgent(BaseModel, ABC):
         tools: List[BaseTool],
         llm: BaseLanguageModel,
         system_prompt: Optional[SystemMessage] = None,
-    ) -> Union[BaseMultiActionAgent, BaseSingleActionAgent]:
-        """construct a agent"""
+    ) -> Any:
+        """construct an agent"""
         return cls(
             llm=llm, tools=tools, prompt=cls._generate_prompt_template(system_prompt)
         )
@@ -123,13 +123,13 @@ class QianfanBaseAgent(BaseModel, ABC):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any
-    ) -> Union[List[AgentAction], AgentFinish]:
-        """plan a action"""
+    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+        """plan an action"""
         tool_history = self._convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: AIMessage = self.llm.predict_messages(
+        result: BaseMessage = self.llm.predict_messages(
             messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
         return self._parse_message_to_action(result)
@@ -139,13 +139,13 @@ class QianfanBaseAgent(BaseModel, ABC):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any
-    ) -> Union[List[AgentAction], AgentFinish]:
-        """plan a action asynchronously"""
+    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+        """plan an action asynchronously"""
         tool_history = self._convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: AIMessage = await self.llm.apredict_messages(
+        result: BaseMessage = await self.llm.apredict_messages(
             messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
         return self._parse_message_to_action(result)
@@ -169,7 +169,7 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
 
     @classmethod
     def _parse_message_to_action(
-        cls, result: AIMessage
+        cls, result: BaseMessage
     ) -> Union[AgentAction, AgentFinish]:
         if result.content:
             return AgentFinish(
@@ -244,7 +244,7 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
 
     @classmethod
     def _parse_message_to_action(
-        cls, result: AIMessage
+        cls, result: BaseMessage
     ) -> Union[List[AgentAction], AgentFinish]:
         if result.content:
             return AgentFinish(

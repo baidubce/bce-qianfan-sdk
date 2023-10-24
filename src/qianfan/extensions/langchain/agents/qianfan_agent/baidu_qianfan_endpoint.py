@@ -87,7 +87,7 @@ class QianfanBaseAgent(BaseModel, ABC):
             )
             try:
                 tool_result = json.loads(tool_result)
-            except Exception as e:
+            except Exception:
                 ...
             if not isinstance(tool_result, dict):
                 tool_result = {"result": tool_result}

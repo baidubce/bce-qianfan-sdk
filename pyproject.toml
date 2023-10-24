@@ -34,6 +34,8 @@ black = "^23.1.0"
 ruff = ">=0.0.290"
 sphinx-rtd-theme = ">=1.2.0"
 mypy = ">=1.4.0"
+pydantic = { version = "<2", markers = "python_version >= '3.8.1'"}
+langchain = { version = ">=0.0.321", markers = "python_version >= '3.8.1'"}
 
 [tool.ruff]
 select = [

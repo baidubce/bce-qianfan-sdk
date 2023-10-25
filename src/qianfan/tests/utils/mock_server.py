@@ -175,13 +175,69 @@ def chat(model_name):
     r = request.json
     # check messages
     check_result = check_messages(r["messages"])
-    if check_result is not None:
+    if "functions" not in r and check_result is not None:
         return json.dumps(check_result)
     if "stream" in r and r["stream"]:
         return flask.Response(
             chat_completion_stream_response(model_name, r["messages"]),
             mimetype="text/event-stream",
         )
+    if "functions" in r:
+        if len(r["messages"]) == 1:
+            return json_response(
+                {
+                    "id": "as-rtpw9dcmef",
+                    "object": "chat.completion",
+                    "created": 1693449832,
+                    "sentence_id": 0,
+                    "is_end": True,
+                    "is_truncated": False,
+                    "result": "",
+                    "need_clear_history": False,
+                    "function_call": {
+                        "name": (
+                            "paper_search"
+                            if r["functions"][0]["name"] == "paper_search"
+                            else "tool_selection"
+                        ),
+                        "thoughts": "用户提到了搜索论文，需要搜索论文来返回结果",
+                        "arguments": (
+                            '{"__arg1":"physics"}'
+                            if r["functions"][0]["name"] == "paper_search"
+                            else (
+                                '{"actions": [{"action": "paper_search",'
+                                ' "query":"physics"}]}'
+                            )
+                        ),
+                    },
+                    "is_safe": 0,
+                    "usage": {
+                        "prompt_tokens": 8,
+                        "completion_tokens": 46,
+                        "total_tokens": 54,
+                    },
+                }
+            )
+        else:
+            return json_response(
+                {
+                    "id": "as-kf6e9thk0f",
+                    "object": "chat.completion",
+                    "created": 1693450180,
+                    "sentence_id": 0,
+                    "is_end": True,
+                    "is_truncated": False,
+                    "result": "测试成功",
+                    "need_clear_history": False,
+                    "is_safe": 0,
+                    "usage": {
+                        "prompt_tokens": 26,
+                        "completion_tokens": 8,
+                        "total_tokens": 42,
+                    },
+                }
+            )
+
     return json_response(
         {
             "id": "as-bcmt5ct4iy",

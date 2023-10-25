@@ -26,7 +26,7 @@ from qianfan.resources.typing import QfRequest
 
 class Prompt(object):
     """
-    Class for Service API
+    Class for Prompt API
     """
 
     @classmethod

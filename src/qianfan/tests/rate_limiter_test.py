@@ -16,6 +16,7 @@
     Unit test for RateLimiter
 """
 import asyncio
+import os
 import time
 
 import pytest
@@ -132,3 +133,15 @@ async def test_async_rate_limiter_in_call_with_qps_sub1():
     await asyncio.wait(task)
     end_time = time.time()
     assert end_time - start_timestamp > 4
+
+
+def test_set_rate_limiter_through_environment_variable():
+    os.environ["QUERY_PER_SECOND"] = str("0.5")
+    start_timestamp = time.time()
+    rl = RateLimiter()
+    for i in range(0, 5):
+        with rl:
+            pass
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp >= 6
+    os.environ["QUERY_PER_SECOND"] = str("0")

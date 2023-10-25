@@ -297,7 +297,6 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
             raise TypeError("arguments isn't a list containing actions")
 
         actions = []
-        print(json.dumps(action_list))
         for action in action_list:
             tool_name = action.get("action", "")
             action.pop("action")

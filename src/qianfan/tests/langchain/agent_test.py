@@ -1,4 +1,5 @@
 import sys
+
 import pytest
 
 
@@ -39,7 +40,9 @@ def get_tool_list():
     return [paper_search]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher"
+)
 def test_sync_qianfan_single_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
@@ -56,7 +59,9 @@ def test_sync_qianfan_single_agent():
     assert agent_executor_qianfan.run("帮我搜索一篇 physics 领域的论文") == "测试成功"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher"
+)
 @pytest.mark.asyncio
 async def test_async_qianfan_single_agent():
     from langchain.agents import AgentExecutor
@@ -76,7 +81,9 @@ async def test_async_qianfan_single_agent():
     ) == "测试成功"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher"
+)
 def test_sync_qianfan_multi_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
@@ -93,7 +100,9 @@ def test_sync_qianfan_multi_agent():
     assert agent_executor_qianfan.run("帮我搜索一篇 physics 领域的论文") == "测试成功"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 8, 1), reason="requires Python 3.8.1 or higher"
+)
 @pytest.mark.asyncio
 async def test_async_qianfan_multi_agent():
     from langchain.agents import AgentExecutor

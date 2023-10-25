@@ -65,6 +65,10 @@ class Prompt(object):
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
+        Note:
+        The `@qianfan_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alisj3ard
         """
 
@@ -86,6 +90,10 @@ class Prompt(object):
             the template.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
+
+        Note:
+        The `@async_qianfan_api_request` decorator is applied to this method, enabling
+        it to send the generated QfRequest and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alisj3ard
         """

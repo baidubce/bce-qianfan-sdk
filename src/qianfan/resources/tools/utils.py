@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Utils for console api
+Utils for qianfan api
 """
 import functools
 from typing import Any, Awaitable, Callable
@@ -23,7 +23,7 @@ from qianfan.resources.api_requestor import QfAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.utils import _get_qianfan_ak_sk
 
-# requestor for console api
+# requestor for qianfan api
 _requestor = QfAPIRequestor()
 
 P = ParamSpec("P")

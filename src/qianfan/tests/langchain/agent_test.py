@@ -1,11 +1,6 @@
 import sys
 import pytest
 
-from qianfan.extensions.langchain.agents import (
-    QianfanMultiActionAgent,
-    QianfanSingleActionAgent,
-)
-
 
 def get_tool_list():
     from langchain.tools import tool
@@ -49,6 +44,10 @@ def test_sync_qianfan_single_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
 
+    from qianfan.extensions.langchain.agents import (
+        QianfanSingleActionAgent,
+    )
+
     tools = get_tool_list()
     agent_qianfan = QianfanSingleActionAgent.from_system_prompt(
         tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
@@ -62,6 +61,10 @@ def test_sync_qianfan_single_agent():
 async def test_async_qianfan_single_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
+
+    from qianfan.extensions.langchain.agents import (
+        QianfanSingleActionAgent,
+    )
 
     tools = get_tool_list()
     agent_qianfan = QianfanSingleActionAgent.from_system_prompt(
@@ -78,6 +81,10 @@ def test_sync_qianfan_multi_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
 
+    from qianfan.extensions.langchain.agents import (
+        QianfanMultiActionAgent,
+    )
+
     tools = get_tool_list()
     agent_qianfan = QianfanMultiActionAgent.from_system_prompt(
         tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
@@ -91,6 +98,10 @@ def test_sync_qianfan_multi_agent():
 async def test_async_qianfan_multi_agent():
     from langchain.agents import AgentExecutor
     from langchain.chat_models import QianfanChatEndpoint
+
+    from qianfan.extensions.langchain.agents import (
+        QianfanMultiActionAgent,
+    )
 
     tools = get_tool_list()
     agent_qianfan = QianfanMultiActionAgent.from_system_prompt(

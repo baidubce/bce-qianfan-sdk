@@ -16,7 +16,6 @@
     Unit test for RateLimiter
 """
 import asyncio
-import os
 import time
 
 import pytest
@@ -24,6 +23,8 @@ import pytest
 import qianfan
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.tests.chat_completion_test import TEST_MESSAGE
+
+from ..config import GLOBAL_CONFIG
 
 
 def test_not_sync_rate_limiter():
@@ -136,7 +137,7 @@ async def test_async_rate_limiter_in_call_with_qps_sub1():
 
 
 def test_set_rate_limiter_through_environment_variable():
-    os.environ["QUERY_PER_SECOND"] = str("0.5")
+    GLOBAL_CONFIG.QIANFAN_QPS_LIMIT = 0.5
     start_timestamp = time.time()
     rl = RateLimiter()
     for i in range(0, 5):
@@ -144,4 +145,4 @@ def test_set_rate_limiter_through_environment_variable():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
-    os.environ["QUERY_PER_SECOND"] = str("0")
+    GLOBAL_CONFIG.QIANFAN_QPS_LIMIT = 0

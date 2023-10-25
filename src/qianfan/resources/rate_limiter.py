@@ -22,7 +22,7 @@ from typing import Any, Optional, Type
 
 from aiolimiter import AsyncLimiter
 
-from ..config import GLOBAL_CONFIG
+from qianfan.config import GLOBAL_CONFIG
 
 
 class RateLimiter:

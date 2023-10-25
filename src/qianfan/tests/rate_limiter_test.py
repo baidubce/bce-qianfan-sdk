@@ -24,7 +24,7 @@ import qianfan
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.tests.chat_completion_test import TEST_MESSAGE
 
-from ..config import GLOBAL_CONFIG
+from qianfan.config import GLOBAL_CONFIG
 
 
 def test_not_sync_rate_limiter():

@@ -15,7 +15,7 @@
 """
     Implementation of Rate Limiter
 """
-
+import os
 import threading
 import time
 from types import TracebackType
@@ -104,6 +104,9 @@ class RateLimiter:
             query_per_second (float): query times in one second, default to 0,
             meaning rate limiter close.
         """
+
+        if query_per_second == 0:
+            query_per_second = os.environ.get("QUERY_PER_SECOND", 0)
 
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():

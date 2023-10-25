@@ -20,7 +20,7 @@ from typing import Any, Dict
 
 from qianfan.config import GLOBAL_CONFIG
 from qianfan.consts import Consts
-from qianfan.resources.llm.utils import async_qianfan_api_request, qianfan_api_request
+from qianfan.resources.tools.utils import async_qianfan_api_request, qianfan_api_request
 from qianfan.resources.typing import QfRequest
 
 

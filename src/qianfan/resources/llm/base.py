@@ -17,7 +17,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional, Set, Tuple, Uni
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultValue
-from qianfan.resources.api_requestor import QfAPIRequestor
+from qianfan.resources.api_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_warn
 
@@ -44,7 +44,7 @@ class BaseResource(object):
         """
         self._model = model
         self._endpoint = endpoint
-        self._client = QfAPIRequestor(**kwargs)
+        self._client = create_api_requestor(**kwargs)
 
     def _update_model_and_endpoint(
         self, model: Optional[str], endpoint: Optional[str]

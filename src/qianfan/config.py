@@ -38,6 +38,11 @@ class GlobalConfig(object, metaclass=Singleton):
     IAM_SIGN_EXPIRATION_SEC: int
     CONSOLE_API_BASE_URL: str
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
+    
+    # for private
+    ENABLE_PRIVATE: Optional[bool]
+    ENABLE_AUTH: Optional[bool]
+    ACCESS_CODE: Optional[str]
 
     def __init__(self) -> None:
         """
@@ -78,9 +83,18 @@ class GlobalConfig(object, metaclass=Singleton):
                     DefaultValue.AccessTokenRefreshMinInterval,
                 )
             )
+            self.ENABLE_PRIVATE = _strtobool(
+                _get_from_env_or_default(
+                    Env.EnablePrivate,
+                    DefaultValue.EnablePrivate,
+                )
+            )
+            self.ACCESS_CODE = _none_if_empty(
+                _get_from_env_or_default(Env.AccessCode, DefaultValue.AccessCode)
+            )
         except Exception as e:
             raise InvalidArgumentError(
-                f"Got invalid envrionment variable with err `{str(e)}`"
+                f"Got invalid environment variable with err `{str(e)}`"
             )
         self.EB_SDK_INSTALLED = True
         if find_spec("erniebot") is None:

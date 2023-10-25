@@ -250,7 +250,7 @@ class AuthManager(metaclass=Singleton):
 
 class Auth(object):
     """
-    object to maintain acccess token for api call
+    object to maintain acccess token for open api call
     """
 
     _ak: Optional[str] = None
@@ -265,6 +265,8 @@ class Auth(object):
 
         when `ak` and `sk` are provided, `access_token` will be set automatically
         """
+        if GLOBAL_CONFIG.ENABLE_PRIVATE:
+            return None
         self._ak = _get_value_from_dict_or_var_or_env(
             kwargs, "ak", GLOBAL_CONFIG.AK, Env.AK
         )

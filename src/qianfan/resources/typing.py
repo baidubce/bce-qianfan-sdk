@@ -84,7 +84,7 @@ class QfResponse(Mapping):
     code: int
     headers: Dict[str, str] = default_field({})
     body: JsonBody = default_field({})
-    image: Optional[bytes] = None
+    images: Optional[List[bytes]] = None
 
     def __getitem__(self, item: str) -> Any:
         """

@@ -79,7 +79,10 @@ class QianfanBaseAgent(BaseModel, ABC):
         if not (
             values["llm"].model == "ERNIE-Bot" or values["llm"].model == "ERNIE-Bot-4"
         ):
-            raise ValueError(f"Model could only be ERNIE-Bot or ERNIE-Bot-4, not {values['llm'].model}")
+            raise ValueError(
+                "Model could only be ERNIE-Bot or ERNIE-Bot-4, not"
+                f" {values['llm'].model}"
+            )
         return values
 
     @staticmethod
@@ -137,7 +140,7 @@ class QianfanBaseAgent(BaseModel, ABC):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
         """plan an action"""
         tool_history = self._convert_action_into_message(intermediate_steps)
@@ -153,7 +156,7 @@ class QianfanBaseAgent(BaseModel, ABC):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
         """plan an action asynchronously"""
         tool_history = self._convert_action_into_message(intermediate_steps)
@@ -206,7 +209,7 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[AgentAction, AgentFinish]:
         result = super().plan(intermediate_steps, callbacks, **kwargs)
         assert isinstance(result, (AgentAction, AgentFinish))
@@ -216,7 +219,7 @@ class QianfanSingleActionAgent(QianfanBaseAgent, BaseSingleActionAgent):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[AgentAction, AgentFinish]:
         result = await super().aplan(intermediate_steps, callbacks, **kwargs)
         assert isinstance(result, (AgentAction, AgentFinish))
@@ -306,7 +309,7 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[List[AgentAction], AgentFinish]:
         result = super().plan(intermediate_steps, callbacks, **kwargs)
         assert isinstance(result, (list, AgentFinish))
@@ -316,7 +319,7 @@ class QianfanMultiActionAgent(QianfanBaseAgent, BaseMultiActionAgent):
         self,
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Union[List[AgentAction], AgentFinish]:
         result = await super().aplan(intermediate_steps, callbacks, **kwargs)
         assert isinstance(result, (list, AgentFinish))

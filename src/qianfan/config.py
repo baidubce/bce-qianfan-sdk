@@ -38,6 +38,7 @@ class GlobalConfig(object, metaclass=Singleton):
     IAM_SIGN_EXPIRATION_SEC: int
     CONSOLE_API_BASE_URL: str
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
+    QIANFAN_QPS_LIMIT: float
 
     def __init__(self) -> None:
         """
@@ -76,6 +77,11 @@ class GlobalConfig(object, metaclass=Singleton):
                 _get_from_env_or_default(
                     Env.AccessTokenRefreshMinInterval,
                     DefaultValue.AccessTokenRefreshMinInterval,
+                )
+            )
+            self.QIANFAN_QPS_LIMIT = float(
+                _get_from_env_or_default(
+                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimnit
                 )
             )
         except Exception as e:

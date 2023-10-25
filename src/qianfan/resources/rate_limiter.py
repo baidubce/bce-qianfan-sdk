@@ -15,13 +15,14 @@
 """
     Implementation of Rate Limiter
 """
-
 import threading
 import time
 from types import TracebackType
 from typing import Any, Optional, Type
 
 from aiolimiter import AsyncLimiter
+
+from qianfan.config import GLOBAL_CONFIG
 
 
 class RateLimiter:
@@ -104,6 +105,9 @@ class RateLimiter:
             query_per_second (float): query times in one second, default to 0,
             meaning rate limiter close.
         """
+
+        if query_per_second == 0:
+            query_per_second = GLOBAL_CONFIG.QIANFAN_QPS_LIMIT
 
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():

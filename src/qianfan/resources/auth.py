@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import threading
 import time
 from typing import Any, Dict, Optional, Tuple
@@ -27,6 +26,7 @@ from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest, RetryConfig
 from qianfan.utils import (
+    AsyncLock,
     _get_value_from_dict_or_var_or_env,
     log_error,
     log_info,
@@ -54,7 +54,7 @@ class AuthManager(metaclass=Singleton):
 
         token: Optional[str]
         lock: threading.Lock
-        alock: asyncio.Lock
+        alock: AsyncLock
         refresh_at: float
 
         def __init__(self, access_token: Optional[str] = None):
@@ -63,7 +63,7 @@ class AuthManager(metaclass=Singleton):
             """
             self.token = access_token
             self.lock = threading.Lock()
-            self.alock = asyncio.Lock()
+            self.alock = AsyncLock()
             self.refresh_at = 0
 
     _token_map: Dict[Tuple[str, str], AccessToken]
@@ -75,7 +75,7 @@ class AuthManager(metaclass=Singleton):
         self._token_map = {}
         self._client = HTTPClient()
         self._lock = threading.Lock()
-        self._alock = asyncio.Lock()
+        self._alock = AsyncLock()
 
     def _register(self, ak: str, sk: str, access_token: Optional[str] = None) -> bool:
         """

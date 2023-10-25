@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import os
-from typing import Any, Dict, Optional, Tuple
+import threading
+from threading import current_thread
+from types import TracebackType
+from typing import Any, Dict, Optional, Tuple, Type
 
 import qianfan
 from qianfan.consts import Env
 from qianfan.errors import InvalidArgumentError
+from qianfan.utils import log_info
+
+thread_local = threading.local()
 
 
 def _get_value_from_dict_or_var_or_env(
@@ -120,3 +127,51 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
             if key in kwargs:
                 del kwargs[key]
     return ak, sk
+
+
+class AsyncLock:
+    """
+    wrapper of asyncio.Lock
+    """
+
+    def __init__(self) -> None:
+        self._lock = _new_asyncio_lock()
+
+    async def __aenter__(self) -> None:
+        if self._lock is None:
+            raise InvalidArgumentError(
+                "no event loop found in current thread, please make sure the event loop"
+                " is available when the object is initialized"
+            )
+        await self._lock.__aenter__()
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        if self._lock is None:
+            raise InvalidArgumentError(
+                "no event loop found in current thread, please make sure the event loop"
+                " is available when the object is initialized"
+            )
+        await self._lock.__aexit__(exc_type, exc_val, exc_tb)
+
+
+def _new_asyncio_lock() -> Optional[asyncio.Lock]:
+    """
+    create a new asyncio lock
+    """
+    try:
+        return asyncio.Lock()
+    except RuntimeError:
+        event_loop_detected = getattr(thread_local, "event_loop_detected", None)
+        if event_loop_detected is None:
+            log_info(
+                f"no event loop in thread `{current_thread().name}`, async feature"
+                " won't be available. Please make sure the object is initialized"
+                " in the thread with event loop."
+            )
+            thread_local.event_loop_detected = True
+    return None

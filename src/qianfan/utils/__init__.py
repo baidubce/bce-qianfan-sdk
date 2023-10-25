@@ -24,6 +24,7 @@ from qianfan.utils.logging import (
     logger,
 )
 from qianfan.utils.utils import (
+    AsyncLock,
     _get_console_ak_sk,
     _get_from_env_or_default,
     _get_value_from_dict_or_var_or_env,
@@ -46,4 +47,5 @@ __all__ = [
     "_none_if_empty",
     "_set_val_if_key_exists",
     "_strtobool",
+    "AsyncLock",
 ]

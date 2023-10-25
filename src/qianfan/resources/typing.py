@@ -82,9 +82,25 @@ class QfResponse(Mapping):
     """
 
     code: int
+    """
+    The HTTP status code of the response.
+    """
+
     headers: Dict[str, str] = default_field({})
+    """
+    A dictionary of HTTP headers included in the response.
+    """
+
     body: JsonBody = default_field({})
+    """
+    The JSON-formatted body of the response.
+    """
+
     image: Optional[bytes] = None
+    """
+    An optional binary image data included in the response.
+    Only available when using test2img related APIs.
+    """
 
     def __getitem__(self, item: str) -> Any:
         """
@@ -136,11 +152,25 @@ class QfRole(Enum):
 
 class QfMessages:
     """
-    Message list of Chat model
+    An auxiliary class for representing a list of messages in a chat model.
+
+    Example usage:
+
+    .. code-block:: python
+
+      messages = QfMessages()
+      # append a message by str
+      messages.append("Hello!")
+      # send the messages directly
+      resp = qianfan.ChatCompletion().do(messages = messages)
+      # append the response to the messages and continue the conversation
+      messages.append(resp)
+      messages.append("next message", role = QfRole.User) # role is optional
+
     """
 
     @dataclass
-    class Message:
+    class _Message:
         """
         Internal class to express message
         """
@@ -166,32 +196,41 @@ class QfMessages:
         """
         Init QfMessages
         """
-        self._msg_list: List[QfMessages.Message] = []
+        self._msg_list: List[QfMessages._Message] = []
 
     def append(
         self, message: Union[str, QfResponse], role: Optional[Union[str, QfRole]] = None
     ) -> None:
         """
-        append message to message_list
-        message could be str or QfResponse
-        if the type of `message` is QfResponse, the role can only be QfRole.Assistant
+        Appends a message to the QfMessages object.
+
+        Parameters:
+          message (Union[str, QfResponse]):
+            The message to be appended. It can be a string or a QfResponse object. When
+            the object is a QfResponse object, the role of the message sender will be
+            `QfRole.Assistant` by default, unless you specify the role using the 'role'
+          role (Optional[Union[str, QfRole]]):
+            An optional parameter to specify the role of the message sender. If not
+            provided, the function will determine the role based on the existed message.
+
+        Example usage can be found in the introduction of this class.
         """
         if isinstance(message, str):
             if len(self._msg_list) >= 1 and "function_call" in self._msg_list[-1].extra:
                 # last message is function call, this message role should be function
                 function_call = self._msg_list[-1].extra["function_call"]
                 role = role if role is not None else QfRole.Function
-                msg = QfMessages.Message(role=role, content=message)
+                msg = QfMessages._Message(role=role, content=message)
                 if "name" in function_call:
                     msg.extra["name"] = function_call["name"]
             else:
                 role = role if role is not None else QfRole.User
-                msg = QfMessages.Message(role=role, content=message)
+                msg = QfMessages._Message(role=role, content=message)
             self._msg_list.append(msg)
         elif isinstance(message, QfResponse):
             try:
                 role = role if role is not None else QfRole.Assistant
-                msg = QfMessages.Message(role=role, content=message.body["result"])
+                msg = QfMessages._Message(role=role, content=message.body["result"])
                 if "function_call" in message.body:
                     msg.extra["function_call"] = message.body["function_call"]
                 self._msg_list.append(msg)

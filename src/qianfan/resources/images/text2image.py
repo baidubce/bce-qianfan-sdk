@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
+import copy
 from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
-import base64
-import copy
+from qianfan.utils.logging import log_warn
 
 
 class Text2Image(BaseResource):
@@ -50,7 +51,7 @@ class Text2Image(BaseResource):
                     "n",
                     "steps",
                     "sampler_index",
-                    "user_id"
+                    "user_id",
                 },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
@@ -121,12 +122,11 @@ class Text2Image(BaseResource):
                 )
         return kwargs
 
-    def do(
+    def create(
         self,
         prompt: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
@@ -165,8 +165,7 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
-
-        return self._do(
+        resp = self._do(
             model,
             endpoint,
             False,
@@ -175,13 +174,16 @@ class Text2Image(BaseResource):
             backoff_factor,
             **kwargs,
         )
+        assert isinstance(resp, QfResponse)
+        resp.images = [base64.b64decode(i["b64_image"]) for i in resp["body"]["data"]]
+        print("resp1111", resp)
+        return resp
 
-    async def ado(
+    async def acreate(
         self,
         prompt: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
@@ -221,7 +223,6 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
-
         resp = await self._ado(
             model,
             endpoint,
@@ -231,5 +232,6 @@ class Text2Image(BaseResource):
             backoff_factor,
             **kwargs,
         )
-        resp.images = [base64.b64decode(i) for i in resp['body']['data']]
+        assert isinstance(resp, QfResponse)
+        resp.images = [base64.b64decode(i["b64_image"]) for i in resp["body"]["data"]]
         return resp

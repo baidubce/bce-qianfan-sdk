@@ -16,19 +16,30 @@
     Unit test for Txt2Image
 """
 
-import os
-
 import pytest
 
 import qianfan
 import qianfan.tests.utils
-from qianfan.tests.utils import EnvHelper, fake_access_token
+
 
 def test_text2image_generate():
     """
     Test basic generate text2image
     """
     qfg = qianfan.Text2Image()
-    resp = qfg.do(prompt="cat")
-    print(resp)
-        
+    resp = qfg.create(prompt="Rag doll cat")
+    # print("resp", resp)
+    assert len(resp["body"]["data"]) == 1
+    assert resp["images"] is not None
+
+
+@pytest.mark.asyncio
+async def test_text2image_agenerate():
+    """
+    Test basic async generate text2image
+    """
+    qfg = qianfan.Text2Image()
+    resp = await qfg.acreate(prompt="Rag doll cat")
+    # print("resp", resp)
+    assert len(resp["body"]["data"]) == 1
+    assert resp["images"] is not None

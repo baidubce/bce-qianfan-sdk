@@ -88,6 +88,7 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
+    QianfanQpsLimit = "0"
     EnablePrivate: str = "False"
     AccessCode: str = ""
 

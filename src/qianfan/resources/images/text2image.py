@@ -144,8 +144,6 @@ class Text2Image(BaseResource):
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
-          stream (bool):
-            Not supported in text2image.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):
@@ -202,8 +200,6 @@ class Text2Image(BaseResource):
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
-          stream (bool):
-            Not supported in text2image.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):

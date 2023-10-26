@@ -11,7 +11,7 @@ clean:
 	rm -rf build output dist qianfan.egg-info docs
 
 doc: install
-	poetry run bash -c "sphinx-apidoc -f -F -M -o build/docs -t src/qianfan/docs src/qianfan "*test*" && cd build/docs && make html"
+	poetry run bash src/scripts/build_doc.sh
 
 format: install
 	poetry run black ./src/qianfan

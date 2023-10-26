@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""qianfan library
+"""
 Library that wraps the qianfan API.
 """
 
@@ -22,10 +22,10 @@ from qianfan.resources.console.finetune import FineTune
 from qianfan.resources.console.model import Model
 from qianfan.resources.console.service import Service
 from qianfan.resources.llm.chat_completion import ChatCompletion
-from qianfan.resources.llm.text2image import Text2Image
 from qianfan.resources.llm.completion import Completion
 from qianfan.resources.llm.embedding import Embedding
 from qianfan.resources.llm.plugin import Plugin
+from qianfan.resources.tools.prompt import Prompt
 from qianfan.resources.typing import QfMessages, QfResponse, QfRole
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
@@ -38,13 +38,19 @@ __all__ = [
     "ChatCompletion",
     "Embedding",
     "Completion",
-    "Text2Image",
     "Plugin",
     "FineTune",
     "Model",
     "Service",
+    "Prompt",
     "AK",
     "SK",
+    "Role",
+    "Messages",
+    "Response",
+    "QfRole",
+    "QfMessages",
+    "QfResponse",
     "AccessToken",
     "AccessKey",
     "SecretKey",

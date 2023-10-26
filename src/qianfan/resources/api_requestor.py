@@ -26,6 +26,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    Optional,
     TypeVar,
     Union,
 )
@@ -41,8 +42,8 @@ from qianfan.resources.auth import Auth, iam_sign
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils.logging import log_error, log_info, log_warn
 from qianfan.utils import _get_value_from_dict_or_var_or_env
+from qianfan.utils.logging import log_error, log_info, log_warn
 
 _T = TypeVar("_T")
 
@@ -379,13 +380,14 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
-            req = self._convert_to_llm_request(
+            req = self._base_llm_request(
                 endpoint,
                 header=header,
                 query=query,
                 body=body,
                 retry_config=retry_config,
             )
+            req = self._add_access_token(req)
             if stream:
                 return self._request_stream(req, data_postprocess=data_postprocess)
             return self._request(req, data_postprocess=data_postprocess)
@@ -409,13 +411,14 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
-            req = await self._aconvert_to_llm_request(
+            req = self._base_llm_request(
                 endpoint,
                 header=header,
                 query=query,
                 body=body,
                 retry_config=retry_config,
             )
+            req = await self._async_add_access_token(req)
             if stream:
                 return self._async_request_stream(
                     req, data_postprocess=data_postprocess
@@ -442,41 +445,29 @@ class QfAPIRequestor(BaseAPIRequestor):
         req.retry_config = retry_config
         return req
 
-    def _convert_to_llm_request(
-        self,
-        endpoint: str,
-        header: Dict[str, Any] = {},
-        query: Dict[str, Any] = {},
-        body: Dict[str, Any] = {},
-        retry_config: RetryConfig = RetryConfig(),
+    def _add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        convert args to llm QfRequest and add access_token
+        add access token to QfRequest
         """
-        req = self._base_llm_request(
-            endpoint, header=header, query=query, body=body, retry_config=retry_config
-        )
-        access_token = self._auth.access_token()
+        if auth is None:
+            auth = self._auth
+        access_token = auth.access_token()
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
         return req
 
-    async def _aconvert_to_llm_request(
-        self,
-        endpoint: str,
-        header: Dict[str, Any] = {},
-        query: Dict[str, Any] = {},
-        body: Dict[str, Any] = {},
-        retry_config: RetryConfig = RetryConfig(),
+    async def _async_add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        async convert args to llm QfRequest and add access_token
+        async add access token to QfRequest
         """
-        req = self._base_llm_request(
-            endpoint, header=header, query=query, body=body, retry_config=retry_config
-        )
-        access_token = await self._auth.a_access_token()
+        if auth is None:
+            auth = self._auth
+        access_token = await auth.a_access_token()
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
@@ -492,13 +483,53 @@ class QfAPIRequestor(BaseAPIRequestor):
             endpoint,
         )
 
-from qianfan.config import GLOBAL_CONFIG
+    def _request_api(
+        self, req: QfRequest, ak: Optional[str] = None, sk: Optional[str] = None
+    ) -> QfResponse:
+        """
+        request api with auth and retry
+        """
 
-def create_api_requestor(*args: Any, **kwargs: Any) -> BaseAPIRequestor:
+        @self._retry_if_token_expired
+        def _helper() -> QfResponse:
+            args = {}
+            if ak is not None:
+                args["ak"] = ak
+            if sk is not None:
+                args["sk"] = sk
+            auth = Auth(**args)
+            self._add_access_token(req, auth)
+            return self._request(req)
+
+        return self._with_retry(req.retry_config, _helper)
+
+    def _async_request_api(
+        self, req: QfRequest, ak: Optional[str] = None, sk: Optional[str] = None
+    ) -> Awaitable[QfResponse]:
+        """
+        async request api with auth and retry
+        """
+
+        @self._async_retry_if_token_expired
+        async def _helper() -> QfResponse:
+            args = {}
+            if ak is not None:
+                args["ak"] = ak
+            if sk is not None:
+                args["sk"] = sk
+            auth = Auth(**args)
+            await self._async_add_access_token(req, auth)
+            return await self._async_request(req)
+
+        return self._async_with_retry(req.retry_config, _helper)
+
+
+def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
     if GLOBAL_CONFIG.ENABLE_PRIVATE:
         return PrivateAPIRequestor(**kwargs)
-    
+
     return QfAPIRequestor(**kwargs)
+
 
 class ConsoleAPIRequestor(BaseAPIRequestor):
     """
@@ -533,11 +564,12 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         iam_sign(ak, sk, request)
         request.url = GLOBAL_CONFIG.CONSOLE_API_BASE_URL + request.url
 
+
 class PrivateAPIRequestor(QfAPIRequestor):
     """
-        qianfan private api requestor
+    qianfan private api requestor
     """
-    
+
     def __init__(self, **kwargs: Any) -> None:
         """
         `ak`, `sk` and `access_token` can be provided in kwargs.
@@ -552,7 +584,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         self._access_code = _get_value_from_dict_or_var_or_env(
             kwargs, "access_code", GLOBAL_CONFIG.ACCESS_CODE, Env.AccessCode
         )
-    
+
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
         this is a wrapper to deal with private error
@@ -574,7 +606,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
                 return func(*args, **kwargs)
 
         return retry_wrapper
-    
+
     def _convert_to_llm_request(
         self,
         endpoint: str,
@@ -589,7 +621,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         - accesscode
         - ak/sk
         - no auth
-        
+
         """
         req = self._base_llm_request(
             endpoint, header=header, query=query, body=body, retry_config=retry_config
@@ -597,6 +629,6 @@ class PrivateAPIRequestor(QfAPIRequestor):
         if self._access_code != "":
             req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
         elif self._ak != "" and self._sk != "":
-            iam_sign(self._ak, self._sk, req)     
-        
+            iam_sign(str(self._ak), str(self._sk), req)
+
         return req

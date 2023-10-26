@@ -68,6 +68,7 @@ class Env:
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
+    QianfanQpsLimit: str = "QIANFAN_QPS_LIMIT"
 
 
 class DefaultValue:
@@ -91,6 +92,7 @@ class DefaultValue:
     RetryBackoffFactor: float = 0
     EnablePrivate: str = "False"
     AccessCode: str = ""
+    QianfanQpsLimnit: str = "0"
 
 
 class Consts:
@@ -109,6 +111,7 @@ class Consts:
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
+    PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
     STREAM_RESPONSE_PREFIX: str = "data: "
 
 

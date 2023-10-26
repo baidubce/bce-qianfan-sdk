@@ -74,7 +74,7 @@ class Completion(BaseResource):
                 },
             ),
             "ERNIE-Bot-4": QfLLMInfo(
-                endpoint="/chat/completions-pro",
+                endpoint="/chat/completions_pro",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

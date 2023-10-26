@@ -371,6 +371,18 @@ import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
 
+### 文生图
+千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。
+
+以下是一个使用
+```python
+qfg = qianfan.Text2Image()
+resp = qfg.create(prompt="Rag doll cat")
+img_data = resp["body"]["data"][0]["image"]
+
+img = Image.open(io.BytesIO(img_data))
+```
+
 ## License
 
 Apache-2.0

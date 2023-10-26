@@ -66,6 +66,7 @@ class Env:
     IAMSignExpirationSeconds: str = "QIANFAN_IAM_SIGN_EXPIRATION_SEC"
     ConsoleAPIBaseURL: str = "QIANFAN_CONSOLE_API_BASE_URL"
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
+    QianfanQpsLimit: str = "QIANFAN_QPS_LIMIT"
 
 
 class DefaultValue:
@@ -87,6 +88,7 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
+    QianfanQpsLimnit: str = "0"
 
 
 class Consts:

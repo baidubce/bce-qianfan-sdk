@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""qianfan library
+"""
 Library that wraps the qianfan API.
 """
 
@@ -43,6 +43,12 @@ __all__ = [
     "Service",
     "AK",
     "SK",
+    "Role",
+    "Messages",
+    "Response",
+    "QfRole",
+    "QfMessages",
+    "QfResponse",
     "AccessToken",
     "AccessKey",
     "SecretKey",

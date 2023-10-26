@@ -20,7 +20,7 @@ import pytest
 from qianfan.tests.utils import EnvHelper, init_test_env
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def init():
     """
     Init test

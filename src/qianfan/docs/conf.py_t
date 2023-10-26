@@ -3,12 +3,15 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import qianfan
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Qianfan"
+project = "Qianfan SDK"
 copyright = "2023, Baidu"
 author = "Baidu"
+version = qianfan.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -17,6 +20,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
+    "m2r",
 ]
 
 templates_path = ["_templates"]

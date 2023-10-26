@@ -120,3 +120,25 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
             if key in kwargs:
                 del kwargs[key]
     return ak, sk
+
+
+def _get_qianfan_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
+    """
+    extract ak and sk from kwargs
+    if not found in kwargs, will return value from global config and env variable
+    if `pop` is True, remove ak and sk from kwargs
+    """
+    ak = _get_value_from_dict_or_var_or_env(
+        kwargs, "ak", qianfan.GLOBAL_CONFIG.AK, Env.AK
+    )
+    sk = _get_value_from_dict_or_var_or_env(
+        kwargs, "sk", qianfan.GLOBAL_CONFIG.SK, Env.SK
+    )
+    if ak is None or sk is None:
+        raise InvalidArgumentError("ak and sk cannot be empty")
+    if pop:
+        # remove ak and sk from kwargs
+        for key in ("ak", "sk"):
+            if key in kwargs:
+                del kwargs[key]
+    return ak, sk

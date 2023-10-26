@@ -26,6 +26,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    Optional,
     TypeVar,
     Union,
 )
@@ -378,13 +379,14 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
-            req = self._convert_to_llm_request(
+            req = self._base_llm_request(
                 endpoint,
                 header=header,
                 query=query,
                 body=body,
                 retry_config=retry_config,
             )
+            req = self._add_access_token(req)
             if stream:
                 return self._request_stream(req, data_postprocess=data_postprocess)
             return self._request(req, data_postprocess=data_postprocess)
@@ -408,13 +410,14 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
-            req = await self._aconvert_to_llm_request(
+            req = self._base_llm_request(
                 endpoint,
                 header=header,
                 query=query,
                 body=body,
                 retry_config=retry_config,
             )
+            req = await self._async_add_access_token(req)
             if stream:
                 return self._async_request_stream(
                     req, data_postprocess=data_postprocess
@@ -441,41 +444,29 @@ class QfAPIRequestor(BaseAPIRequestor):
         req.retry_config = retry_config
         return req
 
-    def _convert_to_llm_request(
-        self,
-        endpoint: str,
-        header: Dict[str, Any] = {},
-        query: Dict[str, Any] = {},
-        body: Dict[str, Any] = {},
-        retry_config: RetryConfig = RetryConfig(),
+    def _add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        convert args to llm QfRequest and add access_token
+        add access token to QfRequest
         """
-        req = self._base_llm_request(
-            endpoint, header=header, query=query, body=body, retry_config=retry_config
-        )
-        access_token = self._auth.access_token()
+        if auth is None:
+            auth = self._auth
+        access_token = auth.access_token()
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
         return req
 
-    async def _aconvert_to_llm_request(
-        self,
-        endpoint: str,
-        header: Dict[str, Any] = {},
-        query: Dict[str, Any] = {},
-        body: Dict[str, Any] = {},
-        retry_config: RetryConfig = RetryConfig(),
+    async def _async_add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        async convert args to llm QfRequest and add access_token
+        async add access token to QfRequest
         """
-        req = self._base_llm_request(
-            endpoint, header=header, query=query, body=body, retry_config=retry_config
-        )
-        access_token = await self._auth.a_access_token()
+        if auth is None:
+            auth = self._auth
+        access_token = await auth.a_access_token()
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
@@ -490,6 +481,46 @@ class QfAPIRequestor(BaseAPIRequestor):
             Consts.ModelAPIPrefix,
             endpoint,
         )
+
+    def _request_api(
+        self, req: QfRequest, ak: Optional[str] = None, sk: Optional[str] = None
+    ) -> QfResponse:
+        """
+        request api with auth and retry
+        """
+
+        @self._retry_if_token_expired
+        def _helper() -> QfResponse:
+            args = {}
+            if ak is not None:
+                args["ak"] = ak
+            if sk is not None:
+                args["sk"] = sk
+            auth = Auth(**args)
+            self._add_access_token(req, auth)
+            return self._request(req)
+
+        return self._with_retry(req.retry_config, _helper)
+
+    def _async_request_api(
+        self, req: QfRequest, ak: Optional[str] = None, sk: Optional[str] = None
+    ) -> Awaitable[QfResponse]:
+        """
+        async request api with auth and retry
+        """
+
+        @self._async_retry_if_token_expired
+        async def _helper() -> QfResponse:
+            args = {}
+            if ak is not None:
+                args["ak"] = ak
+            if sk is not None:
+                args["sk"] = sk
+            auth = Auth(**args)
+            await self._async_add_access_token(req, auth)
+            return await self._async_request(req)
+
+        return self._async_with_retry(req.retry_config, _helper)
 
 
 class ConsoleAPIRequestor(BaseAPIRequestor):

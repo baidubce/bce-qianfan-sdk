@@ -28,7 +28,7 @@ class Tokenizer(object):
     """
 
     @classmethod
-    def count_token(
+    def count_tokens(
         cls, text: str, mode: str = "local", model: str = "ERNIE-Bot", **kwargs: Any
     ) -> int:
         """
@@ -53,13 +53,13 @@ class Tokenizer(object):
                 " `local`"
             )
         if mode == "local":
-            return cls._local_count_token(text)
+            return cls._local_count_tokens(text)
 
         # unreachable
         raise InternalError
 
     @classmethod
-    def _local_count_token(cls, text: str, model: str = "ERNIE-Bot") -> int:
+    def _local_count_tokens(cls, text: str, model: str = "ERNIE-Bot") -> int:
         """
         Calculate the token count for a given text using a local simulation.
 

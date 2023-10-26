@@ -27,4 +27,4 @@ def test_count_token_local():
         (" 你好 123 哈哈1！  \t 123 Hello world", 10),
     ]
     for text, count in cases:
-        assert Tokenizer.count_token(text, mode="local") == count
+        assert Tokenizer.count_tokens(text, mode="local") == count

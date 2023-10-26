@@ -122,7 +122,7 @@ class Text2Image(BaseResource):
                 )
         return kwargs
 
-    def create(
+    def do(
         self,
         prompt: str,
         model: Optional[str] = None,
@@ -185,7 +185,7 @@ class Text2Image(BaseResource):
                 i["image"] = i.pop("b64_image")
         return resp
 
-    async def acreate(
+    async def ado(
         self,
         prompt: str,
         model: Optional[str] = None,

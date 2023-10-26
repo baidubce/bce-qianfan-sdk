@@ -29,10 +29,10 @@ def test_text2image_generate():
     Test basic generate text2image
     """
     qfg = qianfan.Text2Image()
-    resp = qfg.create(prompt="Rag doll cat")
+    resp = qfg.do(prompt="Rag doll cat")
     assert len(resp["body"]["data"]) == 1
     base64.b64decode(resp["body"]["data"][0]["image"])
-    resp = qfg.create(prompt="Rag doll cat", with_decode="base64")
+    resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
     assert resp["body"]["data"] is not None
 
 
@@ -42,8 +42,8 @@ async def test_text2image_agenerate():
     Test basic async generate text2image
     """
     qfg = qianfan.Text2Image()
-    resp = await qfg.acreate(prompt="Rag doll cat")
+    resp = await qfg.ado(prompt="Rag doll cat")
     assert len(resp["body"]["data"]) == 1
     base64.b64decode(resp["body"]["data"][0]["image"])
-    resp = await qfg.acreate(prompt="Rag doll cat", with_decode="base64")
+    resp = await qfg.ado(prompt="Rag doll cat", with_decode="base64")
     assert resp["body"]["data"] is not None

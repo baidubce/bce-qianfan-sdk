@@ -135,7 +135,19 @@ class AsyncLock:
     """
 
     def __init__(self) -> None:
-        self._lock = _new_asyncio_lock()
+        self._lock = None
+        try:
+            self._lock = asyncio.Lock()
+        except RuntimeError:
+            event_loop_checked = getattr(thread_local, "event_loop_checked", None)
+            # only log once for each thread
+            if event_loop_checked is None:
+                log_info(
+                    f"no event loop in thread `{current_thread().name}`, async feature"
+                    " won't be available. Please make sure the object is initialized"
+                    " in the thread with event loop."
+                )
+                thread_local.event_loop_checked = True
 
     async def __aenter__(self) -> None:
         if self._lock is None:
@@ -157,21 +169,3 @@ class AsyncLock:
                 " is available when the object is initialized"
             )
         await self._lock.__aexit__(exc_type, exc_val, exc_tb)
-
-
-def _new_asyncio_lock() -> Optional[asyncio.Lock]:
-    """
-    create a new asyncio lock
-    """
-    try:
-        return asyncio.Lock()
-    except RuntimeError:
-        event_loop_detected = getattr(thread_local, "event_loop_detected", None)
-        if event_loop_detected is None:
-            log_info(
-                f"no event loop in thread `{current_thread().name}`, async feature"
-                " won't be available. Please make sure the object is initialized"
-                " in the thread with event loop."
-            )
-            thread_local.event_loop_detected = True
-    return None

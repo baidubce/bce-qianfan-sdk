@@ -107,6 +107,7 @@ class Consts:
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
+    PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
     STREAM_RESPONSE_PREFIX: str = "data: "
 
 

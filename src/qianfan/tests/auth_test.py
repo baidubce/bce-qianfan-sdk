@@ -26,7 +26,7 @@ from qianfan.tests.utils import EnvHelper, init_test_env
 from qianfan.tests.utils.mock_server import fake_access_token
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="module")
 def init():
     """
     Init test

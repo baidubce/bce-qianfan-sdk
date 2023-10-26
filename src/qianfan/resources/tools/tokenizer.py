@@ -39,7 +39,7 @@ class Tokenizer(object):
             The input text for which tokens need to be counted.
           mode (str, optional):
             `local` (default):
-              local simulation (Chinese characters count + English word count * 1.3)
+              local **SIMULATION** (Chinese characters count + English word count * 1.3)
           model (str, optional):
             The name of the model to be used for token counting, which
             may influence the counting strategy. Default is 'ERNIE-Bot'.
@@ -62,6 +62,8 @@ class Tokenizer(object):
     def _local_count_tokens(cls, text: str, model: str = "ERNIE-Bot") -> int:
         """
         Calculate the token count for a given text using a local simulation.
+
+        ** THIS IS CALCULATED BY LOCAL SIMULATION, NOT REAL TOKEN COUNT **
 
         The token count is computed as follows:
         (Chinese characters count) + (English word count * 1.3)

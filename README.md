@@ -371,6 +371,16 @@ import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
 
+### Prompt 模版
+
+千帆平台提供 Prompt 模版管理功能，可以从 [智能云千帆控制台-Prompt 模版](https://console.bce.baidu.com/qianfan/prompt/template) 获取预置模版或自制模版。SDK 支持对模版进行渲染，需要提供模版的 `template_id` 和该模版需要填充的参数 `params`，具体使用如下
+
+```python
+r = qianfan.Prompt.render(template_id= 6633, params={"region":"上海"})
+print(r['result']['templateContent']) # => 作为游客，告诉我{region}必吃的10大美食
+print(r['result']['content']) # => 作为游客，告诉我上海必吃的10大美食
+```
+
 ## License
 
 Apache-2.0

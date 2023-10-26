@@ -16,11 +16,12 @@
     Unit test for Txt2Image
 """
 
+import base64
+
 import pytest
 
 import qianfan
 import qianfan.tests.utils
-import base64
 
 
 def test_text2image_generate():
@@ -33,7 +34,6 @@ def test_text2image_generate():
     base64.b64decode(resp["body"]["data"][0]["image"])
     resp = qfg.create(prompt="Rag doll cat", with_decode="base64")
     assert resp["body"]["data"] is not None
-        
 
 
 @pytest.mark.asyncio

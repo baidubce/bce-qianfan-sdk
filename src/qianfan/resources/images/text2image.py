@@ -178,11 +178,11 @@ class Text2Image(BaseResource):
         )
         assert isinstance(resp, QfResponse)
         if with_decode == "base64":
-          for i in resp["body"]["data"]:
-            i["image"] = base64.b64decode(i.pop("b64_image"))
+            for i in resp["body"]["data"]:
+                i["image"] = base64.b64decode(i.pop("b64_image"))
         else:
-          for i in resp["body"]["data"]:
-            i["image"] = i.pop("b64_image")
+            for i in resp["body"]["data"]:
+                i["image"] = i.pop("b64_image")
         return resp
 
     async def acreate(
@@ -242,9 +242,9 @@ class Text2Image(BaseResource):
         )
         assert isinstance(resp, QfResponse)
         if with_decode == "base64":
-          for i in resp["body"]["data"]:
-            i["image"] = base64.b64decode(i.pop("b64_image"))
+            for i in resp["body"]["data"]:
+                i["image"] = base64.b64decode(i.pop("b64_image"))
         else:
-          for i in resp["body"]["data"]:
-            i["image"] = i.pop("b64_image")
+            for i in resp["body"]["data"]:
+                i["image"] = i.pop("b64_image")
         return resp

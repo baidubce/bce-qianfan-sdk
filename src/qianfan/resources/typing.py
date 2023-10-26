@@ -96,12 +96,6 @@ class QfResponse(Mapping):
     The JSON-formatted body of the response.
     """
 
-    images: Optional[List[bytes]] = None
-    """
-    An optional binary image data included in the response.
-    Only available when using test2img related APIs.
-    """
-
     def __getitem__(self, item: str) -> Any:
         """
         get item by operator[]

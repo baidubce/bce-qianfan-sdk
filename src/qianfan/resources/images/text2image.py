@@ -127,6 +127,7 @@ class Text2Image(BaseResource):
         prompt: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
+        with_decode: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
@@ -144,6 +145,9 @@ class Text2Image(BaseResource):
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
+          with_decode(Optional[str]):
+            The way to decode data. If not provided, the decode is not used.
+            use "base64" to auto decode from data.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):
@@ -173,8 +177,12 @@ class Text2Image(BaseResource):
             **kwargs,
         )
         assert isinstance(resp, QfResponse)
-        resp.images = [base64.b64decode(i["b64_image"]) for i in resp["body"]["data"]]
-        print("resp1111", resp)
+        if with_decode == "base64":
+          for i in resp["body"]["data"]:
+            i["image"] = base64.b64decode(i.pop("b64_image"))
+        else:
+          for i in resp["body"]["data"]:
+            i["image"] = i.pop("b64_image")
         return resp
 
     async def acreate(
@@ -182,6 +190,7 @@ class Text2Image(BaseResource):
         prompt: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
+        with_decode: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
@@ -200,6 +209,9 @@ class Text2Image(BaseResource):
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
+          with_decode(Optional[str]):
+            The way to decode data. If not provided, the decode is not used.
+            use "base64" to auto decode from data.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):
@@ -229,5 +241,10 @@ class Text2Image(BaseResource):
             **kwargs,
         )
         assert isinstance(resp, QfResponse)
-        resp.images = [base64.b64decode(i["b64_image"]) for i in resp["body"]["data"]]
+        if with_decode == "base64":
+          for i in resp["body"]["data"]:
+            i["image"] = base64.b64decode(i.pop("b64_image"))
+        else:
+          for i in resp["body"]["data"]:
+            i["image"] = i.pop("b64_image")
         return resp

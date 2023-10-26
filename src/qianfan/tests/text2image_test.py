@@ -20,6 +20,7 @@ import pytest
 
 import qianfan
 import qianfan.tests.utils
+import base64
 
 
 def test_text2image_generate():
@@ -28,9 +29,11 @@ def test_text2image_generate():
     """
     qfg = qianfan.Text2Image()
     resp = qfg.create(prompt="Rag doll cat")
-    # print("resp", resp)
     assert len(resp["body"]["data"]) == 1
-    assert resp["images"] is not None
+    base64.b64decode(resp["body"]["data"][0]["image"])
+    resp = qfg.create(prompt="Rag doll cat", with_decode="base64")
+    assert resp["body"]["data"] is not None
+        
 
 
 @pytest.mark.asyncio
@@ -40,6 +43,7 @@ async def test_text2image_agenerate():
     """
     qfg = qianfan.Text2Image()
     resp = await qfg.acreate(prompt="Rag doll cat")
-    # print("resp", resp)
     assert len(resp["body"]["data"]) == 1
-    assert resp["images"] is not None
+    base64.b64decode(resp["body"]["data"][0]["image"])
+    resp = await qfg.acreate(prompt="Rag doll cat", with_decode="base64")
+    assert resp["body"]["data"] is not None

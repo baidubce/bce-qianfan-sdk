@@ -161,6 +161,13 @@ def access_token_checker(func):
                     "error_msg": "Access token expired",
                 }
             )
+        if request.args.get("source") != "sdk":
+            return json_response(
+                {
+                    "error_code": 200,
+                    "error_msg": "request source not valid",
+                }
+            )
         return func(*args, **kwargs)
 
     return wrapper
@@ -406,12 +413,14 @@ def iam_auth_checker(func):
         """
         bce_date = request.headers.get("x-bce-date")
         authorization = request.headers.get("authorization")
-        if bce_date is None or authorization is None:
+        source = request.args.get("source")
+        if bce_date is None or authorization is None or source != "sdk":
             return flask.Response(
                 status=403,
                 headers={
                     "X-Bce-Error-Message": (
-                        "mock server error, authorization or bce_date not found"
+                        "mock server error, authorization or bce_date or source not"
+                        " found"
                     )
                 },
             )

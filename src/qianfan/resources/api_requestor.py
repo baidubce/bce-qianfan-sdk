@@ -73,6 +73,14 @@ def _async_check_if_status_code_is_200(response: aiohttp.ClientResponse) -> None
         )
 
 
+def _add_identifier_into_request(request: QfRequest) -> None:
+    """
+    add an identifier into the request to indicate that the request
+    is from SDK
+    """
+    request.query["source"] = "sdk"
+
+
 class BaseAPIRequestor(object):
     """
     Base class of API Requestor
@@ -456,6 +464,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
+        _add_identifier_into_request(req)
         return req
 
     async def _async_add_access_token(
@@ -470,6 +479,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         if access_token == "":
             raise errors.AccessTokenExpiredError
         req.query["access_token"] = access_token
+        _add_identifier_into_request(req)
         return req
 
     def _llm_api_url(self, endpoint: str) -> str:
@@ -553,5 +563,6 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
             "Host": host,
             **request.headers,
         }
+        _add_identifier_into_request(request)
         iam_sign(ak, sk, request)
         request.url = GLOBAL_CONFIG.CONSOLE_API_BASE_URL + request.url

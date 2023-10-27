@@ -20,6 +20,13 @@ pip install qianfan
 ```python
 import qianfan
 ```
+> **NOTE**: 请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
+> ```python
+> import os
+> os.environ["VAR_NAME"] = "xxx"
+>
+> import qianfan
+
 
 ## 快速使用
 

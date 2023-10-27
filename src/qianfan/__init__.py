@@ -26,6 +26,7 @@ from qianfan.resources.llm.completion import Completion
 from qianfan.resources.llm.embedding import Embedding
 from qianfan.resources.llm.plugin import Plugin
 from qianfan.resources.tools.prompt import Prompt
+from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import QfMessages, QfResponse, QfRole
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
@@ -42,6 +43,7 @@ __all__ = [
     "FineTune",
     "Model",
     "Service",
+    "Tokenizer",
     "Prompt",
     "AK",
     "SK",

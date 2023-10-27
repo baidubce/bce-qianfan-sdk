@@ -17,6 +17,7 @@
 """
 
 import os
+import threading
 
 import pytest
 
@@ -517,3 +518,9 @@ async def test_async_priority():
     # cls.None
     resp = await qianfan.ChatCompletion().ado(messages=TEST_MESSAGE[:1])
     assert resp["_for_ut"]["model"] == "eb-instant"
+
+
+def test_in_other_thread():
+    t = threading.Thread(target=test_generate_with_endpoint)
+    t.start()
+    t.join()

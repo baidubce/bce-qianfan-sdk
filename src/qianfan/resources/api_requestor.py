@@ -34,6 +34,7 @@ from urllib.parse import urlparse
 
 import aiohttp
 import requests
+import re
 
 import qianfan.errors as errors
 from qianfan.config import GLOBAL_CONFIG, Env
@@ -438,7 +439,10 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         create base llm QfRequest from provided args
         """
-        req = QfRequest(method="POST", url=self._llm_api_url(endpoint))
+        req = QfRequest(method="POST", url="{}{}".format(
+            Consts.ModelAPIPrefix,
+            endpoint,
+        ))
         req.headers = header
         req.query = query
         req.json_body = body
@@ -585,50 +589,41 @@ class PrivateAPIRequestor(QfAPIRequestor):
             kwargs, "access_code", GLOBAL_CONFIG.ACCESS_CODE, Env.AccessCode
         )
 
-    def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
-        """
-        this is a wrapper to deal with private error
-        """
-        token_refreshed = False
-
-        def retry_wrapper(*args: Any, **kwargs: Any) -> _T:
-            nonlocal token_refreshed
-            # if token is refreshed, token expired exception will not be dealt with
-            with self._rate_limiter:
-                if not token_refreshed:
-                    try:
-                        return func(*args)
-                    except errors.AccessTokenExpiredError:
-                        # refresh token and set token_refreshed flag
-                        self._auth.refresh_access_token()
-                        token_refreshed = True
-                        # then fallthrough and try again
-                return func(*args, **kwargs)
-
-        return retry_wrapper
-
-    def _convert_to_llm_request(
+    def llm(
         self,
         endpoint: str,
         header: Dict[str, Any] = {},
         query: Dict[str, Any] = {},
         body: Dict[str, Any] = {},
+        stream: bool = False,
+        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
-    ) -> QfRequest:
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
-        convert args to private llm QfRequest.
-        Generally, there are three Authorization way:
-        - accesscode
-        - ak/sk
-        - no auth
-
+        llm related api request
         """
-        req = self._base_llm_request(
-            endpoint, header=header, query=query, body=body, retry_config=retry_config
-        )
-        if self._access_code != "":
-            req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
-        elif self._ak != "" and self._sk != "":
-            iam_sign(str(self._ak), str(self._sk), req)
+        log_info(f"requesting llm api endpoint: {endpoint}")
+        
+        def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
+            req = self._base_llm_request(
+                endpoint,
+                header=header,
+                query=query,
+                body=body,
+                retry_config=retry_config,
+            )
+            parsed_uri = urlparse(GLOBAL_CONFIG.BASE_URL)
+            host = parsed_uri.netloc
+            req.headers["content-type"] = "application/json;"
+            req.headers["Host"] = host
+            if self._access_code != "" and self._access_code is not None:
+                req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
+            elif self._ak != "" and self._sk != "":
+                iam_sign(str(self._ak), str(self._sk), req)
+            req.url = GLOBAL_CONFIG.BASE_URL + req.url
 
-        return req
+            if stream:
+                return self._request_stream(req, data_postprocess=data_postprocess)
+            return self._request(req, data_postprocess=data_postprocess)
+
+        return self._with_retry(retry_config, _helper)

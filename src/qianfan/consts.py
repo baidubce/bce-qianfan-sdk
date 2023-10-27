@@ -88,7 +88,7 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
-    QianfanQpsLimnit: str = "0"
+    QianfanQpsLimit: str = "0"
 
 
 class Consts:

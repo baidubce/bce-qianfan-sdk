@@ -17,6 +17,7 @@
 """
 import pytest
 
+import qianfan
 from qianfan.tests.utils import EnvHelper, init_test_env
 
 

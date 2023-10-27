@@ -25,12 +25,12 @@ import qianfan
 获取到 AK 和 SK 后，用户还需要传递它们来初始化千帆 SDK。 千帆 SDK 支持如下三种传递方式，按优先级从低到高排序：
 
 ```python
-# 通过环境变量传递（作用于全局，优先级最低）
+# 通过环境变量传递
 import os
 os.environ["QIANFAN_AK"]="..."
 os.environ["QIANFAN_SK"]="..."
 
-# 或者通过内置函数传递（作用于全局，优先级大于环境变量）
+# 或者通过内置函数传递
 import qianfan
 qianfan.AK("...")
 qianfan.SK("...")

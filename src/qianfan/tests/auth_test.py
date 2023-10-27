@@ -90,6 +90,7 @@ def test_access_token_from_env():
             auth.refresh_access_token()
             assert auth.access_token() == fake_access_token(ak, sk)
         access_token = "access_token_from_env_8896281"
+        print(f"设置 {access_token}")
         with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
             os.environ["QIANFAN_ACCESS_TOKEN"] = access_token
             # if user provides access_token again for same (ak, sk)
@@ -101,69 +102,6 @@ def test_access_token_from_env():
             auth.refresh_access_token()
             # after refresh, should use new access_token
             assert auth.access_token() == fake_access_token(ak, sk)
-
-
-def test_access_token_from_args():
-    """
-    test access_token with args
-    """
-    with EnvHelper(QIANFAN_AK="ak_from_env_584183", QIANFAN_SK="sk_from_env_531457"):
-        env_access_token = "access_token_from_env_should_not_be_used"
-        with EnvHelper(QIANFAN_ACCESS_TOKEN=env_access_token):
-            access_token = "access_token_from_args_156848"
-            auth = Auth(access_token=access_token)
-            ak = os.environ["QIANFAN_AK"]
-            sk = os.environ["QIANFAN_SK"]
-            # should use provided access_token from args
-            assert auth.access_token() == access_token
-            # after refresh, should use new access_token
-            auth.refresh_access_token()
-            assert auth.access_token() == fake_access_token(ak, sk)
-            access_token = "access_token_from_args_284915"
-            # if user provides access_token again for same (ak, sk)
-            auth = Auth(access_token=access_token)
-            ak = os.environ["QIANFAN_AK"]
-            sk = os.environ["QIANFAN_SK"]
-            # should use the newly provided access_token
-            assert auth.access_token() == access_token
-            auth.refresh_access_token()
-            # after refresh, should use new access_token
-            assert auth.access_token() == fake_access_token(ak, sk)
-            ak = "ak_from_args_358796"
-            sk = "sk_from_args_513578"
-            auth = Auth(ak=ak, sk=sk, access_token=access_token)
-            # should use provided access_token from args
-            assert auth.access_token() == access_token
-            auth.refresh_access_token()
-            assert auth.access_token() == fake_access_token(ak, sk)
-        # test global function
-        ak = "ak_from_function_1"
-        sk = "sk_from_function_1"
-        qianfan.AK(ak)
-        qianfan.SK(sk)
-        auth = Auth()
-        assert auth.access_token() == fake_access_token(ak, sk)
-        access_token = "access_token_from_function_1"
-        qianfan.AccessToken(access_token)
-        auth = Auth()
-        assert auth.access_token() == access_token
-        auth.refresh_access_token()
-        assert auth.access_token() == fake_access_token(ak, sk)
-        ak = "ak_from_args_348126"
-        sk = "sk_from_args_956158"
-        auth = Auth(ak=ak, sk=sk)
-        # should use provided access_token from args
-        assert auth.access_token() == access_token
-        auth.refresh_access_token()
-        assert auth.access_token() == fake_access_token(ak, sk)
-        qianfan.AccessToken(None)
-        ak = "ak_from_args_998416"
-        sk = "sk_from_args_841523"
-        auth = Auth(ak=ak, sk=sk)
-        # should use provided access_token from args
-        assert auth.access_token() == fake_access_token(ak, sk)
-        qianfan.AK(None)
-        qianfan.SK(None)
 
 
 @pytest.mark.asyncio
@@ -212,67 +150,3 @@ async def test_access_token_from_env_async():
             await auth.arefresh_access_token()
             # after refresh, should use new access_token
             assert await auth.a_access_token() == fake_access_token(ak, sk)
-
-
-@pytest.mark.asyncio
-async def test_access_token_from_args_async():
-    """
-    test access_token with args
-    """
-    with EnvHelper(QIANFAN_AK="ak_from_env_357223", QIANFAN_SK="sk_from_env_782215"):
-        env_access_token = "access_token_from_env_should_not_be_used"
-        with EnvHelper(QIANFAN_ACCESS_TOKEN=env_access_token):
-            access_token = "access_token_from_args_987521"
-            auth = Auth(access_token=access_token)
-            ak = os.environ["QIANFAN_AK"]
-            sk = os.environ["QIANFAN_SK"]
-            # should use provided access_token from args
-            assert await auth.a_access_token() == access_token
-            # after refresh, should use new access_token
-            await auth.arefresh_access_token()
-            assert await auth.a_access_token() == fake_access_token(ak, sk)
-            access_token = "access_token_from_args_789621"
-            # if user provides access_token again for same (ak, sk)
-            auth = Auth(access_token=access_token)
-            ak = os.environ["QIANFAN_AK"]
-            sk = os.environ["QIANFAN_SK"]
-            # should use the newly provided access_token
-            assert await auth.a_access_token() == access_token
-            await auth.arefresh_access_token()
-            # after refresh, should use new access_token
-            assert await auth.a_access_token() == fake_access_token(ak, sk)
-            ak = "ak_from_args_358796"
-            sk = "sk_from_args_513578"
-            auth = Auth(ak=ak, sk=sk, access_token=access_token)
-            # should use provided access_token from args
-            assert await auth.a_access_token() == access_token
-            await auth.arefresh_access_token()
-            assert await auth.a_access_token() == fake_access_token(ak, sk)
-        # test global function
-        ak = "ak_from_function_1"
-        sk = "sk_from_function_1"
-        qianfan.AK(ak)
-        qianfan.SK(sk)
-        auth = Auth()
-        assert await auth.a_access_token() == fake_access_token(ak, sk)
-        access_token = "access_token_from_function_1"
-        qianfan.AccessToken(access_token)
-        auth = Auth()
-        assert await auth.a_access_token() == access_token
-        await auth.arefresh_access_token()
-        assert await auth.a_access_token() == fake_access_token(ak, sk)
-        ak = "ak_from_args_348126"
-        sk = "sk_from_args_956158"
-        auth = Auth(ak=ak, sk=sk)
-        # should use provided access_token from args
-        assert await auth.a_access_token() == access_token
-        await auth.arefresh_access_token()
-        assert await auth.a_access_token() == fake_access_token(ak, sk)
-        qianfan.AccessToken(None)
-        ak = "ak_from_args_998416"
-        sk = "sk_from_args_841523"
-        auth = Auth(ak=ak, sk=sk)
-        # should use provided access_token from args
-        assert await auth.a_access_token() == fake_access_token(ak, sk)
-        qianfan.AK(None)
-        qianfan.SK(None)

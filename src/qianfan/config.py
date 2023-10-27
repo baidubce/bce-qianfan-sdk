@@ -11,14 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import copy
+import inspect
+import os
 from importlib.util import find_spec
-from typing import Optional
+from typing import Optional, get_args, Dict
 
 from qianfan.consts import DefaultValue, Env
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import _get_from_env_or_default, _none_if_empty, _strtobool, log_info
 from qianfan.utils.helper import Singleton
+
+_ENV_MAPPER = copy.deepcopy(os.environ)
 
 
 class GlobalConfig(object, metaclass=Singleton):
@@ -40,10 +44,7 @@ class GlobalConfig(object, metaclass=Singleton):
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
     QIANFAN_QPS_LIMIT: float
 
-    def __init__(self) -> None:
-        """
-        Read value from environment or the default value will be used
-        """
+    def refresh(self):
         try:
             self.BASE_URL = _get_from_env_or_default(Env.BaseURL, DefaultValue.BaseURL)
             self.AUTH_TIMEOUT = float(
@@ -81,7 +82,7 @@ class GlobalConfig(object, metaclass=Singleton):
             )
             self.QIANFAN_QPS_LIMIT = float(
                 _get_from_env_or_default(
-                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimnit
+                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimit
                 )
             )
         except Exception as e:
@@ -95,6 +96,43 @@ class GlobalConfig(object, metaclass=Singleton):
                 " sdk."
             )
             self.EB_SDK_INSTALLED = False
+
+    def __init__(self) -> None:
+        """
+        Read value from environment or the default value will be used
+        """
+        self.refresh()
+
+    def __setattr__(self, key, value):
+        return super.__setattr__(self, key, value)
+
+    def __getattribute__(self, item):
+        global _ENV_MAPPER
+        is_changed = _ENV_MAPPER != os.environ
+
+        if is_changed:
+            _ENV_MAPPER = copy.deepcopy(os.environ)
+            self.refresh()
+
+        return super().__getattribute__(item)
+
+        # for attr, value in vars(Env).items():
+        #     if not isinstance(value, str):
+        #         continue
+        #     if value.find(item) == -1:
+        #         continue
+        #     env_val = _none_if_empty(_get_from_env_or_default(value, getattr(DefaultValue, attr)))
+        #     if item == "DISABLE_EB_SDK":
+        #         env_val = _strtobool(env_val)
+        #     if not env_val:
+        #         return None
+        #
+        #     attr_type = inspect.get_annotations(GlobalConfig)[item]
+        #     typing_type_tuple = get_args(attr_type)
+        #     ret = typing_type_tuple[0](env_val) if typing_type_tuple else attr_type(env_val)
+        #     setattr(self, item, ret)
+        #     print(f"获取到变量 {ret}")
+        #     return ret
 
 
 GLOBAL_CONFIG = GlobalConfig()

@@ -371,6 +371,19 @@ import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
 
+### Tokenizer
+
+对于大语言模型，一般有 token 长度的限制，我们提供了 `Tokenizer` 工具类，可以方便地对文本的 token 数量进行估算。
+
+使用方法如下
+
+```python
+text = "这是待计算 token 数量的一段文本"
+count = qianfan.Tokenizer.count_tokens(text) 
+```
+
+目前仅支持 `ERNIE-Bot` 系列模型的估算，约为 `汉字数+单词数*1.3`。
+
 ## License
 
 Apache-2.0

@@ -33,7 +33,7 @@ class Service(object):
     def create(
         cls,
         model_id: int,
-        iteration_id: int,
+        model_version_id: int,
         name: str,
         uri: str,
         replicas: int,
@@ -50,8 +50,8 @@ class Service(object):
         Parameters:
           model_id (int):
             The ID of the model for which the service is to be created.
-          iteration_id (int):
-            The ID of the iteration of the model.
+          model_version_id (int):
+            The ID of the version of the model.
           name (str):
             The name for the created service.
           uri (str):
@@ -74,7 +74,7 @@ class Service(object):
         req = QfRequest(method="POST", url=Consts.ServiceCreateAPI)
         req.json_body = {
             "modelId": model_id,
-            "iterationId": iteration_id,
+            "modelVersionId": model_version_id,
             "name": name,
             "uri": uri,
             "replicas": replicas,

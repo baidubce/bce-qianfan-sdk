@@ -116,24 +116,6 @@ class GlobalConfig(object, metaclass=Singleton):
 
         return super().__getattribute__(item)
 
-        # for attr, value in vars(Env).items():
-        #     if not isinstance(value, str):
-        #         continue
-        #     if value.find(item) == -1:
-        #         continue
-        #     env_val = _none_if_empty(_get_from_env_or_default(value, getattr(DefaultValue, attr)))
-        #     if item == "DISABLE_EB_SDK":
-        #         env_val = _strtobool(env_val)
-        #     if not env_val:
-        #         return None
-        #
-        #     attr_type = inspect.get_annotations(GlobalConfig)[item]
-        #     typing_type_tuple = get_args(attr_type)
-        #     ret = typing_type_tuple[0](env_val) if typing_type_tuple else attr_type(env_val)
-        #     setattr(self, item, ret)
-        #     print(f"获取到变量 {ret}")
-        #     return ret
-
 
 GLOBAL_CONFIG = GlobalConfig()
 

@@ -88,7 +88,9 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
-    QianfanQpsLimnit: str = "0"
+    QianfanQpsLimit = "0"
+    EnablePrivate: str = "False"
+    AccessCode: str = ""
 
 
 class Consts:
@@ -119,3 +121,4 @@ class DefaultLLMModel:
     Completion = "ERNIE-Bot-turbo"
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
+    Text2Image = "Stable-Diffusion-XL"

@@ -48,6 +48,7 @@ chat_comp = qianfan.ChatCompletion(ak="...", sk="...")
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
++ 文生图
 + SFT 大模型调优
 
 ### Chat 对话
@@ -207,6 +208,18 @@ print(resp['result'])
 resp = await plugin.ado(endpoint="your_custom_endpoint", prompt="你好", stream=True)
 async for r in resp:
     print(r)
+```
+
+### 文生图
+千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。
+
+以下是一个使用示例
+```python
+qfg = qianfan.Text2Image()
+resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
+img_data = resp["body"]["data"][0]["image"]
+
+img = Image.open(io.BytesIO(img_data))
 ```
 
 ### 大模型调优

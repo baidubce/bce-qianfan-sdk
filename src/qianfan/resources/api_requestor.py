@@ -78,7 +78,7 @@ def _add_identifier_into_request(request: QfRequest) -> None:
     add an identifier into the request to indicate that the request
     is from SDK
     """
-    request.query["source"] = "sdk"
+    request.query["source"] = "qianfan-py-sdk"
 
 
 class BaseAPIRequestor(object):

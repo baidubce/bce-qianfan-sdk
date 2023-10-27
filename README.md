@@ -387,6 +387,14 @@ import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
 
+> **NOTE**: 如果使用**环境变量**进行QPS配置，请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
+> ```python
+> import os
+> os.environ["QIANFAN_QPS_LIMIT"] = "1"
+>
+> import qianfan
+
+
 ### Tokenizer
 
 对于大语言模型，一般有 token 长度的限制，我们提供了 `Tokenizer` 工具类，可以方便地对文本的 token 数量进行估算。

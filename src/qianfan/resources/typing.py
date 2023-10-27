@@ -92,6 +92,9 @@ class QfResponse(Mapping):
     """
 
     body: JsonBody = default_field({})
+    """
+    The JSON-formatted body of the response.
+    """
 
     def __getitem__(self, item: str) -> Any:
         """

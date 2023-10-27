@@ -95,7 +95,7 @@ class GlobalConfig(object, metaclass=Singleton):
             )
             self.QIANFAN_QPS_LIMIT = float(
                 _get_from_env_or_default(
-                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimnit
+                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimit
                 )
             )
         except Exception as e:

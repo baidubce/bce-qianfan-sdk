@@ -48,6 +48,7 @@ chat_comp = qianfan.ChatCompletion(ak="...", sk="...")
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
++ 文生图
 + SFT 大模型调优
 
 ### Chat 对话
@@ -207,6 +208,18 @@ print(resp['result'])
 resp = await plugin.ado(endpoint="your_custom_endpoint", prompt="你好", stream=True)
 async for r in resp:
     print(r)
+```
+
+### 文生图
+千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。
+
+以下是一个使用示例
+```python
+qfg = qianfan.Text2Image()
+resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
+img_data = resp["body"]["data"][0]["image"]
+
+img = Image.open(io.BytesIO(img_data))
 ```
 
 ### 大模型调优
@@ -370,6 +383,19 @@ print(svc['result']['id'])
 import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
+
+### Tokenizer
+
+对于大语言模型，一般有 token 长度的限制，我们提供了 `Tokenizer` 工具类，可以方便地对文本的 token 数量进行估算。
+
+使用方法如下
+
+```python
+text = "这是待计算 token 数量的一段文本"
+count = qianfan.Tokenizer.count_tokens(text) 
+```
+
+目前仅支持 `ERNIE-Bot` 系列模型的估算，约为 `汉字数+单词数*1.3`。
 
 ## License
 

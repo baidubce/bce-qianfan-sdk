@@ -34,7 +34,6 @@ from urllib.parse import urlparse
 
 import aiohttp
 import requests
-import re
 
 import qianfan.errors as errors
 from qianfan.config import GLOBAL_CONFIG, Env
@@ -439,10 +438,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         create base llm QfRequest from provided args
         """
-        req = QfRequest(method="POST", url="{}{}".format(
-            Consts.ModelAPIPrefix,
-            endpoint,
-        ))
+        req = QfRequest(method="POST", url=self._llm_api_url(endpoint))
         req.headers = header
         req.query = query
         req.json_body = body
@@ -589,6 +585,30 @@ class PrivateAPIRequestor(QfAPIRequestor):
             kwargs, "access_code", GLOBAL_CONFIG.ACCESS_CODE, Env.AccessCode
         )
 
+    def _base_llm_request(
+        self,
+        endpoint: str,
+        header: Dict[str, Any] = {},
+        query: Dict[str, Any] = {},
+        body: Dict[str, Any] = {},
+        retry_config: RetryConfig = RetryConfig(),
+    ) -> QfRequest:
+        """
+        create base llm QfRequest from provided args
+        """
+        req = QfRequest(
+            method="POST",
+            url="{}{}".format(
+                Consts.ModelAPIPrefix,
+                endpoint,
+            ),
+        )
+        req.headers = header
+        req.query = query
+        req.json_body = body
+        req.retry_config = retry_config
+        return req
+
     def llm(
         self,
         endpoint: str,
@@ -603,7 +623,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         llm related api request
         """
         log_info(f"requesting llm api endpoint: {endpoint}")
-        
+
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
             req = self._base_llm_request(
                 endpoint,

@@ -8,11 +8,17 @@ Tips:
 
 .. _`qianfan package`: ./qianfan.html
 
-.. mdinclude:: ../../README.md
+.. include:: quickstart.rst
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}
-   :caption: Contents:
+   :caption: Quickstart:
+
+   quickstart
+
+.. toctree::
+   :maxdepth: {{ mastertocmaxdepth }}
+   :caption: API Doc:
 
 {{ mastertoctree }}
 

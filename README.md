@@ -20,13 +20,6 @@ pip install qianfan
 ```python
 import qianfan
 ```
-> **NOTE**: 请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
-> ```python
-> import os
-> os.environ["VAR_NAME"] = "xxx"
->
-> import qianfan
-
 
 ## 快速使用
 
@@ -393,6 +386,14 @@ print(svc['result']['id'])
 import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
+
+> **NOTE**: 如果使用**环境变量**进行QPS配置，请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
+> ```python
+> import os
+> os.environ["QIANFAN_QPS_LIMIT"] = "1"
+>
+> import qianfan
+
 
 ### Tokenizer
 

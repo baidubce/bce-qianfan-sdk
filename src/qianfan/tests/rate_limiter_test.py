@@ -22,7 +22,6 @@ import time
 import pytest
 
 import qianfan
-from qianfan.config import GLOBAL_CONFIG
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.tests.chat_completion_test import TEST_MESSAGE
 

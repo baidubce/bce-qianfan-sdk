@@ -20,7 +20,6 @@ import os
 
 import pytest
 
-import qianfan
 from qianfan.resources.auth import Auth
 from qianfan.tests.utils import EnvHelper, init_test_env
 from qianfan.tests.utils.mock_server import fake_access_token

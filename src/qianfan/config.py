@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
-import inspect
 import os
 from importlib.util import find_spec
-from typing import Optional, get_args, Dict
+from typing import Any, Optional
 
 from qianfan.consts import DefaultValue, Env
 from qianfan.errors import InvalidArgumentError
@@ -44,7 +43,7 @@ class GlobalConfig(object, metaclass=Singleton):
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
     QIANFAN_QPS_LIMIT: float
 
-    def refresh(self):
+    def refresh(self) -> None:
         try:
             self.BASE_URL = _get_from_env_or_default(Env.BaseURL, DefaultValue.BaseURL)
             self.AUTH_TIMEOUT = float(
@@ -103,10 +102,10 @@ class GlobalConfig(object, metaclass=Singleton):
         """
         self.refresh()
 
-    def __setattr__(self, key, value):
-        return super.__setattr__(self, key, value)
+    def __setattr__(self, key: Any, value: Any) -> None:
+        super.__setattr__(self, key, value)
 
-    def __getattribute__(self, item):
+    def __getattribute__(self, item: Any) -> Any:
         global _ENV_MAPPER
         is_changed = _ENV_MAPPER != os.environ
 

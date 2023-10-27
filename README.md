@@ -356,7 +356,7 @@ print(g['result']['modelId'])
 ```python
 g = qianfan.Service.create(
     model_id=123,
-    iteration_id=456,
+    model_version_id=456,
     name="sdk_test",
     uri="svc_uri",
     replicas=1,

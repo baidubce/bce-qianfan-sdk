@@ -103,16 +103,19 @@ class GlobalConfig(object, metaclass=Singleton):
         self.refresh()
 
     def __setattr__(self, key: Any, value: Any) -> None:
+        global _ENV_MAPPER
+        is_changed = _ENV_MAPPER != os.environ
+        if is_changed:
+            _ENV_MAPPER = copy.deepcopy(os.environ)
+            self.refresh()
         super.__setattr__(self, key, value)
 
     def __getattribute__(self, item: Any) -> Any:
         global _ENV_MAPPER
         is_changed = _ENV_MAPPER != os.environ
-
         if is_changed:
             _ENV_MAPPER = copy.deepcopy(os.environ)
             self.refresh()
-
         return super().__getattribute__(item)
 
 

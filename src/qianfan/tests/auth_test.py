@@ -89,7 +89,6 @@ def test_access_token_from_env():
             auth.refresh_access_token()
             assert auth.access_token() == fake_access_token(ak, sk)
         access_token = "access_token_from_env_8896281"
-        print(f"设置 {access_token}")
         with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
             os.environ["QIANFAN_ACCESS_TOKEN"] = access_token
             # if user provides access_token again for same (ak, sk)

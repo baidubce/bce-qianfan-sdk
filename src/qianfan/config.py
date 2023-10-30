@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import inspect
 import os
+import sys
 import typing
 from importlib.util import find_spec
 from typing import Any, Callable, Optional
@@ -106,8 +106,12 @@ def _os_environ_set_hook(func: Callable) -> Callable:
         decoded_val = os.environ.decodevalue(value)
         if decoded_key in Env.__dict__.values():
             attrs = decoded_key[8:]
-            base_t = inspect.get_annotations(GlobalConfig)[attrs]
-            typing_t = typing.get_args(base_t)
+            base_t = GlobalConfig.__annotations__[attrs]
+            typing_t = (
+                base_t.__args__
+                if isinstance(base_t, typing._GenericAlias)  # type: ignore
+                else None  # type: ignore
+            )
             if typing_t:
                 setattr(GLOBAL_CONFIG, attrs, (typing_t[0])(decoded_val))
             else:
@@ -120,7 +124,10 @@ def _os_environ_set_hook(func: Callable) -> Callable:
     return inner
 
 
-os.putenv = _os_environ_set_hook(os.putenv)
+if sys.version_info >= (3, 9):
+    os.putenv = _os_environ_set_hook(os.putenv)
+else:
+    os.environ.putenv = _os_environ_set_hook(os.environ.putenv)
 
 
 def _os_environ_del_hook(func: Callable) -> Callable:
@@ -129,8 +136,12 @@ def _os_environ_del_hook(func: Callable) -> Callable:
         for k, v in vars(Env).items():
             if decoded_key == v:
                 attrs = decoded_key[8:]
-                base_t = inspect.get_annotations(GlobalConfig)[attrs]
-                typing_t = typing.get_args(base_t)
+                base_t = GlobalConfig.__annotations__[attrs]
+                typing_t = (
+                    base_t.__args__
+                    if isinstance(base_t, typing._GenericAlias)  # type: ignore
+                    else None  # type: ignore
+                )
                 if typing_t and type(None) in typing_t:
                     setattr(GLOBAL_CONFIG, attrs, None)
                 else:
@@ -142,7 +153,10 @@ def _os_environ_del_hook(func: Callable) -> Callable:
     return inner
 
 
-os.unsetenv = _os_environ_del_hook(os.unsetenv)
+if sys.version_info >= (3, 9):
+    os.unsetenv = _os_environ_del_hook(os.unsetenv)
+else:
+    os.environ.unsetenv = _os_environ_del_hook(os.environ.unsetenv)
 
 
 def AK(ak: str) -> None:

@@ -332,6 +332,31 @@ def embedding(model_name):
     )
 
 
+@app.route(Consts.ModelAPIPrefix + "/text2image/<model_name>", methods=["POST"])
+@access_token_checker
+def text2image(model_name):
+    """
+    mock /text2image/<model_name> chat completion api
+    """
+
+    return json_response(
+        {
+            # mock data 64*64
+            "id": "as-sq9n2bm0pa",
+            "object": "image",
+            "created": 1698278344,
+            "data": [
+                {
+                    "object": "image",
+                    "b64_image": "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",
+                    "index": 1,
+                }
+            ],
+            "usage": {"prompt_tokens": 8, "total_tokens": 8},
+        }
+    )
+
+
 @app.route(Consts.PromptRenderAPI, methods=["GET"])
 @access_token_checker
 def prompt():

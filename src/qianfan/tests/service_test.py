@@ -26,7 +26,7 @@ def test_create_service():
     """
     resp = Service.create(
         model_id=846,
-        iteration_id=168,
+        model_version_id=168,
         name="sdk_test",
         uri="sdk_ut",
         replicas=1,
@@ -35,7 +35,7 @@ def test_create_service():
     )
     assert resp["_request"] == {
         "modelId": 846,
-        "iterationId": 168,
+        "modelVersionId": 168,
         "name": "sdk_test",
         "uri": "sdk_ut",
         "replicas": 1,

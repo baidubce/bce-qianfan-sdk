@@ -68,6 +68,9 @@ class Env:
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
 
+    EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
+    AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
+
 
 class DefaultValue:
     """
@@ -89,6 +92,9 @@ class DefaultValue:
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
     QpsLimit: str = "0"
+
+    EnablePrivate: str = "False"
+    AccessCode: str = ""
 
 
 class Consts:
@@ -119,3 +125,4 @@ class DefaultLLMModel:
     Completion = "ERNIE-Bot-turbo"
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
+    Text2Image = "Stable-Diffusion-XL"

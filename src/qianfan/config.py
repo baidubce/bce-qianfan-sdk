@@ -98,11 +98,6 @@ class GlobalConfig(object, metaclass=Singleton):
             self.ACCESS_CODE = _none_if_empty(
                 _get_from_env_or_default(Env.AccessCode, DefaultValue.AccessCode)
             )
-        #             self.QIANFAN_QPS_LIMIT = float(
-        #                 _get_from_env_or_default(
-        #                     Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimit
-        #                 )
-        # >>>>>>> main
         except Exception as e:
             raise InvalidArgumentError(
                 f"Got invalid environment variable with err `{str(e)}`"

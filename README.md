@@ -1,6 +1,9 @@
 # 百度千帆大模型平台 SDK
 
-[![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/) [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/qianfan.html)
+[![LICENSE](https://img.shields.io/github/license/baidubce/bce-qianfan-sdk.svg)](https://github.com/baidubce/bce-qianfan-sdk/blob/master/LICENSE)
+[![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)
+[![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
+[![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/qianfan.html)
 
 针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
 
@@ -48,6 +51,7 @@ chat_comp = qianfan.ChatCompletion(ak="...", sk="...")
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
++ 文生图
 + SFT 大模型调优
 
 ### Chat 对话
@@ -209,6 +213,18 @@ async for r in resp:
     print(r)
 ```
 
+### 文生图
+千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。
+
+以下是一个使用示例
+```python
+qfg = qianfan.Text2Image()
+resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
+img_data = resp["body"]["data"][0]["image"]
+
+img = Image.open(io.BytesIO(img_data))
+```
+
 ### 大模型调优
 
 SFT 相关操作使用“安全认证/Access Key”中的 Access Key ID 和 Secret Access Key 进行鉴权，无法使用获取Access Token的方式鉴权，相关 key 可以在百度智能云控制台中 [安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 获取，详细流程可以参见 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
@@ -343,7 +359,7 @@ print(g['result']['modelId'])
 ```python
 g = qianfan.Service.create(
     model_id=123,
-    iteration_id=456,
+    model_version_id=456,
     name="sdk_test",
     uri="svc_uri",
     replicas=1,
@@ -370,6 +386,14 @@ print(svc['result']['id'])
 import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
+
+> **NOTE**: 如果使用**环境变量**进行QPS配置，请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
+> ```python
+> import os
+> os.environ["QIANFAN_QPS_LIMIT"] = "1"
+>
+> import qianfan
+
 
 ### Tokenizer
 

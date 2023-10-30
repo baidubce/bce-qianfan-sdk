@@ -36,12 +36,13 @@ import aiohttp
 import requests
 
 import qianfan.errors as errors
-from qianfan.config import GLOBAL_CONFIG
+from qianfan.config import GLOBAL_CONFIG, Env
 from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.auth import Auth, iam_sign
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
+from qianfan.utils import _get_value_from_dict_or_var_or_env
 from qianfan.utils.logging import log_error, log_info, log_warn
 
 _T = TypeVar("_T")
@@ -523,6 +524,13 @@ class QfAPIRequestor(BaseAPIRequestor):
         return self._async_with_retry(req.retry_config, _helper)
 
 
+def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
+    if GLOBAL_CONFIG.ENABLE_PRIVATE:
+        return PrivateAPIRequestor(**kwargs)
+
+    return QfAPIRequestor(**kwargs)
+
+
 class ConsoleAPIRequestor(BaseAPIRequestor):
     """
     object to manage console API requests
@@ -555,3 +563,87 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         }
         iam_sign(ak, sk, request)
         request.url = GLOBAL_CONFIG.CONSOLE_API_BASE_URL + request.url
+
+
+class PrivateAPIRequestor(QfAPIRequestor):
+    """
+    qianfan private api requestor
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        """
+        `ak`, `sk` and `access_token` can be provided in kwargs.
+        """
+        super().__init__(**kwargs)
+        self._ak = _get_value_from_dict_or_var_or_env(
+            kwargs, "ak", GLOBAL_CONFIG.AK, Env.AK
+        )
+        self._sk = _get_value_from_dict_or_var_or_env(
+            kwargs, "sk", GLOBAL_CONFIG.SK, Env.SK
+        )
+        self._access_code = _get_value_from_dict_or_var_or_env(
+            kwargs, "access_code", GLOBAL_CONFIG.ACCESS_CODE, Env.AccessCode
+        )
+
+    def _base_llm_request(
+        self,
+        endpoint: str,
+        header: Dict[str, Any] = {},
+        query: Dict[str, Any] = {},
+        body: Dict[str, Any] = {},
+        retry_config: RetryConfig = RetryConfig(),
+    ) -> QfRequest:
+        """
+        create base llm QfRequest from provided args
+        """
+        req = QfRequest(
+            method="POST",
+            url="{}{}".format(
+                Consts.ModelAPIPrefix,
+                endpoint,
+            ),
+        )
+        req.headers = header
+        req.query = query
+        req.json_body = body
+        req.retry_config = retry_config
+        return req
+
+    def llm(
+        self,
+        endpoint: str,
+        header: Dict[str, Any] = {},
+        query: Dict[str, Any] = {},
+        body: Dict[str, Any] = {},
+        stream: bool = False,
+        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
+        retry_config: RetryConfig = RetryConfig(),
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        """
+        llm related api request
+        """
+        log_info(f"requesting llm api endpoint: {endpoint}")
+
+        def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
+            req = self._base_llm_request(
+                endpoint,
+                header=header,
+                query=query,
+                body=body,
+                retry_config=retry_config,
+            )
+            parsed_uri = urlparse(GLOBAL_CONFIG.BASE_URL)
+            host = parsed_uri.netloc
+            req.headers["content-type"] = "application/json;"
+            req.headers["Host"] = host
+            if self._access_code != "" and self._access_code is not None:
+                req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
+            elif self._ak != "" and self._sk != "":
+                iam_sign(str(self._ak), str(self._sk), req)
+            req.url = GLOBAL_CONFIG.BASE_URL + req.url
+
+            if stream:
+                return self._request_stream(req, data_postprocess=data_postprocess)
+            return self._request(req, data_postprocess=data_postprocess)
+
+        return self._with_retry(retry_config, _helper)

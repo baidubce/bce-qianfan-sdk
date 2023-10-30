@@ -57,8 +57,8 @@ class Env:
 
     AK: str = "QIANFAN_AK"
     SK: str = "QIANFAN_SK"
-    ConsoleAK: str = "QIANFAN_ACCESS_KEY"
-    ConsoleSK: str = "QIANFAN_SECRET_KEY"
+    ConsoleAK: str = "QIANFAN_CONSOLE_AK"
+    ConsoleSK: str = "QIANFAN_CONSOLE_SK"
     AccessToken: str = "QIANFAN_ACCESS_TOKEN"
     BaseURL: str = "QIANFAN_BASE_URL"
     DisableErnieBotSDK: str = "QIANFAN_DISABLE_EB_SDK"
@@ -66,7 +66,7 @@ class Env:
     IAMSignExpirationSeconds: str = "QIANFAN_IAM_SIGN_EXPIRATION_SEC"
     ConsoleAPIBaseURL: str = "QIANFAN_CONSOLE_API_BASE_URL"
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
-    QianfanQpsLimit: str = "QIANFAN_QPS_LIMIT"
+    QpsLimit: str = "QIANFAN_QPS_LIMIT"
 
 
 class DefaultValue:
@@ -88,7 +88,7 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
-    QianfanQpsLimit: str = "0"
+    QpsLimit: str = "0"
 
 
 class Consts:

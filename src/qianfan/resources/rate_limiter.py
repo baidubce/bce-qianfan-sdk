@@ -107,7 +107,7 @@ class RateLimiter:
         """
 
         if query_per_second == 0:
-            query_per_second = GLOBAL_CONFIG.QIANFAN_QPS_LIMIT
+            query_per_second = GLOBAL_CONFIG.QPS_LIMIT
 
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():

@@ -30,7 +30,7 @@ def init():
     with EnvHelper(
         QIANFAN_AK="test_ak",
         QIANFAN_SK="test_sk",
-        QIANFAN_ACCESS_KEY="test_access_key",
-        QIANFAN_SECRET_KEY="test_secret_key",
+        QIANFAN_CONSOLE_AK="test_access_key",
+        QIANFAN_CONSOLE_SK="test_secret_key",
     ):
         yield

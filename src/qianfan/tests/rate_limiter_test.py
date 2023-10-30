@@ -144,4 +144,4 @@ def test_set_rate_limiter_through_environment_variable():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
-    os.environ["QIANFAN_QPS_LIMIT"] = "0.5"
+    os.environ["QIANFAN_QPS_LIMIT"] = "0"

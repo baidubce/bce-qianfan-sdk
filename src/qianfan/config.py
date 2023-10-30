@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
+import inspect
 import os
+import typing
 from importlib.util import find_spec
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from qianfan.consts import DefaultValue, Env
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import _get_from_env_or_default, _none_if_empty, _strtobool, log_info
 from qianfan.utils.helper import Singleton
-
-_ENV_MAPPER = copy.deepcopy(os.environ)
 
 
 class GlobalConfig(object, metaclass=Singleton):
@@ -41,9 +40,12 @@ class GlobalConfig(object, metaclass=Singleton):
     IAM_SIGN_EXPIRATION_SEC: int
     CONSOLE_API_BASE_URL: str
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
-    QIANFAN_QPS_LIMIT: float
+    QPS_LIMIT: float
 
-    def refresh(self) -> None:
+    def __init__(self) -> None:
+        """
+        Read value from environment or the default value will be used
+        """
         try:
             self.BASE_URL = _get_from_env_or_default(Env.BaseURL, DefaultValue.BaseURL)
             self.AUTH_TIMEOUT = float(
@@ -79,10 +81,8 @@ class GlobalConfig(object, metaclass=Singleton):
                     DefaultValue.AccessTokenRefreshMinInterval,
                 )
             )
-            self.QIANFAN_QPS_LIMIT = float(
-                _get_from_env_or_default(
-                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimit
-                )
+            self.QPS_LIMIT = float(
+                _get_from_env_or_default(Env.QpsLimit, DefaultValue.QpsLimit)
             )
         except Exception as e:
             raise InvalidArgumentError(
@@ -96,30 +96,53 @@ class GlobalConfig(object, metaclass=Singleton):
             )
             self.EB_SDK_INSTALLED = False
 
-    def __init__(self) -> None:
-        """
-        Read value from environment or the default value will be used
-        """
-        self.refresh()
-
-    def __setattr__(self, key: Any, value: Any) -> None:
-        global _ENV_MAPPER
-        is_changed = _ENV_MAPPER != os.environ
-        if is_changed:
-            _ENV_MAPPER = copy.deepcopy(os.environ)
-            self.refresh()
-        super.__setattr__(self, key, value)
-
-    def __getattribute__(self, item: Any) -> Any:
-        global _ENV_MAPPER
-        is_changed = _ENV_MAPPER != os.environ
-        if is_changed:
-            _ENV_MAPPER = copy.deepcopy(os.environ)
-            self.refresh()
-        return super().__getattribute__(item)
-
 
 GLOBAL_CONFIG = GlobalConfig()
+
+
+def _os_environ_set_hook(func: Callable) -> Callable:
+    def inner(key: Any, value: Any) -> None:
+        decoded_key = os.environ.decodekey(key)
+        decoded_val = os.environ.decodevalue(value)
+        if decoded_key in Env.__dict__.values():
+            attrs = decoded_key[8:]
+            base_t = inspect.get_annotations(GlobalConfig)[attrs]
+            typing_t = typing.get_args(base_t)
+            if typing_t:
+                setattr(GLOBAL_CONFIG, attrs, (typing_t[0])(decoded_val))
+            else:
+                if base_t == bool:
+                    setattr(GLOBAL_CONFIG, attrs, _strtobool(decoded_val))
+                else:
+                    setattr(GLOBAL_CONFIG, attrs, base_t(decoded_val))
+        func(key, value)
+
+    return inner
+
+
+os.putenv = _os_environ_set_hook(os.putenv)
+
+
+def _os_environ_del_hook(func: Callable) -> Callable:
+    def inner(key: Any) -> None:
+        decoded_key = os.environ.decodekey(key)
+        for k, v in vars(Env).items():
+            if decoded_key == v:
+                attrs = decoded_key[8:]
+                base_t = inspect.get_annotations(GlobalConfig)[attrs]
+                typing_t = typing.get_args(base_t)
+                if typing_t and type(None) in typing_t:
+                    setattr(GLOBAL_CONFIG, attrs, None)
+                else:
+                    default_val = DefaultValue.__dict__[k]
+                    setattr(GLOBAL_CONFIG, attrs, base_t(default_val))
+                break
+        func(key)
+
+    return inner
+
+
+os.unsetenv = _os_environ_del_hook(os.unsetenv)
 
 
 def AK(ak: str) -> None:

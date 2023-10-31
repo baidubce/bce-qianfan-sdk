@@ -15,7 +15,7 @@
 
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
-from qianfan.config import GLOBAL_CONFIG
+from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
 from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
@@ -233,8 +233,8 @@ class ChatCompletion(BaseResource):
         else:
             kwargs["messages"] = messages
         if (
-            not GLOBAL_CONFIG.DISABLE_EB_SDK
-            and GLOBAL_CONFIG.EB_SDK_INSTALLED
+            not get_config().DISABLE_EB_SDK
+            and get_config().EB_SDK_INSTALLED
             and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
         ):
             import erniebot
@@ -312,8 +312,8 @@ class ChatCompletion(BaseResource):
         else:
             kwargs["messages"] = messages
         if (
-            not GLOBAL_CONFIG.DISABLE_EB_SDK
-            and GLOBAL_CONFIG.EB_SDK_INSTALLED
+            not get_config().DISABLE_EB_SDK
+            and get_config().EB_SDK_INSTALLED
             and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
         ):
             import erniebot

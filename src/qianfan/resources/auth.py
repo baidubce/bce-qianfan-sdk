@@ -20,14 +20,13 @@ from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.auth.bce_v1_signer import sign
 from baidubce.utils import get_canonical_time
 
-from qianfan.config import GLOBAL_CONFIG
-from qianfan.consts import Consts, Env
+from qianfan.config import get_config
+from qianfan.consts import Consts
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest, RetryConfig
 from qianfan.utils import (
     AsyncLock,
-    _get_value_from_dict_or_var_or_env,
     log_error,
     log_info,
     log_warn,
@@ -164,13 +163,13 @@ class AuthManager(metaclass=Singleton):
         """
         return QfRequest(
             method="POST",
-            url="{}{}".format(GLOBAL_CONFIG.BASE_URL, Consts.AuthAPI),
+            url="{}{}".format(get_config().BASE_URL, Consts.AuthAPI),
             query={
                 "grant_type": "client_credentials",
                 "client_id": ak,
                 "client_secret": sk,
             },
-            retry_config=RetryConfig(timeout=GLOBAL_CONFIG.AUTH_TIMEOUT),
+            retry_config=RetryConfig(timeout=get_config().AUTH_TIMEOUT),
         )
 
     def _update_access_token(
@@ -196,7 +195,7 @@ class AuthManager(metaclass=Singleton):
         """
         if (
             time.time() - obj.refresh_at
-            < GLOBAL_CONFIG.ACCESS_TOKEN_REFRESH_MIN_INTERVAL
+            < get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL
         ):
             log_info("access_token is already refreshed, skip refresh.")
             return True
@@ -265,17 +264,11 @@ class Auth(object):
 
         when `ak` and `sk` are provided, `access_token` will be set automatically
         """
-        if GLOBAL_CONFIG.ENABLE_PRIVATE:
-            return None
-        self._ak = _get_value_from_dict_or_var_or_env(
-            kwargs, "ak", GLOBAL_CONFIG.AK, Env.AK
-        )
-        self._sk = _get_value_from_dict_or_var_or_env(
-            kwargs, "sk", GLOBAL_CONFIG.SK, Env.SK
-        )
-        self._access_token = _get_value_from_dict_or_var_or_env(
-            kwargs, "access_token", GLOBAL_CONFIG.ACCESS_TOKEN, Env.AccessToken
-        )
+        if get_config().ENABLE_PRIVATE:
+            return
+        self._ak = kwargs.get("ak", None) or get_config().AK
+        self._sk = kwargs.get("sk", None) or get_config().SK
+        self._access_code = kwargs.get("access_code", None) or get_config().ACCESS_CODE
 
     def _register(self) -> None:
         """
@@ -383,7 +376,7 @@ def iam_sign(
         {str.encode(k): v for k, v in request.headers.items()},
         {str.encode(k): v for k, v in request.query.items()},
         timestamp=timestamp,
-        expiration_in_seconds=GLOBAL_CONFIG.IAM_SIGN_EXPIRATION_SEC,
+        expiration_in_seconds=get_config().IAM_SIGN_EXPIRATION_SEC,
         headers_to_sign={str.encode(k.lower()) for k in request.headers.keys()},
     )
 

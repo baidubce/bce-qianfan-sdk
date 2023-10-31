@@ -68,7 +68,8 @@ class Env:
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
-    QianfanQpsLimit: str = "QIANFAN_QPS_LIMIT"
+    QpsLimit: str = "QIANFAN_QPS_LIMIT"
+    YamlConfigFile: str = "QIANFAN_YAML_CONFIG_FILE"
 
 
 class DefaultValue:
@@ -82,17 +83,18 @@ class DefaultValue:
     ConsoleSK: str = ""
     AccessToken: str = ""
     BaseURL: str = "https://aip.baidubce.com"
-    AuthTimeout: str = "5"
-    DisableErnieBotSDK: str = "True"
-    IAMSignExpirationSeconds: str = "300"
+    AuthTimeout: float = 5
+    DisableErnieBotSDK: bool = True
+    IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
-    AccessTokenRefreshMinInterval: str = "3600"
+    AccessTokenRefreshMinInterval: float = 3600
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
-    QianfanQpsLimit = "0"
+    QpsLimit: float = 0
+    YamlConfigFile: str = "qianfan_config.yaml"
 
-    EnablePrivate: str = "False"
+    EnablePrivate: bool = False
     AccessCode: str = ""
 
 

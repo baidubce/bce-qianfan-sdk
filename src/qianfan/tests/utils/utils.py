@@ -26,9 +26,9 @@ def init_test_env():
     """
     init for test environment
     """
-    qianfan.GLOBAL_CONFIG.BASE_URL = "http://127.0.0.1:8866"
-    qianfan.GLOBAL_CONFIG.CONSOLE_API_BASE_URL = "http://127.0.0.1:8866"
-    qianfan.GLOBAL_CONFIG.DISABLE_EB_SDK = True
+    qianfan.get_config().BASE_URL = "http://127.0.0.1:8866"
+    qianfan.get_config().CONSOLE_API_BASE_URL = "http://127.0.0.1:8866"
+    qianfan.get_config().DISABLE_EB_SDK = True
     qianfan.enable_log(logging.INFO)
     if "QIANFAN_AK" in os.environ:
         os.environ.pop("QIANFAN_AK")

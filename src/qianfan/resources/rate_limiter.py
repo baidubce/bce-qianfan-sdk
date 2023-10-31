@@ -22,7 +22,7 @@ from typing import Any, Optional, Type
 
 from aiolimiter import AsyncLimiter
 
-from qianfan.config import GLOBAL_CONFIG
+from qianfan.config import get_config
 
 
 class RateLimiter:
@@ -107,7 +107,7 @@ class RateLimiter:
         """
 
         if query_per_second == 0:
-            query_per_second = GLOBAL_CONFIG.QIANFAN_QPS_LIMIT
+            query_per_second = get_config().QPS_LIMIT
 
         self._is_closed = query_per_second <= 0
         if self._check_is_closed():

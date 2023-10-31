@@ -19,8 +19,7 @@ from threading import current_thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type
 
-import qianfan
-from qianfan.consts import Env
+from qianfan import get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import log_info
 
@@ -113,12 +112,8 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
     if not found in kwargs, will return value from global config and env variable
     if `pop` is True, remove ak and sk from kwargs
     """
-    ak = _get_value_from_dict_or_var_or_env(
-        kwargs, "ak", qianfan.GLOBAL_CONFIG.CONSOLE_AK, Env.ConsoleAK
-    )
-    sk = _get_value_from_dict_or_var_or_env(
-        kwargs, "sk", qianfan.GLOBAL_CONFIG.CONSOLE_SK, Env.ConsoleSK
-    )
+    ak = kwargs.get("ak", None) or get_config().CONSOLE_AK
+    sk = kwargs.get("sk", None) or get_config().CONSOLE_SK
     if ak is None or sk is None:
         raise InvalidArgumentError("ak and sk cannot be empty")
     if pop:
@@ -135,12 +130,8 @@ def _get_qianfan_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
     if not found in kwargs, will return value from global config and env variable
     if `pop` is True, remove ak and sk from kwargs
     """
-    ak = _get_value_from_dict_or_var_or_env(
-        kwargs, "ak", qianfan.GLOBAL_CONFIG.AK, Env.AK
-    )
-    sk = _get_value_from_dict_or_var_or_env(
-        kwargs, "sk", qianfan.GLOBAL_CONFIG.SK, Env.SK
-    )
+    ak = kwargs.get("ak", None) or get_config().AK
+    sk = kwargs.get("sk", None) or get_config().SK
     if ak is None or sk is None:
         raise InvalidArgumentError("ak and sk cannot be empty")
     if pop:

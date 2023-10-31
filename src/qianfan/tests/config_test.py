@@ -16,6 +16,7 @@
     Unit test for config
 """
 from qianfan import get_config
+from qianfan.consts import DefaultValue
 from qianfan.tests.utils import EnvHelper
 
 
@@ -23,3 +24,10 @@ def test_load_config_from_dot_env():
     with EnvHelper(QIANFAN_DOT_ENV_CONFIG_FILE="assets/.env"):
         assert get_config().AUTH_TIMEOUT == 0.6
         assert get_config().QPS_LIMIT == 100.2
+
+
+def test_rewrite_config_through_code():
+    config_center = get_config()
+    assert get_config().AUTH_TIMEOUT == DefaultValue.AuthTimeout
+    config_center.AUTH_TIMEOUT = 114514
+    assert get_config().AUTH_TIMEOUT == 114514

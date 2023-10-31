@@ -39,7 +39,12 @@ from langchain.schema import (
 )
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.tools import BaseTool, format_tool_to_openai_function
-from pydantic import BaseModel, root_validator
+from pydantic import VERSION
+
+if VERSION[0] == "2":
+    from pydantic.v1 import BaseModel, root_validator
+else:
+    from pydantic import BaseModel, root_validator
 
 
 class QianfanBaseAgent(BaseModel, ABC):

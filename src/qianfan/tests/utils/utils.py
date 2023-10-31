@@ -19,6 +19,7 @@ import time
 import requests
 
 import qianfan
+from qianfan.consts import Env
 from qianfan.tests.utils.mock_server import start_mock_server
 
 
@@ -26,9 +27,9 @@ def init_test_env():
     """
     init for test environment
     """
-    qianfan.get_config().BASE_URL = "http://127.0.0.1:8866"
-    qianfan.get_config().CONSOLE_API_BASE_URL = "http://127.0.0.1:8866"
-    qianfan.get_config().DISABLE_EB_SDK = True
+    os.environ[Env.BaseURL] = "http://127.0.0.1:8866"
+    os.environ[Env.ConsoleAPIBaseURL] = "http://127.0.0.1:8866"
+    os.environ[Env.DisableErnieBotSDK] = "True"
     qianfan.enable_log(logging.INFO)
     if "QIANFAN_AK" in os.environ:
         os.environ.pop("QIANFAN_AK")

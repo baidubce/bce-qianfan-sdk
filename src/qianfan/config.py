@@ -14,8 +14,6 @@
 import os
 from typing import Optional
 
-import pydantic
-import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import deprecated
@@ -32,8 +30,8 @@ class GlobalConfig(BaseSettings):
 
     AK: Optional[str] = Field(default=None)
     SK: Optional[str] = Field(default=None)
-    CONSOLE_AK: Optional[str] = Field(default=None)
-    CONSOLE_SK: Optional[str] = Field(default=None)
+    ACCESS_KEY: Optional[str] = Field(default=None)
+    SECRET_KEY: Optional[str] = Field(default=None)
     ACCESS_TOKEN: Optional[str] = Field(default=None)
     BASE_URL: str = Field(default=DefaultValue.BaseURL)
     AUTH_TIMEOUT: float = Field(default=DefaultValue.AuthTimeout)
@@ -59,21 +57,14 @@ _GLOBAL_CONFIG: Optional[GlobalConfig] = None
 def get_config() -> GlobalConfig:
     global _GLOBAL_CONFIG
     if not _GLOBAL_CONFIG:
-        type_adapter = pydantic.TypeAdapter(GlobalConfig)
-        yaml_file_path = os.getenv(Env.YamlConfigFile, DefaultValue.YamlConfigFile)
         try:
-            with open(yaml_file_path, mode="r") as f:
-                _GLOBAL_CONFIG = type_adapter.validate_python(
-                    yaml.safe_load(f), strict=True, from_attributes=True
-                )
-        except FileNotFoundError:
-            # todo 解决导入 logger 后的循环引用问题
-            # logger.warn(f"no yaml file {yaml_file_path} was found,
-            # initiate config without config file")
-            _GLOBAL_CONFIG = GlobalConfig()
-        except Exception:
-            _GLOBAL_CONFIG = GlobalConfig()
+            _GLOBAL_CONFIG = GlobalConfig(  # type: ignore
+                _env_file=os.getenv(Env.DotEnvConfigFile, DefaultValue.DotEnvConfigFile)
+            )
+        except Exception as e:
+            # todo 解决引入 Logger 带来的循环引用问题
             # logger.error(f"unexpected error: {e}")
+            raise e
     return _GLOBAL_CONFIG
 
 
@@ -156,7 +147,7 @@ def AccessKey(access_key: str) -> None:
       access_key (str):
         The Access Key to be set for console API authentication.
     """
-    get_config().CONSOLE_AK = access_key
+    get_config().ACCESS_KEY = access_key
 
 
 @deprecated(
@@ -177,4 +168,4 @@ def SecretKey(secret_key: str) -> None:
       secret_key (str):
         The Secret Key to be set for console API authentication.
     """
-    get_config().CONSOLE_SK = secret_key
+    get_config().SECRET_KEY = secret_key

@@ -112,8 +112,8 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
     if not found in kwargs, will return value from global config and env variable
     if `pop` is True, remove ak and sk from kwargs
     """
-    ak = kwargs.get("ak", None) or get_config().CONSOLE_AK
-    sk = kwargs.get("sk", None) or get_config().CONSOLE_SK
+    ak = kwargs.get("ak", None) or get_config().ACCESS_KEY
+    sk = kwargs.get("sk", None) or get_config().SECRET_KEY
     if ak is None or sk is None:
         raise InvalidArgumentError("ak and sk cannot be empty")
     if pop:

@@ -57,8 +57,8 @@ class Env:
 
     AK: str = "QIANFAN_AK"
     SK: str = "QIANFAN_SK"
-    ConsoleAK: str = "QIANFAN_ACCESS_KEY"
-    ConsoleSK: str = "QIANFAN_SECRET_KEY"
+    AccessKey: str = "QIANFAN_ACCESS_KEY"
+    SecretKey: str = "QIANFAN_SECRET_KEY"
     AccessToken: str = "QIANFAN_ACCESS_TOKEN"
     BaseURL: str = "QIANFAN_BASE_URL"
     DisableErnieBotSDK: str = "QIANFAN_DISABLE_EB_SDK"
@@ -69,7 +69,7 @@ class Env:
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
-    YamlConfigFile: str = "QIANFAN_YAML_CONFIG_FILE"
+    DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
 
 
 class DefaultValue:
@@ -92,7 +92,7 @@ class DefaultValue:
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
     QpsLimit: float = 0
-    YamlConfigFile: str = "qianfan_config.yaml"
+    DotEnvConfigFile: str = ".env"
 
     EnablePrivate: bool = False
     AccessCode: str = ""

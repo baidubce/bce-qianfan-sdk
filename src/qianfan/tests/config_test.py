@@ -13,31 +13,13 @@
 # limitations under the License.
 
 """
-    test config for qianfan pytest
+    Unit test for config
 """
-import pytest
-
-import qianfan
-from qianfan.tests.utils import EnvHelper, init_test_env
+from qianfan import get_config
+from qianfan.tests.utils import EnvHelper
 
 
-@pytest.fixture(autouse=True, scope="session")
-def init():
-    """
-    Init test
-    start the mock server first and set the ak/sk
-    """
-    init_test_env()
-    with EnvHelper(
-        QIANFAN_AK="test_ak",
-        QIANFAN_SK="test_sk",
-        QIANFAN_ACCESS_KEY="test_access_key",
-        QIANFAN_SECRET_KEY="test_secret_key",
-    ):
-        yield
-
-
-@pytest.fixture(autouse=True, scope="function")
-def reset_config_automatically():
-    qianfan.config._GLOBAL_CONFIG = None
-    return
+def test_load_config_from_dot_env():
+    with EnvHelper(QIANFAN_DOT_ENV_CONFIG_FILE="assets/.env"):
+        assert get_config().AUTH_TIMEOUT == 0.6
+        assert get_config().QPS_LIMIT == 100.2

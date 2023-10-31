@@ -23,7 +23,6 @@ from qianfan.resources.api_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.utils import _get_console_ak_sk
 
-
 P = ParamSpec("P")
 
 

@@ -268,7 +268,9 @@ class Auth(object):
             return
         self._ak = kwargs.get("ak", None) or get_config().AK
         self._sk = kwargs.get("sk", None) or get_config().SK
-        self._access_code = kwargs.get("access_code", None) or get_config().ACCESS_CODE
+        self._access_token = (
+            kwargs.get("access_token", None) or get_config().ACCESS_TOKEN
+        )
 
     def _register(self) -> None:
         """

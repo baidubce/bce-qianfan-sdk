@@ -15,13 +15,16 @@
 """
     Unit test for config
 """
+import os.path
+
 from qianfan import get_config
 from qianfan.consts import DefaultValue
 from qianfan.tests.utils import EnvHelper
 
 
 def test_load_config_from_dot_env():
-    with EnvHelper(QIANFAN_DOT_ENV_CONFIG_FILE="assets/.env"):
+    file_path = os.path.join(os.getcwd(), "assets/.env")
+    with EnvHelper(QIANFAN_DOT_ENV_CONFIG_FILE=file_path):
         assert get_config().AUTH_TIMEOUT == 0.6
         assert get_config().QPS_LIMIT == 100.2
 

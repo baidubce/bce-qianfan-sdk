@@ -36,6 +36,17 @@ def init():
     yield
 
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_config_automatically():
+    qianfan.config._GLOBAL_CONFIG = None
+    return
+
+
+def reset_config():
+    qianfan.config._GLOBAL_CONFIG = None
+    return
+
+
 def set_env_ak_sk(ak=None, sk=None):
     """
     set env variables value for ak and sk
@@ -89,9 +100,9 @@ def test_access_token_from_env():
             # after refresh, should use new access_token
             auth.refresh_access_token()
             assert auth.access_token() == fake_access_token(ak, sk)
+        reset_config()
         access_token = "access_token_from_env_8896281"
         with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
-            os.environ["QIANFAN_ACCESS_TOKEN"] = access_token
             # if user provides access_token again for same (ak, sk)
             auth = Auth()
             ak = os.environ["QIANFAN_AK"]
@@ -136,6 +147,7 @@ def test_access_token_from_args():
             assert auth.access_token() == access_token
             auth.refresh_access_token()
             assert auth.access_token() == fake_access_token(ak, sk)
+        reset_config()
         # test global function
         ak = "ak_from_function_1"
         sk = "sk_from_function_1"
@@ -200,6 +212,7 @@ async def test_access_token_from_env_async():
             # after refresh, should use new access_token
             await auth.arefresh_access_token()
             assert await auth.a_access_token() == fake_access_token(ak, sk)
+        reset_config()
         access_token = "access_token_from_env_8896281"
         with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
             os.environ["QIANFAN_ACCESS_TOKEN"] = access_token
@@ -248,6 +261,7 @@ async def test_access_token_from_args_async():
             assert await auth.a_access_token() == access_token
             await auth.arefresh_access_token()
             assert await auth.a_access_token() == fake_access_token(ak, sk)
+        reset_config()
         # test global function
         ak = "ak_from_function_1"
         sk = "sk_from_function_1"

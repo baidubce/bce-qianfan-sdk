@@ -36,13 +36,12 @@ import aiohttp
 import requests
 
 import qianfan.errors as errors
-from qianfan.config import GLOBAL_CONFIG, Env
+from qianfan.config import get_config
 from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.auth import Auth, iam_sign
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils import _get_value_from_dict_or_var_or_env
 from qianfan.utils.logging import log_error, log_info, log_warn
 
 _T = TypeVar("_T")
@@ -478,7 +477,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         convert endpoint to llm api url
         """
         return "{}{}{}".format(
-            GLOBAL_CONFIG.BASE_URL,
+            get_config().BASE_URL,
             Consts.ModelAPIPrefix,
             endpoint,
         )
@@ -525,7 +524,7 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
-    if GLOBAL_CONFIG.ENABLE_PRIVATE:
+    if get_config().ENABLE_PRIVATE:
         return PrivateAPIRequestor(**kwargs)
 
     return QfAPIRequestor(**kwargs)
@@ -554,7 +553,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         """
         sign the request
         """
-        parsed_uri = urlparse(GLOBAL_CONFIG.CONSOLE_API_BASE_URL)
+        parsed_uri = urlparse(get_config().CONSOLE_API_BASE_URL)
         host = parsed_uri.netloc
         request.headers = {
             "Content-Type": "application/json",
@@ -562,7 +561,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
             **request.headers,
         }
         iam_sign(ak, sk, request)
-        request.url = GLOBAL_CONFIG.CONSOLE_API_BASE_URL + request.url
+        request.url = get_config().CONSOLE_API_BASE_URL + request.url
 
 
 class PrivateAPIRequestor(QfAPIRequestor):
@@ -575,15 +574,9 @@ class PrivateAPIRequestor(QfAPIRequestor):
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
         super().__init__(**kwargs)
-        self._ak = _get_value_from_dict_or_var_or_env(
-            kwargs, "ak", GLOBAL_CONFIG.AK, Env.AK
-        )
-        self._sk = _get_value_from_dict_or_var_or_env(
-            kwargs, "sk", GLOBAL_CONFIG.SK, Env.SK
-        )
-        self._access_code = _get_value_from_dict_or_var_or_env(
-            kwargs, "access_code", GLOBAL_CONFIG.ACCESS_CODE, Env.AccessCode
-        )
+        self._ak = kwargs.get("ak", None) or get_config().AK
+        self._sk = kwargs.get("sk", None) or get_config().SK
+        self._access_code = kwargs.get("access_code", None) or get_config().ACCESS_CODE
 
     def _base_llm_request(
         self,
@@ -632,7 +625,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
                 body=body,
                 retry_config=retry_config,
             )
-            parsed_uri = urlparse(GLOBAL_CONFIG.BASE_URL)
+            parsed_uri = urlparse(get_config().BASE_URL)
             host = parsed_uri.netloc
             req.headers["content-type"] = "application/json;"
             req.headers["Host"] = host
@@ -640,7 +633,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
                 req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
             elif self._ak != "" and self._sk != "":
                 iam_sign(str(self._ak), str(self._sk), req)
-            req.url = GLOBAL_CONFIG.BASE_URL + req.url
+            req.url = get_config().BASE_URL + req.url
 
             if stream:
                 return self._request_stream(req, data_postprocess=data_postprocess)

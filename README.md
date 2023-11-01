@@ -26,22 +26,43 @@ import qianfan
 在使用千帆 SDK 之前，用户需要在千帆平台上创建应用，以获得 API Key (**AK**) 和 Secret Key (**SK**)。AK 与 SK 是用户在调用千帆 SDK 时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 
 获取到 AK 和 SK 后，用户还需要传递它们来初始化千帆 SDK。 千帆 SDK 支持如下三种传递方式，按优先级从低到高排序：
+1. 从 DotEnv 文件中读取。参考配置文件以及参数类型[点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env)。SDK 默认读取工作目录下的 `.env` 文件进行配置，用户可以在程序运行前设置环境变量 `QIANFAN_DOT_ENV_CONFIG_FILE` 来指定需要使用的配置文件。
 
+2. 通过环境变量读取。可配置的参数与方式 1 相同。举个例子，在代码中，用户可以这么设置：
 ```python
-# 通过环境变量传递（作用于全局，优先级最低）
+# 通过环境变量传递
 import os
 os.environ["QIANFAN_AK"]="..."
 os.environ["QIANFAN_SK"]="..."
-
-# 或者通过内置函数传递（作用于全局，优先级大于环境变量）
-import qianfan
-qianfan.AK("...")
-qianfan.SK("...")
-
-# 或者构造时传递（仅作用于该对象，优先级最高）
-import qianfan
-chat_comp = qianfan.ChatCompletion(ak="...", sk="...")
 ```
+
+> **NOTE**: 如果在代码中使用**环境变量**进行配置，请在设置时，将相关**设置代码**置于**实际使用的代码**前：
+> ```python
+> import os
+> import qianfan
+> 
+> # 这样设置的参数是生效的
+> os.environ["QIANFAN_QPS_LIMIT"] = "1"
+> qianfan.ChatCompletion()
+> 
+> # 这样设置的参数是不生效的
+> qianfan.ChatCompletion()
+> os.environ["QIANFAN_QPS_LIMIT"] = "1"
+> ```
+
+3. 在代码中通过 `get_config()` 获取全局配置单例，并直接修改字段值。这种方式的优先级最高，且设置即生效。
+```python
+import qianfan
+
+config = qianfan.get_config()
+config.AK = "..."
+config.SK = "..."
+
+chat_comp = qianfan.ChatCompletion()
+```
+
+
+
 
 ## 功能
 
@@ -386,13 +407,6 @@ print(svc['result']['id'])
 import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
-
-> **NOTE**: 如果使用**环境变量**进行QPS配置，请在使用os.environ进行参数设置时，将environ**设置代码**置于**导入代码**前：
-> ```python
-> import os
-> os.environ["QIANFAN_QPS_LIMIT"] = "1"
->
-> import qianfan
 
 
 ### Tokenizer

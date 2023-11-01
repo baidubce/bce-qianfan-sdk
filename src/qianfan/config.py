@@ -11,109 +11,67 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from importlib.util import find_spec
+import os
 from typing import Optional
 
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import deprecated
+
 from qianfan.consts import DefaultValue, Env
-from qianfan.errors import InvalidArgumentError
-from qianfan.utils import _get_from_env_or_default, _none_if_empty, _strtobool, log_info
-from qianfan.utils.helper import Singleton
 
 
-class GlobalConfig(object, metaclass=Singleton):
+class GlobalConfig(BaseSettings):
     """
     The global config of whole qianfan sdk
     """
 
-    AK: Optional[str]
-    SK: Optional[str]
-    CONSOLE_AK: Optional[str]
-    CONSOLE_SK: Optional[str]
-    ACCESS_TOKEN: Optional[str]
-    BASE_URL: str
-    AUTH_TIMEOUT: float
-    DISABLE_EB_SDK: bool
-    EB_SDK_INSTALLED: bool
-    IAM_SIGN_EXPIRATION_SEC: int
-    CONSOLE_API_BASE_URL: str
-    ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float
-    QIANFAN_QPS_LIMIT: float
+    model_config = SettingsConfigDict(env_prefix="QIANFAN_", case_sensitive=True)
+
+    AK: Optional[str] = Field(default=None)
+    SK: Optional[str] = Field(default=None)
+    ACCESS_KEY: Optional[str] = Field(default=None)
+    SECRET_KEY: Optional[str] = Field(default=None)
+    ACCESS_TOKEN: Optional[str] = Field(default=None)
+    BASE_URL: str = Field(default=DefaultValue.BaseURL)
+    AUTH_TIMEOUT: float = Field(default=DefaultValue.AuthTimeout)
+    DISABLE_EB_SDK: bool = Field(default=DefaultValue.DisableErnieBotSDK)
+    EB_SDK_INSTALLED: bool = Field(default=False)
+    IAM_SIGN_EXPIRATION_SEC: int = Field(default=DefaultValue.IAMSignExpirationSeconds)
+    CONSOLE_API_BASE_URL: str = Field(default=DefaultValue.ConsoleAPIBaseURL)
+    ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float = Field(
+        default=DefaultValue.AccessTokenRefreshMinInterval
+    )
+    QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
 
     # for private
-    ENABLE_PRIVATE: Optional[bool]
-    ENABLE_AUTH: Optional[bool]
-    ACCESS_CODE: Optional[str]
+    ENABLE_PRIVATE: bool = Field(default=DefaultValue.EnablePrivate)
+    # todo 补充 ENABLE_AUTH 的默认值和使用方法
+    ENABLE_AUTH: Optional[bool] = Field(default=None)
+    ACCESS_CODE: Optional[str] = Field(default=None)
 
-    def __init__(self) -> None:
-        """
-        Read value from environment or the default value will be used
-        """
+
+_GLOBAL_CONFIG: Optional[GlobalConfig] = None
+
+
+def get_config() -> GlobalConfig:
+    global _GLOBAL_CONFIG
+    if not _GLOBAL_CONFIG:
         try:
-            self.BASE_URL = _get_from_env_or_default(Env.BaseURL, DefaultValue.BaseURL)
-            self.AUTH_TIMEOUT = float(
-                _get_from_env_or_default(Env.AuthTimeout, DefaultValue.AuthTimeout)
-            )
-            self.DISABLE_EB_SDK = _strtobool(
-                _get_from_env_or_default(
-                    Env.DisableErnieBotSDK, DefaultValue.DisableErnieBotSDK
-                )
-            )
-            self.AK = _none_if_empty(_get_from_env_or_default(Env.AK, DefaultValue.AK))
-            self.SK = _none_if_empty(_get_from_env_or_default(Env.SK, DefaultValue.SK))
-            self.ACCESS_TOKEN = _none_if_empty(
-                _get_from_env_or_default(Env.AccessToken, DefaultValue.AccessToken)
-            )
-            self.CONSOLE_AK = _none_if_empty(
-                _get_from_env_or_default(Env.ConsoleAK, DefaultValue.ConsoleAK)
-            )
-            self.CONSOLE_SK = _none_if_empty(
-                _get_from_env_or_default(Env.ConsoleSK, DefaultValue.ConsoleSK)
-            )
-            self.IAM_SIGN_EXPIRATION_SEC = int(
-                _get_from_env_or_default(
-                    Env.IAMSignExpirationSeconds, DefaultValue.IAMSignExpirationSeconds
-                )
-            )
-            self.CONSOLE_API_BASE_URL = _get_from_env_or_default(
-                Env.ConsoleAPIBaseURL, DefaultValue.ConsoleAPIBaseURL
-            )
-            self.ACCESS_TOKEN_REFRESH_MIN_INTERVAL = float(
-                _get_from_env_or_default(
-                    Env.AccessTokenRefreshMinInterval,
-                    DefaultValue.AccessTokenRefreshMinInterval,
-                )
-            )
-            self.ENABLE_PRIVATE = _strtobool(
-                _get_from_env_or_default(
-                    Env.EnablePrivate,
-                    DefaultValue.EnablePrivate,
-                )
-            )
-            self.ACCESS_CODE = _none_if_empty(
-                _get_from_env_or_default(Env.AccessCode, DefaultValue.AccessCode)
-            )
-            self.QIANFAN_QPS_LIMIT = float(
-                _get_from_env_or_default(
-                    Env.QianfanQpsLimit, DefaultValue.QianfanQpsLimit
-                )
+            _GLOBAL_CONFIG = GlobalConfig(  # type: ignore
+                _env_file=os.getenv(Env.DotEnvConfigFile, DefaultValue.DotEnvConfigFile)
             )
         except Exception as e:
-            raise InvalidArgumentError(
-                f"Got invalid environment variable with err `{str(e)}`"
-            )
-        self.EB_SDK_INSTALLED = True
-        if find_spec("erniebot") is None:
-            log_info(
-                "erniebot is not installed, all operations will fall back to qianfan"
-                " sdk."
-            )
-            self.EB_SDK_INSTALLED = False
+            # todo 解决引入 Logger 带来的循环引用问题
+            # logger.error(f"unexpected error: {e}")
+            raise e
+    return _GLOBAL_CONFIG
 
 
-GLOBAL_CONFIG = GlobalConfig()
-
-
+@deprecated(
+    "setting config via specific function is deprecated, please get config with"
+    " get_config() and set attributes directly"
+)
 def AK(ak: str) -> None:
     """
     Set the API Key (AK) for LLM API authentication.
@@ -126,9 +84,13 @@ def AK(ak: str) -> None:
       ak (str):
         The API Key to be set for LLM API authentication.
     """
-    GLOBAL_CONFIG.AK = ak
+    get_config().AK = ak
 
 
+@deprecated(
+    "setting config via specific function is deprecated, please get config with"
+    " get_config() and set attributes directly"
+)
 def SK(sk: str) -> None:
     """
     Set the Secret Key (SK) for LLM api authentication. The secret key is paired with
@@ -142,9 +104,13 @@ def SK(sk: str) -> None:
       sk (str):
         The Secret Key to be set for LLM API authentication.
     """
-    GLOBAL_CONFIG.SK = sk
+    get_config().SK = sk
 
 
+@deprecated(
+    "setting config via specific function is deprecated, please get config with"
+    " get_config() and set attributes directly"
+)
 def AccessToken(access_token: str) -> None:
     """
     Set the access token for LLM api authentication.
@@ -161,9 +127,13 @@ def AccessToken(access_token: str) -> None:
       access_token (str):
         The access token to be set for LLM API authentication.
     """
-    GLOBAL_CONFIG.ACCESS_TOKEN = access_token
+    get_config().ACCESS_TOKEN = access_token
 
 
+@deprecated(
+    "setting config via specific function is deprecated, please get config with"
+    " get_config() and set attributes directly"
+)
 def AccessKey(access_key: str) -> None:
     """
     Set the Access Key for console api authentication.
@@ -177,9 +147,13 @@ def AccessKey(access_key: str) -> None:
       access_key (str):
         The Access Key to be set for console API authentication.
     """
-    GLOBAL_CONFIG.CONSOLE_AK = access_key
+    get_config().ACCESS_KEY = access_key
 
 
+@deprecated(
+    "setting config via specific function is deprecated, please get config with"
+    " get_config() and set attributes directly"
+)
 def SecretKey(secret_key: str) -> None:
     """
     Set the Secret Key for console api authentication. The secret key is paired with the
@@ -194,4 +168,4 @@ def SecretKey(secret_key: str) -> None:
       secret_key (str):
         The Secret Key to be set for console API authentication.
     """
-    GLOBAL_CONFIG.CONSOLE_SK = secret_key
+    get_config().SECRET_KEY = secret_key

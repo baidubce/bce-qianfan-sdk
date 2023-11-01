@@ -21,7 +21,7 @@ import time
 import pytest
 
 import qianfan
-from qianfan.config import GLOBAL_CONFIG
+from qianfan.config import get_config
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.tests.chat_completion_test import TEST_MESSAGE
 
@@ -136,7 +136,7 @@ async def test_async_rate_limiter_in_call_with_qps_sub1():
 
 
 def test_set_rate_limiter_through_environment_variable():
-    GLOBAL_CONFIG.QIANFAN_QPS_LIMIT = 0.5
+    get_config().QPS_LIMIT = 0.5
     start_timestamp = time.time()
     rl = RateLimiter()
     for i in range(0, 5):
@@ -144,4 +144,4 @@ def test_set_rate_limiter_through_environment_variable():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
-    GLOBAL_CONFIG.QIANFAN_QPS_LIMIT = 0
+    get_config().QPS_LIMIT = 0

@@ -17,6 +17,7 @@
 """
 import pytest
 
+import qianfan
 from qianfan.tests.utils import EnvHelper, init_test_env
 
 
@@ -34,3 +35,9 @@ def init():
         QIANFAN_SECRET_KEY="test_secret_key",
     ):
         yield
+
+
+@pytest.fixture(autouse=True, scope="function")
+def reset_config_automatically():
+    qianfan.config._GLOBAL_CONFIG = None
+    return

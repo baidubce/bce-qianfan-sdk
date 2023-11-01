@@ -28,6 +28,14 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
     MessagesPlaceholder,
 )
+
+# notice:
+# 此处使用 langchain.pydantic_v1 是 langchain 依赖 pydantic 1.x 的兼容手段
+# 使 SDK 安装了 pydantic 2.x 时，agent 代码也能正常工作。请勿修改。
+from langchain.pydantic_v1 import (
+    BaseModel,
+    root_validator,
+)
 from langchain.schema import (
     AgentAction,
     AgentFinish,
@@ -39,7 +47,6 @@ from langchain.schema import (
 )
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.tools import BaseTool, format_tool_to_openai_function
-from pydantic import BaseModel, root_validator
 
 
 class QianfanBaseAgent(BaseModel, ABC):

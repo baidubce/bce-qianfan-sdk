@@ -23,9 +23,6 @@ from qianfan.resources.api_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.utils import _get_console_ak_sk
 
-# requestor for console api
-_requestor = ConsoleAPIRequestor()
-
 P = ParamSpec("P")
 
 
@@ -54,6 +51,6 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             ),
         )
         req = func(*args, **kwargs)
-        return _requestor._request_console_api(req, ak, sk, retry_config)
+        return ConsoleAPIRequestor()._request_console_api(req, ak, sk, retry_config)
 
     return inner

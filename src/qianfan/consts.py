@@ -57,8 +57,8 @@ class Env:
 
     AK: str = "QIANFAN_AK"
     SK: str = "QIANFAN_SK"
-    ConsoleAK: str = "QIANFAN_ACCESS_KEY"
-    ConsoleSK: str = "QIANFAN_SECRET_KEY"
+    AccessKey: str = "QIANFAN_ACCESS_KEY"
+    SecretKey: str = "QIANFAN_SECRET_KEY"
     AccessToken: str = "QIANFAN_ACCESS_TOKEN"
     BaseURL: str = "QIANFAN_BASE_URL"
     DisableErnieBotSDK: str = "QIANFAN_DISABLE_EB_SDK"
@@ -68,7 +68,8 @@ class Env:
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
-    QianfanQpsLimit: str = "QIANFAN_QPS_LIMIT"
+    QpsLimit: str = "QIANFAN_QPS_LIMIT"
+    DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
 
 
 class DefaultValue:
@@ -82,17 +83,18 @@ class DefaultValue:
     ConsoleSK: str = ""
     AccessToken: str = ""
     BaseURL: str = "https://aip.baidubce.com"
-    AuthTimeout: str = "5"
-    DisableErnieBotSDK: str = "True"
-    IAMSignExpirationSeconds: str = "300"
+    AuthTimeout: float = 5
+    DisableErnieBotSDK: bool = True
+    IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
-    AccessTokenRefreshMinInterval: str = "3600"
+    AccessTokenRefreshMinInterval: float = 3600
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
-    QianfanQpsLimit = "0"
+    QpsLimit: float = 0
+    DotEnvConfigFile: str = ".env"
 
-    EnablePrivate: str = "False"
+    EnablePrivate: bool = False
     AccessCode: str = ""
 
 

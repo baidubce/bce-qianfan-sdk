@@ -26,7 +26,7 @@ import qianfan
 在使用千帆 SDK 之前，用户需要在千帆平台上创建应用，以获得 API Key (**AK**) 和 Secret Key (**SK**)。AK 与 SK 是用户在调用千帆 SDK 时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 
 获取到 AK 和 SK 后，用户还需要传递它们来初始化千帆 SDK。 千帆 SDK 支持如下三种传递方式，按优先级从低到高排序：
-1. 从 DotEnv 文件中读取。参考配置文件以及参数类型[点此](https://github.com/baidubce/bce-qianfan-sdk/blob/total_refactor_of_global_config/dotenv_config_sample.env)。SDK 默认读取工作目录下的 `.env` 文件进行配置，用户可以在程序运行前设置环境变量 `QIANFAN_DOT_ENV_CONFIG_FILE` 来指定需要使用的配置文件
+1. 从 DotEnv 文件中读取。参考配置文件以及参数类型[点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env)。SDK 默认读取工作目录下的 `.env` 文件进行配置，用户可以在程序运行前设置环境变量 `QIANFAN_DOT_ENV_CONFIG_FILE` 来指定需要使用的配置文件。
 
 2. 通过环境变量读取。可配置的参数与方式 1 相同。举个例子，在代码中，用户可以这么设置：
 ```python
@@ -54,7 +54,7 @@ os.environ["QIANFAN_SK"]="..."
 ```python
 import qianfan
 
-config = qianfan.config.get_config()
+config = qianfan.get_config()
 config.AK = "..."
 config.SK = "..."
 

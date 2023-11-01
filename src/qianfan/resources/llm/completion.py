@@ -85,6 +85,19 @@ class Completion(BaseResource):
                     "system",
                 },
             ),
+            "ERNIE-Bot-8k": QfLLMInfo(
+                endpoint="/chat/ernie_bot_8k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "functions",
+                    "system",
+                    "user_id",
+                },
+            ),
             "BLOOMZ-7B": QfLLMInfo(
                 endpoint="/chat/bloomz_7b1",
                 required_keys={"messages"},

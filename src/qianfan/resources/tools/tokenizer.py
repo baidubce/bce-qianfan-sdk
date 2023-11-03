@@ -19,7 +19,11 @@ Tokenizer
 import unicodedata
 from typing import Any
 
+from qianfan import get_config
+from qianfan.consts import Consts
 from qianfan.errors import InternalError, InvalidArgumentError
+from qianfan.resources.tools.utils import qianfan_api_request
+from qianfan.resources.typing import QfRequest
 
 
 class Tokenizer(object):
@@ -40,6 +44,9 @@ class Tokenizer(object):
           mode (str, optional):
             `local` (default):
               local **SIMULATION** (Chinese characters count + English word count * 1.3)
+            `remote`:
+              use qianfan api to calculate the token count. API will return accurate
+              token count, but only ERNIE-Bot series models are supported.
           model (str, optional):
             The name of the model to be used for token counting, which
             may influence the counting strategy. Default is 'ERNIE-Bot'.
@@ -47,16 +54,43 @@ class Tokenizer(object):
             Additional keyword arguments that can be passed to customize the request.
 
         """
-        if mode not in ["local"]:
+        if mode not in ["local", "remote"]:
             raise InvalidArgumentError(
                 f"Mode `{mode}` is not supported for count token, supported mode:"
                 " `local`"
             )
         if mode == "local":
             return cls._local_count_tokens(text)
+        if mode == "remote":
+            if model not in ["ERNIE-Bot", "ERNIE-Bot-turbo", "ERNIE-Bot-4"]:
+                raise InvalidArgumentError(
+                    f"Model `{model} is not supported to calculate token count from"
+                    " server.`"
+                )
+            return cls._remote_count_tokens_eb(text, **kwargs)
 
         # unreachable
         raise InternalError
+
+    @staticmethod
+    @qianfan_api_request
+    def _eb_tokenizer(text: str, **kwargs: Any) -> QfRequest:
+        """
+        create the request and use `qianfan_api_request` to get the response
+        """
+        request = QfRequest(
+            method="POST", url=get_config().BASE_URL + Consts.EBTokenizerAPI
+        )
+        request.json_body = {"prompt": text}
+        return request
+
+    @classmethod
+    def _remote_count_tokens_eb(cls, text: str, **kwargs: Any) -> int:
+        """
+        call the api to get the token count
+        """
+        resp = cls._eb_tokenizer(text, **kwargs)
+        return resp["amount"]
 
     @classmethod
     def _local_count_tokens(cls, text: str, model: str = "ERNIE-Bot") -> int:

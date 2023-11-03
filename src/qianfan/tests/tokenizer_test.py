@@ -28,3 +28,10 @@ def test_count_token_local():
     ]
     for text, count in cases:
         assert Tokenizer.count_tokens(text, mode="local") == count
+
+
+def test_count_token_remote():
+    prompt = "test prompt"
+    assert Tokenizer.count_tokens(prompt, mode="remote") == 97575 + len(
+        prompt
+    )  # magic number

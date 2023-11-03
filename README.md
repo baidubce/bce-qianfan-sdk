@@ -374,6 +374,31 @@ svc = qianfan.Service.get(id = 2047)
 print(svc['result']['id'])
 ```
 
+### Prompt 模版
+
+千帆平台提供 Prompt 模版管理功能，可以从 [智能云千帆控制台-Prompt 模版](https://console.bce.baidu.com/qianfan/prompt/template) 获取预置模版或自制模版。SDK 支持对 Prompt 模版进行
+
+- 在线渲染：需要提供模版的 `id`，可以从控制台中获得，详细参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alisj3ard)
+- 本地渲染：需要提供模版字符串，并且用 `{}` 包裹待渲染的字段
+
+具体使用方法如下
+
+```python
+# 在线 prompt
+# id 为 6633 的模版为：作为游客，告诉我{region}必吃的10大美食
+prompt = qianfan.Prompt(id = 6633) 
+prompt.render(region="上海") # => 作为游客，告诉我上海必吃的10大美食
+
+# 如果需要原始请求，可以设置 raw 字段，则会返回 QfResponse 对象，其中包含请求的原始数据
+resp = prompt.render(region="上海", raw=True)
+print(r['result']['templateContent']) # => 作为游客，告诉我{region}必吃的10大美食
+print(r['result']['content']) # => 作为游客，告诉我上海必吃的10大美食
+
+# 本地 prompt
+prompt = qianfan.Prompt(template="作为游客，告诉我{region}必吃的10大美食")
+prompt.render(region="上海") # => 作为游客，告诉我上海必吃的10大美食
+```
+
 ## SDK 配置
 
 千帆 SDK 内设了多种参数供用户设置，目前支持如下三种配置方式，按优先级从低到高排序：

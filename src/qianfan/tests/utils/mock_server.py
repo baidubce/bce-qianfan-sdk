@@ -370,10 +370,7 @@ def prompt():
                 "templateId": 632,
                 "templateName": "原创改写",
                 "templateContent": "用{number}种不同的方式改写以下段落，以避免重复，同时保持其含义：{text}。",
-                "content": (
-                    "用2种不同的方式改写以下段落，以避免重复，"
-                    "同时保持其含义：千帆大模型平台是面向企业开发者的一站式大模型开发及服务运行平台。"
-                ),
+                "content": "mock server template response",
                 "templateVariables": "number,text",
             },
             "status": 200,

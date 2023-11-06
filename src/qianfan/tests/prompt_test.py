@@ -69,3 +69,40 @@ async def test_render_prompt_async():
     result = resp["result"]
     assert "content" in result
     assert "templateContent" in result
+
+
+def test_online_prompt_cache():
+    """
+    test online prompt
+    """
+    prompt = Prompt(id=1203, cache=True)
+    resp = prompt.render(name="test", raw=True)
+    # The first rendering will request the remote api
+    assert resp["result"]["content"] == "mock server template response"
+    assert resp["_params"]["id"] == "1203"
+    assert resp["_params"]["name"] == "test"
+    # Other rendering will use the cached data
+    resp = prompt.render(number="48", text="ut test data")
+    assert (
+        resp
+        == "用48种不同的方式改写以下段落，以避免重复，同时保持其含义：ut test data。"
+    )
+
+
+@pytest.mark.asyncio
+async def test_online_prompt_cache_async():
+    """
+    test online prompt
+    """
+    prompt = Prompt(id=1203, cache=True)
+    resp = await prompt.arender(name="test", raw=True)
+    # The first rendering will request the remote api
+    assert resp["result"]["content"] == "mock server template response"
+    assert resp["_params"]["id"] == "1203"
+    assert resp["_params"]["name"] == "test"
+    # Other rendering will use the cached data
+    resp = await prompt.arender(number="48", text="ut test data")
+    assert (
+        resp
+        == "用48种不同的方式改写以下段落，以避免重复，同时保持其含义：ut test data。"
+    )

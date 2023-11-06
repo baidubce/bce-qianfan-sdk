@@ -16,7 +16,7 @@
 Prompt API
 """
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from qianfan.config import get_config
 from qianfan.consts import Consts
@@ -53,7 +53,9 @@ class Prompt(object):
     _prompt: _PromptBase
     """real prompt object to deal with prompt rendering"""
 
-    def __init__(self, id: Optional[int] = None, template: Optional[str] = None):
+    def __init__(
+        self, id: Optional[int] = None, template: Optional[str] = None, **kwargs: Any
+    ):
         """
         Initialize a Prompt object.
 
@@ -68,6 +70,9 @@ class Prompt(object):
           template (Optional[str]):
             An optional string containing the template for the prompt. If provided,
             the template will be rendered locally.
+          cache (bool):
+            This is only avaible for online prompt. If set to True, sdk will cache
+            the result of first request and render the prompt locally afterwards.
 
         Example usage:
 
@@ -81,9 +86,9 @@ class Prompt(object):
 
         """
         if id is not None:
-            self._prompt = _OnlinePrompt(id)
+            self._prompt = _OnlinePrompt(id, **kwargs)
         elif template is not None:
-            self._prompt = _LocalPrompt(template)
+            self._prompt = _LocalPrompt(template, **kwargs)
         else:
             raise InvalidArgumentError("either id or template must be provided")
 
@@ -153,11 +158,13 @@ class _OnlinePrompt(_PromptBase):
     Prompt object for online template
     """
 
-    def __init__(self, id: int):
+    def __init__(self, id: int, cache: bool = False):
         """
         Init the object with the prompt id from qianfan console.
         """
         self._id = id
+        self._cache = cache
+        self._template_info = None
 
     @staticmethod
     def _render_online_request(template_id: int, **kwargs: str) -> QfRequest:
@@ -199,14 +206,30 @@ class _OnlinePrompt(_PromptBase):
         """
         extract the content from response
         """
+        if self._cache:
+            self._template_info = {}
+            self._template_info["template"] = response["result"]["templateContent"]
+            self._template_info["args"] = response["result"]["templateVariables"].split(
+                ","
+            )
+            self._template_info["name"] = response["result"]["templateName"]
         if raw:
             return response
         return response["result"]["content"]
+
+    def _render_cache(self, raw: bool, **kwargs: str) -> str:
+        if raw:
+            raise InvalidArgumentError("`raw` is not supported when cache is enabled")
+        return self._template_info["template"].format(**kwargs)
 
     def render(self, raw: bool = False, **kwargs: str) -> Union[str, QfResponse]:
         """
         send the request and return the response.
         """
+        # if cache is enabled and the template info has been cached
+        # render the prompt locally
+        if self._cache and self._template_info is not None:
+            return self._render_cache(raw, **kwargs)
         response = self._render_online(**kwargs)
         return self._extract_response(raw, response)
 
@@ -214,5 +237,9 @@ class _OnlinePrompt(_PromptBase):
         """
         async send the request and return the response.
         """
+        # if cache is enabled and the template info has been cached
+        # render the prompt locally
+        if self._cache and self._template_info is not None:
+            return self._render_cache(raw, **kwargs)
         response = await self._arender_online(**kwargs)
         return self._extract_response(raw, response)

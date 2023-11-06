@@ -389,10 +389,16 @@ print(svc['result']['id'])
 prompt = qianfan.Prompt(id = 6633) 
 prompt.render(region="上海") # => 作为游客，告诉我上海必吃的10大美食
 
-# 如果需要原始请求，可以设置 raw 字段，则会返回 QfResponse 对象，其中包含请求的原始数据
+# 如果需要原始请求，可以设置 raw 字段，SDK 会返回 QfResponse 对象，其中包含请求的原始数据
 resp = prompt.render(region="上海", raw=True)
 print(r['result']['templateContent']) # => 作为游客，告诉我{region}必吃的10大美食
 print(r['result']['content']) # => 作为游客，告诉我上海必吃的10大美食
+
+# 为了避免频繁远程请求带来的延迟，SDK 支持缓存模版并进行本地渲染
+# 第一次渲染时，会从远程获取模版并缓存，后续将在本地渲染
+# 该模式下不支持 `raw` 参数
+prompt = qianfan.Prompt(id = 6633, cache=True) 
+prompt.render(region="上海")
 
 # 本地 prompt
 prompt = qianfan.Prompt(template="作为游客，告诉我{region}必吃的10大美食")

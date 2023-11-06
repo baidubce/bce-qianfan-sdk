@@ -166,6 +166,59 @@ def access_token_checker(func):
     return wrapper
 
 
+def truncated_stream_response(is_end_resp: bool):
+    """
+    mock stream chat response
+    """
+
+    if is_end_resp:
+        data = json.dumps(
+            {
+                "id": "as-ywwpgx4dt7",
+                "object": "chat.completion",
+                "created": 1680166793,
+                "sentence_id": 0,
+                "is_end": True,
+                "is_truncated": False,
+                "result": "==end",
+                "need_clear_history": False,
+                "usage": {
+                    "prompt_tokens": 11,
+                    "completion_tokens": 16,
+                    "total_tokens": 27,
+                },
+            }
+        )
+        yield "data: " + data + "\n\n"
+    else:
+        for i in range(0, STREAM_COUNT):
+            is_end = i == STREAM_COUNT - 1
+            data = json.dumps(
+                {
+                    "id": "as-ywwpgx4dt7",
+                    "object": "chat.completion",
+                    "created": 1680166793,
+                    "sentence_id": 0,
+                    "is_end": is_end,
+                    "is_truncated": True,
+                    "result": "truncated_" + str(i),
+                    "need_clear_history": False,
+                    "usage": {
+                        "prompt_tokens": 11,
+                        "completion_tokens": 16,
+                        "total_tokens": 27,
+                    },
+                    "_for_ut": {
+                        "model": "truncated",
+                        "turn": i,
+                        "stream": True,
+                        "type": "chat",
+                    },
+                }
+            )
+            yield "data: " + data + "\n\n"
+
+
 @app.route(Consts.ModelAPIPrefix + "/chat/<model_name>", methods=["POST"])
 @access_token_checker
 def chat(model_name):
@@ -175,6 +228,61 @@ def chat(model_name):
     r = request.json
     # check messages
     check_result = check_messages(r["messages"])
+    if model_name == "truncated":
+        # stream
+        if "stream" in r and r["stream"]:
+            return flask.Response(
+                truncated_stream_response(
+                    len(r["messages"]) >= 1 and r["messages"][-1]["content"] == "继续"
+                ),
+                mimetype="text/event-stream",
+            )
+        # not stream
+        if len(r["messages"]) >= 1 and r["messages"][-1]["content"] == "继续":
+            # continue answer is_truncated=`False`
+            return json_response(
+                {
+                    "id": "as-bcmt5ct4id",
+                    "object": "chat.completion",
+                    "created": 1680167072,
+                    "result": "-->end of truncated]",
+                    "is_truncated": False,
+                    "need_clear_history": False,
+                    "usage": {
+                        "prompt_tokens": 7,
+                        "completion_tokens": 67,
+                        "total_tokens": 74,
+                    },
+                    "_for_ut": {
+                        "model": "truncated",
+                        "turn": None,
+                        "stream": False,
+                        "type": "chat",
+                    },
+                }
+            )
+
+        return json_response(
+            {
+                "id": "as-bcmt5ct4id",
+                "object": "chat.completion",
+                "created": 1680167072,
+                "result": "[begin truncate",
+                "is_truncated": True,
+                "need_clear_history": False,
+                "usage": {
+                    "prompt_tokens": 7,
+                    "completion_tokens": 67,
+                    "total_tokens": 74,
+                },
+                "_for_ut": {
+                    "model": "truncated",
+                    "turn": None,
+                    "stream": False,
+                    "type": "chat",
+                },
+            }
+        )
     if "functions" not in r and check_result is not None:
         return json.dumps(check_result)
     if "stream" in r and r["stream"]:

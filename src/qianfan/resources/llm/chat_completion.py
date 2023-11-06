@@ -13,12 +13,13 @@
 # limitations under the License.
 
 
+import copy
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
-from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
+from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse, QfRole
 
 
 class ChatCompletion(BaseResource):
@@ -189,6 +190,7 @@ class ChatCompletion(BaseResource):
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
+        auto_concat_truncate: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -248,8 +250,7 @@ class ChatCompletion(BaseResource):
             return erniebot.ChatCompletion.create(  # type: ignore
                 model=model.lower(), stream=stream, **kwargs
             )
-
-        return self._do(
+        resp = self._do(
             model,
             endpoint,
             stream,
@@ -258,6 +259,92 @@ class ChatCompletion(BaseResource):
             backoff_factor,
             **kwargs,
         )
+        if not auto_concat_truncate:
+            return resp
+        if stream:
+            return self._stream_concat_truncated(
+                model,
+                endpoint,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                resp,
+                **kwargs,
+            )
+
+        cur_content: str = resp["result"]
+        entire_content: str = cur_content
+        is_truncated: bool = resp["is_truncated"]
+        msgs = copy.deepcopy(messages)
+        while is_truncated:
+            if isinstance(msgs, QfMessages):
+                msgs.append(cur_content, QfRole.Assistant)
+                msgs.append("继续", QfRole.User)
+            else:
+                msgs.append({"content": cur_content, "role": "assistant"})
+                msgs.append({"content": "继续", "role": "user"})
+            cur_content = ""
+            kwargs["messages"] = msgs
+            resp = self._do(
+                model,
+                endpoint,
+                stream,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                **kwargs,
+            )
+            cur_content += resp["result"]
+            entire_content += resp["result"]
+            is_truncated = resp["is_truncated"]
+            if not is_truncated:
+                resp.body["result"] = entire_content
+                return resp
+
+    def _stream_concat_truncated(
+        self,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        retry_count: int = 1,
+        request_timeout: float = 60,
+        backoff_factor: float = 0,
+        first_resp: Iterator[QfResponse] = None,
+        **kwargs: Any,
+    ) -> Iterator[QfResponse]:
+        """
+        Stream concat.
+        """
+        messages = kwargs.pop("messages")
+        cur_content: str = ""
+        for r in first_resp:
+            cur_content += r["result"]
+            yield r
+        is_truncated: bool = True
+        while is_truncated:
+            if isinstance(messages, QfMessages):
+                messages.append(cur_content, QfRole.Assistant)
+                messages.append("继续", QfRole.User)
+            else:
+                messages.append({"content": cur_content, "role": "assistant"})
+                messages.append({"content": "继续", "role": "user"})
+            cur_content = ""
+            kwargs["messages"] = messages
+            resp = self._do(
+                model,
+                endpoint,
+                True,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                **kwargs,
+            )
+
+            for r in resp:
+                cur_content += r["result"]
+                is_truncated = r["is_truncated"]
+                # if r["is_end"] and not is_truncated:
+                #     r.body["is_end"] = False
+                yield r
 
     async def ado(
         self,
@@ -268,6 +355,7 @@ class ChatCompletion(BaseResource):
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
+        auto_concat_truncate: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -327,7 +415,7 @@ class ChatCompletion(BaseResource):
             return await erniebot.ChatCompletion.acreate(  # type: ignore
                 model=model.lower(), stream=stream, **kwargs
             )
-        return await self._ado(
+        resp = await self._ado(
             model,
             endpoint,
             stream,
@@ -336,3 +424,87 @@ class ChatCompletion(BaseResource):
             backoff_factor,
             **kwargs,
         )
+        if not auto_concat_truncate:
+            return resp
+        if stream:
+            return self._async_stream_concat_truncated(
+                model,
+                endpoint,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                resp,
+                **kwargs,
+            )
+
+        cur_content: str = resp["result"]
+        entire_content: str = cur_content
+        is_truncated: bool = resp["is_truncated"]
+
+        msgs = copy.deepcopy(messages)
+        while is_truncated:
+            if isinstance(msgs, QfMessages):
+                msgs.append(cur_content, QfRole.Assistant)
+                msgs.append("继续", QfRole.User)
+            else:
+                msgs.append({"content": cur_content, "role": "assistant"})
+                msgs.append({"content": "继续", "role": "user"})
+            cur_content = ""
+            kwargs["messages"] = msgs
+            resp = await self._ado(
+                model,
+                endpoint,
+                stream,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                **kwargs,
+            )
+            cur_content += resp["result"]
+            entire_content += resp["result"]
+            is_truncated = resp["is_truncated"]
+            if not is_truncated:
+                resp.body["result"] = entire_content
+                return resp
+
+    async def _async_stream_concat_truncated(
+        self,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        retry_count: int = 1,
+        request_timeout: float = 60,
+        backoff_factor: float = 0,
+        first_resp: AsyncIterator[QfResponse] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[QfResponse]:
+        """
+        Stream concat.
+        """
+        messages = kwargs.pop("messages")
+        cur_content: str = ""
+        async for r in first_resp:
+            cur_content += r["result"]
+            yield r
+        is_truncated: bool = True
+        while is_truncated:
+            if isinstance(messages, QfMessages):
+                messages.append(cur_content, QfRole.Assistant)
+                messages.append("继续", QfRole.User)
+            else:
+                messages.append({"content": cur_content, "role": "assistant"})
+                messages.append({"content": "继续", "role": "user"})
+            cur_content = ""
+            kwargs["messages"] = messages
+
+            async for r in await self._ado(
+                model,
+                endpoint,
+                True,
+                retry_count,
+                request_timeout,
+                backoff_factor,
+                **kwargs,
+            ):
+                cur_content += r["result"]
+                is_truncated = r["is_truncated"]
+                yield r

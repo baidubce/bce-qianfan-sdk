@@ -261,17 +261,20 @@ class ChatCompletion(BaseResource):
         )
         if not auto_concat_truncate:
             return resp
+        # continuously request for entire reply
         if stream:
+            assert isinstance(resp, Iterator)
             return self._stream_concat_truncated(
+                resp,
+                kwargs.pop("messages"),
                 model,
                 endpoint,
                 retry_count,
                 request_timeout,
                 backoff_factor,
-                resp,
                 **kwargs,
             )
-
+        assert isinstance(resp, QfResponse)
         cur_content: str = resp["result"]
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
@@ -288,33 +291,57 @@ class ChatCompletion(BaseResource):
             resp = self._do(
                 model,
                 endpoint,
-                stream,
+                False,
                 retry_count,
                 request_timeout,
                 backoff_factor,
                 **kwargs,
             )
+            assert isinstance(resp, QfResponse)
             cur_content += resp["result"]
             entire_content += resp["result"]
             is_truncated = resp["is_truncated"]
             if not is_truncated:
                 resp.body["result"] = entire_content
                 return resp
+        return resp
 
     def _stream_concat_truncated(
         self,
+        first_resp: Iterator[QfResponse],
+        messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
-        first_resp: Iterator[QfResponse] = None,
         **kwargs: Any,
     ) -> Iterator[QfResponse]:
         """
-        Stream concat.
+        Continuously do stream request for all pieces of reply.
+
+        Parameters:
+          model (Optional[str]):
+            The name or identifier of the language model to use. If not specified, the
+            default model is used(ERNIE-Bot-turbo).
+          endpoint (Optional[str]):
+            The endpoint for making API requests. If not provided, the default endpoint
+            is used.
+          stream (bool):
+            If set to True, the responses are streamed back as an iterator. If False, a
+            single response is returned.
+          retry_count (int):
+            The number of times to retry the request in case of failure.
+          request_timeout (float):
+            The maximum time (in seconds) to wait for a response from the model.
+          backoff_factor (float):
+            A factor to increase the waiting time between retry attempts.
+          kwargs (Any):
+            Additional keyword arguments that can be passed to customize the request.
+
+        Yields:
+            Iterator[QfResponse]: _description_
         """
-        messages = kwargs.pop("messages")
         cur_content: str = ""
         for r in first_resp:
             cur_content += r["result"]
@@ -427,16 +454,19 @@ class ChatCompletion(BaseResource):
         if not auto_concat_truncate:
             return resp
         if stream:
+            assert isinstance(resp, AsyncIterator)
             return self._async_stream_concat_truncated(
+                resp,
+                kwargs.pop("messages"),
                 model,
                 endpoint,
                 retry_count,
                 request_timeout,
                 backoff_factor,
-                resp,
                 **kwargs,
             )
 
+        assert isinstance(resp, QfResponse)
         cur_content: str = resp["result"]
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
@@ -460,27 +490,29 @@ class ChatCompletion(BaseResource):
                 backoff_factor,
                 **kwargs,
             )
+            assert isinstance(resp, QfResponse)
             cur_content += resp["result"]
             entire_content += resp["result"]
             is_truncated = resp["is_truncated"]
             if not is_truncated:
                 resp.body["result"] = entire_content
                 return resp
+        return resp
 
     async def _async_stream_concat_truncated(
         self,
+        first_resp: AsyncIterator[QfResponse],
+        messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
-        first_resp: AsyncIterator[QfResponse] = None,
         **kwargs: Any,
     ) -> AsyncIterator[QfResponse]:
         """
         Stream concat.
         """
-        messages = kwargs.pop("messages")
         cur_content: str = ""
         async for r in first_resp:
             cur_content += r["result"]
@@ -496,7 +528,7 @@ class ChatCompletion(BaseResource):
             cur_content = ""
             kwargs["messages"] = messages
 
-            async for r in await self._ado(
+            resp = await self._ado(
                 model,
                 endpoint,
                 True,
@@ -504,7 +536,9 @@ class ChatCompletion(BaseResource):
                 request_timeout,
                 backoff_factor,
                 **kwargs,
-            ):
+            )
+            assert isinstance(resp, AsyncIterator)
+            async for r in resp:
                 cur_content += r["result"]
                 is_truncated = r["is_truncated"]
                 yield r

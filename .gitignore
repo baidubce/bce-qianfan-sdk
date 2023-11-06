@@ -56,3 +56,4 @@ poetry.lock
 
 .vscode
 .*_cache
+.env*

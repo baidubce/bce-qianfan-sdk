@@ -96,7 +96,7 @@ class Logger(object):
             None
 
         """
-        self._logger.warn(message, *args, **params)
+        self._logger.warning(message, *args, **params)
 
 
 logger = Logger()

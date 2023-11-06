@@ -47,16 +47,6 @@ def reset_config():
     return
 
 
-def set_env_ak_sk(ak=None, sk=None):
-    """
-    set env variables value for ak and sk
-    """
-    if ak is not None:
-        os.environ["QIANFAN_AK"] = ak
-    if sk is not None:
-        os.environ["QIANFAN_SK"] = sk
-
-
 def test_auth_from_env():
     """
     test auth with environment variables
@@ -290,3 +280,38 @@ async def test_access_token_from_args_async():
         assert await auth.a_access_token() == fake_access_token(ak, sk)
         qianfan.AK(None)
         qianfan.SK(None)
+
+
+def test_auth_from_access_key():
+    with EnvHelper(QIANFAN_ACCESS_KEY="access_key", QIANFAN_SECRET_KEY="secret_key"):
+        qianfan.get_config().AK = None
+        qianfan.get_config().SK = None
+        auth = Auth()
+        assert auth.access_token() == fake_access_token(
+            "ak_from_app_list_api_1", "sk_from_app_list_api_1"
+        )
+        with EnvHelper(QIANFAN_APPID="3"):
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert auth.access_token() == fake_access_token(
+                "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+            )
+
+
+@pytest.mark.asyncio
+async def test_auth_from_access_key_async():
+    with EnvHelper(QIANFAN_ACCESS_KEY="access_key", QIANFAN_SECRET_KEY="secret_key"):
+        qianfan.get_config().AK = None
+        qianfan.get_config().SK = None
+        auth = Auth()
+        assert await auth.a_access_token() == fake_access_token(
+            "ak_from_app_list_api_1", "sk_from_app_list_api_1"
+        )
+        with EnvHelper(QIANFAN_APPID="3"):
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert await auth.a_access_token() == fake_access_token(
+                "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+            )

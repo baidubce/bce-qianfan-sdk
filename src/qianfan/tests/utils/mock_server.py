@@ -709,6 +709,41 @@ def get_model_version_detail():
     )
 
 
+@app.route(Consts.AppListAPI, methods=["GET"])
+@iam_auth_checker
+def get_app_list():
+    return json_response(
+        {
+            "log_id": "8918918516",
+            "result": {
+                "appList": [
+                    {
+                        "id": 1,
+                        "name": "unit_test_1",
+                        "ak": "ak_from_app_list_api_1",
+                        "sk": "sk_from_app_list_api_1",
+                        "apiIds": "1,2,3",
+                    },
+                    {
+                        "id": 2,
+                        "name": "unit_test_2",
+                        "ak": "ak_from_app_list_api_2",
+                        "sk": "sk_from_app_list_api_2",
+                        "apiIds": "1,2,3",
+                    },
+                    {
+                        "id": 3,
+                        "name": "unit_test_3",
+                        "ak": "ak_from_app_list_api_3",
+                        "sk": "sk_from_app_list_api_3",
+                        "apiIds": "1,2,3",
+                    },
+                ]
+            },
+        }
+    )
+
+
 @app.route(Consts.ModelDetailAPI, methods=["POST"])
 @iam_auth_checker
 def get_model_detail():

@@ -16,11 +16,11 @@
 Prompt API
 """
 
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from qianfan.config import get_config
 from qianfan.consts import Consts
-from qianfan.errors import InvalidArgumentError
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.tools.utils import async_qianfan_api_request, qianfan_api_request
 from qianfan.resources.typing import QfRequest, QfResponse
 
@@ -164,7 +164,7 @@ class _OnlinePrompt(_PromptBase):
         """
         self._id = id
         self._cache = cache
-        self._template_info = None
+        self._template_info: Optional[Dict[str, str]] = None
 
     @staticmethod
     def _render_online_request(template_id: int, **kwargs: str) -> QfRequest:
@@ -220,6 +220,10 @@ class _OnlinePrompt(_PromptBase):
     def _render_cache(self, raw: bool, **kwargs: str) -> str:
         if raw:
             raise InvalidArgumentError("`raw` is not supported when cache is enabled")
+        if self._template_info is None:
+            raise InternalError(
+                "The template should alreay been cached, there might be a bug in sdk"
+            )
         return self._template_info["template"].format(**kwargs)
 
     def render(self, raw: bool = False, **kwargs: str) -> Union[str, QfResponse]:

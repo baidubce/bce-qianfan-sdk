@@ -43,6 +43,8 @@ class GlobalConfig(BaseSettings):
         default=DefaultValue.AccessTokenRefreshMinInterval
     )
     QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
+    BAIDU_CLOUD_AK: Optional[str] = Field(default=None)
+    BAIDU_CLOUD_SK: Optional[str] = Field(default=None)
 
     # for private
     ENABLE_PRIVATE: bool = Field(default=DefaultValue.EnablePrivate)

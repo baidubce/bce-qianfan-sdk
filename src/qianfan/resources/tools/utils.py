@@ -23,8 +23,6 @@ from qianfan.resources.api_requestor import QfAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.utils import _get_qianfan_ak_sk
 
-# requestor for qianfan api
-_requestor = QfAPIRequestor()
 
 P = ParamSpec("P")
 
@@ -55,7 +53,7 @@ def qianfan_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         )
         req = func(*args, **kwargs)
         req.retry_config = retry_config
-        return _requestor._request_api(req, ak, sk)
+        return QfAPIRequestor()._request_api(req, ak, sk)
 
     return inner
 
@@ -88,6 +86,6 @@ def async_qianfan_api_request(
         )
         req = await func(*args, **kwargs)
         req.retry_config = retry_config
-        return await _requestor._async_request_api(req, ak, sk)
+        return await QfAPIRequestor()._async_request_api(req, ak, sk)
 
     return inner

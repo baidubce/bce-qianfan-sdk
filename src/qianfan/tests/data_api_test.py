@@ -1,5 +1,12 @@
 from qianfan import Data
-from qianfan.resources.console.user_constant import *
+from qianfan.resources.console.user_constant import (
+    DataExportScene,
+    DataProjectType,
+    DataSetType,
+    DataSourceType,
+    DataStorageType,
+    DataTemplateType,
+)
 
 
 def test_create_task():
@@ -13,6 +20,33 @@ def test_create_task():
         )
     except ValueError as e:
         assert str(e) == "storage id is empty while create dataset in private bos"
+
+    try:
+        resp = Data.create_bare_dataset(
+            "test_dataset_name",
+            DataSetType.MultiModel,
+            DataProjectType.Conversation,
+            DataTemplateType.NonAnnotatedConversation,
+            DataStorageType.PublicBos,
+        )
+    except ValueError as e:
+        assert (
+            str(e) == "Incompatible project type or template type with multi model set"
+        )
+
+    try:
+        resp = Data.create_bare_dataset(
+            "test_dataset_name",
+            DataSetType.TextOnly,
+            DataProjectType.Conversation,
+            DataTemplateType.QuerySet,
+            DataStorageType.PublicBos,
+        )
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Incompatible project type with template type when create text dataset"
+        )
 
     resp = Data.create_bare_dataset(
         "test_dataset_name",
@@ -59,11 +93,11 @@ def test_create_import_task():
         assert str(e) == "import file apart from local can only have 1 file url"
 
     resp = Data.create_data_import_task(
-            dataset_id=1,
-            is_annotated=True,
-            import_source=DataSourceType.PrivateBos,
-            files_url=["1"],
-        )
+        dataset_id=1,
+        is_annotated=True,
+        import_source=DataSourceType.PrivateBos,
+        files_url=["1"],
+    )
 
     reqs = resp.get("_request")
     assert reqs["datasetId"] == 1
@@ -144,7 +178,7 @@ def test_create_dataset_export_task():
         dataset_id=12,
         export_scene=DataExportScene.Normal,
         export_destination_type=DataSourceType.PrivateBos,
-        storage_id="bucket_name"
+        storage_id="bucket_name",
     )
     reqs = resp.get("_request")
 

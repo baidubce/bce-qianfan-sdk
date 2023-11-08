@@ -44,8 +44,10 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](#sdk-配置) 部分。
+
 <details>
-<summary> 更多认证方式 </summary>
+<summary> 其他认证方式 </summary>
 
 > 这里是一些其他认证方式，请仅在无法获取 Access Key 与 Secret Key 时使用。这些认证方式已经过时，将在未来从 SDK 中移除。
 
@@ -99,6 +101,7 @@ print(resp["result"])
 
 ```python
 import qianfan
+# 鉴权参数也可以通过函数参数传入，若已通过环境变量配置，则无需传入
 chat_comp = qianfan.ChatCompletion(access_key="...", secret_key="...")
 
 # 调用默认模型，即 ERNIE-Bot-turbo
@@ -129,7 +132,7 @@ msgs = qianfan.Messages()
 while True:
     msgs.append(input())         # 增加用户输入
     resp = chat_comp.do(messages=msgs)
-    print(resp)									 # 打印输出
+    print(resp)	                 # 打印输出
     msgs.append(resp)            # 增加模型输出
 ```
 
@@ -175,7 +178,7 @@ async for r in resp:
 
 ```python
 import qianfan
-comp = qianfan.Completion(access_key="...", secret_key="...")
+comp = qianfan.Completion()
 
 resp = comp.do(model="ERNIE-Bot", prompt="你好")
 # 输出：你好！有什么我可以帮助你的吗？
@@ -205,7 +208,7 @@ resp = comp.do(endpoint="your_custom_endpoint", prompt="你好")
 ```python
 # Embedding 基础功能
 import qianfan
-emb = qianfan.Embedding(ak="...", sk="...")
+emb = qianfan.Embedding()
 
 resp = emb.do(model="Embedding-V1", texts=["世界上最高的山"])
 print(resp['data'][0]['embedding'])
@@ -405,8 +408,8 @@ print(svc['result']['id'])
 ```python
 # 通过环境变量传递
 import os
-os.environ["QIANFAN_AK"]="..."
-os.environ["QIANFAN_SK"]="..."
+os.environ["QIANFAN_ACCESS_KEY"]="..."
+os.environ["QIANFAN_SECRET_KEY"]="..."
 ```
 
 > **NOTE**: 如果在代码中使用**环境变量**进行配置，请在设置时，将相关**设置代码**置于**实际使用的代码**前：
@@ -428,8 +431,8 @@ os.environ["QIANFAN_SK"]="..."
 import qianfan
 
 config = qianfan.get_config()
-config.AK = "..."
-config.SK = "..."
+config.AccessKey = "..."
+config.SecretKey = "..."
 
 chat_comp = qianfan.ChatCompletion()
 ```

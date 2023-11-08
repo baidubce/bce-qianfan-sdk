@@ -338,6 +338,10 @@ class Auth(object):
                     )
                     app_list = resp["result"]["appList"]
                     self._update_ak_sk_from_app_list(app_list)
+                    if self._ak is None or self._sk is None:
+                        # ak and sk should already be set
+                        # otherwise an exception should already be raised
+                        raise InternalError
                     Auth._console_ak_to_qianfan_ak[
                         (self._access_key, self._secret_key)
                     ] = (self._ak, self._sk)

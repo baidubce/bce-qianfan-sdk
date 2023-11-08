@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from qianfan.config import get_config
 from qianfan.consts import Consts
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.resources.console.app import App
+from qianfan.resources.console.app import _App
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest, RetryConfig
 from qianfan.utils import (
@@ -279,28 +279,34 @@ class Auth(object):
             )
 
     def _update_ak_sk_from_app_list(self, app_list: List[Dict[str, Any]]) -> None:
-
+        """
+        select the latest app from `app_list` and update ak, sk
+        """
         if len(app_list) == 0:
-            log_error(
+            raise InvalidArgumentError(
                 "no app found, please create an app first on qianfan console:"
                 " https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
             )
         appid = get_config().APPID
-        selected_app = app_list[0]
+        # the last app is the latest one
+        selected_app = app_list[-1]
         if appid is None:
+            # if user does not provide appid, use the latest one
             log_info(
-                "no appid provided, using the first one which id is"
+                "no appid provided, using the latest one which id is"
                 f" {selected_app['id']}"
             )
         else:
+            # find the uesr required app
             tmp = [app for app in app_list if app["id"] == appid]
             if len(tmp) == 0:
                 log_warn(
                     f"The provided appid {appid} is not found, please check the"
-                    " id and the sdk will use the first one which id is"
+                    " id and the sdk will use the latest one which id is"
                     f" {selected_app['id']}"
                 )
-            selected_app = tmp[0]
+            else:
+                selected_app = tmp[0]
         self._ak = selected_app["ak"]
         self._sk = selected_app["sk"]
 
@@ -317,7 +323,7 @@ class Auth(object):
                 and self._ak is None
                 and self._sk is None
             ):
-                resp = App.list(
+                resp = _App.list(
                     access_key=self._access_key, secret_key=self._secret_key
                 )
                 app_list = resp["result"]["appList"]
@@ -349,7 +355,7 @@ class Auth(object):
                 and self._ak is None
                 and self._sk is None
             ):
-                resp = await App.alist(
+                resp = await _App.alist(
                     access_key=self._access_key, secret_key=self._secret_key
                 )
                 app_list = resp["result"]["appList"]

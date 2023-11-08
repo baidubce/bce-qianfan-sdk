@@ -24,7 +24,7 @@ from qianfan.resources.console.utils import (
 from qianfan.resources.typing import QfRequest
 
 
-class App(object):
+class _App(object):
     """
     Class for Model Management API
     """

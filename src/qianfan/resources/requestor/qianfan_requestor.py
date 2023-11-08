@@ -32,8 +32,8 @@ from urllib.parse import urlparse
 import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.consts import Consts
-from qianfan.resources.auth import Auth
-from qianfan.resources.iam import iam_sign
+from qianfan.resources.auth.iam import iam_sign
+from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.requestor.base import BaseAPIRequestor
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_info

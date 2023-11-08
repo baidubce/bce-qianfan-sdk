@@ -19,7 +19,7 @@ import functools
 from typing import Any, Awaitable, Callable
 
 from qianfan.consts import DefaultValue
-from qianfan.resources.auth import Auth
+from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.requestor.qianfan_requestor import QfAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 

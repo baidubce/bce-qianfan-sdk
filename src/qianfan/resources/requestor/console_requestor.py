@@ -19,7 +19,7 @@ Console API Requestor
 from urllib.parse import urlparse
 
 from qianfan import get_config
-from qianfan.resources.iam import iam_sign
+from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.requestor.base import BaseAPIRequestor
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 

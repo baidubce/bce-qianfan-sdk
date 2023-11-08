@@ -255,6 +255,12 @@ class Auth(object):
     _access_key: Optional[str] = None
     _secret_key: Optional[str] = None
     _registered: bool = False
+    _console_ak_to_qianfan_ak: Dict[Tuple[str, str], Tuple[str, str]] = {}
+    """
+    (access_key, secret_key) -> (ak, sk)
+    map which convert console ak/sk to qianfan ak/sk
+    use as cache to avoid querying console ak/sk multple times
+    """
 
     def __init__(self, **kwargs: Any) -> None:
         """
@@ -323,11 +329,18 @@ class Auth(object):
                 and self._ak is None
                 and self._sk is None
             ):
-                resp = _App.list(
-                    access_key=self._access_key, secret_key=self._secret_key
+                self._ak, self._sk = Auth._console_ak_to_qianfan_ak.get(
+                    (self._access_key, self._secret_key), (None, None)
                 )
-                app_list = resp["result"]["appList"]
-                self._update_ak_sk_from_app_list(app_list)
+                if self._ak is None:
+                    resp = _App.list(
+                        access_key=self._access_key, secret_key=self._secret_key
+                    )
+                    app_list = resp["result"]["appList"]
+                    self._update_ak_sk_from_app_list(app_list)
+                    Auth._console_ak_to_qianfan_ak[
+                        (self._access_key, self._secret_key)
+                    ] = (self._ak, self._sk)
 
             if self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided

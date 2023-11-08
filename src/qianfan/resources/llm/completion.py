@@ -59,6 +59,7 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "user_id",
+                    "system",
                 },
             ),
             "ERNIE-Bot": QfLLMInfo(
@@ -104,6 +105,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "Llama-2-7b-chat": QfLLMInfo(
@@ -112,6 +117,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "Llama-2-13b-chat": QfLLMInfo(
@@ -120,6 +129,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "Llama-2-70b-chat": QfLLMInfo(
@@ -128,6 +141,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "Qianfan-BLOOMZ-7B-compressed": QfLLMInfo(
@@ -136,6 +153,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "Qianfan-Chinese-Llama-2-7B": QfLLMInfo(
@@ -144,6 +165,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "ChatGLM2-6B-32K": QfLLMInfo(
@@ -152,6 +177,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             "AquilaChat-7B": QfLLMInfo(
@@ -160,6 +189,10 @@ class Completion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
+                    "temperaturetop_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(

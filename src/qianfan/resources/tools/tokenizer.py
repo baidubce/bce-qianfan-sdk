@@ -17,7 +17,7 @@ Tokenizer
 """
 
 import unicodedata
-from typing import Any
+from typing import Any, Literal
 
 from qianfan import get_config
 from qianfan.consts import Consts
@@ -33,7 +33,11 @@ class Tokenizer(object):
 
     @classmethod
     def count_tokens(
-        cls, text: str, mode: str = "local", model: str = "ERNIE-Bot", **kwargs: Any
+        cls,
+        text: str,
+        mode: Literal["local", "remote"] = "local",
+        model: str = "ERNIE-Bot",
+        **kwargs: Any,
     ) -> int:
         """
         Count the number of tokens in a given text.

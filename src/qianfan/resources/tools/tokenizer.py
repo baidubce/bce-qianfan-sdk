@@ -16,8 +16,14 @@
 Tokenizer
 """
 
+import sys
 import unicodedata
-from typing import Any, Literal
+from typing import Any
+
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal  # noqa: F401
+else:
+    from typing import Literal  # noqa: F401
 
 from qianfan import get_config
 from qianfan.consts import Consts

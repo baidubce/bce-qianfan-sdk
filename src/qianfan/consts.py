@@ -115,7 +115,7 @@ class Consts:
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
-    AppListAPI: str = "/wenxinworkshop/app/list"
+    AppListAPI: str = "/wenxinworkshop/service/appList"
     STREAM_RESPONSE_PREFIX: str = "data: "
 
 

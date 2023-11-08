@@ -36,8 +36,8 @@ class Data:
                 "Incompatible project type or template type with multi model set"
             )
 
-        str_project_type = str(project_type)
-        str_template_type = str(template_type)
+        str_project_type = str(project_type.value)
+        str_template_type = str(template_type.value)
         if not str_template_type.startswith(str_project_type):
             raise ValueError(
                 "Incompatible project type with template type when create text dataset"
@@ -47,10 +47,10 @@ class Data:
         post_body_dict = {
             "name": name,
             "versionId": 1,
-            "projectType": project_type,
-            "templateType": template_type,
-            "dataType": data_set_type,
-            "storageType": storage_type,
+            "projectType": project_type.value,
+            "templateType": template_type.value,
+            "dataType": data_set_type.value,
+            "storageType": storage_type.value,
         }
 
         if storage_type == DataStorageType.PrivateBos:
@@ -94,9 +94,9 @@ class Data:
         post_body_dict: Dict[str, Any] = {
             "datasetId": dataset_id,
             "annotated": is_annotated,
-            "importFrom": import_source,
+            "importFrom": import_source.value,
             "removeDuplicate": is_removing_duplicated_data,
-            "zipFormat": zip_format,
+            "zipFormat": zip_format.value,
         }
 
         if not files_url:
@@ -150,8 +150,8 @@ class Data:
             "datasetId": dataset_id,
             "exportFormat": -1 if is_export_origin_files_only else 0,
             "exportType": 1 if is_export_with_annotation else 2,
-            "exportScene": export_scene,
-            "exportTo": export_destination_type,
+            "exportScene": export_scene.value,
+            "exportTo": export_destination_type.value,
         }
 
         if export_destination_type == DataSourceType.SharedZipUrl:

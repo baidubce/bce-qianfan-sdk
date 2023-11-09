@@ -19,12 +19,9 @@ import functools
 from typing import Any, Awaitable, Callable
 
 from qianfan.consts import DefaultValue
-from qianfan.resources.api_requestor import QfAPIRequestor
+from qianfan.resources.auth.oauth import Auth
+from qianfan.resources.requestor.openapi_requestor import QfAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
-from qianfan.utils import _get_qianfan_ak_sk
-
-# requestor for qianfan api
-_requestor = QfAPIRequestor()
 
 P = ParamSpec("P")
 
@@ -45,7 +42,7 @@ def qianfan_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         """
         inner function of wrapper
         """
-        ak, sk = _get_qianfan_ak_sk(**kwargs)
+        auth = Auth(**kwargs)
         retry_config = RetryConfig(
             retry_count=kwargs.get("retry_count", DefaultValue.RetryCount),
             timeout=kwargs.get("request_timeout", DefaultValue.RetryTimeout),
@@ -55,7 +52,7 @@ def qianfan_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         )
         req = func(*args, **kwargs)
         req.retry_config = retry_config
-        return _requestor._request_api(req, ak, sk)
+        return QfAPIRequestor()._request_api(req, auth)
 
     return inner
 
@@ -78,7 +75,7 @@ def async_qianfan_api_request(
         """
         inner function of wrapper
         """
-        ak, sk = _get_qianfan_ak_sk(**kwargs)
+        auth = Auth(**kwargs)
         retry_config = RetryConfig(
             retry_count=kwargs.get("retry_count", DefaultValue.RetryCount),
             timeout=kwargs.get("request_timeout", DefaultValue.RetryTimeout),
@@ -88,6 +85,6 @@ def async_qianfan_api_request(
         )
         req = await func(*args, **kwargs)
         req.retry_config = retry_config
-        return await _requestor._async_request_api(req, ak, sk)
+        return await QfAPIRequestor()._async_request_api(req, auth)
 
     return inner

@@ -21,7 +21,7 @@ import os
 import pytest
 
 import qianfan
-from qianfan.resources.auth import Auth
+from qianfan.resources.auth.oauth import Auth
 from qianfan.tests.utils import EnvHelper, init_test_env
 from qianfan.tests.utils.mock_server import fake_access_token
 
@@ -45,16 +45,6 @@ def reset_config_automatically():
 def reset_config():
     qianfan.config._GLOBAL_CONFIG = None
     return
-
-
-def set_env_ak_sk(ak=None, sk=None):
-    """
-    set env variables value for ak and sk
-    """
-    if ak is not None:
-        os.environ["QIANFAN_AK"] = ak
-    if sk is not None:
-        os.environ["QIANFAN_SK"] = sk
 
 
 def test_auth_from_env():
@@ -290,3 +280,60 @@ async def test_access_token_from_args_async():
         assert await auth.a_access_token() == fake_access_token(ak, sk)
         qianfan.AK(None)
         qianfan.SK(None)
+
+
+def test_auth_from_access_key():
+    with EnvHelper(QIANFAN_ACCESS_KEY="access_key", QIANFAN_SECRET_KEY="secret_key"):
+        qianfan.get_config().AK = None
+        qianfan.get_config().SK = None
+        auth = Auth()
+        assert auth.access_token() == fake_access_token(
+            "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+        )
+        with EnvHelper(QIANFAN_APPID="2"):
+            Auth._console_ak_to_app_ak = {}
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert auth.access_token() == fake_access_token(
+                "ak_from_app_list_api_2", "sk_from_app_list_api_2"
+            )
+        # if user provides an appid which is not in the app list
+        # sdk should choose the latest app
+        with EnvHelper(QIANFAN_APPID="9999"):
+            Auth._console_ak_to_app_ak = {}
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert auth.access_token() == fake_access_token(
+                "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+            )
+
+
+@pytest.mark.asyncio
+async def test_auth_from_access_key_async():
+    with EnvHelper(QIANFAN_ACCESS_KEY="access_key", QIANFAN_SECRET_KEY="secret_key"):
+        qianfan.get_config().AK = None
+        qianfan.get_config().SK = None
+        auth = Auth()
+        assert await auth.a_access_token() == fake_access_token(
+            "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+        )
+        with EnvHelper(QIANFAN_APPID="2"):
+            Auth._console_ak_to_app_ak = {}
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert await auth.a_access_token() == fake_access_token(
+                "ak_from_app_list_api_2", "sk_from_app_list_api_2"
+            )
+        # if user provides an appid which is not in the app list
+        # sdk should choose the latest app
+        with EnvHelper(QIANFAN_APPID="9999"):
+            Auth._console_ak_to_app_ak = {}
+            qianfan.get_config().AK = None
+            qianfan.get_config().SK = None
+            auth = Auth()
+            assert await auth.a_access_token() == fake_access_token(
+                "ak_from_app_list_api_3", "sk_from_app_list_api_3"
+            )

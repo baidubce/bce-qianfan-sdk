@@ -43,6 +43,7 @@ class GlobalConfig(BaseSettings):
         default=DefaultValue.AccessTokenRefreshMinInterval
     )
     QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
+    APPID: Optional[int] = Field(default=None)
 
     # for private
     ENABLE_PRIVATE: bool = Field(default=DefaultValue.EnablePrivate)

@@ -23,7 +23,35 @@ import qianfan
 
 ## 快速使用
 
-在使用千帆 SDK 之前，用户需要在千帆平台上创建应用，以获得 API Key (**AK**) 和 Secret Key (**SK**)。AK 与 SK 是用户在调用千帆 SDK 时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
+在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
+
+```python
+import os
+import qianfan
+
+os.environ["QIANFAN_ACCESS_KEY"]="..."
+os.environ["QIANFAN_SECRET_KEY"]="..."
+# 通过 App Id 选择使用的应用
+# 该参数可选，若不提供 SDK 会自动选择最新创建的应用
+os.environ["QIANFAN_APPID"]="..."
+
+chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
+resp = chat_comp.do(messages=[{
+    "role": "user",
+    "content": "你好，千帆"
+}], top_p=0.8, temperature=0.9, penalty_score=1.0)
+
+print(resp["result"])
+```
+
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](#sdk-配置) 部分。
+
+<details>
+<summary> 其他认证方式 </summary>
+
+> 这里是一些其他认证方式，请仅在无法获取 Access Key 与 Secret Key 时使用。这些认证方式已经过时，将在未来从 SDK 中移除。
+
+API Key (**AK**) 和 Secret Key (**SK**）是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
 
 ```python
 import os
@@ -41,6 +69,20 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
+适用范围：
+
+| 功能 | API Key | Access Key |
+|:---|:---:|:---:|
+| Chat 对话 | ✅ | ✅ |
+| Completion 续写 | ✅ | ✅ |
+| Embedding 向量化 | ✅ | ✅ |
+| Plugin 插件调用 | ✅ | ✅ |
+| 文生图 | ✅ | ✅ |
+| 大模型调优 | ❌ | ✅ |
+| 大模型管理 | ❌ | ✅ |
+| 大模型服务 | ❌ | ✅ |
+
+</details>
 
 ## 功能
 
@@ -59,7 +101,8 @@ print(resp["result"])
 
 ```python
 import qianfan
-chat_comp = qianfan.ChatCompletion(ak="...", sk="...")
+# 鉴权参数也可以通过函数参数传入，若已通过环境变量配置，则无需传入
+chat_comp = qianfan.ChatCompletion(access_key="...", secret_key="...")
 
 # 调用默认模型，即 ERNIE-Bot-turbo
 resp = chat_comp.do(messages=[{
@@ -89,7 +132,7 @@ msgs = qianfan.Messages()
 while True:
     msgs.append(input())         # 增加用户输入
     resp = chat_comp.do(messages=msgs)
-    print(resp)									 # 打印输出
+    print(resp)	                 # 打印输出
     msgs.append(resp)            # 增加模型输出
 ```
 
@@ -135,7 +178,7 @@ async for r in resp:
 
 ```python
 import qianfan
-comp = qianfan.Completion(ak="...", sk="...")
+comp = qianfan.Completion()
 
 resp = comp.do(model="ERNIE-Bot", prompt="你好")
 # 输出：你好！有什么我可以帮助你的吗？
@@ -165,7 +208,7 @@ resp = comp.do(endpoint="your_custom_endpoint", prompt="你好")
 ```python
 # Embedding 基础功能
 import qianfan
-emb = qianfan.Embedding(ak="...", sk="...")
+emb = qianfan.Embedding()
 
 resp = emb.do(model="Embedding-V1", texts=["世界上最高的山"])
 print(resp['data'][0]['embedding'])
@@ -226,25 +269,6 @@ img = Image.open(io.BytesIO(img_data))
 
 ### 大模型调优
 
-SFT 相关操作使用“安全认证/Access Key”中的 Access Key ID 和 Secret Access Key 进行鉴权，无法使用获取Access Token的方式鉴权，相关 key 可以在百度智能云控制台中 [安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 获取，详细流程可以参见 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
-
-鉴权方式除命名外，使用方法与上述 AK 与 SK 方式相同，提供如下三种方式
-
-```python
-# 通过环境变量传递（作用于全局，优先级最低）
-import os
-os.environ["QIANFAN_ACCESS_KEY"] = "..."
-os.environ["QIANFAN_SECRET_KEY"] = "..."
-
-# 或者通过内置函数传递（作用于全局，优先级大于环境变量）
-import qianfan
-qianfan.AccessKey("...")
-qianfan.SecretKey("...")
-
-# 或者调用相关接口时传递（仅作用于该请求，优先级最高）
-import qianfan
-task = qianfan.FineTune.create_task(ak="...", sk="...")
-```
 
 目前千帆平台支持如下 SFT 相关操作：
 - 创建训练任务
@@ -402,8 +426,8 @@ print(count) # => 18
 ```python
 # 通过环境变量传递
 import os
-os.environ["QIANFAN_AK"]="..."
-os.environ["QIANFAN_SK"]="..."
+os.environ["QIANFAN_ACCESS_KEY"]="..."
+os.environ["QIANFAN_SECRET_KEY"]="..."
 ```
 
 > **NOTE**: 如果在代码中使用**环境变量**进行配置，请在设置时，将相关**设置代码**置于**实际使用的代码**前：
@@ -425,8 +449,8 @@ os.environ["QIANFAN_SK"]="..."
 import qianfan
 
 config = qianfan.get_config()
-config.AK = "..."
-config.SK = "..."
+config.AccessKey = "..."
+config.SecretKey = "..."
 
 chat_comp = qianfan.ChatCompletion()
 ```

@@ -17,7 +17,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional, Set, Tuple, Uni
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultValue
-from qianfan.resources.api_requestor import create_api_requestor
+from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_warn
 

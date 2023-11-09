@@ -65,6 +65,7 @@ class EnvHelper(object):
             os.environ.pop(env_name)
         else:
             os.environ[env_name] = value
+        qianfan.config._GLOBAL_CONFIG = None
 
     def __enter__(self):
         """

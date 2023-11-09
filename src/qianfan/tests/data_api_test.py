@@ -27,6 +27,20 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 
+enter_except_flag = True
+
+
+def _check_and_reset_except_flag() -> bool:
+    global enter_except_flag
+    ret = enter_except_flag
+    enter_except_flag = False
+    return ret
+
+
+def _enter_except_handle_block():
+    global enter_except_flag
+    enter_except_flag = True
+
 
 def test_create_task():
     """
@@ -41,7 +55,10 @@ def test_create_task():
             DataStorageType.PrivateBos,
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert str(e) == "storage id is empty while create dataset in private bos"
+
+    assert _check_and_reset_except_flag()
 
     try:
         resp = Data.create_bare_dataset(
@@ -52,9 +69,12 @@ def test_create_task():
             DataStorageType.PublicBos,
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert (
             str(e) == "Incompatible project type or template type with multi model set"
         )
+
+    assert _check_and_reset_except_flag()
 
     try:
         resp = Data.create_bare_dataset(
@@ -65,10 +85,13 @@ def test_create_task():
             DataStorageType.PublicBos,
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert (
             str(e)
             == "Incompatible project type with template type when create text dataset"
         )
+
+    assert _check_and_reset_except_flag()
 
     resp = Data.create_bare_dataset(
         "test_dataset_name",
@@ -102,26 +125,32 @@ def test_create_import_task():
             dataset_id=1,
             is_annotated=True,
             import_source=DataSourceType.Local,
-            files_url=[],
+            file_url=[],
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert str(e) == "import file url can't be empty"
+
+    assert _check_and_reset_except_flag()
 
     try:
         Data.create_data_import_task(
             dataset_id=1,
             is_annotated=True,
             import_source=DataSourceType.PrivateBos,
-            files_url=["1", "2"],
+            file_url=["1", "2"],
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert str(e) == "import file apart from local can only have 1 file url"
+
+    _check_and_reset_except_flag()
 
     resp = Data.create_data_import_task(
         dataset_id=1,
         is_annotated=True,
         import_source=DataSourceType.PrivateBos,
-        files_url=["1"],
+        file_url=["1"],
     )
 
     reqs = resp.get("_request")
@@ -206,7 +235,10 @@ def test_create_dataset_export_task():
             export_destination_type=DataSourceType.SharedZipUrl,
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert str(e) == "could not import to DataSourceType.SharedZipUrl"
+
+    assert _check_and_reset_except_flag()
 
     try:
         resp = Data.create_dataset_export_task(
@@ -215,7 +247,10 @@ def test_create_dataset_export_task():
             export_destination_type=DataSourceType.PrivateBos,
         )
     except ValueError as e:
+        _enter_except_handle_block()
         assert str(e) == "storage id needed when export to private bos"
+
+    assert _check_and_reset_except_flag()
 
     resp = Data.create_dataset_export_task(
         dataset_id=12,

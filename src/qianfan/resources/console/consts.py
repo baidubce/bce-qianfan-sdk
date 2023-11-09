@@ -53,16 +53,10 @@ class DataStorageType(str, Enum):
 
 
 class DataSourceType(int, Enum):
-    Local: int = 0
     PrivateBos: int = 1
     SharedZipUrl: int = 2
 
 
-class DataZipInnerContentFormatType(int, Enum):
-    Json: int = 2
-    xml_voc: int = 3
-
-
-class DataExportScene(int, Enum):
-    Normal: int = 0
-    Release: int = 1
+class DataExportDestinationType(int, Enum):
+    PlatformBos: int = 0
+    PrivateBos: int = 1

@@ -20,13 +20,12 @@ from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
 from qianfan.resources.console.consts import (
-    DataExportScene,
     DataProjectType,
     DataSetType,
     DataSourceType,
     DataStorageType,
     DataTemplateType,
-    DataZipInnerContentFormatType,
+    DataExportDestinationType,
 )
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
@@ -78,7 +77,7 @@ class Data:
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr
         """
-        if DataSetType == DataSetType.MultiModel and (
+        if data_set_type == DataSetType.MultiModel and (
             project_type != DataProjectType.Text2Speech
             or template_type != DataTemplateType.Text2Speech
         ):
@@ -151,9 +150,7 @@ class Data:
         dataset_id: int,
         is_annotated: bool,
         import_source: DataSourceType,
-        files_url: List[str],
-        zip_format: DataZipInnerContentFormatType = DataZipInnerContentFormatType.Json,
-        is_removing_duplicated_data: bool = True,
+        file_url: str,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -166,12 +163,8 @@ class Data:
                 has dataset been annotated
             import_source (DataSourceType):
                 the source for importing dataset
-            files_url (List[str]):
-                file url list
-            zip_format (Optional[DataZipInnerContentFormatType]):
-                data format in zip, default to json
-            is_removing_duplicated_data (Optional[bool]):
-                is removing duplicate data needed
+            file_url (str):
+                file url
             **kwargs:
                 any other parameters.
 
@@ -182,20 +175,16 @@ class Data:
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Yloic82qy
         """
+        if not file_url:
+            raise ValueError("import file url can't be empty")
+
         req = QfRequest(method="POST", url=Consts.DatasetImportAPI)
         post_body_dict: Dict[str, Any] = {
             "datasetId": dataset_id,
             "annotated": is_annotated,
             "importFrom": import_source.value,
-            "removeDuplicate": is_removing_duplicated_data,
-            "zipFormat": zip_format.value,
+            "files": [file_url],
         }
-
-        if not files_url:
-            raise ValueError("import file url can't be empty")
-        if import_source != DataSourceType.Local and len(files_url) != 1:
-            raise ValueError("import file apart from local can only have 1 file url")
-        post_body_dict["files"] = files_url
 
         req.json_body = post_body_dict
         return req
@@ -262,10 +251,8 @@ class Data:
     def create_dataset_export_task(
         cls,
         dataset_id: int,
-        export_scene: DataExportScene,
-        export_destination_type: DataSourceType,
+        export_destination_type: DataExportDestinationType,
         storage_id: Optional[str] = None,
-        is_export_origin_files_only: bool = True,
         is_export_with_annotation: bool = True,
         **kwargs: Any,
     ) -> QfRequest:
@@ -275,16 +262,11 @@ class Data:
         Args:
             dataset_id (int):
                 dataset id
-            export_scene (DataExportScene):
-                when data export happen
-            export_destination_type (DataSourceType):
-                export destination type, and it can't be SharedZipUrl here,
-                 or a ValueError will be raised
+            export_destination_type (DataExportDestinationType):
+                export destination type
             storage_id (Optional[str]):
                 storage id of user's BOS,
                 needed when export_destination_type is PrivateBos, Default to None.
-            is_export_origin_files_only (Optional[bool]):
-                is export origin files in dataset only, Defaults to True.
             is_export_with_annotation (Optional[bool]):
                 is export dataset with annotation, Defaults to True.
             **kwargs:
@@ -300,15 +282,12 @@ class Data:
         req = QfRequest(method="POST", url=Consts.DatasetExportAPI)
         post_body_dict: Dict[str, Any] = {
             "datasetId": dataset_id,
-            "exportFormat": -1 if is_export_origin_files_only else 0,
+            "exportFormat": 0,
             "exportType": 1 if is_export_with_annotation else 2,
-            "exportScene": export_scene.value,
             "exportTo": export_destination_type.value,
         }
 
-        if export_destination_type == DataSourceType.SharedZipUrl:
-            raise ValueError("could not import to DataSourceType.SharedZipUrl")
-        if export_destination_type == DataSourceType.PrivateBos:
+        if export_destination_type == DataExportDestinationType.PrivateBos:
             if not storage_id:
                 raise ValueError("storage id needed when export to private bos")
             post_body_dict["storageId"] = storage_id

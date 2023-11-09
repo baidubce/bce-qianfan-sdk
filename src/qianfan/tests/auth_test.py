@@ -291,7 +291,7 @@ def test_auth_from_access_key():
             "ak_from_app_list_api_3", "sk_from_app_list_api_3"
         )
         with EnvHelper(QIANFAN_APPID="2"):
-            Auth._console_ak_to_qianfan_ak = {}
+            Auth._console_ak_to_app_ak = {}
             qianfan.get_config().AK = None
             qianfan.get_config().SK = None
             auth = Auth()
@@ -301,7 +301,7 @@ def test_auth_from_access_key():
         # if user provides an appid which is not in the app list
         # sdk should choose the latest app
         with EnvHelper(QIANFAN_APPID="9999"):
-            Auth._console_ak_to_qianfan_ak = {}
+            Auth._console_ak_to_app_ak = {}
             qianfan.get_config().AK = None
             qianfan.get_config().SK = None
             auth = Auth()
@@ -320,7 +320,7 @@ async def test_auth_from_access_key_async():
             "ak_from_app_list_api_3", "sk_from_app_list_api_3"
         )
         with EnvHelper(QIANFAN_APPID="2"):
-            Auth._console_ak_to_qianfan_ak = {}
+            Auth._console_ak_to_app_ak = {}
             qianfan.get_config().AK = None
             qianfan.get_config().SK = None
             auth = Auth()
@@ -330,7 +330,7 @@ async def test_auth_from_access_key_async():
         # if user provides an appid which is not in the app list
         # sdk should choose the latest app
         with EnvHelper(QIANFAN_APPID="9999"):
-            Auth._console_ak_to_qianfan_ak = {}
+            Auth._console_ak_to_app_ak = {}
             qianfan.get_config().AK = None
             qianfan.get_config().SK = None
             auth = Auth()

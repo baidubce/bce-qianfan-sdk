@@ -255,7 +255,7 @@ class Auth(object):
     _access_key: Optional[str] = None
     _secret_key: Optional[str] = None
     _registered: bool = False
-    _console_ak_to_qianfan_ak: Dict[Tuple[str, str], Tuple[str, str]] = {}
+    _console_ak_to_app_ak: Dict[Tuple[str, str], Tuple[str, str]] = {}
     """
     (access_key, secret_key) -> (ak, sk)
     map which convert console ak/sk to qianfan ak/sk
@@ -329,7 +329,7 @@ class Auth(object):
                 and self._ak is None
                 and self._sk is None
             ):
-                self._ak, self._sk = Auth._console_ak_to_qianfan_ak.get(
+                self._ak, self._sk = Auth._console_ak_to_app_ak.get(
                     (self._access_key, self._secret_key), (None, None)
                 )
                 if self._ak is None:
@@ -342,9 +342,10 @@ class Auth(object):
                         # ak and sk should already be set
                         # otherwise an exception should already be raised
                         raise InternalError
-                    Auth._console_ak_to_qianfan_ak[
-                        (self._access_key, self._secret_key)
-                    ] = (self._ak, self._sk)
+                    Auth._console_ak_to_app_ak[(self._access_key, self._secret_key)] = (
+                        self._ak,
+                        self._sk,
+                    )
 
             if self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided

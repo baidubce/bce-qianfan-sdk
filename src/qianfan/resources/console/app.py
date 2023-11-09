@@ -73,7 +73,7 @@ class _App(object):
             Additional keyword arguments that can be passed to customize the request.
 
         Note:
-        The `@async_console_api_request` decorator is applied to this method, enabling 
+        The `@async_console_api_request` decorator is applied to this method, enabling
         it to send the generated QfRequest and return a QfResponse to the user.
 
         API Doc: Not available yet.

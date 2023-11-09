@@ -26,7 +26,7 @@ from qianfan.resources.typing import QfRequest
 
 class _App(object):
     """
-    Class for Model Management API
+    Class for App related API
     """
 
     @classmethod

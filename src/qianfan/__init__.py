@@ -18,7 +18,6 @@ Library that wraps the qianfan API.
 
 
 from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
-from qianfan.resources.console.data import Data
 from qianfan.resources.console.finetune import FineTune
 from qianfan.resources.console.model import Model
 from qianfan.resources.console.service import Service
@@ -37,7 +36,6 @@ Messages = QfMessages
 Response = QfResponse
 
 __all__ = [
-    "Data",
     "ChatCompletion",
     "Embedding",
     "Completion",

@@ -17,7 +17,6 @@
 """
 
 
-from qianfan import Data
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
@@ -26,6 +25,7 @@ from qianfan.resources.console.consts import (
     DataStorageType,
     DataTemplateType,
 )
+from qianfan.resources.console.data import Data
 
 enter_except_flag = True
 

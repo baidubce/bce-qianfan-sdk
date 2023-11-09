@@ -60,3 +60,42 @@ class DataSourceType(int, Enum):
 class DataExportDestinationType(int, Enum):
     PlatformBos: int = 0
     PrivateBos: int = 1
+
+
+class DataImportStatus(int, Enum):
+    NotStarted: int = -1
+    """未发起导入"""
+    Initialized: int = 0
+    """导入初始化"""
+    Running: int = 1
+    """导入进行中"""
+    Finished: int = 2
+    """导入完成"""
+    Failed: int = 3
+    """导入失败"""
+
+
+class DataExportStatus(int, Enum):
+    NotStarted: int = -1
+    """未发起导出"""
+    Initialized: int = 0
+    """导出初始化"""
+    Running: int = 1
+    """导出进行中"""
+    Finished: int = 2
+    """导出完成"""
+    Failed: int = 3
+    """导出失败"""
+
+
+class DataReleaseStatus(int, Enum):
+    NotStarted: int = -1
+    """未发起发布"""
+    Initialized: int = 0
+    """发布初始化"""
+    Running: int = 1
+    """发布进行中"""
+    Finished: int = 2
+    """发布完成"""
+    Failed: int = 3
+    """发布失败"""

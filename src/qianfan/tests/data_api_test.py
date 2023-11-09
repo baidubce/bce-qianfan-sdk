@@ -19,7 +19,7 @@
 
 from qianfan import Data
 from qianfan.resources.console.consts import (
-    DataExportScene,
+    DataExportDestinationType,
     DataProjectType,
     DataSetType,
     DataSourceType,
@@ -124,8 +124,8 @@ def test_create_import_task():
         Data.create_data_import_task(
             dataset_id=1,
             is_annotated=True,
-            import_source=DataSourceType.Local,
-            file_url=[],
+            import_source=DataSourceType.PrivateBos,
+            file_url="",
         )
     except ValueError as e:
         _enter_except_handle_block()
@@ -133,24 +133,13 @@ def test_create_import_task():
 
     assert _check_and_reset_except_flag()
 
-    try:
-        Data.create_data_import_task(
-            dataset_id=1,
-            is_annotated=True,
-            import_source=DataSourceType.PrivateBos,
-            file_url=["1", "2"],
-        )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert str(e) == "import file apart from local can only have 1 file url"
-
     _check_and_reset_except_flag()
 
     resp = Data.create_data_import_task(
         dataset_id=1,
         is_annotated=True,
-        import_source=DataSourceType.PrivateBos,
-        file_url=["1"],
+        import_source=DataSourceType.SharedZipUrl,
+        file_url="1",
     )
 
     reqs = resp.get("_request")
@@ -231,20 +220,7 @@ def test_create_dataset_export_task():
     try:
         resp = Data.create_dataset_export_task(
             dataset_id=12,
-            export_scene=DataExportScene.Normal,
-            export_destination_type=DataSourceType.SharedZipUrl,
-        )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert str(e) == "could not import to DataSourceType.SharedZipUrl"
-
-    assert _check_and_reset_except_flag()
-
-    try:
-        resp = Data.create_dataset_export_task(
-            dataset_id=12,
-            export_scene=DataExportScene.Normal,
-            export_destination_type=DataSourceType.PrivateBos,
+            export_destination_type=DataExportDestinationType.PrivateBos,
         )
     except ValueError as e:
         _enter_except_handle_block()
@@ -254,17 +230,15 @@ def test_create_dataset_export_task():
 
     resp = Data.create_dataset_export_task(
         dataset_id=12,
-        export_scene=DataExportScene.Normal,
-        export_destination_type=DataSourceType.PrivateBos,
+        export_destination_type=DataExportDestinationType.PrivateBos,
         storage_id="bucket_name",
     )
     reqs = resp.get("_request")
 
     assert reqs["datasetId"] == 12
-    assert reqs["exportFormat"] == -1
+    assert reqs["exportFormat"] == 0
     assert reqs["exportType"] == 1
-    assert reqs["exportScene"] == DataExportScene.Normal
-    assert reqs["exportTo"] == DataSourceType.PrivateBos
+    assert reqs["exportTo"] == DataExportDestinationType.PrivateBos
     assert reqs["storageId"] == "bucket_name"
 
     assert resp.get("result")

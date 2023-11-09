@@ -119,6 +119,47 @@ def test_custom_args():
     assert request["messages"] == TEST_MESSAGE
 
 
+def test_auto_concat_truncated():
+    qfg = qianfan.ChatCompletion()
+    resp = qfg.do(
+        endpoint="truncated", messages=TEST_MESSAGE, auto_concat_truncate=True
+    )
+    assert isinstance(resp, qianfan.QfResponse)
+    assert resp["result"] == "[begin truncate-->end of truncated]"
+
+    # test stream
+    resp_content = ""
+    for r in qfg.do(
+        endpoint="truncated",
+        messages=TEST_MESSAGE[:1],
+        auto_concat_truncate=True,
+        stream=True,
+    ):
+        resp_content += r["result"]
+    assert resp_content == "truncated_0truncated_1truncated_2==end"
+
+
+@pytest.mark.asyncio
+async def test_async_auto_concat_truncated():
+    qfc = qianfan.ChatCompletion()
+    resp = await qfc.ado(
+        endpoint="truncated", messages=TEST_MESSAGE, auto_concat_truncate=True
+    )
+    assert isinstance(resp, qianfan.QfResponse)
+    assert resp["result"] == "[begin truncate-->end of truncated]"
+
+    # test stream
+    async_content = ""
+    async for r in await qfc.ado(
+        endpoint="truncated",
+        messages=TEST_MESSAGE[:1],
+        auto_concat_truncate=True,
+        stream=True,
+    ):
+        async_content += r["result"]
+    assert async_content == "truncated_0truncated_1truncated_2==end"
+
+
 def test_generate_stream():
     """
     Test stream generate

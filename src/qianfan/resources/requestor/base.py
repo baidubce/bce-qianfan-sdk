@@ -207,25 +207,9 @@ class BaseAPIRequestor(object):
 
     def _check_error(self, body: Dict[str, Any]) -> None:
         """
-        check whether "error_code" is in response
-        if got error, APIError exception will be raised
+        check whether there is error in response
         """
-        if "error_code" in body:
-            error_code = body["error_code"]
-            err_msg = f"no error message in return body, error code: {error_code}"
-            if "error_msg" in body:
-                err_msg = body["error_msg"]
-            elif "error_message" in body:
-                err_msg = body["error_message"]
-            log_error(
-                f"api request failed with error code: {error_code}, err msg: {err_msg}"
-            )
-            if error_code in {
-                APIErrorCode.APITokenExpired.value,
-                APIErrorCode.APITokenInvalid.value,
-            }:
-                raise errors.AccessTokenExpiredError
-            raise errors.APIError(error_code, err_msg)
+        raise NotImplementedError
 
     def _with_retry(
         self, config: RetryConfig, func: Callable[..., _T], *args: Any

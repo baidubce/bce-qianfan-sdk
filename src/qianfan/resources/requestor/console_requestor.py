@@ -16,18 +16,34 @@
 Console API Requestor
 """
 
+from typing import Any, Dict
 from urllib.parse import urlparse
 
+import qianfan.errors as errors
 from qianfan import get_config
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.requestor.base import BaseAPIRequestor
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
+from qianfan.utils.logging import log_error
 
 
 class ConsoleAPIRequestor(BaseAPIRequestor):
     """
     object to manage console API requests
     """
+
+    def _check_error(self, body: Dict[str, Any]) -> None:
+        """
+        check whether error_code is in the response body
+        """
+        if "error_code" in body:
+            error_code = body["error_code"]
+            err_msg = body.get("error_msg", "no error message found in response body")
+            log_error(
+                f"console api request failed with error code: {error_code}, err msg:"
+                f" {err_msg}, please check the api doc"
+            )
+            raise errors.APIError(error_code, err_msg)
 
     def _request_console_api(
         self, req: QfRequest, ak: str, sk: str, retry_config: RetryConfig

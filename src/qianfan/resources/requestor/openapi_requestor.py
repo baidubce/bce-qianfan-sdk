@@ -31,12 +31,12 @@ from urllib.parse import urlparse
 
 import qianfan.errors as errors
 from qianfan.config import get_config
-from qianfan.consts import Consts
+from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.requestor.base import BaseAPIRequestor
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils.logging import log_info
+from qianfan.utils.logging import log_error, log_info
 
 _T = TypeVar("_T")
 
@@ -98,6 +98,26 @@ class QfAPIRequestor(BaseAPIRequestor):
                 return await func(*args, **kwargs)
 
         return retry_wrapper
+
+    def _check_error(self, body: Dict[str, Any]) -> None:
+        """
+        check whether error_code in response body
+        if there is an APITokenExpired error,
+        raise AccessTokenExpiredError
+        """
+        if "error_code" in body:
+            error_code = body["error_code"]
+            err_msg = body.get("error_msg", "no error message found in response body")
+            log_error(
+                f"api request failed with error code: {error_code}, err msg: {err_msg},"
+                " please check https://cloud.baidu.com/doc/WENXINWORKSHOP/s/tlmyncueh"
+            )
+            if error_code in {
+                APIErrorCode.APITokenExpired.value,
+                APIErrorCode.APITokenInvalid.value,
+            }:
+                raise errors.AccessTokenExpiredError
+            raise errors.APIError(error_code, err_msg)
 
     def llm(
         self,

@@ -1,3 +1,21 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Data API
+"""
+
 from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
@@ -15,6 +33,10 @@ from qianfan.resources.typing import QfRequest
 
 
 class Data:
+    """
+    Class for Data API
+    """
+
     @classmethod
     @console_api_request
     def create_bare_dataset(
@@ -28,6 +50,33 @@ class Data:
         storage_path: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
+        """
+        create a bare dataset。
+
+        Parameters:
+            name (str):
+                the name of the dataset.
+            data_set_type (DataSetType):
+                the type of the dataset.
+            project_type (DataProjectType):
+                the project type.
+            template_type (DataTemplateType):
+                the template type.
+            storage_type (DataStorageType):
+                the type of data storage.
+            storage_id (Optional[str]):
+                the storage ID when the storage type is PrivateBos.
+            storage_path (Optional[str]):
+                the storage path when the storage type is PrivateBos.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr
+        """
         if DataSetType == DataSetType.MultiModel and (
             project_type != DataProjectType.Text2Speech
             or template_type != DataTemplateType.Text2Speech
@@ -71,6 +120,21 @@ class Data:
     @classmethod
     @console_api_request
     def release_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+        """
+        release dataset
+
+        Parameters:
+            dataset_id (int):
+                dataset id.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Uloic6krs
+        """
         req = QfRequest(method="POST", url=Consts.DatasetReleaseAPI)
         req.json_body = {
             "datasetId": dataset_id,
@@ -90,6 +154,31 @@ class Data:
         is_removing_duplicated_data: bool = True,
         **kwargs: Any,
     ) -> QfRequest:
+        """
+        create data import task
+
+        Parameters:
+            dataset_id (int):
+                dataset id
+            is_annotated (bool):
+                has dataset been annotated
+            import_source (DataSourceType):
+                the source for importing dataset
+            files_url (List[str]):
+                file url list
+            zip_format (Optional[DataZipInnerContentFormatType]):
+                data format in zip, default to json
+            is_removing_duplicated_data (Optional[bool]):
+                is removing duplicate data needed
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Yloic82qy
+        """
         req = QfRequest(method="POST", url=Consts.DatasetImportAPI)
         post_body_dict: Dict[str, Any] = {
             "datasetId": dataset_id,
@@ -111,6 +200,21 @@ class Data:
     @classmethod
     @console_api_request
     def get_dataset_info(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+        """
+        get dataset info
+
+        Parameters:
+            dataset_id (int):
+                dataset id.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Xloick80a
+        """
         req = QfRequest(method="POST", url=Consts.DatasetInfoAPI)
         req.json_body = {
             "datasetId": dataset_id,
@@ -123,6 +227,21 @@ class Data:
     def get_dataset_status_in_batch(
         cls, dataset_id_list: List[int], **kwargs: Any
     ) -> QfRequest:
+        """
+        get dataset status in dataset id list
+
+        Parameters:
+            dataset_id_list (List[int]):
+                dataset id list.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sloicm9qz
+        """
         int_dataset_id_list: List[str] = [str(id) for id in dataset_id_list]
         ids = ",".join(int_dataset_id_list)
 
@@ -145,6 +264,33 @@ class Data:
         is_export_with_annotation: bool = True,
         **kwargs: Any,
     ) -> QfRequest:
+        """
+        create dataset export task
+
+        Args:
+            dataset_id (int):
+                dataset id
+            export_scene (DataExportScene):
+                when data export happen
+            export_destination_type (DataSourceType):
+                export destination type, and it can't be SharedZipUrl here,
+                 or a ValueError will be raised
+            storage_id (Optional[str]):
+                storage id of user's BOS,
+                needed when export_destination_type is PrivateBos, Default to None.
+            is_export_origin_files_only (Optional[bool]):
+                is export origin files in dataset only, Defaults to True.
+            is_export_with_annotation (Optional[bool]):
+                is export dataset with annotation, Defaults to True.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/bloicnydp
+        """
         req = QfRequest(method="POST", url=Consts.DatasetExportAPI)
         post_body_dict: Dict[str, Any] = {
             "datasetId": dataset_id,
@@ -167,6 +313,21 @@ class Data:
     @classmethod
     @console_api_request
     def delete_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+        """
+        delete dataset
+
+        Parameters:
+            dataset_id (int):
+                dataset id.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Oloicp6fk
+        """
         req = QfRequest(method="POST", url=Consts.DatasetDeleteAPI)
         req.json_body = {
             "datasetId": dataset_id,
@@ -177,6 +338,21 @@ class Data:
     @classmethod
     @console_api_request
     def get_dataset_export_records(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+        """
+        get dataset export records
+
+        Parameters:
+            dataset_id (int):
+                dataset id.
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlonqgtw0
+        """
         req = QfRequest(method="POST", url=Consts.DatasetExportRecordAPI)
         req.json_body = {
             "datasetId": dataset_id,
@@ -186,9 +362,26 @@ class Data:
 
     @classmethod
     @console_api_request
-    def get_dataset_error_detail(
+    def get_dataset_import_error_detail(
         cls, dataset_id: int, error_code: int, **kwargs: Any
     ) -> QfRequest:
+        """
+        get dataset status in dataset id list
+
+        Parameters:
+            dataset_id (int):
+                dataset id.
+            error_code (int):
+                error code used to query
+            **kwargs:
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method, enabling it to
+            send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlonqulbq
+        """
         req = QfRequest(method="POST", url=Consts.DatasetImportErrorDetail)
         req.json_body = {
             "datasetId": dataset_id,

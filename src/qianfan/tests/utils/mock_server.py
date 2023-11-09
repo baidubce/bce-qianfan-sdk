@@ -882,6 +882,280 @@ def get_service():
     )
 
 
+@app.route(Consts.DatasetCreateAPI, methods=["POST"])
+@iam_auth_checker
+def create_dataset():
+    args = request.json
+    return json_response(
+        {
+            "log_id": "log_id",
+            "status": 200,
+            "success": True,
+            "result": {
+                "groupId": 12,
+                "id": 42,
+                "versionId": 1,
+                "groupName": args["name"],
+                "displayName": "displayName",
+                "createFrom": 0,
+                "bmlDatasetId": "bmlDatasetId",
+                "userId": 123,
+                "dataType": args["dataType"],
+                "projectType": args["projectType"],
+                "templateType": args["templateType"],
+                "remark": "this is remark",
+                "storageInfo": {
+                    "storageId": args.get("storageId", ""),
+                    "storagePath": (
+                        "/easydata/_system_/dataset/ds-z07hkq2kyvsmrmdw/texts"
+                    ),
+                    "storageName": args.get("storageId"),
+                    "rawStoragePath": args.get("rawStoragePath", ""),
+                },
+                "importStatus": 1,
+                "importProgress": 0,
+                "exportStatus": -1,
+                "releaseStatus": 0,
+                "ShouldHide": True,
+                "status": 0,
+                "isUnique": 0,
+                "errCode": None,
+                "createTime": "2023-10-25T16:16:38.430058683+08:00",
+                "modifyTime": "2023-10-25T16:16:38.430066297+08:00",
+            },
+        }
+    )
+
+
+@app.route(Consts.DatasetImportAPI, methods=["POST"])
+@iam_auth_checker
+def create_data_import_task():
+    return json_response(
+        {
+            "log_id": "log_id",
+            "status": 200,
+            "success": True,
+            "result": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetReleaseAPI, methods=["POST"])
+@iam_auth_checker
+def release_dataset():
+    return json_response(
+        {
+            "log_id": "log_id",
+            "status": 200,
+            "success": True,
+            "result": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetInfoAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_info():
+    args = request.json
+    return json_response(
+        {
+            "log_id": "log_id",
+            "result": {
+                "groupId": 14510,
+                "name": "ChineseMedicalDialogueData中文医疗问答数据集",
+                "dataType": 4,
+                "versionInfo": {
+                    "groupId": 14510,
+                    "datasetId": args["datasetId"],
+                    "importRecordCount": 1,
+                    "exportRecordCount": 0,
+                    "bmlDatasetId": "ds-7pkzh1exthpuy10n",
+                    "userId": 0,
+                    "versionId": 1,
+                    "displayName": "",
+                    "importStatus": 2,
+                    "importProgress": 100,
+                    "exportStatus": -1,
+                    "exportProgress": 0,
+                    "dataType": 4,
+                    "projectType": 20,
+                    "templateType": 2000,
+                    "errCode": None,
+                    "uniqueType": 0,
+                    "importErrorInfo": None,
+                    "createTime": "2023-09-08 17:10:11",
+                    "modifyTime": "2023-10-25 20:45:23",
+                    "storageType": "sysBos",
+                    "storage": {
+                        "storageId": "easydata",
+                        "storageName": "easydata",
+                        "storagePath": (
+                            "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts"
+                        ),
+                        "rawStoragePath": "",
+                        "region": "bj",
+                    },
+                    "releaseStatus": 2,
+                    "releaseErrCode": 0,
+                    "releaseStoragePath": (
+                        "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts/jsonl"
+                    ),
+                    "releaseProgress": 0,
+                    "remark": "",
+                    "annotatedEntityCount": 792099,
+                    "entityCount": 792099,
+                    "labelCount": 1,
+                    "memorySize": 513.42,
+                    "characterCount": 173338860,
+                    "isEnhancing": False,
+                    "enhanceStatus": -1,
+                    "hasEnhance": False,
+                    "isSelfInstructEnhance": False,
+                    "interAnnoRunning": False,
+                    "hardSampleCount": 0,
+                    "etlStatus": 0,
+                    "hasEtl": False,
+                    "isPipelineEtl": False,
+                    "teamAnnoStatus": -1,
+                    "hasTeamAnno": False,
+                    "promptOptimizeStatus": 0,
+                    "demandStatus": "",
+                    "view": 2446,
+                    "usage": 262,
+                    "description": (
+                        "中文医疗对话数据集由792099个问答对组成，包括男科、内科、妇产科、肿瘤科、儿科和外科"
+                    ),
+                    "tag": [
+                        {"name": "文本对话非排序"},
+                        {"name": "限定式问答"},
+                        {"name": "调优"},
+                    ],
+                    "license": "MIT",
+                    "copyright": "toyhom",
+                    "copyrightLink": (
+                        "https://github.com/Toyhom/Chinese-medical-dialogue-data"
+                    ),
+                },
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetStatusFetchInBatchAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_status():
+    args = request.json
+    return json_response(
+        {
+            "log_id": "log_id",
+            "status": 200,
+            "success": True,
+            "result": {
+                idx: {
+                    "importStatus": 1,
+                    "importProgress": 1,
+                    "releaseStatus": 0,
+                    "releaseProgress": 0,
+                    "exportStatus": 255,
+                    "exportProgress": 0,
+                    "enhanceStatus": -1,
+                    "etlStatus": 0,
+                    "importErrorInfo": None,
+                    "entityCount": 0,
+                    "annotatedEntityCount": 0,
+                    "labelCount": 1,
+                    "characterCount": 0,
+                    "modifyTime": "2023-10-26 12:34:08",
+                }
+                for idx in args["datasetIds"].split(",")
+            },
+        }
+    )
+
+
+@app.route(Consts.DatasetImportErrorDetail, methods=["POST"])
+@iam_auth_checker
+def get_dataset_import_error_detail():
+    return json_response(
+        {
+            "log_id": "log_id",
+            "result": {
+                "dataType": "file",
+                "downloadUrl": "url",
+                "isZip": 0,
+                "projectType": 401,
+                "content": [
+                    {
+                        "sequence": 1,
+                        "sampleFileName": "",
+                        "sampleName": "WENXINWORKSHOP (1).docx",
+                        "textLocation": 0,
+                        "textContent": "",
+                    }
+                ],
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetDeleteAPI, methods=["POST"])
+@iam_auth_checker
+def delete_dataset():
+    return json_response(
+        {
+            "log_id": "9rbmg0i9v2ufkdb2",
+            "result": {"versionCount": 0},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetExportAPI, methods=["POST"])
+@iam_auth_checker
+def create_dataset_export_task():
+    return json_response(
+        {
+            "log_id": "dhqc1wmm2tyg61m7",
+            "result": True,
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetExportRecordAPI, methods=["POST"])
+@iam_auth_checker
+def get_export_record():
+    return json_response(
+        {
+            "log_id": "59sjmnq2xzda5spn",
+            "result": [
+                {
+                    "creatorName": "yyw02",
+                    "storageId": "easydata-upload",
+                    "storagePath": "path",
+                    "size": 0.01,
+                    "exportFormat": 0,
+                    "exportType": 1,
+                    "status": 2,
+                    "recordNum": 9,
+                    "exportTo": 0,
+                    "downloadUrl": "url",
+                    "startTime": "2023-11-07 10:04:44",
+                    "finishTime": "2023-11-07 10:04:53",
+                }
+            ],
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
 def _start_mock_server():
     """
     run mock server

@@ -17,7 +17,7 @@
 """
 
 
-from qianfan import Service
+from qianfan.resources import Service
 
 
 def test_create_service():

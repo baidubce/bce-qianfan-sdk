@@ -8,7 +8,7 @@ uninstall:
 	pip uninstall -y qianfan
 
 clean:
-	rm -rf build output dist qianfan.egg-info docs
+	rm -rf build output dist qianfan.egg-info
 
 doc: install
 	poetry run bash src/scripts/build_doc.sh

@@ -12,7 +12,7 @@
 
 使用前需要引用入Data类
 ```python
-from qianfan.resources.console.data import Data
+from qianfan.resources import Data
 ```
 
 #### **创建数据集**

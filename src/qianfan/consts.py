@@ -96,6 +96,7 @@ class DefaultValue:
 
     EnablePrivate: bool = False
     AccessCode: str = ""
+    TruncatedContinuePrompt = "继续"
 
 
 class Consts:

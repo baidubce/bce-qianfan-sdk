@@ -17,7 +17,7 @@ import copy
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 from qianfan.config import get_config
-from qianfan.consts import DefaultLLMModel
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
 from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse, QfRole
 
@@ -191,6 +191,7 @@ class ChatCompletion(BaseResource):
         request_timeout: float = 60,
         backoff_factor: float = 0,
         auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -219,8 +220,14 @@ class ChatCompletion(BaseResource):
           backoff_factor (float):
             A factor to increase the waiting time between retry attempts.
           auto_concat_truncate (bool):
-            If set to True, continuously requesting will be run until `is_truncated` is
-            `False`. As a result, the entire reply will be returned.
+            [Experimental] If set to True, continuously requesting will be run
+            until `is_truncated` is `False`. As a result, the entire reply will
+            be returned.
+            Cause this feature highly relies on the understanding ability of LLM,
+            Use it carefully.
+          truncated_continue_prompt (str):
+            [Experimental] The prompt to use when requesting more content for auto
+            truncated reply.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -275,7 +282,7 @@ class ChatCompletion(BaseResource):
                 retry_count,
                 request_timeout,
                 backoff_factor,
-                **kwargs,
+                truncated_continue_prompt,
             )
         assert isinstance(resp, QfResponse)
         cur_content: str = resp["result"]
@@ -285,10 +292,10 @@ class ChatCompletion(BaseResource):
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
-                msgs.append("继续", QfRole.User)
+                msgs.append(truncated_continue_prompt, QfRole.User)
             else:
                 msgs.append({"content": cur_content, "role": "assistant"})
-                msgs.append({"content": "继续", "role": "user"})
+                msgs.append({"content": truncated_continue_prompt, "role": "user"})
             cur_content = ""
             kwargs["messages"] = msgs
             resp = self._do(
@@ -318,6 +325,7 @@ class ChatCompletion(BaseResource):
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> Iterator[QfResponse]:
         """
@@ -339,6 +347,9 @@ class ChatCompletion(BaseResource):
             The maximum time (in seconds) to wait for a response from the model.
           backoff_factor (float):
             A factor to increase the waiting time between retry attempts.
+          truncated_continue_prompt (str):
+            [Experimental] The prompt to use when requesting more content for auto
+            truncated reply.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -353,10 +364,10 @@ class ChatCompletion(BaseResource):
         while is_truncated:
             if isinstance(messages, QfMessages):
                 messages.append(cur_content, QfRole.Assistant)
-                messages.append("继续", QfRole.User)
+                messages.append(truncated_continue_prompt, QfRole.User)
             else:
                 messages.append({"content": cur_content, "role": "assistant"})
-                messages.append({"content": "继续", "role": "user"})
+                messages.append({"content": truncated_continue_prompt, "role": "user"})
             cur_content = ""
             kwargs["messages"] = messages
             resp = self._do(
@@ -386,6 +397,7 @@ class ChatCompletion(BaseResource):
         request_timeout: float = 60,
         backoff_factor: float = 0,
         auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -414,8 +426,14 @@ class ChatCompletion(BaseResource):
           backoff_factor (float):
             A factor to increase the waiting time between retry attempts.
           auto_concat_truncate (bool):
-            If set to True, continuously requesting will be run until `is_truncated` is
-            `False`. As a result, the entire reply will be returned.
+            [Experimental] If set to True, continuously requesting will be run
+            until `is_truncated` is `False`. As a result, the entire reply will
+            be returned.
+            Cause this feature highly relies on the understanding ability of LLM,
+            Use it carefully.
+          truncated_continue_prompt (str):
+            [Experimental] The prompt to use when requesting more content for auto
+            truncated reply.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -481,10 +499,10 @@ class ChatCompletion(BaseResource):
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
-                msgs.append("继续", QfRole.User)
+                msgs.append(truncated_continue_prompt, QfRole.User)
             else:
                 msgs.append({"content": cur_content, "role": "assistant"})
-                msgs.append({"content": "继续", "role": "user"})
+                msgs.append({"content": truncated_continue_prompt, "role": "user"})
             cur_content = ""
             kwargs["messages"] = msgs
             resp = await self._ado(
@@ -514,6 +532,7 @@ class ChatCompletion(BaseResource):
         retry_count: int = 1,
         request_timeout: float = 60,
         backoff_factor: float = 0,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> AsyncIterator[QfResponse]:
         """
@@ -527,10 +546,10 @@ class ChatCompletion(BaseResource):
         while is_truncated:
             if isinstance(messages, QfMessages):
                 messages.append(cur_content, QfRole.Assistant)
-                messages.append("继续", QfRole.User)
+                messages.append(truncated_continue_prompt, QfRole.User)
             else:
                 messages.append({"content": cur_content, "role": "assistant"})
-                messages.append({"content": "继续", "role": "user"})
+                messages.append({"content": truncated_continue_prompt, "role": "user"})
             cur_content = ""
             kwargs["messages"] = messages
 

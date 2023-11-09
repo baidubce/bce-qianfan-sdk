@@ -19,7 +19,7 @@ Data API
 from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
-from qianfan.resources.console.user_constant import (
+from qianfan.resources.console.consts import (
     DataExportScene,
     DataProjectType,
     DataSetType,

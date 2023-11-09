@@ -18,7 +18,6 @@ Library that wraps the qianfan API.
 
 
 from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
-from qianfan.resources.console import user_constant
 from qianfan.resources.console.data import Data
 from qianfan.resources.console.finetune import FineTune
 from qianfan.resources.console.model import Model
@@ -48,7 +47,6 @@ __all__ = [
     "Service",
     "Text2Image",
     "Tokenizer",
-    "user_constant",
     "AK",
     "SK",
     "Role",

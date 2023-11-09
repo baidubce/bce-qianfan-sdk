@@ -18,7 +18,7 @@
 
 
 from qianfan import Data
-from qianfan.resources.console.user_constant import (
+from qianfan.resources.console.consts import (
     DataExportScene,
     DataProjectType,
     DataSetType,

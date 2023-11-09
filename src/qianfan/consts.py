@@ -124,6 +124,7 @@ class Consts:
     DatasetExportRecordAPI: str = "/wenxinworkshop/dataset/exportRecord"
     DatasetImportErrorDetail: str = "/wenxinworkshop/dataset/importErrorDetail"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
+    EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
 
 

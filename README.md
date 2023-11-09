@@ -122,6 +122,8 @@ print(resp["result"])
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)
 
+
+> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License
 
 Apache-2.0

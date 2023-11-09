@@ -26,6 +26,11 @@ if sys.version_info < (3, 10):
 else:
     from typing import ParamSpec  # noqa: F401
 
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal  # noqa: F401
+else:
+    from typing import Literal  # noqa: F401
+
 ParamsType = Dict[str, str]
 HeadersType = Dict[str, str]
 JsonBody = Dict[str, Any]

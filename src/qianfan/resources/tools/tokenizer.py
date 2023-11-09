@@ -16,20 +16,14 @@
 Tokenizer
 """
 
-import sys
 import unicodedata
 from typing import Any
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Literal  # noqa: F401
-else:
-    from typing import Literal  # noqa: F401
 
 from qianfan import get_config
 from qianfan.consts import Consts
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.tools.utils import qianfan_api_request
-from qianfan.resources.typing import QfRequest
+from qianfan.resources.typing import Literal, QfRequest
 
 
 class Tokenizer(object):

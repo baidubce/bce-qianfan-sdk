@@ -109,7 +109,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -121,7 +122,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -133,7 +135,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -145,7 +148,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -157,7 +161,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -169,7 +174,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -181,7 +187,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",
@@ -193,7 +200,8 @@ class ChatCompletion(BaseResource):
                 optional_keys={
                     "stream",
                     "user_id",
-                    "temperaturetop_k",
+                    "temperature",
+                    "top_k",
                     "top_p",
                     "penalty_score",
                     "stop",

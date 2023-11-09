@@ -10,6 +10,10 @@
 - [获取数据集导出记录](#获取数据集导出记录)
 - [获取数据集导入错误详情](#获取数据集导入错误详情)
 
+使用前需要引用入Data类
+```python
+from qianfan.resources.console.data import Data
+```
 
 #### **创建数据集**
 可以创建数据集，需要提供数据集名称 `name` 、数据集类型 `data_set_type` 、数据集模板 `DataTemplateType` 等信息。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr)。

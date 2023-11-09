@@ -382,6 +382,23 @@ def prompt():
     )
 
 
+@app.route(Consts.EBTokenizerAPI, methods=["POST"])
+@access_token_checker
+def eb_tokenizer():
+    """
+    mock prompt render api
+    """
+    prompt = request.json["prompt"]
+    return json_response(
+        {
+            "id": "as-biv9bzt19n",
+            "object": "tokenizer.erniebot",
+            "created": 1698655037,
+            "amount": 97575 + len(prompt),  # magic number for eb tokenizer api
+        }
+    )
+
+
 def fake_access_token(ak: str, sk: str) -> str:
     """
     generate fake access token

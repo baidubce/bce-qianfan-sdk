@@ -46,6 +46,7 @@ select = [
   "F",  # pyflakes
   "I",  # isort
 ]
+typing-modules = ["qianfan.resources.typing"]
 
 [tool.black]
 preview = true

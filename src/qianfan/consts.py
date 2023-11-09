@@ -116,6 +116,7 @@ class Consts:
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
     AppListAPI: str = "/wenxinworkshop/service/appList"
+    EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
 
 

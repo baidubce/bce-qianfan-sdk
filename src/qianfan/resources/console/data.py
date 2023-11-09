@@ -72,8 +72,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr
         """
@@ -130,8 +131,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Uloic6krs
         """
@@ -174,8 +176,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Yloic82qy
         """
@@ -210,8 +213,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Xloick80a
         """
@@ -237,8 +241,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sloicm9qz
         """
@@ -286,8 +291,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/bloicnydp
         """
@@ -323,8 +329,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Oloicp6fk
         """
@@ -348,8 +355,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlonqgtw0
         """
@@ -377,8 +385,9 @@ class Data:
                 any other parameters.
 
         Note:
-            The `@console_api_request` decorator is applied to this method, enabling it to
-            send the generated QfRequest and return a QfResponse to the user.
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlonqulbq
         """

@@ -218,6 +218,9 @@ class ChatCompletion(BaseResource):
             The maximum time (in seconds) to wait for a response from the model.
           backoff_factor (float):
             A factor to increase the waiting time between retry attempts.
+          auto_concat_truncate (bool):
+            If set to True, continuously requesting will be run until `is_truncated` is
+            `False`. As a result, the entire reply will be returned.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -410,6 +413,9 @@ class ChatCompletion(BaseResource):
             The maximum time (in seconds) to wait for a response from the model.
           backoff_factor (float):
             A factor to increase the waiting time between retry attempts.
+          auto_concat_truncate (bool):
+            If set to True, continuously requesting will be run until `is_truncated` is
+            `False`. As a result, the entire reply will be returned.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 

@@ -13,21 +13,22 @@
 # limitations under the License.
 
 """
-Library that wraps the qianfan API.
+Library aimed to helping developer to interactive with LLM.
 """
 
 
 from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
-from qianfan.resources.console.finetune import FineTune
-from qianfan.resources.console.model import Model
-from qianfan.resources.console.service import Service
-from qianfan.resources.images.text2image import Text2Image
-from qianfan.resources.llm.chat_completion import ChatCompletion
-from qianfan.resources.llm.completion import Completion
-from qianfan.resources.llm.embedding import Embedding
-from qianfan.resources.llm.plugin import Plugin
-from qianfan.resources.tools.tokenizer import Tokenizer
-from qianfan.resources.typing import QfMessages, QfResponse, QfRole
+from qianfan.resources import (
+    ChatCompletion,
+    Completion,
+    Embedding,
+    Plugin,
+    QfMessages,
+    QfResponse,
+    QfRole,
+    Text2Image,
+    Tokenizer,
+)
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
 
@@ -40,9 +41,6 @@ __all__ = [
     "Embedding",
     "Completion",
     "Plugin",
-    "FineTune",
-    "Model",
-    "Service",
     "Text2Image",
     "Tokenizer",
     "AK",

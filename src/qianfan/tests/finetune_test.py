@@ -17,7 +17,7 @@
 """
 
 
-from qianfan import FineTune
+from qianfan.resources import FineTune
 
 
 def test_create_finetune_task():

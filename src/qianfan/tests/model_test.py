@@ -17,7 +17,7 @@
 """
 
 
-from qianfan import Model
+from qianfan.resources import Model
 
 
 def test_list_model():

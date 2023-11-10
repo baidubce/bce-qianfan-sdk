@@ -38,7 +38,7 @@ black = "^23.1.0"
 ruff = ">=0.0.290"
 sphinx-rtd-theme = ">=1.2.0"
 mypy = ">=1.4.0"
-m2r = "^0.3.1"
+myst-parser = ">=0.19.2"
 
 [tool.ruff]
 select = [

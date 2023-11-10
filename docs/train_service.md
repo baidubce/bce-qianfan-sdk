@@ -1,4 +1,4 @@
-## Training and Service
+# 训练与服务
 ### 大模型调优
 目前千帆平台支持如下 
 SFT 相关操作：

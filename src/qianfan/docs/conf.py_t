@@ -20,7 +20,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "m2r",
+    "myst_parser",
 ]
 
 templates_path = ["_templates"]

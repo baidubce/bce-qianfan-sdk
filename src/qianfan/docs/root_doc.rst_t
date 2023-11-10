@@ -8,13 +8,17 @@ Tips:
 
 .. _`qianfan package`: ./qianfan.html
 
-.. include:: quickstart.rst
+.. include:: README.md
+   :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}
    :caption: Quickstart:
+   :glob:
 
-   quickstart
+   README.md
+   docs/*
+
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}

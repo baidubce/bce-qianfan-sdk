@@ -3,6 +3,7 @@
 set -e
 
 sphinx-apidoc -f -F -M -o build/docs -t src/qianfan/docs src/qianfan "*test*"
-cp src/qianfan/docs/*.rst build/docs
+cp README.md build/docs
+cp -r docs build/docs
 cd build/docs 
 make html

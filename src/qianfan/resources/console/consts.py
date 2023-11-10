@@ -27,7 +27,7 @@ class DataProjectType(int, Enum):
     Conversation: int = 20
     GenericText: int = 401
     QuerySet: int = 402
-    Text2Speech: int = 705
+    Text2Image: int = 705
 
 
 class DataTemplateType(int, Enum):
@@ -35,11 +35,11 @@ class DataTemplateType(int, Enum):
     Template type used by Qianfan Data
     """
 
-    NonAnnotatedConversation: int = 2000
-    AnnotatedConversation: int = 2001
+    NonSortedConversation: int = 2000
+    SortedConversation: int = 2001
     GenericText: int = 40100
     QuerySet: int = 40200
-    Text2Speech: int = 70500
+    Text2Image: int = 70500
 
 
 class DataSetType(int, Enum):

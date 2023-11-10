@@ -78,8 +78,8 @@ class Data:
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr
         """
         if data_set_type == DataSetType.MultiModel and (
-            project_type != DataProjectType.Text2Speech
-            or template_type != DataTemplateType.Text2Speech
+            project_type != DataProjectType.Text2Image
+            or template_type != DataTemplateType.Text2Image
         ):
             raise ValueError(
                 "Incompatible project type or template type with multi model set"

@@ -21,10 +21,9 @@ Tips:
    docs/train.md
    docs/model_management.md
    docs/service.md
-   docs/configurable.md
    docs/dataset.md
    docs/utils.md
-
+   docs/configurable.md
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}

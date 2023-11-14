@@ -22,6 +22,7 @@
 import json
 import random
 import threading
+import time
 from functools import wraps
 
 import flask
@@ -161,6 +162,14 @@ def access_token_checker(func):
                     "error_msg": "Access token expired",
                 }
             )
+        try:
+            # if "_delay" in request.json, sleep for a while
+            # this argument is for unit test
+            # if not exists, do nothing
+            delay = request.json["_delay"]
+            time.sleep(delay)
+        except Exception:
+            pass
         return func(*args, **kwargs)
 
     return wrapper

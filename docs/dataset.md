@@ -21,14 +21,14 @@ from qianfan.resources import Data
 
 ```python
 resp = Data.create_bare_dataset(
-        "test_dataset_name",
-        DataSetType.TextOnly,
-        DataProjectType.Conversation,
-        DataTemplateType.NonAnnotatedConversation,
-        DataStorageType.PrivateBos,
-        "bos_bucket_name",
-        "bos_path",
-    )
+    "test_dataset_name",
+    DataSetType.TextOnly,
+    DataProjectType.Conversation,
+    DataTemplateType.NonSortedConversation,
+    DataStorageType.PrivateBos,
+    "bos_bucket_name",
+    "bos_path",
+)
 print(resp['result'])
 ```
 

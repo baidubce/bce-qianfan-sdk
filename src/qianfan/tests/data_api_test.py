@@ -51,7 +51,7 @@ def test_create_task():
             "test_dataset_name",
             DataSetType.TextOnly,
             DataProjectType.Conversation,
-            DataTemplateType.NonAnnotatedConversation,
+            DataTemplateType.NonSortedConversation,
             DataStorageType.PrivateBos,
         )
     except ValueError as e:
@@ -65,7 +65,7 @@ def test_create_task():
             "test_dataset_name",
             DataSetType.MultiModel,
             DataProjectType.Conversation,
-            DataTemplateType.NonAnnotatedConversation,
+            DataTemplateType.NonSortedConversation,
             DataStorageType.PublicBos,
         )
     except ValueError as e:
@@ -97,7 +97,7 @@ def test_create_task():
         "test_dataset_name",
         DataSetType.TextOnly,
         DataProjectType.Conversation,
-        DataTemplateType.NonAnnotatedConversation,
+        DataTemplateType.NonSortedConversation,
         DataStorageType.PrivateBos,
         "bos_bucket_name",
         "bos_path",
@@ -105,7 +105,7 @@ def test_create_task():
 
     reqs = resp.get("_request")
     assert reqs["versionId"] == 1
-    assert reqs["templateType"] == DataTemplateType.NonAnnotatedConversation
+    assert reqs["templateType"] == DataTemplateType.NonSortedConversation
 
     assert resp.get("result", {})
 

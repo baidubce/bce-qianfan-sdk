@@ -44,7 +44,7 @@ class Data:
         data_set_type: DataSetType,
         project_type: DataProjectType,
         template_type: DataTemplateType,
-        storage_type: DataStorageType,
+        storage_type: DataStorageType = DataStorageType.PublicBos,
         storage_id: Optional[str] = None,
         storage_path: Optional[str] = None,
         **kwargs: Any,
@@ -78,8 +78,8 @@ class Data:
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/qloic44vr
         """
         if data_set_type == DataSetType.MultiModel and (
-            project_type != DataProjectType.Text2Speech
-            or template_type != DataTemplateType.Text2Speech
+            project_type != DataProjectType.Text2Image
+            or template_type != DataTemplateType.Text2Image
         ):
             raise ValueError(
                 "Incompatible project type or template type with multi model set"

@@ -1,0 +1,340 @@
+import csv
+import functools
+import io
+import json
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import pyarrow.json
+from typing_extensions import Self
+
+from qianfan.framework.dataset.data_source import (
+    DataSource,
+    FileDataSource,
+    FormatType,
+    QianfanDataSource,
+)
+from qianfan.framework.dataset.qianfan_data_operator import QianfanOperator
+from qianfan.framework.dataset.schema import (
+    QianfanGenericText,
+    QianfanQuerySet,
+    QianfanSortedConversation,
+    QianfanText2Image,
+    Schema,
+)
+from qianfan.framework.dataset.table import Table
+from qianfan.resources.console.consts import DataTemplateType
+
+
+def _online_except_decorator(func: Callable) -> Callable:
+    @functools.wraps(func)
+    def inner(dataset: Any, *args: Any, **kwargs: Any) -> Any:
+        if dataset._is_dataset_located_in_qianfan():  # noqa
+            raise Exception()
+        return func(dataset, *args, **kwargs)
+
+    return inner
+
+
+class Dataset(Table):
+    # 内部的数据源对象，在 load 时被指定
+    inner_data_source_cache: Optional[DataSource] = None
+
+    # schema 对象的缓存，在 load 时被指定
+    inner_schema_cache: Optional[Schema] = None
+
+    class ValidationError(Exception):
+        ...
+
+    @classmethod
+    def _from_source(
+        cls, source: DataSource, schema: Optional[Schema], **kwargs: Any
+    ) -> "Dataset":
+        """内部封装的从数据源导出字节流并构建数据集的方法"""
+        str_content = source.fetch(**kwargs)
+        format_type = source.format_type()
+
+        if format_type == FormatType.Json:
+            pyarrow_table = pyarrow.json.read_json(
+                str_content.replace("\r", "\\r").replace("\n", "\\n")
+            )
+        elif format_type == FormatType.Jsonl:
+            json_data_list = [
+                json.loads(line.replace("\r", "\\r").replace("\n", "\\n"))
+                for line in str_content.split("\n") if line
+            ]
+            if not len(json_data_list):
+                raise ValueError("no data in jsonline file")
+            if isinstance(json_data_list[0], list):
+                json_data_list = [data[0] for data in json_data_list]
+            pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
+        elif format_type == FormatType.Csv:
+            csv_data = [row for row in csv.DictReader(str_content)]
+            pyarrow_table = pyarrow.Table.from_pylist(csv_data)
+        elif format_type == FormatType.Text:
+            line_data = [{"prompt": line} for line in str_content.split("\n")]
+            pyarrow_table = pyarrow.Table.from_pylist(line_data)
+        else:
+            raise ValueError("unknown format type")
+
+        dataset = cls(
+            inner_table=pyarrow_table,
+            inner_data_source_cache=source,
+            inner_schema_cache=schema,
+        )
+        return dataset
+
+    def _to_source(self, source: DataSource, **kwargs: Any) -> bool:
+        format_type = source.format_type()
+
+        if format_type == FormatType.Json:
+            dict_list = self.inner_table.to_pylist()
+            return source.save(json.dumps(dict_list, ensure_ascii=False))
+
+        elif format_type == FormatType.Jsonl:
+            dict_list = self.inner_table.to_pylist()
+            list_of_json: List[str] = []
+            for elem in dict_list:
+                if isinstance(source, QianfanDataSource):
+                    list_of_json.append(f"[{json.dumps(elem, ensure_ascii=False)}]")
+                else:
+                    list_of_json.append(f"{json.dumps(elem, ensure_ascii=False)}")
+            return source.save("\n".join(list_of_json))
+
+        elif format_type == FormatType.Csv:
+            string_stream_buffer = io.StringIO()
+            pyarrow.csv.write_csv(self.inner_table, string_stream_buffer)
+            return source.save(string_stream_buffer.getvalue())
+
+        elif format_type == FormatType.Text:
+            if self.inner_table.num_columns > 1:
+                raise ValueError(
+                    "cannot export dataset to pure text if the number of column is"
+                    " greater than 1"
+                )
+            result_list = list(self.inner_table.to_pydict().values())[0]
+            return source.save("\n".join(result_list))
+
+        else:
+            raise ValueError("unknown format type")
+
+    @classmethod
+    def _from_args_to_source(
+        cls,
+        data_file: Optional[str] = None,
+        qianfan_dataset_id: Optional[int] = None,
+        huggingface_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> DataSource:
+        """从参数来构建数据源"""
+        if data_file:
+            return FileDataSource(path=data_file, **kwargs)
+        if qianfan_dataset_id:
+            return QianfanDataSource.get_existed_datasource_from_qianfan(
+                dataset_id=qianfan_dataset_id, **kwargs
+            )
+        if huggingface_name:
+            raise ValueError("huggingface not supported yet")
+
+        raise ValueError("no arguments is passing")
+
+    @classmethod
+    def _get_qianfan_schema(cls, source: QianfanDataSource) -> Schema:
+        template_type = source.template_type
+        if template_type == DataTemplateType.SortedConversation:
+            return QianfanSortedConversation()
+        if template_type == DataTemplateType.NonSortedConversation:
+            return QianfanSortedConversation()
+        if template_type == DataTemplateType.GenericText:
+            return QianfanGenericText()
+        if template_type == DataTemplateType.QuerySet:
+            return QianfanQuerySet()
+        if template_type == DataTemplateType.Text2Image:
+            return QianfanText2Image()
+
+        raise ValueError(f"schema didn't find for template type {template_type}")
+
+    @classmethod
+    def load(
+        cls, source: DataSource, schema: Optional[Schema] = None, **kwargs: Any
+    ) -> "Dataset":
+        """
+        从 source 中读取数据，并且创建一个 Table 实例。
+        如果有指定 schema，则在导入后再做校验
+        具体逻辑如果使用伪代码表现，则是如下：
+        """
+
+        # 从数据源开始构建对象
+        table = cls._from_source(source, schema, **kwargs)
+
+        # 校验
+        if schema and not schema.validate(table):
+            raise cls.ValidationError("validate failed when initialize dataset")
+
+        return table
+
+    @classmethod
+    def load_with_args(
+        cls,
+        data_file: Optional[str] = None,
+        qianfan_dataset_id: Optional[int] = None,
+        huggingface_name: Optional[str] = None,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        从 data_file，或者千帆平台，或者 huggingface 读取数据
+        如果有指定 schema，则在导入后再做校验
+        如果读取数据需要额外的参数配置，可以通过 **kwargs 传递
+        """
+        # 这里要动态的创建数据源
+        source = cls._from_args_to_source(
+            data_file, qianfan_dataset_id, huggingface_name, **kwargs
+        )
+        return cls.load(source, schema, **kwargs)
+
+    def save(
+        self,
+        destination: Optional[DataSource] = None,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """向 source 中写数据，如果有指定 schema，则在导出前做校验"""
+        # 获取数据源参数
+        source = destination if destination else self.inner_data_source_cache
+        assert source
+
+        # 首先检查是否有传入 schema 或者已经默认有了 schema
+        schema = schema if schema else self.inner_schema_cache
+        # 如果导出的数据源是千帆，则强制构造 schema 进行检查，优先级最高
+        if isinstance(source, QianfanDataSource):
+            # 一个方法从 source 中抽取 schema 信息
+            schema = self._get_qianfan_schema(source)
+
+        # 校验
+        if schema and not schema.validate(self):
+            raise self.ValidationError("validate failed when output dataset")
+
+        # 开始写入数据
+        return self._to_source(source, **kwargs)  # noqa
+
+    def save_with_args(
+        self,
+        data_file: Optional[str] = None,
+        qianfan_dataset_id: Optional[int] = None,
+        huggingface_name: Optional[str] = None,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """对 save 的重载，直接从数据源参数开始构建数据源并导出"""
+        source = self._from_args_to_source(
+            data_file, qianfan_dataset_id, huggingface_name, **kwargs
+        )
+        return self.save(source, schema, **kwargs)
+
+    @classmethod
+    def create_from_pyobj(
+        cls,
+        data: Union[List[Dict[str, Any]], Dict[str, List]],
+        schema: Optional[Schema] = None,
+    ) -> "Dataset":
+        if isinstance(data, list):
+            return cls(
+                inner_table=pyarrow.Table.from_pylist(data),
+                inner_schema_cache=schema,
+            )
+        else:
+            return cls(
+                inner_table=pyarrow.Table.from_pydict(data),
+                inner_schema_cache=schema,
+            )
+
+    @classmethod
+    def create_from_pyarrow_table(
+        cls, table: pyarrow.Table, schema: Optional[Schema] = None
+    ) -> "Dataset":
+        return cls(inner_table=table, inner_schema_cache=schema)
+
+    def _is_dataset_located_in_qianfan(self) -> bool:
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+            return False
+        return self.inner_data_source_cache.download_when_init
+
+    # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
+    # 例如通过平台的 API 发起数据清洗任务
+    def online_data_process(self, operators: List[QianfanOperator]) -> bool:
+        if not self._is_dataset_located_in_qianfan():
+            # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
+            # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
+            return False
+
+        # 这里根据 operators 来填充参数，然后发起数据清洗，最后将任务处理结果返回。
+        # 目前没有实现相关接口，直接抛出 False
+        return False
+
+    # -------------------- Processable 相关 ----------------
+    # 直接调用 Table 对象的接口方法
+    # 这些接口不支持用在云端数据集上
+    @_online_except_decorator
+    def map(self, op: Callable[[Any], Any]) -> Self:
+        return super().map(op)
+
+    @_online_except_decorator
+    def filter(self, op: Callable[[Any], bool]) -> Self:
+        return super().filter(op)
+
+    @_online_except_decorator
+    def delete(self, index: Union[int, str]) -> Self:
+        return super().delete(index)
+
+    # 但是在云上数据集追加数据未来可以支持，本质是向数据集中导入新数据。
+    # 目前不做修改，等待接口 ready
+    @_online_except_decorator
+    def append(self, elem: Any) -> Self:
+        return super().append(elem)
+
+    # 等待接口 ready 才能对云端数据集做展示
+    @_online_except_decorator
+    def list(
+        self,
+        by: Optional[
+            Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
+        ] = None,
+    ) -> Any:
+        return super().list(by)
+
+    def __getitem__(self, key: Any) -> Any:
+        return self.list(key)
+
+    def __delitem__(self, key: Any) -> None:
+        self.delete(key)
+
+    # 列操作集
+    @_online_except_decorator
+    def col_map(self, op: Callable[[Any], Any]) -> Self:
+        return super().col_map(op)
+
+    @_online_except_decorator
+    def col_filter(self, op: Callable[[Any], bool]) -> Self:
+        return super().col_filter(op)
+
+    @_online_except_decorator
+    def col_delete(self, index: Union[int, str]) -> Self:
+        return super().col_delete(index)
+
+    @_online_except_decorator
+    def col_append(self, elem: Any) -> Self:
+        return super().col_append(elem)
+
+    # 等待接口 ready 才能对云端数据集做展示
+    @_online_except_decorator
+    def col_list(
+        self,
+        by: Optional[
+            Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
+        ] = None,
+    ) -> Any:
+        return super().col_list(by)
+
+    @_online_except_decorator
+    def col_names(self) -> List[str]:
+        return super().col_names()

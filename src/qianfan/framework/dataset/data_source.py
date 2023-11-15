@@ -19,8 +19,9 @@ from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
     DataSetType,
+    DataSourceType,
     DataStorageType,
-    DataTemplateType, DataSourceType,
+    DataTemplateType,
 )
 from qianfan.resources.console.data import Data
 from qianfan.utils.bos_uploader import upload_content_to_bos
@@ -111,8 +112,12 @@ class FileDataSource(DataSource, BaseModel):
         raise ValueError(f"cannot match proper format type for {suffix}")
 
 
-def _get_data_format_from_template_type(template_type: DataTemplateType):
-    if template_type in [DataTemplateType.NonSortedConversation, DataTemplateType.SortedConversation, DataTemplateType.QuerySet]:
+def _get_data_format_from_template_type(template_type: DataTemplateType) -> FormatType:
+    if template_type in [
+        DataTemplateType.NonSortedConversation,
+        DataTemplateType.SortedConversation,
+        DataTemplateType.QuerySet,
+    ]:
         return FormatType.Jsonl
     # 有待商榷
     elif template_type == DataTemplateType.GenericText:
@@ -171,23 +176,35 @@ class QianfanDataSource(DataSource, BaseModel):
         elif self.storage_type == DataStorageType.PrivateBos:
             # 只支持除泛文本以外的文本上传，文生图需要后续再细化。
             file_path = f"{self.storage_path}/data.jsonl"
+            ak = self.ak if self.ak else get_config().ACCESS_KEY
+            sk = self.sk if self.sk else get_config().SECRET_KEY
+            if not ak:
+                return False
+            if not sk:
+                return False
+
             upload_content_to_bos(
                 data,
                 file_path,
                 self.storage_id,
                 self.storage_region,
-                self.ak if self.ak else get_config().ACCESS_KEY,
-                self.sk if self.sk else get_config().SECRET_KEY,
+                ak,
+                sk,
             )
             is_annotated = kwargs["is_annotated"]
-            Data.create_data_import_task(self.id, is_annotated, DataSourceType.PrivateBos, file_path)
+            Data.create_data_import_task(
+                self.id, is_annotated, DataSourceType.PrivateBos, file_path
+            )
             while True:
                 sleep(2)
-                qianfan_resp = Data.get_dataset_info(self.id)['result']['versionInfo']
-                status = qianfan_resp['importStatus']
-                if status in [self._ImportStatusMap['waiting'], self._ImportStatusMap['exporting']]:
+                qianfan_resp = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+                status = qianfan_resp["importStatus"]
+                if status in [
+                    self._ImportStatusMap["waiting"],
+                    self._ImportStatusMap["exporting"],
+                ]:
                     return True
-                elif status == self._ImportStatusMap['complete']:
+                elif status == self._ImportStatusMap["complete"]:
                     continue
                 else:
                     return False

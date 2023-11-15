@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-import pyarrow.compute
-
 from qianfan.framework.dataset.table import Table
 
 

@@ -442,7 +442,7 @@ class QianfanDataSource(DataSource, BaseModel):
     def get_existed_datasource_from_qianfan(
         cls,
         dataset_id: int,
-        is_download_dataset_to_local: bool = False,
+        is_download_dataset_to_local: bool = True,
         ak: Optional[str] = None,
         sk: Optional[str] = None,
         **kwargs: Any,

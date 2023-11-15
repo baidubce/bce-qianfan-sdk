@@ -50,11 +50,11 @@ class Dataset(Table):
         cls, source: DataSource, schema: Optional[Schema], **kwargs: Any
     ) -> "Dataset":
         """内部封装的从数据源导出字节流并构建数据集的方法"""
-        if isinstance(source, QianfanDataSource) and source.download_when_init:
+        if isinstance(source, QianfanDataSource) and not source.download_when_init:
             # 如果是云上的数据集，则直接创建空表。
             # 云上数据集的相关处理能力暂不可用
             return cls(
-                inner_table=pyarrow.Table(),
+                inner_table=pyarrow.Table.from_pylist([{"place_holder": 1}]),
                 inner_data_source_cache=source,
                 inner_schema_cache=schema,
             )
@@ -266,7 +266,7 @@ class Dataset(Table):
     def _is_dataset_located_in_qianfan(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
             return False
-        return self.inner_data_source_cache.download_when_init
+        return not self.inner_data_source_cache.download_when_init
 
     # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
     # 例如通过平台的 API 发起数据清洗任务

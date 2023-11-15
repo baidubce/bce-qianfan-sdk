@@ -268,7 +268,7 @@ class Text2Image(BaseResource):
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = Plugin().batch_do(["...", "..."], batch_size = 10)
+        response_list = Text2Image().batch_do(["...", "..."], batch_size = 10)
         for response in response_list:
             # return QfResponse if succeed, or exception will be raised
             print(response.result())
@@ -305,7 +305,7 @@ class Text2Image(BaseResource):
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = await Plugin().abatch_do([...], batch_size = 10)
+        response_list = await Text2Image().abatch_do([...], batch_size = 10)
         for response in response_list:
             # response is `QfResponse` if succeed, or response will be exception
             print(response)

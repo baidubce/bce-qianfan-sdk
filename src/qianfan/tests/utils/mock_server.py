@@ -122,7 +122,7 @@ def check_messages(messages):
     """
     if len(messages) % 2 != 1:
         return {
-            "error_code": APIErrorCode.InvalidParam,
+            "error_code": APIErrorCode.InvalidParam.value,
             "error_msg": "messages length must be odd",
         }
     for i, m in enumerate(messages):
@@ -130,7 +130,7 @@ def check_messages(messages):
             i % 2 == 1 and m["role"] != "assistant"
         ):
             return {
-                "error_code": APIErrorCode.InvalidParam,
+                "error_code": APIErrorCode.InvalidParam.value,
                 "error_msg": f"invalid role in message {i}",
             }
     return None

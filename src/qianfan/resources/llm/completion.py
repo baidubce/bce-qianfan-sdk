@@ -442,7 +442,5 @@ class Completion(BaseResource):
         ```
 
         """
-        tasks = [
-            self.ado(prompt=prompt, stream=False, **kwargs) for prompt in prompt_list
-        ]
+        tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
         return await self._abatch_request(tasks, batch_size)

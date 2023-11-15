@@ -14,11 +14,16 @@
 
 import base64
 import copy
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
+from functools import partial
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
-from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
+from qianfan.resources.llm.base import (
+    UNSPECIFIED_MODEL,
+    BaseResource,
+    BatchRequestFuture,
+)
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 from qianfan.utils.logging import log_warn
 
@@ -242,3 +247,70 @@ class Text2Image(BaseResource):
             for i in resp["body"]["data"]:
                 i["image"] = base64.b64decode(i["b64_image"])
         return resp
+
+    def batch_do(
+        self,
+        prompt_list: List[str],
+        batch_size: int = 1,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        """
+        Batch generate execute a plugin action on the provided input prompt and
+        generate responses.
+
+        Parameters:
+          prompt_list (List[str]):
+            The list user input or prompt for which a response is generated.
+          batch_size (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `Plugin.do` for other parameters such as `model`,
+            `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = Plugin().batch_do(["...", "..."], batch_size = 10)
+        for response in response_list:
+            # return QfResponse if succeed, or exception will be raised
+            print(response.result())
+        # or
+        while response_list.finished_count() != response_list.task_count():
+            time.sleep(1)
+        print(response_list.results())
+        ```
+
+        """
+        task_list = [
+            partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
+        ]
+
+        return self._batch_request(task_list, batch_size)
+
+    async def abatch_do(
+        self,
+        prompt_list: List[str],
+        batch_size: int = 1,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        Async batch execute a plugin action on the provided input prompt and generate
+        responses.
+
+        Parameters:
+          prompt_list (List[str]):
+            The list user input or prompt for which a response is generated.
+          batch_size (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `Plugin.ado` for other parameters such as `model`,
+            `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = await Plugin().abatch_do([...], batch_size = 10)
+        for response in response_list:
+            # response is `QfResponse` if succeed, or response will be exception
+            print(response)
+        ```
+
+        """
+        tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
+        return await self._abatch_request(tasks, batch_size)

@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
-from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
+from qianfan.resources.llm.base import (
+    UNSPECIFIED_MODEL,
+    BaseResource,
+    BatchRequestFuture,
+)
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
@@ -207,3 +212,67 @@ class Embedding(BaseResource):
             backoff_factor,
             **kwargs,
         )
+
+    def batch_do(
+        self,
+        texts_list: List[List[str]],
+        batch_size: int = 1,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        """
+        Batch generate embeddings for a list of input texts using a specified model.
+
+        Parameters:
+          texts_list (List[List[str]]):
+            List of the input text list to generate the embeddings.
+          batch_size (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `Completion.do` for other parameters such as `model`,
+            `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = Completion().batch_do(["...", "..."], batch_size = 10)
+        for response in response_list:
+            # return QfResponse if succeed, or exception will be raised
+            print(response.result())
+        # or
+        while response_list.finished_count() != response_list.task_count():
+            time.sleep(1)
+        print(response_list.results())
+        ```
+
+        """
+        task_list = [partial(self.do, texts=texts, **kwargs) for texts in texts_list]
+
+        return self._batch_request(task_list, batch_size)
+
+    async def abatch_do(
+        self,
+        texts_list: List[List[str]],
+        batch_size: int = 1,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        Async batch generate embeddings for a list of input texts using a specified
+        model.
+
+        Parameters:
+          texts_list (List[List[str]]):
+            List of the input text list to generate the embeddings.
+          batch_size (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `Embedding.ado` for other parameters such as `model`,
+            `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = await Embedding().abatch_do([...], batch_size = 10)
+        for response in response_list:
+            # response is `QfResponse` if succeed, or response will be exception
+            print(response)
+        ```
+
+        """
+        tasks = [self.ado(texts=texts, **kwargs) for texts in texts_list]
+        return await self._abatch_request(tasks, batch_size)

@@ -50,6 +50,15 @@ class Dataset(Table):
         cls, source: DataSource, schema: Optional[Schema], **kwargs: Any
     ) -> "Dataset":
         """内部封装的从数据源导出字节流并构建数据集的方法"""
+        if isinstance(source, QianfanDataSource) and source.download_when_init:
+            # 如果是云上的数据集，则直接创建空表。
+            # 云上数据集的相关处理能力暂不可用
+            return cls(
+                inner_table=pyarrow.Table(),
+                inner_data_source_cache=source,
+                inner_schema_cache=schema,
+            )
+
         str_content = source.fetch(**kwargs)
         format_type = source.format_type()
 
@@ -60,7 +69,8 @@ class Dataset(Table):
         elif format_type == FormatType.Jsonl:
             json_data_list = [
                 json.loads(line.replace("\r", "\\r").replace("\n", "\\n"))
-                for line in str_content.split("\n") if line
+                for line in str_content.split("\n")
+                if line
             ]
             if not len(json_data_list):
                 raise ValueError("no data in jsonline file")
@@ -76,12 +86,11 @@ class Dataset(Table):
         else:
             raise ValueError("unknown format type")
 
-        dataset = cls(
+        return cls(
             inner_table=pyarrow_table,
             inner_data_source_cache=source,
             inner_schema_cache=schema,
         )
-        return dataset
 
     def _to_source(self, source: DataSource, **kwargs: Any) -> bool:
         format_type = source.format_type()
@@ -106,7 +115,7 @@ class Dataset(Table):
             return source.save(string_stream_buffer.getvalue())
 
         elif format_type == FormatType.Text:
-            if self.inner_table.num_columns > 1:
+            if self.get_column_count() > 1:
                 raise ValueError(
                     "cannot export dataset to pure text if the number of column is"
                     " greater than 1"

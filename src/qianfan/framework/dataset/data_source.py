@@ -13,15 +13,17 @@ import dateutil.parser
 import requests
 from pydantic import BaseModel, Field, model_validator
 
+from qianfan.config import get_config
 from qianfan.framework.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
     DataSetType,
     DataStorageType,
-    DataTemplateType,
+    DataTemplateType, DataSourceType,
 )
 from qianfan.resources.console.data import Data
+from qianfan.utils.bos_uploader import upload_content_to_bos
 
 
 class FormatType(Enum):
@@ -109,6 +111,15 @@ class FileDataSource(DataSource, BaseModel):
         raise ValueError(f"cannot match proper format type for {suffix}")
 
 
+def _get_data_format_from_template_type(template_type: DataTemplateType):
+    if template_type in [DataTemplateType.NonSortedConversation, DataTemplateType.SortedConversation, DataTemplateType.QuerySet]:
+        return FormatType.Jsonl
+    # 有待商榷
+    elif template_type == DataTemplateType.GenericText:
+        return FormatType.Text
+    return FormatType.Json
+
+
 # 千帆平台的数据源
 class QianfanDataSource(DataSource, BaseModel):
     id: int
@@ -122,6 +133,7 @@ class QianfanDataSource(DataSource, BaseModel):
     storage_id: str
     storage_path: str
     storage_name: str
+    storage_region: str
     info: Dict[str, Any] = Field(default={})
     # 开关控制是否需要下载到本地进行后续处理。
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
@@ -145,10 +157,40 @@ class QianfanDataSource(DataSource, BaseModel):
             f"no project type and set type found matching with {template_type}"
         )
 
+    _ImportStatusMap = {
+        "waiting": 0,
+        "exporting": 1,
+        "complete": 2,
+        "failed": 3,
+        "interpreted": 4,
+    }
+
     def save(self, data: str, **kwargs: Any) -> bool:
-        # 上传到公共存储和私有存储都依赖 BOS 上传的功能
-        # 上传到公共存储依赖于获取公共 BOS 临时存储权限 API 的开放
-        raise NotImplementedError()
+        if self.storage_type == DataStorageType.PublicBos:
+            raise NotImplementedError()
+        elif self.storage_type == DataStorageType.PrivateBos:
+            # 只支持除泛文本以外的文本上传，文生图需要后续再细化。
+            file_path = f"{self.storage_path}/data.jsonl"
+            upload_content_to_bos(
+                data,
+                file_path,
+                self.storage_id,
+                self.storage_region,
+                self.ak if self.ak else get_config().ACCESS_KEY,
+                self.sk if self.sk else get_config().SECRET_KEY,
+            )
+            is_annotated = kwargs["is_annotated"]
+            Data.create_data_import_task(self.id, is_annotated, DataSourceType.PrivateBos, file_path)
+            while True:
+                sleep(2)
+                qianfan_resp = Data.get_dataset_info(self.id)['result']['versionInfo']
+                status = qianfan_resp['importStatus']
+                if status in [self._ImportStatusMap['waiting'], self._ImportStatusMap['exporting']]:
+                    return True
+                elif status == self._ImportStatusMap['complete']:
+                    continue
+                else:
+                    return False
 
     async def asave(self, data: str, **kwargs: Any) -> bool:
         # 同 save
@@ -285,6 +327,7 @@ class QianfanDataSource(DataSource, BaseModel):
             self._save_remote_into_file(dataset_bin_path, dataset_info_path, **kwargs)
 
         with open(dataset_bin_path, mode="r") as f:
+            self.download_when_init = True
             return f.read()
 
     def _check_is_any_data_existed_in_dataset(self, **kwargs: Any) -> bool:
@@ -369,14 +412,11 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_id=qianfan_resp["storageInfo"]["storageId"],
             storage_path=qianfan_resp["storageInfo"]["storagePath"],
             storage_name=qianfan_resp["storageInfo"]["storageName"],
+            storage_region=qianfan_resp["storageInfo"]["region"],
             info=(
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
-            data_format_type=(
-                FormatType.Jsonl
-                if set_type == DataSetType.TextOnly
-                else FormatType.Json
-            ),
+            data_format_type=_get_data_format_from_template_type(template_type),
             ak=ak,
             sk=sk,
         )
@@ -433,13 +473,10 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_id=qianfan_resp["versionInfo"]["storage"]["storageId"],
             storage_path=qianfan_resp["versionInfo"]["storage"]["storagePath"],
             storage_name=qianfan_resp["versionInfo"]["storage"]["storageName"],
+            storage_region=qianfan_resp["versionInfo"]["storage"]["region"],
             download_when_init=is_download_dataset_to_local,
             info={**qianfan_resp},
-            data_format_type=(
-                FormatType.Jsonl
-                if set_type == DataSetType.TextOnly
-                else FormatType.Json
-            ),
+            data_format_type=_get_data_format_from_template_type(template_type),
             ak=ak,
             sk=sk,
         )

@@ -240,3 +240,9 @@ class Table(BaseModel, Appendable, Listable, Processable):
             self.delete(key)
         else:
             raise ValueError(f"Unsupported key type {type(key)}")
+
+    def get_row_count(self):
+        return self.inner_table.num_rows
+
+    def get_column_count(self):
+        return self.inner_table.num_columns

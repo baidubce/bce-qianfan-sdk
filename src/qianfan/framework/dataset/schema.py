@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 
+import pyarrow.compute
+
 from qianfan.framework.dataset.table import Table
 
 
 class Schema(ABC):
     @abstractmethod
-    def validate(self, dataset: Table) -> bool:
+    def validate(self, table: Table) -> bool:
         """
         将 table 对象传入，然后做校验。
         目前只校验数据集字段格式，不校验内容缺失问题。
@@ -14,12 +16,18 @@ class Schema(ABC):
 
 # 无排序对话
 class QianfanNonSortedConversation(Schema):
-    def validate(self, dataset: Table) -> bool:
-        col_names = dataset.col_names()
+    def validate(self, table: Table) -> bool:
+        if table.get_row_count() == 0:
+            return False
+
+        col_names = table.col_names()
         if "prompt" not in col_names:
             return False
+
         if "response" in col_names:
-            response_record = dataset.list(0)[0]["response"]
+            if table.inner_table.column("response").null_count:
+                return False
+            response_record = table.list(0)[0]["response"]
             if not (
                 isinstance(response_record, list)
                 and len(response_record) == 1
@@ -32,12 +40,18 @@ class QianfanNonSortedConversation(Schema):
 
 # 有排序对话
 class QianfanSortedConversation(Schema):
-    def validate(self, dataset: Table) -> bool:
-        col_names = dataset.col_names()
+    def validate(self, table: Table) -> bool:
+        if table.get_row_count() == 0:
+            return False
+
+        col_names = table.col_names()
         if "prompt" not in col_names:
             return False
+
         if "response" in col_names:
-            response_record = dataset.list(0)[0]["response"]
+            if table.inner_table.column("response").null_count:
+                return False
+            response_record = table.list(0)[0]["response"]
             if not (
                 isinstance(response_record, list)
                 and isinstance(response_record[0], str)
@@ -49,11 +63,15 @@ class QianfanSortedConversation(Schema):
 
 # 泛文本对话
 class QianfanGenericText(Schema):
-    def validate(self, dataset: Table) -> bool:
-        col_names = dataset.col_names()
+    def validate(self, table: Table) -> bool:
+        if table.get_row_count() == 0:
+            return False
+
+        col_names = table.col_names()
         if len(col_names) != 1:
             return False
-        elem = dataset.list(0)[0][col_names[0]]
+
+        elem = table.list(0)[0][col_names[0]]
         if isinstance(elem, str):
             return False
 
@@ -62,11 +80,15 @@ class QianfanGenericText(Schema):
 
 # 问答集
 class QianfanQuerySet(Schema):
-    def validate(self, dataset: Table) -> bool:
-        col_names = dataset.col_names()
+    def validate(self, table: Table) -> bool:
+        if table.get_row_count() == 0:
+            return False
+
+        col_names = table.col_names()
         if "prompt" not in col_names:
             return False
-        elem = dataset.list(0)[0]["prompt"]
+
+        elem = table.list(0)[0]["prompt"]
         if isinstance(elem, str):
             return False
 
@@ -75,5 +97,5 @@ class QianfanQuerySet(Schema):
 
 # 文生图
 class QianfanText2Image(Schema):
-    def validate(self, dataset: Table) -> bool:
+    def validate(self, table: Table) -> bool:
         return False

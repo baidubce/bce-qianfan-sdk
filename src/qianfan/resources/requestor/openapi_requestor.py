@@ -62,16 +62,15 @@ class QfAPIRequestor(BaseAPIRequestor):
         def retry_wrapper(*args: Any, **kwargs: Any) -> _T:
             nonlocal token_refreshed
             # if token is refreshed, token expired exception will not be dealt with
-            with self._rate_limiter:
-                if not token_refreshed:
-                    try:
-                        return func(*args)
-                    except errors.AccessTokenExpiredError:
-                        # refresh token and set token_refreshed flag
-                        self._auth.refresh_access_token()
-                        token_refreshed = True
-                        # then fallthrough and try again
-                return func(*args, **kwargs)
+            if not token_refreshed:
+                try:
+                    return func(*args)
+                except errors.AccessTokenExpiredError:
+                    # refresh token and set token_refreshed flag
+                    self._auth.refresh_access_token()
+                    token_refreshed = True
+                    # then fallthrough and try again
+            return func(*args, **kwargs)
 
         return retry_wrapper
 
@@ -86,16 +85,15 @@ class QfAPIRequestor(BaseAPIRequestor):
         async def retry_wrapper(*args: Any, **kwargs: Any) -> _T:
             nonlocal token_refreshed
             # if token is refreshed, token expired exception will not be dealt with
-            async with self._rate_limiter:
-                if not token_refreshed:
-                    try:
-                        return await func(*args)
-                    except errors.AccessTokenExpiredError:
-                        # refresh token and set token_refreshed flag
-                        await self._auth.arefresh_access_token()
-                        token_refreshed = True
-                        # then fallthrough and try again
-                return await func(*args, **kwargs)
+            if not token_refreshed:
+                try:
+                    return await func(*args)
+                except errors.AccessTokenExpiredError:
+                    # refresh token and set token_refreshed flag
+                    await self._auth.arefresh_access_token()
+                    token_refreshed = True
+                    # then fallthrough and try again
+            return await func(*args, **kwargs)
 
         return retry_wrapper
 

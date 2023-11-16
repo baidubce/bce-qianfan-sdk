@@ -1,3 +1,20 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+wrapper for pyarrow.Table
+"""
+
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import pyarrow
@@ -5,7 +22,7 @@ from pyarrow import Table as PyarrowTable
 from pydantic import BaseModel
 from typing_extensions import Self
 
-from qianfan.framework.dataset.process_interface import (
+from qianfan.dataset.process_interface import (
     Appendable,
     Listable,
     Processable,
@@ -13,6 +30,8 @@ from qianfan.framework.dataset.process_interface import (
 
 
 class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
+    """handler for processing of pyarrow table row"""
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -52,13 +71,13 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
             isinstance(by, (list, tuple)) and isinstance(by[0], str)
         ):
             raise ValueError("cannot get row from table by str")
-        if not by:
+        if by is None:
             return self.table.to_pylist()
 
         if isinstance(by, int):
             return self.table.take([by]).to_pylist()
         elif isinstance(by, (list, tuple)):
-            return self.table.take(by).to_pylist()
+            return self.table.take(list(by)).to_pylist()
         elif isinstance(by, slice):
             return self.table.slice(
                 offset=by.start, length=by.stop - by.start + 1
@@ -70,22 +89,32 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
         # 构建出的新 table 会按照首行的 key 作为 columns
         new_table: List[Dict[str, Any]] = []
         for row_index in range(self.table.num_rows):
-            input_dict = {
-                key: val[0]
-                for key, val in self.table.take([row_index]).to_pydict().items()
-            }
-            new_table.append(op(input_dict))
+            origin_data = self.table.take([row_index]).to_pylist()[0]
+            input_dict = {key: val for key, val in origin_data.items()}
+            returned_data = op(input_dict)
+            if not returned_data:
+                raise ValueError("cant make data empty")
+            if not isinstance(returned_data, dict):
+                raise ValueError("returned value isn't dict")
+            if input_dict.keys() != returned_data.keys():
+                raise ValueError("cant modify column name in map")
+
+            new_table.append(returned_data)
 
         return pyarrow.Table.from_pylist(new_table)
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
         selection_masks: List[bool] = []
         for row_index in range(self.table.num_rows):
-            input_dict = {
-                key: val[0]
-                for key, val in self.table.take([row_index]).to_pydict().items()
-            }
-            selection_masks.append(op(input_dict))
+            origin_data = self.table.take([row_index]).to_pylist()[0]
+            input_dict = {key: val for key, val in origin_data.items()}
+            flag = op(input_dict)
+            if flag is None:
+                raise ValueError("cant return None")
+            if not isinstance(flag, bool):
+                raise ValueError("returned value isn't bool")
+
+            selection_masks.append(flag)
 
         return self.table.filter(mask=selection_masks)
 
@@ -105,6 +134,8 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
 
 
 class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
+    """handler for processing of pyarrow table column"""
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -113,12 +144,27 @@ class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
     def append(self, elem: Any) -> Self:
         if not isinstance(elem, dict):
             raise ValueError(f"element appended must be dict, not {type(elem)}")
-        return self.table.append_column(elem["name"], elem["data"])
+        if "name" not in elem:
+            raise ValueError("no name has been provided")
+        if "data" not in elem:
+            raise ValueError("no data has been provided")
+        if not isinstance(elem["name"], str):
+            raise TypeError(f"name isn't str, rather than {type(elem['name'])}")
+        if not isinstance(elem["data"], list):
+            raise TypeError(f"data isn't list, rather than {type(elem['data'])}")
+        if not elem["data"]:
+            raise ValueError("data can't be empty")
+        if len(elem["data"]) != self.table.num_rows:
+            raise ValueError(
+                f"the length of data need to be {self.table.num_rows}, rather than"
+                f" {len(elem['data'])}"
+            )
+        return self.table.append_column(elem["name"], [elem["data"]])
 
     def list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
     ) -> Any:
-        if not by:
+        if by is None:
             return self.table.to_pydict()
 
         if isinstance(by, slice):
@@ -127,20 +173,25 @@ class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
             indices: Any = [by]
         else:
             indices = by
-        return self.table.select(indices).to_pydict()
+        if isinstance(indices[0], str) and not set(indices).issubset(
+            set(self.table.column_names)
+        ):
+            raise ValueError("contain not existed column name")
+        return self.table.select(list(indices)).to_pydict()
 
     def map(self, op: Callable[[Any], Any]) -> Self:
         new_columns: Dict[str, List[Any]] = {}
         for i in range(self.table.num_columns):
-            column = self.table.select(i).to_pydict()
-            new_columns += op(column)
+            column = self.table.select([i]).to_pydict()
+            ret_column = op(column)
+            new_columns.update(ret_column)
 
         return pyarrow.Table.from_pydict(new_columns)
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
         dropped_column_name = []
         for i in range(self.table.num_columns):
-            column = self.table.select(i).to_pydict()
+            column = self.table.select([i]).to_pydict()
             if not op(column):
                 dropped_column_name += list(column.keys())
 
@@ -154,8 +205,8 @@ class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
 
 class Table(BaseModel, Appendable, Listable, Processable):
     """
-    数据集在内存中的表示
-    派生自 pyarrow.Table，并且实现了 process_interface.py 中的接口
+    dataset representation on memory
+    inherited from pyarrow.Table，implementing interface in process_interface.py
     """
 
     class Config:
@@ -246,3 +297,9 @@ class Table(BaseModel, Appendable, Listable, Processable):
 
     def get_column_count(self) -> int:
         return self.inner_table.num_columns
+
+    def to_pylist(self) -> List:
+        return self.inner_table.to_pylist()
+
+    def to_pydict(self) -> Dict:
+        return self.inner_table.to_pydict()

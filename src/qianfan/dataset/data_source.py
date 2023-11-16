@@ -1,3 +1,20 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+data source which is related to download/upload
+"""
+
 import datetime
 import io
 import json
@@ -14,7 +31,7 @@ import requests
 from pydantic import BaseModel, Field, model_validator
 
 from qianfan.config import get_config
-from qianfan.framework.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
@@ -28,7 +45,7 @@ from qianfan.utils.bos_uploader import upload_content_to_bos
 
 
 class FormatType(Enum):
-    """数据源格式类型枚举"""
+    """Enum for data source format type"""
 
     Json = "json"
     Jsonl = "jsonl"
@@ -38,38 +55,47 @@ class FormatType(Enum):
 
 
 class DataSource(ABC):
+    """basic data source class"""
+
     @abstractmethod
     def save(self, data: str, **kwargs: Any) -> bool:
-        """将数据导出到数据源中，返回导入成功或失败"""
+        """
+        Export the data to the data source
+        and return
+        whether the import was successful or failed
+        """
 
     @abstractmethod
     async def asave(self, data: str, **kwargs: Any) -> bool:
-        """异步导出，看情况实现"""
+        """async export"""
 
     @abstractmethod
     def fetch(self, **kwargs: Any) -> str:
-        """从数据源中获取数据"""
+        """fetch data from source"""
 
     @abstractmethod
     async def afetch(self, **kwargs: Any) -> str:
-        """从数据源中异步获取数据，看情况实现"""
+        """async fetch"""
 
     @abstractmethod
     def format_type(self) -> FormatType:
-        """获取数据源绑定的数据格式"""
+        """get format type binding to source"""
 
     @abstractmethod
     def set_format_type(self, format_type: FormatType) -> None:
-        """设置数据源绑定的数据格式"""
+        """set format type binding to source"""
 
 
 # 目前第一期主要支持本地调用
 # 且目前只支持读单个文件，文件夹兼容稍后
 class FileDataSource(DataSource, BaseModel):
+    """file data source"""
+
     path: str
     file_format: Optional[FormatType] = Field(default=None)
 
     def save(self, data: str, **kwargs: Any) -> bool:
+        """write data to file"""
         with open(self.path, mode="w") as file:
             file.write(data)
         return True
@@ -78,6 +104,7 @@ class FileDataSource(DataSource, BaseModel):
         raise NotImplementedError()
 
     def fetch(self, **kwargs: Any) -> str:
+        """read data from file"""
         with open(self.path, mode="r") as file:
             return file.read()
 
@@ -85,10 +112,12 @@ class FileDataSource(DataSource, BaseModel):
         raise NotImplementedError()
 
     def format_type(self) -> FormatType:
+        """get format type binding to source"""
         assert self.file_format
         return self.file_format
 
     def set_format_type(self, format_type: FormatType) -> None:
+        """set format type binding to source"""
         self.file_format = format_type
 
     @model_validator(mode="after")
@@ -127,6 +156,8 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
 
 # 千帆平台的数据源
 class QianfanDataSource(DataSource, BaseModel):
+    """Qianfan data source"""
+
     id: int
     group_id: int
     name: str
@@ -138,7 +169,7 @@ class QianfanDataSource(DataSource, BaseModel):
     storage_id: str
     storage_path: str
     storage_name: str
-    storage_region: str
+    storage_region: Optional[str] = Field(default=None)
     info: Dict[str, Any] = Field(default={})
     # 开关控制是否需要下载到本地进行后续处理。
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
@@ -171,6 +202,12 @@ class QianfanDataSource(DataSource, BaseModel):
     }
 
     def save(self, data: str, **kwargs: Any) -> bool:
+        """
+        write data to qianfan
+        currently only support to write to
+        user BOS storage
+        """
+
         if self.storage_type == DataStorageType.PublicBos:
             raise NotImplementedError()
         elif self.storage_type == DataStorageType.PrivateBos:
@@ -181,6 +218,9 @@ class QianfanDataSource(DataSource, BaseModel):
             if not ak:
                 return False
             if not sk:
+                return False
+
+            if not self.storage_region:
                 return False
 
             upload_content_to_bos(
@@ -210,7 +250,6 @@ class QianfanDataSource(DataSource, BaseModel):
                     return False
 
     async def asave(self, data: str, **kwargs: Any) -> bool:
-        # 同 save
         raise NotImplementedError()
 
     _ExportStatusMap = {
@@ -248,7 +287,6 @@ class QianfanDataSource(DataSource, BaseModel):
             or parser.parse(info["modifyTime"])
             > self._get_latest_export_record(**kwargs)[1]
         ):
-            print("开始导出数据集")
             # TODO 支持导出到用户 BOS
             Data.create_dataset_export_task(
                 self.id, DataExportDestinationType.PlatformBos, **kwargs
@@ -265,7 +303,6 @@ class QianfanDataSource(DataSource, BaseModel):
                 elif status == self._ExportStatusMap["failed"]:
                     raise self.QianfanRequestError("export dataset failed")
 
-        print("开始下载数据集")
         newest_record = self._get_latest_export_record(**kwargs)[0]
         download_url = newest_record["downloadUrl"]
         resp = requests.get(download_url)
@@ -311,7 +348,6 @@ class QianfanDataSource(DataSource, BaseModel):
         if not os.path.exists(dataset_info_path) or not os.path.exists(
             dataset_bin_path
         ):
-            print("检查失败，不存在缓存文件，开始下载")
             self._save_remote_into_file(dataset_bin_path, dataset_info_path, **kwargs)
 
         def _datetime_parse_hook(obj: Any) -> Union[datetime.datetime, str]:
@@ -335,12 +371,10 @@ class QianfanDataSource(DataSource, BaseModel):
                 dataset_info["finishTime"]
             ):
                 # 更新缓存
-                print("缓存过期，开始获取数据")
                 self._save_remote_into_file(
                     dataset_bin_path, dataset_info_path, **kwargs
                 )
         except Exception:
-            print("异常，开始获取数据")
             self._save_remote_into_file(dataset_bin_path, dataset_info_path, **kwargs)
 
         with open(dataset_bin_path, mode="r") as f:
@@ -352,6 +386,7 @@ class QianfanDataSource(DataSource, BaseModel):
         return qianfan_resp["entityCount"] != 0
 
     def fetch(self, **kwargs: Any) -> str:
+        """read data from qianfan or local cache"""
         if self.ak and self.sk:
             kwargs["ak"] = self.ak
             kwargs["sk"] = self.sk
@@ -364,10 +399,17 @@ class QianfanDataSource(DataSource, BaseModel):
         raise NotImplementedError()
 
     def format_type(self) -> FormatType:
+        """get format type binding to source"""
         assert self.data_format_type
         return self.data_format_type
 
     def set_format_type(self, format_type: FormatType) -> None:
+        """
+        not support
+        bind to dataset template type
+        TextOnly -> Jsonl
+        MultiModel -> Json
+        """
         # 不支持设置，和数据集类型绑定
         # 文本都是 jsonl
         # 文生图都是 json
@@ -388,6 +430,7 @@ class QianfanDataSource(DataSource, BaseModel):
         sk: Optional[str] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
+        """create bare dataset on qianfan as data source"""
         project_type, set_type = cls._get_qianfan_dataset_type_tuple(template_type)
         if storage_type == DataStorageType.PrivateBos:
             if not storage_args:
@@ -403,6 +446,11 @@ class QianfanDataSource(DataSource, BaseModel):
                 raise ValueError(
                     "storage_path needed when putting data on private storage"
                 )
+            if not (
+                isinstance(storage_args["storage_id"], str)
+                and isinstance(storage_args["storage_path"], str)
+            ):
+                raise ValueError("storage_args should contain str")
 
         storage_args_pass_through = {} if not storage_args else storage_args
         qianfan_resp = Data.create_bare_dataset(
@@ -417,8 +465,8 @@ class QianfanDataSource(DataSource, BaseModel):
             **kwargs,
         )["result"]
 
-        return cls(
-            id=qianfan_resp["datasetid"],
+        source = cls(
+            id=qianfan_resp["id"],
             group_id=qianfan_resp["groupId"],
             name=name,
             version=qianfan_resp["versionId"],
@@ -429,7 +477,6 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_id=qianfan_resp["storageInfo"]["storageId"],
             storage_path=qianfan_resp["storageInfo"]["storagePath"],
             storage_name=qianfan_resp["storageInfo"]["storageName"],
-            storage_region=qianfan_resp["storageInfo"]["region"],
             info=(
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
@@ -437,6 +484,11 @@ class QianfanDataSource(DataSource, BaseModel):
             ak=ak,
             sk=sk,
         )
+
+        if storage_type == DataStorageType.PrivateBos:
+            source.storage_region = qianfan_resp["storageInfo"]["region"]
+
+        return source
 
     @classmethod
     def get_existed_datasource_from_qianfan(
@@ -447,6 +499,7 @@ class QianfanDataSource(DataSource, BaseModel):
         sk: Optional[str] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
+        """load a dataset from qianfan as data source"""
         qianfan_resp = Data.get_dataset_info(dataset_id, ak=ak, sk=sk, **kwargs)[
             "result"
         ]

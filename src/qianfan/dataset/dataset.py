@@ -1,3 +1,20 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+dataset core concept, a wrap of data processing, data transmission and data validation
+"""
+
 import csv
 import functools
 import io
@@ -7,21 +24,22 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import pyarrow.json
 from typing_extensions import Self
 
-from qianfan.framework.dataset.data_source import (
+from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
+from qianfan.dataset.data_operator import QianfanOperator
+from qianfan.dataset.data_source import (
     DataSource,
     FileDataSource,
     FormatType,
     QianfanDataSource,
 )
-from qianfan.framework.dataset.qianfan_data_operator import QianfanOperator
-from qianfan.framework.dataset.schema import (
+from qianfan.dataset.schema import (
     QianfanGenericText,
     QianfanQuerySet,
     QianfanSortedConversation,
     QianfanText2Image,
     Schema,
 )
-from qianfan.framework.dataset.table import Table
+from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import DataTemplateType
 
 
@@ -36,6 +54,8 @@ def _online_except_decorator(func: Callable) -> Callable:
 
 
 class Dataset(Table):
+    """Dataset"""
+
     # 内部的数据源对象，在 load 时被指定
     inner_data_source_cache: Optional[DataSource] = None
 
@@ -63,20 +83,31 @@ class Dataset(Table):
         format_type = source.format_type()
 
         if format_type == FormatType.Json:
-            pyarrow_table = pyarrow.json.read_json(
+            data_py_rep = json.loads(
                 str_content.replace("\r", "\\r").replace("\n", "\\n")
             )
+            if not isinstance(data_py_rep, list):
+                data_py_rep = [data_py_rep]
+            pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
         elif format_type == FormatType.Jsonl:
             json_data_list = [
                 json.loads(line.replace("\r", "\\r").replace("\n", "\\n"))
                 for line in str_content.split("\n")
                 if line
             ]
-            if not len(json_data_list):
+            if not json_data_list:
                 raise ValueError("no data in jsonline file")
             if isinstance(json_data_list[0], list):
-                json_data_list = [data[0] for data in json_data_list]
-            pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
+                json_data_dict = {
+                    QianfanDefaultColumnNameForNestedTable: json_data_list
+                }
+                pyarrow_table = pyarrow.Table.from_pydict(json_data_dict)
+            elif isinstance(json_data_list[0], dict):
+                pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
+            else:
+                raise TypeError(
+                    f"unknown table element type: {type(json_data_list[0])}"
+                )
         elif format_type == FormatType.Csv:
             csv_data = [row for row in csv.DictReader(str_content)]
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
@@ -100,13 +131,26 @@ class Dataset(Table):
             return source.save(json.dumps(dict_list, ensure_ascii=False))
 
         elif format_type == FormatType.Jsonl:
-            dict_list = self.inner_table.to_pylist()
             list_of_json: List[str] = []
-            for elem in dict_list:
-                if isinstance(source, QianfanDataSource):
+
+            column_names = self.inner_table.column_names
+            if (
+                len(column_names) == 1
+                and QianfanDefaultColumnNameForNestedTable == column_names[0]
+            ):
+                compo_list = self.inner_table.to_pydict()[
+                    QianfanDefaultColumnNameForNestedTable
+                ]
+                for elem in compo_list:
+                    list_of_json.append(json.dumps(elem, ensure_ascii=False))
+            elif isinstance(source, QianfanDataSource):
+                dict_list = self.inner_table.to_pylist()
+                for elem in dict_list:
                     list_of_json.append(f"[{json.dumps(elem, ensure_ascii=False)}]")
-                else:
-                    list_of_json.append(f"{json.dumps(elem, ensure_ascii=False)}")
+            else:
+                dict_list = self.inner_table.to_pylist()
+                for elem in dict_list:
+                    list_of_json.append(json.dumps(elem, ensure_ascii=False))
             return source.save("\n".join(list_of_json))
 
         elif format_type == FormatType.Csv:
@@ -133,7 +177,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[int] = None,
         huggingface_name: Optional[str] = None,
         **kwargs: Any,
-    ) -> DataSource:
+    ) -> Optional[DataSource]:
         """从参数来构建数据源"""
         if data_file:
             return FileDataSource(path=data_file, **kwargs)
@@ -144,7 +188,7 @@ class Dataset(Table):
         if huggingface_name:
             raise ValueError("huggingface not supported yet")
 
-        raise ValueError("no arguments is passing")
+        return None
 
     @classmethod
     def _get_qianfan_schema(cls, source: QianfanDataSource) -> Schema:
@@ -164,15 +208,27 @@ class Dataset(Table):
 
     @classmethod
     def load(
-        cls, source: DataSource, schema: Optional[Schema] = None, **kwargs: Any
+        cls,
+        source: Optional[DataSource] = None,
+        data_file: Optional[str] = None,
+        qianfan_dataset_id: Optional[int] = None,
+        huggingface_name: Optional[str] = None,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
     ) -> "Dataset":
         """
-        从 source 中读取数据，并且创建一个 Table 实例。
-        如果有指定 schema，则在导入后再做校验
-        具体逻辑如果使用伪代码表现，则是如下：
+        Read data from the source or create a source from the parameters
+        and create a Table instance.
+        If a schema is specified, perform validation after importing.
         """
 
+        if not source:
+            source = cls._from_args_to_source(
+                data_file, qianfan_dataset_id, huggingface_name, **kwargs
+            )
+
         # 从数据源开始构建对象
+        assert source
         table = cls._from_source(source, schema, **kwargs)
 
         # 校验
@@ -181,33 +237,25 @@ class Dataset(Table):
 
         return table
 
-    @classmethod
-    def load_with_args(
-        cls,
+    def save(
+        self,
+        destination: Optional[DataSource] = None,
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
         **kwargs: Any,
-    ) -> "Dataset":
-        """
-        从 data_file，或者千帆平台，或者 huggingface 读取数据
-        如果有指定 schema，则在导入后再做校验
-        如果读取数据需要额外的参数配置，可以通过 **kwargs 传递
-        """
-        # 这里要动态的创建数据源
-        source = cls._from_args_to_source(
-            data_file, qianfan_dataset_id, huggingface_name, **kwargs
-        )
-        return cls.load(source, schema, **kwargs)
-
-    def save(
-        self,
-        destination: Optional[DataSource] = None,
-        schema: Optional[Schema] = None,
-        **kwargs: Any,
     ) -> bool:
-        """向 source 中写数据，如果有指定 schema，则在导出前做校验"""
+        """
+        write data to source
+        if a schema has been passed,
+        validate data before exporting
+        """
+        if not destination:
+            destination = self._from_args_to_source(
+                data_file, qianfan_dataset_id, huggingface_name, **kwargs
+            )
+
         # 获取数据源参数
         source = destination if destination else self.inner_data_source_cache
         assert source
@@ -226,26 +274,13 @@ class Dataset(Table):
         # 开始写入数据
         return self._to_source(source, **kwargs)  # noqa
 
-    def save_with_args(
-        self,
-        data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
-        huggingface_name: Optional[str] = None,
-        schema: Optional[Schema] = None,
-        **kwargs: Any,
-    ) -> bool:
-        """对 save 的重载，直接从数据源参数开始构建数据源并导出"""
-        source = self._from_args_to_source(
-            data_file, qianfan_dataset_id, huggingface_name, **kwargs
-        )
-        return self.save(source, schema, **kwargs)
-
     @classmethod
     def create_from_pyobj(
         cls,
         data: Union[List[Dict[str, Any]], Dict[str, List]],
         schema: Optional[Schema] = None,
     ) -> "Dataset":
+        """create a dataset from python dict or list"""
         if isinstance(data, list):
             return cls(
                 inner_table=pyarrow.Table.from_pylist(data),
@@ -261,6 +296,7 @@ class Dataset(Table):
     def create_from_pyarrow_table(
         cls, table: pyarrow.Table, schema: Optional[Schema] = None
     ) -> "Dataset":
+        """create a dataset from pyarrow table"""
         return cls(inner_table=table, inner_schema_cache=schema)
 
     def _is_dataset_located_in_qianfan(self) -> bool:
@@ -271,6 +307,10 @@ class Dataset(Table):
     # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
     # 例如通过平台的 API 发起数据清洗任务
     def online_data_process(self, operators: List[QianfanOperator]) -> bool:
+        """
+        create a online ETL task on qianfan
+        not available currently
+        """
         if not self._is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。

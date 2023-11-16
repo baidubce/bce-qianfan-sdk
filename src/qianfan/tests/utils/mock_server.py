@@ -994,45 +994,88 @@ def get_service():
 @iam_auth_checker
 def create_dataset():
     args = request.json
-    return json_response(
-        {
-            "log_id": "log_id",
-            "status": 200,
-            "success": True,
-            "result": {
-                "groupId": 12,
-                "id": 42,
-                "versionId": 1,
-                "groupName": args["name"],
-                "displayName": "displayName",
-                "createFrom": 0,
-                "bmlDatasetId": "bmlDatasetId",
-                "userId": 123,
-                "dataType": args["dataType"],
-                "projectType": args["projectType"],
-                "templateType": args["templateType"],
-                "remark": "this is remark",
-                "storageInfo": {
-                    "storageId": args.get("storageId", ""),
-                    "storagePath": (
-                        "/easydata/_system_/dataset/ds-z07hkq2kyvsmrmdw/texts"
-                    ),
-                    "storageName": args.get("storageId"),
-                    "rawStoragePath": args.get("rawStoragePath", ""),
+    if args["storageType"] == "sysBos":
+        return json_response(
+            {
+                "log_id": "log_id",
+                "status": 200,
+                "success": True,
+                "result": {
+                    "groupId": 12,
+                    "id": 42,
+                    "versionId": 1,
+                    "groupName": args["name"],
+                    "displayName": "displayName",
+                    "createFrom": 0,
+                    "bmlDatasetId": "bmlDatasetId",
+                    "userId": 123,
+                    "dataType": args["dataType"],
+                    "projectType": args["projectType"],
+                    "templateType": args["templateType"],
+                    "remark": "this is remark",
+                    "storageInfo": {
+                        "storageId": args.get("storageId", "1231"),
+                        "storagePath": args.get(
+                            "storagePath",
+                            "/easydata/_system_/dataset/ds-z07hkq2kyvsmrmdw/texts",
+                        ),
+                        "storageName": args.get("storageId", "1231"),
+                    },
+                    "importStatus": 1,
+                    "importProgress": 0,
+                    "exportStatus": -1,
+                    "releaseStatus": 0,
+                    "ShouldHide": True,
+                    "status": 0,
+                    "isUnique": 0,
+                    "errCode": None,
+                    "createTime": "2023-10-25T16:16:38.430058683+08:00",
+                    "modifyTime": "2023-10-25T16:16:38.430066297+08:00",
                 },
-                "importStatus": 1,
-                "importProgress": 0,
-                "exportStatus": -1,
-                "releaseStatus": 0,
-                "ShouldHide": True,
-                "status": 0,
-                "isUnique": 0,
-                "errCode": None,
-                "createTime": "2023-10-25T16:16:38.430058683+08:00",
-                "modifyTime": "2023-10-25T16:16:38.430066297+08:00",
-            },
-        }
-    )
+            }
+        )
+    else:
+        return json_response(
+            {
+                "log_id": "log_id",
+                "status": 200,
+                "success": True,
+                "result": {
+                    "groupId": 12,
+                    "id": 42,
+                    "versionId": 1,
+                    "groupName": args["name"],
+                    "displayName": "displayName",
+                    "createFrom": 0,
+                    "bmlDatasetId": "bmlDatasetId",
+                    "userId": 123,
+                    "dataType": args["dataType"],
+                    "projectType": args["projectType"],
+                    "templateType": args["templateType"],
+                    "remark": "this is remark",
+                    "storageInfo": {
+                        "storageId": args.get("storageId", "1231"),
+                        "storagePath": args.get(
+                            "storagePath",
+                            "/easydata/_system_/dataset/ds-z07hkq2kyvsmrmdw/texts",
+                        ),
+                        "storageName": args.get("storageId", "1231"),
+                        "rawStoragePath": args.get("rawStoragePath", ""),
+                        "region": "bj",
+                    },
+                    "importStatus": 1,
+                    "importProgress": 0,
+                    "exportStatus": -1,
+                    "releaseStatus": 0,
+                    "ShouldHide": True,
+                    "status": 0,
+                    "isUnique": 0,
+                    "errCode": None,
+                    "createTime": "2023-10-25T16:16:38.430058683+08:00",
+                    "modifyTime": "2023-10-25T16:16:38.430066297+08:00",
+                },
+            }
+        )
 
 
 @app.route(Consts.DatasetImportAPI, methods=["POST"])

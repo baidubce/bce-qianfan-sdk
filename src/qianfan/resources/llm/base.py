@@ -12,20 +12,120 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+import asyncio
+import concurrent.futures
 import copy
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Set, Tuple, Union
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
-from qianfan.utils import log_warn
+from qianfan.utils import log_info, log_warn
 
 # This is used when user provides `endpoint`
 # In such cases, SDK cannot know which model the user is using
 # This constant is used to express no model is spcified,
 # so that SDK still can get the requirements of API from _supported_models()
 UNSPECIFIED_MODEL = "UNSPECIFIED_MODEL"
+
+
+class BatchRequestFuture(object):
+    """
+    Future object for batch request
+    """
+
+    def __init__(
+        self,
+        tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
+        worker_num: int,
+    ) -> None:
+        """
+        Init batch request future
+        """
+        future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
+        self._executor = ThreadPoolExecutor(max_workers=worker_num)
+        for task in tasks:
+            future = self._executor.submit(task)
+            future.add_done_callback(self._future_callback)
+            future_list.append(future)
+        self._future_list = future_list
+        self._finished_count = 0
+        self._lock = threading.Lock()
+
+    def _future_callback(
+        self, fn: Future[Union[QfResponse, Iterator[QfResponse]]]
+    ) -> None:
+        """
+        callback when one task is finished
+        """
+        with self._lock:
+            self._finished_count += 1
+            if self._finished_count == len(self._future_list):
+                log_info("All tasks finished, exeutor will be shutdown")
+                self._executor.shutdown(wait=False)
+
+    def wait(self) -> None:
+        """
+        Wait for all tasks to be finished
+        """
+        concurrent.futures.wait(self._future_list)
+
+    def results(self) -> List[Union[QfResponse, Iterator[QfResponse]]]:
+        """
+        Wait for all tasks to be finished, and return the results.
+        The order of the elements in the output is the same as the order
+        of the elements in the input.
+        """
+        return [future.result() for future in self._future_list]
+
+    def task_count(self) -> int:
+        """
+        Return the total count of tasks
+        """
+        return len(self._future_list)
+
+    def finished_count(self) -> int:
+        """
+        Return the number of tasks that have been finished
+        """
+        with self._lock:
+            return self._finished_count
+
+    def __iter__(self) -> Iterator[Future[Union[QfResponse, Iterator[QfResponse]]]]:
+        """
+        Return the iterator of the future list.
+        Use `result()` to get the result of each task.
+
+        ```
+        for item in batch_request_future:
+            print(item.result())
+        ```
+        """
+        return self._future_list.__iter__()
+
+    def __len__(self) -> int:
+        """
+        return the number of tasks
+        """
+        return len(self._future_list)
 
 
 class BaseResource(object):
@@ -328,3 +428,40 @@ class BaseResource(object):
         get access token
         """
         return self._client._auth.access_token()
+
+    def _batch_request(
+        self,
+        tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
+        worker_num: int,
+    ) -> BatchRequestFuture:
+        """
+        create batch prediction task and return future
+        """
+        if worker_num <= 0:
+            raise errors.InvalidArgumentError("worker_num must be greater than 0")
+        return BatchRequestFuture(tasks, worker_num)
+
+    async def _abatch_request(
+        self,
+        tasks: Sequence[
+            Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
+        ],
+        worker_num: int,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        async do batch prediction
+        """
+        if worker_num <= 0:
+            raise errors.InvalidArgumentError("worker_num must be greater than 0")
+        sem = asyncio.Semaphore(worker_num)
+
+        async def _with_concurrency_limit(
+            task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
+        ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+            async with sem:
+                return await task
+
+        return await asyncio.gather(
+            *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
+            return_exceptions=True,
+        )

@@ -18,6 +18,7 @@
 
 import os
 import threading
+import time
 
 import pytest
 
@@ -565,3 +566,63 @@ def test_in_other_thread():
     t = threading.Thread(target=test_generate_with_endpoint)
     t.start()
     t.join()
+
+
+def test_batch_predict():
+    CASE_LEN = 10
+    messages_list = [
+        [{"role": "user", "content": f"test prompt {i}"}] for i in range(CASE_LEN)
+    ]
+    # _delay is the argument only for unit test
+    # it will make the response delay for a while
+    start_time = time.time()
+    results = (
+        qianfan.ChatCompletion()
+        .batch_do(messages_list, worker_num=4, _delay=1)
+        .results()
+    )
+    assert 5 >= time.time() - start_time >= 3
+    for input, output in zip(messages_list, results):
+        assert input[0]["content"] in output["result"]
+
+    start_time = time.time()
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=1)
+    for i, output in enumerate(future):
+        assert messages_list[i][0]["content"] in output.result()["result"]
+    assert 3 >= time.time() - start_time >= 2
+
+    start_time = time.time()
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=1)
+    assert future.task_count() == CASE_LEN
+    while future.finished_count() != future.task_count():
+        time.sleep(0.3)
+    assert 3 >= time.time() - start_time >= 2
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(messages_list, future.results()):
+        assert input[0]["content"] in output["result"]
+
+    start_time = time.time()
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=0.5)
+    assert future.task_count() == CASE_LEN
+    future.wait()
+    assert 2 >= time.time() - start_time >= 1
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(messages_list, future.results()):
+        assert input[0]["content"] in output["result"]
+
+
+@pytest.mark.asyncio
+async def test_batch_predict_async():
+    CASE_LEN = 10
+    messages_list = [
+        [{"role": "user", "content": f"test prompt {i}"}] for i in range(CASE_LEN)
+    ]
+    # _delay is the argument only for unit test
+    # it will make the response delay for a while
+    start_time = time.time()
+    results = await qianfan.ChatCompletion().abatch_do(
+        messages_list, worker_num=4, _delay=1
+    )
+    assert 5 >= time.time() - start_time >= 3
+    for input, output in zip(messages_list, results):
+        assert input[0]["content"] in output["result"]

@@ -50,10 +50,10 @@ class BatchRequestFuture(object):
     def __init__(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        batch_size: int,
+        worker_num: int,
     ) -> None:
         future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
-        self._executor = ThreadPoolExecutor(max_workers=batch_size)
+        self._executor = ThreadPoolExecutor(max_workers=worker_num)
         for task in tasks:
             future = self._executor.submit(task)
             future.add_done_callback(self._future_callback)
@@ -392,18 +392,18 @@ class BaseResource(object):
     def _batch_request(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        batch_size: int,
+        worker_num: int,
     ) -> BatchRequestFuture:
-        return BatchRequestFuture(tasks, batch_size)
+        return BatchRequestFuture(tasks, worker_num)
 
     async def _abatch_request(
         self,
         tasks: Sequence[
             Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ],
-        batch_size: int,
+        worker_num: int,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
-        sem = asyncio.Semaphore(batch_size)
+        sem = asyncio.Semaphore(worker_num)
 
         async def _with_concurrency_limit(
             task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]

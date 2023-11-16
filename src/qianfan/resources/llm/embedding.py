@@ -216,7 +216,7 @@ class Embedding(BaseResource):
     def batch_do(
         self,
         texts_list: List[List[str]],
-        batch_size: int = 1,
+        worker_num: int = 1,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -225,14 +225,14 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          batch_size (int):
+          worker_num (int):
             The number of prompts to process at the same time.
           kwargs (Any):
             Please refer to `Completion.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = Completion().batch_do(["...", "..."], batch_size = 10)
+        response_list = Completion().batch_do(["...", "..."], worker_num = 10)
         for response in response_list:
             # return QfResponse if succeed, or exception will be raised
             print(response.result())
@@ -245,12 +245,12 @@ class Embedding(BaseResource):
         """
         task_list = [partial(self.do, texts=texts, **kwargs) for texts in texts_list]
 
-        return self._batch_request(task_list, batch_size)
+        return self._batch_request(task_list, worker_num)
 
     async def abatch_do(
         self,
         texts_list: List[List[str]],
-        batch_size: int = 1,
+        worker_num: int = 1,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -260,14 +260,14 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          batch_size (int):
+          worker_num (int):
             The number of prompts to process at the same time.
           kwargs (Any):
             Please refer to `Embedding.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = await Embedding().abatch_do([...], batch_size = 10)
+        response_list = await Embedding().abatch_do([...], worker_num = 10)
         for response in response_list:
             # response is `QfResponse` if succeed, or response will be exception
             print(response)
@@ -275,4 +275,4 @@ class Embedding(BaseResource):
 
         """
         tasks = [self.ado(texts=texts, **kwargs) for texts in texts_list]
-        return await self._abatch_request(tasks, batch_size)
+        return await self._abatch_request(tasks, worker_num)

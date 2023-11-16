@@ -578,7 +578,7 @@ def test_batch_predict():
     start_time = time.time()
     results = (
         qianfan.ChatCompletion()
-        .batch_do(messages_list, batch_size=4, _delay=1)
+        .batch_do(messages_list, worker_num=4, _delay=1)
         .results()
     )
     assert 5 >= time.time() - start_time >= 3
@@ -586,13 +586,13 @@ def test_batch_predict():
         assert input[0]["content"] in output["result"]
 
     start_time = time.time()
-    future = qianfan.ChatCompletion().batch_do(messages_list, batch_size=5, _delay=1)
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=1)
     for i, output in enumerate(future):
         assert messages_list[i][0]["content"] in output.result()["result"]
     assert 3 >= time.time() - start_time >= 2
 
     start_time = time.time()
-    future = qianfan.ChatCompletion().batch_do(messages_list, batch_size=5, _delay=1)
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=1)
     assert future.task_count() == CASE_LEN
     while future.finished_count() != future.task_count():
         time.sleep(0.3)
@@ -612,7 +612,7 @@ async def test_batch_predict_async():
     # it will make the response delay for a while
     start_time = time.time()
     results = await qianfan.ChatCompletion().abatch_do(
-        messages_list, batch_size=4, _delay=1
+        messages_list, worker_num=4, _delay=1
     )
     assert 5 >= time.time() - start_time >= 3
     for input, output in zip(messages_list, results):

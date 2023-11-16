@@ -378,20 +378,20 @@ def test_batch_predict():
     # it will make the response delay for a while
     start_time = time.time()
     results = (
-        qianfan.Completion().batch_do(prompt_list, batch_size=4, _delay=1).results()
+        qianfan.Completion().batch_do(prompt_list, worker_num=4, _delay=1).results()
     )
     assert 5 >= time.time() - start_time >= 3
     for input, output in zip(prompt_list, results):
         assert input in output["result"]
 
     start_time = time.time()
-    future = qianfan.Completion().batch_do(prompt_list, batch_size=5, _delay=1)
+    future = qianfan.Completion().batch_do(prompt_list, worker_num=5, _delay=1)
     for i, output in enumerate(future):
         assert prompt_list[i] in output.result()["result"]
     assert 3 >= time.time() - start_time >= 2
 
     start_time = time.time()
-    future = qianfan.Completion().batch_do(prompt_list, batch_size=5, _delay=1)
+    future = qianfan.Completion().batch_do(prompt_list, worker_num=5, _delay=1)
     assert future.task_count() == CASE_LEN
     while future.finished_count() != future.task_count():
         time.sleep(0.3)
@@ -408,7 +408,7 @@ async def test_batch_predict_async():
     # _delay is the argument only for unit test
     # it will make the response delay for a while
     start_time = time.time()
-    results = await qianfan.Completion().abatch_do(prompt_list, batch_size=4, _delay=1)
+    results = await qianfan.Completion().abatch_do(prompt_list, worker_num=4, _delay=1)
     assert 5 >= time.time() - start_time >= 3
     for input, output in zip(prompt_list, results):
         assert input in output["result"]

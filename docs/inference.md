@@ -180,7 +180,7 @@ img = Image.open(io.BytesIO(img_data))
 
 #### **批量推理**
 
-上述模型均提供了 `batch_do` 和异步的 `abatch_do` 方法，方便用户批量进行推理，并通过 `batch_size` 来控制并发量。
+上述模型均提供了 `batch_do` 和异步的 `abatch_do` 方法，方便用户批量进行推理，并通过 `worker_num` 来控制并发量。
 
 ```python
 prompt_list = ["你好", "很高兴认识你"]
@@ -188,7 +188,7 @@ prompt_list = ["你好", "很高兴认识你"]
 # 内部元素类型与 `do` 方法传入的参数类型一致
 # 例如 ChatCompletion 则应该传入 List[Union[Dict, QfMessages]]
 # 额外参数例如 `model` 等，与 `do` 方法可传入的参数和使用方法一致
-task = Completion().batch_do(prompt_list, batch_size=10)
+task = Completion().batch_do(prompt_list, worker_num=10)
 # 由于推理任务较为耗时，所以推理会在后台进行
 # resp 是一个 Future 对象，可以通过它来获得任务运行状态
 while task.finished_count() != task.total_count():
@@ -211,7 +211,7 @@ for r in task:
         print(res)
 
 # 异步调用
-results = await Completion().abatch_do(prompt_list, batch_size=10)
+results = await Completion().abatch_do(prompt_list, worker_num=10)
 # 返回值为一个 List，与输入列表中的元素一一对应
 # 正常情况下与 `ado` 返回类型一致，但如果发生异常则会是一个 Exception 对象
 for prompt, result in zip(prompt_list, results):

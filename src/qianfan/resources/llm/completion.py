@@ -383,7 +383,7 @@ class Completion(BaseResource):
     def batch_do(
         self,
         prompt_list: List[str],
-        batch_size: int = 1,
+        worker_num: int = 1,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -392,14 +392,14 @@ class Completion(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The input prompt list to generate the continuation from.
-          batch_size (int):
+          worker_num (int):
             The number of prompts to process at the same time.
           kwargs (Any):
             Please refer to `Completion.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = Completion().batch_do(["...", "..."], batch_size = 10)
+        response_list = Completion().batch_do(["...", "..."], worker_num = 10)
         for response in response_list:
             # return QfResponse if succeed, or exception will be raised
             print(response.result())
@@ -414,12 +414,12 @@ class Completion(BaseResource):
             partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
         ]
 
-        return self._batch_request(task_list, batch_size)
+        return self._batch_request(task_list, worker_num)
 
     async def abatch_do(
         self,
         prompt_list: List[str],
-        batch_size: int = 1,
+        worker_num: int = 1,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -428,14 +428,14 @@ class Completion(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The input prompt list to generate the continuation from.
-          batch_size (int):
+          worker_num (int):
             The number of prompts to process at the same time.
           kwargs (Any):
             Please refer to `Completion.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = await Completion().abatch_do([...], batch_size = 10)
+        response_list = await Completion().abatch_do([...], worker_num = 10)
         for response in response_list:
             # response is `QfResponse` if succeed, or response will be exception
             print(response)
@@ -443,4 +443,4 @@ class Completion(BaseResource):
 
         """
         tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
-        return await self._abatch_request(tasks, batch_size)
+        return await self._abatch_request(tasks, worker_num)

@@ -16,7 +16,6 @@ data source which is related to download/upload
 """
 
 import datetime
-import io
 import json
 import os.path
 import shutil
@@ -31,9 +30,12 @@ import requests
 from pydantic import BaseModel, Field, model_validator
 
 from qianfan.config import get_config
-from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset.consts import QianfanDatasetLocalCacheDir, ZipFileMaxSizeInMem
+from qianfan.errors import FileSizeOverflow, QianfanRequestError
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
+    DataExportStatus,
+    DataImportStatus,
     DataProjectType,
     DataSetType,
     DataSourceType,
@@ -193,14 +195,6 @@ class QianfanDataSource(DataSource, BaseModel):
             f"no project type and set type found matching with {template_type}"
         )
 
-    _ImportStatusMap = {
-        "waiting": 0,
-        "exporting": 1,
-        "complete": 2,
-        "failed": 3,
-        "interpreted": 4,
-    }
-
     def save(self, data: str, **kwargs: Any) -> bool:
         """
         write data to qianfan
@@ -236,27 +230,21 @@ class QianfanDataSource(DataSource, BaseModel):
                 self.id, is_annotated, DataSourceType.PrivateBos, file_path
             )
             while True:
-                sleep(2)
+                sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
                 qianfan_resp = Data.get_dataset_info(self.id)["result"]["versionInfo"]
                 status = qianfan_resp["importStatus"]
                 if status in [
-                    self._ImportStatusMap["waiting"],
-                    self._ImportStatusMap["exporting"],
+                    DataImportStatus.NotStarted.value,
+                    DataImportStatus.Running.value,
                 ]:
                     return True
-                elif status == self._ImportStatusMap["complete"]:
+                elif status == DataImportStatus.Finished.value:
                     continue
                 else:
                     return False
 
     async def asave(self, data: str, **kwargs: Any) -> bool:
         raise NotImplementedError()
-
-    _ExportStatusMap = {
-        "exporting": 1,
-        "complete": 2,
-        "failed": 3,
-    }
 
     def _get_latest_export_record(
         self, **kwargs: Any
@@ -277,7 +265,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         return export_records[newest_record_index], latest_record_time
 
-    def _fetch_data_from_remote(self, **kwargs: Any) -> Tuple[bytes, Dict]:
+    def _fetch_data_from_remote(self, zip_file_path: str, **kwargs: Any) -> Dict:
         parser = dateutil.parser.parser()
 
         info = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
@@ -296,28 +284,41 @@ class QianfanDataSource(DataSource, BaseModel):
                 info = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
                 status = info["exportStatus"]
 
-                if status == self._ExportStatusMap["complete"]:
+                if status == DataExportStatus.Finished.value:
                     break
-                elif status == self._ExportStatusMap["exporting"]:
+                elif status == DataExportStatus.Running.value:
                     continue
-                elif status == self._ExportStatusMap["failed"]:
-                    raise self.QianfanRequestError("export dataset failed")
+                elif status == DataExportStatus.Failed.value:
+                    raise QianfanRequestError("export dataset failed")
 
         newest_record = self._get_latest_export_record(**kwargs)[0]
         download_url = newest_record["downloadUrl"]
-        resp = requests.get(download_url)
+
+        resp = requests.get(download_url, stream=True)
+        with open(zip_file_path, "wb") as f:
+            for chuck in resp.iter_content(10240):
+                f.write(chuck)
+        resp.close()
+
         if resp.status_code != 200:
             raise Exception(
                 "download dataset from remote failed with http status code"
                 f" {resp.status_code}"
             )
-        return resp.content, newest_record
+
+        return newest_record
 
     def _save_remote_into_file(
         self, bin_path: str, info_path: str, **kwargs: Any
     ) -> None:
-        dataset_bin, info = self._fetch_data_from_remote(**kwargs)
-        with zipfile.ZipFile(io.BytesIO(dataset_bin)) as zip_f:
+        info = self._fetch_data_from_remote(bin_path, **kwargs)
+        with zipfile.ZipFile(bin_path) as zip_f:
+            json_file_name = zip_f.namelist()[0]
+            if zip_f.getinfo(json_file_name).file_size >= ZipFileMaxSizeInMem:
+                raise FileSizeOverflow(
+                    "dataset file size is too big to load:"
+                    f" {zip_f.getinfo(json_file_name).file_size}"
+                )
             json_file_name = zip_f.namelist()[0]
             zip_f.extractall()
             shutil.move(json_file_name, bin_path)
@@ -414,9 +415,6 @@ class QianfanDataSource(DataSource, BaseModel):
         # 文本都是 jsonl
         # 文生图都是 json
         raise NotImplementedError()
-
-    class QianfanRequestError(Exception):
-        ...
 
     @classmethod
     def create_new_bare_datasource_from_local(

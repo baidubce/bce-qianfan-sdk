@@ -70,6 +70,7 @@ class Env:
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
     DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
+    ImportStatusPollingInterval: str = "QIANFAN_IMPORT_STATUS_POLLING_INTERVAL"
 
 
 class DefaultValue:
@@ -97,6 +98,7 @@ class DefaultValue:
     EnablePrivate: bool = False
     AccessCode: str = ""
     TruncatedContinuePrompt = "继续"
+    ImportStatusPollingInterval: float = 2
 
 
 class Consts:

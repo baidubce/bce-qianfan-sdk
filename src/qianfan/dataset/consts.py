@@ -17,3 +17,5 @@ constants for dataset using
 
 QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
 QianfanDefaultColumnNameForNestedTable = "_default_column_name"
+
+ZipFileMaxSizeInMem = 1024 * 1024 * 1024 * 2

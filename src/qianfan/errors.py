@@ -72,3 +72,21 @@ class InternalError(QianfanError):
     """Exception when internal error occurs"""
 
     pass
+
+
+class ValidationError(Exception):
+    """Exception when validating failed"""
+
+    ...
+
+
+class QianfanRequestError(Exception):
+    """Exception when request on qianfan failed"""
+
+    ...
+
+
+class FileSizeOverflow(Exception):
+    """Exception when zip file is too big"""
+
+    ...

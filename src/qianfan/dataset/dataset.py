@@ -40,6 +40,7 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
+from qianfan.errors import ValidationError
 from qianfan.resources.console.consts import DataTemplateType
 
 
@@ -61,9 +62,6 @@ class Dataset(Table):
 
     # schema 对象的缓存，在 load 时被指定
     inner_schema_cache: Optional[Schema] = None
-
-    class ValidationError(Exception):
-        ...
 
     @classmethod
     def _from_source(
@@ -233,7 +231,7 @@ class Dataset(Table):
 
         # 校验
         if schema and not schema.validate(table):
-            raise cls.ValidationError("validate failed when initialize dataset")
+            raise ValidationError("validate failed when initialize dataset")
 
         return table
 
@@ -269,7 +267,7 @@ class Dataset(Table):
 
         # 校验
         if schema and not schema.validate(self):
-            raise self.ValidationError("validate failed when output dataset")
+            raise ValidationError("validate failed when output dataset")
 
         # 开始写入数据
         return self._to_source(source, **kwargs)  # noqa

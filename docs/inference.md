@@ -5,6 +5,7 @@
 + [Embedding 向量化](#embedding-向量化)
 + [Plugin 插件调用](#plugin-插件)
 + [文生图](#文生图)
++ [批量推理](#批量推理)
 
 #### **Chat 对话**
 

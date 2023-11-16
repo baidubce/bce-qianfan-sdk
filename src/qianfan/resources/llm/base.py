@@ -37,7 +37,7 @@ import qianfan.errors as errors
 from qianfan.consts import DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
-from qianfan.utils import log_warn
+from qianfan.utils import log_info, log_warn
 
 # This is used when user provides `endpoint`
 # In such cases, SDK cannot know which model the user is using
@@ -68,7 +68,7 @@ class BatchRequestFuture(object):
         with self._lock:
             self._finished_count += 1
             if self._finished_count == len(self._future_list):
-                log_warn("All tasks finished, exeutor will be shutdown")
+                log_info("All tasks finished, exeutor will be shutdown")
                 self._executor.shutdown(wait=False)
 
     def results(self) -> List[Union[QfResponse, Iterator[QfResponse]]]:

@@ -14,11 +14,16 @@
 
 
 import copy
+from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel, DefaultValue
-from qianfan.resources.llm.base import UNSPECIFIED_MODEL, BaseResource
+from qianfan.resources.llm.base import (
+    UNSPECIFIED_MODEL,
+    BaseResource,
+    BatchRequestFuture,
+)
 from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse, QfRole
 
 
@@ -621,3 +626,70 @@ class ChatCompletion(BaseResource):
                 cur_content += r["result"]
                 is_truncated = r["is_truncated"]
                 yield r
+
+    def batch_do(
+        self,
+        messages_list: List[Union[List[Dict], QfMessages]],
+        worker_num: int = 1,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        """
+        Batch perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = ChatCompletion().batch_do([...], worker_num = 10)
+        for response in response_list:
+            # return QfResponse if succeed, or exception will be raised
+            print(response.result())
+        # or
+        while response_list.finished_count() != response_list.task_count():
+            time.sleep(1)
+        print(response_list.results())
+        ```
+
+        """
+        task_list = [
+            partial(self.do, messages=messages, **kwargs) for messages in messages_list
+        ]
+
+        return self._batch_request(task_list, worker_num)
+
+    async def abatch_do(
+        self,
+        messages_list: List[Union[List[Dict], QfMessages]],
+        worker_num: int = 1,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        Async batch perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (int):
+            The number of prompts to process at the same time.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = await ChatCompletion().abatch_do([...], worker_num = 10)
+        for response in response_list:
+            # response is `QfResponse` if succeed, or response will be exception
+            print(response)
+        ```
+
+        """
+        tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
+        return await self._abatch_request(tasks, worker_num)

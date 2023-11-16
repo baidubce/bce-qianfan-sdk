@@ -88,7 +88,8 @@ class BaseAPIRequestor(object):
         """
         simple sync request
         """
-        response = self._client.request(request)
+        with self._rate_limiter:
+            response = self._client.request(request)
         _check_if_status_code_is_200(response)
         try:
             body = response.json()
@@ -106,7 +107,8 @@ class BaseAPIRequestor(object):
         """
         stream sync request
         """
-        responses = self._client.request_stream(request)
+        with self._rate_limiter:
+            responses = self._client.request_stream(request)
         for body, resp in responses:
             _check_if_status_code_is_200(resp)
             body_str = body.decode("utf-8")
@@ -137,7 +139,8 @@ class BaseAPIRequestor(object):
         """
         async request
         """
-        response, session = await self._client.arequest(request)
+        async with self._rate_limiter:
+            response, session = await self._client.arequest(request)
         async with session:
             async with response:
                 _async_check_if_status_code_is_200(response)
@@ -158,7 +161,8 @@ class BaseAPIRequestor(object):
         """
         async stream request
         """
-        responses = self._client.arequest_stream(request)
+        async with self._rate_limiter:
+            responses = self._client.arequest_stream(request)
         async for body, resp in responses:
             _async_check_if_status_code_is_200(resp)
             body_str = body.decode("utf-8")

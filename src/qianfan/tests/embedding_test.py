@@ -17,6 +17,7 @@
 """
 
 import os
+import time
 
 import pytest
 
@@ -138,3 +139,53 @@ def test_embedding_auth():
         assert "data" in resp.body
         resp = c.do(texts=TEST_MESSAGE[0], model="bge-large-en")
         assert "data" in resp.body
+
+
+def test_batch_predict():
+    CASE_LEN = 10
+    text_list = [[f"test prompt {i}"] for i in range(CASE_LEN)]
+    # _delay is the argument only for unit test
+    # it will make the response delay for a while
+    start_time = time.time()
+    results = qianfan.Embedding().batch_do(text_list, worker_num=4, _delay=1).results()
+    assert 5 >= time.time() - start_time >= 3
+    for input, output in zip(text_list, results):
+        assert input == output["_request"]["input"]
+
+    start_time = time.time()
+    future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=1)
+    for i, output in enumerate(future):
+        assert text_list[i] == output.result()["_request"]["input"]
+    assert 3 >= time.time() - start_time >= 2
+
+    start_time = time.time()
+    future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=1)
+    assert future.task_count() == CASE_LEN
+    while future.finished_count() != future.task_count():
+        time.sleep(0.3)
+    assert 3 >= time.time() - start_time >= 2
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(text_list, future.results()):
+        assert input == output["_request"]["input"]
+
+    start_time = time.time()
+    future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=0.5)
+    assert future.task_count() == CASE_LEN
+    future.wait()
+    assert 2 >= time.time() - start_time >= 1
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(text_list, future.results()):
+        assert input == output["_request"]["input"]
+
+
+@pytest.mark.asyncio
+async def test_batch_predict_async():
+    CASE_LEN = 10
+    text_list = [[f"test prompt {i}"] for i in range(CASE_LEN)]
+    # _delay is the argument only for unit test
+    # it will make the response delay for a while
+    start_time = time.time()
+    results = await qianfan.Embedding().abatch_do(text_list, worker_num=4, _delay=1)
+    assert 5 >= time.time() - start_time >= 3
+    for input, output in zip(text_list, results):
+        assert input == output["_request"]["input"]

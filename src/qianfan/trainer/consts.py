@@ -1,4 +1,3 @@
-from collections.abc import Mapping, Sequence
 from enum import Enum
 
 
@@ -43,14 +42,6 @@ class ServiceStatus(str, Enum):
 
 class TrainMode(str, Enum):
     SFT = "SFT"
-
-
-class ServiceStatus(str, Enum):
-    Done = "Done"
-    New = "New"
-    Deploying = "Deploying"
-    Failed = "Failed"
-    Stopped = "Stopped"
 
 
 ModelTypeMapping = {

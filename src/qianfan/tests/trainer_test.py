@@ -11,7 +11,7 @@ class MyEventHandler(EventHandler):
 
 def test_trainer_sft_start():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_length=4096
+        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
     )
     ds_id = 111
 
@@ -24,16 +24,18 @@ def test_trainer_sft_start():
     )
     sft_task.start()
     res = sft_task.result
-    assert sft_task.result is not None
-    assert isinstance(sft_task.result, dict)
-    assert "model_version_id" in sft_task.result
+    assert res is not None
+    assert isinstance(res, list)
+    assert len(res) > 0
+    assert isinstance(res[0], dict)
+    assert "model_version_id" in res[0]
 
 
 def test_trainer_sft_with_deploy():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_length=4096
+        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
     )
-    deploy_config = DeployConfig(name="")
+    deploy_config = DeployConfig(replicas=1, pool_type=1)
     ds_id = 111
     train_config.model_dump_json()
 
@@ -46,8 +48,9 @@ def test_trainer_sft_with_deploy():
         event_handler=eh,
     )
     sft_task.start()
-    print("sft task", sft_task.result)
     res = sft_task.result
-    assert sft_task.result is not None
-    assert isinstance(sft_task.result, dict)
-    assert "model_endpoint" in sft_task.result
+    assert res is not None
+    assert isinstance(res, list)
+    assert len(res) > 0
+    assert isinstance(res[0], dict)
+    assert "model_endpoint" in res[0]

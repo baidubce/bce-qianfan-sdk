@@ -17,9 +17,9 @@ class TrainConfig(BaseModel):
 
 
 class DeployConfig(BaseModel):
-    name: Optional[str] = None
-    endpoint_prefix: Optional[str] = None
-    description: Optional[str] = None
-    replicas: Optional[int] = None
-    pool_type: Optional[str] = None
+    name: str = ""
+    endpoint_prefix: str = ""
+    description: str = ""
+    replicas: int
+    pool_type: int
     extras: Any = None

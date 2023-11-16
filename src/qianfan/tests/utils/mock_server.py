@@ -933,7 +933,6 @@ def create_service():
     """
     mock create service api
     """
-    print("server: ", 1)
     return json_response(
         {"log_id": "2771697584", "result": {"result": True, "serviceId": 164}}
     )

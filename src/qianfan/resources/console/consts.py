@@ -99,3 +99,11 @@ class DataReleaseStatus(int, Enum):
     """发布完成"""
     Failed: int = 3
     """发布失败"""
+
+
+class ServiceStatus(str, Enum):
+    Done = "Done"
+    New = "New"
+    Deploying = "Deploying"
+    Failed = "Failed"
+    Stopped = "Stopped"

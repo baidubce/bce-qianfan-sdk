@@ -25,3 +25,10 @@ class Event:
 class EventHandler:
     def dispatch(self, event: Event) -> None:
         return None
+
+
+def dispatch_event(
+    event_handler: Optional[EventHandler] = None, event: Optional[Event] = None
+) -> None:
+    if event_handler is not None and event is not None:
+        event_handler.dispatch(event)

@@ -191,18 +191,11 @@ prompt_list = ["你好", "很高兴认识你"]
 # 额外参数例如 `model` 等，与 `do` 方法可传入的参数和使用方法一致
 task = Completion().batch_do(prompt_list, worker_num=10)
 # 由于推理任务较为耗时，所以推理会在后台进行
-# resp 是一个 Future 对象，可以通过它来获得任务运行状态
-while task.finished_count() != task.total_count():
-    time.sleep(1)
-# 用户可以通过 resp.results() 来等待所有推理任务完成并获取结果
-results = task.results()
-# 结果与输入一一对应，如果推理成功那么结果与 `do` 返回类型一致
-# 否则是一个 Exception 对象，用户需要进行错误处理
-for prompt, result in zip(prompt_list, results):
-    if not isinstance(result, Exception):
-        print(prompt, result)
-
-# 也可以遍历的方式获取已完成的推理结果
+# 返回的 task 是一个 Future 对象，可以通过它来获得任务运行状态
+# 例如通过 resp.finished_count() 和 resp.total_count() 来获取已完成和总任务数
+print("{}/{}".format(task.finished_count(), task.total_count())) # => 11/20
+# SDK 会按照输入顺序进行批量推理
+# 可以通过遍历的方式获取已完成任务的结果
 for r in task:
     # 需要调用 r.result() 来显式等待某一条推理完成
     res = r.result()
@@ -210,6 +203,17 @@ for r in task:
     # 否则会是一个 Exception 对象，用户需要进行错误处理
     if not isinstance(res, Exception):
         print(res)
+# 也可以通过 resp.results() 来等待所有推理任务完成并获取所有结果
+results = task.results()
+# 或者仅等待所有任务完成，避免因返回的数据量较大导致过多的内存占用
+# 之后可再采用上述遍历的方式逐个获取结果
+task.wait()
+# 结果与输入一一对应，如果推理成功那么结果与 `do` 返回类型一致
+# 否则是一个 Exception 对象，用户需要进行错误处理
+for prompt, result in zip(prompt_list, results):
+    if not isinstance(result, Exception):
+        print(prompt, result)
+
 
 # 异步调用
 results = await Completion().abatch_do(prompt_list, worker_num=10)

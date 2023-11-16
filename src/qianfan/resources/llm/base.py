@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import copy
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -47,11 +48,18 @@ UNSPECIFIED_MODEL = "UNSPECIFIED_MODEL"
 
 
 class BatchRequestFuture(object):
+    """
+    Future object for batch request
+    """
+
     def __init__(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
         worker_num: int,
     ) -> None:
+        """
+        Init batch request future
+        """
         future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
         self._executor = ThreadPoolExecutor(max_workers=worker_num)
         for task in tasks:
@@ -65,26 +73,58 @@ class BatchRequestFuture(object):
     def _future_callback(
         self, fn: Future[Union[QfResponse, Iterator[QfResponse]]]
     ) -> None:
+        """
+        callback when one task is finished
+        """
         with self._lock:
             self._finished_count += 1
             if self._finished_count == len(self._future_list):
                 log_info("All tasks finished, exeutor will be shutdown")
                 self._executor.shutdown(wait=False)
 
+    def wait(self) -> None:
+        """
+        Wait for all tasks to be finished
+        """
+        concurrent.futures.wait(self._future_list)
+
     def results(self) -> List[Union[QfResponse, Iterator[QfResponse]]]:
+        """
+        Wait for all tasks to be finished, and return the results.
+        The order of the elements in the output is the same as the order
+        of the elements in the input.
+        """
         return [future.result() for future in self._future_list]
 
     def task_count(self) -> int:
+        """
+        Return the total count of tasks
+        """
         return len(self._future_list)
 
     def finished_count(self) -> int:
+        """
+        Return the number of tasks that have been finished
+        """
         with self._lock:
             return self._finished_count
 
     def __iter__(self) -> Iterator[Future[Union[QfResponse, Iterator[QfResponse]]]]:
+        """
+        Return the iterator of the future list.
+        Use `result()` to get the result of each task.
+
+        ```
+        for item in batch_request_future:
+            print(item.result())
+        ```
+        """
         return self._future_list.__iter__()
 
     def __len__(self) -> int:
+        """
+        return the number of tasks
+        """
         return len(self._future_list)
 
 

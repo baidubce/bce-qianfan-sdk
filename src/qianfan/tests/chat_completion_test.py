@@ -601,6 +601,15 @@ def test_batch_predict():
     for input, output in zip(messages_list, future.results()):
         assert input[0]["content"] in output["result"]
 
+    start_time = time.time()
+    future = qianfan.ChatCompletion().batch_do(messages_list, worker_num=5, _delay=0.5)
+    assert future.task_count() == CASE_LEN
+    future.wait()
+    assert 2 >= time.time() - start_time >= 1
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(messages_list, future.results()):
+        assert input[0]["content"] in output["result"]
+
 
 @pytest.mark.asyncio
 async def test_batch_predict_async():

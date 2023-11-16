@@ -80,6 +80,15 @@ def test_batch_predict():
     for input, output in zip(prompt_list, future.results()):
         assert input == output["_request"]["prompt"]
 
+    start_time = time.time()
+    future = qianfan.Text2Image().batch_do(prompt_list, worker_num=5, _delay=0.5)
+    assert future.task_count() == CASE_LEN
+    future.wait()
+    assert 2 >= time.time() - start_time >= 1
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(prompt_list, future.results()):
+        assert input == output["_request"]["prompt"]
+
 
 @pytest.mark.asyncio
 async def test_batch_predict_async():

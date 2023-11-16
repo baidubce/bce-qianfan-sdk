@@ -168,6 +168,15 @@ def test_batch_predict():
     for input, output in zip(text_list, future.results()):
         assert input == output["_request"]["input"]
 
+    start_time = time.time()
+    future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=0.5)
+    assert future.task_count() == CASE_LEN
+    future.wait()
+    assert 2 >= time.time() - start_time >= 1
+    assert future.finished_count() == CASE_LEN
+    for input, output in zip(text_list, future.results()):
+        assert input == output["_request"]["input"]
+
 
 @pytest.mark.asyncio
 async def test_batch_predict_async():

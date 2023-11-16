@@ -203,7 +203,7 @@ for r in task:
     # 否则会是一个 Exception 对象，用户需要进行错误处理
     if not isinstance(res, Exception):
         print(res)
-# 也可以通过 resp.results() 来等待所有推理任务完成并获取所有结果
+# 也可以通过 task.results() 来等待所有推理任务完成并获取所有结果
 results = task.results()
 # 或者仅等待所有任务完成，避免因返回的数据量较大导致过多的内存占用
 # 之后可再采用上述遍历的方式逐个获取结果

@@ -86,6 +86,9 @@ print(resp["result"])
 </details>
 
 ## 功能导览
+
+我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
+
 ### 大模型能力
 
 目前千帆 SDK 支持用户使用如下大模型预测能力，详见[预测服务](./docs/inference.md)

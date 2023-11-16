@@ -394,6 +394,11 @@ class BaseResource(object):
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
         worker_num: int,
     ) -> BatchRequestFuture:
+        """
+        create batch prediction task and return future
+        """
+        if worker_num <= 0:
+            raise errors.InvalidArgumentError("worker_num must be greater than 0")
         return BatchRequestFuture(tasks, worker_num)
 
     async def _abatch_request(
@@ -403,6 +408,11 @@ class BaseResource(object):
         ],
         worker_num: int,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        async do batch prediction
+        """
+        if worker_num <= 0:
+            raise errors.InvalidArgumentError("worker_num must be greater than 0")
         sem = asyncio.Semaphore(worker_num)
 
         async def _with_concurrency_limit(

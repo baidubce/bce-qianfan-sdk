@@ -65,6 +65,9 @@ class Dataset(Table):
     # schema 对象的缓存，在 load 时被指定
     inner_schema_cache: Optional[Schema] = None
 
+    # 千帆数据集 Schema 校验时设置的标注 flag，默认为 False
+    qianfan_is_annotated: bool = False
+
     @classmethod
     def _from_source(
         cls, source: DataSource, schema: Optional[Schema], **kwargs: Any
@@ -263,7 +266,6 @@ class Dataset(Table):
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
-        qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
         **kwargs: Any,
@@ -282,9 +284,6 @@ class Dataset(Table):
                 dataset local file path, default to None
             qianfan_dataset_id (Optional[int]):
                 qianfan dataset ID, default to None
-            qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
-                create arguments for creating a bare dataset on qianfan,
-                default to None
             huggingface_name (Optional[str]):
                 Hugging Face dataset name, not available now
             schema: (Optional[Schema]):
@@ -300,7 +299,6 @@ class Dataset(Table):
             source = cls._from_args_to_source(
                 data_file,
                 qianfan_dataset_id,
-                qianfan_dataset_create_args,
                 huggingface_name,
                 **kwargs,
             )
@@ -379,6 +377,9 @@ class Dataset(Table):
             error = ValidationError("validate failed when initialize dataset")
             log_error(str(error))
             raise error
+
+        if isinstance(source, QianfanDataSource):
+            kwargs["is_annotated"] = schema.is_annotated
 
         # 开始写入数据
         return self._to_source(source, **kwargs)  # noqa

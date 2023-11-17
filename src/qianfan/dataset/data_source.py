@@ -44,7 +44,7 @@ from qianfan.resources.console.consts import (
 )
 from qianfan.resources.console.data import Data
 from qianfan.utils.bos_uploader import upload_content_to_bos
-from qianfan.utils.logging import log_error, log_info, log_warn
+from qianfan.utils.logging import log_error, log_info, log_warn, log_debug
 
 
 class FormatType(Enum):
@@ -460,11 +460,15 @@ class QianfanDataSource(DataSource, BaseModel):
 
         # 流式下载到本地文件中
         log_info(f"start to download dataset zip from url {download_url}")
-        resp = requests.get(download_url, stream=True)
-        with open(zip_file_path, "wb") as f:
-            for chuck in resp.iter_content(10240):
-                f.write(chuck)
-        resp.close()
+        try:
+            resp = requests.get(download_url, stream=True)
+            with open(zip_file_path, "wb") as f:
+                for chuck in resp.iter_content(10240):
+                    f.write(chuck)
+            resp.close()
+        except Exception as e:
+            log_error(f"exception occurred during download {str(e)}")
+            raise e
 
         if resp.status_code != 200:
             http_error = Exception(
@@ -688,6 +692,7 @@ class QianfanDataSource(DataSource, BaseModel):
             **kwargs,
         )["result"]
 
+        log_debug(f"create qianfan dataset response: {qianfan_resp}")
         log_info("create dataset on qianfan successfully")
 
         # 构造对象

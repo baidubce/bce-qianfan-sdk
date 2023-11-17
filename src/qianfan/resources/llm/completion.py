@@ -85,6 +85,9 @@ class Completion(BaseResource):
                     "penalty_score",
                     "user_id",
                     "system",
+                    "stop",
+                    "disable_search",
+                    "enable_citation",
                 },
             ),
             "ERNIE-Bot-4": QfLLMInfo(
@@ -97,6 +100,9 @@ class Completion(BaseResource):
                     "penalty_score",
                     "user_id",
                     "system",
+                    "stop",
+                    "disable_search",
+                    "enable_citation",
                 },
             ),
             "ERNIE-Bot-8k": QfLLMInfo(

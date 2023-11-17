@@ -125,7 +125,6 @@ class TrainAction(
         self.task_id = task_id
         self.task_id = job_id
         self.train_mode = train_mode
-
     def exec(self, input: Dict[str, Any], **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         # request for create model train task
         try:
@@ -206,9 +205,10 @@ class TrainAction(
             time.sleep(10)
 
         try:
+            self.model_name="model_{}{}".format(self.task_id, self.job_id)
             model_publish_resp = api.Model.publish(
                 is_new=True,
-                model_name="test_sdk_ebt1",
+                model_name=self.model_name,
                 version_meta={"taskId": self.task_id, "iterationId": self.job_id},
             )
             # 获取model_id and version
@@ -231,7 +231,7 @@ class TrainAction(
                         ),
                     )
                     return wrap_error_output(e)
-                if job_status != "RUNNING":
+                if job_status != console_const.TrainStatus.Running:
                     break
                 time.sleep(10)
 
@@ -249,8 +249,16 @@ class TrainAction(
                     model_version_id=self.model_version_id
                 )
                 model_version_state = model_detail_info["result"]["state"]
-                if model_version_state != "Creating":
+                if model_version_state == console_const.ModelState.Ready:
                     break
+                elif model_version_state == console_const.ModelState.Fail:
+                    self.event_dispatcher,
+                    Event(
+                        self.id,
+                        ActionState.Error,
+                        "action_error: action[{}], msg:{}".format(self.id, "model publish failed"),
+                    ),
+                    return wrap_error_output(e)
                 time.sleep(20)
 
         except Exception as e:

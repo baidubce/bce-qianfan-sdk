@@ -107,3 +107,14 @@ class ServiceStatus(str, Enum):
     Deploying = "Deploying"
     Failed = "Failed"
     Stopped = "Stopped"
+
+class TrainStatus(str, Enum):
+    Finish = "FINISH"
+    Running = "RUNNING"
+    Fail = "FAIL"
+    Stop = "STOP"
+
+class ModelState(str, Enum):
+    Ready = "Ready" #已就绪
+    Creating = "Creating" #创建中
+    Fail = "Fail" #创建失败

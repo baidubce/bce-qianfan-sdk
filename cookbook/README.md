@@ -16,3 +16,4 @@
 
 - [Baidu ElasticSearch](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/baidu_elasticsearch_RAG/qianfan_baidu_elasticsearch.ipynb)：展示了如何使用百度 ElasticSearch 向量数据库，对接千帆平台的模型管理和应用接入的能力，并构建一个RAG的知识问答场景。
 - [Weights & Biases](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/wandb/wandb.ipynb)：展示了如何将千帆模型对接至 Weights & Biases，并使用其提供的可视化能力进行模型训练过程监控。 
+- [Deep Lake](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/deeplake_retrieval_qa/deeplake_retrieval_qa.ipynb)：展示了如何使用 Deep Lake 获取数据库，并基于该数据完成一个检索式问答系统。

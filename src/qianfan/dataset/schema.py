@@ -18,16 +18,12 @@ currently qianfan schema only
 
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
-
 from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error
 
 
-class Schema(ABC, BaseModel):
-    is_annotated: bool = False
-
+class Schema(ABC):
     @abstractmethod
     def validate(self, table: Table) -> bool:
         """
@@ -42,8 +38,20 @@ class Schema(ABC, BaseModel):
         """
 
 
+class QianfanSchema(Schema):
+    def __init__(self) -> None:
+        """
+        initialize a new Schema instance
+        """
+        # 千帆使用，用于作为返回值，表示是否是带标注的数据
+        self.is_annotated: bool = False
+
+    def validate(self, table: Table) -> bool:
+        return self.is_annotated
+
+
 # 无排序对话
-class QianfanNonSortedConversation(Schema):
+class QianfanNonSortedConversation(QianfanSchema):
     """validator for non-sorted, conversational dataset"""
 
     def validate(self, table: Table) -> bool:
@@ -100,15 +108,15 @@ class QianfanNonSortedConversation(Schema):
 
         # 本地单轮对话对接千帆的校验规则
         if "prompt" not in col_names:
-            log_error(f"no prompt column in dataset column")
+            log_error("no prompt column in dataset column")
             return False
         if table.inner_table.column("prompt").null_count:
-            log_error(f"prompt column has empty data in dataset column")
+            log_error("prompt column has empty data in dataset column")
             return False
 
         if "response" in col_names:
             if table.inner_table.column("response").null_count:
-                log_error(f"response column has empty data in dataset column")
+                log_error("response column has empty data in dataset column")
                 return False
             response_list = table.col_list("response")["response"]
             for index in range(len(response_list)):
@@ -129,7 +137,7 @@ class QianfanNonSortedConversation(Schema):
 
 
 # 有排序对话
-class QianfanSortedConversation(Schema):
+class QianfanSortedConversation(QianfanSchema):
     """validator for sorted, conversational dataset"""
 
     def validate(self, table: Table) -> bool:
@@ -191,21 +199,21 @@ class QianfanSortedConversation(Schema):
 
         # 本地单轮对话带排序对接千帆的校验规则
         if "prompt" not in col_names:
-            log_error(f"no prompt column in dataset column")
+            log_error("no prompt column in dataset column")
             return False
         if table.inner_table.column("prompt").null_count:
-            log_error(f"prompt column has empty data in dataset column")
+            log_error("prompt column has empty data in dataset column")
             return False
 
         if "response" in col_names:
             if table.inner_table.column("response").null_count:
-                log_error(f"response column has empty data in dataset column")
+                log_error("response column has empty data in dataset column")
                 return False
             response_list = table.col_list("response")["response"]
             for index in range(len(response_list)):
                 response_record = response_list[index]
                 if not (isinstance(response_record, list) and len(response_record) > 0):
-                    log_error(f"response records illegal in dataset row {index}")
+                    log_error("response records illegal in dataset row {index}")
                     return False
                 for single_response_record in response_record:
                     if not (
@@ -222,7 +230,7 @@ class QianfanSortedConversation(Schema):
 
 
 # 泛文本对话
-class QianfanGenericText(Schema):
+class QianfanGenericText(QianfanSchema):
     """validator for generic text dataset"""
 
     def validate(self, table: Table) -> bool:
@@ -252,7 +260,7 @@ class QianfanGenericText(Schema):
 
 
 # 问答集
-class QianfanQuerySet(Schema):
+class QianfanQuerySet(QianfanSchema):
     """validator for query set dataset"""
 
     def validate(self, table: Table) -> bool:
@@ -284,17 +292,17 @@ class QianfanQuerySet(Schema):
             return True
 
         if "prompt" not in col_names:
-            log_error(f"no prompt column in dataset column")
+            log_error("no prompt column in dataset column")
             return False
         if table.inner_table.column("prompt").null_count:
-            log_error(f"prompt column has empty data in dataset column")
+            log_error("prompt column has empty data in dataset column")
             return False
 
         return True
 
 
 # 文生图
-class QianfanText2Image(Schema):
+class QianfanText2Image(QianfanSchema):
     """validator for text to image dataset"""
 
     def validate(self, table: Table) -> bool:

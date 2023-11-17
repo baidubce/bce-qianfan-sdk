@@ -35,6 +35,7 @@ from qianfan.dataset.data_source import (
 from qianfan.dataset.schema import (
     QianfanGenericText,
     QianfanQuerySet,
+    QianfanSchema,
     QianfanSortedConversation,
     QianfanText2Image,
     Schema,
@@ -297,9 +298,9 @@ class Dataset(Table):
         if not source:
             log_info("no data source was provided, construct")
             source = cls._from_args_to_source(
-                data_file,
-                qianfan_dataset_id,
-                huggingface_name,
+                data_file=data_file,
+                qianfan_dataset_id=qianfan_dataset_id,
+                huggingface_name=huggingface_name,
                 **kwargs,
             )
 
@@ -379,6 +380,7 @@ class Dataset(Table):
             raise error
 
         if isinstance(source, QianfanDataSource):
+            assert isinstance(schema, QianfanSchema)
             kwargs["is_annotated"] = schema.is_annotated
 
         # 开始写入数据

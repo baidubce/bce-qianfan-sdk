@@ -44,7 +44,7 @@ from qianfan.resources.console.consts import (
 )
 from qianfan.resources.console.data import Data
 from qianfan.utils.bos_uploader import upload_content_to_bos
-from qianfan.utils.logging import log_error, log_info, log_warn, log_debug
+from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
 
 
 class FormatType(Enum):

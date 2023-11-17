@@ -16,7 +16,7 @@ interface file
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 from typing_extensions import Self
 
@@ -27,16 +27,40 @@ class Processable(ABC):
     """
 
     @abstractmethod
-    def map(self, op: Callable[[Dict[str, Any]], Dict[str, Any]]) -> Self:
-        """map on a Processable object"""
+    def map(self, op: Callable[[Any], Any]) -> Self:
+        """
+        map on a Processable object
+
+        Args:
+            op (Callable[[Any], Any]): handler used to map
+
+        Returns:
+            Self: a new Processable object after mapping
+        """
 
     @abstractmethod
-    def filter(self, op: Callable[[Dict[str, Any]], bool]) -> Self:
-        """filter on a Processable object"""
+    def filter(self, op: Callable[[Any], bool]) -> Self:
+        """
+        filter on a Processable object
+
+        Args:
+            op (Callable[[Any], bool]): handler used to filter
+
+        Returns:
+            Self: a new Processable object after filtering
+        """
 
     @abstractmethod
     def delete(self, index: Union[int, str]) -> Self:
-        """delete an element from Processable object"""
+        """
+        delete an element from Processable object
+
+        Args:
+            index (Union[int, str]): element index to delete
+
+        Returns:
+            Self: a new Processable object after delete
+        """
 
 
 class Appendable(ABC):
@@ -46,7 +70,15 @@ class Appendable(ABC):
 
     @abstractmethod
     def append(self, elem: Any) -> Self:
-        """append an element at Appendable object"""
+        """
+        append an element at Appendable object
+
+        Args:
+            elem (Any): element to append
+
+        Returns:
+            Self: a new Appendable object after appending
+        """
 
 
 class Listable(ABC):
@@ -58,4 +90,12 @@ class Listable(ABC):
     def list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
     ) -> Any:
-        """get an element from object"""
+        """
+        get an element from object
+
+        Args:
+            by (Optional[Union[slice, int, str, Sequence[int], Sequence[str]]):
+                index used to get data or data list, default to None
+        Returns:
+            Any: elements
+        """

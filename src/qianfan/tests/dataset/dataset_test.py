@@ -17,6 +17,7 @@ test for data set
 
 from typing import Any
 
+import pytest
 from pydantic import BaseModel
 
 from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
@@ -28,8 +29,10 @@ from qianfan.dataset.schema import (
 )
 
 
-class FakeJsonlDataSource(DataSource, BaseModel):
+class FakeDataSource(DataSource, BaseModel):
     buffer: str = ""
+    origin_data: str
+    format: FormatType
 
     def save(self, data: str, **kwargs: Any) -> bool:
         self.buffer = data
@@ -39,43 +42,26 @@ class FakeJsonlDataSource(DataSource, BaseModel):
         pass
 
     def fetch(self, **kwargs: Any) -> str:
-        return '[{"prompt": "12", "reponse": [["12"]]}, {"prompt": "12", "reponse": [["12"]]}]'  # noqa
+        return self.origin_data  # noqa
 
     async def afetch(self, **kwargs: Any) -> str:
         pass
 
     def format_type(self) -> FormatType:
-        return FormatType.Jsonl
+        return self.format
 
     def set_format_type(self, format_type: FormatType) -> None:
-        pass
-
-
-class FakeJsonDataSource(DataSource, BaseModel):
-    buffer: str = ""
-
-    def save(self, data: str, **kwargs: Any) -> bool:
-        self.buffer = data
-        return True
-
-    async def asave(self, data: str, **kwargs: Any) -> bool:
-        pass
-
-    def fetch(self, **kwargs: Any) -> str:
-        return '{"prompt": "12", "response": [["12"]]}'
-
-    async def afetch(self, **kwargs: Any) -> str:
-        pass
-
-    def format_type(self) -> FormatType:
-        return FormatType.Json
-
-    def set_format_type(self, format_type: FormatType) -> None:
-        pass
+        self.format = format_type
 
 
 def test_dataset_create():
-    fake_data_source = FakeJsonlDataSource()
+    fake_data_source = FakeDataSource(
+        origin_data=(
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response":'
+            ' [["12"]]}]'
+        ),
+        format=FormatType.Jsonl,
+    )
     dataset = Dataset.load(fake_data_source)
     list_ret = dataset.list()
     dataset.save(schema=QianfanNonSortedConversation())
@@ -83,10 +69,31 @@ def test_dataset_create():
     assert fake_data_source.buffer == fake_data_source.fetch()
     assert list(list_ret[0].keys())[0] == QianfanDefaultColumnNameForNestedTable
 
-    fake_data_source_2 = FakeJsonDataSource()
+    fake_data_source_2 = FakeDataSource(
+        origin_data='{"prompt": "12", "response": [["12"]]}', format=FormatType.Json
+    )
     dataset_2 = Dataset.load(fake_data_source_2)
     list_ret = dataset_2.list()
     dataset_2.save(schema=QianfanNonSortedConversation())
     dataset_2.save(schema=QianfanSortedConversation())
     assert f"[{fake_data_source_2.fetch()}]" == fake_data_source_2.buffer
     assert list(list_ret[0].keys())[0] == "prompt"
+
+    fake_data_source_3 = FakeDataSource(
+        origin_data='{"prompt": "12", "response": [[]]}', format=FormatType.Json
+    )
+    dataset_3 = Dataset.load(fake_data_source_3)
+    with pytest.raises(Exception):
+        dataset_3.save(schema=QianfanNonSortedConversation())
+    with pytest.raises(Exception):
+        dataset_3.save(schema=QianfanSortedConversation())
+
+    fake_data_source_4 = FakeDataSource(
+        origin_data='[{"prompt": "12", "response": [["12"]]}, {"prompt": "12"}]',
+        format=FormatType.Jsonl,
+    )
+    dataset_4 = Dataset.load(fake_data_source_4)
+    with pytest.raises(Exception):
+        dataset_4.save(schema=QianfanNonSortedConversation())
+    with pytest.raises(Exception):
+        dataset_4.save(schema=QianfanSortedConversation())

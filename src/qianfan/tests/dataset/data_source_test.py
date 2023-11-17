@@ -14,6 +14,7 @@
 """
 test for data source
 """
+import os
 
 from qianfan.dataset.data_source import FileDataSource, FormatType, QianfanDataSource
 from qianfan.resources.console.consts import (
@@ -25,18 +26,38 @@ from qianfan.resources.console.consts import (
 
 
 def test_automatic_detect_file_format():
+    with open("1.json", "w"):
+        ...
+    with open("1.2.jsonl", "w"):
+        ...
+    with open("1.csv", "w"):
+        ...
+    with open("1.txt", "w"):
+        ...
+    with open(".1.json", "w"):
+        ...
+    with open("123", "w"):
+        ...
+
     assert FileDataSource(path="1.json").format_type() == FormatType.Json
     assert FileDataSource(path="1.2.jsonl").format_type() == FormatType.Jsonl
-    assert FileDataSource(path="/1.csv").format_type() == FormatType.Csv
-    assert FileDataSource(path="/2/1.txt").format_type() == FormatType.Text
+    assert FileDataSource(path="1.csv").format_type() == FormatType.Csv
+    assert FileDataSource(path="1.txt").format_type() == FormatType.Text
     assert FileDataSource(path=".1.json").format_type() == FormatType.Json
     f = FileDataSource(path="123")
     f.set_format_type(FormatType.Json)
     assert f.format_type() == FormatType.Json
 
+    os.remove("1.json")
+    os.remove("1.2.jsonl")
+    os.remove("1.csv")
+    os.remove("1.txt")
+    os.remove(".1.json")
+    os.remove("123")
+
 
 def test_create_bare_qianfan_data_source():
-    datasource_1 = QianfanDataSource.create_new_bare_datasource_from_local(
+    datasource_1 = QianfanDataSource.create_bare_dataset(
         "name",
         DataTemplateType.NonSortedConversation,
         DataStorageType.PublicBos,
@@ -46,14 +67,12 @@ def test_create_bare_qianfan_data_source():
     assert datasource_1.project_type == DataProjectType.Conversation
     assert datasource_1.set_type == DataSetType.TextOnly
 
-    datasource_2 = QianfanDataSource.create_new_bare_datasource_from_local(
+    datasource_2 = QianfanDataSource.create_bare_dataset(
         "name",
         DataTemplateType.Text2Image,
         DataStorageType.PrivateBos,
-        storage_args={
-            "storage_id": "a",
-            "storage_path": "b",
-        },
+        storage_id="a",
+        storage_path="b",
     )
 
     assert datasource_2.template_type == DataTemplateType.Text2Image
@@ -69,7 +88,7 @@ def test_create_bare_qianfan_data_source():
 
 
 def test_create_qianfan_data_source_from_existed():
-    source = QianfanDataSource.get_existed_datasource_from_qianfan(12, False)
+    source = QianfanDataSource.get_existed_dataset(12, False)
     assert source.id == 12
     assert source.group_id == 14510
     assert source.storage_region == "bj"

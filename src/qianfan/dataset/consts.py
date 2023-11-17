@@ -15,7 +15,8 @@
 constants for dataset using
 """
 
+# 千帆数据集本地缓存文件夹的相对路径
 QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
-QianfanDefaultColumnNameForNestedTable = "_default_column_name"
 
-ZipFileMaxSizeInMem = 1024 * 1024 * 1024 * 2
+# 导入的数据集是高于二维的嵌套格式时，使用的占位行名
+QianfanDefaultColumnNameForNestedTable = "_default_column_name"

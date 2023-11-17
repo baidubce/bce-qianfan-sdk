@@ -28,6 +28,12 @@ class Schema(ABC):
         """
         validate a dataset.Table object
         currently check field and type only, not content in table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
         """
 
 
@@ -36,6 +42,15 @@ class QianfanNonSortedConversation(Schema):
     """validator for non-sorted, conversational dataset"""
 
     def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
         if table.get_row_count() == 0:
             return False
 
@@ -45,20 +60,31 @@ class QianfanNonSortedConversation(Schema):
             len(col_names) == 1
             and QianfanDefaultColumnNameForNestedTable == col_names[0]
         ):
-            single_entry = table.list(0)[0][col_names[0]][0]
-            if "prompt" not in single_entry:
-                return False
-            if not isinstance(single_entry["prompt"], str):
-                return False
-            if "response" in col_names:
-                response_record = single_entry["response"]
-                if not (
-                    isinstance(response_record, list)
-                    and len(response_record) == 1
-                    and isinstance(response_record[0], list)
-                    and isinstance(response_record[0][0], str)
-                ):
+            is_response_column_existed = False
+            records = table.list()[0][col_names[0]]
+            for index in range(len(records)):
+                conversation = records[index]
+                if "prompt" not in conversation:
                     return False
+                if "response" in conversation:
+                    if index == 0:
+                        is_response_column_existed = True
+                    elif not is_response_column_existed:
+                        return False
+                    response_record = conversation["response"]
+                    if not (
+                        isinstance(response_record, list)
+                        and len(response_record) == 1
+                        and isinstance(response_record[0], list)
+                        and len(response_record[0]) == 1
+                        and isinstance(response_record[0][0], str)
+                        and response_record[0][0]
+                    ):
+                        return False
+
+                elif is_response_column_existed:
+                    return False
+
             return True
 
         # 本地单轮对话对接千帆的校验规则
@@ -70,14 +96,17 @@ class QianfanNonSortedConversation(Schema):
         if "response" in col_names:
             if table.inner_table.column("response").null_count:
                 return False
-            response_record = table.list(0)[0]["response"]
-            if not (
-                isinstance(response_record, list)
-                and len(response_record) == 1
-                and isinstance(response_record[0], list)
-                and isinstance(response_record[0][0], str)
-            ):
-                return False
+            for row in table.col_list("response")["response"]:
+                response_record = row
+                if not (
+                    isinstance(response_record, list)
+                    and len(response_record) == 1
+                    and isinstance(response_record[0], list)
+                    and len(response_record[0]) == 1
+                    and isinstance(response_record[0][0], str)
+                    and response_record[0][0]
+                ):
+                    return False
 
         return True
 
@@ -87,6 +116,15 @@ class QianfanSortedConversation(Schema):
     """validator for sorted, conversational dataset"""
 
     def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
         if table.get_row_count() == 0:
             return False
 
@@ -97,19 +135,34 @@ class QianfanSortedConversation(Schema):
             len(col_names) == 1
             and QianfanDefaultColumnNameForNestedTable == col_names[0]
         ):
-            single_entry = table.list(0)[0][col_names[0]][0]
-            if "prompt" not in single_entry:
-                return False
-            if not isinstance(single_entry["prompt"], str):
-                return False
-            if "response" in col_names:
-                response_record = single_entry["response"]
-                if not (
-                    isinstance(response_record, list)
-                    and isinstance(response_record[0], list)
-                    and isinstance(response_record[0][0], str)
-                ):
+            is_response_column_existed = False
+            records = table.list()[0][col_names[0]]
+            for index in range(len(records)):
+                conversation = records[index]
+                if "prompt" not in conversation:
                     return False
+                if "response" in conversation:
+                    if index == 0:
+                        is_response_column_existed = True
+                    elif not is_response_column_existed:
+                        return False
+                    response_record = conversation["response"]
+                    if not (
+                        isinstance(response_record, list) and len(response_record) > 0
+                    ):
+                        return False
+                    for single_response_record in response_record:
+                        if not (
+                            isinstance(single_response_record, list)
+                            and len(single_response_record) == 1
+                            and isinstance(single_response_record[0], str)
+                            and single_response_record[0]
+                        ):
+                            return False
+
+                elif is_response_column_existed:
+                    return False
+
             return True
 
         # 本地单轮对话带排序对接千帆的校验规则
@@ -121,13 +174,18 @@ class QianfanSortedConversation(Schema):
         if "response" in col_names:
             if table.inner_table.column("response").null_count:
                 return False
-            response_record = table.list(0)[0]["response"]
-            if not (
-                isinstance(response_record, list)
-                and isinstance(response_record[0], list)
-                and isinstance(response_record[0][0], str)
-            ):
-                return False
+            for row in table.col_list("response")["response"]:
+                response_record = row
+                if not (isinstance(response_record, list) and len(response_record) > 0):
+                    return False
+                for single_response_record in response_record:
+                    if not (
+                        isinstance(single_response_record, list)
+                        and len(single_response_record) == 1
+                        and isinstance(single_response_record[0], str)
+                        and single_response_record[0]
+                    ):
+                        return False
 
         return True
 
@@ -137,6 +195,15 @@ class QianfanGenericText(Schema):
     """validator for generic text dataset"""
 
     def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
         if table.get_row_count() == 0:
             return False
 
@@ -158,6 +225,15 @@ class QianfanQuerySet(Schema):
     """validator for query set dataset"""
 
     def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
         if table.get_row_count() == 0:
             return False
 
@@ -189,4 +265,13 @@ class QianfanText2Image(Schema):
     """validator for text to image dataset"""
 
     def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
         return False

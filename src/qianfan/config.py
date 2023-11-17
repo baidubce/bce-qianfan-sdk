@@ -53,6 +53,10 @@ class GlobalConfig(BaseSettings):
     IMPORT_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.ImportStatusPollingInterval
     )
+    EXPORT_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ExportStatusPollingInterval
+    )
+    EXPORT_FILE_SIZE_LIMIT: int = Field(default=DefaultValue.ExportFileSizeLimit)
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

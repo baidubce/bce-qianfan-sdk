@@ -15,6 +15,7 @@ import time
 from typing import Any, Dict, Optional, cast
 
 from qianfan import resources as api
+from qianfan.dataset.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console import consts as console_const
 from qianfan.trainer.base import (
@@ -97,6 +98,28 @@ def get_default_train_config(model_type: str) -> TrainConfig:
 class TrainAction(
     BaseAction[Dict[str, Any], Dict[str, Any]],
 ):
+    """
+    Class for Train Action, Synchronous invocation of the training API,
+    taking a dataset metainfo dict as input and producing a model metadata
+    as output. Concretly, `exec` is called for running.
+
+    Note: this action is not involved with model publising, please use use
+    `ModelPublishAction` for publishing model.
+
+    Sample:
+
+    Input:
+    ```
+    [{'type': 1, 'id': 111}]
+    ```
+
+    Output:
+    ```
+    {'task_id': 47923, 'job_id': 33512}
+    Sample code:
+    ```
+    """
+
     is_incr: bool = False
 
     def __init__(
@@ -104,10 +127,9 @@ class TrainAction(
         base_model_version: str,
         train_config: Optional[TrainConfig] = None,
         base_model: Optional[str] = None,
-        model_type: str = "",
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.task_id = task_id
@@ -118,14 +140,17 @@ class TrainAction(
         else:
             # train from base model
             self.base_model_version = base_model_version
-            self.base_model = base_model
-            self.model_type = ModelTypeMapping.get(model_type)
+            self.base_model = (
+                ModelTypeMapping.get(self.base_model_version)
+                if base_model is None
+                else base_model
+            )
         self.train_config = (
             train_config
-            if train_config is None
+            if train_config is not None
             else get_default_train_config(base_model_version)
         )
-        self.train_mode = TrainMode.SFT
+        self.train_mode: TrainMode = TrainMode.SFT
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -137,20 +162,19 @@ class TrainAction(
         if self.is_incr:
             return self._exec_incremental(input, **kwargs)
         # request for create model train task
-        self.task_name = utils.uuid()
+        self.task_name = f"task_{utils.uuid()}"
         resp = api.FineTune.create_task(self.task_name)
         self.task_id = cast(int, resp["result"]["id"])
 
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
             raise InvalidArgumentError("trainset rate must be set")
-
         assert self.train_config is not None
         req_job = {
             "taskId": self.task_id,
-            "baseTrainType": self.base_model,
-            "trainType": self.model_type,
-            "trainMode": self.train_mode,
+            "baseTrainType": self.base_model_version,
+            "trainType": self.base_model,
+            "trainMode": self.train_mode.value,
             "peftType": self.train_config.peft_type,
             "trainConfig": {
                 "epoch": self.train_config.epoch,
@@ -159,7 +183,11 @@ class TrainAction(
                 "maxSeqLen": self.train_config.max_seq_len,
             },
             "trainset": train_sets,
-            "trainsetRate": self.train_config.trainsetRate,
+            "trainsetRate": self.train_config.trainset_rate,
+        }
+        tc_dict = cast(dict, req_job["trainConfig"])
+        req_job["trainConfig"] = {
+            key: value for key, value in tc_dict.items() if value is not None
         }
         create_job_resp = api.FineTune.create_job(req_job)
         self.job_id = cast(int, create_job_resp["result"]["id"])
@@ -181,7 +209,23 @@ class TrainAction(
 
 
 class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
-    # @with_state
+    """
+    Class for Model publish action, Commonly used after `TrainAction`.
+
+    Sample:
+
+    Input:
+    ```
+    {'task_id': 47923, 'job_id': 33512}
+    ```
+
+    Output:
+    ```
+    {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+    ```
+    """
+
+    @with_state
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         self.task_id = int(input.get("task_id", ""))
         self.job_id = int(input.get("job_id", ""))
@@ -191,7 +235,8 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         model.publish()
         output = {
-            **self.__dict__,
+            "task_id": self.task_id,
+            "job_id": self.job_id,
             "model_id": model.id,
             "model_version_id": model.version_id,
         }
@@ -202,13 +247,30 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
-    dataset: Any
+    """LoadDataSetAction
+    Action for dataset's loading, invokes the dataset's save method
+    to gaurantee the dataset is loaded in Qianfan platform.
+    Sample:
+        ```
+        load_action = LoadDataSetAction(dataset=Dataset(id=1))
+        load_action.exec()
+        ```
+
+    input:
+        none
+    output:
+        ```
+        {"datasets" : [{"id": 1, "name": "test_dataset"}]}
+        ```
+    """
+
+    dataset: Optional[Dataset]
 
     def __init__(
         self,
-        dataset: Any = None,
+        dataset: Optional[Dataset] = None,
         event_handler: Optional[EventHandler] = None,
-        **kwargs: Dict[str, Any]
+        **kwargs: Dict[str, Any],
     ) -> None:
         super().__init__(event_handler=event_handler)
         self.dataset = dataset
@@ -217,7 +279,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
         if isinstance(self.dataset, Dict):
             return self.dataset
-        # self.dataset.xxx
         return input
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
@@ -225,6 +286,26 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
 
 class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """DeployAction
+    Action for model service deployment. A TrainConfig must be supplied
+    when instance initialized.
+    Sample:
+        ```
+        deploy_config = DeployConfig(replicas=1, pool_type=1)
+        deploy_action = DeployAction(deploy_config=deploy_config)
+
+        output = deploy_action.exec(input)
+        ```
+
+    input:
+        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+    output:
+        ```
+        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39,
+        'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
+        ```
+    """
+
     deploy_config: Optional[DeployConfig]
     model_id: Optional[int]
     model_version_id: Optional[int]
@@ -248,7 +329,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if model.service is not None:
             return {
                 "service_id": model.service.id,
-                "model_endpoint": model.service.endpoint,
+                "service_endpoint": model.service.endpoint,
             }
         else:
             raise InternalError("model.service is not avaiable")
@@ -258,6 +339,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
 
 class LLMFinetune(Trainer):
+    """
+    Class implments the SFT training pipeline with serveral actions.
+    Use `start()` to sychronously start the training pipeline untill the
+    model training is finished.
+    """
+
     def __init__(
         self,
         model_version_type: str,
@@ -266,8 +353,46 @@ class LLMFinetune(Trainer):
         deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
         base_model: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
+        """
+        Initialization function for LLMFinetune(SFT).
+
+        Parameters:
+            model_version_type: str
+                A string representing the model version type.
+                like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
+            dataset: Dataset
+                A dataset instance.
+            train_config: TrainConfig
+                An TrainConfig for Finetune training parameters.
+                If not provided, default parameters of diverse
+                models will be used.
+            deploy_config: DeployConfig
+                An DeployConfig for model service deployment parameters.
+                Required if deployment is needed.
+            event_handler:  EventHandler
+                An EventHandler instance for receive events during
+                the training process
+            base_model:
+                An optional string representing the base model like
+                'ERNIE-Bot-turbo', 'ChatGLM2'
+                which will be mapped from the model version type if
+                not set.
+            **kwargs: Any additional keyword arguments.
+
+            kwargs (Any):
+            Additional keyword arguments.
+
+        ```
+        sft_task = LLMFinetune(
+            model_version_type="ERNIE-Bot-turbo-0725",
+            dataset={"datasets": [{"type": 1, "id": ds_id}]},
+            train_config=train_config,
+            event_handler=eh,
+        )
+        ```
+        """
         if base_model is None and ModelTypeMapping.get(model_version_type) is not None:
             base_model = ModelTypeMapping.get(model_version_type)
 
@@ -308,7 +433,7 @@ class LLMFinetune(Trainer):
 
     def start(self) -> Trainer:
         for i, ppl in enumerate(self.ppls):
-            self.result[i] = ppl.exec({})
+            self.result[i] = ppl.exec()
         return self
 
     def stop(self) -> Trainer:

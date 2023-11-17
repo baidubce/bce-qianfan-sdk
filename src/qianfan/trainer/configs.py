@@ -25,8 +25,8 @@ class TrainConfig(BaseModel):
     """
     parameter efficient FineTuning method, like `LoRA`, `P-tuning`, `ALL`
     """
+    trainset_rate: int = 20
     extras: Any = None
-    trainsetRate: int = 0
 
 
 class DeployConfig(BaseModel):

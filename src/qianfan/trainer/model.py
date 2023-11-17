@@ -126,14 +126,14 @@ class Service(
         Union[str, List[str], List[dict]], Union[str, List[str], List[dict]]
     ]
 ):
-    id: int
+    id: Optional[int]
     model: Optional[Model]
     deploy_config: Optional[DeployConfig]
     endpoint: str
 
     def __init__(
         self,
-        id: int = -1,
+        id: Optional[int] = None,
         model: Optional[Model] = None,
         deploy_config: Optional[DeployConfig] = None,
     ) -> None:
@@ -180,7 +180,8 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
     )
 
     svc.id = svc_publish_resp["result"]["serviceId"]
-
+    if svc.id is None:
+        raise InternalError("service id not found")
     # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
     while True:
         resp = api.Service.get(id=svc.id)

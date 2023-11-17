@@ -128,16 +128,42 @@ def with_state(func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """
+    Pipeline is a sequentially executed chain composed of multiple actions,
+    and users can customize the action chain according to their needs. At
+    any given moment, the Pipeline retains the id of the currently executing
+    action, allowing users to retrieve information about the action currently
+    in progress. By registering an EventHandler, user can listen to events
+    generated during the Pipeline running process.
+    """
+
     def __init__(
         self,
         actions: Sequence[BaseAction],
-        id: Optional[str] = None,
-        name: Optional[str] = None,
         next_actions: Sequence[BaseAction] = [],
         event_handler: Optional[EventHandler] = None,
         **kwargs: Any
     ) -> None:
-        super().__init__(id, name, event_handler, **kwargs)
+        """
+
+        Parameters:
+            actions Sequence[BaseAction]:
+                The actions to be executed in the pipeline.
+            next_actions: Sequence[BaseAction]:
+                The actions to be executed after the pipeline is completed.
+            event_handler: Optional[EventHandler]
+                event_handler to receive events.
+            kwargs (Any):
+                Additional keyword arguments.
+
+        ```
+        ppl = Pipeline(
+            actions=actions,
+        )
+        ```
+
+        """
+        super().__init__(event_handler=event_handler, **kwargs)
         self.actions: Dict[str, BaseAction] = {}
         self.seq: List[str] = []
         for action in actions:
@@ -162,9 +188,12 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 raise InternalError(cast(str, output.get("error")))
 
         for next in self.next_actions:
-            next.exec(output, **kwargs)
+            next.exec(copy.deepcopy(output), **kwargs)
 
         return output
+
+    def __getitem__(self, key: str) -> BaseAction:
+        return self.actions[key]
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
         return None

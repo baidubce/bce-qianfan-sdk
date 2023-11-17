@@ -66,9 +66,6 @@ class Dataset(Table):
     # schema 对象的缓存，在 load 时被指定
     inner_schema_cache: Optional[Schema] = None
 
-    # 千帆数据集 Schema 校验时设置的标注 flag，默认为 False
-    qianfan_is_annotated: bool = False
-
     @classmethod
     def _from_source(
         cls, source: DataSource, schema: Optional[Schema], **kwargs: Any

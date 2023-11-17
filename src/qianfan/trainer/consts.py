@@ -1,3 +1,16 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from enum import Enum
 
 
@@ -11,6 +24,8 @@ class ActionState(str, Enum):
 
 # SFT训练过程的状态常量：
 class SFTStatus(str, Enum):
+    Unknown = "Unknown"
+    """未知状态"""
     Created = "Created"
     """任务创建成功，对应创建任务+创建任务运行时API两部分都成功"""
     Training = "Training"
@@ -30,6 +45,8 @@ class SFTStatus(str, Enum):
 
 
 class ServiceStatus(str, Enum):
+    Unknown = "Unknown"
+    """未知状态"""
     Deploying = "Deploying"
     """模型服务发布中"""
     Deployed = "Deployed"
@@ -55,3 +72,14 @@ ModelTypeMapping = {
     "Baichuan2-13B": "Baichuan2-13B",
     "BLOOMZ-7B": "BLOOMZ",
 }
+
+
+class ModelType(str, Enum):
+    LLM = "LLM"
+    Text2Image = "Text2Image"
+
+
+class ServiceType(str, Enum):
+    Chat = "Chat"
+    Completion = "Completion"
+    Embedding = "Embedding"

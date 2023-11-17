@@ -1,11 +1,25 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import copy
 import pickle
-import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, TypeVar, cast
 
+from qianfan.errors import InternalError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
+from qianfan.utils import utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
@@ -45,7 +59,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         event_handler: Optional[EventHandler] = None,
         **kwargs: Dict[str, Any]
     ) -> None:
-        self.id = id if id is not None else str(uuid.uuid4())
+        self.id = id if id is not None else utils.uuid()
         self.name = name if name is not None else "actions_{}".format(self.id)
         self.state = ActionState.Preceding
         self.event_dispatcher = event_handler
@@ -74,7 +88,43 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         ...
 
     def stop(self) -> None:
-        dispatch_event(self.event_dispatcher, Event(self.id, ActionState.Stopped))
+        self.action_event(ActionState.Stopped)
+
+    def action_error_event(self, e: Exception) -> None:
+        dispatch_event(
+            self.event_dispatcher,
+            Event(
+                self.__class__.__name__ + self.id,
+                ActionState.Error,
+                "action_error: action[{}], msg:{}".format(self.id, str(e)),
+                {"error": str(e)},
+            ),
+        )
+
+    def action_event(self, state: ActionState, msg: str = "", data: Any = None) -> None:
+        dispatch_event(
+            self.event_dispatcher,
+            Event(
+                "{}_{}".format(self.__class__.__name__, self.id),
+                state,
+                "action_event: action[{}], msg:{}".format(self.id, msg),
+                data,
+            ),
+        )
+
+
+def with_state(func: Callable[..., Any]) -> Callable[..., Any]:
+    def wrapper(self: BaseAction, input: Any, **kwargs: Any) -> Any:
+        try:
+            self.action_event(ActionState.Preceding, "", {})
+            resp = func(self, input=input, **kwargs)
+            self.action_event(ActionState.Done, "", resp)
+            return resp
+        except Exception as e:
+            self.action_error_event(e)
+            return {"error": e}
+
+    return wrapper
 
 
 class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -97,19 +147,22 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.seq.append(action.id)
         self.next_actions = next_actions
 
-    def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
+    @with_state
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for k in self.seq:
             if self.event_dispatcher is not None:
-                self.event_dispatcher.dispatch(
-                    Event(
-                        self.id, ActionState.Running, "actions exec...", {"action": k}
-                    )
+                self.action_event(
+                    ActionState.Running, "pipeline running", {"action": k}
                 )
-            output = self.actions[k].exec(output, **kwargs)
             self._state = k
+            output = self.actions[k].exec(output, **kwargs)
+
+            if output.get("error") is not None:
+                raise InternalError(cast(str, output.get("error")))
+
         for next in self.next_actions:
-            pass
+            next.exec(output, **kwargs)
 
         return output
 

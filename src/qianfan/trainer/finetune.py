@@ -1,87 +1,88 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import time
-import uuid
 from typing import Any, Dict, Optional, cast
 
 from qianfan import resources as api
-from qianfan.errors import InvalidArgumentError
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console import consts as console_const
 from qianfan.trainer.base import (
     BaseAction,
-    Event,
     EventHandler,
     Pipeline,
     Trainer,
-    dispatch_event,
+    with_state,
 )
 from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.consts import (
-    ActionState,
     ModelTypeMapping,
     TrainMode,
 )
+from qianfan.trainer.model import Model
+from qianfan.utils import utils
 
 DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
     "ERNIE-Bot-turbo-0725": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
+        learning_rate=0.00003,
         max_seq_len=4096,
         peft_type="LoRA",
     ),
     "ERNIE-Bot-turbo-0516": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
-        peft_type="LoRA",
+        batch_size=32,
+        learning_rate=0.00002,
+        peft_type="ALL",
     ),
     "ERNIE-Bot-turbo-0704": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        learning_rate=0.00003,
         peft_type="LoRA",
     ),
     "Llama-2-7b": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        batch_size=1,
+        learning_rate=0.00002,
         peft_type="LoRA",
     ),
     "Llama-2-13b": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        batch_size=1,
+        learning_rate=0.00002,
         peft_type="LoRA",
     ),
     "SQLCoder-7B": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        batch_size=1,
+        learning_rate=0.00002,
         peft_type="LoRA",
     ),
     "ChatGLM2-6B": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        batch_size=1,
+        learning_rate=0.00002,
         peft_type="LoRA",
     ),
     "Baichuan2-13B": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        learning_rate=0.000001,
         peft_type="LoRA",
     ),
     "BLOOMZ-7B": TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.0002,
-        max_seq_len=4096,
+        batch_size=1,
+        learning_rate=0.00002,
         peft_type="LoRA",
     ),
 }
@@ -91,10 +92,6 @@ def get_default_train_config(model_type: str) -> TrainConfig:
     return DefaultTrainConfigMapping.get(
         model_type, DefaultTrainConfigMapping["ERNIE-Bot-turbo-0725"]
     )
-
-
-def wrap_error_output(e: Exception) -> Dict[str, Any]:
-    return {"error": e}
 
 
 class TrainAction(
@@ -110,217 +107,98 @@ class TrainAction(
         model_type: str = "",
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
-        train_mode: Optional[TrainMode] = None,
         **kwargs: Any
     ) -> None:
         super().__init__(**kwargs)
-        self.base_model_version = base_model_version
-        self.base_model = base_model
-        self.model_type = ModelTypeMapping.get(model_type)
+        self.task_id = task_id
+        self.job_id = job_id
+        if self.task_id is not None or self.job_id is not None:
+            # if incremental train
+            self.is_incr = True
+        else:
+            # train from base model
+            self.base_model_version = base_model_version
+            self.base_model = base_model
+            self.model_type = ModelTypeMapping.get(model_type)
         self.train_config = (
             train_config
             if train_config is None
             else get_default_train_config(base_model_version)
         )
-        self.task_id = task_id
-        self.task_id = job_id
-        self.train_mode = train_mode
-    def exec(self, input: Dict[str, Any], **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        self.train_mode = TrainMode.SFT
+
+    def _exec_incremental(
+        self, input: Dict[str, Any], **kwargs: Dict
+    ) -> Dict[str, Any]:
+        raise NotImplementedError("incr train not implemented")
+
+    @with_state
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        if self.is_incr:
+            return self._exec_incremental(input, **kwargs)
         # request for create model train task
-        try:
-            resp = api.FineTune.create_task(name=str(uuid.uuid4()))
-            self.task_id = cast(int, resp["result"]["id"])
-        except Exception as e:
-            dispatch_event(
-                self.event_dispatcher,
-                Event(
-                    self.id,
-                    ActionState.Error,
-                    "action_error: action[{}], msg:{}".format(self.id, e),
-                ),
-            )
-            return wrap_error_output(e)
+        self.task_name = utils.uuid()
+        resp = api.FineTune.create_task(self.task_name)
+        self.task_id = cast(int, resp["result"]["id"])
 
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
-            dispatch_event(
-                self.event_dispatcher,
-                Event(
-                    self.id,
-                    ActionState.Error,
-                    "action_error: action[{}], msg:{}".format(self.id, "no trainset"),
-                ),
-            )
-            return wrap_error_output(ValueError("trainset rate must be set"))
+            raise InvalidArgumentError("trainset rate must be set")
 
-        # request for model train job
-        try:
-            assert self.train_config is not None
-            req_job = {
-                "taskId": self.task_id,
-                "baseTrainType": self.base_model,
-                "trainType": self.model_type,
-                "trainMode": self.train_mode,
-                "peftType": self.train_config.peft_type,
-                "trainConfig": {
-                    "epoch": self.train_config.epoch,
-                    "learningRate": self.train_config.learning_rate,
-                    "batchSize": self.train_config.batch_size,
-                    "maxSeqLen": self.train_config.max_seq_len,
-                },
-                "trainset": train_sets,
-                "trainsetRate": self.train_config.trainsetRate,
-            }
-            create_job_resp = api.FineTune.create_job(req_job)
-            self.job_id = cast(int, create_job_resp["result"]["id"])
-        except Exception as e:
-            dispatch_event(
-                self.event_dispatcher,
-                Event(
-                    self.id,
-                    ActionState.Error,
-                    "action_error: action[{}], msg:{}".format(self.id, e),
-                ),
-            )
-            return wrap_error_output(e)
+        assert self.train_config is not None
+        req_job = {
+            "taskId": self.task_id,
+            "baseTrainType": self.base_model,
+            "trainType": self.model_type,
+            "trainMode": self.train_mode,
+            "peftType": self.train_config.peft_type,
+            "trainConfig": {
+                "epoch": self.train_config.epoch,
+                "learningRate": self.train_config.learning_rate,
+                "batchSize": self.train_config.batch_size,
+                "maxSeqLen": self.train_config.max_seq_len,
+            },
+            "trainset": train_sets,
+            "trainsetRate": self.train_config.trainsetRate,
+        }
+        create_job_resp = api.FineTune.create_job(req_job)
+        self.job_id = cast(int, create_job_resp["result"]["id"])
 
+        # 获取job状态，是否训练完成
         while True:
-            try:
-                job_status_resp = api.FineTune.get_job(
-                    task_id=self.task_id, job_id=self.job_id
-                )
-                job_status = job_status_resp["result"]["trainStatus"]
-            except Exception as e:
-                dispatch_event(
-                    self.event_dispatcher,
-                    Event(
-                        self.id,
-                        ActionState.Error,
-                        "action_error: action[{}], msg:{}".format(self.id, e),
-                    ),
-                )
-                return wrap_error_output(e)
-            if job_status != "RUNNING":
+            job_status_resp = api.FineTune.get_job(
+                task_id=self.task_id, job_id=self.job_id
+            )
+            job_status = job_status_resp["result"]["trainStatus"]
+            if job_status != console_const.TrainStatus.Running:
                 break
-            time.sleep(10)
+            time.sleep(5)
 
-        try:
-            self.model_name="model_{}{}".format(self.task_id, self.job_id)
-            model_publish_resp = api.Model.publish(
-                is_new=True,
-                model_name=self.model_name,
-                version_meta={"taskId": self.task_id, "iterationId": self.job_id},
-            )
-            # 获取model_id and version
-            self.model_id = model_publish_resp["result"]["modelId"]
-            self.model_version = model_publish_resp["result"]["version"]
-
-            while True:
-                try:
-                    job_status_resp = api.FineTune.get_job(
-                        task_id=self.task_id, job_id=self.job_id
-                    )
-                    job_status = job_status_resp["result"]["trainStatus"]
-                except Exception as e:
-                    dispatch_event(
-                        self.event_dispatcher,
-                        Event(
-                            self.id,
-                            ActionState.Error,
-                            "action_error: action[{}], msg:{}".format(self.id, e),
-                        ),
-                    )
-                    return wrap_error_output(e)
-                if job_status != console_const.TrainStatus.Running:
-                    break
-                time.sleep(10)
-
-            # 获取模型版本信息：
-            model_list_resp = api.Model.list(model_id=self.model_id)
-            model_version_list = model_list_resp["result"]["modelVersionList"]
-            if model_version_list is None or len(model_version_list) == 0:
-                return wrap_error_output(ValueError("not model version matched"))
-            self.model_version_id = model_version_list[0]["modelVersionId"]
-
-            # 获取模型版本详情
-            # 模型版本状态有三种：Creating, Ready, Failed
-            while True:
-                model_detail_info = api.Model.detail(
-                    model_version_id=self.model_version_id
-                )
-                model_version_state = model_detail_info["result"]["state"]
-                if model_version_state == console_const.ModelState.Ready:
-                    break
-                elif model_version_state == console_const.ModelState.Fail:
-                    self.event_dispatcher,
-                    Event(
-                        self.id,
-                        ActionState.Error,
-                        "action_error: action[{}], msg:{}".format(self.id, "model publish failed"),
-                    ),
-                    return wrap_error_output(e)
-                time.sleep(20)
-
-        except Exception as e:
-            dispatch_event(
-                self.event_dispatcher,
-                Event(
-                    self.id,
-                    ActionState.Error,
-                    "action_error: action[{}], msg:{}".format(self.id, e),
-                ),
-            )
-            return wrap_error_output(e)
-        return {"model_id": self.model_id, "model_version_id": self.model_version_id}
+        return {"task_id": self.task_id, "job_id": self.job_id}
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
         return None
 
 
-class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
-    deploy_config: Optional[DeployConfig]
-    model_id: int
-    model_version_id: Optional[str] = None
+class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    # @with_state
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        self.task_id = int(input.get("task_id", ""))
+        self.job_id = int(input.get("job_id", ""))
+        model = Model(task_id=self.task_id, job_id=self.job_id)
+        if self.task_id == "" or self.job_id == "":
+            raise InvalidArgumentError("task_id or job_id must be set")
 
-    def __init__(
-        self, deploy_config: Optional[DeployConfig] = None, **kwargs: Dict[str, Any]
-    ):
-        super().__init__(kwargs=kwargs)
-        self.deploy_config = deploy_config
-
-    def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
-        if self.deploy_config is None:
-            return input
-        self.model_id = input.get("model_id", "")
-        self.mdoel_version_id = input.get("model_version_id", "")
-        if self.model_id == "" or self.mdoel_version_id == "":
-            return {}
-        task_name_id = str(uuid.uuid4()).replace("-", "")
-
-        svc_publish_resp = api.Service.create(
-            model_id=self.model_id,
-            model_version_id=self.mdoel_version_id,
-            iteration_id=self.model_version_id,
-            name="task_{}".format(task_name_id),
-            uri="ep{}".format(task_name_id),
-            replicas=self.deploy_config.replicas,
-            pool_type=self.deploy_config.pool_type,
-        )
-
-        self.svc_id = svc_publish_resp["result"]["serviceId"]
-
-        # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
-        while True:
-            resp = api.Service.get(id=self.svc_id)
-            svc_status = resp["result"]["serviceStatus"]
-            if svc_status != console_const.ServiceStatus.Deploying.value:
-                sft_model_endpoint = resp["result"]["uri"]
-                break
-            time.sleep(20)
-        return {"service_id": self.svc_id, "model_endpoint": sft_model_endpoint}
+        model.publish()
+        output = {
+            **self.__dict__,
+            "model_id": model.id,
+            "model_version_id": model.version_id,
+        }
+        return output
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
-        return None
+        return super().resume(input, **kwargs)
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -335,10 +213,45 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         super().__init__(event_handler=event_handler)
         self.dataset = dataset
 
+    @with_state
     def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
         if isinstance(self.dataset, Dict):
             return self.dataset
+        # self.dataset.xxx
         return input
+
+    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
+        return None
+
+
+class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    deploy_config: Optional[DeployConfig]
+    model_id: Optional[int]
+    model_version_id: Optional[int]
+
+    def __init__(
+        self, deploy_config: Optional[DeployConfig] = None, **kwargs: Dict[str, Any]
+    ):
+        super().__init__(kwargs=kwargs)
+        self.deploy_config = deploy_config
+
+    @with_state
+    def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
+        if self.deploy_config is None:
+            raise InvalidArgumentError("deploy_config must be set")
+        self.model_id = input.get("model_id")
+        self.model_version_id = input.get("model_version_id")
+        if self.model_id is None or self.model_version_id is None:
+            raise InvalidArgumentError("model_id or model_version_id must be set")
+        model = Model(self.model_id, self.model_version_id)
+        model.deploy(self.deploy_config)
+        if model.service is not None:
+            return {
+                "service_id": model.service.id,
+                "model_endpoint": model.service.endpoint,
+            }
+        else:
+            raise InternalError("model.service is not avaiable")
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
         return None
@@ -351,26 +264,20 @@ class LLMFinetune(Trainer):
         dataset: Any,
         train_config: Optional[TrainConfig] = None,
         deploy_config: Optional[DeployConfig] = None,
-        model_id: Optional[str] = None,
-        model_version_id: Optional[str] = None,
         event_handler: Optional[EventHandler] = None,
         base_model: Optional[str] = None,
         **kwargs: Any
     ) -> None:
-        if model_version_id is not None and model_id is not None:
-            # incr train
-            pass
-
         if base_model is None and ModelTypeMapping.get(model_version_type) is not None:
             base_model = ModelTypeMapping.get(model_version_type)
 
         if base_model is None or base_model == "":
             raise InvalidArgumentError("base_model is empty")
 
-        load_data_action = LoadDataSetAction(
+        self.load_data_action = LoadDataSetAction(
             dataset=dataset, event_handler=event_handler, **kwargs
         )
-        train_action = TrainAction(
+        self.train_action = TrainAction(
             train_config=train_config,
             base_model=base_model,
             base_model_version=model_version_type,
@@ -378,16 +285,22 @@ class LLMFinetune(Trainer):
             event_handler=event_handler,
             **kwargs,
         )
-        deploy_action = DeployAction(
-            deploy_config=deploy_config, **{"event_handler": event_handler, **kwargs}
-        )
+        self.model_publish = ModelPublishAction()
+
+        actions = [
+            self.load_data_action,
+            self.train_action,
+            self.model_publish,
+        ]
+        if deploy_config is not None:
+            self.deploy_action = DeployAction(
+                deploy_config=deploy_config,
+                **{"event_handler": event_handler, **kwargs},
+            )
+            actions.append(self.deploy_action)
 
         ppl = Pipeline(
-            [
-                load_data_action,
-                train_action,
-                deploy_action,
-            ],
+            actions=actions,
             event_handler=event_handler,
         )
         self.ppls = [ppl]

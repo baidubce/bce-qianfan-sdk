@@ -4,9 +4,11 @@ from qianfan.trainer.finetune import LLMFinetune
 
 
 class MyEventHandler(EventHandler):
+    events: list = []
+
     def dispatch(self, event: Event) -> None:
         # return super().dispatch(event)
-        print("event: ", event)
+        self.events.append(event)
 
 
 def test_trainer_sft_start():
@@ -29,6 +31,7 @@ def test_trainer_sft_start():
     assert len(res) > 0
     assert isinstance(res[0], dict)
     assert "model_version_id" in res[0]
+    assert len(eh.events) > 0
 
 
 def test_trainer_sft_with_deploy():
@@ -54,3 +57,4 @@ def test_trainer_sft_with_deploy():
     assert len(res) > 0
     assert isinstance(res[0], dict)
     assert "model_endpoint" in res[0]
+    assert len(eh.events) > 0

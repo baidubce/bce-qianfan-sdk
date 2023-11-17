@@ -50,6 +50,13 @@ class GlobalConfig(BaseSettings):
     # todo 补充 ENABLE_AUTH 的默认值和使用方法
     ENABLE_AUTH: Optional[bool] = Field(default=None)
     ACCESS_CODE: Optional[str] = Field(default=None)
+    IMPORT_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ImportStatusPollingInterval
+    )
+    EXPORT_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ExportStatusPollingInterval
+    )
+    EXPORT_FILE_SIZE_LIMIT: int = Field(default=DefaultValue.ExportFileSizeLimit)
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

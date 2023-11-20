@@ -1,4 +1,4 @@
-<img width="166" alt="image" src="https://github.com/baidubce/bce-qianfan-sdk/assets/1155052/c5ef9267-37b2-40a2-b2c5-21f236d890df"># 百度千帆大模型平台 SDK
+# 百度千帆大模型平台 SDK
 
 [![LICENSE](https://img.shields.io/github/license/baidubce/bce-qianfan-sdk.svg)](https://github.com/baidubce/bce-qianfan-sdk/blob/master/LICENSE)
 [![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)

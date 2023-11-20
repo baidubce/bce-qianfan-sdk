@@ -18,33 +18,40 @@ not available currently
 
 from typing import Any, Dict
 
+from pydantic import BaseModel
 
-class QianfanOperator:
+
+class QianfanOperator(BaseModel):
     """Basic class for online ETL operator"""
 
     operator_name: str
+    operator_type: str
     arg_dict: Dict[str, Any]
 
 
 class ExceptionRegulator(QianfanOperator):
     """Exception class for online ETL operator"""
 
+    operator_type: str = "clean"
     pass
 
 
 class Filter(QianfanOperator):
     """Filter class for online ETL operator"""
 
+    operator_type: str = "filter"
     pass
 
 
 class Deduplicator(QianfanOperator):
     """Deduplicator class for online ETL operator"""
 
+    operator_type: str = "deduplication"
     pass
 
 
-class SensitiveDataProcessor(QianfanOperator):
+class DesensitizationProcessor(QianfanOperator):
     """Sensitive data processor class for online ETL operator"""
 
+    operator_type: str = "desensitization"
     pass

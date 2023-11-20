@@ -99,3 +99,12 @@ class DataReleaseStatus(int, Enum):
     """发布完成"""
     Failed: int = 3
     """发布失败"""
+
+
+class EntityListingType(int, Enum):
+    All: int = 0
+    """展示全部"""
+    AnnotatedOnly: int = 1
+    """只展示已标注的"""
+    NotAnnotatedOnly: int = 2
+    """只展示未标注的"""

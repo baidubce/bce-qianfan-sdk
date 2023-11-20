@@ -602,7 +602,7 @@ class Data:
         dataset_id: int,
         content: Optional[List[Dict[str, Any]]] = None,
         labels: Optional[List[Dict[str, Any]]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> QfRequest:
         """
         annotate an entity within a dataset
@@ -642,7 +642,9 @@ class Data:
 
     @classmethod
     @console_api_request
-    def delete_an_entity(cls, entity_ids: List[str], dataset_id: int) -> QfRequest:
+    def delete_an_entity(
+        cls, entity_ids: List[str], dataset_id: int, **kwargs: Any
+    ) -> QfRequest:
         """
         delete an entity from dataset
 
@@ -675,7 +677,8 @@ class Data:
         annotating_time_closure: Optional[List[int]] = None,
         listing_type: EntityListingType = EntityListingType.All,
         label_id_str: Optional[str] = None,
-    ):
+        **kwargs: Any,
+    ) -> QfRequest:
         """
         delete an entity from dataset
 
@@ -685,11 +688,14 @@ class Data:
             offset (int):
                 offset of dataset where the list start, default to 0
             page_size (int):
-                window size of the list, default to 20, the maximum value is 30 and the minimum is 1
+                window size of the list, default to 20,
+                the maximum value is 30 and the minimum is 1
             import_time_closure (Optional[List[int]]):
-                a list containing start timestamp and end timestamp of importing time, default to None
+                a list containing start timestamp
+                and end timestamp of importing time, default to None
             annotating_time_closure (Optional[List[int]]):
-                a list containing start timestamp and end timestamp of annotating time, default to None
+                a list containing start timestamp
+                and end timestamp of annotating time, default to None
             listing_type (EntityListingType):
                 type of listing, default to EntityListingType.All
             label_id_str (Optional[str]):
@@ -703,7 +709,7 @@ class Data:
         API Doc: # TODO ADD ETL 文档公网链接
         """
         req = QfRequest(method="POST", url=Consts.DatasetEntityListAPI)
-        request_json = {
+        request_json: Dict[str, Any] = {
             "datasetId": dataset_id,
             "offset": offset,
             "pageSize": page_size,

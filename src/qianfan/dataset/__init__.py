@@ -12,3 +12,22 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
+
+__all__ = [
+    "DataSource",
+    "FileDataSource",
+    "QianfanDataSource",
+    "Dataset",
+    "Appendable",
+    "Listable",
+    "Processable",
+    "QianfanDefaultColumnNameForNestedTable",
+    "QianfanGenericText",
+    "QianfanNonSortedConversation",
+    "QianfanQuerySet",
+    "QianfanSchema",
+    "QianfanSortedConversation",
+    "QianfanText2Image",
+    "Schema",
+    "Table",
+]

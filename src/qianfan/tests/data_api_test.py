@@ -233,7 +233,7 @@ def test_create_etl_task():
     assert reqs["sourceDatasetId"] == 1
     assert reqs["destDatasetId"] == 2
     assert reqs["entityType"] == 2
-    assert type(reqs["operationsV2"]) is dict
+    assert isinstance(reqs["operationsV2"], dict)
 
 
 def test_get_dataset_etl_task_info():

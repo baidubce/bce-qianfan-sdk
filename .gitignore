@@ -57,3 +57,4 @@ poetry.lock
 .vscode
 .*_cache
 .env*
+.ipynb_checkpoints

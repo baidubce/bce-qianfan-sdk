@@ -1,4 +1,4 @@
-# 百度千帆大模型平台 SDK
+<img width="166" alt="image" src="https://github.com/baidubce/bce-qianfan-sdk/assets/1155052/c5ef9267-37b2-40a2-b2c5-21f236d890df"># 百度千帆大模型平台 SDK
 
 [![LICENSE](https://img.shields.io/github/license/baidubce/bce-qianfan-sdk.svg)](https://github.com/baidubce/bce-qianfan-sdk/blob/master/LICENSE)
 [![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)
@@ -44,7 +44,7 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
-除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](#sdk-配置) 部分。
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
 <summary> 其他认证方式 </summary>

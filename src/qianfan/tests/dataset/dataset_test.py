@@ -97,3 +97,17 @@ def test_dataset_create():
         dataset_4.save(schema=QianfanNonSortedConversation())
     with pytest.raises(Exception):
         dataset_4.save(schema=QianfanSortedConversation())
+
+    fake_data_source_5 = FakeDataSource(
+        origin_data=(
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response":'
+            ' [["12"]]}]\n'
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12"}]'
+        ),
+        format=FormatType.Jsonl,
+    )
+    dataset_5 = Dataset.load(fake_data_source_5)
+    with pytest.raises(Exception):
+        dataset_5.save(schema=QianfanNonSortedConversation())
+    with pytest.raises(Exception):
+        dataset_5.save(schema=QianfanSortedConversation())

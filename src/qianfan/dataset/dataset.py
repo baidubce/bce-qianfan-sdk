@@ -434,6 +434,13 @@ class Dataset(Table):
             return False
         return not self.inner_data_source_cache.download_when_init
 
+    def _is_dataset_generic_text(self) -> bool:
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+            return False
+        return (
+            self.inner_data_source_cache.template_type == DataTemplateType.GenericText
+        )
+
     # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
     # 例如通过平台的 API 发起数据清洗任务
     def online_data_process(self, operators: List[QianfanOperator]) -> bool:
@@ -452,8 +459,25 @@ class Dataset(Table):
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             return False
 
-        # 这里根据 operators 来填充参数，然后发起数据清洗，最后将任务处理结果返回。
-        # 目前没有实现相关接口，直接抛出 False
+        if not self._is_dataset_generic_text():
+            # 如果数据集不是泛文本，也不支持清洗
+            return False
+
+        operator_dict: Dict[str, Any] = {}
+        for operator in operators:
+            attr_dict = operator.model_dump()
+            attr_dict.pop("operator_name")
+            attr_dict.pop("operator_type")
+
+            elem_dict = {"name": operator.operator_name, "args": attr_dict}
+
+            operator_type = operator.operator_type
+            if operator_type not in operator_dict:
+                operator_dict[operator_type] = []
+
+            operator_dict[operator_type].append(elem_dict)
+
+        # TODO 等待新建数据集版本的接口放出
         return False
 
     # -------------------- Processable 相关 ----------------
@@ -519,6 +543,7 @@ class Dataset(Table):
         by: Optional[
             Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
         ] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         get element(s) from dataset
@@ -530,7 +555,31 @@ class Dataset(Table):
         Returns:
             Any: dataset row list
         """
-        return super().list(by)
+        if not self._is_dataset_located_in_qianfan():
+            return super().list(by)
+        else:
+            assert isinstance(self.inner_data_source_cache, QianfanDataSource)
+
+            if isinstance(by, str):
+                message = "can't get entity by string from qianfan"
+                log_error(message)
+                raise ValueError(message)
+            elif isinstance(by, (list, tuple)):
+                message = "can't get entity by sequence from qianfan"
+                log_error(message)
+                raise ValueError(message)
+
+            args = {"dataset_id": self.inner_data_source_cache.id}
+
+            if isinstance(by, int):
+                args["offset"] = by
+                args["pageSize"] = 1
+            elif isinstance(by, slice):
+                args["offset"] = by.start
+                args["pageSize"] = by.stop - by.start
+
+            # 接口不完备
+            # Data.list_all_entity_in_dataset(**kwargs, **args)
 
     def __getitem__(self, key: Any) -> Any:
         return self.list(key)

@@ -1316,6 +1316,176 @@ def get_export_record():
     )
 
 
+@app.route(Consts.PromptCreateAPI, methods=["POST"])
+@iam_auth_checker
+def create_prompt():
+    return json_response(
+        {
+            "log_id": "py3yxbi7ffdj7kuc",
+            "result": {"templateId": 732},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptInfoAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_detail():
+    return json_response(
+        {
+            "log_id": "i1sm6juguyzyqrpd",
+            "result": {
+                "templateId": 732,
+                "templateName": "文生文1号3343",
+                "templateContent": (
+                    "请以{number}字数生成{province}省相关简介\naaa(eee) bbbb((xxx))"
+                ),
+                "content": (
+                    "请以{number}字数生成{province}省相关简介\naaa(eee) bbbb5275"
+                ),
+                "templateVariables": "xxx",
+                "labels": [{"labelId": 138, "labelName": "sxz1", "color": ""}],
+                "creatorName": "",
+                "type": 2,
+                "sceneType": 1,
+                "frameworkType": 0,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptUpdateAPI, methods=["POST"])
+def prompt_update():
+    return json_response(
+        {
+            "log_id": "9sh0grwe6ydfi318",
+            "result": {"templateId": 732},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptDeleteAPI, methods=["POST"])
+def prompt_delete():
+    return json_response(
+        {"log_id": "pws9pkrncvjesmmn", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.PromptListAPI, methods=["POST"])
+def prompt_list():
+    return json_response(
+        {
+            "log_id": "4235xa2mjupupcwe",
+            "result": {
+                "total": 239,
+                "items": [
+                    {
+                        "templateId": 724,
+                        "templateName": "照片写实2",
+                        "templateContent": (
+                            "Cherry Blossoms in Hokkaido in the wintertime, Canon RF"
+                            " 16mm f:2.8 STM Lens, hyperrealistic photography, style of"
+                            " unsplash and National Geographic"
+                        ),
+                        "templateVariables": "",
+                        "variableIdentifier": "{}",
+                        "negativeTemplateContent": (
+                            "owres,bad anatomy,cropped,worst quality,low quality,normal"
+                            " quality,blurry,blurry,sketches"
+                        ),
+                        "labels": [
+                            {
+                                "labelId": 150,
+                                "labelName": "图像生成",
+                                "color": "#0099E6",
+                            }
+                        ],
+                        "creatorName": "",
+                        "type": 1,
+                        "sceneType": 2,
+                        "frameworkType": 0,
+                    },
+                    {
+                        "templateId": 723,
+                        "templateName": "3D角色",
+                        "templateContent": (
+                            "snowing winter, super cute baby pixar style white fairy"
+                            " bear, shiny snow-white fluffy, big bright eyes, wearing a"
+                            " woolly cyan hat, delicate and fine, high detailed, bright"
+                            " color, natural light, simple background, octane render,"
+                            " ultra wide angle, 8K"
+                        ),
+                        "templateVariables": "",
+                        "variableIdentifier": "{}",
+                        "negativeTemplateContent": (
+                            "(worst quality, low quality:1.4),signature, watermark,"
+                            " simple background, dated, low res, line art, flat colors"
+                        ),
+                        "labels": [
+                            {
+                                "labelId": 150,
+                                "labelName": "图像生成",
+                                "color": "#0099E6",
+                            }
+                        ],
+                        "creatorName": "",
+                        "type": 1,
+                        "sceneType": 2,
+                        "frameworkType": 0,
+                    },
+                ],
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptLabelListAPI, methods=["POST"])
+def prompt_label_list():
+    return json_response(
+        {
+            "log_id": "eauyfgtgqfqdu25z",
+            "result": {
+                "items": [
+                    {
+                        "labelId": 139,
+                        "createTime": "2023-10-08T11:02:51+08:00",
+                        "updateTime": "2023-10-08T11:02:51+08:00",
+                        "labelName": "sxz2",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                    {
+                        "labelId": 138,
+                        "createTime": "2023-10-08T11:02:25+08:00",
+                        "updateTime": "2023-10-08T11:02:25+08:00",
+                        "labelName": "sxz1",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                    {
+                        "labelId": 2,
+                        "createTime": "2023-05-29T18:42:44+08:00",
+                        "updateTime": "2023-05-29T18:42:44+08:00",
+                        "labelName": "label2",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                ],
+                "total": 30,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
 def _start_mock_server():
     """
     run mock server

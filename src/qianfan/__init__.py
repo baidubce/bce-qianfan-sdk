@@ -31,6 +31,7 @@ from qianfan.resources import (
 )
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
+from qianfan.prompts.prompt import Prompt
 
 Role = QfRole
 Messages = QfMessages
@@ -54,6 +55,7 @@ __all__ = [
     "AccessToken",
     "AccessKey",
     "SecretKey",
+    "Prompt",
     "get_config",
     "disable_log",
     "enable_log",

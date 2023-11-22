@@ -16,7 +16,7 @@
 Prompt API
 """
 import re
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from qianfan.consts import (
     Consts,
@@ -26,7 +26,7 @@ from qianfan.consts import (
 )
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console.utils import console_api_request
-from qianfan.resources.typing import QfRequest
+from qianfan.resources.typing import Literal, QfRequest
 
 
 class Prompt(object):
@@ -127,8 +127,10 @@ class Prompt(object):
             # if user does not provide variables
             # we will extract them from the template
             if negative_variables is None:
-                negative_variables = cls._extract_variables(
-                    negative_template, identifier
+                negative_variables = (
+                    cls._extract_variables(negative_template, identifier)
+                    if negative_template is not None
+                    else []
                 )
             req.json_body["negativeTemplateVariables"] = ",".join(negative_variables)
         return req

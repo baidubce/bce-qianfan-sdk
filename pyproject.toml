@@ -51,6 +51,7 @@ myst-parser = ">=0.19.2"
 
 [tool.poetry.extras]
 langchain = ["langchain"]
+all = ["langchain"]
 
 [tool.ruff]
 select = [

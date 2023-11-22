@@ -246,6 +246,8 @@ def test_get_dataset_etl_task_info():
 
     assert reqs["etlId"] == 1
     assert resp.body.get("result").get("id") == 1
+    assert resp.body.get("result").get("sourceDatasetId") == 1
+    assert resp.body.get("result").get("destDatasetId") == 2
 
 
 def test_delete_dataset_etl_task():

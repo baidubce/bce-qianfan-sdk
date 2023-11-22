@@ -304,7 +304,13 @@ class QianfanDataSource(DataSource, BaseModel):
         log_error(error)
         raise error
 
-    def save(self, data: str, is_annotated: bool = False, does_release: bool = False, **kwargs: Any) -> bool:
+    def save(
+        self,
+        data: str,
+        is_annotated: bool = False,
+        does_release: bool = False,
+        **kwargs: Any,
+    ) -> bool:
         """
         Write data to qianfan
         Currently only support to write to
@@ -313,7 +319,8 @@ class QianfanDataSource(DataSource, BaseModel):
          Args:
             data (str): data waiting to be uploaded。
             is_annotated (bool): has data been annotated, default to False
-            does_release (bool): does release dataset after saving successfully, default to False
+            does_release (bool): does release dataset
+            after saving successfully, default to False
             **kwargs (Any): optional arguments。
 
         Returns:

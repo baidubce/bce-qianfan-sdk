@@ -480,8 +480,8 @@ class Dataset(Table):
         etl_id: Optional[int] = None
         for task in etl_list:
             if (
-                task["sourceDatasetName"] == origin_data_source.id
-                and task["destDatasetName"] == new_data_source.id
+                task["sourceDatasetId"] == origin_data_source.id
+                and task["destDatasetId"] == new_data_source.id
             ):
                 etl_id = task["etlId"]
                 break

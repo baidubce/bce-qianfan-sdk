@@ -20,12 +20,14 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from qianfan.dataset.data_source import DataSource, FormatType
+from qianfan.dataset.data_operator import FilterCheckNumberWords
+from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
+from qianfan.resources.console.consts import DataTemplateType
 
 
 class FakeDataSource(DataSource, BaseModel):
@@ -110,3 +112,13 @@ def test_dataset_create():
         dataset_5.save(schema=QianfanNonSortedConversation())
     with pytest.raises(Exception):
         dataset_5.save(schema=QianfanSortedConversation())
+
+
+def test_dataset_online_process():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", DataTemplateType.GenericText
+    )
+    dataset = Dataset.load(source=qianfan_data_source)
+    assert dataset.online_data_process(
+        [FilterCheckNumberWords(number_words_min_cutoff=10)]
+    )

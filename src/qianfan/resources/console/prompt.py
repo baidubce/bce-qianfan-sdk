@@ -331,7 +331,7 @@ class Prompt(object):
         The `@console_api_request` decorator is applied to this method, enabling it to
         send the generated QfRequest and return a QfResponse to the user.
 
-        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wlmrgowee
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/zlp7u6inp
         """
         req = QfRequest(method="POST", url=Consts.PromptLabelListAPI)
         req.json_body = {"offset": offset, "pageSize": page_size, **kwargs}

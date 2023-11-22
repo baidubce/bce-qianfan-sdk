@@ -1333,6 +1333,7 @@ def prompt_detail():
 
 
 @app.route(Consts.PromptUpdateAPI, methods=["POST"])
+@iam_auth_checker
 def prompt_update():
     return json_response(
         {
@@ -1345,6 +1346,7 @@ def prompt_update():
 
 
 @app.route(Consts.PromptDeleteAPI, methods=["POST"])
+@iam_auth_checker
 def prompt_delete():
     return json_response(
         {"log_id": "pws9pkrncvjesmmn", "result": True, "status": 200, "success": True}
@@ -1352,6 +1354,7 @@ def prompt_delete():
 
 
 @app.route(Consts.PromptListAPI, methods=["POST"])
+@iam_auth_checker
 def prompt_list():
     return json_response(
         {
@@ -1422,6 +1425,7 @@ def prompt_list():
 
 
 @app.route(Consts.PromptLabelListAPI, methods=["POST"])
+@iam_auth_checker
 def prompt_label_list():
     return json_response(
         {

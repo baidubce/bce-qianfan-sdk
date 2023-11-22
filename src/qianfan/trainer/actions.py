@@ -61,13 +61,27 @@ class TrainAction(
 
     def __init__(
         self,
-        base_model_version: str,
+        train_type: str,
         train_config: Optional[TrainConfig] = None,
         base_model: Optional[str] = None,
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
+        """_summary_
+
+        Args:
+            train_type (str):
+                train_type, like 'ERNIE-Bot-turbo-0725'
+            train_config (Optional[TrainConfig], optional):
+                train_config, e.g. `epoch=10, batch_size=32`.
+            base_model (Optional[str], optional):
+                base_mode, like 'ERNIE-Bot-turbo'. Defaults to None.
+            task_id (Optional[int], optional):
+                used in incr train, model train task_id. Defaults to None.
+            job_id (Optional[int], optional):
+                used in incr train, mod train job_id. Defaults to None.
+        """
         super().__init__(**kwargs)
         self.task_id = task_id
         self.job_id = job_id
@@ -76,16 +90,16 @@ class TrainAction(
             self.is_incr = True
         else:
             # train from base model
-            self.base_model_version = base_model_version
+            self.train_type = train_type
             self.base_model = (
-                ModelTypeMapping.get(self.base_model_version)
+                ModelTypeMapping.get(self.train_type)
                 if base_model is None
                 else base_model
             )
         self.train_config = (
             train_config
             if train_config is not None
-            else self.get_default_train_config(base_model_version)
+            else self.get_default_train_config(train_type)
         )
         self.train_mode: str = console_consts.TrainMode.SFT.value
 
@@ -110,8 +124,8 @@ class TrainAction(
         assert self.train_config is not None
         req_job = {
             "taskId": self.task_id,
-            "baseTrainType": self.base_model_version,
-            "trainType": self.base_model,
+            "baseTrainType": self.base_model,
+            "trainType": self.train_type,
             "trainMode": self.train_mode,
             "peftType": self.train_config.peft_type,
             "trainConfig": {

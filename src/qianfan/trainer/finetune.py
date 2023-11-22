@@ -44,7 +44,7 @@ class LLMFinetune(Trainer):
 
     def __init__(
         self,
-        model_version_type: str,
+        train_type: str,
         dataset: Any,
         train_config: Optional[TrainConfig] = None,
         deploy_config: Optional[DeployConfig] = None,
@@ -56,7 +56,7 @@ class LLMFinetune(Trainer):
         Initialization function for LLM fine-tuning.
 
         Parameters:
-            model_version_type: str
+            train_type: str
                 A string representing the model version type.
                 like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
             dataset: Dataset
@@ -90,8 +90,8 @@ class LLMFinetune(Trainer):
         )
         ```
         """
-        if base_model is None and ModelTypeMapping.get(model_version_type) is not None:
-            base_model = ModelTypeMapping.get(model_version_type)
+        if base_model is None and ModelTypeMapping.get(train_type) is not None:
+            base_model = ModelTypeMapping.get(train_type)
 
         if base_model is None or base_model == "":
             raise InvalidArgumentError("base_model is empty")
@@ -102,7 +102,7 @@ class LLMFinetune(Trainer):
         self.train_action = TrainAction(
             train_config=train_config,
             base_model=base_model,
-            base_model_version=model_version_type,
+            train_type=train_type,
             train_mode=console_consts.TrainMode.SFT,
             event_handler=event_handler,
             **kwargs,

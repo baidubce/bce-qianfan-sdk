@@ -80,7 +80,7 @@ def test_trainer_sft_start():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        model_version_type="ERNIE-Bot-turbo-0725",
+        train_type="ERNIE-Bot-turbo-0725",
         dataset=ds,
         train_config=train_config,
         event_handler=eh,
@@ -107,7 +107,7 @@ def test_trainer_sft_with_deploy():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        model_version_type="ERNIE-Bot-turbo-0725",
+        train_type="ERNIE-Bot-turbo-0725",
         dataset=ds,
         train_config=train_config,
         deploy_config=deploy_config,

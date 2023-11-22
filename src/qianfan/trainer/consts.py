@@ -84,6 +84,10 @@ ModelTypeMapping = {
 
 class ServiceType(str, Enum):
     Chat = "Chat"
+    """Corresponding to the `ChatCompletion`"""
     Completion = "Completion"
+    """Corresponding to the `Completion`"""
     Embedding = "Embedding"
+    """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
+    """Corresponding to the `Text2Image"""

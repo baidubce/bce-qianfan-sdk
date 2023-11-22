@@ -19,12 +19,17 @@ import csv
 import functools
 import io
 import json
+from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pyarrow.json
+import requests
 from typing_extensions import Self
 
-from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
+from qianfan import get_config
+from qianfan.dataset.consts import (
+    QianfanDataGroupColumnName,
+)
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
     DataSource,
@@ -41,9 +46,10 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
-from qianfan.errors import ValidationError
-from qianfan.resources.console.consts import DataTemplateType
-from qianfan.utils import log_debug, log_error, log_info
+from qianfan.errors import RequestError, ValidationError
+from qianfan.resources import Data
+from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
+from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 
 # 装饰器，用来阻塞部分对云上数据集（非本地）的操作请求
@@ -106,15 +112,11 @@ class Dataset(Table):
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
             if isinstance(json_data_list[0], list):
-                # 如果读取的是一个 Json 列表的列表，则必须嵌套存储
-                # 因为 Pyarrow Table 并不适合存储列表形式的数据
-                # 行与列的处理能力暂不支持嵌套存储的数据集
-                # 后续开发相关支持，将此时的数据集底层实现
-                # 更换为 pyarrow.Array
-                json_data_dict = {
-                    QianfanDefaultColumnNameForNestedTable: json_data_list
-                }
-                pyarrow_table = pyarrow.Table.from_pydict(json_data_dict)
+                inner_list: List[Dict[str, Any]] = []
+                for i in range(len(json_data_list)):
+                    for pair in json_data_list[i]:
+                        inner_list.append({**pair, QianfanDataGroupColumnName: i})
+                pyarrow_table = pyarrow.Table.from_pylist(inner_list)
             elif isinstance(json_data_list[0], dict):
                 # 如果读取的是一个 Json 字典的列表，则正常存储，此时行列的处理能力可用
                 pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
@@ -157,15 +159,17 @@ class Dataset(Table):
         elif format_type == FormatType.Jsonl:
             list_of_json: List[str] = []
 
-            # 如果是 Jsonl，则需要处理嵌套的情况
+            # 如果是 Jsonl，则需要处理可能的分组情况
             column_names = self.inner_table.column_names
-            if (
-                len(column_names) == 1
-                and QianfanDefaultColumnNameForNestedTable == column_names[0]
-            ):
-                compo_list = self.inner_table.to_pydict()[
-                    QianfanDefaultColumnNameForNestedTable
-                ]
+            if QianfanDataGroupColumnName in column_names:
+                compo_list: List[List[Dict[str, Any]]] = []
+                for row in self.inner_table.to_pylist():
+                    group_index = row[QianfanDataGroupColumnName]
+                    while group_index >= len(compo_list):
+                        compo_list.append([])
+                    row.pop(QianfanDataGroupColumnName)
+                    compo_list[-1].append(row)
+
                 for elem in compo_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
             elif isinstance(source, QianfanDataSource):
@@ -434,11 +438,67 @@ class Dataset(Table):
             return False
         return not self.inner_data_source_cache.download_when_init
 
+    def _is_dataset_generic_text(self) -> bool:
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+            return False
+        return (
+            self.inner_data_source_cache.template_type == DataTemplateType.GenericText
+        )
+
+    def _create_a_dataset_etl_task(
+        self, operator_dict: Dict[str, List[Dict[str, Any]]]
+    ) -> int:
+        origin_data_source = self.inner_data_source_cache
+        assert isinstance(origin_data_source, QianfanDataSource)
+
+        log_info("create a new dataset group and dataset")
+        new_data_source = QianfanDataSource.create_bare_dataset(
+            name=f"{origin_data_source.name}_sdk_after_process",
+            template_type=origin_data_source.template_type,
+            storage_type=origin_data_source.storage_type,
+            storage_id=origin_data_source.storage_id,
+            storage_path=origin_data_source.storage_path,
+            ak=origin_data_source.ak,
+            sk=origin_data_source.sk,
+        )
+
+        log_info("new dataset group and dataset created, start creating etl task")
+
+        Data.create_dataset_etl_task(
+            source_dataset_id=origin_data_source.id,
+            destination_dataset_id=new_data_source.id,
+            operations=operator_dict,
+        )
+
+        etl_result = Data.get_dataset_etl_task_list()["result"]
+        if etl_result.get("processingCount", 0) == 0:
+            message = "get empty etl task list after creating an etl task"
+            log_error(message)
+            raise ValueError(message)
+
+        etl_list = etl_result.get("items", [])
+        etl_id: Optional[int] = None
+        for task in etl_list:
+            if (
+                task["sourceDatasetName"] == origin_data_source.id
+                and task["destDatasetName"] == new_data_source.id
+            ):
+                etl_id = task["etlId"]
+                break
+
+        if etl_id is None:
+            message = "can't find matched processing etl task"
+            log_error(message)
+            raise ValueError(message)
+
+        log_info(f"created etl task id: {etl_id}")
+        return etl_id
+
     # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
     # 例如通过平台的 API 发起数据清洗任务
     def online_data_process(self, operators: List[QianfanOperator]) -> bool:
         """
-        create a online ETL task on qianfan
+        create an online ETL task on qianfan
         not available currently
 
         Args:
@@ -452,8 +512,47 @@ class Dataset(Table):
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             return False
 
-        # 这里根据 operators 来填充参数，然后发起数据清洗，最后将任务处理结果返回。
-        # 目前没有实现相关接口，直接抛出 False
+        if not self._is_dataset_generic_text():
+            # 如果数据集不是泛文本，也不支持清洗
+            return False
+
+        operator_dict: Dict[str, List[Dict[str, Any]]] = {}
+        for operator in operators:
+            attr_dict = operator.model_dump()
+            attr_dict.pop("operator_name")
+            attr_dict.pop("operator_type")
+
+            elem_dict = {"name": operator.operator_name, "args": attr_dict}
+
+            operator_type = operator.operator_type
+            if operator_type not in operator_dict:
+                operator_dict[operator_type] = []
+
+            operator_dict[operator_type].append(elem_dict)
+
+        etl_id = self._create_a_dataset_etl_task(operator_dict)
+        while True:
+            sleep(get_config().ETL_STATUS_POLLING_INTERVAL)
+            result = Data.get_dataset_etl_task_info(etl_id)["result"]
+            if result["processStatus"] == ETLTaskStatus.Finished.value:
+                log_info(f"data etl task {etl_id} succeeded")
+                return True
+            if result["processStatus"] == ETLTaskStatus.Running.value:
+                log_info(f"data etl task {etl_id} running, keep polling")
+                continue
+            if result["processStatus"] == ETLTaskStatus.Paused.value:
+                log_warn(f"etl task {etl_id} paused")
+                continue
+            if result["processStatus"] in [
+                ETLTaskStatus.Failed.value,
+                ETLTaskStatus.Interrupted.value,
+            ]:
+                log_warn(
+                    f"etl task {etl_id} terminated with status code:"
+                    f" {result['processStatus']}"
+                )
+                return False
+        log_error("should not reach there")
         return False
 
     # -------------------- Processable 相关 ----------------
@@ -519,6 +618,7 @@ class Dataset(Table):
         by: Optional[
             Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
         ] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         get element(s) from dataset
@@ -530,7 +630,56 @@ class Dataset(Table):
         Returns:
             Any: dataset row list
         """
-        return super().list(by)
+        if not self._is_dataset_located_in_qianfan():
+            return super().list(by)
+        else:
+            assert isinstance(self.inner_data_source_cache, QianfanDataSource)
+
+            if isinstance(by, str):
+                message = "can't get entity by string from qianfan"
+                log_error(message)
+                raise ValueError(message)
+            elif isinstance(by, (list, tuple)):
+                message = "can't get entity by sequence from qianfan"
+                log_error(message)
+                raise ValueError(message)
+
+            args = {"dataset_id": self.inner_data_source_cache.id}
+
+            if isinstance(by, int):
+                args["offset"] = by
+                args["pageSize"] = 1
+            elif isinstance(by, slice):
+                args["offset"] = by.start
+                args["pageSize"] = by.stop - by.start
+
+            resp = Data.list_all_entity_in_dataset(**{**kwargs, **args})["result"][
+                "items"
+            ]
+            result = [
+                {"entity_id": record["id"], "entity_url": record["url"]}
+                for record in resp
+            ]
+
+            for elem in result:
+                for i in range(get_config().GET_ENTITY_CONTENT_FAILED_RETRY_TIMES):
+                    resp = requests.get(elem["entity_url"])
+                    if resp.status_code == 200:
+                        break
+                    log_warn(f"request url {elem['entity_url']} failed, retry")
+
+                if resp.status_code != 200:
+                    message = (
+                        f"request content of entity {elem['entity_id']} from"
+                        f" {elem['entity_url']} failed"
+                    )
+                    log_error(message)
+                    raise RequestError(message)
+
+                elem.pop("entity_url")
+                elem["entity_content"] = resp.content
+
+            return result
 
     def __getitem__(self, key: Any) -> Any:
         return self.list(key)

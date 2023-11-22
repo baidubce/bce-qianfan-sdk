@@ -27,11 +27,12 @@ from qianfan.trainer.base import (
     Trainer,
 )
 from qianfan.trainer.configs import DeployConfig, TrainConfig
-from qianfan.trainer.consts import ActionState, FinetuneStatus, ModelTypeMapping
-
-
-class FinetuneStatusInfo:
-    status: Optional[FinetuneStatus] = None
+from qianfan.trainer.consts import (
+    ActionState,
+    FinetuneStatus,
+    ModelTypeMapping,
+    ServiceStatus,
+)
 
 
 class LLMFinetune(Trainer):
@@ -161,7 +162,7 @@ fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Running: FinetuneStatus.Training,
         ActionState.Done: FinetuneStatus.TrainFinished,
         ActionState.Error: FinetuneStatus.TrainFailed,
-        ActionState.Stopped: FinetuneStatus.TrainFailed,
+        ActionState.Stopped: FinetuneStatus.TrainStopped,
     },
     ModelPublishAction.__class__.__name__: {
         ActionState.Preceding: FinetuneStatus.ModelPublishing,
@@ -171,6 +172,10 @@ fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Stopped: FinetuneStatus.ModelPublishFailed,
     },
     DeployAction.__class__.__name__: {
-        
-    }
+        ActionState.Preceding: ServiceStatus.Created,
+        ActionState.Running: ServiceStatus.Deploying,
+        ActionState.Done: ServiceStatus.Deployed,
+        ActionState.Error: ServiceStatus.DeployFailed,
+        ActionState.Stopped: ServiceStatus.DeployStopped,
+    },
 }

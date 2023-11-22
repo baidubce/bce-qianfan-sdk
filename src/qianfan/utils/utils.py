@@ -14,6 +14,8 @@
 
 import asyncio
 import os
+import secrets
+import string
 import threading
 import uuid as uuid_lib
 from threading import current_thread
@@ -187,3 +189,9 @@ class AsyncLock:
 
 def uuid() -> str:
     return str(uuid_lib.uuid4()).replace("-", "")
+
+
+def generate_letter_num_random_id(len: int = 10) -> str:
+    return "".join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(len)
+    )

@@ -1,4 +1,5 @@
 from qianfan.resources.console import consts as console_consts
+from qianfan.trainer.consts import ServiceType
 from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import (
@@ -41,7 +42,7 @@ def test_model_publish_action():
 
 
 def test_service_deploy_action():
-    deploy_config = DeployConfig(replicas=1, pool_type=1)
+    deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     deploy_action = DeployAction(deploy_config=deploy_config)
 
     output = deploy_action.exec(
@@ -82,7 +83,7 @@ def test_trainer_sft_with_deploy():
     train_config = TrainConfig(
         epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
     )
-    deploy_config = DeployConfig(replicas=1, pool_type=1)
+    deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     ds_id = 111
     train_config.model_dump_json()
 

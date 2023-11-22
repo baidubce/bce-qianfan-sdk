@@ -14,6 +14,7 @@
 import copy
 import pickle
 from abc import ABC, abstractmethod
+from threading import Lock
 from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, TypeVar, cast
 
 from qianfan.errors import InternalError
@@ -26,12 +27,22 @@ Output = TypeVar("Output")
 
 
 class Executable(Generic[Input, Output], ABC):
+    """
+    generic abstraction class of executable
+
+    """
+
     @abstractmethod
     def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
         ...
 
 
 class Serializable(ABC):
+    """
+    generic abstraction class of serializable.
+    especially for the model, service, and trainer.
+    """
+
     @abstractmethod
     def dumps(self) -> Optional[bytes]:
         """
@@ -44,6 +55,15 @@ class Serializable(ABC):
 
     @abstractmethod
     def loads(self, data: bytes) -> Any:
+        """
+        loads
+
+        Args:
+            data (bytes): load
+
+        Returns:
+            Any: _description_
+        """
         ...
 
 
@@ -114,6 +134,11 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
 
 
 def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    decorator for action state tracking with event.
+
+    """
+
     def wrapper(self: BaseAction, input: Any, **kwargs: Any) -> Any:
         try:
             self.action_event(ActionState.Preceding, "", {})
@@ -173,13 +198,25 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.seq.append(action.id)
         self.next_actions = next_actions
         self._state: Optional[Any] = None
+        self._sync_lock = Lock()
+        self._stop: bool = False
+        self._last_output: Optional[Dict[str, Any]] = None
 
     @with_event
     def exec(
         self, input: Optional[Dict[str, Any]] = None, **kwargs: Dict
     ) -> Dict[str, Any]:
+        """
+        Parameters:
+            input: Optional[Dict[str, Any]] input of the pipeline.
+            kwargs: additional keyword arguments.
+        Return:
+            Dict[str, Any]: The output of the pipeline.
+        """
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for k in self.seq:
+            if self._stop:
+                break
             if self.event_dispatcher is not None:
                 self.action_event(
                     ActionState.Running, "pipeline running", {"action": k}
@@ -199,7 +236,23 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self.actions.get(key)
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
+        """
+        resume pipeline running from last stopped or failed action.
+        """
+        for k in self.seq:
+            if k != self._state:
+                continue
+            self.actions[k].exec(input, **kwargs)
         return None
+
+    def stop(self) -> None:
+        """
+        stop pipeline running, only stop the actions not running.
+        """
+        with self._sync_lock:
+            self._stop = True
+
+        return super().stop()
 
 
 class Trainer(ABC):
@@ -218,20 +271,50 @@ class Trainer(ABC):
 
     @abstractmethod
     def start(self, **kwargs: Dict) -> "Trainer":
+        """
+        Trainer abstract method. For the diverse instance subclasses,
+        Override this method to implement the specific training process.
+        Returns:
+            Trainer: Trainer instance
+        """
         ...
 
+    @abstractmethod
     def stop(self, **kwargs: Dict) -> "Trainer":
+        """
+        Trainer abstract method. Subclasses implement it to support an
+        more controllable usage in the concrete situations.
+        Returns:
+            Trainer: Trainer instance
+        """
         return self
 
+    @abstractmethod
     def resume(self, **kwargs: Dict) -> "Trainer":
+        """
+        Counter to stop method. User can resume the training process by
+        calling resume() method.
+        Returns:
+            Trainer: Trainer instance
+        """
         return self
 
     @property
     def status(self) -> str:
+        """
+        Trainer status。Implements different status for different process
+        like fine-tuning, RLHF, PreTrain and so on.
+        """
         return ""
 
     def get_evaluate_result(self) -> Any:
+        """
+        Receive the evaluate result from the pipeline. [coming soon].
+        """
         raise NotImplementedError("trainer get_evaluate_result")
 
     def get_log(self) -> Any:
+        """
+        Receive the training log during the pipeline execution. [coming soon].
+        """
         raise NotImplementedError("trainer get_log")

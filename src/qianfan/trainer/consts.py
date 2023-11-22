@@ -15,20 +15,29 @@ from enum import Enum
 
 
 class ActionState(str, Enum):
-    Preceding = "Preceding"
-    """_summary_
     """
+    This class list the key point during an action execution
+    At default, ActionState should be get through event_handler's
+    dispatched event.
+    """
+
+    Preceding = "Preceding"
+    """`Preceding` stands for the point before exec"""
     Running = "Running"
+    """`Running` stands for the point during exec"""
     Done = "Done"
+    """`Done` stands for the state of doing exec"""
     Error = "Error"
+    """`Error` stands for the state when errors occur."""
     Stopped = "Stopped"
+    """`Stopped` stands for the state when stop() is called."""
 
 
 class FinetuneStatus(str, Enum):
     Unknown = "Unknown"
     """未知状态"""
     Created = "Created"
-    """任务创建成功，对应创建任务+创建任务运行时API两部分都成功"""
+    """任务创建，初始化"""
     Training = "Training"
     """训练中 对应训练任务运行时API状态的Running"""
     TrainFinished = "TrainFinished"
@@ -48,14 +57,16 @@ class FinetuneStatus(str, Enum):
 class ServiceStatus(str, Enum):
     Unknown = "Unknown"
     """未知状态"""
+    Created = "Created"
+    """任务创建，初始化"""
     Deploying = "Deploying"
     """模型服务发布中"""
     Deployed = "Deployed"
     """模型服务发布成功"""
     DeployFailed = "DeployFailed"
     """模型服务发布失败"""
-    DeployOffline = "DeployOffline"
-    """服务下线"""
+    DeployStopped = "DeployStopped"
+    """服务发布任务停止"""
 
 
 ModelTypeMapping = {
@@ -71,12 +82,8 @@ ModelTypeMapping = {
 }
 
 
-class ModelType(str, Enum):
-    LLM = "LLM"
-    Text2Image = "Text2Image"
-
-
 class ServiceType(str, Enum):
     Chat = "Chat"
     Completion = "Completion"
     Embedding = "Embedding"
+    Text2Image = "Text2Image"

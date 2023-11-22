@@ -15,26 +15,62 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
+from qianfan.trainer.consts import ServiceType
+
 
 class TrainConfig(BaseModel):
     epoch: Optional[int] = None
+    """
+    epoch number: differ from models
+    """
     batch_size: Optional[int] = None
+    """
+    batch size: differ from models
+    """
     learning_rate: Optional[float] = None
+    """
+    learning rate: differ from models
+    """
     max_seq_len: Optional[int] = None
+    """
+    max_seq_len: differ from models
+    """
     peft_type: Optional[str] = None
     """
     parameter efficient FineTuning method, like `LoRA`, `P-tuning`, `ALL`
     """
     trainset_rate: int = 20
+    """
+    rate for dataset to spilt 
+    """
     extras: Any = None
 
 
 class DeployConfig(BaseModel):
     name: str = ""
+    """
+    Service name
+    """
     endpoint_prefix: str = ""
+    """
+    Endpoint custom prefix, will be used to call resource api
+    """
     description: str = ""
+    """
+    description of service
+    """
     replicas: int
+    """
+    replicas for model services, related to the capacity in QPS of model service.
+    """
     pool_type: int
+    """
+    resource pool type, public resource will be shared with others.
+    """
+    service_type: ServiceType
+    """
+    service type, after deploy, Service could behave like the specific type.
+    """
     extras: Any = None
 
 

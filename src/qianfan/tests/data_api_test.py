@@ -15,7 +15,7 @@
 """
     Unit test for Data
 """
-
+import pytest
 
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -25,28 +25,17 @@ from qianfan.resources.console.consts import (
     DataSourceType,
     DataStorageType,
     DataTemplateType,
+    EntityListingType,
 )
-
-enter_except_flag = True
-
-
-def _check_and_reset_except_flag() -> bool:
-    global enter_except_flag
-    ret = enter_except_flag
-    enter_except_flag = False
-    return ret
-
-
-def _enter_except_handle_block():
-    global enter_except_flag
-    enter_except_flag = True
 
 
 def test_create_task():
     """
     test Data.create_bare_dataset
     """
-    try:
+    with pytest.raises(
+        ValueError, match="storage id is empty while create dataset in private bos"
+    ):
         resp = Data.create_bare_dataset(
             "test_dataset_name",
             DataSetType.TextOnly,
@@ -54,13 +43,11 @@ def test_create_task():
             DataTemplateType.NonSortedConversation,
             DataStorageType.PrivateBos,
         )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert str(e) == "storage id is empty while create dataset in private bos"
 
-    assert _check_and_reset_except_flag()
-
-    try:
+    with pytest.raises(
+        ValueError,
+        match="Incompatible project type or template type with multi model set",
+    ):
         resp = Data.create_bare_dataset(
             "test_dataset_name",
             DataSetType.MultiModel,
@@ -68,15 +55,11 @@ def test_create_task():
             DataTemplateType.NonSortedConversation,
             DataStorageType.PublicBos,
         )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert (
-            str(e) == "Incompatible project type or template type with multi model set"
-        )
 
-    assert _check_and_reset_except_flag()
-
-    try:
+    with pytest.raises(
+        ValueError,
+        match="Incompatible project type with template type when create text dataset",
+    ):
         resp = Data.create_bare_dataset(
             "test_dataset_name",
             DataSetType.TextOnly,
@@ -84,14 +67,6 @@ def test_create_task():
             DataTemplateType.QuerySet,
             DataStorageType.PublicBos,
         )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert (
-            str(e)
-            == "Incompatible project type with template type when create text dataset"
-        )
-
-    assert _check_and_reset_except_flag()
 
     resp = Data.create_bare_dataset(
         "test_dataset_name",
@@ -120,20 +95,13 @@ def test_create_import_task():
     """
     test Data.create_data_import_task
     """
-    try:
+    with pytest.raises(ValueError, match="import file url can't be empty"):
         Data.create_data_import_task(
             dataset_id=1,
             is_annotated=True,
             import_source=DataSourceType.PrivateBos,
             file_url="",
         )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert str(e) == "import file url can't be empty"
-
-    assert _check_and_reset_except_flag()
-
-    _check_and_reset_except_flag()
 
     resp = Data.create_data_import_task(
         dataset_id=1,
@@ -217,16 +185,13 @@ def test_create_dataset_export_task():
     """
     test Data.create_dataset_export_task
     """
-    try:
+    with pytest.raises(
+        ValueError, match="storage id needed when export to private bos"
+    ):
         resp = Data.create_dataset_export_task(
             dataset_id=12,
             export_destination_type=DataExportDestinationType.PrivateBos,
         )
-    except ValueError as e:
-        _enter_except_handle_block()
-        assert str(e) == "storage id needed when export to private bos"
-
-    assert _check_and_reset_except_flag()
 
     resp = Data.create_dataset_export_task(
         dataset_id=12,
@@ -254,3 +219,154 @@ def test_get_export_record():
     assert reqs["datasetId"] == 12
 
     assert resp.get("result", [])[0].get("creatorName", "") == "yyw02"
+
+
+def test_create_etl_task():
+    """
+    test Data.create_dataset_etl_task
+    """
+    resp = Data.create_dataset_etl_task(
+        1, 2, {"clean": [], "filter": [], "deduplication": [], "desensitization": []}
+    )
+    reqs = resp.get("_request")
+
+    assert reqs["sourceDatasetId"] == 1
+    assert reqs["destDatasetId"] == 2
+    assert reqs["entityType"] == 2
+    assert isinstance(reqs["operationsV2"], dict)
+
+
+def test_get_dataset_etl_task_info():
+    """
+    test Data.get_dataset_etl_task_info
+    """
+
+    resp = Data.get_dataset_etl_task_info(1)
+    reqs = resp.get("_request")
+
+    assert reqs["etlId"] == 1
+    assert resp.body.get("result").get("id") == 1
+
+
+def test_delete_dataset_etl_task():
+    """
+    test Data.delete_dataset_etl_task
+    """
+
+    resp = Data.delete_dataset_etl_task([12, 34])
+    reqs = resp.get("_request")
+
+    assert reqs["etlIds"] == [12, 34]
+
+
+def test_create_dataset_augmenting_task():
+    """
+    test Data.create_dataset_augmenting_task
+    """
+    with pytest.raises(ValueError, match="num_seed_fewshot should be between 1 to 10"):
+        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 90, 1, 1)
+
+    with pytest.raises(
+        ValueError, match="num_instances_to_generate should be between 1 to 5000"
+    ):
+        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 1, 5001, 1)
+
+    with pytest.raises(
+        ValueError, match="similarity_threshold should be between 0 to 1"
+    ):
+        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 1, 1, -1)
+
+    resp = Data.create_dataset_augmenting_task(
+        "test",
+        12,
+        34,
+        "ERNIE-Bot-turbo",
+        "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant",
+        12,
+        1,
+        1,
+        1,
+    )
+    reqs = resp.get("_request")
+
+    assert reqs["name"] == "test"
+    assert reqs["sourceDatasetId"] == 12
+    assert reqs["destDatasetId"] == 34
+    assert reqs["serviceName"] == "ERNIE-Bot-turbo"
+    assert (
+        reqs["serviceUrl"]
+        == "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant"
+    )
+    assert reqs["appId"] == 12
+    assert reqs["numSeedFewshot"] == 1
+    assert reqs["numInstancesToGenerate"] == 1
+    assert reqs["similarityThreshold"] == 1
+
+
+def test_get_dataset_augmenting_task_info():
+    """
+    test Data.get_dataset_augmenting_task_info
+    """
+
+    resp = Data.get_dataset_augmenting_task_info(1)
+    reqs = resp.get("_request")
+
+    assert reqs["taskId"] == 1
+
+
+def test_delete_dataset_augmenting_task():
+    """
+    test Data.delete_dataset_augmenting_task
+    """
+
+    resp = Data.delete_dataset_augmenting_task([1])
+    reqs = resp.get("_request")
+
+    assert reqs["taskIds"] == [1]
+
+
+def test_annotate_an_entity():
+    """
+    test Data.annotate_an_entity
+    """
+
+    resp = Data.annotate_an_entity(
+        "gbd", 12, [{"prompt": "test", "response": [["test"]]}]
+    )
+    reqs = resp.get("_request")
+
+    assert reqs["id"] == "gbd"
+    assert reqs["datasetId"] == 12
+    assert reqs["content"] == [{"prompt": "test", "response": [["test"]]}]
+
+
+def test_delete_an_entity():
+    """
+    test Data.delete_an_entity
+    """
+
+    resp = Data.delete_an_entity(["12"], 12)
+    reqs = resp.get("_request")
+
+    assert reqs["id"] == ["12"]
+    assert reqs["datasetId"] == 12
+
+
+def test_list_all_entity_in_dataset():
+    """
+    test Data.list_all_entity_in_dataset
+    """
+
+    with pytest.raises(ValueError):
+        Data.list_all_entity_in_dataset(1, 2, 3, [1], None)
+
+    with pytest.raises(ValueError):
+        Data.list_all_entity_in_dataset(1, 2, 3, None, [2])
+
+    resp = Data.list_all_entity_in_dataset(1, 2, 3)
+    reqs = resp.get("_request")
+
+    assert reqs["datasetId"] == 1
+    assert reqs["offset"] == 2
+    assert reqs["pageSize"] == 3
+    assert reqs["tabType"] == EntityListingType.All.value

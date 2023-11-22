@@ -14,7 +14,7 @@ def upload_content_to_bos(
     bos_config = BceClientConfiguration(
         credentials=BceCredentials(ak, sk), endpoint=f"{region}.bcebos.com"
     )
-    BosClient(bos_config).put_object(bucket_name, remote_file_path, data)
+    BosClient(bos_config).put_object_from_string(bucket_name, remote_file_path, data)
 
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:

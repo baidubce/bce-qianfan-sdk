@@ -1316,9 +1316,16 @@ def get_export_record():
     )
 
 
+origin_data_source_id = 0
+new_data_source_id = 0
+
+
 @app.route(Consts.DatasetCreateETLTaskAPI, methods=["POST"])
 @iam_auth_checker
 def create_dataset_etl_task():
+    global origin_data_source_id, new_data_source_id
+    origin_data_source_id = request.json["sourceDatasetId"]
+    new_data_source_id = request.json["destDatasetId"]
     return json_response(
         {"log_id": "i9vswaefzbqpu92d", "result": True, "status": 200, "success": True}
     )
@@ -1327,14 +1334,15 @@ def create_dataset_etl_task():
 @app.route(Consts.DatasetETLTaskInfoAPI, methods=["POST"])
 @iam_auth_checker
 def get_dataset_etl_task_info():
+    global origin_data_source_id, new_data_source_id
     return json_response(
         {
             "log_id": "44k3yj73ms178179",
             "result": {
                 "id": request.json["etlId"],
                 "userId": 113,
-                "sourceDatasetId": 2235,
-                "destDatasetId": 2230,
+                "sourceDatasetId": origin_data_source_id,
+                "destDatasetId": new_data_source_id,
                 "taskId": 5331,
                 "entityCount": 1,
                 "entityType": 2,
@@ -1550,6 +1558,80 @@ def get_dataset_etl_task_info():
     )
 
 
+@app.route(Consts.DatasetETLListTaskAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_etl_task_list():
+    global origin_data_source_id, new_data_source_id
+    return json_response(
+        {
+            "log_id": "wwcm30w7exxexyqx",
+            "result": {
+                "processingCount": 1,
+                "items": [
+                    {
+                        "etlId": 275,
+                        "startTime": "2023-11-06 16:03:23",
+                        "sourceDatasetName": "4train_generic_usrBos-V1",
+                        "destDatasetName": "4train_generic_sysBos-V1",
+                        "operatorNameList": [
+                            "remove_invisible_character",
+                            "replace_uniform_whitespace",
+                            "remove_non_meaning_characters",
+                            "replace_traditional_chinese_to_simplified",
+                            "remove_web_identifiers",
+                            "remove_emoji",
+                            "deduplication_simhash",
+                            "replace_emails",
+                            "replace_ip",
+                            "replace_identifier",
+                            "filter_check_number_words",
+                            "filter_check_character_repetition_removal",
+                            "filter_check_word_repetition_removal",
+                            "filter_check_special_characters",
+                            "filter_check_flagged_words",
+                            "filter_check_lang_id",
+                            "filter_check_perplexity",
+                        ],
+                        "sourceDatasetId": origin_data_source_id,
+                        "destDatasetId": new_data_source_id,
+                        "entityCount": 1,
+                        "entityType": 2,
+                        "result": {
+                            "RET_OK": 0,
+                            "pipeline_stage_result": None,
+                            "export_entity_num": 0,
+                            "remaining_entity": 0,
+                            "unprocessed_entity": 0,
+                            "remove_emoji": {"processed_entity": 0},
+                            "remove_url": {"processed_entity": 0},
+                            "trad_to_simp": {"processed_entity": 0},
+                            "remove_id_card": {"processed_entity": 0},
+                            "remove_phone_number": {"processed_entity": 0},
+                            "remove_exception_char": {"processed_entity": 0},
+                            "replace_sim2trad": {"processed_entity": 0},
+                            "replace_trad2sim": {"processed_entity": 0},
+                            "replace_upper2lower": {"processed_entity": 0},
+                            "cut": {"remaining_entity": 0, "unprocessed_entity": 0},
+                            "failReason": "",
+                            "pauseReason": "",
+                        },
+                        "processStatus": 2,
+                        "status": 0,
+                        "errCode": 0,
+                        "errMsg": "",
+                        "createTime": "0001-01-01T00:00:00Z",
+                        "finishTime": "0001-01-01T00:00:00Z",
+                        "modifyTime": "0001-01-01T00:00:00Z",
+                    }
+                ],
+                "total": 1,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
 @app.route(Consts.DatasetETLTaskDeleteAPI, methods=["POST"])
 @iam_auth_checker
 def delete_dataset_etl_task():
@@ -1563,6 +1645,59 @@ def delete_dataset_etl_task():
 def create_dataset_augmenting_task():
     return json_response(
         {"log_id": "514mkkutaquh4fvq", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetAugListTaskAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_aug_task_list():
+    return json_response(
+        {
+            "log_id": "x5bnzd1g2fi3iiz9",
+            "result": {
+                "total": 45,
+                "items": [
+                    {
+                        "id": 241,
+                        "projectType": 20,
+                        "sourceDatasetId": 2343,
+                        "sourceDatasetName": "sys_bos数据集1106-V1",
+                        "destDatasetId": 2431,
+                        "destDatasetName": "werwrewrwe-V2",
+                        "area": 0,
+                        "status": 4,
+                        "strategy": 0,
+                        "operations": "",
+                        "startTime": "2023-11-08 10:44:21",
+                        "finishTime": "2023-11-08 10:44:56",
+                        "failReason": "对象存储访问异常",
+                        "isSelfInstruct": True,
+                        "name": "3334",
+                        "modelName": "ERNIE-Bot",
+                    },
+                    {
+                        "id": 240,
+                        "projectType": 20,
+                        "sourceDatasetId": 2324,
+                        "sourceDatasetName": "3-V2",
+                        "destDatasetId": 2343,
+                        "destDatasetName": "sys_bos数据集1106-V1",
+                        "area": 0,
+                        "status": 3,
+                        "strategy": 0,
+                        "operations": "",
+                        "startTime": "2023-11-08 10:43:55",
+                        "finishTime": "2023-11-08 10:44:02",
+                        "failReason": "",
+                        "isSelfInstruct": True,
+                        "name": "357",
+                        "modelName": "ERNIE-Bot",
+                    },
+                ],
+            },
+            "status": 200,
+            "success": True,
+        }
     )
 
 

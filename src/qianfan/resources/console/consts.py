@@ -116,20 +116,20 @@ class TrainStatus(str, Enum):
     Stop = "STOP"
 
 
-class TrainSet(int, Enum):
-    PlatformDataSet = 1
-    BosPathDataset = 2
-
-
 class ModelState(str, Enum):
-    Ready = "Ready"  # 已就绪
-    Creating = "Creating"  # 创建中
-    Fail = "Fail"  # 创建失败
+    Ready = "Ready"
+    """已就绪"""
+    Creating = "Creating"
+    """创建中"""
+    Fail = "Fail"
+    """创建失败"""
 
 
 class TrainDatasetType(int, Enum):
     Platform = 1
+    """平台数据集"""
     PrivateBos = 2
+    """私有Bos数据集"""
 
 
 class TrainMode(str, Enum):

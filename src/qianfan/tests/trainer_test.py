@@ -1,13 +1,15 @@
+from qianfan.dataset import Dataset, QianfanDataSource
 from qianfan.resources.console import consts as console_consts
-from qianfan.trainer.consts import ServiceType
-from qianfan.trainer.configs import DeployConfig, TrainConfig
-from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import (
+from qianfan.trainer.actions import (
     DeployAction,
-    LLMFinetune,
+    LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
 )
+from qianfan.trainer.configs import DeployConfig, TrainConfig
+from qianfan.trainer.consts import ServiceType
+from qianfan.trainer.event import Event, EventHandler
+from qianfan.trainer.finetune import LLMFinetune
 
 
 class MyEventHandler(EventHandler):
@@ -16,6 +18,17 @@ class MyEventHandler(EventHandler):
     def dispatch(self, event: Event) -> None:
         print("receive:<", event)
         self.events.append(event)
+
+
+def test_load_data_action():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source)
+
+    res = LoadDataSetAction(ds).exec({"dataset_id": 123})
+    assert isinstance(res, dict)
+    assert "datasets" in res
 
 
 def test_train_action():
@@ -60,12 +73,15 @@ def test_trainer_sft_start():
         max_seq_len=4096,
         trainset_rate=20,
     )
-    ds_id = 111
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source)
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
         model_version_type="ERNIE-Bot-turbo-0725",
-        dataset={"datasets": [{"type": 1, "id": ds_id}]},
+        dataset=ds,
         train_config=train_config,
         event_handler=eh,
     )
@@ -84,13 +100,15 @@ def test_trainer_sft_with_deploy():
         epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
     )
     deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
-    ds_id = 111
-    train_config.model_dump_json()
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source)
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
         model_version_type="ERNIE-Bot-turbo-0725",
-        dataset={"datasets": [{"type": 1, "id": ds_id}]},
+        dataset=ds,
         train_config=train_config,
         deploy_config=deploy_config,
         event_handler=eh,

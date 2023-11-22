@@ -228,7 +228,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.dataset = dataset
 
     @with_event
-    def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         if self.dataset is None:
             raise InvalidArgumentError("dataset must be set")
         if self.dataset.inner_data_source_cache is None:

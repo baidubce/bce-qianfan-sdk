@@ -304,7 +304,13 @@ class QianfanDataSource(DataSource, BaseModel):
         log_error(error)
         raise error
 
-    def save(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
+    def save(
+        self,
+        data: str,
+        is_annotated: bool = False,
+        does_release: bool = False,
+        **kwargs: Any,
+    ) -> bool:
         """
         Write data to qianfan
         Currently only support to write to
@@ -312,7 +318,9 @@ class QianfanDataSource(DataSource, BaseModel):
 
          Args:
             data (str): data waiting to be uploaded。
-            is_annotated (bool): has data been annotated
+            is_annotated (bool): has data been annotated, default to False
+            does_release (bool): does release dataset
+            after saving successfully, default to False
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -366,10 +374,15 @@ class QianfanDataSource(DataSource, BaseModel):
                     continue
                 elif status == DataImportStatus.Finished.value:
                     log_info("import succeed")
-                    return True
+                    break
                 else:
                     log_error(f"import failed with status {status}")
                     return False
+
+            if does_release:
+                log_info("release after saving starts")
+                return self.release_dataset()
+            return True
 
     async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
         """

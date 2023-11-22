@@ -27,7 +27,7 @@ Output = TypeVar("Output")
 
 class Executable(Generic[Input, Output], ABC):
     @abstractmethod
-    def exec(self, input: Input, **kwargs: Dict) -> Output:
+    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
         ...
 
 
@@ -57,10 +57,10 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         id: Optional[str] = None,
         name: Optional[str] = None,
         event_handler: Optional[EventHandler] = None,
-        **kwargs: Dict[str, Any]
+        **kwargs: Dict[str, Any],
     ) -> None:
         self.id = id if id is not None else utils.uuid()
-        self.name = name if name is not None else "actions_{}".format(self.id)
+        self.name = name if name is not None else f"actions_{self.id}"
         self.state = ActionState.Preceding
         self.event_dispatcher = event_handler
 
@@ -80,7 +80,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         ...
 
     @abstractmethod
-    def exec(self, input: Input, **kwargs: Dict) -> Output:
+    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
         ...
 
     @abstractmethod
@@ -96,7 +96,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
             Event(
                 self.__class__.__name__ + self.id,
                 ActionState.Error,
-                "action_error: action[{}], msg:{}".format(self.id, str(e)),
+                f"action_error: action[{self.id}], msg:{str(e)}",
                 {"error": str(e)},
             ),
         )
@@ -105,15 +105,15 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         dispatch_event(
             self.event_dispatcher,
             Event(
-                "{}_{}".format(self.__class__.__name__, self.id),
+                f"{self.__class__.__name__}_{self.id}",
                 state,
-                "action_event: action[{}], msg:{}".format(self.id, msg),
+                f"action_event: action[{self.id}], msg:{msg}",
                 data,
             ),
         )
 
 
-def with_state(func: Callable[..., Any]) -> Callable[..., Any]:
+def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(self: BaseAction, input: Any, **kwargs: Any) -> Any:
         try:
             self.action_event(ActionState.Preceding, "", {})
@@ -142,7 +142,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         actions: Sequence[BaseAction],
         next_actions: Sequence[BaseAction] = [],
         event_handler: Optional[EventHandler] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
 
@@ -168,13 +168,16 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.seq: List[str] = []
         for action in actions:
             if action.id in self.actions:
-                raise ValueError("action id {} is duplicated".format(action.id))
+                raise ValueError(f"action id {action.id} is duplicated")
             self.actions[action.id] = action
             self.seq.append(action.id)
         self.next_actions = next_actions
+        self._state: Optional[Any] = None
 
-    @with_state
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    @with_event
+    def exec(
+        self, input: Optional[Dict[str, Any]] = None, **kwargs: Dict
+    ) -> Dict[str, Any]:
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for k in self.seq:
             if self.event_dispatcher is not None:
@@ -192,28 +195,40 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         return output
 
-    def __getitem__(self, key: str) -> BaseAction:
-        return self.actions[key]
+    def __getitem__(self, key: str) -> Optional[BaseAction]:
+        return self.actions.get(key)
 
     def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
         return None
 
 
 class Trainer(ABC):
+    """
+    Base Trainer class, which focus on one step call to run the
+    whole training process. which define the basic 3 methods to
+    operate training.
+    - start() start the specific training process like fine-tuning
+    - resume() resume from the stopped, failed
+    - stop() stop the training process
+    """
+
     ppls: List[Pipeline] = []
-    status: Optional[str] = None
     error: Optional[Exception] = None
     result: List[Any] = []
 
     @abstractmethod
-    def start(self) -> "Trainer":
+    def start(self, **kwargs: Dict) -> "Trainer":
         ...
 
-    def stop(self) -> "Trainer":
+    def stop(self, **kwargs: Dict) -> "Trainer":
         return self
 
-    def resume(self) -> "Trainer":
+    def resume(self, **kwargs: Dict) -> "Trainer":
         return self
+
+    @property
+    def status(self) -> str:
+        return ""
 
     def get_evaluate_result(self) -> Any:
         raise NotImplementedError("trainer get_evaluate_result")

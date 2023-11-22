@@ -81,6 +81,9 @@ class ChatCompletion(BaseResource):
                     "system",
                     "user_id",
                     "user_setting",
+                    "stop",
+                    "disable_search",
+                    "enable_citation",
                 },
             ),
             "ERNIE-Bot-4": QfLLMInfo(
@@ -94,6 +97,9 @@ class ChatCompletion(BaseResource):
                     "functions",
                     "system",
                     "user_id",
+                    "stop",
+                    "disable_search",
+                    "enable_citation",
                 },
             ),
             "ERNIE-Bot-8k": QfLLMInfo(
@@ -105,6 +111,18 @@ class ChatCompletion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "functions",
+                    "system",
+                    "user_id",
+                },
+            ),
+            "ERNIE-Bot-turbo-AI": QfLLMInfo(
+                endpoint="/chat/ai_apaas",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
                     "system",
                     "user_id",
                 },

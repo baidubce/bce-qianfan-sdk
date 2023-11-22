@@ -100,5 +100,5 @@ def test_trainer_sft_with_deploy():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_endpoint" in res[0]
+    assert "service_endpoint" in res[0]
     assert len(eh.events) > 0

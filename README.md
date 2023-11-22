@@ -44,7 +44,7 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
-除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](#sdk-配置) 部分。
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
 <summary> 其他认证方式 </summary>
@@ -86,6 +86,9 @@ print(resp["result"])
 </details>
 
 ## 功能导览
+
+我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
+
 ### 大模型能力
 
 目前千帆 SDK 支持用户使用如下大模型预测能力，详见[预测服务](./docs/inference.md)

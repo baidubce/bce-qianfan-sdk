@@ -16,14 +16,15 @@ from enum import Enum
 
 class ActionState(str, Enum):
     Preceding = "Preceding"
+    """_summary_
+    """
     Running = "Running"
     Done = "Done"
     Error = "Error"
     Stopped = "Stopped"
 
 
-# SFT训练过程的状态常量：
-class SFTStatus(str, Enum):
+class FinetuneStatus(str, Enum):
     Unknown = "Unknown"
     """未知状态"""
     Created = "Created"
@@ -55,10 +56,6 @@ class ServiceStatus(str, Enum):
     """模型服务发布失败"""
     DeployOffline = "DeployOffline"
     """服务下线"""
-
-
-class TrainMode(str, Enum):
-    SFT = "SFT"
 
 
 ModelTypeMapping = {

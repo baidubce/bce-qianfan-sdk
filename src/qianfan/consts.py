@@ -70,6 +70,9 @@ class Env:
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
     DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
+    ImportStatusPollingInterval: str = "QIANFAN_IMPORT_STATUS_POLLING_INTERVAL"
+    ExportStatusPollingInterval: str = "QIANFAN_EXPORT_STATUS_POLLING_INTERVAL"
+    ExportFileSizeLimit: str = "QIANFAN_EXPORT_FILE_SIZE_LIMIT"
 
 
 class DefaultValue:
@@ -97,6 +100,13 @@ class DefaultValue:
     EnablePrivate: bool = False
     AccessCode: str = ""
     TruncatedContinuePrompt = "继续"
+    ImportStatusPollingInterval: float = 2
+    ExportStatusPollingInterval: float = 2
+
+    # 目前可直接下载到本地的千帆数据集解压后的大小上限
+    # 后期研究更换为用户机内存大小的上限
+    # 目前限制 2GB，防止用户内存爆炸
+    ExportFileSizeLimit: int = 1024 * 1024 * 1024 * 2
 
 
 class Consts:

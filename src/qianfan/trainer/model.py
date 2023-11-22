@@ -56,7 +56,7 @@ class Model(
         self.job_id = job_id
 
     def exec(
-        self, input: Union[str, List[str], List[dict]], **kwargs: Dict
+        self, input: Optional[Union[str, List[str], List[dict]]] = None, **kwargs: Dict
     ) -> Union[str, List[str], List[dict]]:
         if self.service is None:
             raise InternalError(
@@ -71,9 +71,7 @@ class Model(
 
     def publish(self, name: str = "") -> "Model":
         # 发布模型
-        self.model_name = (
-            name if name != "" else "m_{}{}".format(self.task_id, self.job_id)
-        )
+        self.model_name = name if name != "" else f"m_{self.task_id}{self.job_id}"
         model_publish_resp = api.Model.publish(
             is_new=True,
             model_name=self.model_name,
@@ -149,7 +147,7 @@ class Service(
         return resp["result"]["serviceStatus"]
 
     def exec(
-        self, input: Union[str, List[str], List[dict]], **kwargs: Dict
+        self, input: Optional[Union[str, List[str], List[dict]]] = None, **kwargs: Dict
     ) -> Union[str, List[str], List[dict]]:
         if self.status != console_const.ServiceStatus.Done:
             raise InternalError("service is not ready")
@@ -173,8 +171,8 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
         model_id=model.id,
         model_version_id=model.version_id,
         iteration_id=model.version_id,
-        name="task_{}_{}".format(model.id, model.version_id),
-        uri="ep_{}_{}".format(model.id, model.version_id),
+        name=f"task_{model.id}_{model.version_id}",
+        uri=f"ep_{model.id}_{model.version_id}",
         replicas=deploy_config.replicas,
         pool_type=deploy_config.pool_type,
     )

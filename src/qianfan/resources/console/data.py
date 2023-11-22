@@ -44,7 +44,7 @@ class Data:
         data_set_type: DataSetType,
         project_type: DataProjectType,
         template_type: DataTemplateType,
-        storage_type: DataStorageType,
+        storage_type: DataStorageType = DataStorageType.PublicBos,
         storage_id: Optional[str] = None,
         storage_path: Optional[str] = None,
         **kwargs: Any,

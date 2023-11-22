@@ -125,3 +125,7 @@ class ModelState(str, Enum):
 class TrainDatasetType(int, Enum):
     Platform = 1
     PrivateBos = 2
+
+
+class TrainMode(str, Enum):
+    SFT = "SFT"

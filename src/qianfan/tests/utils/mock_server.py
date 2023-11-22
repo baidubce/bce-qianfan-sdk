@@ -474,31 +474,6 @@ def text2image(model_name):
     )
 
 
-@app.route(Consts.PromptRenderAPI, methods=["GET"])
-@access_token_checker
-def prompt():
-    """
-    mock prompt render api
-    """
-    return json_response(
-        {
-            "log_id": "e9d3f283-1091-405b-568e-862e824e679e",
-            "result": {
-                "templateId": 632,
-                "templateName": "原创改写",
-                "templateContent": "用{number}种不同的方式改写以下段落，以避免重复，同时保持其含义：{text}。",
-                "content": (
-                    "用2种不同的方式改写以下段落，以避免重复，"
-                    "同时保持其含义：千帆大模型平台是面向企业开发者的一站式大模型开发及服务运行平台。"
-                ),
-                "templateVariables": "number,text",
-            },
-            "status": 200,
-            "success": True,
-        }
-    )
-
-
 @app.route(Consts.EBTokenizerAPI, methods=["POST"])
 @access_token_checker
 def eb_tokenizer():

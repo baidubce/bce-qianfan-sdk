@@ -31,7 +31,6 @@ from qianfan.resources import (
 )
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
-from qianfan.prompts.prompt import Prompt
 
 Role = QfRole
 Messages = QfMessages

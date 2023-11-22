@@ -139,7 +139,7 @@ class Consts:
     PromptUpdateAPI: str = "/wenxinworkshop/prompt/template/update"
     PromptDeleteAPI: str = "/wenxinworkshop/prompt/template/delete"
     PromptListAPI: str = "/wenxinworkshop/prompt/template/list"
-    PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/ist"
+    PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/list"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "

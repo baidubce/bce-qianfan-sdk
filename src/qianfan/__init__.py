@@ -17,6 +17,7 @@ Library aimed to helping developer to interactive with LLM.
 """
 
 
+from qianfan.components.hub import hub
 from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
 from qianfan.resources import (
     ChatCompletion,
@@ -46,6 +47,7 @@ __all__ = [
     "AK",
     "SK",
     "Role",
+    "hub",
     "Messages",
     "Response",
     "QfRole",

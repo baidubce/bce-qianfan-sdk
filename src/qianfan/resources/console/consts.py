@@ -73,6 +73,8 @@ class DataImportStatus(int, Enum):
     """导入完成"""
     Failed: int = 3
     """导入失败"""
+    Terminated: int = 4
+    """导入终止"""
 
 
 class DataExportStatus(int, Enum):
@@ -89,10 +91,8 @@ class DataExportStatus(int, Enum):
 
 
 class DataReleaseStatus(int, Enum):
-    NotStarted: int = -1
+    NotStarted: int = 0
     """未发起发布"""
-    Initialized: int = 0
-    """发布初始化"""
     Running: int = 1
     """发布进行中"""
     Finished: int = 2
@@ -108,3 +108,18 @@ class EntityListingType(int, Enum):
     """只展示已标注的"""
     NotAnnotatedOnly: int = 2
     """只展示未标注的"""
+
+
+class ETLTaskStatus(int, Enum):
+    NoTask: int = 0
+    """没有任务"""
+    Running: int = 1
+    """清洗中"""
+    Finished: int = 2
+    """清洗完成"""
+    Interrupted: int = 3
+    """清洗被终止"""
+    Failed: int = 4
+    """清洗失败"""
+    Paused: int = 5
+    """清洗暂停"""

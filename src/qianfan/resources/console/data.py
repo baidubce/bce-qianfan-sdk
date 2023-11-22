@@ -406,7 +406,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lp6irqen
         """
         req = QfRequest(method="POST", url=Consts.DatasetCreateETLTaskAPI)
         req.json_body = {
@@ -435,11 +435,42 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlp6it4vd
         """
         req = QfRequest(method="POST", url=Consts.DatasetETLTaskInfoAPI)
         req.json_body = {
             "etlId": etl_id,
+        }
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_dataset_etl_task_list(
+        cls, page_size: int = 10, offset: int = 0, **kwargs: Any
+    ) -> QfRequest:
+        """
+        get a post-pretrain dataset etl task info
+
+        Parameters:
+            page_size (int):
+                the length of etl list showing, default to 10.
+            offset (int):
+                where to start list etl task, default to 0.
+            **kwargs (Any):
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/elp7myxvp
+        """
+        req = QfRequest(method="POST", url=Consts.DatasetETLListTaskAPI)
+        req.json_body = {
+            "offset": offset,
+            "pageSize": page_size,
         }
 
         return req
@@ -461,7 +492,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Glp6iu8ny
         """
         req = QfRequest(method="POST", url=Consts.DatasetETLTaskDeleteAPI)
         req.json_body = {
@@ -515,7 +546,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlp6iv0zw
         """
         if not (1 <= num_seed_fewshot <= 10):
             raise ValueError("num_seed_fewshot should be between 1 to 10")
@@ -542,6 +573,57 @@ class Data:
 
     @classmethod
     @console_api_request
+    def get_dataset_aug_task_list(
+        cls,
+        keyword: Optional[str] = None,
+        sorted_by_start_time_asc: Optional[bool] = None,
+        page_size: int = 10,
+        offset: int = 0,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        get a post-pretrain dataset etl task info
+
+        Parameters:
+            keyword: (Optional[str]):
+                optional keyword to search augmentation task, default to None.
+            sorted_by_start_time_asc (Optional[bool]):
+                is result list sorted by starting time in ascending order if True,
+                sorted by starting time in descending order if False,
+                sorted by id in ascending order if None.
+                default to None
+            page_size (int):
+                the length of etl list showing, default to 10.
+            offset (int):
+                where to start list etl task, default to 0.
+            **kwargs (Any):
+                any other parameters.
+
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Flp7n9xmp
+        """
+        req = QfRequest(method="POST", url=Consts.DatasetAugListTaskAPI)
+        request_json: Dict[str, Any] = {
+            "isSelfInstruct": True,
+            "offset": offset,
+            "pageSize": page_size,
+        }
+
+        if keyword:
+            request_json["word"] = keyword
+        if sorted_by_start_time_asc is not None:
+            request_json["sortField"] = "startTime"
+            request_json["sortBy"] = "asc" if sorted_by_start_time_asc else "desc"
+
+        req.json_body = request_json
+        return req
+
+    @classmethod
+    @console_api_request
     def get_dataset_augmenting_task_info(cls, task_id: int, **kwargs: Any) -> QfRequest:
         """
         get a data augmenting task info
@@ -557,7 +639,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Clp6iwiy9
         """
         req = QfRequest(method="POST", url=Consts.DatasetAugTaskInfoAPI)
         req.json_body = {
@@ -585,7 +667,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/glp6iy6h3
         """
         req = QfRequest(method="POST", url=Consts.DatasetAugTaskDeleteAPI)
         req.json_body = {
@@ -624,7 +706,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlp6izcqr
         """
         req = QfRequest(method="POST", url=Consts.DatasetAnnotateAPI)
         request_json = {
@@ -659,7 +741,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilp6j1rse
         """
         req = QfRequest(method="POST", url=Consts.DatasetEntityDeleteAPI)
         req.json_body = {"id": entity_ids, "datasetId": dataset_id}
@@ -706,7 +788,7 @@ class Data:
             enabling it to send the generated QfRequest
             and return a QfResponse to the user.
 
-        API Doc: # TODO ADD ETL 文档公网链接
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Ulp6j2yep
         """
         req = QfRequest(method="POST", url=Consts.DatasetEntityListAPI)
         request_json: Dict[str, Any] = {

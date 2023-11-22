@@ -18,7 +18,6 @@ currently qianfan schema only
 
 from abc import ABC, abstractmethod
 
-from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error
 
@@ -69,55 +68,6 @@ class QianfanNonSortedConversation(QianfanSchema):
             return False
 
         col_names = table.col_names()
-
-        if (
-            len(col_names) == 1
-            and QianfanDefaultColumnNameForNestedTable == col_names[0]
-        ):
-            is_response_column_existed = False
-            records = table.col_list()[col_names[0]]
-            for index in range(len(records)):
-                for record_index in range(len(records[index])):
-                    conversation = records[index][record_index]
-                    if "prompt" not in conversation:
-                        log_error(
-                            f"no prompt column in dataset row {index}. row data:"
-                            f" {conversation}"
-                        )
-                        return False
-                    if "response" in conversation:
-                        if index == 0 and record_index == 0:
-                            is_response_column_existed = True
-                        elif not is_response_column_existed:
-                            log_error(
-                                f"no response column in dataset before row {index}. row"
-                                f" data: {conversation}"
-                            )
-                            return False
-                        response_record = conversation["response"]
-                        if not (
-                            isinstance(response_record, list)
-                            and len(response_record) == 1
-                            and isinstance(response_record[0], list)
-                            and len(response_record[0]) == 1
-                            and isinstance(response_record[0][0], str)
-                            and response_record[0][0]
-                        ):
-                            log_error(
-                                f"response illegal in dataset row {index}. response"
-                                f" data: {response_record}"
-                            )
-                            return False
-
-                    elif is_response_column_existed:
-                        log_error(
-                            f"no response column in dataset row {index}. row data:"
-                            f" {conversation}"
-                        )
-                        return False
-
-            self.is_annotated = is_response_column_existed
-            return True
 
         # 本地单轮对话对接千帆的校验规则
         if "prompt" not in col_names:
@@ -171,64 +121,6 @@ class QianfanSortedConversation(QianfanSchema):
             return False
 
         col_names = table.col_names()
-
-        # 从千帆导入的数据集的校验规则
-        if (
-            len(col_names) == 1
-            and QianfanDefaultColumnNameForNestedTable == col_names[0]
-        ):
-            is_response_column_existed = False
-            records = table.col_list()[col_names[0]]
-            for index in range(len(records)):
-                for record_index in range(len(records[index])):
-                    conversation = records[index][record_index]
-                    if "prompt" not in conversation:
-                        log_error(
-                            f"no prompt column in dataset row {index}. row data:"
-                            f" {conversation}"
-                        )
-                        return False
-                    if "response" in conversation:
-                        if index == 0 and record_index == 0:
-                            is_response_column_existed = True
-                        elif not is_response_column_existed:
-                            log_error(
-                                f"no response column in dataset before row {index}. row"
-                                f" data: {conversation}"
-                            )
-                            return False
-                        response_record = conversation["response"]
-                        if not (
-                            isinstance(response_record, list)
-                            and len(response_record) > 0
-                        ):
-                            log_error(
-                                f"response records illegal in dataset row {index}."
-                                f" response data: {response_record}"
-                            )
-                            return False
-                        for single_response_record in response_record:
-                            if not (
-                                isinstance(single_response_record, list)
-                                and len(single_response_record) == 1
-                                and isinstance(single_response_record[0], str)
-                                and single_response_record[0]
-                            ):
-                                log_error(
-                                    f"response illegal in dataset row {index}. response"
-                                    f" data: {response_record}"
-                                )
-                                return False
-
-                    elif is_response_column_existed:
-                        log_error(
-                            f"no response column in dataset row {index}. row data:"
-                            f" {conversation}"
-                        )
-                        return False
-
-            self.is_annotated = is_response_column_existed
-            return True
 
         # 本地单轮对话带排序对接千帆的校验规则
         if "prompt" not in col_names:
@@ -317,20 +209,6 @@ class QianfanQuerySet(QianfanSchema):
             return False
 
         col_names = table.col_names()
-        if (
-            len(col_names) == 1
-            and QianfanDefaultColumnNameForNestedTable == col_names[0]
-        ):
-            records = table.col_list()[col_names[0]]
-            for index in range(len(records)):
-                query = records[index]
-                if "prompt" not in query:
-                    log_error(
-                        f"no prompt column in dataset row {index}. row data: {query}"
-                    )
-                    return False
-
-            return True
 
         if "prompt" not in col_names:
             log_error("no prompt column in dataset column")

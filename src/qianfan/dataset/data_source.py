@@ -37,6 +37,7 @@ from qianfan.resources.console.consts import (
     DataExportStatus,
     DataImportStatus,
     DataProjectType,
+    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataStorageType,
@@ -321,8 +322,8 @@ class QianfanDataSource(DataSource, BaseModel):
         if self.storage_type == DataStorageType.PublicBos:
             raise NotImplementedError()
         elif self.storage_type == DataStorageType.PrivateBos:
-            # 只支持除泛文本以外的文本上传，文生图需要后续再细化。
-            file_path = f"{self.storage_path}/data.jsonl"
+            suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
+            file_path = f"{self.storage_path}/data.{suffix}"
             ak = self.ak if self.ak else get_config().ACCESS_KEY
             sk = self.sk if self.sk else get_config().SECRET_KEY
             if not ak:
@@ -816,3 +817,28 @@ class QianfanDataSource(DataSource, BaseModel):
             dataset.fetch(**kwargs)
 
         return dataset
+
+    def release_dataset(self) -> bool:
+        """
+        make a dataset released
+
+        Returns:
+            bool: Whether releasing succeeded
+        """
+        Data.release_dataset(self.id)
+        while True:
+            sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
+            info = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+            status = info["releaseStatus"]
+            if status == DataReleaseStatus.Running:
+                log_info("data releasing, keep rolling")
+                continue
+            elif status == DataReleaseStatus.Failed:
+                message = (
+                    f"data releasing failed with error code {info['releaseErrCode']}"
+                )
+                log_error(message)
+                return False
+            else:
+                log_info("data releasing succeeded")
+                return True

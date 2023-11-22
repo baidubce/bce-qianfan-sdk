@@ -29,7 +29,7 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: |
-          pip3 install poetry
+          pip3 install poetry==1.6.1
       - name: run lint
         run: make lint
       - name: run UT
@@ -77,7 +77,7 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: |
-          pip3 install poetry
+          pip3 install poetry==1.6.1
           poetry install
       - name: Build docs
         run: |

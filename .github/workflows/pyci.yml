@@ -37,7 +37,7 @@ jobs:
       - name: Install latest version of Poetry
         if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
-          pip install poetry
+          pip install poetry==1.6.1
       # Poetry still needs to be re-prepended to the PATH on each run, since
       # PATH does not persist between runs.
       - name: Add Poetry to $PATH

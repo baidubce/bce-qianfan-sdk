@@ -165,7 +165,7 @@ class Dataset(Table):
                     while group_index >= len(compo_list):
                         compo_list.append([])
                     row.pop(QianfanDataGroupColumnName)
-                    compo_list[-1].append(row)
+                    compo_list[group_index].append(row)
 
                 for elem in compo_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
@@ -633,7 +633,6 @@ class Dataset(Table):
         """
         return super().append(elem)
 
-    # 等待接口 ready 才能对云端数据集做展示
     def list(
         self,
         by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None,

@@ -24,6 +24,7 @@ Tips:
    docs/dataset.md
    docs/utils.md
    docs/configurable.md
+   docs/dataset_framework
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}

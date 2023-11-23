@@ -628,7 +628,7 @@ def get_model_version_detail():
     return json_response(
         {
             "result": {
-                "modelId": 7,
+                "modelId": 1,
                 "modelName": "ERNIE-Bot",
                 "modelVersionId": 39,
                 "version": "ERNIE-Bot",
@@ -862,7 +862,7 @@ def get_model_detail():
     return json_response(
         {
             "result": {
-                "modelId": 7,
+                "modelId": 1,
                 "modelName": "ERNIE-Bot",
                 "source": "PlatformPreset",
                 "modelType": 0,
@@ -873,7 +873,7 @@ def get_model_detail():
                 "description": "百度⾃⾏研发的⼤语⾔模型，覆盖海量中⽂数据，具有更强的对话问答、内容创作⽣成等能⼒。",
                 "modelVersionList": [
                     {
-                        "modelId": 7,
+                        "modelId": 1,
                         "modelName": "ERNIE-Bot",
                         "modelVersionId": 39,
                         "version": "ERNIE-Bot",
@@ -944,7 +944,7 @@ def get_service():
                 "uri": "xbiimimv_xxx",
                 "fullUri": "http://gzns-inf-h22-for-idl28.gzns:8192/rpc/v1/agile/chat/xbiimimv_xxx",
                 "applyStatus": 2,
-                "serviceStatus": 1,
+                "serviceStatus": "Done",
                 "sourceType": 1,
                 "onlineTime": 1694601667,
                 "callUnitPrice": "0",

@@ -75,6 +75,8 @@ class DeployConfig(BaseModel):
 
 
 DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
+    """model train type -> default train config
+    """
     "ERNIE-Bot-turbo-0725": TrainConfig(
         epoch=1,
         learning_rate=0.00003,

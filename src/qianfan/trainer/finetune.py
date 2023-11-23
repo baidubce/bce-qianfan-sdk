@@ -77,15 +77,13 @@ class LLMFinetune(Trainer):
                 which will be mapped from the model version type if
                 not set.
             **kwargs: Any additional keyword arguments.
-
-            kwargs (Any):
-            Additional keyword arguments.
-
+        
+        for calling example:
         ```
         sft_task = LLMFinetune(
             train_type="ERNIE-Bot-turbo-0725",
             dataset={"datasets": [{"type": 1, "id": ds_id}]},
-            train_config=train_config,
+            train_config=TrainConfig(...),
             event_handler=eh,
         )
         ```
@@ -129,9 +127,20 @@ class LLMFinetune(Trainer):
         self.result = [None]
 
     def start(self, **kwargs: Dict) -> Trainer:
-        """
+        """_summary_
         start a pipeline to run the fine-tune process.
-
+        
+        Parameters:
+            **kwargs:
+                Any additional keyword arguments.
+                {"input": {}} could be specified if needed
+        
+        Raises:
+            InvalidArgumentError: no pipeline bind
+            to start.
+        Returns:
+            Trainer: 
+                self, for chain invocation. 
         """
         self.input = kwargs.get("input")
         if len(self.ppls) != 1:
@@ -158,12 +167,27 @@ class LLMFinetune(Trainer):
         )
 
     def stop(self, **kwargs: Dict) -> Trainer:
+        """
+        stop method of LLMFinetune. LLMFinetune will stop 
+        all actions in pipeline. In fact, LLMFinetune only take one
+        pipeline, so it will be equal to stop first of `ppls`.
+
+        Returns:
+            Trainer: 
+                self, for chain invocation. 
+        """
         for ppl in self.ppls:
             ppl.stop()
         return self
 
     def resume(self, **kwargs: Dict) -> "LLMFinetune":
-        return self
+        """
+        LLMFinetune resume method.
+
+        Returns:
+            LLMFinetune: _description_
+        """
+        raise NotImplementedError("LLM Finetune not supported yet")
 
 
 # mapping for action state -> fine-tune status

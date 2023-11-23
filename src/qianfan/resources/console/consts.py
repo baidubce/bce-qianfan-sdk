@@ -103,17 +103,26 @@ class DataReleaseStatus(int, Enum):
 
 class ServiceStatus(str, Enum):
     Done = "Done"
+    """服务就绪"""
     New = "New"
+    """服务新建"""
     Deploying = "Deploying"
+    """服务部署中"""
     Failed = "Failed"
+    """服务部署失败"""
     Stopped = "Stopped"
+    """服务下线"""
 
 
 class TrainStatus(str, Enum):
     Finish = "FINISH"
+    """训练完成"""
     Running = "RUNNING"
+    """训练进行中"""
     Fail = "FAIL"
+    """训练失败"""
     Stop = "STOP"
+    """训练停止"""
 
 
 class ModelState(str, Enum):
@@ -134,6 +143,7 @@ class TrainDatasetType(int, Enum):
 
 class TrainMode(str, Enum):
     SFT = "SFT"
+    """对应 LLMFinetune"""
 
 
 class EntityListingType(int, Enum):

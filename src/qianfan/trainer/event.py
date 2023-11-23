@@ -26,15 +26,6 @@ class Event:
     registered and listened to, enabling the insertion of various
     types of callbacks or intermediate task functions in the Pipeline
     nodes.
-    Parameters:
-        action_id (str):
-            The id of the Action, auto-generated when action is created.
-        action_state (ActionState):
-            The state of the Action.
-        description (str):
-            The description of the event.
-        data (Any):
-            for different event state, the data may be different.
     """
 
     action_id: Optional[str] = None
@@ -49,13 +40,35 @@ class Event:
         description: Optional[str] = None,
         data: Any = None,
     ):
+        """
+        init method of event
+
+        Parameters:
+            action_id (str):
+                The id of the Action, auto-generated when action is created.
+            action_state (ActionState):
+                The state of the Action.
+            description (str):
+                The description of the event.
+            data (Any):
+                for different event state, the data may be different.
+        """
         self.action_id = action_id
         self.action_state = state
         self.description = description
         self.data = data
 
     def __repr__(self) -> str:
-        return json.dumps(self.__dict__)
+        """
+        str repr of event for log or display
+
+        Returns:
+            str: fields str of event
+        """
+        try:
+            return json.dumps(self.__dict__)
+        except Exception:
+            return str(self.__dict__)
 
 
 class EventHandler:
@@ -67,6 +80,13 @@ class EventHandler:
     """
 
     def dispatch(self, event: Event) -> None:
+        """_summary_
+
+        Parameters:
+            event (Event): 
+                event to dispatch to user custom handler
+
+        """
         return None
 
 

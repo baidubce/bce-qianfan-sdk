@@ -213,9 +213,26 @@ class Model(
             time.sleep(get_config().MODEL_PUBLISH_STATUS_POLLING_INTERVAL)
 
     def dumps(self) -> Optional[bytes]:
+        """
+        Serialize the model to bytes.
+
+        Returns:
+            Optional[bytes]: 
+                bytes of this model
+        """
         return pickle.dumps(self)
 
     def loads(self, data: bytes) -> Any:
+        """
+        load model instance from bytes
+
+        Parameters:
+            data (bytes): 
+                bytes of this model
+
+        Returns:
+            Any: model instance
+        """
         return pickle.loads(data)
 
 
@@ -308,16 +325,33 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             raise InvalidArgumentError(f"unsupported service type {self.service_type}")
 
     def dumps(self) -> Optional[bytes]:
+        """
+        serialize the model instance to bytes
+
+        Returns:
+            Optional[bytes]: 
+                bytes of the model instance
+        """
         return pickle.dumps(self)
 
     def loads(self, data: bytes) -> Any:
+        """
+        load service instance from bytes
+
+        Parameters:
+            data (bytes): 
+                bytes of model instance
+
+        Returns:
+            Any: model instance
+        """
         return pickle.loads(data)
 
 
 def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
     """
     model deployment implement, a polling loop will be called after
-    deploy task created
+    deploy task created.
 
     Parameters:
         model (Model):

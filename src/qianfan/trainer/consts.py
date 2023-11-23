@@ -70,6 +70,9 @@ class ServiceStatus(str, Enum):
 
 
 ModelTypeMapping = {
+    """
+    train type to base train type
+    """
     "ERNIE-Bot-turbo-0725": "ERNIE-Bot-turbo",
     "ERNIE-Bot-turbo-0516": "ERNIE-Bot-turbo",
     "ERNIE-Bot-turbo-0704": "ERNIE-Bot-turbo",

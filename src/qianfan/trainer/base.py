@@ -58,7 +58,7 @@ class Serializable(ABC):
         """
         loads
 
-        Args:
+        Parameters:
             data (bytes): load
 
         Returns:
@@ -68,6 +68,11 @@ class Serializable(ABC):
 
 
 class ExecuteSerializable(Executable[Input, Output], Serializable):
+    """
+    set of executable and serializable. subclass implement it to support
+    exec and dumps/loads.
+    """
+
     ...
 
 
@@ -101,9 +106,24 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         self.event_dispatcher = event_handler
 
     def dumps(self) -> Optional[bytes]:
+        """
+        dumps action input bytes
+
+        Returns:
+            serialized bytes action data
+        """
         return pickle.dumps(self)
 
     def loads(self, data: bytes) -> Any:
+        """
+        loads
+
+        Parameters:
+            data (bytes): load
+
+        Returns:
+            Any: action instance
+        """
         return pickle.loads(data)
 
     @abstractmethod
@@ -120,10 +140,20 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         ...
 
     @abstractmethod
-    def resume(self, input: Input, **kwargs: Dict) -> None:
+    def resume(self, **kwargs: Dict) -> None:
+        """
+        Action resume from last input, sub-class should implement this method
+        with their own resuming logic. BaseAction don not support last input
+        storage, because it's not different from actions in their each action
+        state.
+        """
         ...
 
-    def stop(self) -> None:
+    def stop(self, **kwargs: Dict) -> None:
+        """
+        Action stop method, sub-class should implement this method
+        with their own stop logic.
+        """
         self.action_event(ActionState.Stopped)
 
     def action_error_event(self, e: Exception) -> None:
@@ -131,7 +161,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         dispatch action error event
 
         Parameters:
-            e (Exception): _description_
+            e (Exception): action runtime error
         """
         dispatch_event(
             self.event_dispatcher,
@@ -263,9 +293,20 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return output
 
     def __getitem__(self, key: str) -> Optional[BaseAction]:
+        """
+        get action by key, which is the action id.
+
+        Args:
+            key (str):
+                action id generate when action was created.
+
+        Returns:
+            Optional[BaseAction]:
+                action with the given id if exists, otherwise None.
+        """
         return self.actions.get(key)
 
-    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
+    def resume(self, **kwargs: Dict) -> None:
         """
         resume pipeline running from last stopped or failed action.
         """
@@ -275,7 +316,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.actions[k].exec(input, **kwargs)
         return None
 
-    def stop(self) -> None:
+    def stop(self, **kwargs: Dict) -> None:
         """
         stop pipeline running, only stop the actions not running.
         """
@@ -296,8 +337,12 @@ class Trainer(ABC):
     """
 
     ppls: List[Pipeline] = []
-    error: Optional[Exception] = None
+    """
+    Pipelines for training, there may be multiple pipelines in
+    the training process.
+    """
     result: List[Any] = []
+    """pipeline running results, which may be an error or an object"""
 
     @abstractmethod
     def start(self, **kwargs: Dict) -> "Trainer":

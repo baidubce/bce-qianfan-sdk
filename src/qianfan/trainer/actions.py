@@ -106,10 +106,47 @@ class TrainAction(
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
     ) -> Dict[str, Any]:
+        """
+        increment train from task_id, job_id
+
+        Parameters:
+            input (Dict[str, Any]):
+                input
+
+        Raises:
+            NotImplementedError: not implemented yet
+
+        Returns:
+            Dict[str, Any]:
+                output
+        """
         raise NotImplementedError("incr train not implemented")
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        """
+        exec method for train action
+
+        Args:
+            input (Dict[str, Any], optional):
+                input with dataset meta:
+                for example:
+                    Input:
+                    ```
+                    {'datasets':[{'type': 1, 'id': 111}]}
+                    ```
+        Raises:
+            InvalidArgumentError: invalid dataset input
+
+        Returns:
+            Dict[str, Any]:
+                train task output with task_id and job_id
+                for example:
+                    Output:
+                    ```
+                    {'task_id': 47923, 'job_id': 33512}
+                    ```
+        """
         if self.is_incr:
             return self._exec_incremental(input, **kwargs)
         # request for create model train task
@@ -161,8 +198,18 @@ class TrainAction(
         )
         return {"task_id": self.task_id, "job_id": self.job_id}
 
-    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
-        return self.exec(input, **kwargs)
+    def resume(self, **kwargs: Dict) -> None:
+        """
+        resume method for train action
+
+        Args:
+            **kwargs (Dict[str, Any]):
+                input args for action resume
+
+        Returns:
+            _type_:
+        """
+        raise NotImplementedError("TrainAction.resume() is not implemented")
 
     def get_default_train_config(self, model_type: str) -> TrainConfig:
         return DefaultTrainConfigMapping.get(
@@ -208,8 +255,8 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         }
         return output
 
-    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
-        return self.exec(input, **kwargs)
+    def resume(self, **kwargs: Dict) -> None:
+        raise NotImplementedError("ModelPublishAction.resume() is not implemented")
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -271,8 +318,8 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             ]
         }
 
-    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
-        return None
+    def resume(self, **kwargs: Dict) -> None:
+        raise NotImplementedError("LoadDataset.resume() is not implemented")
 
 
 class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -338,5 +385,5 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         else:
             raise InternalError("model.service is not avaiable")
 
-    def resume(self, input: Dict[str, Any], **kwargs: Dict) -> None:
-        return None
+    def resume(self, **kwargs: Dict) -> None:
+        raise NotImplementedError("DeployAction.resume() is not implemented")

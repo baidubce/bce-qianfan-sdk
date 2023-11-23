@@ -19,6 +19,7 @@ import datetime
 import json
 import os.path
 import shutil
+import uuid
 import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -37,13 +38,14 @@ from qianfan.resources.console.consts import (
     DataExportStatus,
     DataImportStatus,
     DataProjectType,
+    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataStorageType,
     DataTemplateType,
 )
 from qianfan.resources.console.data import Data
-from qianfan.utils.bos_uploader import upload_content_to_bos
+from qianfan.utils.bos_uploader import generate_bos_file_path, upload_content_to_bos
 from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
 
 
@@ -272,6 +274,7 @@ class QianfanDataSource(DataSource, BaseModel):
     storage_type: DataStorageType
     storage_id: str
     storage_path: str
+    storage_raw_path: Optional[str] = Field(default=None)
     storage_name: str
     storage_region: Optional[str] = Field(default=None)
     info: Dict[str, Any] = Field(default={})
@@ -303,7 +306,13 @@ class QianfanDataSource(DataSource, BaseModel):
         log_error(error)
         raise error
 
-    def save(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
+    def save(
+        self,
+        data: str,
+        is_annotated: bool = False,
+        does_release: bool = False,
+        **kwargs: Any,
+    ) -> bool:
         """
         Write data to qianfan
         Currently only support to write to
@@ -311,7 +320,9 @@ class QianfanDataSource(DataSource, BaseModel):
 
          Args:
             data (str): data waiting to be uploaded。
-            is_annotated (bool): has data been annotated
+            is_annotated (bool): has data been annotated, default to False
+            does_release (bool): does release dataset
+            after saving successfully, default to False
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -321,8 +332,9 @@ class QianfanDataSource(DataSource, BaseModel):
         if self.storage_type == DataStorageType.PublicBos:
             raise NotImplementedError()
         elif self.storage_type == DataStorageType.PrivateBos:
-            # 只支持除泛文本以外的文本上传，文生图需要后续再细化。
-            file_path = f"{self.storage_path}/data.jsonl"
+            suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
+            file_path = f"{self.storage_raw_path}data_{uuid.uuid4()}.{suffix}"
+
             ak = self.ak if self.ak else get_config().ACCESS_KEY
             sk = self.sk if self.sk else get_config().SECRET_KEY
             if not ak:
@@ -337,6 +349,10 @@ class QianfanDataSource(DataSource, BaseModel):
                 return False
 
             log_info("start to upload data to user BOS")
+            log_debug(
+                f"bucket path: {file_path} bucket name: {self.storage_id} bos region:"
+                f" {self.storage_region}"
+            )
             upload_content_to_bos(
                 data,
                 file_path,
@@ -348,7 +364,10 @@ class QianfanDataSource(DataSource, BaseModel):
             log_info("uploading data to user BOS finished")
 
             Data.create_data_import_task(
-                self.id, is_annotated, DataSourceType.PrivateBos, file_path
+                self.id,
+                is_annotated,
+                DataSourceType.PrivateBos,
+                generate_bos_file_path(self.storage_id, file_path),
             )
 
             log_info("successfully create importing task")
@@ -365,10 +384,15 @@ class QianfanDataSource(DataSource, BaseModel):
                     continue
                 elif status == DataImportStatus.Finished.value:
                     log_info("import succeed")
-                    return True
+                    break
                 else:
                     log_error(f"import failed with status {status}")
                     return False
+
+            if does_release:
+                log_info("release after saving starts")
+                return self.release_dataset()
+            return True
 
     async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
         """
@@ -719,6 +743,7 @@ class QianfanDataSource(DataSource, BaseModel):
         # 如果是私有的 BOS，还需要额外填充返回的 region 信息
         if storage_type == DataStorageType.PrivateBos:
             source.storage_region = qianfan_resp["storageInfo"]["region"]
+            source.storage_raw_path = qianfan_resp["storageInfo"]["rawStoragePath"]
 
         return source
 
@@ -802,6 +827,7 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             storage_id=qianfan_resp["versionInfo"]["storage"]["storageId"],
             storage_path=qianfan_resp["versionInfo"]["storage"]["storagePath"],
+            storage_raw_path=qianfan_resp["versionInfo"]["storage"]["rawStoragePath"],
             storage_name=qianfan_resp["versionInfo"]["storage"]["storageName"],
             storage_region=qianfan_resp["versionInfo"]["storage"]["region"],
             download_when_init=is_download_to_local,
@@ -816,3 +842,28 @@ class QianfanDataSource(DataSource, BaseModel):
             dataset.fetch(**kwargs)
 
         return dataset
+
+    def release_dataset(self) -> bool:
+        """
+        make a dataset released
+
+        Returns:
+            bool: Whether releasing succeeded
+        """
+        Data.release_dataset(self.id)
+        while True:
+            sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
+            info = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+            status = info["releaseStatus"]
+            if status == DataReleaseStatus.Running:
+                log_info("data releasing, keep rolling")
+                continue
+            elif status == DataReleaseStatus.Failed:
+                message = (
+                    f"data releasing failed with error code {info['releaseErrCode']}"
+                )
+                log_error(message)
+                return False
+            else:
+                log_info("data releasing succeeded")
+                return True

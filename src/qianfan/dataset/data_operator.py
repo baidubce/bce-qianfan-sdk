@@ -16,35 +16,147 @@ data operator for qianfan online
 not available currently
 """
 
-from typing import Any, Dict
+
+from pydantic import BaseModel, Field
 
 
-class QianfanOperator:
+class QianfanOperator(BaseModel):
     """Basic class for online ETL operator"""
 
     operator_name: str
-    arg_dict: Dict[str, Any]
+    operator_type: str
 
 
 class ExceptionRegulator(QianfanOperator):
     """Exception class for online ETL operator"""
 
-    pass
+    operator_type: str = "clean"
 
 
 class Filter(QianfanOperator):
     """Filter class for online ETL operator"""
 
-    pass
+    operator_type: str = "filter"
 
 
 class Deduplicator(QianfanOperator):
     """Deduplicator class for online ETL operator"""
 
-    pass
+    operator_type: str = "deduplication"
 
 
-class SensitiveDataProcessor(QianfanOperator):
+class DesensitizationProcessor(QianfanOperator):
     """Sensitive data processor class for online ETL operator"""
 
-    pass
+    operator_type: str = "desensitization"
+
+
+class RemoveEmoji(ExceptionRegulator):
+    """Exception class to remove emoji"""
+
+    operator_name: str = "remove_emoji"
+
+
+class RemoveInvisibleCharacter(ExceptionRegulator):
+    """Exception class to remove invisible character"""
+
+    operator_name: str = "remove_invisible_character"
+
+
+class ReplaceUniformWhitespace(ExceptionRegulator):
+    """Exception class to replace uniform whitespace"""
+
+    operator_name: str = "replace_uniform_whitespace"
+
+
+class RemoveNonMeaningCharacters(ExceptionRegulator):
+    """Exception class to remove non-meaning characters"""
+
+    operator_name: str = "remove_non_meaning_characters"
+
+
+class ReplaceTraditionalChineseToSimplified(ExceptionRegulator):
+    """Exception class to replace traditional chinese to simplified"""
+
+    operator_name: str = "replace_traditional_chinese_to_simplified"
+
+
+class RemoveWebIdentifiers(ExceptionRegulator):
+    """Exception class to remove web identifiers"""
+
+    operator_name: str = "remove_web_identifiers"
+
+
+class FilterCheckNumberWords(Filter):
+    """Filter class to check number of words"""
+
+    operator_name: str = "filter_check_number_words"
+    number_words_min_cutoff: int = Field(default=1)
+    number_words_max_cutoff: int = Field(default=10000)
+
+
+class FilterCheckWordRepetitionRemoval(Filter):
+    """Filter class to check word repetition removal"""
+
+    operator_name: str = "filter_check_word_repetition_removal"
+    word_repetition_max_cutoff: float
+
+
+class FilterCheckCharacterRepetitionRemoval(Filter):
+    """Filter class to check character repetition removal"""
+
+    operator_name: str = "filter_check_character_repetition_removal"
+    character_repetition_max_cutoff: float
+
+
+class FilterCheckSpecialCharacters(Filter):
+    """Filter class to check special characters"""
+
+    operator_name: str = "filter_check_special_characters"
+    special_characters_max_cutoff: float
+
+
+class FilterCheckFlaggedWords(Filter):
+    """Filter class to check flagged words"""
+
+    operator_name: str = "filter_check_flagged_words"
+    flagged_words_max_cutoff: float
+
+
+class FilterCheckLangId(Filter):
+    """Filter class to check lang id"""
+
+    operator_name: str = "filter_check_lang_id"
+    lang_id_min_cutoff: float
+
+
+class FilterCheckPerplexity(Filter):
+    """Filter class to check perplexity"""
+
+    operator_name: str = "filter_check_perplexity"
+    perplexity_max_cutoff: int
+
+
+class DeduplicationSimhash(Deduplicator):
+    """Deduplicator class to deduplicate by simhash"""
+
+    operator_name: str = "deduplication_simhash"
+    distance: float
+
+
+class ReplaceEmails(DesensitizationProcessor):
+    """Sensitive data processor class to replace emails"""
+
+    operator_name: str = "replace_emails"
+
+
+class ReplaceIp(DesensitizationProcessor):
+    """Sensitive data processor class to replace ip"""
+
+    operator_name: str = "replace_ip"
+
+
+class ReplaceIdentifier(DesensitizationProcessor):
+    """Sensitive data processor class to replace identifier"""
+
+    operator_name: str = "replace_identifier"

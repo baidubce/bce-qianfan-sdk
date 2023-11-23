@@ -474,31 +474,6 @@ def text2image(model_name):
     )
 
 
-@app.route(Consts.PromptRenderAPI, methods=["GET"])
-@access_token_checker
-def prompt():
-    """
-    mock prompt render api
-    """
-    return json_response(
-        {
-            "log_id": "e9d3f283-1091-405b-568e-862e824e679e",
-            "result": {
-                "templateId": 632,
-                "templateName": "原创改写",
-                "templateContent": "用{number}种不同的方式改写以下段落，以避免重复，同时保持其含义：{text}。",
-                "content": (
-                    "用2种不同的方式改写以下段落，以避免重复，"
-                    "同时保持其含义：千帆大模型平台是面向企业开发者的一站式大模型开发及服务运行平台。"
-                ),
-                "templateVariables": "number,text",
-            },
-            "status": 200,
-            "success": True,
-        }
-    )
-
-
 @app.route(Consts.EBTokenizerAPI, methods=["POST"])
 @access_token_checker
 def eb_tokenizer():
@@ -1310,6 +1285,696 @@ def get_export_record():
                     "finishTime": "2023-11-07 10:04:53",
                 }
             ],
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptCreateAPI, methods=["POST"])
+@iam_auth_checker
+def create_prompt():
+    return json_response(
+        {
+            "log_id": "py3yxbi7ffdj7kuc",
+            "result": {"templateId": 732},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptInfoAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_detail():
+    return json_response(
+        {
+            "log_id": "i1sm6juguyzyqrpd",
+            "result": {
+                "templateId": 732,
+                "templateName": "文生文1号3343",
+                "templateContent": (
+                    "请以{number}字数生成{province}省相关简介\naaa(eee) bbbb((xxx))"
+                ),
+                "content": (
+                    "请以{number}字数生成{province}省相关简介\naaa(eee) bbbb5275"
+                ),
+                "templateVariables": "xxx",
+                "labels": [{"labelId": 138, "labelName": "sxz1", "color": ""}],
+                "creatorName": "",
+                "type": 2,
+                "sceneType": 1,
+                "frameworkType": 0,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptUpdateAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_update():
+    return json_response(
+        {
+            "log_id": "9sh0grwe6ydfi318",
+            "result": {"templateId": 732},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptDeleteAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_delete():
+    return json_response(
+        {"log_id": "pws9pkrncvjesmmn", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.PromptListAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_list():
+    return json_response(
+        {
+            "log_id": "4235xa2mjupupcwe",
+            "result": {
+                "total": 239,
+                "items": [
+                    {
+                        "templateId": 724,
+                        "templateName": "照片写实2",
+                        "templateContent": (
+                            "Cherry Blossoms in Hokkaido in the wintertime, Canon RF"
+                            " 16mm f:2.8 STM Lens, hyperrealistic photography, style of"
+                            " unsplash and National Geographic"
+                        ),
+                        "templateVariables": "",
+                        "variableIdentifier": "{}",
+                        "negativeTemplateContent": (
+                            "owres,bad anatomy,cropped,worst quality,low quality,normal"
+                            " quality,blurry,blurry,sketches"
+                        ),
+                        "labels": [
+                            {
+                                "labelId": 150,
+                                "labelName": "图像生成",
+                                "color": "#0099E6",
+                            }
+                        ],
+                        "creatorName": "",
+                        "type": 1,
+                        "sceneType": 2,
+                        "frameworkType": 0,
+                    },
+                    {
+                        "templateId": 723,
+                        "templateName": "3D角色",
+                        "templateContent": (
+                            "snowing winter, super cute baby pixar style white fairy"
+                            " bear, shiny snow-white fluffy, big bright eyes, wearing a"
+                            " woolly cyan hat, delicate and fine, high detailed, bright"
+                            " color, natural light, simple background, octane render,"
+                            " ultra wide angle, 8K"
+                        ),
+                        "templateVariables": "",
+                        "variableIdentifier": "{}",
+                        "negativeTemplateContent": (
+                            "(worst quality, low quality:1.4),signature, watermark,"
+                            " simple background, dated, low res, line art, flat colors"
+                        ),
+                        "labels": [
+                            {
+                                "labelId": 150,
+                                "labelName": "图像生成",
+                                "color": "#0099E6",
+                            }
+                        ],
+                        "creatorName": "",
+                        "type": 1,
+                        "sceneType": 2,
+                        "frameworkType": 0,
+                    },
+                ],
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptLabelListAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_label_list():
+    return json_response(
+        {
+            "log_id": "eauyfgtgqfqdu25z",
+            "result": {
+                "items": [
+                    {
+                        "labelId": 139,
+                        "createTime": "2023-10-08T11:02:51+08:00",
+                        "updateTime": "2023-10-08T11:02:51+08:00",
+                        "labelName": "sxz2",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                    {
+                        "labelId": 138,
+                        "createTime": "2023-10-08T11:02:25+08:00",
+                        "updateTime": "2023-10-08T11:02:25+08:00",
+                        "labelName": "sxz1",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                    {
+                        "labelId": 2,
+                        "createTime": "2023-05-29T18:42:44+08:00",
+                        "updateTime": "2023-05-29T18:42:44+08:00",
+                        "labelName": "label2",
+                        "creatorName": "",
+                        "type": 2,
+                    },
+                ],
+                "total": 30,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+origin_data_source_id = 0
+new_data_source_id = 0
+
+
+@app.route(Consts.DatasetCreateETLTaskAPI, methods=["POST"])
+@iam_auth_checker
+def create_dataset_etl_task():
+    global origin_data_source_id, new_data_source_id
+    origin_data_source_id = request.json["sourceDatasetId"]
+    new_data_source_id = request.json["destDatasetId"]
+    return json_response(
+        {"log_id": "i9vswaefzbqpu92d", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetETLTaskInfoAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_etl_task_info():
+    global origin_data_source_id, new_data_source_id
+    return json_response(
+        {
+            "log_id": "44k3yj73ms178179",
+            "result": {
+                "id": request.json["etlId"],
+                "userId": 113,
+                "sourceDatasetId": origin_data_source_id,
+                "destDatasetId": new_data_source_id,
+                "taskId": 5331,
+                "entityCount": 1,
+                "entityType": 2,
+                "operationsV2": {
+                    "clean": [
+                        {"name": "remove_invisible_character", "args": {}},
+                        {"name": "replace_uniform_whitespace", "args": {}},
+                        {"name": "remove_non_meaning_characters", "args": {}},
+                        {
+                            "name": "replace_traditional_chinese_to_simplified",
+                            "args": {},
+                        },
+                        {"name": "remove_web_identifiers", "args": {}},
+                        {"name": "remove_emoji", "args": {}},
+                        {"name": "save_pipeline_clean", "args": {}},
+                    ],
+                    "deduplication": [
+                        {"name": "deduplication_simhash", "args": {"distance": 5.6511}},
+                        {"name": "save_pipeline_deduplication", "args": {}},
+                    ],
+                    "desensitization": [
+                        {"name": "replace_emails", "args": {}},
+                        {"name": "replace_ip", "args": {}},
+                        {"name": "replace_identifier", "args": {}},
+                        {"name": "save_pipeline_desensitization", "args": {}},
+                    ],
+                    "filter": [
+                        {
+                            "name": "filter_check_number_words",
+                            "args": {
+                                "number_words_max_cutoff": 10000,
+                                "number_words_min_cutoff": 2.2,
+                            },
+                        },
+                        {
+                            "name": "filter_check_character_repetition_removal",
+                            "args": {"default_character_repetition_max_cutoff": 0.2},
+                        },
+                        {
+                            "name": "filter_check_word_repetition_removal",
+                            "args": {"word_repetition_max_cutoff": 0.6},
+                        },
+                        {
+                            "name": "filter_check_special_characters",
+                            "args": {"special_characters_max_cutoff": 0.3},
+                        },
+                        {
+                            "name": "filter_check_flagged_words",
+                            "args": {"flagged_words_max_cutoff": 0.50556},
+                        },
+                        {
+                            "name": "filter_check_lang_id",
+                            "args": {"lang_id_min_cutoff": 0.5},
+                        },
+                        {
+                            "name": "filter_check_perplexity",
+                            "args": {"perplexity_max_cutoff": 1110},
+                        },
+                        {"name": "save_pipeline_filter", "args": {}},
+                    ],
+                },
+                "result": {
+                    "RET_OK": 0,
+                    "pipeline_stage_result": {
+                        "clean": {
+                            "status": "Success",
+                            "operator_count": 6,
+                            "entity_match_count": 1,
+                            "each_operator_result": [
+                                {
+                                    "name": "remove_invisible_character",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "replace_uniform_whitespace",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "remove_non_meaning_characters",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "replace_traditional_chinese_to_simplified",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "remove_web_identifiers",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "remove_emoji",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                            ],
+                        },
+                        "deduplication": {
+                            "status": "Success",
+                            "operator_count": 1,
+                            "entity_match_count": 0,
+                            "each_operator_result": [
+                                {
+                                    "name": "deduplication_simhash",
+                                    "remaining_count": 0,
+                                    "drop_count": 0,
+                                }
+                            ],
+                        },
+                        "desensitization": {
+                            "status": "Success",
+                            "operator_count": 3,
+                            "entity_match_count": 0,
+                            "each_operator_result": [
+                                {
+                                    "name": "replace_emails",
+                                    "remaining_count": 0,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "replace_ip",
+                                    "remaining_count": 0,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "replace_identifier",
+                                    "remaining_count": 0,
+                                    "drop_count": 0,
+                                },
+                            ],
+                        },
+                        "filter": {
+                            "status": "Success",
+                            "operator_count": 7,
+                            "entity_match_count": 1,
+                            "each_operator_result": [
+                                {
+                                    "name": "filter_check_number_words",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "filter_check_character_repetition_removal",
+                                    "remaining_count": 0,
+                                    "drop_count": 1,
+                                },
+                                {
+                                    "name": "filter_check_word_repetition_removal",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "filter_check_special_characters",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "filter_check_flagged_words",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "filter_check_lang_id",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                                {
+                                    "name": "filter_check_perplexity",
+                                    "remaining_count": 1,
+                                    "drop_count": 0,
+                                },
+                            ],
+                        },
+                    },
+                    "export_entity_num": 0,
+                    "remaining_entity": 0,
+                    "unprocessed_entity": 0,
+                    "remove_emoji": {"processed_entity": 0},
+                    "remove_url": {"processed_entity": 0},
+                    "trad_to_simp": {"processed_entity": 0},
+                    "remove_id_card": {"processed_entity": 0},
+                    "remove_phone_number": {"processed_entity": 0},
+                    "remove_exception_char": {"processed_entity": 0},
+                    "replace_sim2trad": {"processed_entity": 0},
+                    "replace_trad2sim": {"processed_entity": 0},
+                    "replace_upper2lower": {"processed_entity": 0},
+                    "cut": {"remaining_entity": 0, "unprocessed_entity": 0},
+                    "failReason": "",
+                    "pauseReason": "",
+                },
+                "processStatus": 2,
+                "status": 0,
+                "createTime": "2023-11-06T14:31:03+08:00",
+                "finishTime": "2023-11-06T14:32:11+08:00",
+                "creatorName": "yyw02",
+                "sourceDatasetName": "4train_generic_usrBos-V1",
+                "destDatasetName": "4train_generic_sysBos-V1",
+                "etlResult": "",
+                "remainingEntity": 0,
+                "exceptionResult": "",
+                "startTime": "2023-11-06 14:31:03",
+                "endTime": "2023-11-06 14:32:11",
+                "modifyTime": "2023-11-06 14:32:11",
+                "logPath": "path",
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetETLListTaskAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_etl_task_list():
+    global origin_data_source_id, new_data_source_id
+    return json_response(
+        {
+            "log_id": "wwcm30w7exxexyqx",
+            "result": {
+                "processingCount": 1,
+                "items": [
+                    {
+                        "etlId": 275,
+                        "startTime": "2023-11-06 16:03:23",
+                        "sourceDatasetName": "4train_generic_usrBos-V1",
+                        "destDatasetName": "4train_generic_sysBos-V1",
+                        "operatorNameList": [
+                            "remove_invisible_character",
+                            "replace_uniform_whitespace",
+                            "remove_non_meaning_characters",
+                            "replace_traditional_chinese_to_simplified",
+                            "remove_web_identifiers",
+                            "remove_emoji",
+                            "deduplication_simhash",
+                            "replace_emails",
+                            "replace_ip",
+                            "replace_identifier",
+                            "filter_check_number_words",
+                            "filter_check_character_repetition_removal",
+                            "filter_check_word_repetition_removal",
+                            "filter_check_special_characters",
+                            "filter_check_flagged_words",
+                            "filter_check_lang_id",
+                            "filter_check_perplexity",
+                        ],
+                        "sourceDatasetId": origin_data_source_id,
+                        "destDatasetId": new_data_source_id,
+                        "entityCount": 1,
+                        "entityType": 2,
+                        "result": {
+                            "RET_OK": 0,
+                            "pipeline_stage_result": None,
+                            "export_entity_num": 0,
+                            "remaining_entity": 0,
+                            "unprocessed_entity": 0,
+                            "remove_emoji": {"processed_entity": 0},
+                            "remove_url": {"processed_entity": 0},
+                            "trad_to_simp": {"processed_entity": 0},
+                            "remove_id_card": {"processed_entity": 0},
+                            "remove_phone_number": {"processed_entity": 0},
+                            "remove_exception_char": {"processed_entity": 0},
+                            "replace_sim2trad": {"processed_entity": 0},
+                            "replace_trad2sim": {"processed_entity": 0},
+                            "replace_upper2lower": {"processed_entity": 0},
+                            "cut": {"remaining_entity": 0, "unprocessed_entity": 0},
+                            "failReason": "",
+                            "pauseReason": "",
+                        },
+                        "processStatus": 2,
+                        "status": 0,
+                        "errCode": 0,
+                        "errMsg": "",
+                        "createTime": "0001-01-01T00:00:00Z",
+                        "finishTime": "0001-01-01T00:00:00Z",
+                        "modifyTime": "0001-01-01T00:00:00Z",
+                    }
+                ],
+                "total": 1,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetETLTaskDeleteAPI, methods=["POST"])
+@iam_auth_checker
+def delete_dataset_etl_task():
+    return json_response(
+        {"log_id": "i9vswaefzbqpu92d", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetCreateAugTaskAPI, methods=["POST"])
+@iam_auth_checker
+def create_dataset_augmenting_task():
+    return json_response(
+        {"log_id": "514mkkutaquh4fvq", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetAugListTaskAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_aug_task_list():
+    return json_response(
+        {
+            "log_id": "x5bnzd1g2fi3iiz9",
+            "result": {
+                "total": 45,
+                "items": [
+                    {
+                        "id": 241,
+                        "projectType": 20,
+                        "sourceDatasetId": 2343,
+                        "sourceDatasetName": "sys_bos数据集1106-V1",
+                        "destDatasetId": 2431,
+                        "destDatasetName": "werwrewrwe-V2",
+                        "area": 0,
+                        "status": 4,
+                        "strategy": 0,
+                        "operations": "",
+                        "startTime": "2023-11-08 10:44:21",
+                        "finishTime": "2023-11-08 10:44:56",
+                        "failReason": "对象存储访问异常",
+                        "isSelfInstruct": True,
+                        "name": "3334",
+                        "modelName": "ERNIE-Bot",
+                    },
+                    {
+                        "id": 240,
+                        "projectType": 20,
+                        "sourceDatasetId": 2324,
+                        "sourceDatasetName": "3-V2",
+                        "destDatasetId": 2343,
+                        "destDatasetName": "sys_bos数据集1106-V1",
+                        "area": 0,
+                        "status": 3,
+                        "strategy": 0,
+                        "operations": "",
+                        "startTime": "2023-11-08 10:43:55",
+                        "finishTime": "2023-11-08 10:44:02",
+                        "failReason": "",
+                        "isSelfInstruct": True,
+                        "name": "357",
+                        "modelName": "ERNIE-Bot",
+                    },
+                ],
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetAugTaskInfoAPI, methods=["POST"])
+@iam_auth_checker
+def get_dataset_augmenting_task_info():
+    return json_response(
+        {
+            "log_id": "cg7tfntkmkwevpgs",
+            "result": {
+                "id": request.json["taskId"],
+                "sourceDatasetId": 1902,
+                "destDatasetId": 2325,
+                "sourceDatasetName": "augment_0922_1-V1",
+                "destDatasetName": "54-V5",
+                "labelIds": "",
+                "status": 4,
+                "area": 0,
+                "entityCount": 651,
+                "strategy": 0,
+                "operations": "",
+                "retStr": "对象存储访问异常",
+                "startTime": "2023-11-02 14:55:12",
+                "finishTime": "2023-11-02 14:56:05",
+                "isSelfInstruct": True,
+                "name": "augment_1102_2",
+                "serviceName": "ERNIE-Bot",
+                "appName": "文心千帆showcase123",
+                "userName": "百里慕蕊",
+                "numSeedFewshot": 6,
+                "numInstancesToGenerate": 20,
+                "similarityThreshold": 0.6,
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetAugTaskDeleteAPI, methods=["POST"])
+@iam_auth_checker
+def delete_dataset_augmenting_task():
+    return json_response(
+        {"log_id": "514mkkutaquh4fvq", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetAnnotateAPI, methods=["POST"])
+@iam_auth_checker
+def annotate_an_entity():
+    return json_response(
+        {"log_id": "x7wwxwhykirrt30n", "result": True, "status": 200, "success": True}
+    )
+
+
+@app.route(Consts.DatasetEntityDeleteAPI, methods=["POST"])
+@iam_auth_checker
+def delete_an_entity():
+    return json_response(
+        {
+            "log_id": "d9vkbs591be1u4ms",
+            "result": {"failedOnes": None},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.DatasetEntityListAPI, methods=["POST"])
+@iam_auth_checker
+def list_all_entity_in_dataset():
+    return json_response(
+        {
+            "log_id": "15jk2d6tkisnidt9",
+            "result": {
+                "totalAll": 7,
+                "total": 2,
+                "items": [
+                    {
+                        "id": "aaa",
+                        "name": "",
+                        "labels": [
+                            {
+                                "label_id": "654887c72733b0c09e2d5bc0",
+                                "name": "ERNIE_BOT",
+                                "color": "#1A73E8",
+                            }
+                        ],
+                        "url": "url1",
+                        "memorySize": 0.01,
+                        "isEncrypted": False,
+                        "textExtra": {
+                            "domainType": "",
+                            "taskType": "",
+                            "wordNum": 0,
+                            "repetitiveCharRatio": 0,
+                            "specialCharRatio": 0,
+                            "flaggedWordRatio": 0,
+                            "langProb": 0,
+                            "perplexity": 0,
+                        },
+                    },
+                    {
+                        "id": "bbb",
+                        "name": "",
+                        "labels": [
+                            {
+                                "label_id": "654887c72733b0c09e2d5bc0",
+                                "name": "ERNIE_BOT",
+                                "color": "#1A73E8",
+                            }
+                        ],
+                        "url": "url2",
+                        "memorySize": 0.01,
+                        "isEncrypted": False,
+                        "textExtra": {
+                            "domainType": "",
+                            "taskType": "",
+                            "wordNum": 0,
+                            "repetitiveCharRatio": 0,
+                            "specialCharRatio": 0,
+                            "flaggedWordRatio": 0,
+                            "langProb": 0,
+                            "perplexity": 0,
+                        },
+                    },
+                ],
+            },
             "status": 200,
             "success": True,
         }

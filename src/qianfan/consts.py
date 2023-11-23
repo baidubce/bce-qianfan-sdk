@@ -72,7 +72,12 @@ class Env:
     DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
     ImportStatusPollingInterval: str = "QIANFAN_IMPORT_STATUS_POLLING_INTERVAL"
     ExportStatusPollingInterval: str = "QIANFAN_EXPORT_STATUS_POLLING_INTERVAL"
+    ReleaseStatusPollingInterval: str = "QIANFAN_RELEASE_STATUS_POLLING_INTERVAL"
     ExportFileSizeLimit: str = "QIANFAN_EXPORT_FILE_SIZE_LIMIT"
+    ETLStatusPollingInterval: str = "QIANFAN_ETL_STATUS_POLLING_INTERVAL"
+    GetEntityContentFailedRetryTimes: str = (
+        "QIANFAN_GET_ENTITY_CONTENT_FAILED_RETRY_TIMES"
+    )
 
 
 class DefaultValue:
@@ -102,11 +107,14 @@ class DefaultValue:
     TruncatedContinuePrompt = "继续"
     ImportStatusPollingInterval: float = 2
     ExportStatusPollingInterval: float = 2
+    ReleaseStatusPollingInterval: float = 2
+    ETLStatusPollingInterval: float = 2
 
     # 目前可直接下载到本地的千帆数据集解压后的大小上限
     # 后期研究更换为用户机内存大小的上限
     # 目前限制 2GB，防止用户内存爆炸
     ExportFileSizeLimit: int = 1024 * 1024 * 1024 * 2
+    GetEntityContentFailedRetryTimes: int = 3
 
 
 class Consts:
@@ -134,7 +142,24 @@ class Consts:
     DatasetDeleteAPI: str = "/wenxinworkshop/dataset/delete"
     DatasetExportRecordAPI: str = "/wenxinworkshop/dataset/exportRecord"
     DatasetImportErrorDetail: str = "/wenxinworkshop/dataset/importErrorDetail"
+    DatasetCreateETLTaskAPI: str = "/wenxinworkshop/etl/create"
+    DatasetETLTaskInfoAPI: str = "/wenxinworkshop/etl/detail"
+    DatasetETLListTaskAPI: str = "/wenxinworkshop/etl/list"
+    DatasetETLTaskDeleteAPI: str = "/wenxinworkshop/etl/delete"
+    DatasetCreateAugTaskAPI: str = "/wenxinworkshop/enhance/create"
+    DatasetAugListTaskAPI: str = "/wenxinworkshop/enhance/list"
+    DatasetAugTaskInfoAPI: str = "/wenxinworkshop/enhance/detail"
+    DatasetAugTaskDeleteAPI: str = "/wenxinworkshop/enhance/delete"
+    DatasetAnnotateAPI: str = "/wenxinworkshop/entity/annotate"
+    DatasetEntityDeleteAPI: str = "/wenxinworkshop/entity/delete"
+    DatasetEntityListAPI: str = "/wenxinworkshop/entity/list"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
+    PromptCreateAPI: str = "/wenxinworkshop/prompt/template/create"
+    PromptInfoAPI: str = "/wenxinworkshop/prompt/template/info"
+    PromptUpdateAPI: str = "/wenxinworkshop/prompt/template/update"
+    PromptDeleteAPI: str = "/wenxinworkshop/prompt/template/delete"
+    PromptListAPI: str = "/wenxinworkshop/prompt/template/list"
+    PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/list"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
@@ -149,3 +174,28 @@ class DefaultLLMModel:
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
+
+
+class PromptSceneType(int, enum.Enum):
+    Text2Text: int = 1
+    """文生文"""
+    Text2Image: int = 2
+    """文生图"""
+
+
+class PromptFrameworkType(int, enum.Enum):
+    NotUse: int = 0
+    """不使用框架"""
+    Basic: int = 1
+    """基础框架"""
+    CRISPE: int = 2
+    """CRISPE框架"""
+    Fewshot: int = 3
+    """fewshot框架"""
+
+
+class PromptType(int, enum.Enum):
+    Preset = 1
+    """预置模版"""
+    User = 2
+    """用户创建模版"""

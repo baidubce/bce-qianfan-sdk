@@ -154,6 +154,19 @@ print(resp["result"])
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset_framework.md)。
 
 
+### Prompt 管理
+
+千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
+
+目前支持的 Prompt 管理操作有：
+
+- 创建 Prompt
+- 更新 Prompt
+- 删除 Prompt
+- 获取 Prompt 详情
+- 获取 Prompt 列表
+- 获取 Prompt 标签列表
+
 ### 其他
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)

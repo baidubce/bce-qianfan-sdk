@@ -20,13 +20,14 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from qianfan.dataset.consts import QianfanDefaultColumnNameForNestedTable
-from qianfan.dataset.data_source import DataSource, FormatType
+from qianfan.dataset.data_operator import FilterCheckNumberWords
+from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
+from qianfan.resources.console.consts import DataTemplateType
 
 
 class FakeDataSource(DataSource, BaseModel):
@@ -67,7 +68,7 @@ def test_dataset_create():
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())
     assert fake_data_source.buffer == fake_data_source.fetch()
-    assert list(list_ret[0].keys())[0] == QianfanDefaultColumnNameForNestedTable
+    assert list(list_ret[0].keys())[0] == "prompt"
 
     fake_data_source_2 = FakeDataSource(
         origin_data='{"prompt": "12", "response": [["12"]]}', format=FormatType.Json
@@ -97,3 +98,27 @@ def test_dataset_create():
         dataset_4.save(schema=QianfanNonSortedConversation())
     with pytest.raises(Exception):
         dataset_4.save(schema=QianfanSortedConversation())
+
+    fake_data_source_5 = FakeDataSource(
+        origin_data=(
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response":'
+            ' [["12"]]}]\n'
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12"}]'
+        ),
+        format=FormatType.Jsonl,
+    )
+    dataset_5 = Dataset.load(fake_data_source_5)
+    with pytest.raises(Exception):
+        dataset_5.save(schema=QianfanNonSortedConversation())
+    with pytest.raises(Exception):
+        dataset_5.save(schema=QianfanSortedConversation())
+
+
+def test_dataset_online_process():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", DataTemplateType.GenericText
+    )
+    dataset = Dataset.load(source=qianfan_data_source)
+    assert dataset.online_data_process(
+        [FilterCheckNumberWords(number_words_min_cutoff=10)]
+    )["is_succeeded"]

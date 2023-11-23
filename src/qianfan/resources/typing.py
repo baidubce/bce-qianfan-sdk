@@ -86,12 +86,12 @@ class QfResponse(Mapping):
     Response from Qianfan API
     """
 
-    http_code: int
+    code: int
     """
     The HTTP status code of the response.
     """
 
-    http_headers: Dict[str, str] = default_field({})
+    headers: Dict[str, str] = default_field({})
     """
     A dictionary of HTTP headers included in the response.
     """

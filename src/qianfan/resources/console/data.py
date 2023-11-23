@@ -43,7 +43,7 @@ def _data_api_exception_handler(f: Callable[P, QfResponse]) -> Callable[P, QfRes
     def inner(*args: Any, **kwargs: Any) -> QfResponse:
         resp = f(*args, **kwargs)
         if resp["status"] == 400 or not resp["success"]:
-            code = resp["code"]
+            code = resp.body["code"]
             message = resp["message"]
             err_msg = f"request error with code: {code} , and message: {message}"
             log_error(err_msg)

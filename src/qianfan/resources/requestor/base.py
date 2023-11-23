@@ -192,7 +192,7 @@ class BaseAPIRequestor(object):
         """
         self._check_error(body)
         qf_response = QfResponse(
-            http_code=resp.status_code, http_headers=dict(resp.headers), body=body
+            code=resp.status_code, headers=dict(resp.headers), body=body
         )
         return qf_response
 
@@ -205,7 +205,7 @@ class BaseAPIRequestor(object):
         self._check_error(body)
 
         qf_response = QfResponse(
-            http_code=resp.status, http_headers=dict(resp.headers), body=body
+            code=resp.status, headers=dict(resp.headers), body=body
         )
         return qf_response
 

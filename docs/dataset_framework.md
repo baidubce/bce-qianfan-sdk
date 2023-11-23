@@ -31,7 +31,7 @@
 用户可以通过 SDK，读取特定格式的文件，并且转换成内存中的数据集对象以供检视、清洗和转换。
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.load(data_file="path/to/dataset_file.json")
 print(dataset)
@@ -46,7 +46,7 @@ SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，�
 用户也可以传入 `FormatType` 对象来手动指定数据集的文件类型
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FormatType
 
 dataset = Dataset.load(
@@ -66,7 +66,7 @@ print(dataset)
 用户也可以传递 `data_file` 参数来指定导出到文件名和文件路径，同时可以传递 `file_format` 参数来指定导出的格式
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FormatType
 
 dataset = Dataset.load(
@@ -88,7 +88,7 @@ dataset.save(
 创建和使用文件数据源的方式如下所示：
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FileDataSource
 
 file_source = FileDataSource(path="local_file.json")
@@ -109,7 +109,7 @@ file_source = FileDataSource(
 文件数据源同样可以作为 `save` 的参数，来指定导出的文件路径
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FileDataSource, FormatType
 
 file_source = FileDataSource(
@@ -134,7 +134,7 @@ dataset.load(file_source)
 `Dataset`  对象封装的 `load ` 方法支持用户传入已经存在的千帆平台数据集版本 ID 以在本地创建一个数据集
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset_qianfan = Dataset.load(qianfan_dataset_id=42)
 dataset_qianfan.list()
@@ -145,7 +145,7 @@ dataset_qianfan.list()
 如果用户不想在创建 `Dataset`  时即进行缓存，可以设置 `is_download_to_local` 为 `False` ，此时用户可以在功能受限的情况下对数据集进行有限的操作
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 dataset_qianfan.list()
@@ -197,7 +197,7 @@ data_source = QianfanDataSource.create_bare_dataset(
 
 ```python
 from pyarrow import Table
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 pyobj_dataset = Dataset.create_from_pyobj([{"column_name1": "column_data1"}])
 pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
@@ -218,7 +218,7 @@ pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...)
 + `slice` ：取该闭区间内的行
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.create_from_pyobj([
   {"column_name1": "column_data1"},
@@ -239,7 +239,7 @@ print(dataset.list(slice(0, 1)))
 除了调用 `list` 函数，用户还可以使用中括号来替代 `list` ，二者等价。因此上面的例子可以改写为：
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.create_from_pyobj([
   {"column_name1": "column_data1"},
@@ -266,7 +266,7 @@ print(dataset[slice(0, 1)])
 + `List[int]` ，`List[str]` ，`Tuple[int]` ，`Tuple[str]` ：取所有元素下标的列，或取所有指定列名的列
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
@@ -287,7 +287,7 @@ print(dataset.list(["column_name1", "column_name3"])
 如果用户使用的是列名字符串来查找列，那么上面的例子同样也可以使用 `[]` 来改写：
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
@@ -311,7 +311,7 @@ print(dataset[["column_name1", "column_name3"]]
 + `slice` ：取左闭右开区间内的实体
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 
@@ -331,7 +331,7 @@ print(dataset[slice(0, 2)])
 在创建 `Dataset` 后，用户可以使用 `map` ，`filter` ，`append` ，`delete` 等函数对行进行修改；也可以使用 `col_map` ，`col_filter` ，`col_append` ，`col_delete` 等函数对列进行修改。以上函数都支持链式调用。
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 
 dataset = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
@@ -355,7 +355,7 @@ dataset = dataset.filter(lambda obj: obj["column_name1"] == "column_data1")
 如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_operator import (
   RemoveInvisibleCharacter,
   FilterCheckNumberWords,
@@ -378,7 +378,7 @@ dataset_qianfan.online_data_process([
 为了方便用户对数据集的格式以及内容进行校验，千帆 Python SDK 内提供了 `Schema` 类用于数据集格式与内容的校验，同时提供了针对千帆平台部分数据集类型的 `Schema` 实现。用户可以在 `load` 或者 `save` 时指定 `schema` 参数，传入一个 `Schema` 类的对象，以在不同的阶段对数据集进行校验；也可以单独创建一个 `Schema` 对象，调用 `validate` 方法对数据集进行校验
 
 ```python
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import Dataset
 from qianfan.dataset.schema import QianfanNonSortedConversation
 
 schema = QianfanNonSortedConversation()

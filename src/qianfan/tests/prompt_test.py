@@ -123,7 +123,7 @@ def test_render_prompt():
     """
     Test render prompt
     """
-    resp = Prompt.render(id=11, var1="v1", var2="v2")
+    resp = Prompt.info(id=11, var1="v1", var2="v2")
     assert resp["_request"] == {"id": "11", "var1": "v1", "var2": "v2"}
     assert "templateId" in resp["result"]
     assert "content" in resp["result"]

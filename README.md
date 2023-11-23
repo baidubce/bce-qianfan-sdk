@@ -137,6 +137,19 @@ print(resp["result"])
 - 获取数据集导出记录
 - 获取数据集导入错误详情
 
+### Prompt 管理
+
+千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
+
+目前支持的 Prompt 管理操作有：
+
+- 创建 Prompt
+- 更新 Prompt
+- 删除 Prompt
+- 获取 Prompt 详情
+- 获取 Prompt 列表
+- 获取 Prompt 标签列表
+
 ### 其他
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)

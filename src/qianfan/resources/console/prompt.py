@@ -137,7 +137,7 @@ class Prompt(object):
 
     @classmethod
     @console_api_request
-    def render(cls, id: int, **kwargs: Any) -> QfRequest:
+    def info(cls, id: int, **kwargs: Any) -> QfRequest:
         """
         Renders a prompt template and retrieves template details.
 

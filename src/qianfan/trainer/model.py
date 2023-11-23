@@ -29,6 +29,7 @@ from qianfan.resources.console import consts as console_const
 from qianfan.trainer.base import ExecuteSerializable
 from qianfan.trainer.configs import DeployConfig
 from qianfan.trainer.consts import ServiceType
+from qianfan.utils import log_warn
 
 
 class Model(
@@ -243,7 +244,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
     """service model instance"""
     deploy_config: Optional[DeployConfig]
     """service deploy config"""
-    endpoint: str
+    endpoint: Optional[str]
     """service endpoint to call"""
     service_type: Optional[ServiceType]
     """service type, for user use service as a execution must specify"""
@@ -252,6 +253,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
     def __init__(
         self,
         id: Optional[int] = None,
+        endpoint: Optional[str] = None,
         model: Optional[Model] = None,
         deploy_config: Optional[DeployConfig] = None,
         service_type: Optional[ServiceType] = None,
@@ -263,6 +265,8 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         Parameters:
             id (Optional[int], optional):
                 qianfan service id. Defaults to None.
+            endpoint (Optional[str], optional):
+                qianfan service endpoint. Defaults to None.
             model (Optional[Model], optional):
                 service's corresponding model. Defaults to None.
             deploy_config (Optional[DeployConfig], optional):
@@ -272,9 +276,12 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
                 Defaults to None.
         """
         self.id = id
+        self.endpoint = endpoint
         self.model = model
         self.deploy_config = deploy_config
         self.service_type = service_type
+        if self.endpoint is not None and self.service_type is None:
+            log_warn("service type should be specified when endpoint passed in")
 
     @property
     def status(self) -> console_const.ServiceStatus:
@@ -311,6 +318,10 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         """
         if input is None:
             raise InvalidArgumentError("input is none")
+        if self.endpoint is not None and self.service_type is None:
+            raise InvalidArgumentError(
+                "service type must be specified when endpoint passed in"
+            )
         if self.status != console_const.ServiceStatus.Done:
             raise InternalError("service is not ready")
         if self.service_type == ServiceType.Chat:
@@ -375,7 +386,11 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
         model_version_id=model.version_id,
         iteration_id=model.version_id,
         name=f"svc{model.id}{model.version_id}",
-        uri=f"ep{model.id}{model.version_id}",
+        uri=(
+            deploy_config.endpoint_prefix
+            if deploy_config != ""
+            else f"ep{model.id}{model.version_id}"
+        ),
         replicas=deploy_config.replicas,
         pool_type=deploy_config.pool_type,
     )

@@ -80,7 +80,7 @@ def test_service_deploy_action():
     assert "service_id" in output and "service_endpoint" in output
 
 
-def test_trainer_sft_start():
+def test_trainer_sft_run():
     train_config = TrainConfig(
         epoch=1,
         batch_size=4,
@@ -100,7 +100,7 @@ def test_trainer_sft_start():
         train_config=train_config,
         event_handler=eh,
     )
-    sft_task.start()
+    sft_task.run()
     res = sft_task.result
     assert res is not None
     assert isinstance(res, list)
@@ -128,7 +128,7 @@ def test_trainer_sft_with_deploy():
         deploy_config=deploy_config,
         event_handler=eh,
     )
-    sft_task.start()
+    sft_task.run()
     res = sft_task.result
     assert res is not None
     assert isinstance(res, list)
@@ -136,6 +136,9 @@ def test_trainer_sft_with_deploy():
     assert isinstance(res[0], dict)
     assert "service_endpoint" in res[0]
     assert len(eh.events) > 0
+    svc = res[0]["service"]
+    resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
+    assert resp["result"] != ""
 
 
 def test_model_deploy():

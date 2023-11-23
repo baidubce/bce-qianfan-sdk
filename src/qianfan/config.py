@@ -75,6 +75,9 @@ class GlobalConfig(BaseSettings):
     DEPLOY_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.DeployStatusPollingInterval
     )
+    DEFAULT_FINE_TUNE_TRAIN_TYPE: str = Field(
+        default=DefaultValue.DefaultFinetuneTrainType
+    )
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

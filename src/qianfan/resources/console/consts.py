@@ -146,6 +146,11 @@ class TrainMode(str, Enum):
     """对应 LLMFinetune"""
 
 
+class DeployPoolType(int, Enum):
+    PrivateResource = 1
+    PublicResource = 2
+
+
 class EntityListingType(int, Enum):
     All: int = 0
     """展示全部"""

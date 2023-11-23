@@ -15,6 +15,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
+from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.consts import ServiceType
 
 
@@ -63,7 +64,7 @@ class DeployConfig(BaseModel):
     """
     replicas for model services, related to the capacity in QPS of model service.
     """
-    pool_type: int
+    pool_type: console_consts.DeployPoolType
     """
     resource pool type, public resource will be shared with others.
     """

@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, TypeV
 from qianfan.errors import InternalError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
-from qianfan.utils import utils
+from qianfan.utils import log_debug, log_error, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
@@ -179,7 +179,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
 
         Parameters:
             state (ActionState): action state
-            msg (str, optional): action custom description. Defaults to "".
+            msg (str, optional): action custom dfscription. Defaults to "".
             data (Any, optional): action custom data. Defaults to None.
         """
         dispatch_event(
@@ -201,12 +201,16 @@ def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
 
     def wrapper(self: BaseAction, input: Any, **kwargs: Any) -> Any:
         try:
+            log_debug(f"action[{self.id}] Preceding")
             self.action_event(ActionState.Preceding, "", {})
             resp = func(self, input=input, **kwargs)
             self.action_event(ActionState.Done, "", resp)
+            log_debug(f"action[{self.id}] Done")
             return resp
         except Exception as e:
+            log_error(f"action[{self.id}] error {e}")
             self.action_error_event(e)
+
             return {"error": e}
 
     return wrapper
@@ -225,7 +229,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def __init__(
         self,
         actions: Sequence[BaseAction],
-        next_actions: Sequence[BaseAction] = [],
+        post_actions: Sequence[BaseAction] = [],
         event_handler: Optional[EventHandler] = None,
         **kwargs: Any,
     ) -> None:
@@ -234,7 +238,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         Parameters:
             actions Sequence[BaseAction]:
                 The actions to be executed in the pipeline.
-            next_actions: Sequence[BaseAction]:
+            post_actions: Sequence[BaseAction]:
                 The actions to be executed after the pipeline is completed.
             event_handler: Optional[EventHandler]
                 event_handler to receive events.
@@ -256,7 +260,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 raise ValueError(f"action id {action.id} is duplicated")
             self.actions[action.id] = action
             self.seq.append(action.id)
-        self.next_actions = next_actions
+        self.post_actions = post_actions
         self._state: Optional[Any] = None
         self._sync_lock = Lock()
         self._stop: bool = False
@@ -287,7 +291,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             if output.get("error") is not None:
                 raise InternalError(cast(str, output.get("error")))
 
-        for next in self.next_actions:
+        for next in self.post_actions:
             next.exec(copy.deepcopy(output), **kwargs)
 
         return output
@@ -331,7 +335,7 @@ class Trainer(ABC):
     Base Trainer class, which focus on one step call to run the
     whole training process. which define the basic 3 methods to
     operate training.
-    - start() start the specific training process like fine-tuning
+    - run() run the specific training process like fine-tuning
     - resume() resume from the stopped, failed
     - stop() stop the training process
     """
@@ -345,7 +349,7 @@ class Trainer(ABC):
     """pipeline running results, which may be an error or an object"""
 
     @abstractmethod
-    def start(self, **kwargs: Dict) -> "Trainer":
+    def run(self, **kwargs: Dict) -> "Trainer":
         """
         Trainer abstract method. For the diverse instance subclasses,
         Override this method to implement the specific training process.

@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
+from qianfan.dataset import QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
@@ -38,7 +39,7 @@ from qianfan.trainer.consts import (
 class LLMFinetune(Trainer):
     """
     Class implements the SFT training pipeline with several actions.
-    Use `start()` to synchronously start the training pipeline until the
+    Use `run()` to synchronously run the training pipeline until the
     model training is finished.
     """
 
@@ -88,12 +89,27 @@ class LLMFinetune(Trainer):
         )
         ```
         """
+        # 校验train_type, base_model_type
         if base_model is None and ModelTypeMapping.get(train_type) is not None:
             base_model = ModelTypeMapping.get(train_type)
 
         if base_model is None or base_model == "":
             raise InvalidArgumentError("base_model is empty")
 
+        # 校验dataset
+        if dataset is None:
+            raise InvalidArgumentError("dataset must be set")
+        if dataset.inner_data_source_cache is None:
+            raise InvalidArgumentError("invalid dataset")
+
+        qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
+        if (
+            qf_data_src.template_type
+            != console_consts.DataTemplateType.NonSortedConversation
+        ):
+            raise InvalidArgumentError(
+                "dataset must be `non-sorted conversation` template in llm-fine-tune"
+            )
         self.load_data_action = LoadDataSetAction(
             dataset=dataset, event_handler=event_handler, **kwargs
         )
@@ -126,9 +142,9 @@ class LLMFinetune(Trainer):
         self.ppls = [ppl]
         self.result = [None]
 
-    def start(self, **kwargs: Dict) -> Trainer:
+    def run(self, **kwargs: Dict) -> Trainer:
         """_summary_
-        start a pipeline to run the fine-tune process.
+        run a pipeline to run the fine-tune process.
 
         Parameters:
             **kwargs:
@@ -137,14 +153,14 @@ class LLMFinetune(Trainer):
 
         Raises:
             InvalidArgumentError: no pipeline bind
-            to start.
+            to run.
         Returns:
             Trainer:
                 self, for chain invocation.
         """
         self.input = kwargs.get("input")
         if len(self.ppls) != 1:
-            raise InvalidArgumentError("invalid pipeline to start")
+            raise InvalidArgumentError("invalid pipeline to run")
         self.result[0] = self.ppls[0].exec(self.input)
         return self
 

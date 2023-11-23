@@ -556,6 +556,7 @@ class Dataset(Table):
             result = Data.get_dataset_etl_task_info(etl_id)["result"]
             if result["processStatus"] == ETLTaskStatus.Finished.value:
                 log_info(f"data etl task {etl_id} succeeded")
+                ret_dict["is_succeeded"] = True
                 ret_dict["new_dataset_id"] = new_dataset_id
                 return ret_dict
             if result["processStatus"] == ETLTaskStatus.Running.value:

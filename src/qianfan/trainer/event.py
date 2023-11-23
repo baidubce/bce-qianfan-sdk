@@ -83,7 +83,7 @@ class EventHandler:
         """_summary_
 
         Parameters:
-            event (Event): 
+            event (Event):
                 event to dispatch to user custom handler
 
         """

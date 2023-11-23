@@ -217,7 +217,7 @@ class Model(
         Serialize the model to bytes.
 
         Returns:
-            Optional[bytes]: 
+            Optional[bytes]:
                 bytes of this model
         """
         return pickle.dumps(self)
@@ -227,7 +227,7 @@ class Model(
         load model instance from bytes
 
         Parameters:
-            data (bytes): 
+            data (bytes):
                 bytes of this model
 
         Returns:
@@ -329,7 +329,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         serialize the model instance to bytes
 
         Returns:
-            Optional[bytes]: 
+            Optional[bytes]:
                 bytes of the model instance
         """
         return pickle.dumps(self)
@@ -339,7 +339,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         load service instance from bytes
 
         Parameters:
-            data (bytes): 
+            data (bytes):
                 bytes of model instance
 
         Returns:

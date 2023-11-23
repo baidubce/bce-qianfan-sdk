@@ -53,7 +53,6 @@ __all__ = [
     "AccessToken",
     "AccessKey",
     "SecretKey",
-    "Prompt",
     "get_config",
     "disable_log",
     "enable_log",

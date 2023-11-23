@@ -18,7 +18,13 @@ from typing import Any, Dict, Iterator, Optional, Union
 from qianfan import resources as api
 from qianfan.config import get_config
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.resources import ChatCompletion, Completion, QfResponse, Text2Image
+from qianfan.resources import (
+    ChatCompletion,
+    Completion,
+    Embedding,
+    QfResponse,
+    Text2Image,
+)
 from qianfan.resources.console import consts as console_const
 from qianfan.trainer.base import ExecuteSerializable
 from qianfan.trainer.configs import DeployConfig
@@ -70,6 +76,25 @@ class Model(
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
     ) -> Union[QfResponse, Iterator[QfResponse]]:
+        """
+        model execution, for different model service type, please input
+        a dict with different keys.
+        Concretely, take
+            `input={"messages": [{"role": "user",
+                    "content": "hello world"}]}`
+        as input, when the model is a chat io Model.
+
+        Parameters:
+            input (Optional[Dict], optional):
+                input data . Defaults to None.
+
+        Raises:
+            InternalError: model with no service deployed is unable to call exec
+
+        Returns:
+            Union[QfResponse, Iterator[QfResponse]]:
+                output data
+        """
         if self.service is None:
             raise InternalError(
                 "model not deployed, call `model_deploy()` to instantiate a service"
@@ -77,11 +102,62 @@ class Model(
         return self.service.exec(input, **kwargs)
 
     def deploy(self, deploy_config: DeployConfig) -> "Service":
+        """
+        model deploy
+
+        Parameters:
+            deploy_config (DeployConfig):
+                model service deploy config
+
+        Returns:
+            Service: model service instance
+        """
         self.service = model_deploy(self, deploy_config)
 
         return self.service
 
     def publish(self, name: str = "") -> "Model":
+        """
+        model publish, before deploying a model, it should be published.
+
+        Parameters:
+            name (str, optional):
+                model name. Defaults to "m_{task_id}{job_id}".
+        """
+        if self.version_id:
+            # already released
+            model_detail_resp = api.Model.detail(model_version_id=self.version_id)
+            self.id = model_detail_resp["result"]["modelId"]
+            self.task_id = model_detail_resp["result"]["sourceExtra"][
+                "trainSourceExtra"
+            ]["taskId"]
+            self.job_id = model_detail_resp["result"]["sourceExtra"][
+                "trainSourceExtra"
+            ]["runId"]
+            if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
+                self._wait_for_publish()
+
+        if self.id:
+            list_resp = api.Model.list(self.id)
+            if len(list_resp["result"]["modelVersionList"]) == 0:
+                raise InvalidArgumentError(
+                    "not model version matched, please train and publish first"
+                )
+            self.version_id = list_resp["result"]["modelVersionList"][0][
+                "modelVersionId"
+            ]
+            if self.version_id is None:
+                raise InvalidArgumentError("model version id not found")
+            model_detail_resp = api.Model.detail(model_version_id=self.version_id)
+            self.task_id = model_detail_resp["result"]["sourceExtra"][
+                "trainSourceExtra"
+            ]["taskId"]
+            self.job_id = model_detail_resp["result"]["sourceExtra"][
+                "trainSourceExtra"
+            ]["runId"]
+            if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
+                self._wait_for_publish()
+
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}{self.job_id}"
         model_publish_resp = api.Model.publish(
@@ -113,7 +189,20 @@ class Model(
 
         if self.version_id is None:
             raise InvalidArgumentError("model version id not found")
+        self._wait_for_publish()
+
+        return self
+
+    def _wait_for_publish(self) -> None:
+        """
+        call a polling loop to wait until the model is published.
+
+        Raises:
+            InternalError: _description_
+        """
         # 获取模型版本详情
+        if self.version_id is None:
+            raise InvalidArgumentError("model version id not found")
         while True:
             model_detail_info = api.Model.detail(model_version_id=self.version_id)
             model_version_state = model_detail_info["result"]["state"]
@@ -122,7 +211,6 @@ class Model(
             elif model_version_state == console_const.ModelState.Fail:
                 raise InternalError("model published failed")
             time.sleep(get_config().MODEL_PUBLISH_STATUS_POLLING_INTERVAL)
-        return self
 
     def dumps(self) -> Optional[bytes]:
         return pickle.dumps(self)
@@ -133,10 +221,16 @@ class Model(
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):
     id: Optional[int]
+    """remote service id"""
     model: Optional[Model]
+    """service model instance"""
     deploy_config: Optional[DeployConfig]
+    """service deploy config"""
     endpoint: str
+    """service endpoint to call"""
     service_type: Optional[ServiceType]
+    """service type, for user use service as a execution must specify"""
+    # service type may get from model ioModel
 
     def __init__(
         self,
@@ -167,6 +261,15 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
 
     @property
     def status(self) -> console_const.ServiceStatus:
+        """
+        get the service status
+
+        Raises:
+            InternalError: id not found
+
+        Returns:
+            console_const.ServiceStatus
+        """
         if self.id is None:
             raise InternalError("service id not found")
         resp = api.Service.get(id=self.id)
@@ -178,15 +281,16 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         """
         exec
 
-        Args:
+        Parameters:
             input (Optional[Union[str, List[str], List[dict]]], optional):
                 input of execution of service. Defaults to None.
             **kwargs: additional args Dict
         Raises:
-            InternalError: _description_
+            InternalError: unsupported service type
 
         Returns:
-            Union[str, List[str], List[dict]]: _description_
+            Union[str, List[str], List[dict]]:
+                output
         """
         if input is None:
             raise InvalidArgumentError("input is none")
@@ -196,6 +300,8 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             return ChatCompletion().do(endpoint=self.endpoint, **input)
         elif self.service_type == ServiceType.Completion:
             return Completion().do(endpoint=self.endpoint, **input)
+        elif self.service_type == ServiceType.Embedding:
+            return Embedding().do(endpoint=self.endpoint, **input)
         elif self.service_type == ServiceType.Text2Image:
             return Text2Image().do(endpoint=self.endpoint, **input)
         else:

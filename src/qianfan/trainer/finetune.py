@@ -83,7 +83,7 @@ class LLMFinetune(Trainer):
 
         ```
         sft_task = LLMFinetune(
-            model_version_type="ERNIE-Bot-turbo-0725",
+            train_type="ERNIE-Bot-turbo-0725",
             dataset={"datasets": [{"type": 1, "id": ds_id}]},
             train_config=train_config,
             event_handler=eh,
@@ -129,6 +129,10 @@ class LLMFinetune(Trainer):
         self.result = [None]
 
     def start(self, **kwargs: Dict) -> Trainer:
+        """
+        start a pipeline to run the fine-tune process.
+
+        """
         self.input = kwargs.get("input")
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to start")
@@ -137,6 +141,12 @@ class LLMFinetune(Trainer):
 
     @property
     def status(self) -> str:
+        """
+        LLMFinetune status getter.
+
+        Returns:
+            str: status for LLMFinetune, mapping from state of actions in pipeline.
+        """
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to get status")
         action = self.ppls[0][str(self.ppls[0]._state)]
@@ -156,6 +166,7 @@ class LLMFinetune(Trainer):
         return self
 
 
+# mapping for action state -> fine-tune status
 fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
     TrainAction.__class__.__name__: {
         ActionState.Preceding: FinetuneStatus.Created,

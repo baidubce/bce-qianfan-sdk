@@ -68,9 +68,9 @@ class TrainAction(
         job_id: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
-        """_summary_
+        """
 
-        Args:
+        Parameters:
             train_type (str):
                 train_type, like 'ERNIE-Bot-turbo-0725'
             train_config (Optional[TrainConfig], optional):

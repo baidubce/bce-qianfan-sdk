@@ -18,6 +18,7 @@ data source which is related to download/upload
 import datetime
 import json
 import os.path
+import random
 import shutil
 import zipfile
 from abc import ABC, abstractmethod
@@ -44,7 +45,7 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 from qianfan.resources.console.data import Data
-from qianfan.utils.bos_uploader import upload_content_to_bos
+from qianfan.utils.bos_uploader import generate_bos_file_path, upload_content_to_bos
 from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
 
 
@@ -331,7 +332,12 @@ class QianfanDataSource(DataSource, BaseModel):
             raise NotImplementedError()
         elif self.storage_type == DataStorageType.PrivateBos:
             suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
-            file_path = f"{self.storage_path}/data.{suffix}"
+            file_path = (
+                f"{self.storage_path}/data_{random.randint(0,19084241)}.{suffix}"
+            )
+            if file_path[0] != "/":
+                file_path = "/" + file_path
+
             ak = self.ak if self.ak else get_config().ACCESS_KEY
             sk = self.sk if self.sk else get_config().SECRET_KEY
             if not ak:
@@ -346,6 +352,10 @@ class QianfanDataSource(DataSource, BaseModel):
                 return False
 
             log_info("start to upload data to user BOS")
+            log_debug(
+                f"bucket path: {file_path} bucket name: {self.storage_id} bos region:"
+                f" {self.storage_region}"
+            )
             upload_content_to_bos(
                 data,
                 file_path,
@@ -357,7 +367,10 @@ class QianfanDataSource(DataSource, BaseModel):
             log_info("uploading data to user BOS finished")
 
             Data.create_data_import_task(
-                self.id, is_annotated, DataSourceType.PrivateBos, file_path
+                self.id,
+                is_annotated,
+                DataSourceType.PrivateBos,
+                generate_bos_file_path(self.storage_id, file_path),
             )
 
             log_info("successfully create importing task")

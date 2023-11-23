@@ -96,18 +96,14 @@ class Dataset(Table):
         )
 
         if format_type == FormatType.Json:
-            data_py_rep = json.loads(
-                str_content.replace("\r", "\\r").replace("\n", "\\n")
-            )
+            data_py_rep = json.loads(str_content)
             # 如果导入的是一个字典，则需要转换成列表才能被读取
             if not isinstance(data_py_rep, list):
                 data_py_rep = [data_py_rep]
             pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
         elif format_type == FormatType.Jsonl:
             json_data_list = [
-                json.loads(line.replace("\r", "\\r").replace("\n", "\\n"))
-                for line in str_content.split("\n")
-                if line
+                json.loads(line) for line in str_content.split("\n") if line
             ]
             if not json_data_list:
                 raise ValueError("no data in jsonline file")

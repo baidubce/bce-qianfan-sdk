@@ -16,7 +16,7 @@
 Data API
 """
 import functools
-from typing import Any, Callable, Dict, List, Optional, ParamSpec
+from typing import Any, Callable, Dict, List, Optional
 
 from qianfan.consts import Consts
 from qianfan.errors import QianfanError
@@ -30,7 +30,7 @@ from qianfan.resources.console.consts import (
     EntityListingType,
 )
 from qianfan.resources.console.utils import console_api_request
-from qianfan.resources.typing import QfRequest, QfResponse
+from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse
 from qianfan.utils import log_error
 
 P = ParamSpec("P")

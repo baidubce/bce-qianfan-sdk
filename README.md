@@ -44,7 +44,7 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
-除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](#sdk-配置) 部分。
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
 <summary> 其他认证方式 </summary>
@@ -136,6 +136,19 @@ print(resp["result"])
 - 删除数据集
 - 获取数据集导出记录
 - 获取数据集导入错误详情
+
+### Prompt 管理
+
+千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
+
+目前支持的 Prompt 管理操作有：
+
+- 创建 Prompt
+- 更新 Prompt
+- 删除 Prompt
+- 获取 Prompt 详情
+- 获取 Prompt 列表
+- 获取 Prompt 标签列表
 
 ### 其他
 - [tokenizer](./docs/utils.md)

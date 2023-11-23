@@ -154,6 +154,12 @@ class Consts:
     DatasetEntityDeleteAPI: str = "/wenxinworkshop/entity/delete"
     DatasetEntityListAPI: str = "/wenxinworkshop/entity/list"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
+    PromptCreateAPI: str = "/wenxinworkshop/prompt/template/create"
+    PromptInfoAPI: str = "/wenxinworkshop/prompt/template/info"
+    PromptUpdateAPI: str = "/wenxinworkshop/prompt/template/update"
+    PromptDeleteAPI: str = "/wenxinworkshop/prompt/template/delete"
+    PromptListAPI: str = "/wenxinworkshop/prompt/template/list"
+    PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/list"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
@@ -168,3 +174,28 @@ class DefaultLLMModel:
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
+
+
+class PromptSceneType(int, enum.Enum):
+    Text2Text: int = 1
+    """文生文"""
+    Text2Image: int = 2
+    """文生图"""
+
+
+class PromptFrameworkType(int, enum.Enum):
+    NotUse: int = 0
+    """不使用框架"""
+    Basic: int = 1
+    """基础框架"""
+    CRISPE: int = 2
+    """CRISPE框架"""
+    Fewshot: int = 3
+    """fewshot框架"""
+
+
+class PromptType(int, enum.Enum):
+    Preset = 1
+    """预置模版"""
+    User = 2
+    """用户创建模版"""

@@ -198,22 +198,25 @@ print("{}/{}".format(task.finished_count(), task.total_count())) # => 11/20
 # SDK 会按照输入顺序进行批量推理
 # 可以通过遍历的方式获取已完成任务的结果
 for r in task:
-    # 需要调用 r.result() 来显式等待某一条推理完成
-    res = r.result()
-    # 如果推理成功，res 是一个 QfResponse 对象
-    # 否则会是一个 Exception 对象，用户需要进行错误处理
-    if not isinstance(res, Exception):
-        print(res)
+    try:
+        # 需要调用 r.result() 来显式等待某一条推理完成
+        res = r.result()
+        # 如果推理成功，res 是一个 QfResponse 对象
+        # 否则会是一个 Exception 对象，用户需要进行错误处理
+    except Exception as e:
+        print(e)
 # 也可以通过 task.results() 来等待所有推理任务完成并获取所有结果
-results = task.results()
+# 但也同样需要进行错误处理
+try:
+    results = task.results()
+except Exception as e:
+    print(e)
 # 或者仅等待所有任务完成，避免因返回的数据量较大导致过多的内存占用
 # 之后可再采用上述遍历的方式逐个获取结果
 task.wait()
-# 结果与输入一一对应，如果推理成功那么结果与 `do` 返回类型一致
-# 否则是一个 Exception 对象，用户需要进行错误处理
+# 结果与输入一一对应，结果与 `do` 返回类型一致
 for prompt, result in zip(prompt_list, results):
-    if not isinstance(result, Exception):
-        print(prompt, result)
+    print(prompt, result)
 
 
 # 异步调用

@@ -274,7 +274,7 @@ class QianfanDataSource(DataSource, BaseModel):
     storage_type: DataStorageType
     storage_id: str
     storage_path: str
-    storage_raw_path: str
+    storage_raw_path: Optional[str] = Field(default=None)
     storage_name: str
     storage_region: Optional[str] = Field(default=None)
     info: Dict[str, Any] = Field(default={})
@@ -731,7 +731,6 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             storage_id=qianfan_resp["storageInfo"]["storageId"],
             storage_path=qianfan_resp["storageInfo"]["storagePath"],
-            storage_raw_path=qianfan_resp["storageInfo"]["rawStoragePath"],
             storage_name=qianfan_resp["storageInfo"]["storageName"],
             info=(
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
@@ -744,6 +743,7 @@ class QianfanDataSource(DataSource, BaseModel):
         # 如果是私有的 BOS，还需要额外填充返回的 region 信息
         if storage_type == DataStorageType.PrivateBos:
             source.storage_region = qianfan_resp["storageInfo"]["region"]
+            source.storage_raw_path = qianfan_resp["storageInfo"]["rawStoragePath"]
 
         return source
 

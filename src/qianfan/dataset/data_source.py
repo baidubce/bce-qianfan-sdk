@@ -18,8 +18,8 @@ data source which is related to download/upload
 import datetime
 import json
 import os.path
-import random
 import shutil
+import uuid
 import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -274,6 +274,7 @@ class QianfanDataSource(DataSource, BaseModel):
     storage_type: DataStorageType
     storage_id: str
     storage_path: str
+    storage_raw_path: str
     storage_name: str
     storage_region: Optional[str] = Field(default=None)
     info: Dict[str, Any] = Field(default={})
@@ -332,11 +333,7 @@ class QianfanDataSource(DataSource, BaseModel):
             raise NotImplementedError()
         elif self.storage_type == DataStorageType.PrivateBos:
             suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
-            file_path = (
-                f"{self.storage_path}/data_{random.randint(0,19084241)}.{suffix}"
-            )
-            if file_path[0] != "/":
-                file_path = "/" + file_path
+            file_path = f"{self.storage_raw_path}data_{uuid.uuid4()}.{suffix}"
 
             ak = self.ak if self.ak else get_config().ACCESS_KEY
             sk = self.sk if self.sk else get_config().SECRET_KEY
@@ -734,6 +731,7 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             storage_id=qianfan_resp["storageInfo"]["storageId"],
             storage_path=qianfan_resp["storageInfo"]["storagePath"],
+            storage_raw_path=qianfan_resp["storageInfo"]["rawStoragePath"],
             storage_name=qianfan_resp["storageInfo"]["storageName"],
             info=(
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
@@ -829,6 +827,7 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             storage_id=qianfan_resp["versionInfo"]["storage"]["storageId"],
             storage_path=qianfan_resp["versionInfo"]["storage"]["storagePath"],
+            storage_raw_path=qianfan_resp["versionInfo"]["storage"]["rawStoragePath"],
             storage_name=qianfan_resp["versionInfo"]["storage"]["storageName"],
             storage_region=qianfan_resp["versionInfo"]["storage"]["region"],
             download_when_init=is_download_to_local,

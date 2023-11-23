@@ -15,10 +15,11 @@
 """
 Data API
 """
-
-from typing import Any, Dict, List, Optional
+import functools
+from typing import Any, Callable, Dict, List, Optional, ParamSpec
 
 from qianfan.consts import Consts
+from qianfan.errors import QianfanError
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
@@ -29,7 +30,27 @@ from qianfan.resources.console.consts import (
     EntityListingType,
 )
 from qianfan.resources.console.utils import console_api_request
-from qianfan.resources.typing import QfRequest
+from qianfan.resources.typing import QfRequest, QfResponse
+from qianfan.utils import log_error
+
+P = ParamSpec("P")
+
+
+def _data_api_exception_handler(f: Callable[P, QfResponse]) -> Callable[P, QfResponse]:
+    """the error code checker for data api only"""
+
+    @functools.wraps(f)
+    def inner(*args: Any, **kwargs: Any) -> QfResponse:
+        resp = f(*args, **kwargs)
+        if resp["status"] == 400 or not resp["success"]:
+            code = resp["code"]
+            message = resp["message"]
+            err_msg = f"request error with code: {code} , and message: {message}"
+            log_error(err_msg)
+            raise QianfanError(err_msg)
+        return resp
+
+    return inner
 
 
 class Data:
@@ -38,6 +59,7 @@ class Data:
     """
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def create_bare_dataset(
         cls,
@@ -119,6 +141,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def release_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -145,6 +168,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def create_data_import_task(
         cls,
@@ -191,6 +215,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_info(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -217,6 +242,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_status_in_batch(
         cls, dataset_id_list: List[int], **kwargs: Any
@@ -248,6 +274,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def create_dataset_export_task(
         cls,
@@ -297,6 +324,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def delete_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -323,6 +351,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_export_records(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -349,6 +378,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_import_error_detail(
         cls, dataset_id: int, error_code: int, **kwargs: Any
@@ -380,6 +410,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def create_dataset_etl_task(
         cls,
@@ -419,6 +450,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_etl_task_info(cls, etl_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -445,6 +477,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_etl_task_list(
         cls, page_size: int = 10, offset: int = 0, **kwargs: Any
@@ -476,6 +509,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def delete_dataset_etl_task(cls, etl_ids: List[int], **kwargs: Any) -> QfRequest:
         """
@@ -502,6 +536,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def create_dataset_augmenting_task(
         cls,
@@ -572,6 +607,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_aug_task_list(
         cls,
@@ -623,6 +659,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def get_dataset_augmenting_task_info(cls, task_id: int, **kwargs: Any) -> QfRequest:
         """
@@ -649,6 +686,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def delete_dataset_augmenting_task(
         cls, task_ids: List[int], **kwargs: Any
@@ -677,6 +715,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def annotate_an_entity(
         cls,
@@ -723,6 +762,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def delete_an_entity(
         cls, entity_ids: List[str], dataset_id: int, **kwargs: Any
@@ -749,6 +789,7 @@ class Data:
         return req
 
     @classmethod
+    @_data_api_exception_handler
     @console_api_request
     def list_all_entity_in_dataset(
         cls,

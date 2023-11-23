@@ -20,7 +20,7 @@ import functools
 import io
 import json
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import pyarrow.json
 import requests
@@ -608,12 +608,9 @@ class Dataset(Table):
         return super().append(elem)
 
     # 等待接口 ready 才能对云端数据集做展示
-    @_online_except_decorator
     def list(
         self,
-        by: Optional[
-            Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
-        ] = None,
+        by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -644,10 +641,10 @@ class Dataset(Table):
 
             if isinstance(by, int):
                 args["offset"] = by
-                args["pageSize"] = 1
+                args["page_size"] = 1
             elif isinstance(by, slice):
                 args["offset"] = by.start
-                args["pageSize"] = by.stop - by.start
+                args["page_size"] = by.stop - by.start
 
             resp = Data.list_all_entity_in_dataset(**{**kwargs, **args})["result"][
                 "items"
@@ -673,7 +670,7 @@ class Dataset(Table):
                     raise RequestError(message)
 
                 elem.pop("entity_url")
-                elem["entity_content"] = resp.content
+                elem["entity_content"] = resp.text
 
             return result
 

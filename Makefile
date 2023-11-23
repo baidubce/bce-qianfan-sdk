@@ -2,7 +2,7 @@ build:
 	bash src/scripts/build.sh
 
 install:
-	poetry install
+	poetry install -E all
 
 uninstall:
 	pip uninstall -y qianfan

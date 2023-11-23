@@ -56,7 +56,16 @@ class GlobalConfig(BaseSettings):
     EXPORT_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.ExportStatusPollingInterval
     )
+    RELEASE_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ReleaseStatusPollingInterval
+    )
     EXPORT_FILE_SIZE_LIMIT: int = Field(default=DefaultValue.ExportFileSizeLimit)
+    ETL_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ETLStatusPollingInterval
+    )
+    GET_ENTITY_CONTENT_FAILED_RETRY_TIMES: int = Field(
+        default=DefaultValue.GetEntityContentFailedRetryTimes
+    )
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

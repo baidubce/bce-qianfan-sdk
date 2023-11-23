@@ -69,10 +69,8 @@ class ServiceStatus(str, Enum):
     """服务发布任务停止"""
 
 
+# model train type -> default train config
 ModelTypeMapping = {
-    """
-    train type to base train type
-    """
     "ERNIE-Bot-turbo-0725": "ERNIE-Bot-turbo",
     "ERNIE-Bot-turbo-0516": "ERNIE-Bot-turbo",
     "ERNIE-Bot-turbo-0704": "ERNIE-Bot-turbo",

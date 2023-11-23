@@ -56,6 +56,7 @@ def test_train_action():
             ]
         }
     )
+    print("output", output)
     assert isinstance(output, dict)
     assert "task_id" in output and "job_id" in output
 

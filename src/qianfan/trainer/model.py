@@ -226,6 +226,7 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
     svc = Service(
         model=model,
         deploy_config=deploy_config,
+        service_type=deploy_config.service_type,
     )
     if model.id is None or model.version_id is None:
         raise InvalidArgumentError("model id | model version id not found")

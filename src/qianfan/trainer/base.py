@@ -72,6 +72,11 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
 
 
 class BaseAction(ExecuteSerializable[Input, Output], ABC):
+    """
+    BaseAction is a reusable, atomic operation components that can be
+    freely orchestrated for use in Pipelines.
+    """
+
     def __init__(
         self,
         id: Optional[str] = None,
@@ -79,13 +84,21 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         event_handler: Optional[EventHandler] = None,
         **kwargs: Dict[str, Any],
     ) -> None:
+        """
+        init method
+
+        Parameters:
+            id (Optional[str], optional):
+                action id for identify action. Defaults to None.
+            name (Optional[str], optional):
+                action name. Defaults to None.
+            event_handler (Optional[EventHandler], optional):
+                event_handler implements for action state track. Defaults to None.
+        """
         self.id = id if id is not None else utils.uuid()
         self.name = name if name is not None else f"actions_{self.id}"
         self.state = ActionState.Preceding
         self.event_dispatcher = event_handler
-
-    def _identifying(self) -> Optional[str]:
-        return self.id
 
     def dumps(self) -> Optional[bytes]:
         return pickle.dumps(self)
@@ -93,14 +106,17 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
     def loads(self, data: bytes) -> Any:
         return pickle.loads(data)
 
-    def pre_process(self) -> None:
-        ...
-
-    def post_process(self) -> None:
-        ...
-
     @abstractmethod
     def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
+        """
+        exec is a abstract method for execute action.
+
+        Parameters:
+            input (Optional[Input], optional): input. Defaults to None.
+
+        Returns:
+            Output: output
+        """
         ...
 
     @abstractmethod
@@ -111,6 +127,12 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         self.action_event(ActionState.Stopped)
 
     def action_error_event(self, e: Exception) -> None:
+        """
+        dispatch action error event
+
+        Parameters:
+            e (Exception): _description_
+        """
         dispatch_event(
             self.event_dispatcher,
             Event(
@@ -122,6 +144,14 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         )
 
     def action_event(self, state: ActionState, msg: str = "", data: Any = None) -> None:
+        """
+        dispatch action event
+
+        Parameters:
+            state (ActionState): action state
+            msg (str, optional): action custom description. Defaults to "".
+            data (Any, optional): action custom data. Defaults to None.
+        """
         dispatch_event(
             self.event_dispatcher,
             Event(

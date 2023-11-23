@@ -33,6 +33,10 @@ from qianfan.trainer.consts import (
     ModelTypeMapping,
     ServiceStatus,
 )
+from qianfan.trainer.model import (
+    Model,
+    Service
+)
 
 
 class LLMFinetune(Trainer):

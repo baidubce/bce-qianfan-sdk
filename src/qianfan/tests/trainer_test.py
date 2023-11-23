@@ -23,6 +23,7 @@ from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.consts import ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.model import Model, Service
 
 
 class MyEventHandler(EventHandler):
@@ -134,3 +135,12 @@ def test_trainer_sft_with_deploy():
     assert isinstance(res[0], dict)
     assert "service_endpoint" in res[0]
     assert len(eh.events) > 0
+
+
+def test_model_deploy():
+    svc = Model(id=1, version_id=1).deploy(
+        DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
+    )
+
+    resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
+    assert resp["result"] != ""

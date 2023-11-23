@@ -303,6 +303,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def __init__(
         self, deploy_config: Optional[DeployConfig] = None, **kwargs: Dict[str, Any]
     ):
+        """
+
+        Parameters:
+            deploy_config (Optional[DeployConfig], optional):
+                deploy config include replicas and so on. Defaults to None.
+        """
         super().__init__(kwargs=kwargs)
         self.deploy_config = deploy_config
 

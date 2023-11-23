@@ -121,4 +121,4 @@ def test_dataset_online_process():
     dataset = Dataset.load(source=qianfan_data_source)
     assert dataset.online_data_process(
         [FilterCheckNumberWords(number_words_min_cutoff=10)]
-    )
+    )["is_succeeded"]

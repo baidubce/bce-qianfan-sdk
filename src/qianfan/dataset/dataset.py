@@ -19,8 +19,9 @@ import csv
 import functools
 import io
 import json
+import uuid
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import pyarrow.json
 import requests
@@ -96,18 +97,14 @@ class Dataset(Table):
         )
 
         if format_type == FormatType.Json:
-            data_py_rep = json.loads(
-                str_content.replace("\r", "\\r").replace("\n", "\\n")
-            )
+            data_py_rep = json.loads(str_content)
             # 如果导入的是一个字典，则需要转换成列表才能被读取
             if not isinstance(data_py_rep, list):
                 data_py_rep = [data_py_rep]
             pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
         elif format_type == FormatType.Jsonl:
             json_data_list = [
-                json.loads(line.replace("\r", "\\r").replace("\n", "\\n"))
-                for line in str_content.split("\n")
-                if line
+                json.loads(line) for line in str_content.split("\n") if line
             ]
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
@@ -447,13 +444,13 @@ class Dataset(Table):
 
     def _create_a_dataset_etl_task(
         self, operator_dict: Dict[str, List[Dict[str, Any]]]
-    ) -> int:
+    ) -> Tuple[int, int]:
         origin_data_source = self.inner_data_source_cache
         assert isinstance(origin_data_source, QianfanDataSource)
 
         log_info("create a new dataset group and dataset")
         new_data_source = QianfanDataSource.create_bare_dataset(
-            name=f"{origin_data_source.name}_sdk_after_process",
+            name=f"{origin_data_source.name}_etl_result_set_{uuid.uuid4()}",
             template_type=origin_data_source.template_type,
             storage_type=origin_data_source.storage_type,
             storage_id=origin_data_source.storage_id,
@@ -462,6 +459,9 @@ class Dataset(Table):
             sk=origin_data_source.sk,
         )
 
+        log_debug(
+            f"new dataset id: {new_data_source.id} , and name: {new_data_source.name}"
+        )
         log_info("new dataset group and dataset created, start creating etl task")
 
         Data.create_dataset_etl_task(
@@ -492,11 +492,11 @@ class Dataset(Table):
             raise ValueError(message)
 
         log_info(f"created etl task id: {etl_id}")
-        return etl_id
+        return etl_id, new_data_source.id
 
     # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
     # 例如通过平台的 API 发起数据清洗任务
-    def online_data_process(self, operators: List[QianfanOperator]) -> bool:
+    def online_data_process(self, operators: List[QianfanOperator]) -> Dict[str, Any]:
         """
         create an online ETL task on qianfan
         not available currently
@@ -505,16 +505,27 @@ class Dataset(Table):
             operators (List[QianfanOperator]): operators applied to ETL task
 
         Returns:
-            bool: is ETL task succeeded
+            Dict[str, Any]: ETL task info, contains 3 field:
+                is_succeeded (bool): whether ETL task succeed
+                etl_task_id (Optional[int]): etl task id, only
+                    exists when etl task is created successfully
+                new_dataset_id (Optional[int]): dataset id which
+                    stores data after etl, only exists when etl
+                    task is succeeded
         """
+
+        ret_dict: Dict[str, Any] = {"is_succeeded": False}
+
         if not self._is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
-            return False
+            log_warn("can't process a non-qianfan dataset on qianfan")
+            return ret_dict
 
         if not self._is_dataset_generic_text():
             # 如果数据集不是泛文本，也不支持清洗
-            return False
+            log_warn("can't process qianfan dataset which isn't GenericText type")
+            return ret_dict
 
         operator_dict: Dict[str, List[Dict[str, Any]]] = {}
         for operator in operators:
@@ -530,13 +541,24 @@ class Dataset(Table):
 
             operator_dict[operator_type].append(elem_dict)
 
-        etl_id = self._create_a_dataset_etl_task(operator_dict)
+        log_debug(f"operator args dict: {operator_dict}")
+        log_info("start to creating an etl task")
+
+        etl_id, new_dataset_id = self._create_a_dataset_etl_task(operator_dict)
+
+        log_debug(f"get etl id {etl_id}")
+        log_info("creating etl task successfully")
+
+        ret_dict["etl_task_id"] = etl_id
+
         while True:
             sleep(get_config().ETL_STATUS_POLLING_INTERVAL)
             result = Data.get_dataset_etl_task_info(etl_id)["result"]
             if result["processStatus"] == ETLTaskStatus.Finished.value:
                 log_info(f"data etl task {etl_id} succeeded")
-                return True
+                ret_dict["is_succeeded"] = True
+                ret_dict["new_dataset_id"] = new_dataset_id
+                return ret_dict
             if result["processStatus"] == ETLTaskStatus.Running.value:
                 log_info(f"data etl task {etl_id} running, keep polling")
                 continue
@@ -551,9 +573,9 @@ class Dataset(Table):
                     f"etl task {etl_id} terminated with status code:"
                     f" {result['processStatus']}"
                 )
-                return False
+                return ret_dict
         log_error("should not reach there")
-        return False
+        return ret_dict
 
     # -------------------- Processable 相关 ----------------
     # 直接调用 Table 对象的接口方法
@@ -612,12 +634,9 @@ class Dataset(Table):
         return super().append(elem)
 
     # 等待接口 ready 才能对云端数据集做展示
-    @_online_except_decorator
     def list(
         self,
-        by: Optional[
-            Union[slice, int, str, List[int], Tuple[int], List[str], Tuple[str]]
-        ] = None,
+        by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -631,9 +650,11 @@ class Dataset(Table):
             Any: dataset row list
         """
         if not self._is_dataset_located_in_qianfan():
+            log_info(f"list local dataset data by {by}")
             return super().list(by)
         else:
             assert isinstance(self.inner_data_source_cache, QianfanDataSource)
+            log_info(f"list qianfan dataset data by {by}")
 
             if isinstance(by, str):
                 message = "can't get entity by string from qianfan"
@@ -648,14 +669,17 @@ class Dataset(Table):
 
             if isinstance(by, int):
                 args["offset"] = by
-                args["pageSize"] = 1
+                args["page_size"] = 1
             elif isinstance(by, slice):
                 args["offset"] = by.start
-                args["pageSize"] = by.stop - by.start
+                args["page_size"] = by.stop - by.start
 
+            log_debug(f"request qianfan dataset list args: {args}")
             resp = Data.list_all_entity_in_dataset(**{**kwargs, **args})["result"][
                 "items"
             ]
+            log_info("received dataset list from qianfan dataset")
+            log_debug(f"request qianfan dataset list response items: {resp}")
             result = [
                 {"entity_id": record["id"], "entity_url": record["url"]}
                 for record in resp
@@ -663,6 +687,9 @@ class Dataset(Table):
 
             for elem in result:
                 for i in range(get_config().GET_ENTITY_CONTENT_FAILED_RETRY_TIMES):
+                    log_info(
+                        f"retrieve single entity from {elem['entity_url']} in try {i}"
+                    )
                     resp = requests.get(elem["entity_url"])
                     if resp.status_code == 200:
                         break
@@ -676,16 +703,34 @@ class Dataset(Table):
                     log_error(message)
                     raise RequestError(message)
 
+                log_info(
+                    f"retrieve single entity from {elem['entity_url']} succeeded, with"
+                    f" content: {resp.text}"
+                )
                 elem.pop("entity_url")
-                elem["entity_content"] = resp.content
+                elem["entity_content"] = resp.text
 
             return result
 
     def __getitem__(self, key: Any) -> Any:
-        return self.list(key)
+        if (
+            isinstance(key, int)
+            or isinstance(key, slice)
+            or (isinstance(key, (list, tuple)) and key and isinstance(key[0], int))
+        ):
+            return self.list(key)
+        else:
+            return self.col_list(key)
 
     def __delitem__(self, key: Any) -> None:
-        self.delete(key)
+        if isinstance(key, int):
+            self.delete(key)
+        elif isinstance(key, str):
+            self.col_delete(key)
+        else:
+            err_msg = f"unsupported key type for deleting: {type(key)}"
+            log_error(err_msg)
+            raise TypeError(err_msg)
 
     # 列操作集
     @_online_except_decorator

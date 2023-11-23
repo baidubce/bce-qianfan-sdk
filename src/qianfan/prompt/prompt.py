@@ -13,11 +13,12 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import List, Literal, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console.prompt import Prompt as PromptResource
+from qianfan.resources.typing import Literal
 from qianfan.utils import log_warn
 
 

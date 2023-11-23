@@ -1356,6 +1356,84 @@ def prompt_delete():
 @app.route(Consts.PromptListAPI, methods=["POST"])
 @iam_auth_checker
 def prompt_list():
+    name = request.json.get("name", None)
+    if name is not None:
+        if "txt2img" in name:
+            return json_response(
+                {
+                    "log_id": "4235xa2mjupupcwe",
+                    "result": {
+                        "total": 239,
+                        "items": [
+                            {
+                                "templateId": 724,
+                                "templateName": name,
+                                "templateContent": "txt2img template {badvar} ((v1))",
+                                "templateVariables": "v1",
+                                "variableIdentifier": "(())",
+                                "negativeTemplateContent": "negative ((v3))",
+                                "negativeTemplateVariables": "v3",
+                                "labels": [
+                                    {
+                                        "labelId": 188,
+                                        "labelName": "图像生成",
+                                        "color": "#0099E6",
+                                    }
+                                ],
+                                "creatorName": "ut",
+                                "type": 1,
+                                "sceneType": 2,
+                                "frameworkType": 0,
+                            },
+                        ],
+                    },
+                    "status": 200,
+                    "success": True,
+                }
+            )
+        else:
+            return json_response(
+                {
+                    "log_id": "8cpba3jt9svbk81d",
+                    "result": {
+                        "total": 24,
+                        "items": [
+                            {
+                                "templateId": 11831,
+                                "templateName": "example_prompt",
+                                "templateContent": "template (v1) {v2} (v3)",
+                                "templateVariables": "v1",
+                                "variableIdentifier": "()",
+                                "labels": [],
+                                "creatorName": "ut",
+                                "type": 2,
+                                "sceneType": 1,
+                                "frameworkType": 2,
+                            },
+                            {
+                                "templateId": 11827,
+                                "templateName": name,
+                                "templateContent": "example template {var1}",
+                                "templateVariables": "var1",
+                                "variableIdentifier": "{}",
+                                "labels": [
+                                    {
+                                        "labelId": 150,
+                                        "labelName": "test",
+                                        "color": "#0099E6",
+                                    }
+                                ],
+                                "creatorName": "ut",
+                                "type": 2,
+                                "sceneType": 1,
+                                "frameworkType": 0,
+                            },
+                        ],
+                    },
+                    "status": 200,
+                    "success": True,
+                }
+            )
     return json_response(
         {
             "log_id": "4235xa2mjupupcwe",

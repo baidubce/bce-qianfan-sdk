@@ -13,29 +13,41 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
-from qianfan.components.hub.interface import HubSerializable
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
-from qianfan.errors import InvalidArgumentError
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console.prompt import Prompt as PromptResource
 from qianfan.utils import log_warn
 
 
 @dataclass
 class PromptLabel(object):
+    """
+    Class of prompt label
+    """
+
     id: int
+    """
+    id of the label
+    """
     name: str
+    """
+    name of the label
+    """
     color: str
+    """
+    the color displayed in the console
+    """
 
 
-class Prompt(HubSerializable):
+class Prompt(object):
     """
     Prompt
     """
 
     id: Optional[int] = None
-    name: str
+    name: Optional[str] = None
     template: str
     variables: List[str]
     identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]
@@ -50,8 +62,8 @@ class Prompt(HubSerializable):
 
     def __init__(
         self,
-        name: str,
         mode: Literal["local", "remote"] = "remote",
+        name: Optional[str] = None,
         template: Optional[str] = None,
         identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"] = "{}",
         variables: Optional[List[str]] = None,
@@ -63,9 +75,44 @@ class Prompt(HubSerializable):
         negative_variables: Optional[List[str]] = None,
         creator_name: Optional[str] = None,
     ) -> None:
+        """
+        Initializes a Prompt object.
+
+        Parameters:
+          mode (Literal["local", "remote"]):
+            The mode of the prompt, either "local" or "remote". Default is "remote".
+          name (Optional[str]):
+            The name of the prompt, required if mode is "remote".
+          template (Optional[str]):
+            The template string for the prompt, required if mode id "local".
+          identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):
+            The identifier format used in the template, e.g., "{}", "{{}}", "[]".
+          variables (Optional[List[str]]):
+            A list of variables used in the prompt template. SDK will extract them
+            if not specified.
+          labels (List[PromptLabel]):
+            A list of labels associated with the prompt.
+          type (PromptType):
+            The type of the prompt, e.g., PromptType.User.
+          scene_type (PromptSceneType):
+            The scene type of the prompt, e.g., PromptSceneType.Text2Text.
+          framework_type (PromptFrameworkType):
+            The framework type used in the prompt, e.g., PromptFrameworkType.Fewshot.
+          negative_template (Optional[str]):
+            The negative template string for the prompt.
+          negative_variables (Optional[List[str]]):
+            A list of variables used in the negative template. SDK will extract them
+            if not specified.
+          creator_name (Optional[str]):
+            The name of the creator of the prompt.
+        """
         self._mode = mode
         # in `remote` mode, the object is initialized by name
         if mode == "remote":
+            if name is None:
+                raise InvalidArgumentError(
+                    "name is required when initializing prompt in remote mode"
+                )
             self._init_by_remote(name)
             # if the object is initialized by remote
             # other input attributes will be ignored
@@ -85,7 +132,15 @@ class Prompt(HubSerializable):
             else:
                 self.variables = PromptResource._extract_variables(template, identifier)
             self.negative_template = negative_template
-            self.negative_variables = negative_variables
+            if self.negative_template is not None:
+                # if user does not provide negative varibles
+                # extract them from negative template
+                if self.negative_variables is not None:
+                    self.negative_variables = negative_variables
+                else:
+                    self.negative_variables = PromptResource._extract_variables(
+                        self.negative_template, identifier
+                    )
             self.creator_name = creator_name
         else:
             raise InvalidArgumentError(
@@ -93,6 +148,9 @@ class Prompt(HubSerializable):
             )
 
     def _init_by_remote(self, name: str) -> None:
+        """
+        Init the prompt from api by name.
+        """
         resp = PromptResource.list(name=name, type=PromptType.User)
         prompt_info = None
         # try to find the prompt in user prompts
@@ -114,7 +172,12 @@ class Prompt(HubSerializable):
         self.id = prompt_info["templateId"]
         self.name = prompt_info["templateName"]
         self.template = prompt_info["templateContent"]
-        self.variables = prompt_info["templateVariables"].split(",")
+        variables_str = prompt_info["templateVariables"]
+        # "".split(",") returns [""], which is not what we want
+        if variables_str == "":
+            self.variables = []
+        else:
+            self.variables = variables_str.split(",")
         self.labels = [
             PromptLabel(label["labelId"], label["labelName"], label["color"])
             for label in prompt_info["labels"]
@@ -126,16 +189,25 @@ class Prompt(HubSerializable):
         self.creator_name = prompt_info["creatorName"]
         if self.scene_type == PromptSceneType.Text2Image:
             self.negative_template = prompt_info["negativeTemplateContent"]
-            self.negative_variables = prompt_info["negativeTemplateVariables"].split(
-                ","
-            )
+            # sometimes negativeTemplateVariables is not set
+            if "negativeTemplateVariables" in prompt_info:
+                self.negative_variables = prompt_info[
+                    "negativeTemplateVariables"
+                ].split(",")
+            else:
+                self.negative_variables = []
 
     def upload(self) -> None:
         """
-        Upload the prompt to Qianfan.
+        Upload the prompt to Qianfan. If the prompt is local, it will create a new one
+        on the server. Otherwise, it will update the existing prompt.
         """
         # local prompt, create it
         if self._mode == "local" or self.id is None:
+            if self.name is None:
+                raise InvalidArgumentError(
+                    "name is required when uploading to the server"
+                )
             resp = PromptResource.create(
                 name=self.name,
                 template=self.template,
@@ -153,6 +225,8 @@ class Prompt(HubSerializable):
             self.id = resp["result"]["templateId"]
             self._mode = "remote"
         else:
+            if self.name is None:
+                raise InternalError("name should be set in remote mode")
             resp = PromptResource.update(
                 id=self.id,
                 name=self.name,
@@ -170,6 +244,11 @@ class Prompt(HubSerializable):
     def render(self, **kwargs: str) -> Tuple[str, Optional[str]]:
         """
         Render the prompt with given variables.
+
+        Parameters:
+          kwargs (Any):
+            The value of the variables to be used for variable replacement in the
+            template.
         """
         prompt = self.template
         left_id, right_id = PromptResource._split_identifier(self.identifier)
@@ -193,7 +272,7 @@ class Prompt(HubSerializable):
 
     def delete(self) -> None:
         """
-        Delete the prompo from Qianfan.
+        Delete the prompt from Qianfan.
         """
         if self._mode == "local" or self.id is None:
             log_warn("local prompt does not need to be deleted")
@@ -206,60 +285,30 @@ class Prompt(HubSerializable):
             raise InvalidArgumentError(
                 f"Failed to delete prompt: {resp['message']['global']}"
             )
+        self.id = None
+        self._mode = "local"
 
     def set_template(self, template: str) -> None:
         """
-        Set the prompt's template.
+        Set the prompt's template. The variables in the template will be extracted.
+
+        Parameters:
+          template (str):
+            The new template.
         """
         self.template = template
         self.variables = PromptResource._extract_variables(template, self.identifier)
 
     def set_negative_template(self, template: str) -> None:
         """
-        Set the prompt's negative template.
+        Set the prompt's negative template. The variables in the template will be
+        extracted.
+
+        Parameters:
+          template (str):
+            The new negative template.
         """
         self.negative_template = template
         self.negative_variables = PromptResource._extract_variables(
             template, self.identifier
         )
-
-    def _hub_serialize(self) -> Dict:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "template": self.template,
-            "identifier": self.identifier,
-            "labels": [
-                {"id": label.id, "name": label.name, "color": label.color}
-                for label in self.labels
-            ],
-            "type": self.type.value,
-            "sceneType": self.scene_type.value,
-            "frameworkType": self.framework_type.value,
-            "negativeTemplate": self.negative_template,
-            "negativeVariables": self.negative_variables,
-            "creatorName": self.creator_name,
-            "mode": self._mode,
-        }
-
-    @classmethod
-    def _hub_deserialize(cls, data: Dict) -> "Prompt":
-        p = Prompt(
-            mode="local",
-            name=data["name"],
-            template=data["template"],
-            identifier=data["identifier"],
-            labels=[
-                PromptLabel(id=label["id"], name=label["name"], color=label["color"])
-                for label in data["labels"]
-            ],
-            type=PromptType(data["type"]),
-            scene_type=PromptSceneType(data["sceneType"]),
-            framework_type=PromptFrameworkType(data["frameworkType"]),
-            negative_template=data["negativeTemplate"],
-            negative_variables=data["negativeVariables"],
-            creator_name=data["creatorName"],
-        )
-        p.id = data["id"]
-        p._mode = data["mode"]
-        return p

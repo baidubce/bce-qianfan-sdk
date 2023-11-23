@@ -23,7 +23,7 @@ from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.consts import ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
-from qianfan.trainer.model import Model, Service
+from qianfan.trainer.model import Model
 
 
 class MyEventHandler(EventHandler):

@@ -181,16 +181,11 @@ def test_load_and_save():
     """
     test load and save prompt
     """
-    # This is for compatibility with Windows
-    # On Windows, the file cannot be opened twice, so we cannot use
-    # NamedTemporaryFile()
-    _, tmp_file = tempfile.mkstemp()
-
     template = "test template {var1}"
-    prompt = Prompt(template=template, mode="local")
-    prompt.save_to_file(tmp_file)
-    new_prompt = Prompt.from_file(tmp_file)
-    assert new_prompt.template == template
-    assert new_prompt.render(var1="test") == prompt.render(var1="test")
-
-    os.remove(tmp_file)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_file = os.path.join(tmp_dir, "prompt.tpl")
+        prompt = Prompt(template=template, mode="local")
+        prompt.save_to_file(tmp_file)
+        new_prompt = Prompt.from_file(tmp_file)
+        assert new_prompt.template == template
+        assert new_prompt.render(var1="test") == prompt.render(var1="test")

@@ -30,6 +30,7 @@ from typing_extensions import Self
 from qianfan import get_config
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -47,6 +48,9 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
+from qianfan.dataset.utils import (
+    _construct_table_from_nest_sequence,
+)
 from qianfan.errors import RequestError, ValidationError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
@@ -109,11 +113,7 @@ class Dataset(Table):
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
             if isinstance(json_data_list[0], list):
-                inner_list: List[Dict[str, Any]] = []
-                for i in range(len(json_data_list)):
-                    for pair in json_data_list[i]:
-                        inner_list.append({**pair, QianfanDataGroupColumnName: i})
-                pyarrow_table = pyarrow.Table.from_pylist(inner_list)
+                pyarrow_table = _construct_table_from_nest_sequence(json_data_list)
             elif isinstance(json_data_list[0], dict):
                 # 如果读取的是一个 Json 字典的列表，则正常存储，此时行列的处理能力可用
                 pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
@@ -156,9 +156,17 @@ class Dataset(Table):
         elif format_type == FormatType.Jsonl:
             list_of_json: List[str] = []
 
-            # 如果是 Jsonl，则需要处理可能的分组情况
-            column_names = self.inner_table.column_names
-            if QianfanDataGroupColumnName in column_names:
+            # 如果是 Jsonl，则需要处理所有可能的情况
+            if self.is_data_packed():
+                log_info("enter packed deserialization logic")
+                data_list = self.col_list(QianfanDatasetPackColumnName)[
+                    QianfanDatasetPackColumnName
+                ]
+
+                for entity in data_list:
+                    list_of_json.append(json.dumps(entity, ensure_ascii=False))
+            elif self.is_data_grouped():
+                log_info("enter grouped deserialization logic")
                 compo_list: List[List[Dict[str, Any]]] = []
                 for row in self.inner_table.to_pylist():
                     group_index = row[QianfanDataGroupColumnName]
@@ -171,10 +179,12 @@ class Dataset(Table):
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
             elif isinstance(source, QianfanDataSource):
                 # 导出到千帆且非嵌套时需要使用特殊格式，只支持文本类数据
+                log_info("enter qianfan deserialization logic")
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(f"[{json.dumps(elem, ensure_ascii=False)}]")
             else:
+                log_info("enter else logic")
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
@@ -187,7 +197,7 @@ class Dataset(Table):
 
         elif format_type == FormatType.Text:
             # 导出为纯文本时，列的数量不可大于 1
-            if self.get_column_count() > 1:
+            if self.column_number() > 1:
                 error = ValueError(
                     "cannot export dataset to pure text if the number of column is"
                     " greater than 1"
@@ -241,25 +251,6 @@ class Dataset(Table):
         return None
 
     @classmethod
-    def _get_qianfan_schema(cls, source: QianfanDataSource) -> Schema:
-        """推断获取 Schema"""
-        template_type = source.template_type
-        if template_type == DataTemplateType.SortedConversation:
-            return QianfanSortedConversation()
-        if template_type == DataTemplateType.NonSortedConversation:
-            return QianfanSortedConversation()
-        if template_type == DataTemplateType.GenericText:
-            return QianfanGenericText()
-        if template_type == DataTemplateType.QuerySet:
-            return QianfanQuerySet()
-        if template_type == DataTemplateType.Text2Image:
-            return QianfanText2Image()
-
-        error = ValueError(f"schema didn't find for template type {template_type}")
-        log_error(str(error))
-        raise error
-
-    @classmethod
     def load(
         cls,
         source: Optional[DataSource] = None,
@@ -267,6 +258,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[int] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
+        organize_data_as_qianfan: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -285,9 +277,15 @@ class Dataset(Table):
                 qianfan dataset ID, default to None
             huggingface_name (Optional[str]):
                 Hugging Face dataset name, not available now
-            schema: (Optional[Schema]):
+            schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
-            kwargs (Any): optional arguments
+            organize_data_as_qianfan (bool):
+                only available when data source's format is
+                FormatType.Json. indicates whether
+                organize data within dataset in qianfan's format,
+                default to False, which means not, and
+                default format will be a group-based 2D structure.
+            **kwargs (Any): optional arguments
 
         Returns:
             Dataset: a dataset instance
@@ -311,6 +309,9 @@ class Dataset(Table):
             error = ValidationError("validate failed when initialize dataset")
             log_error(str(error))
             raise error
+
+        if source.format_type() == FormatType.Jsonl and organize_data_as_qianfan:
+            table.pack()
 
         return table
 
@@ -369,11 +370,11 @@ class Dataset(Table):
         # 如果导出的数据源是千帆，则强制构造 schema 进行检查，优先级最高
         if isinstance(source, QianfanDataSource):
             # 一个方法从 source 中抽取 schema 信息
-            schema = self._get_qianfan_schema(source)
+            schema = _get_qianfan_schema(source)
 
         # 校验
         if schema and not schema.validate(self):
-            error = ValidationError("validate failed when initialize dataset")
+            error = ValidationError("validate failed when save dataset")
             log_error(str(error))
             raise error
 
@@ -622,16 +623,30 @@ class Dataset(Table):
     # 但是在云上数据集追加数据未来可以支持，本质是向数据集中导入新数据。
     # 目前不做修改，等待接口 ready
     @_online_except_decorator
-    def append(self, elem: Any) -> Self:
+    def append(
+        self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
+    ) -> Self:
         """
         append an element to dataset
 
         Args:
-            elem (Union[List[Dict], Tuple[Dict], Dict]): elements added to dataset
+            elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
+            add_new_group (bool):
+                Whether elem has a new group id.
+                Only used when dataset is grouped.
+            is_grouped (bool):
+                Are element in elem in same group.
+                Only used when dataset is grouped and elem is Sequence
+                and add_new_group was set True.
+                Default to True, all elements
+                will be in same group.
+                If it's True, each element will have
+                sequential incremental group id from last
+                available group id.
         Returns:
             Self: Dataset itself
         """
-        return super().append(elem)
+        return super().append(elem, add_new_group, is_grouped)
 
     def list(
         self,
@@ -813,3 +828,22 @@ class Dataset(Table):
             List[str]: column name list
         """
         return super().col_names()
+
+
+def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
+    """推断获取 Schema"""
+    template_type = source.template_type
+    if template_type == DataTemplateType.SortedConversation:
+        return QianfanSortedConversation()
+    if template_type == DataTemplateType.NonSortedConversation:
+        return QianfanSortedConversation()
+    if template_type == DataTemplateType.GenericText:
+        return QianfanGenericText()
+    if template_type == DataTemplateType.QuerySet:
+        return QianfanQuerySet()
+    if template_type == DataTemplateType.Text2Image:
+        return QianfanText2Image()
+
+    error = ValueError(f"schema didn't find for template type {template_type}")
+    log_error(str(error))
+    raise error

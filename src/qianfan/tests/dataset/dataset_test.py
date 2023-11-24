@@ -24,6 +24,7 @@ from qianfan.dataset.data_operator import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
+    QianfanGenericText,
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
@@ -112,6 +113,14 @@ def test_dataset_create():
         dataset_5.save(schema=QianfanNonSortedConversation())
     with pytest.raises(Exception):
         dataset_5.save(schema=QianfanSortedConversation())
+
+    fake_data_source_6 = FakeDataSource(
+        origin_data="this\nis\nmulti\nline\ndata", format=FormatType.Text
+    )
+    dataset_6 = Dataset.load(fake_data_source_6)
+    dataset_6.save(schema=QianfanGenericText())
+
+    assert fake_data_source_6.origin_data == fake_data_source_6.buffer
 
 
 def test_dataset_online_process():

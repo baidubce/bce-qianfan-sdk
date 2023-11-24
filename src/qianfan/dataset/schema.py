@@ -15,11 +15,28 @@
 schema for validation
 currently qianfan schema only
 """
-
+import functools
 from abc import ABC, abstractmethod
+from typing import Any, Callable
 
 from qianfan.dataset.table import Table
-from qianfan.utils import log_error
+from qianfan.utils import log_error, log_info
+
+
+def _data_format_converter(func: Callable) -> Callable:
+    @functools.wraps(func)
+    def inner(schema: Schema, table: Table, *args: Any, **kwargs: Any) -> bool:
+        if table.is_data_packed():
+            log_info("unpack dataset before validating")
+            table.unpack()
+            result = func(schema, table, *args, **kwargs)
+            log_info("pack dataset after validation")
+            table.pack()
+            return result
+
+        return func(schema, table, *args, **kwargs)
+
+    return inner
 
 
 class Schema(ABC):
@@ -53,6 +70,7 @@ class QianfanSchema(Schema):
 class QianfanNonSortedConversation(QianfanSchema):
     """validator for non-sorted, conversational dataset"""
 
+    @_data_format_converter
     def validate(self, table: Table) -> bool:
         """
         validate a table
@@ -63,7 +81,7 @@ class QianfanNonSortedConversation(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
-        if table.get_row_count() == 0:
+        if table.row_number() == 0:
             log_error("no data in table")
             return False
 
@@ -94,7 +112,11 @@ class QianfanNonSortedConversation(QianfanSchema):
                 ):
                     log_error(
                         f"response illegal in dataset row {index}. response data:"
-                        f" {response_record}"
+                        f" {response_record}\n"
+                        "for accurate dataset format, please check"
+                        "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/yliu6bqzw"
+                        "#%E6%9C%89%E6%A0%87%E6%B3%A8%E4%BF%A1%E6%81%AF"
+                        "-%E6%9C%AC%E5%9C%B0%E5%AF%BC%E5%85%A5"
                     )
                     return False
 
@@ -106,6 +128,7 @@ class QianfanNonSortedConversation(QianfanSchema):
 class QianfanSortedConversation(QianfanSchema):
     """validator for sorted, conversational dataset"""
 
+    @_data_format_converter
     def validate(self, table: Table) -> bool:
         """
         validate a table
@@ -116,7 +139,7 @@ class QianfanSortedConversation(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
-        if table.get_row_count() == 0:
+        if table.row_number() == 0:
             log_error("no data in table")
             return False
 
@@ -153,6 +176,10 @@ class QianfanSortedConversation(QianfanSchema):
                         log_error(
                             f"response illegal in dataset row {index}. response data:"
                             f" {response_record}"
+                            "for accurate dataset format, please check"
+                            "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/yliu6bqzw"
+                            "#%E6%9C%89%E6%A0%87%E6%B3%A8%E4%BF%A1%E6%81%AF"
+                            "-%E6%9C%AC%E5%9C%B0%E5%AF%BC%E5%85%A5"
                         )
                         return False
 
@@ -174,7 +201,7 @@ class QianfanGenericText(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
-        if table.get_row_count() == 0:
+        if table.row_number() == 0:
             log_error("no data in table")
             return False
 
@@ -194,6 +221,7 @@ class QianfanGenericText(QianfanSchema):
 class QianfanQuerySet(QianfanSchema):
     """validator for query set dataset"""
 
+    @_data_format_converter
     def validate(self, table: Table) -> bool:
         """
         validate a table
@@ -204,7 +232,7 @@ class QianfanQuerySet(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
-        if table.get_row_count() == 0:
+        if table.row_number() == 0:
             log_error("no data in table")
             return False
 

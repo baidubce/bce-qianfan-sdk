@@ -11,15 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
-constants for dataset using
+utilities dataset needs
 """
 
-# 千帆数据集本地缓存文件夹的相对路径
-QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
+from typing import Any, Dict, List, Sequence
 
-# 包装成单列表时使用的列名
-QianfanDatasetPackColumnName = "_pack"
+import pyarrow
 
-# 分组时应用的列名
-QianfanDataGroupColumnName = "_group"
+from qianfan.dataset.consts import QianfanDataGroupColumnName
+
+
+def _construct_table_from_nest_sequence(json_data_list: Sequence) -> pyarrow.Table:
+    inner_list: List[Dict[str, Any]] = []
+    for i in range(len(json_data_list)):
+        for pair in json_data_list[i]:
+            inner_list.append({**pair, QianfanDataGroupColumnName: i})
+    return pyarrow.Table.from_pylist(inner_list)

@@ -182,6 +182,11 @@ class FileDataSource(DataSource, BaseModel):
         Returns:
             str: A string containing the data read from the file.
         """
+        # 检查文件是否存在且非目录
+        if not os.path.exists(self.path):
+            raise ValueError("file path not found")
+        if os.path.isdir(self.path):
+            raise ValueError("cannot read from folder")
         with open(self.path, mode="r") as file:
             return file.read()
 
@@ -223,12 +228,6 @@ class FileDataSource(DataSource, BaseModel):
             return self
 
         try:
-            # 检查文件是否存在且非目录
-            if not os.path.exists(self.path):
-                raise ValueError("file path not found")
-            if os.path.isdir(self.path):
-                raise ValueError("cannot read from folder")
-
             index = self.path.rfind(".")
             # 查询不到的情况下默认使用纯文本格式
             if index == -1:

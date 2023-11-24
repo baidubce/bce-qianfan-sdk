@@ -20,6 +20,10 @@ from typing import Any, Dict
 import pyarrow
 import pytest
 
+from qianfan.dataset.consts import (
+    QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
+)
 from qianfan.dataset.table import Table
 
 
@@ -47,8 +51,8 @@ def test_list_row():
     table = Table(
         inner_table=pyarrow.Table.from_pydict({"a": [1, 2, 3], "b": ["a", "b", "c"]})
     )
-    assert table.list(0) == [{"a": 1, "b": "a"}]
-    assert table.list(1) == [{"a": 2, "b": "b"}]
+    assert table.list(0) == {"a": 1, "b": "a"}
+    assert table.list(1) == {"a": 2, "b": "b"}
     assert table.list([1, 2]) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
     assert table.list((1, 2)) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
     assert table.list(slice(1, 3)) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
@@ -100,7 +104,7 @@ def test_filter_row():
         return row["age"] > 25
 
     filtered_table = table.filter(op)
-    assert filtered_table.get_row_count() == 2
+    assert filtered_table.row_number() == 2
 
     def mis_op(row):
         return row["age"]
@@ -152,7 +156,9 @@ def test_append_column():
         table.col_append({"name": "test", "data": ["abc"]})
 
     table.col_append({"name": "test", "data": ["a", "b", "c", "d"]})
-    table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
+
+    with pytest.raises(ValueError):
+        table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
 
 
 def test_list_column():
@@ -224,3 +230,150 @@ def test_delete_column():
         "x": [1, 2, 3, 4],
         "z": ["1", "2", "3", "4"],
     }
+
+
+def test_unpack_table():
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    table = Table(inner_table=pyarrow.Table.from_pydict(packed_table))
+
+    assert table.unpack()
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+    assert table.list() == unpacked_inner_table
+
+
+def test_pack_table():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    assert table.pack()
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    packed_row_table = [
+        {
+            QianfanDatasetPackColumnName: [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ]
+        },
+        {QianfanDatasetPackColumnName: [{"column1": "data1", "column2": "data2"}]},
+    ]
+
+    assert table.col_list() == packed_table
+    assert table.list() == packed_row_table
+
+
+def test_packed_dataset_append():
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    table = Table(inner_table=pyarrow.Table.from_pydict(packed_table))
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.row_number() == 3
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ]
+    )
+    assert table.row_number() == 4
+
+    new_table_element = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+            [{"column1": "data1", "column2": "data2"}],
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+        ]
+    }
+
+    assert table.col_list() == new_table_element
+
+
+def test_grouped_dataset_append():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.list()[-1][QianfanDataGroupColumnName] == 1
+
+    table.append(elem={"column1": "data1", "column2": "data2"}, add_new_group=True)
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ]
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+    assert table.list()[-2][QianfanDataGroupColumnName] == 2
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        add_new_group=True,
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 3
+    assert table.list()[-2][QianfanDataGroupColumnName] == 3
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        add_new_group=True,
+        is_grouped=False,
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 5
+    assert table.list()[-2][QianfanDataGroupColumnName] == 4

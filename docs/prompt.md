@@ -11,7 +11,7 @@ SDK 提供了 `Prompt` 类，可以方便快速地使用千帆的 Prompt 能力�
 可以通过如下方式引用
 
 ```
-from qianfan.prompt import Prompt
+from qianfan.components import Prompt
 ```
 
 ### 快速使用
@@ -94,6 +94,19 @@ print(p.render(new_var="hello")) # => 新的 Prompt hello
 ```python
 p = Prompt(name="cookbook_prompt")
 p.delete()
+```
+
+### 保存&加载
+
+SDK 提供了 `save_to_file` 方法，可以将 Prompt 保存保存至本地。 再次使用时，只需要通过 `from_file` 方法即可读取 Prompt。
+
+```python
+p = Prompt(template="这是一个用于{usage}的 Prompt")
+p.save_to_file("test_prompt.tpl")
+
+p = Prompt.from_file("test_prompt.tpl")
+prompt, _ = p.render(usage="测试")
+print(prompt) # => 这是一个用于测试的 Prompt
 ```
 
 ## Prompt 接口

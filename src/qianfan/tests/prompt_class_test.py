@@ -16,8 +16,10 @@
     Unit test for Prompt
 """
 
+import tempfile
+
+from qianfan.components import Prompt
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
-from qianfan.prompt import Prompt
 
 
 def test_init_remote_prompt():
@@ -172,3 +174,16 @@ def test_delete():
     prompt.delete()
     assert prompt.id is None
     assert prompt._mode == "local"
+
+
+def test_load_and_save():
+    """
+    test load and save prompt
+    """
+    template = "test template {var1}"
+    with tempfile.NamedTemporaryFile() as f:
+        prompt = Prompt(template=template, mode="local")
+        prompt.save_to_file(f.name)
+        new_prompt = Prompt.from_file(f.name)
+        assert new_prompt.template == template
+        assert new_prompt.render(var1="test") == prompt.render(var1="test")

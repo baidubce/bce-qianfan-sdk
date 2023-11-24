@@ -82,6 +82,7 @@ class Prompt(object):
         Parameters:
           mode (Literal["local", "remote"]):
             The mode of the prompt, either "local" or "remote". Default is "remote".
+            If "name" is not provided, the mode will be "local".
           name (Optional[str]):
             The name of the prompt, required if mode is "remote".
           template (Optional[str]):
@@ -107,6 +108,9 @@ class Prompt(object):
           creator_name (Optional[str]):
             The name of the creator of the prompt.
         """
+        # if name is not provided, the mode will be `local`
+        if name is None:
+            mode = "local"
         self._mode = mode
         # in `remote` mode, the object is initialized by name
         if mode == "remote":
@@ -197,6 +201,37 @@ class Prompt(object):
                 ].split(",")
             else:
                 self.negative_variables = []
+
+    @classmethod
+    def from_file(
+        cls,
+        path: str,
+        identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"] = "{}",
+    ) -> "Prompt":
+        """
+        Create a Prompt object from file. The file should only contain the
+        prompt template.
+
+        Parameters:
+          path (str):
+            The path of the prompt file.
+          identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):
+            The identifier of the prompt.
+        """
+        with open(path, "r") as f:
+            content = f.read()
+        return cls(template=content, identifier=identifier, mode="local")
+
+    def save_to_file(self, path: str) -> None:
+        """
+        Save the prompt template to file.
+
+        Parameters:
+          path (str):
+            The path of the prompt file.
+        """
+        with open(path, "w") as f:
+            f.write(self.template)
 
     def upload(self) -> None:
         """

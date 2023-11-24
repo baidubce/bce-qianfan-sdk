@@ -14,6 +14,8 @@
 """utils for logging
 """
 import logging
+import sys
+from functools import partial
 from typing import Any
 
 
@@ -59,7 +61,7 @@ class Logger(object):
             None
 
         """
-        return self._logger.info(message, stacklevel=2, *args, **params)
+        return self._logger.info(message, *args, **params)
 
     def debug(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -71,7 +73,7 @@ class Logger(object):
         Returns:
             None
         """
-        self._logger.debug(message, stacklevel=2, *args, **params)
+        self._logger.debug(message, *args, **params)
 
     def error(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -83,7 +85,7 @@ class Logger(object):
         Returns:
             None
         """
-        self._logger.error(message, stacklevel=2, *args, **params)
+        self._logger.error(message, *args, **params)
 
     def warn(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -96,15 +98,22 @@ class Logger(object):
             None
 
         """
-        self._logger.warning(message, stacklevel=2, *args, **params)
+        self._logger.warning(message, *args, **params)
 
 
 logger = Logger()
 
-log_info = logger.info
-log_debug = logger.debug
-log_error = logger.error
-log_warn = logger.warn
+# only Python 3.8+ support stacklevel
+if sys.version_info <= (3, 7):
+    log_info = logger.info
+    log_debug = logger.debug
+    log_error = logger.error
+    log_warn = logger.warn
+else:
+    log_info = partial(logger.info, stacklevel=2)
+    log_debug = partial(logger.debug, stacklevel=2)
+    log_error = partial(logger.error, stacklevel=2)
+    log_warn = partial(logger.warn, stacklevel=2)
 
 
 def enable_log(log_level: int = logging.INFO) -> None:

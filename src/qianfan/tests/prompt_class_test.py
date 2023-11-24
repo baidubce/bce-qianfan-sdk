@@ -185,7 +185,7 @@ def test_load_and_save():
     # On Windows, the file cannot be opened twice, so we cannot use
     # NamedTemporaryFile()
     _, tmp_file = tempfile.mkstemp()
-    
+
     template = "test template {var1}"
     prompt = Prompt(template=template, mode="local")
     prompt.save_to_file(tmp_file)

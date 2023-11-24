@@ -16,8 +16,8 @@
     Unit test for Prompt
 """
 
-import tempfile
 import os
+import tempfile
 
 from qianfan.components import Prompt
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType

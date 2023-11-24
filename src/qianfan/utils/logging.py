@@ -104,7 +104,7 @@ class Logger(object):
 logger = Logger()
 
 # only Python 3.8+ support stacklevel
-if sys.version_info <= (3, 7):
+if sys.version_info < (3, 8):
     log_info = logger.info
     log_debug = logger.debug
     log_error = logger.error

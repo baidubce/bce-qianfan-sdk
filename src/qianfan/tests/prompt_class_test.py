@@ -17,6 +17,7 @@
 """
 
 import tempfile
+import os
 
 from qianfan.components import Prompt
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
@@ -180,10 +181,16 @@ def test_load_and_save():
     """
     test load and save prompt
     """
+    # This is for compatibility with Windows
+    # On Windows, the file cannot be opened twice, so we cannot use
+    # NamedTemporaryFile()
+    _, tmp_file = tempfile.mkstemp()
+    
     template = "test template {var1}"
-    with tempfile.NamedTemporaryFile() as f:
-        prompt = Prompt(template=template, mode="local")
-        prompt.save_to_file(f.name)
-        new_prompt = Prompt.from_file(f.name)
-        assert new_prompt.template == template
-        assert new_prompt.render(var1="test") == prompt.render(var1="test")
+    prompt = Prompt(template=template, mode="local")
+    prompt.save_to_file(tmp_file)
+    new_prompt = Prompt.from_file(tmp_file)
+    assert new_prompt.template == template
+    assert new_prompt.render(var1="test") == prompt.render(var1="test")
+
+    os.remove(tmp_file)

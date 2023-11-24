@@ -59,7 +59,7 @@ class Logger(object):
             None
 
         """
-        return self._logger.info(message, *args, **params)
+        return self._logger.info(message, stacklevel=2, *args, **params)
 
     def debug(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -71,7 +71,7 @@ class Logger(object):
         Returns:
             None
         """
-        self._logger.debug(message, *args, **params)
+        self._logger.debug(message, stacklevel=2, *args, **params)
 
     def error(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -83,7 +83,7 @@ class Logger(object):
         Returns:
             None
         """
-        self._logger.error(message, *args, **params)
+        self._logger.error(message, stacklevel=2, *args, **params)
 
     def warn(self, message: object, *args: object, **params: Any) -> None:
         """
@@ -96,7 +96,7 @@ class Logger(object):
             None
 
         """
-        self._logger.warning(message, *args, **params)
+        self._logger.warning(message, stacklevel=2, *args, **params)
 
 
 logger = Logger()

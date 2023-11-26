@@ -21,6 +21,66 @@
     + 使用千帆平台校验规则
     + 自行编写校验规则
 
+
+# 快速开始
+
+如果用户想要快速上手数据集相关能力，可按照下列三步进行操作。
+
+## 创建数据集
+
+创建数据集最简单的方法，就是从本地文件创建、或从千帆平台导出
+
+```python
+from qianfan.dataset import Dataset
+
+# 从本地文件导入
+dataset = Dataset.load(data_file="path/to/dataset_file.jsonl")
+
+# 从千帆导入
+dataset = Dataset.load(qianfan_dataset_id=42)
+```
+
+## 处理数据集
+
+当你已经创建好数据集后，就可以对数据进行处理了。
+
+```python
+from typing import Dict, Any
+
+def filter_func(row: Dict[str, Any]) -> bool:
+  # 编写你的过滤逻辑
+  return row["col1"] > 0.5 and row["col2"] < 3
+
+def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
+  # 编写你的映射逻辑
+  return {
+    "col1": row["col1"] + 0.5,
+    "col2": row["col2"] * 0.5,
+  }
+
+print(dataset.filter(filter_func).map(map_func).list())
+```
+
+## 导出数据集
+
+处理完数据集后，你可以将数据集导出到本地文件、或上传到千帆平台。
+
+```python
+# 导出到本地文件
+dataset.save(data_file="path/to/local_file.csv")
+
+# 导出到千帆平台
+# 请确认导出的千帆数据集使用的是私有 BOS 存储
+dataset.save(qianfan_dataset_id=56)
+
+# 或者导出到它导入的地方
+dataset.save()
+```
+
+恭喜你，已经学会了如何使用千帆 Python SDK 的数据集相关能力。
+
+接下来将会更加细致的讲解各个模块和功能点之间的作用
+
 # 数据集管理
 
 千帆 Python SDK 现支持用户通过 SDK 对本地或千帆平台的数据集进行管理，以及通过多种方式创建数据集。
@@ -88,8 +148,7 @@ dataset.save(
 创建和使用文件数据源的方式如下所示：
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FileDataSource
+from qianfan.dataset import Dataset, FileDataSource
 
 file_source = FileDataSource(path="local_file.json")
 dataset = Dataset.load(file_source)
@@ -97,8 +156,7 @@ dataset = Dataset.load(file_source)
 
 `FileDataSource` 同样支持用户传递 `file_format` 自己手动指定文件类型
 
-```python
-from qianfan.dataset.data_source import FileDataSource, FormatType
+```python, FileDataSource, FormatType
 
 file_source = FileDataSource(
   path="local_file",
@@ -109,8 +167,8 @@ file_source = FileDataSource(
 文件数据源同样可以作为 `save` 的参数，来指定导出的文件路径
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FileDataSource, FormatType
+from qianfan.dataset import Dataset, FileDataSource
+from qianfan.dataset.data_source import FormatType
 
 file_source = FileDataSource(
   path="local_file",
@@ -176,8 +234,8 @@ dataset_qianfan.save()
 和从文件系统导入一致，千帆 Python SDK 也同样内置了千帆数据源，用作数据集 `load` 或者 `save` 操作的入参。目前 SDK 支持用户在本地全新创建一个千帆数据源，代表在千帆平台上创建一个新的数据集组，默认包含一个数据集；或者在本地创建一个千帆数据源以代表平台上已经存在的数据集。
 
 ```python
+from qianfan.dataset import DataTemplateType
 from qianfan.dataset.data_source import QianfanDataSource
-from qianfan.resources.console.consts import DataTemplateType
 
 # 创建一个映射到已存在的数据集的千帆数据源
 data_source = QianfanDataSource.get_existed_dataset(32591)
@@ -202,6 +260,31 @@ from qianfan.dataset import Dataset
 pyobj_dataset = Dataset.create_from_pyobj([{"column_name1": "column_data1"}])
 pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
 ```
+
+## 包装与拆分
+
+除此之外，当用户选择导入一个 jsonl 格式的文件，或者导入的是千帆平台的对话类数据集、Query 数据集时，SDK 支持传入 `organize_data_as_qianfan` 参数，来指定将数据集组织成千帆平台的对应格式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
+
+```python
+dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_qianfan=True)
+```
+
+设置 `organize_data_as_qianfan=True` 或使用 `pack()` 函数得到的千帆平台的数据集格式如下所示
+
+| _pack |
+|----|
+| [{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response": [["12"]]}]   |
+| [{"prompt": "34", "response": [["34"]]}]  |
+
+使用 `unpack()` 函数得到的展开后的格式
+
+| prompt | response | _group |
+|--------|----------|--------|
+| 12     | [["12"]] | 0      |
+| 12     | [["12"]] | 0      |
+| 34     | [["34"]] | 1      |
+
+其中 `_group` 列表示数据集的分组信息。
 
 # 数据集处理
 
@@ -281,7 +364,7 @@ print(dataset.col_list(0))
 print(dataset.col_list([0, 2]))
 
 # 取指定列名的列
-print(dataset.list(["column_name1", "column_name3"])
+print(dataset.col_list(["column_name1", "column_name3"]))
 ```
 
 如果用户使用的是列名字符串来查找列，那么上面的例子同样也可以使用 `[]` 来改写：
@@ -300,7 +383,7 @@ print(dataset["column_name1"])
 
 
 # 取指定列名列表的列
-print(dataset[["column_name1", "column_name3"]]
+print(dataset[["column_name1", "column_name3"]])
 ```
 
 ### 千帆数据集预览
@@ -316,10 +399,10 @@ from qianfan.dataset import Dataset
 dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 
 # 单独检视某一实体
-print(dataset[0])
+print(dataset_qianfan[0])
 
 # 检视某一区间内的实体
-print(dataset[slice(0, 2)])
+print(dataset_qianfan[slice(0, 2)])
 ```
 
 ## 数据集清洗
@@ -339,10 +422,10 @@ dataset = Dataset.create_from_pyobj([{
   "column_name3": "column_data3",
 }])
 
-dataset = dataset.filter(lambda obj: obj["column_name1"] == "column_data1")
-								.filter(filter_func)
-  							.filter(...)
-    						.map(...)
+dataset = dataset.filter(lambda obj: obj["column_name1"] == "column_data1") \
+								.filter(filter_func) \
+  							.filter(...) \
+    						.map(...) \
       					.append(({
                     "column_name1": "column_data1",
                     "column_name2": "column_data2",
@@ -391,7 +474,7 @@ dataset_qianfan = Dataset.load(qianfan_dataset_id=42, schema=schema)
 # 则默认使用 load 的 schema 进行校验
 # 额外传入则会覆盖原有的 schema，
 # 使用新的 schema 进行校验
-dataset.save(schema=schema)
+dataset_qianfan.save(schema=schema)
 
 # 单独使用
 schema.validate(dataset_qianfan)
@@ -402,6 +485,7 @@ schema.validate(dataset_qianfan)
 用户可以编写派生自 `Schema` 的子类，实现自己的校验逻辑
 
 ```python
+from qianfan.dataset import Table
 from qianfan.dataset.schema import Schema
 
 class YourSchema(Schema):

@@ -141,10 +141,10 @@ print(resp['result'])
 ```
 
 #### **删除数据清洗任务**
-删除某一数据清洗任务，需要提供数据清洗任务 ID `etl_id` 。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Glp6iu8ny)
+删除某一数据清洗任务，需要提供数据清洗任务 ID 列表 `etl_ids` 。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Glp6iu8ny)
 
 ```python
-resp = Data.delete_dataset_etl_task(12)
+resp = Data.delete_dataset_etl_task([12])
 print(resp['result'])
 ```
 
@@ -153,6 +153,7 @@ print(resp['result'])
 
 ```python
 resp = Data.create_dataset_augmenting_task(
+    "name_of_aug_task",
     12,
     34,
     "ERNIE-Bot",
@@ -190,12 +191,12 @@ print(resp['result'])
 ```
 
 #### **实体标注**
-对数据集中的某一实体进行标注，需要提供数据集 ID `dataset_id` ，实体 ID `entity_id` ，标注内容 `content` 或图片标签 `labels`。详细方法和返回参数参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlp6izcqr) 
+对数据集中的某一实体进行标注，需要提供实体 ID `entity_id` ，数据集 ID `dataset_id` ，标注内容 `content` 或图片标签 `labels`。详细方法和返回参数参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlp6izcqr) 
 
 ```python
 resp = Data.annotate_an_entity(
-    12,
     "48dc586f7eb638457b826c02c1b868ef8ac8911b495504625a1ac824f9d38ff8_5f9ac12ca15e4c9c9351174942865e5a",
+    12,
      [{
         "prompt": "请根据下面的新闻生成摘要, 内容如下:一辆小轿车，一名女司机，竟造成9死24伤。日前，深圳市交警局对事故进行通报：从目前证据看，事故系司机超速行驶且操作不当导致。目前24名伤员已有6名治愈出院，其余正接受治疗，预计事故赔偿费或超一千万元。\n生成摘要如下:",
         "response": [
@@ -208,10 +209,10 @@ print(resp['result'])
 ```
 
 #### **删除实体**
-使用实体 ID 删除数据集中的实体，需要提供数据集 ID `dataset_id` 和实体 ID 列表 `entity_ids` 。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilp6j1rse)
+使用实体 ID 删除数据集中的实体，需要提供实体 ID 列表 `entity_ids` 和数据集 ID `dataset_id` 。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilp6j1rse)
 
 ```python
-resp = Data.delete_an_entity(12, ["48dc586f7eb638457b826c02c1b868ef8ac8911b495504625a1ac824f9d38ff8_5f9ac12ca15e4c9c9351174942865e5a"])
+resp = Data.delete_an_entity(["48dc586f7eb638457b826c02c1b868ef8ac8911b495504625a1ac824f9d38ff8_5f9ac12ca15e4c9c9351174942865e5a"], 12)
 print(resp['result'])
 ```
 

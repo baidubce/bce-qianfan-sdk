@@ -359,6 +359,7 @@ class Dataset(Table):
                 qianfan_dataset_id,
                 qianfan_dataset_create_args,
                 huggingface_name,
+                is_download_to_local=False,
                 **kwargs,
             )
 

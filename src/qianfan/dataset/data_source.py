@@ -310,6 +310,9 @@ class QianfanDataSource(DataSource, BaseModel):
         data: str,
         is_annotated: bool = False,
         does_release: bool = False,
+        sup_storage_id: str = "",
+        sup_storage_path: str = "",
+        sup_storage_region: str = "",
         **kwargs: Any,
     ) -> bool:
         """
@@ -320,78 +323,114 @@ class QianfanDataSource(DataSource, BaseModel):
          Args:
             data (str): data waiting to be uploaded。
             is_annotated (bool): has data been annotated, default to False
-            does_release (bool): does release dataset
-            after saving successfully, default to False
+            does_release (bool):
+                does release dataset
+                after saving successfully,
+                default to False
+            sup_storage_id (Optional[str]):
+                bos bucket name used for uploading,
+                we recommend to use this parameter
+                when your destination dataset on qianfan
+                is stored in public BOS.
+                Default to empty str
+            sup_storage_path (Optional[str]):
+                bos bucket file path used for uploading,
+                we recommend to use this parameter
+                when your destination dataset on qianfan
+                is stored in public BOS.
+                Default to empty str
+            sup_storage_region (Optional[str]):
+                bos bucket region used for uploading,
+                we recommend to use this parameter
+                when your destination dataset on qianfan
+                is stored in public BOS.
+                Default to empty str
             **kwargs (Any): optional arguments。
 
         Returns:
             bool: has data been uploaded successfully
         """
 
-        if self.storage_type == DataStorageType.PublicBos:
-            raise NotImplementedError()
+        if sup_storage_id and sup_storage_path and sup_storage_region:
+            storage_id = sup_storage_id
+            storage_path = sup_storage_path
+            storage_region = sup_storage_region
         elif self.storage_type == DataStorageType.PrivateBos:
-            suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
-            file_path = f"{self.storage_raw_path}data_{uuid.uuid4()}.{suffix}"
+            storage_id = self.storage_id
 
-            ak = self.ak if self.ak else get_config().ACCESS_KEY
-            sk = self.sk if self.sk else get_config().SECRET_KEY
-            if not ak:
-                log_warn("no ak was provided when upload data to user BOS")
+            assert self.storage_raw_path
+            storage_path = self.storage_raw_path
+
+            assert self.storage_region
+            storage_region = self.storage_region
+        elif self.storage_type == DataStorageType.PublicBos:
+            raise NotImplementedError()
+        else:
+            err_msg = "can't get storage info for uploading to qianfan"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
+        file_path = f"{storage_path}data_{uuid.uuid4()}.{suffix}"
+
+        ak = self.ak if self.ak else get_config().ACCESS_KEY
+        sk = self.sk if self.sk else get_config().SECRET_KEY
+        if not ak:
+            log_warn("no ak was provided when upload data to user BOS")
+            return False
+        if not sk:
+            log_warn("no sk was provided when upload data to user BOS")
+            return False
+
+        if not storage_region:
+            log_warn("no region was provided when upload data to user BOS")
+            return False
+
+        log_info("start to upload data to user BOS")
+        log_debug(
+            f"bucket path: {file_path} bucket name: {storage_id} bos region:"
+            f" {storage_region}"
+        )
+        upload_content_to_bos(
+            data,
+            file_path,
+            storage_id,
+            storage_region,
+            ak,
+            sk,
+        )
+        log_info("uploading data to user BOS finished")
+
+        Data.create_data_import_task(
+            self.id,
+            is_annotated,
+            DataSourceType.PrivateBos,
+            generate_bos_file_path(storage_id, file_path),
+        )
+
+        log_info("successfully create importing task")
+        while True:
+            sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
+            log_info("polling import task status")
+            qianfan_resp = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+            status = qianfan_resp["importStatus"]
+            if status in [
+                DataImportStatus.NotStarted.value,
+                DataImportStatus.Running.value,
+            ]:
+                log_info(f"import status: {status}, keep polling")
+                continue
+            elif status == DataImportStatus.Finished.value:
+                log_info("import succeed")
+                break
+            else:
+                log_error(f"import failed with status {status}")
                 return False
-            if not sk:
-                log_warn("no sk was provided when upload data to user BOS")
-                return False
 
-            if not self.storage_region:
-                log_warn("no region was provided when upload data to user BOS")
-                return False
-
-            log_info("start to upload data to user BOS")
-            log_debug(
-                f"bucket path: {file_path} bucket name: {self.storage_id} bos region:"
-                f" {self.storage_region}"
-            )
-            upload_content_to_bos(
-                data,
-                file_path,
-                self.storage_id,
-                self.storage_region,
-                ak,
-                sk,
-            )
-            log_info("uploading data to user BOS finished")
-
-            Data.create_data_import_task(
-                self.id,
-                is_annotated,
-                DataSourceType.PrivateBos,
-                generate_bos_file_path(self.storage_id, file_path),
-            )
-
-            log_info("successfully create importing task")
-            while True:
-                sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
-                log_info("polling import task status")
-                qianfan_resp = Data.get_dataset_info(self.id)["result"]["versionInfo"]
-                status = qianfan_resp["importStatus"]
-                if status in [
-                    DataImportStatus.NotStarted.value,
-                    DataImportStatus.Running.value,
-                ]:
-                    log_info(f"import status: {status}, keep polling")
-                    continue
-                elif status == DataImportStatus.Finished.value:
-                    log_info("import succeed")
-                    break
-                else:
-                    log_error(f"import failed with status {status}")
-                    return False
-
-            if does_release:
-                log_info("release after saving starts")
-                return self.release_dataset()
-            return True
+        if does_release:
+            log_info("release after saving starts")
+            return self.release_dataset()
+        return True
 
     async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
         """

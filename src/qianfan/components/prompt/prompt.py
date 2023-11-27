@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from qianfan.components.hub import HubSerializable
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console.prompt import Prompt as PromptResource
@@ -23,7 +24,7 @@ from qianfan.utils import log_warn
 
 
 @dataclass
-class PromptLabel(object):
+class PromptLabel(HubSerializable):
     """
     Class of prompt label
     """
@@ -42,7 +43,7 @@ class PromptLabel(object):
     """
 
 
-class Prompt(object):
+class Prompt(HubSerializable):
     """
     Prompt
     """
@@ -348,3 +349,21 @@ class Prompt(object):
         self.negative_variables = PromptResource._extract_variables(
             template, self.identifier
         )
+
+    def _hub_serialize(self) -> Dict[str, Any]:
+        """
+        Implement `HubSerializable` protocol.
+        Convert the prompt to a dictionary that can be used for serialization.
+        """
+        dic = super()._hub_serialize()
+        del dic["args"]["_mode"]
+        del dic["args"]["id"]
+        return dic
+
+    @classmethod
+    def _hub_deserialize(cls, dic: Dict[str, Any]) -> "Prompt":
+        """
+        Implement `HubSerializable` protocol.
+        Convert a dictionary to a prompt.
+        """
+        return cls(mode="local", **dic)

@@ -1404,7 +1404,13 @@ def prompt_list():
                                 "templateContent": "template (v1) {v2} (v3)",
                                 "templateVariables": "v1",
                                 "variableIdentifier": "()",
-                                "labels": [],
+                                "labels": [
+                                    {
+                                        "labelId": 150,
+                                        "labelName": "test_label",
+                                        "color": "#0099E6",
+                                    }
+                                ],
                                 "creatorName": "ut",
                                 "type": 2,
                                 "sceneType": 1,

@@ -167,6 +167,7 @@ class Dataset(Table):
                     list_of_json.append(json.dumps(entity, ensure_ascii=False))
             elif self.is_data_grouped():
                 log_info("enter grouped deserialization logic")
+                self._squash_group_number()
                 compo_list: List[List[Dict[str, Any]]] = []
                 for row in self.inner_table.to_pylist():
                     group_index = row[QianfanDataGroupColumnName]
@@ -653,6 +654,7 @@ class Dataset(Table):
         self,
         elem: Any,
         index: Any,
+        group_id: int = -1,
         add_new_group: bool = False,
         is_grouped: bool = True,
     ) -> Self:
@@ -662,9 +664,14 @@ class Dataset(Table):
         Args:
             elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
             index (int): where to insert element(s)
+            group_id (int):
+                which group id you want to apply to new element(s).
+                Default to -1, which means let group id be automatically
+                inferred from table.
             add_new_group (bool):
                 Whether elem has a new group id.
-                Only used when dataset is grouped.
+                Only used when dataset is grouped
+                and group_id is -1
             is_grouped (bool):
                 Are element in elem in same group.
                 Only used when dataset is grouped and elem is Sequence

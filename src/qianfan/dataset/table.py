@@ -32,7 +32,72 @@ from qianfan.dataset.process_interface import (
     Processable,
 )
 from qianfan.dataset.utils import _construct_table_from_nest_sequence
-from qianfan.utils import log_debug, log_error, log_info
+from qianfan.utils import log_debug, log_error, log_info, log_warn
+
+
+def _create_new_table_for_add(
+    elem: Union[List[Dict], Tuple[Dict], Dict],
+    is_dataset_packed: bool = False,
+    add_new_group: bool = False,
+    is_grouped: bool = True,
+    group_id: int = -1,
+    **kwargs: Any,
+) -> PyarrowTable:
+    if isinstance(elem, (list, tuple)):
+        log_info("add a sequence object to table")
+        if not elem:
+            err_msg = "element is empty"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+        elif not isinstance(elem[0], dict):
+            err_msg = (
+                "element in sequence-like "
+                "container cannot be instance of"
+                f" {type(elem[0])}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        log_debug(f"append row data: {elem}")
+
+        if is_dataset_packed:
+            log_info("enter packed appending logic")
+            return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
+
+        # TODO 是否需要做深拷贝？
+        tables: List = list(elem)
+
+        if group_id != -1:
+            log_info("enter grouped appending logic")
+
+            if not add_new_group:
+                for table in tables:
+                    table[QianfanDataGroupColumnName] = group_id
+            elif is_grouped:
+                for table in tables:
+                    table[QianfanDataGroupColumnName] = group_id + 1
+            else:
+                for i in range(len(tables)):
+                    table = tables[i]
+                    table[QianfanDataGroupColumnName] = group_id + i + 1
+
+            log_debug(f"row data after processing: {table}")
+        return pyarrow.Table.from_pylist(tables)
+
+    elif isinstance(elem, dict):
+        log_info("add a dict object to table")
+        if is_dataset_packed:
+            elem = {QianfanDatasetPackColumnName: [elem]}
+        elif group_id != -1:
+            elem[QianfanDataGroupColumnName] = group_id + (1 if add_new_group else 0)
+
+        log_debug(f"row data after processing: {elem}")
+        return pyarrow.Table.from_pylist([elem])
+
+    else:
+        err_msg = f"element cannot be instance of {type(elem)}"
+        log_error(err_msg)
+        raise ValueError(err_msg)
 
 
 class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
@@ -42,73 +107,6 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         arbitrary_types_allowed = True
 
     table: PyarrowTable
-
-    def _create_new_table_for_add(
-        self,
-        elem: Union[List[Dict], Tuple[Dict], Dict],
-        is_dataset_packed: bool = False,
-        add_new_group: bool = False,
-        is_grouped: bool = True,
-        group_id: int = -1,
-        **kwargs: Any,
-    ) -> PyarrowTable:
-        if isinstance(elem, (list, tuple)):
-            log_info("add a sequence object to table")
-            if not elem:
-                err_msg = "element is empty"
-                log_error(err_msg)
-                raise ValueError(err_msg)
-            elif not isinstance(elem[0], dict):
-                err_msg = (
-                    "element in sequence-like "
-                    "container cannot be instance of"
-                    f" {type(elem[0])}"
-                )
-                log_error(err_msg)
-                raise ValueError(err_msg)
-
-            log_debug(f"append row data: {elem}")
-
-            if is_dataset_packed:
-                log_info("enter packed appending logic")
-                return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
-
-            # TODO 是否需要做深拷贝？
-            tables: List = list(elem)
-
-            if group_id != -1:
-                log_info("enter grouped appending logic")
-
-                if not add_new_group:
-                    for table in tables:
-                        table[QianfanDataGroupColumnName] = group_id
-                elif is_grouped:
-                    for table in tables:
-                        table[QianfanDataGroupColumnName] = group_id + 1
-                else:
-                    for i in range(len(tables)):
-                        table = tables[i]
-                        table[QianfanDataGroupColumnName] = group_id + i + 1
-
-                log_debug(f"row data after processing: {table}")
-            return pyarrow.Table.from_pylist(tables)
-
-        elif isinstance(elem, dict):
-            log_info("add a dict object to table")
-            if is_dataset_packed:
-                elem = {QianfanDatasetPackColumnName: [elem]}
-            elif group_id != -1:
-                elem[QianfanDataGroupColumnName] = group_id + (
-                    1 if add_new_group else 0
-                )
-
-            log_debug(f"row data after processing: {elem}")
-            return pyarrow.Table.from_pylist([elem])
-
-        else:
-            err_msg = f"element cannot be instance of {type(elem)}"
-            log_error(err_msg)
-            raise ValueError(err_msg)
 
     def append(
         self,
@@ -137,7 +135,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         return pyarrow.concat_tables(
             [
                 self.table,
-                self._create_new_table_for_add(
+                _create_new_table_for_add(
                     elem,
                     is_dataset_packed,
                     add_new_group,
@@ -185,7 +183,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 elem, is_dataset_packed, add_new_group, is_grouped, group_id, **kwargs
             )
 
-        new_table = self._create_new_table_for_add(
+        new_table = _create_new_table_for_add(
             elem, is_dataset_packed, add_new_group, is_grouped, group_id, **kwargs
         )
 
@@ -482,6 +480,34 @@ class Table(BaseModel, Addable, Listable, Processable):
         col_names = self.col_names()
         return QianfanDataGroupColumnName in col_names
 
+    def _squash_group_number(self) -> None:
+        if not self.is_data_grouped():
+            log_warn("squash group number when table isn't grouped")
+            return
+        self.inner_table = self.inner_table.sort_by(QianfanDataGroupColumnName)
+        group_column_list = self.col_list(QianfanDataGroupColumnName)[
+            QianfanDataGroupColumnName
+        ]
+
+        last_appeared_number = group_column_list[0]
+        current_group_number = 0
+        new_group_column_list = [0]
+
+        for i in range(1, len(group_column_list)):
+            num = group_column_list[i]
+            if num != last_appeared_number:
+                last_appeared_number = num
+                current_group_number += 1
+
+            new_group_column_list.append(current_group_number)
+
+        self.col_delete(QianfanDataGroupColumnName)
+        self.col_append(
+            {"name": QianfanDataGroupColumnName, "data": new_group_column_list}
+        )
+
+        return
+
     def pack(self) -> bool:
         """
         pack all group into 1 row
@@ -501,6 +527,8 @@ class Table(BaseModel, Addable, Listable, Processable):
         if self.inner_table.column(QianfanDataGroupColumnName).null_count:
             log_error("can't pack a dataset when column '_group' has None")
             return False
+
+        self._squash_group_number()
 
         inner_index = "_index"
         group_ordered_table: pyarrow.Table = self.inner_table.append_column(
@@ -607,20 +635,28 @@ class Table(BaseModel, Addable, Listable, Processable):
         return self
 
     def _calculate_kwargs_for_add(
-        self, add_new_group: bool = False, is_grouped: bool = True
+        self, add_new_group: bool = False, is_grouped: bool = True, group_id: int = -1
     ) -> Dict[str, Any]:
         kwargs: Dict[str, Any] = {}
         if self.is_data_grouped():
+            if group_id != -1:
+                kwargs = {
+                    "group_id": group_id - 1,
+                    "add_new_group": True,
+                    "is_grouped": is_grouped,
+                }
+                return kwargs
+
             group_column: pyarrow.ChunkedArray = self.inner_table.column(
                 QianfanDataGroupColumnName
             )
-            group_id = pc.max(group_column, min_count=0).as_py()
+            calculated_group_id = pc.max(group_column, min_count=0).as_py()
             kwargs = {
-                "group_id": group_id,
+                "group_id": calculated_group_id,
                 "add_new_group": add_new_group,
                 "is_grouped": is_grouped,
             }
-        if self.is_data_packed():
+        elif self.is_data_packed():
             kwargs = {"is_dataset_packed": True}
 
         return kwargs
@@ -659,6 +695,7 @@ class Table(BaseModel, Addable, Listable, Processable):
         self,
         elem: Any,
         index: Any,
+        group_id: int = -1,
         add_new_group: bool = False,
         is_grouped: bool = True,
     ) -> Self:
@@ -668,9 +705,14 @@ class Table(BaseModel, Addable, Listable, Processable):
         Args:
             elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to pyarrow table
             index (int): where to insert element(s)
+            group_id (int):
+                which group id you want to apply to new element(s).
+                Default to -1, which means let group id be automatically
+                inferred from table.
             add_new_group (bool):
                 Whether elem has a new group id.
-                Only used when table is grouped.
+                Only used when table is grouped
+                and group_id is -1
             is_grouped (bool):
                 Are element in elem in same group.
                 Only used when table is grouped and elem is Sequence
@@ -686,7 +728,9 @@ class Table(BaseModel, Addable, Listable, Processable):
         manipulator = self._row_op()
 
         self.inner_table = manipulator.insert(
-            elem, index, **self._calculate_kwargs_for_add(add_new_group, is_grouped)
+            elem,
+            index,
+            **self._calculate_kwargs_for_add(add_new_group, is_grouped, group_id),
         )
         return self
 

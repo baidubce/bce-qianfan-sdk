@@ -422,3 +422,35 @@ def test_grouped_dataset_append():
     )
     assert table.list()[-1][QianfanDataGroupColumnName] == 5
     assert table.list()[-2][QianfanDataGroupColumnName] == 4
+
+
+def test_insert_group_data():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    table.insert(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        index=1,
+        group_id=12,
+        add_new_group=False,
+        is_grouped=False,
+    )
+
+    new_table_list = table.to_pylist()
+    assert new_table_list[1][QianfanDataGroupColumnName] == 12
+    assert new_table_list[2][QianfanDataGroupColumnName] == 13
+
+    table.pack()
+    table.unpack()
+
+    group_col = table.col_list(QianfanDataGroupColumnName)[QianfanDataGroupColumnName]
+
+    assert max(group_col) == 3

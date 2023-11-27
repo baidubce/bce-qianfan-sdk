@@ -49,13 +49,13 @@ from typing import Dict, Any
 
 def filter_func(row: Dict[str, Any]) -> bool:
   # 编写你的过滤逻辑
-  return row["col1"] > 0.5 and row["col2"] < 3
+  return "sensitive data for example" not in row["col1"]
 
 def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
   # 编写你的映射逻辑
   return {
-    "col1": row["col1"] + 0.5,
-    "col2": row["col2"] * 0.5,
+    "col1": row["col1"].replace("sensitive data for example", ""),
+    "col2": row["col2"]
   }
 
 print(dataset.filter(filter_func).map(map_func).list())
@@ -213,10 +213,21 @@ dataset_qianfan.list()
 
 用户可以将数据集导出到千帆平台的数据集中，千帆 Python SDK 支持两种导出方式：
 
-+ 一种导出方式是导出到一个全新的千帆平台数据集当中：填写 `save` 函数 `qianfan_dataset_create_args` 参数。该参数是一个字典，里面包含了用于创建千帆数据集所需的所有参数。具体参数列表请查看  `QianfanDataSource.create_bare_dataset` 方法。
++ 一种导出方式是导出到一个全新的千帆平台数据集当中：填写 `save` 函数 `qianfan_dataset_create_args` 参数。该参数是一个字典，里面包含了用于创建千帆数据集所需的所有参数。
+
+  主要的参数包括：
+  + name: 千帆平台数据集名称
+  + template_type: 千帆平台数据集模板类型
+  + storage_type: 千帆平台数据集存储类型
 
 ```python
-dataset_qianfan.save(qianfan_dataset_create_args={})
+dataset_qianfan.save(
+  qianfan_dataset_create_args={
+    "name": "example_name",
+    "template_type": DataTemplateType.NonSortedConversation,
+    "storage_type": DataStorageType.PublicBos
+  }
+)
 ```
 
 + 另一种导出方式是增量导出到已经存在的数据集当中：填写 `save` 函数的 `qianfan_dataset_id` 参数（和 `load` 方法一致）。如果是导出到原本导入的数据集，则可以忽略 `qianfan_dataset_id` 参数。
@@ -422,15 +433,16 @@ dataset = Dataset.create_from_pyobj([{
   "column_name3": "column_data3",
 }])
 
-dataset = dataset.filter(lambda obj: obj["column_name1"] == "column_data1") \
-								.filter(filter_func) \
-  							.filter(...) \
-    						.map(...) \
-      					.append(({
-                    "column_name1": "column_data1",
-                    "column_name2": "column_data2",
-                    "column_name3": "column_data3",
-                  }))
+dataset = dataset \
+  .filter(lambda obj: obj["column_name1"] == "column_data1") \
+  .filter(filter_func) \
+  .filter(...) \
+  .map(...) \
+  .append(({
+    "column_name1": "column_data1",
+    "column_name2": "column_data2",
+    "column_name3": "column_data3",
+  }))
 ```
 
 ### 千帆平台的在线数据处理

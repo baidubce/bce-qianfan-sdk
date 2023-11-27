@@ -27,7 +27,7 @@ from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,
 )
 from qianfan.dataset.process_interface import (
-    Appendable,
+    Addable,
     Listable,
     Processable,
 )
@@ -35,7 +35,7 @@ from qianfan.dataset.utils import _construct_table_from_nest_sequence
 from qianfan.utils import log_debug, log_error, log_info
 
 
-class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
+class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table row"""
 
     class Config:
@@ -43,7 +43,7 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
 
     table: PyarrowTable
 
-    def append(
+    def _create_new_table_for_add(
         self,
         elem: Union[List[Dict], Tuple[Dict], Dict],
         is_dataset_packed: bool = False,
@@ -51,21 +51,7 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
         is_grouped: bool = True,
         group_id: int = -1,
         **kwargs: Any,
-    ) -> Self:
-        """
-        append an element to pyarrow table
-
-        Args:
-            elem (Union[List[Dict], Tuple[Dict], Dict]): elements added to pyarrow table
-            is_dataset_packed (bool): whether table is packed, default to False.
-            add_new_group (bool): whether elem has new group id, default to False.
-            is_grouped (bool): whether elem is grouped, default to True.
-            group_id (int): new group id, default to -1.
-            **kwargs (Any): optional arguments
-        Returns:
-            Self: a new pyarrow table
-        """
-
+    ) -> PyarrowTable:
         if isinstance(elem, (list, tuple)):
             log_info("add a sequence object to table")
             if not elem:
@@ -85,9 +71,7 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
 
             if is_dataset_packed:
                 log_info("enter packed appending logic")
-                table_dict = self.table.to_pydict()
-                table_dict[QianfanDatasetPackColumnName].append(elem)
-                return pyarrow.Table.from_pydict(table_dict)
+                return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
 
             # TODO 是否需要做深拷贝？
             tables: List = list(elem)
@@ -107,9 +91,7 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
                         table[QianfanDataGroupColumnName] = group_id + i + 1
 
                 log_debug(f"row data after processing: {table}")
-            return pyarrow.concat_tables(
-                [self.table, pyarrow.Table.from_pylist(tables)], promote=True
-            )
+            return pyarrow.Table.from_pylist(tables)
 
         elif isinstance(elem, dict):
             log_info("add a dict object to table")
@@ -121,14 +103,100 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
                 )
 
             log_debug(f"row data after processing: {elem}")
-            new_table = pyarrow.Table.from_pylist([elem])
-            return pyarrow.concat_tables([self.table, new_table], promote=True)
+            return pyarrow.Table.from_pylist([elem])
 
         else:
             err_msg = f"element cannot be instance of {type(elem)}"
             log_error(err_msg)
             raise ValueError(err_msg)
-        return self.table
+
+    def append(
+        self,
+        elem: Union[List[Dict], Tuple[Dict], Dict],
+        is_dataset_packed: bool = False,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+        group_id: int = -1,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        append element(s) to pyarrow table
+
+        Args:
+            elem (Union[List[Dict], Tuple[Dict], Dict]):
+                element(s) added to pyarrow table
+            is_dataset_packed (bool): whether table is packed, default to False.
+            add_new_group (bool): whether elem has new group id, default to False.
+            is_grouped (bool): whether elem is grouped, default to True.
+            group_id (int): new group id, default to -1.
+            **kwargs (Any): optional arguments
+        Returns:
+            Self: a new pyarrow table
+        """
+
+        return pyarrow.concat_tables(
+            [
+                self.table,
+                self._create_new_table_for_add(
+                    elem,
+                    is_dataset_packed,
+                    add_new_group,
+                    is_grouped,
+                    group_id,
+                    **kwargs,
+                ),
+            ],
+            promote=True,
+        )
+
+    def insert(
+        self,
+        elem: Union[List[Dict], Tuple[Dict], Dict],
+        index: int,
+        is_dataset_packed: bool = False,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+        group_id: int = -1,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        insert element(s) to pyarrow table
+
+        Args:
+            elem (Union[List[Dict], Tuple[Dict], Dict]):
+                element(s) added to pyarrow table
+            index (int): where to insert element(s).
+            is_dataset_packed (bool): whether table is packed, default to False.
+            add_new_group (bool): whether elem has new group id, default to False.
+            is_grouped (bool): whether elem is grouped, default to True.
+            group_id (int): new group id, default to -1.
+            **kwargs (Any): optional arguments
+        Returns:
+            Self: a new pyarrow table
+        """
+        table_length = self.table.num_rows
+        if index < 0 or index > table_length:
+            err_msg = f"can't insert element at {index}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if index == table_length:
+            return self.append(
+                elem, is_dataset_packed, add_new_group, is_grouped, group_id, **kwargs
+            )
+
+        new_table = self._create_new_table_for_add(
+            elem, is_dataset_packed, add_new_group, is_grouped, group_id, **kwargs
+        )
+
+        if index == 0:
+            return pyarrow.concat_tables([new_table, self.table], promote=True)
+
+        table_front_part = self.table.slice(length=index)
+        table_rear_part = self.table.slice(index)
+        return pyarrow.concat_tables(
+            [table_front_part, new_table, table_rear_part], promote=True
+        )
 
     def list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
@@ -240,7 +308,7 @@ class _PyarrowRowManipulator(BaseModel, Appendable, Listable, Processable):
         )
 
 
-class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
+class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table column"""
 
     class Config:
@@ -281,6 +349,30 @@ class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
                 f" {len(elem['data'])}"
             )
         return self.table.append_column(elem["name"], [elem["data"]])
+
+    def insert(self, elem: Dict[str, List], index: int) -> Self:
+        """
+        insert a row to pyarrow table
+
+        Args:
+            elem (Dict[str, List]): dict containing element added to pyarrow table
+                must has column name "name" and column data list "data"
+            index (int): where to insert new column
+
+        Returns:
+            Self: a new pyarrow table
+        """
+
+        col_length = self.table.num_columns
+        if index < 0 or index > col_length:
+            err_msg = f"can't insert column at {index}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if index == col_length:
+            return self.append(elem)
+
+        return self.table.add_column(index, elem["name"], [elem["data"]])
 
     def list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
@@ -365,7 +457,7 @@ class _PyarrowColumnManipulator(BaseModel, Appendable, Listable, Processable):
         return self.table.drop_columns(index)
 
 
-class Table(BaseModel, Appendable, Listable, Processable):
+class Table(BaseModel, Addable, Listable, Processable):
     """
     dataset representation on memory
     inherited from pyarrow.Table，implementing interface in process_interface.py
@@ -514,6 +606,25 @@ class Table(BaseModel, Appendable, Listable, Processable):
         self.inner_table = manipulator.delete(index)
         return self
 
+    def _calculate_kwargs_for_add(
+        self, add_new_group: bool = False, is_grouped: bool = True
+    ) -> Dict[str, Any]:
+        kwargs: Dict[str, Any] = {}
+        if self.is_data_grouped():
+            group_column: pyarrow.ChunkedArray = self.inner_table.column(
+                QianfanDataGroupColumnName
+            )
+            group_id = pc.max(group_column, min_count=0).as_py()
+            kwargs = {
+                "group_id": group_id,
+                "add_new_group": add_new_group,
+                "is_grouped": is_grouped,
+            }
+        if self.is_data_packed():
+            kwargs = {"is_dataset_packed": True}
+
+        return kwargs
+
     def append(
         self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
     ) -> Self:
@@ -539,21 +650,44 @@ class Table(BaseModel, Appendable, Listable, Processable):
         """
         manipulator = self._row_op()
 
-        kwargs: Dict[str, Any] = {}
-        if self.is_data_grouped():
-            group_column: pyarrow.ChunkedArray = self.inner_table.column(
-                QianfanDataGroupColumnName
-            )
-            group_id = pc.max(group_column, min_count=0).as_py()
-            kwargs = {
-                "group_id": group_id,
-                "add_new_group": add_new_group,
-                "is_grouped": is_grouped,
-            }
-        if self.is_data_packed():
-            kwargs = {"is_dataset_packed": True}
+        self.inner_table = manipulator.append(
+            elem, **self._calculate_kwargs_for_add(add_new_group, is_grouped)
+        )
+        return self
 
-        self.inner_table = manipulator.append(elem, **kwargs)
+    def insert(
+        self,
+        elem: Any,
+        index: Any,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+    ) -> Self:
+        """
+        insert an element to pyarrow table
+
+        Args:
+            elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to pyarrow table
+            index (int): where to insert element(s)
+            add_new_group (bool):
+                Whether elem has a new group id.
+                Only used when table is grouped.
+            is_grouped (bool):
+                Are element in elem in same group.
+                Only used when table is grouped and elem is Sequence
+                and add_new_group was set True.
+                Default to True, all elements
+                will be in same group.
+                If it's True, each element will have
+                sequential incremental group id from last
+                available group id.
+        Returns:
+            Self: Table itself
+        """
+        manipulator = self._row_op()
+
+        self.inner_table = manipulator.insert(
+            elem, index, **self._calculate_kwargs_for_add(add_new_group, is_grouped)
+        )
         return self
 
     def list(
@@ -626,6 +760,21 @@ class Table(BaseModel, Appendable, Listable, Processable):
         """
         manipulator = self._col_op()
         self.inner_table = manipulator.append(elem)
+        return self
+
+    def col_insert(self, elem: Any, index: Any) -> Self:
+        """
+        append a row to pyarrow table
+
+        Args:
+            elem (Dict[str, List]): dict containing element added to pyarrow table
+                must has column name "name" and column data list "data"
+            index (int): where to insert new column
+        Returns:
+            Self: Table itself
+        """
+        manipulator = self._col_op()
+        self.inner_table = manipulator.insert(elem, index)
         return self
 
     def col_list(

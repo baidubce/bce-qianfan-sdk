@@ -627,7 +627,7 @@ class Dataset(Table):
         self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
     ) -> Self:
         """
-        append an element to dataset
+        append element(s) to dataset
 
         Args:
             elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
@@ -647,6 +647,37 @@ class Dataset(Table):
             Self: Dataset itself
         """
         return super().append(elem, add_new_group, is_grouped)
+
+    @_online_except_decorator
+    def insert(
+        self,
+        elem: Any,
+        index: Any,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+    ) -> Self:
+        """
+        insert element(s) to dataset
+
+        Args:
+            elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
+            index (int): where to insert element(s)
+            add_new_group (bool):
+                Whether elem has a new group id.
+                Only used when dataset is grouped.
+            is_grouped (bool):
+                Are element in elem in same group.
+                Only used when dataset is grouped and elem is Sequence
+                and add_new_group was set True.
+                Default to True, all elements
+                will be in same group.
+                If it's True, each element will have
+                sequential incremental group id from last
+                available group id.
+        Returns:
+            Self: Dataset itself
+        """
+        return super().insert(elem, index, add_new_group, is_grouped)
 
     def list(
         self,
@@ -794,6 +825,20 @@ class Dataset(Table):
         Args:
             elem (Dict[str, List]): dict containing element added to dataset
                 must has column name "name" and column data list "data"
+        Returns:
+            Self: Dataset itself
+        """
+        return super().col_append(elem)
+
+    @_online_except_decorator
+    def col_insert(self, elem: Any, index: Any) -> Self:
+        """
+        append a row to dataset
+
+        Args:
+            elem (Dict[str, List]): dict containing element added to dataset
+                must has column name "name" and column data list "data"
+            index (int): where to insert new column
         Returns:
             Self: Dataset itself
         """

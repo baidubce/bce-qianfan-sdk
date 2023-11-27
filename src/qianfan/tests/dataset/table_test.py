@@ -47,6 +47,43 @@ def test_append_row():
     assert len(table.list()) == 5
 
 
+def test_insert_row():
+    table = Table(
+        inner_table=pyarrow.Table.from_pylist(
+            [{"name": "duck", "age": 3}, {"name": "monkey", "age": 24}]
+        )
+    )
+
+    with pytest.raises(ValueError):
+        table.append(["not a dict"])
+
+    with pytest.raises(ValueError):
+        table.append(123)
+
+    new_row = {"name": "tiger", "age": 5}
+
+    with pytest.raises(ValueError):
+        table.insert(new_row, -1)
+
+    with pytest.raises(ValueError):
+        table.insert(new_row, 3)
+
+    table.insert(new_row, 1)
+    assert len(table.list()) == 3
+
+    new_rows = [{"name": "pig", "age": 6}, {"name": "pig", "age": 6}]
+    table.insert(new_rows, 1)
+    assert len(table.list()) == 5
+
+    assert table.list() == [
+        {"name": "duck", "age": 3},
+        {"name": "pig", "age": 6},
+        {"name": "pig", "age": 6},
+        {"name": "tiger", "age": 5},
+        {"name": "monkey", "age": 24},
+    ]
+
+
 def test_list_row():
     table = Table(
         inner_table=pyarrow.Table.from_pydict({"a": [1, 2, 3], "b": ["a", "b", "c"]})
@@ -159,6 +196,14 @@ def test_append_column():
 
     with pytest.raises(ValueError):
         table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
+
+
+def test_insert_column():
+    table = Table(inner_table=pyarrow.Table.from_pydict({"x": [1, 2, 3, 4]}))
+    table.col_insert({"name": "test", "data": ["a", "b", "c", "d"]}, 0)
+    table.col_insert({"name": "another_col", "data": [0, 0, 0, 0]}, 0)
+
+    assert table.column_number() == 3
 
 
 def test_list_column():

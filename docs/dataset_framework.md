@@ -422,7 +422,7 @@ print(dataset_qianfan[slice(0, 2)])
 
 ### 本地数据集清洗
 
-在创建 `Dataset` 后，用户可以使用 `map` ，`filter` ，`append` ，`delete` 等函数对行进行修改；也可以使用 `col_map` ，`col_filter` ，`col_append` ，`col_delete` 等函数对列进行修改。以上函数都支持链式调用。
+在创建 `Dataset` 后，用户可以使用 `map` ，`filter` ，`append`，`insert` ，`delete` 等函数对行进行修改；也可以使用 `col_map` ，`col_filter` ，`col_append` ，`col_delete` 等函数对列进行修改。以上函数都支持链式调用。
 
 ```python
 from qianfan.dataset import Dataset

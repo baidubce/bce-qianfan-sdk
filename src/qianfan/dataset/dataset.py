@@ -219,6 +219,7 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
+        bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
@@ -243,6 +244,13 @@ class Dataset(Table):
                 f" {qianfan_dataset_create_args}, with args: {kwargs}"
             )
             return QianfanDataSource.create_bare_dataset(**qianfan_dataset_create_args)
+
+        if bos_load_args:
+            log_info(
+                "construct a new qianfan data source from bos loading:"
+                f" {bos_load_args}, with args: {kwargs}"
+            )
+            return QianfanDataSource.create_from_bos_file(**bos_load_args)
         if huggingface_name:
             error = ValueError("huggingface not supported yet")
             log_error(str(error))
@@ -257,6 +265,7 @@ class Dataset(Table):
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
+        bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
         organize_data_as_qianfan: bool = False,
@@ -276,6 +285,9 @@ class Dataset(Table):
                 dataset local file path, default to None
             qianfan_dataset_id (Optional[int]):
                 qianfan dataset ID, default to None
+            bos_load_args: (Optional[Dict[str, Any]]):
+                create a dataset and import initial dataset content
+                from args
             huggingface_name (Optional[str]):
                 Hugging Face dataset name, not available now
             schema (Optional[Schema]):
@@ -297,6 +309,7 @@ class Dataset(Table):
             source = cls._from_args_to_source(
                 data_file=data_file,
                 qianfan_dataset_id=qianfan_dataset_id,
+                bos_load_args=bos_load_args,
                 huggingface_name=huggingface_name,
                 **kwargs,
             )
@@ -322,7 +335,6 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
-        huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
         **kwargs: Any,
     ) -> bool:
@@ -343,8 +355,6 @@ class Dataset(Table):
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
                 default to None
-            huggingface_name (Optional[str]):
-                Hugging Face dataset name, not available now
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
             kwargs (Any): optional arguments
@@ -358,7 +368,6 @@ class Dataset(Table):
                 data_file,
                 qianfan_dataset_id,
                 qianfan_dataset_create_args,
-                huggingface_name,
                 is_download_to_local=False,
                 **kwargs,
             )

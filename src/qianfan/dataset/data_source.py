@@ -259,6 +259,36 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
     return FormatType.Json
 
 
+def _create_import_data_task_and_wait_for_success(
+    dataset_id: int, is_annotated: bool, file_path: str
+) -> bool:
+    Data.create_data_import_task(
+        dataset_id,
+        is_annotated,
+        DataSourceType.PrivateBos,
+        file_path,
+    )
+
+    log_info("successfully create importing task")
+    while True:
+        sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
+        log_info("polling import task status")
+        qianfan_resp = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
+        status = qianfan_resp["importStatus"]
+        if status in [
+            DataImportStatus.NotStarted.value,
+            DataImportStatus.Running.value,
+        ]:
+            log_info(f"import status: {status}, keep polling")
+            continue
+        elif status == DataImportStatus.Finished.value:
+            log_info("import succeed")
+            return True
+        else:
+            log_error(f"import failed with status {status}")
+            return False
+
+
 # 千帆平台的数据源
 class QianfanDataSource(DataSource, BaseModel):
     """Qianfan data source"""
@@ -296,8 +326,15 @@ class QianfanDataSource(DataSource, BaseModel):
             # 此处通过整数除法计算前缀
             if template_type.value // t.value == 100:
                 if template_type == DataTemplateType.Text2Image:
+                    log_debug(
+                        f"inferred project type: {t}, set type:"
+                        f" {DataSetType.MultiModel}"
+                    )
                     return t, DataSetType.MultiModel
                 else:
+                    log_debug(
+                        f"inferred project type: {t}, set type: {DataSetType.TextOnly}"
+                    )
                     return t, DataSetType.TextOnly
         error = ValueError(
             f"no project type and set type found matching with {template_type}"
@@ -401,31 +438,11 @@ class QianfanDataSource(DataSource, BaseModel):
         )
         log_info("uploading data to user BOS finished")
 
-        Data.create_data_import_task(
-            self.id,
-            is_annotated,
-            DataSourceType.PrivateBos,
-            generate_bos_file_path(storage_id, file_path),
-        )
-
-        log_info("successfully create importing task")
-        while True:
-            sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
-            log_info("polling import task status")
-            qianfan_resp = Data.get_dataset_info(self.id)["result"]["versionInfo"]
-            status = qianfan_resp["importStatus"]
-            if status in [
-                DataImportStatus.NotStarted.value,
-                DataImportStatus.Running.value,
-            ]:
-                log_info(f"import status: {status}, keep polling")
-                continue
-            elif status == DataImportStatus.Finished.value:
-                log_info("import succeed")
-                break
-            else:
-                log_error(f"import failed with status {status}")
-                return False
+        complete_file_path = generate_bos_file_path(storage_id, file_path)
+        if not _create_import_data_task_and_wait_for_success(
+            self.id, is_annotated, complete_file_path
+        ):
+            return False
 
         if does_release:
             log_info("release after saving starts")
@@ -695,6 +712,67 @@ class QianfanDataSource(DataSource, BaseModel):
         raise NotImplementedError()
 
     @classmethod
+    def _create_bare_dataset(
+        cls,
+        name: str,
+        template_type: DataTemplateType,
+        storage_type: DataStorageType = DataStorageType.PublicBos,
+        storage_id: Optional[str] = None,
+        storage_path: Optional[str] = None,
+        addition_info: Optional[Dict[str, Any]] = None,
+        ak: Optional[str] = None,
+        sk: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "QianfanDataSource":
+        log_info("start to create dataset on qianfan")
+        project_type, set_type = cls._get_qianfan_dataset_type_tuple(template_type)
+
+        # 发起创建数据集的请求
+        qianfan_resp = Data.create_bare_dataset(
+            name,
+            set_type,
+            project_type,
+            template_type,
+            storage_type,
+            storage_id,
+            storage_path,
+            ak=ak,
+            sk=sk,
+            **kwargs,
+        )["result"]
+
+        log_debug(f"create qianfan dataset response: {qianfan_resp}")
+        log_info("create dataset on qianfan successfully")
+
+        # 构造对象
+        source = cls(
+            id=qianfan_resp["id"],
+            group_id=qianfan_resp["groupId"],
+            name=name,
+            version=qianfan_resp["versionId"],
+            set_type=set_type,
+            project_type=project_type,
+            template_type=template_type,
+            storage_type=storage_type,
+            storage_id=qianfan_resp["storageInfo"]["storageId"],
+            storage_path=qianfan_resp["storageInfo"]["storagePath"],
+            storage_name=qianfan_resp["storageInfo"]["storageName"],
+            info=(
+                {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
+            ),
+            data_format_type=_get_data_format_from_template_type(template_type),
+            ak=ak,
+            sk=sk,
+        )
+
+        # 如果是私有的 BOS，还需要额外填充返回的 region 信息
+        if storage_type == DataStorageType.PrivateBos:
+            source.storage_region = qianfan_resp["storageInfo"]["region"]
+            source.storage_raw_path = qianfan_resp["storageInfo"]["rawStoragePath"]
+
+        return source
+
+    @classmethod
     def create_bare_dataset(
         cls,
         name: str,
@@ -730,58 +808,101 @@ class QianfanDataSource(DataSource, BaseModel):
             QianfanDataSource: A datasource represents your dataset on Qianfan
         """
 
-        # 腿短数据集的类型
-        project_type, set_type = cls._get_qianfan_dataset_type_tuple(template_type)
-        if storage_type == DataStorageType.PrivateBos:
-            if not (storage_id and storage_path):
-                error = ValueError("storage_id or storage_path missing")
-                log_error(str(error))
-                raise error
+        if storage_type == DataStorageType.PrivateBos and not (
+            storage_id and storage_path
+        ):
+            error = ValueError("storage_id or storage_path missing")
+            log_error(str(error))
+            raise error
 
-        log_info("start to create dataset on qianfan")
-
-        # 发起创建数据集的请求
-        qianfan_resp = Data.create_bare_dataset(
+        return cls._create_bare_dataset(
             name,
-            set_type,
-            project_type,
             template_type,
             storage_type,
-            ak=ak,
-            sk=sk,
-            storage_id=storage_id,
-            storage_path=storage_path,
+            storage_id,
+            storage_path,
+            addition_info,
+            ak,
+            sk,
             **kwargs,
-        )["result"]
-
-        log_debug(f"create qianfan dataset response: {qianfan_resp}")
-        log_info("create dataset on qianfan successfully")
-
-        # 构造对象
-        source = cls(
-            id=qianfan_resp["id"],
-            group_id=qianfan_resp["groupId"],
-            name=name,
-            version=qianfan_resp["versionId"],
-            set_type=set_type,
-            project_type=project_type,
-            template_type=template_type,
-            storage_type=storage_type,
-            storage_id=qianfan_resp["storageInfo"]["storageId"],
-            storage_path=qianfan_resp["storageInfo"]["storagePath"],
-            storage_name=qianfan_resp["storageInfo"]["storageName"],
-            info=(
-                {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
-            ),
-            data_format_type=_get_data_format_from_template_type(template_type),
-            ak=ak,
-            sk=sk,
         )
 
-        # 如果是私有的 BOS，还需要额外填充返回的 region 信息
+    @classmethod
+    def create_from_bos_file(
+        cls,
+        name: str,
+        template_type: DataTemplateType,
+        storage_id: str,
+        storage_path: str,
+        file_name: str,
+        is_data_annotated: bool,
+        storage_type: DataStorageType = DataStorageType.PrivateBos,
+        addition_info: Optional[Dict[str, Any]] = None,
+        ak: Optional[str] = None,
+        sk: Optional[str] = None,
+        is_download_to_local: bool = True,
+        **kwargs: Any,
+    ) -> "QianfanDataSource":
+        """
+        create a dataset on qianfan as data source,
+        which will import data from specific bos
+        Args:
+            name (str): dataset name you want
+            template_type (DataTemplateType): template type applying to data set
+            storage_id (str): private BOS bucket name
+            storage_path (str): private BOS file path
+            file_name (str): file need to upload
+            is_data_annotated (bool): is data in bos annotated
+            storage_type (Optional[DataStorageType]):
+                data storage type used to store your data, default to PrivateBos
+            addition_info (Optional[Dict[str, Any]]):
+                additional info you want to have，default to None
+            ak (Optional[str]):
+                console ak related to your dataset and bos，default to None
+            sk (Optional[str]):
+                console sk related to your dataset and bos，default to None
+            is_download_to_local (bool):
+                does dataset download file when initialize object，default to True
+            kwargs (Any): other arguments
+
+        Returns:
+            QianfanDataSource: A datasource represents your dataset on Qianfan
+        """
+
+        log_info("start to create dataset on qianfan from bos")
+        storage_info_for_create: Dict[str, Any] = {}
+
         if storage_type == DataStorageType.PrivateBos:
-            source.storage_region = qianfan_resp["storageInfo"]["region"]
-            source.storage_raw_path = qianfan_resp["storageInfo"]["rawStoragePath"]
+            storage_info_for_create = {
+                "storage_id": storage_id,
+                "storage_path": storage_path,
+            }
+
+        log_debug(f"storage_info: {storage_info_for_create}")
+        log_info("start to create bare dataset")
+
+        source = cls._create_bare_dataset(
+            name,
+            template_type,
+            storage_type,
+            addition_info=addition_info,
+            ak=ak,
+            sk=sk,
+            **storage_info_for_create,
+            **kwargs,
+        )
+
+        log_info("start to import data in bos")
+        if not _create_import_data_task_and_wait_for_success(
+            source.id, is_data_annotated, f"{storage_id}{storage_path}{file_name}"
+        ):
+            err_msg = "failed to create dataset from bos file"
+            log_error(err_msg)
+            raise QianfanRequestError(err_msg)
+
+        if is_download_to_local:
+            log_info("start to fetch dataset cache because is_download_to_local is set")
+            source.fetch(**kwargs)
 
         return source
 

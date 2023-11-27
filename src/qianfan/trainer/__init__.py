@@ -11,19 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Library aimed to helping developer to interactive with Dataset
-"""
-
-from qianfan.dataset.data_source import DataSource, FileDataSource, QianfanDataSource
-from qianfan.dataset.dataset import Dataset
-from qianfan.dataset.table import Table
+from qianfan.trainer.actions import (
+    DeployAction,
+    LoadDataSetAction,
+    ModelPublishAction,
+    TrainAction,
+)
+from qianfan.trainer.event import Event, EventHandler
+from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.model import Model, Service
 
 __all__ = [
-    "DataSource",
-    "FileDataSource",
-    "QianfanDataSource",
-    "Dataset",
-    "Table",
+    "LLMFinetune",
+    "Model",
+    "Service",
+    "BaseAction",
+    "Trainer",
+    "EventHandler",
+    "Event",
+    "TrainAction",
+    "LoadDataSetAction",
+    "DeployAction",
+    "ModelPublishAction",
 ]

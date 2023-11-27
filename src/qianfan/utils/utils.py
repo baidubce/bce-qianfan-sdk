@@ -14,7 +14,10 @@
 
 import asyncio
 import os
+import secrets
+import string
 import threading
+import uuid as uuid_lib
 from threading import current_thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type
@@ -182,3 +185,13 @@ class AsyncLock:
                 " is available when the object is initialized"
             )
         await self._lock.__aexit__(exc_type, exc_val, exc_tb)
+
+
+def uuid() -> str:
+    return str(uuid_lib.uuid4()).replace("-", "")
+
+
+def generate_letter_num_random_id(len: int = 10) -> str:
+    return "".join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(len)
+    )

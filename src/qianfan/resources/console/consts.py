@@ -73,6 +73,8 @@ class DataImportStatus(int, Enum):
     """导入完成"""
     Failed: int = 3
     """导入失败"""
+    Terminated: int = 4
+    """导入终止"""
 
 
 class DataExportStatus(int, Enum):
@@ -89,13 +91,85 @@ class DataExportStatus(int, Enum):
 
 
 class DataReleaseStatus(int, Enum):
-    NotStarted: int = -1
+    NotStarted: int = 0
     """未发起发布"""
-    Initialized: int = 0
-    """发布初始化"""
     Running: int = 1
     """发布进行中"""
     Finished: int = 2
     """发布完成"""
     Failed: int = 3
     """发布失败"""
+
+
+class ServiceStatus(str, Enum):
+    Done = "Done"
+    """服务就绪"""
+    New = "New"
+    """服务新建"""
+    Deploying = "Deploying"
+    """服务部署中"""
+    Failed = "Failed"
+    """服务部署失败"""
+    Stopped = "Stopped"
+    """服务下线"""
+
+
+class TrainStatus(str, Enum):
+    Finish = "FINISH"
+    """训练完成"""
+    Running = "RUNNING"
+    """训练进行中"""
+    Fail = "FAIL"
+    """训练失败"""
+    Stop = "STOP"
+    """训练停止"""
+
+
+class ModelState(str, Enum):
+    Ready = "Ready"
+    """已就绪"""
+    Creating = "Creating"
+    """创建中"""
+    Fail = "Fail"
+    """创建失败"""
+
+
+class TrainDatasetType(int, Enum):
+    Platform = 1
+    """平台数据集"""
+    PrivateBos = 2
+    """私有Bos数据集"""
+
+
+class TrainMode(str, Enum):
+    SFT = "SFT"
+    """对应 LLMFinetune"""
+
+
+class DeployPoolType(int, Enum):
+    PrivateResource = 1
+    PublicResource = 2
+
+
+class EntityListingType(int, Enum):
+    All: int = 0
+    """展示全部"""
+    AnnotatedOnly: int = 1
+    """只展示已标注的"""
+    NotAnnotatedOnly: int = 2
+    """只展示未标注的"""
+
+
+class ETLTaskStatus(int, Enum):
+    NoTask: int = 0
+    """没有任务"""
+    Running: int = 1
+    """清洗中"""
+    Finished: int = 2
+    """清洗完成"""
+    Interrupted: int = 3
+    """清洗被终止"""
+    Failed: int = 4
+    """清洗失败"""
+    Paused: int = 5
+    """清洗暂停"""

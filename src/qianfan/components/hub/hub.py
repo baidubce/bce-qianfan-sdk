@@ -17,7 +17,7 @@ Hub
 """
 
 import json
-from typing import Any, Optional, Dict
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -101,7 +101,7 @@ def save(
 
     Parameters:
       obj (HubSerializable):
-        The object to be serialized. It should implement the `HubSerializable` interface.
+        The object to be serialized.
       path (Optional[str]):
         The file path where the serialized data will be saved. If not provided, the
         serialized data is not saved to a file.

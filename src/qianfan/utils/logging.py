@@ -14,6 +14,8 @@
 """utils for logging
 """
 import logging
+import sys
+from functools import partial
 from typing import Any
 
 
@@ -101,10 +103,17 @@ class Logger(object):
 
 logger = Logger()
 
-log_info = logger.info
-log_debug = logger.debug
-log_error = logger.error
-log_warn = logger.warn
+# only Python 3.8+ support stacklevel
+if sys.version_info < (3, 8):
+    log_info = logger.info
+    log_debug = logger.debug
+    log_error = logger.error
+    log_warn = logger.warn
+else:
+    log_info = partial(logger.info, stacklevel=2)
+    log_debug = partial(logger.debug, stacklevel=2)
+    log_error = partial(logger.error, stacklevel=2)
+    log_warn = partial(logger.warn, stacklevel=2)
 
 
 def enable_log(log_level: int = logging.INFO) -> None:

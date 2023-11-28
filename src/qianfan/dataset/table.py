@@ -862,6 +862,9 @@ class Table(BaseModel, Addable, Listable, Processable):
         else:
             raise ValueError(f"Unsupported key type {type(key)}")
 
+    def __len__(self) -> int:
+        return self.row_number()
+
     def row_number(self) -> int:
         """
         get pyarrow table row count。

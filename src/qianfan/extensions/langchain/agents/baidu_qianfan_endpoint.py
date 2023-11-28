@@ -164,10 +164,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         result: BaseMessage = self.llm.predict_messages(
             messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
-        final_message = self._parse_message_to_action(result)
+        action = self._parse_message_to_action(result)
 
-        assert isinstance(final_message, (AgentAction, AgentFinish))
-        return final_message
+        assert isinstance(action, (AgentAction, AgentFinish))
+        return action
 
     async def aplan(
         self,
@@ -183,10 +183,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         result: BaseMessage = await self.llm.apredict_messages(
             messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
         )
-        final_message = self._parse_message_to_action(result)
+        action = self._parse_message_to_action(result)
 
-        assert isinstance(final_message, (AgentAction, AgentFinish))
-        return final_message
+        assert isinstance(action, (AgentAction, AgentFinish))
+        return action
 
     @classmethod
     def _default_system_prompt(cls) -> SystemMessage:

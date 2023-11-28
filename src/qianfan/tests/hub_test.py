@@ -59,4 +59,4 @@ def test_prompt_hub():
     assert p.variables == ["style", "gender"]
     assert p.labels[0] == PromptLabel(id=1734, name="生活助手", color="#2468F2")
     assert p.type == PromptType(1)
-    assert p.framework_type == PromptFrameworkType.Basic
+    assert p.framework_type == PromptFrameworkType.NotUse

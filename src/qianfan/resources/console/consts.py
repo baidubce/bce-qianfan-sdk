@@ -101,6 +101,56 @@ class DataReleaseStatus(int, Enum):
     """发布失败"""
 
 
+class ServiceStatus(str, Enum):
+    Done = "Done"
+    """服务就绪"""
+    New = "New"
+    """服务新建"""
+    Deploying = "Deploying"
+    """服务部署中"""
+    Failed = "Failed"
+    """服务部署失败"""
+    Stopped = "Stopped"
+    """服务下线"""
+
+
+class TrainStatus(str, Enum):
+    Finish = "FINISH"
+    """训练完成"""
+    Running = "RUNNING"
+    """训练进行中"""
+    Fail = "FAIL"
+    """训练失败"""
+    Stop = "STOP"
+    """训练停止"""
+
+
+class ModelState(str, Enum):
+    Ready = "Ready"
+    """已就绪"""
+    Creating = "Creating"
+    """创建中"""
+    Fail = "Fail"
+    """创建失败"""
+
+
+class TrainDatasetType(int, Enum):
+    Platform = 1
+    """平台数据集"""
+    PrivateBos = 2
+    """私有Bos数据集"""
+
+
+class TrainMode(str, Enum):
+    SFT = "SFT"
+    """对应 LLMFinetune"""
+
+
+class DeployPoolType(int, Enum):
+    PrivateResource = 1
+    PublicResource = 2
+
+
 class EntityListingType(int, Enum):
     All: int = 0
     """展示全部"""

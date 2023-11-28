@@ -539,7 +539,12 @@ class Dataset(Table):
             log_warn("can't process qianfan dataset which isn't GenericText type")
             return ret_dict
 
-        operator_dict: Dict[str, List[Dict[str, Any]]] = {}
+        operator_dict: Dict[str, List[Dict[str, Any]]] = {
+            "clean": [],
+            "filter": [],
+            "deduplication": [],
+            "desensitization": [],
+        }
         for operator in operators:
             attr_dict = operator.model_dump()
             attr_dict.pop("operator_name")
@@ -548,9 +553,6 @@ class Dataset(Table):
             elem_dict = {"name": operator.operator_name, "args": attr_dict}
 
             operator_type = operator.operator_type
-            if operator_type not in operator_dict:
-                operator_dict[operator_type] = []
-
             operator_dict[operator_type].append(elem_dict)
 
         log_debug(f"operator args dict: {operator_dict}")

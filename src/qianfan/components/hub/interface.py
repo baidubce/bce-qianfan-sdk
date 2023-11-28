@@ -59,6 +59,7 @@ def loads(data: Any) -> Any:
     if isinstance(data, list):
         return [loads(i) for i in data]
     if isinstance(data, dict):
+        # if is normal dict
         if data.get("type", None) == "dict":
             return {k: loads(v) for k, v in data["args"].items()}
         # load the class from module

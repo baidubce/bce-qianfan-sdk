@@ -24,10 +24,11 @@ import random
 import threading
 import time
 from functools import wraps
+from io import BytesIO
 
 import flask
 import requests
-from flask import Flask, request
+from flask import Flask, request, send_file
 
 from qianfan.consts import APIErrorCode, Consts
 
@@ -2063,6 +2064,63 @@ def list_all_entity_in_dataset():
             "success": True,
         }
     )
+
+
+@app.route("/mock/hub/prompt", methods=["GET"])
+def mock_hub_file():
+    buffer = BytesIO()
+    content = """{
+    "sdk_version": "0.2.0",
+    "obj": {
+        "module": "qianfan.components.prompt.prompt",
+        "type": "Prompt",
+        "args": {
+            "name": "穿搭灵感",
+            "template": "请推荐三套{style}适合通勤的{gender}衣着搭配",
+            "variables": [
+                "style",
+                "gender"
+            ],
+            "labels": [
+                {
+                    "module": "qianfan.components.prompt.prompt",
+                    "type": "PromptLabel",
+                    "args": {
+                        "id": 1734,
+                        "name": "生活助手",
+                        "color": "#2468F2"
+                    }
+                }
+            ],
+            "identifier": "{}",
+            "type": {
+                "module": "qianfan.consts",
+                "type": "PromptType",
+                "args": {
+                    "value": 1
+                }
+            },
+            "scene_type": {
+                "module": "qianfan.consts",
+                "type": "PromptSceneType",
+                "args": {
+                    "value": 1
+                }
+            },
+            "framework_type": {
+                "module": "qianfan.consts",
+                "type": "PromptFrameworkType",
+                "args": {
+                    "value": 0
+                }
+            },
+            "creator_name": ""
+        }
+    }
+}"""
+    buffer.write(bytes(content, "utf-8"))
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="prompt.json")
 
 
 def _start_mock_server():

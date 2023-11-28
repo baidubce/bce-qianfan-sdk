@@ -17,23 +17,64 @@ Hub
 """
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Dict
+
+import requests
 
 from qianfan.components.hub.interface import HubSerializable, loads
-from qianfan.errors import InvalidArgumentError, ValidationError
+from qianfan.errors import InvalidArgumentError, RequestError, ValidationError
 from qianfan.version import VERSION as sdk_version
 
 
-def load(json_str: Optional[str] = None, path: Optional[str] = None) -> Any:
+def load(
+    json_str: Optional[str] = None,
+    path: Optional[str] = None,
+    url: Optional[str] = None,
+) -> Any:
     """
-    Load a object from different sources
+    Loads an object from either a JSON string, a file specified by its path, or a URL.
+    ONLY ONE SOURCE SHOULD BE PROVIDED.
+    When multiple sources are provided, which source will be used is undefined.
+
+    Parameters:
+      json_str (Optional[str]):
+        A JSON-formatted string containing the serialized representation of the object,
+        which is the return value of the `hub.save` method.
+      path (Optional[str]):
+        The path to the file from which the object should be loaded.
+      url (Optional[str]):
+        The URL from which the object should be loaded.
+
+    Returns:
+      Any:
+        The deserialized object.
+
+    Example:
+    ```python
+    # Example 1: Load from a JSON string
+    data = save(obj)
+    loaded_object = load(json_str=data)
+
+    # Example 2: Load from a file
+    file_path = 'path/to/data.json'
+    loaded_object = load(path=file_path)
+
+    # Example 3: Load from a URL
+    url = 'https://example.com/data.json'
+    loaded_object = load(url=url)
+    ```
     """
     # get `cls_desc` from different sources
     s = json_str
     if path is not None:
         with open(path) as f:
             s = f.read()
-    # TODO: support load from url and qianfan server
+    if url is not None:
+        try:
+            s = requests.get(url).text
+        except requests.RequestException as e:
+            raise RequestError(f"Request the target url failed. Error detail: {str(e)}")
+    # TODO: support load qianfan server
     if s is None:
         raise InvalidArgumentError("No content provided to load the object.")
     try:
@@ -47,9 +88,30 @@ def load(json_str: Optional[str] = None, path: Optional[str] = None) -> Any:
     return loads(cls_desc["obj"])
 
 
-def save(obj: HubSerializable, path: Optional[str] = None) -> str:
+def save(
+    obj: HubSerializable, path: Optional[str] = None, dump_args: Dict[str, Any] = {}
+) -> str:
     """
-    Save the object to different sources
+    Serialize the given object and save it to different sources.
+
+    This function takes an object (`obj`) that implements the `HubSerializable`
+    interface and serializes it. The serialized data is then saved to a file specified
+    by the optional `path` parameter. The serialization process can be customized
+    further by providing additional arguments in the `dump_args` dictionary.
+
+    Parameters:
+      obj (HubSerializable):
+        The object to be serialized. It should implement the `HubSerializable` interface.
+      path (Optional[str]):
+        The file path where the serialized data will be saved. If not provided, the
+        serialized data is not saved to a file.
+      dump_args (Dict[str, Any]):
+        Additional keyword arguments to customize the serialization result. These
+        arguments are passed to `json.dumps` function.
+
+    Returns:
+      str:
+        The serialized result.
     """
     if not isinstance(obj, HubSerializable):
         raise ValidationError(
@@ -61,7 +123,7 @@ def save(obj: HubSerializable, path: Optional[str] = None) -> str:
         "obj": obj._hub_serialize(),
     }
     try:
-        json_str = json.dumps(s)
+        json_str = json.dumps(s, **dump_args)
     except json.JSONDecodeError:
         raise ValidationError("Hub can not serialize the provided object.")
     if path is not None:

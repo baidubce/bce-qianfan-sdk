@@ -19,7 +19,8 @@
 import os
 import tempfile
 
-from qianfan.components import Prompt, hub
+from qianfan.components import Prompt, PromptLabel, hub
+from qianfan.consts import PromptFrameworkType, PromptType
 
 
 def test_prompt_hub():
@@ -51,3 +52,11 @@ def test_prompt_hub():
         assert new_p.labels == p.labels
         assert new_p.variables == p.variables
         assert new_p.negative_template == p.negative_template
+
+    p = hub.load(url="http://127.0.0.1:8866/mock/hub/prompt")
+    assert isinstance(p, Prompt)
+    assert p.name == "穿搭灵感"
+    assert p.variables == ["style", "gender"]
+    assert p.labels[0] == PromptLabel(id=1734, name="生活助手", color="#2468F2")
+    assert p.type == PromptType(1)
+    assert p.framework_type == PromptFrameworkType.Basic

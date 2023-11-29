@@ -131,7 +131,7 @@ class LLMFinetune(Trainer):
         if deploy_config is not None:
             self.deploy_action = DeployAction(
                 deploy_config=deploy_config,
-                **{"event_handler": event_handler, **kwargs},
+                event_handler=event_handler,
             )
             actions.append(self.deploy_action)
 
@@ -208,8 +208,15 @@ class LLMFinetune(Trainer):
 
 # mapping for action state -> fine-tune status
 fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
+    LoadDataSetAction.__class__.__name__: {
+        ActionState.Preceding: FinetuneStatus.DatasetLoading,
+        ActionState.Running: FinetuneStatus.DatasetLoading,
+        ActionState.Done: FinetuneStatus.DatasetLoaded,
+        ActionState.Error: FinetuneStatus.DatasetLoadFailed,
+        ActionState.Stopped: FinetuneStatus.DatasetLoadStopped,
+    },
     TrainAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.Created,
+        ActionState.Preceding: FinetuneStatus.TrainCreated,
         ActionState.Running: FinetuneStatus.Training,
         ActionState.Done: FinetuneStatus.TrainFinished,
         ActionState.Error: FinetuneStatus.TrainFailed,

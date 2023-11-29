@@ -100,8 +100,8 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
             event_handler (Optional[EventHandler], optional):
                 event_handler implements for action state track. Defaults to None.
         """
-        self.id = id if id is not None else utils.uuid()
-        self.name = name if name is not None else f"actions_{self.id}"
+        self.id = id if id is not None else utils.generate_letter_num_random_id()
+        self.name = name if name is not None else f"action_{self.id}"
         self.state = ActionState.Preceding
         self.event_dispatcher = event_handler
 
@@ -191,6 +191,10 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
                 data,
             ),
         )
+
+    @classmethod
+    def action_type(cls) -> str:
+        return "base"
 
 
 def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -397,3 +401,18 @@ class Trainer(ABC):
         Receive the training log during the pipeline execution. [coming soon].
         """
         raise NotImplementedError("trainer get_log")
+
+    def register_event_handler(
+        self, event_handler: EventHandler, ppl_id: Optional[str] = None
+    ) -> None:
+        """
+        Register the event handler to specific the ppls.
+        Args:
+            event_handler (EventHandler): The event handler instance.
+        """
+        for ppl in self.ppls:
+            if ppl_id is None and ppl.id == ppl_id:
+                ppl.event_dispatcher == event_handler
+                break
+            else:
+                ppl.event_dispatcher = event_handler

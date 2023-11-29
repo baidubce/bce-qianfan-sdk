@@ -29,7 +29,7 @@ from qianfan.resources.console import consts as console_const
 from qianfan.trainer.base import ExecuteSerializable
 from qianfan.trainer.configs import DeployConfig
 from qianfan.trainer.consts import ServiceType
-from qianfan.utils import log_warn
+from qianfan.utils import log_info, log_warn
 
 
 class Model(
@@ -39,7 +39,7 @@ class Model(
     """remote model id"""
     version_id: Optional[int]
     """remote model version id"""
-    name: str
+    name: Optional[str] = None
     """model name"""
     service: Optional["Service"] = None
     """model service"""
@@ -54,6 +54,7 @@ class Model(
         version_id: Optional[int] = None,
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
+        name: Optional[str] = None,
     ):
         """
         Class for model in qianfan, which is deployable by using deploy() to
@@ -73,6 +74,7 @@ class Model(
         self.version_id = version_id
         self.task_id = task_id
         self.job_id = job_id
+        self.name = name
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -113,8 +115,9 @@ class Model(
         Returns:
             Service: model service instance
         """
-        self.service = model_deploy(self, deploy_config)
-
+        if self.service is None:
+            self.service = model_deploy(self, deploy_config)
+        log_info("model service already existed")
         return self.service
 
     def publish(self, name: str = "") -> "Model":
@@ -254,7 +257,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         self,
         id: Optional[int] = None,
         endpoint: Optional[str] = None,
-        model: Optional[Model] = None,
+        model: Optional[Union[Model, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
         service_type: Optional[ServiceType] = None,
     ) -> None:
@@ -276,15 +279,27 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
                 Defaults to None.
         """
         self.id = id
-        self.endpoint = endpoint
-        self.model = model
+        self.service_type = service_type
+        if self.service_type is None:
+            log_warn("service type should be specified before exec")
+        if endpoint is not None:
+            self.model = None
+            self.endpoint = endpoint
+        elif isinstance(model, str):
+            self.model = Model(name=model)
+            self.endpoint = None
+        elif isinstance(model, Model):
+            # need to deploy
+            self.model = model
+            self.endpoint = None
+        else:
+            raise InvalidArgumentError("invalid model service")
         self.deploy_config = deploy_config
         self.service_type = service_type
-        if self.endpoint is not None and self.service_type is None:
-            log_warn("service type should be specified when endpoint passed in")
+        # if self.endpoint is not None and self.service_type is None:
 
     @property
-    def status(self) -> console_const.ServiceStatus:
+    def status(self) -> str:
         """
         get the service status
 
@@ -295,8 +310,9 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             console_const.ServiceStatus
         """
         if self.id is None:
-            raise InternalError("service id not found")
-        resp = api.Service.get(id=self.id)
+            return ""
+        else:
+            resp = api.Service.get(id=self.id)
         return resp["result"]["serviceStatus"]
 
     def exec(
@@ -318,22 +334,84 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         """
         if input is None:
             raise InvalidArgumentError("input is none")
+        return self.get_res().do(**{**input, **kwargs})
+
+    def get_res(self) -> Union[ChatCompletion, Completion, Embedding, Text2Image]:
+        """
+        convert to the specific model resources. e.g.
+        `ChatCompletion`, `Completion`, `Embeddings`,
+        `Text2Image`
+
+        Returns:
+            Union[ChatCompletion, Completion, Embedding, Text2Image]:
+                resource object
+        """
         if self.endpoint is not None and self.service_type is None:
             raise InvalidArgumentError(
                 "service type must be specified when endpoint passed in"
             )
-        if self.status != console_const.ServiceStatus.Done:
-            raise InternalError("service is not ready")
+        svc_status = self.status
+        if svc_status != console_const.ServiceStatus.Done:
+            log_warn("service status unknown, service could be unavailable.")
         if self.service_type == ServiceType.Chat:
-            return ChatCompletion().do(endpoint=self.endpoint, **input)
+            return ChatCompletion(
+                model=(self.model.name if self.model is not None else None),
+                endpoint=self.endpoint,
+            )
         elif self.service_type == ServiceType.Completion:
-            return Completion().do(endpoint=self.endpoint, **input)
+            return Completion(
+                model=(self.model.name if self.model is not None else None),
+                endpoint=self.endpoint,
+            )
         elif self.service_type == ServiceType.Embedding:
-            return Embedding().do(endpoint=self.endpoint, **input)
+            return Embedding(
+                model=(self.model.name if self.model is not None else None),
+                endpoint=self.endpoint,
+            )
         elif self.service_type == ServiceType.Text2Image:
-            return Text2Image().do(endpoint=self.endpoint, **input)
+            return Text2Image(
+                model=(self.model.name if self.model is not None else None),
+                endpoint=self.endpoint,
+            )
         else:
             raise InvalidArgumentError(f"unsupported service type {self.service_type}")
+
+    def deploy(self) -> "Service":
+        if self.model is None:
+            raise InvalidArgumentError("model not found")
+        model = self.model
+        if model.id is None or model.version_id is None:
+            raise InvalidArgumentError("model id | model version id not found")
+        if self.deploy_config is None:
+            raise InvalidArgumentError("deploy config not found")
+        svc_publish_resp = api.Service.create(
+            model_id=model.id,
+            model_version_id=model.version_id,
+            iteration_id=model.version_id,
+            name=f"svc{model.id}{model.version_id}",
+            uri=(
+                self.deploy_config.endpoint_prefix
+                if self.deploy_config != ""
+                else f"ep{model.id}{model.version_id}"
+            ),
+            replicas=self.deploy_config.replicas,
+            pool_type=self.deploy_config.pool_type,
+        )
+
+        self.id = svc_publish_resp["result"]["serviceId"]
+        if self.id is None:
+            raise InternalError("service id not found")
+        # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
+        while True:
+            resp = api.Service.get(id=self.id)
+            svc_status = resp["result"]["serviceStatus"]
+            if svc_status != console_const.ServiceStatus.Deploying.value:
+                sft_model_endpoint = resp["result"]["uri"]
+                break
+            time.sleep(get_config().DEPLOY_STATUS_POLLING_INTERVAL)
+
+        self.endpoint = sft_model_endpoint
+        return self
 
     def dumps(self) -> Optional[bytes]:
         """
@@ -379,33 +457,5 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
         deploy_config=deploy_config,
         service_type=deploy_config.service_type,
     )
-    if model.id is None or model.version_id is None:
-        raise InvalidArgumentError("model id | model version id not found")
-    svc_publish_resp = api.Service.create(
-        model_id=model.id,
-        model_version_id=model.version_id,
-        iteration_id=model.version_id,
-        name=f"svc{model.id}{model.version_id}",
-        uri=(
-            deploy_config.endpoint_prefix
-            if deploy_config != ""
-            else f"ep{model.id}{model.version_id}"
-        ),
-        replicas=deploy_config.replicas,
-        pool_type=deploy_config.pool_type,
-    )
-
-    svc.id = svc_publish_resp["result"]["serviceId"]
-    if svc.id is None:
-        raise InternalError("service id not found")
-    # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
-    while True:
-        resp = api.Service.get(id=svc.id)
-        svc_status = resp["result"]["serviceStatus"]
-        if svc_status != console_const.ServiceStatus.Deploying.value:
-            sft_model_endpoint = resp["result"]["uri"]
-            break
-        time.sleep(get_config().DEPLOY_STATUS_POLLING_INTERVAL)
-
-    svc.endpoint = sft_model_endpoint
+    svc.deploy()
     return svc

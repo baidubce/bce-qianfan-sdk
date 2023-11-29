@@ -124,7 +124,7 @@ print(resp["result"])
 
 ### 平台数据集管理
 
-千帆平台提供 API 接口对数据集进行管理，详见[数据管理](./docs/dataset.md)
+千帆平台提供 API 接口对数据集进行管理，详见[数据管理](./docs/data.md)
 
 目前支持的数据集管理操作有：
 - 创建数据集
@@ -151,7 +151,7 @@ print(resp["result"])
 
 ## 本地数据集处理
 
-千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset_framework.md)。
+千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
 
 
 ### Prompt 管理

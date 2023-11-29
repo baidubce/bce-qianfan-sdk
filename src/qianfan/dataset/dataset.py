@@ -25,6 +25,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import pyarrow.json
 import requests
+from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 
 from qianfan import get_config
@@ -71,11 +72,30 @@ def _online_except_decorator(func: Callable) -> Callable:
 class Dataset(Table):
     """Dataset"""
 
-    # 内部的数据源对象，在 load 时被指定
-    inner_data_source_cache: Optional[DataSource] = None
+    def __init__(
+        self,
+        inner_table: PyarrowTable,
+        inner_data_source_cache: Optional[DataSource] = None,
+        inner_schema_cache: Optional[Schema] = None,
+    ) -> None:
+        """
+        Init a Dataset Object
 
-    # schema 对象的缓存，在 load 时被指定
-    inner_schema_cache: Optional[Schema] = None
+        Args:
+            inner_table (PyarrowTable):
+                a pyarrow.Table object wrapped by Table
+            inner_data_source_cache (Optional[DataSource]):
+                a data source cache where the dataset was loaded from
+            inner_schema_cache (Optional[Schema]):
+                schema cache used when dataset was loaded
+        """
+        super().__init__(inner_table)
+
+        # 内部的数据源对象，在 load 时被指定
+        self.inner_data_source_cache: Optional[DataSource] = inner_data_source_cache
+
+        # schema 对象的缓存，在 load 时被指定
+        self.inner_schema_cache: Optional[Schema] = inner_schema_cache
 
     @classmethod
     def _from_source(
@@ -861,7 +881,7 @@ class Dataset(Table):
         Returns:
             Self: Dataset itself
         """
-        return super().col_append(elem)
+        return super().col_insert(elem, index)
 
     # 等待接口 ready 才能对云端数据集做展示
     @_online_except_decorator

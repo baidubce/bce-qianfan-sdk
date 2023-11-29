@@ -455,16 +455,21 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
         return self.table.drop_columns(index)
 
 
-class Table(BaseModel, Addable, Listable, Processable):
+class Table(Addable, Listable, Processable):
     """
     dataset representation on memory
     inherited from pyarrow.Table，implementing interface in process_interface.py
     """
 
-    class Config:
-        arbitrary_types_allowed = True
+    def __init__(self, inner_table: PyarrowTable) -> None:
+        """
+        Init a Table object
 
-    inner_table: PyarrowTable
+        Args:
+            inner_table (PyarrowTable): a pyarrow.Table object wrapped by Table
+        """
+        # 内部使用的 pyarrow.Table 对象
+        self.inner_table: PyarrowTable = inner_table
 
     def _row_op(self) -> _PyarrowRowManipulator:
         return _PyarrowRowManipulator(table=self.inner_table)

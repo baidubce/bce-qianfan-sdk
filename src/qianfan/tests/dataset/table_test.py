@@ -203,7 +203,10 @@ def test_insert_column():
     table.col_insert({"name": "test", "data": ["a", "b", "c", "d"]}, 0)
     table.col_insert({"name": "another_col", "data": [0, 0, 0, 0]}, 0)
 
+    col_names = table.col_names()
     assert table.column_number() == 3
+    assert col_names[0] == "another_col"
+    assert col_names[1] == "test"
 
 
 def test_list_column():

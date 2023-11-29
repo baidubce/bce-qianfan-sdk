@@ -33,6 +33,11 @@ from qianfan.consts import PromptSceneType
 txt2img_prompt.scene_type == PromptSceneType.Text2Image # => True
 
 prompt, negative_prompt = txt2img_prompt.render()
+# 之后将 prompt 和 negative_prompt 送入模型进行推理
+qianfan.Text2Image().do(
+    prompt=prompt, 
+    negative_prompt=negative_prompt
+)
 ```
 
 ### 本地 Prompt

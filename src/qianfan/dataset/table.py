@@ -36,7 +36,7 @@ from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 
 def _create_new_table_for_add(
-    elem: Union[List[Dict], Tuple[Dict], Dict],
+    elem: Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict],
     is_dataset_packed: bool = False,
     add_new_group: bool = False,
     is_grouped: bool = True,
@@ -49,7 +49,21 @@ def _create_new_table_for_add(
             err_msg = "element is empty"
             log_error(err_msg)
             raise ValueError(err_msg)
-        elif not isinstance(elem[0], dict):
+
+        log_debug(f"append row data: {elem}")
+
+        if is_dataset_packed:
+            log_info("enter packed appending logic")
+            if isinstance(elem[0], dict):
+                return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
+            elif isinstance(elem[0], list) and isinstance(elem[0][0], dict):
+                return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: elem})
+            else:
+                err_msg = f"element cannot be instance of {type(elem)}"
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+        if not isinstance(elem[0], dict):
             err_msg = (
                 "element in sequence-like "
                 "container cannot be instance of"
@@ -57,12 +71,6 @@ def _create_new_table_for_add(
             )
             log_error(err_msg)
             raise ValueError(err_msg)
-
-        log_debug(f"append row data: {elem}")
-
-        if is_dataset_packed:
-            log_info("enter packed appending logic")
-            return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
 
         # TODO 是否需要做深拷贝？
         tables: List = list(elem)
@@ -100,6 +108,14 @@ def _create_new_table_for_add(
         raise ValueError(err_msg)
 
 
+def _whether_dataset_is_packed(col_names: List[str]) -> bool:
+    return col_names == [QianfanDatasetPackColumnName]
+
+
+def _whether_dataset_is_grouped(col_names: List[str]) -> bool:
+    return QianfanDataGroupColumnName in col_names
+
+
 class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table row"""
 
@@ -107,6 +123,9 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         arbitrary_types_allowed = True
 
     table: PyarrowTable
+
+    def _inner_table_is_packed(self) -> bool:
+        return _whether_dataset_is_packed(self.table.column_names)
 
     def append(
         self,
@@ -214,9 +233,29 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             isinstance(by, (list, tuple)) and isinstance(by[0], str)
         ):
             raise ValueError("cannot get row from table by str")
+
+        if self._inner_table_is_packed():
+            if by is None:
+                return self.table.to_pydict()[QianfanDatasetPackColumnName]
+            if isinstance(by, int):
+                return self.table.take([by]).to_pylist()[0][
+                    QianfanDatasetPackColumnName
+                ]
+            elif isinstance(by, (list, tuple)):
+                return self.table.take(list(by)).to_pydict()[
+                    QianfanDatasetPackColumnName
+                ]
+            elif isinstance(by, slice):
+                return self.table.slice(
+                    offset=by.start, length=by.stop - by.start + 1
+                ).to_pydict()[QianfanDatasetPackColumnName]
+            else:
+                raise ValueError(
+                    f"unsupported key type {type(by)} when get row from table"
+                )
+
         if by is None:
             return self.table.to_pylist()
-
         if isinstance(by, int):
             return self.table.take([by]).to_pylist()[0]
         elif isinstance(by, (list, tuple)):
@@ -240,21 +279,33 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         """
 
         # 构建出的新 table 会按照首行的 key 作为 columns
-        new_table: List[Dict[str, Any]] = []
-        for row_index in range(self.table.num_rows):
-            origin_data = self.table.take([row_index]).to_pylist()[0]
-            input_dict = {key: val for key, val in origin_data.items()}
-            returned_data = op(input_dict)
-            if not returned_data:
-                raise ValueError("cant make data empty")
-            if not isinstance(returned_data, dict):
-                raise ValueError("returned value isn't dict")
-            if input_dict.keys() != returned_data.keys():
-                raise ValueError("cant modify column name in map")
+        if self._inner_table_is_packed():
+            new_list: List[List[Any]] = []
+            for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
+                returned_data = op(row)
+                if not returned_data:
+                    raise ValueError("cant make data empty")
+                if not isinstance(returned_data, list):
+                    raise ValueError("returned value isn't list")
 
-            new_table.append(returned_data)
+                new_list.append(returned_data)
 
-        return pyarrow.Table.from_pylist(new_table)
+            return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: new_list})
+        else:
+            new_table: List[Dict[str, Any]] = []
+            for row_index in range(self.table.num_rows):
+                origin_data = self.table.take([row_index]).to_pylist()[0]
+
+                input_dict = {key: val for key, val in origin_data.items()}
+                returned_data = op(input_dict)
+                if not returned_data:
+                    raise ValueError("cant make data empty")
+                if not isinstance(returned_data, dict):
+                    raise ValueError("returned value isn't dict")
+
+                new_table.append(returned_data)
+
+            return pyarrow.Table.from_pylist(new_table)
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
         """
@@ -268,16 +319,26 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         """
 
         selection_masks: List[bool] = []
-        for row_index in range(self.table.num_rows):
-            origin_data = self.table.take([row_index]).to_pylist()[0]
-            input_dict = {key: val for key, val in origin_data.items()}
-            flag = op(input_dict)
-            if flag is None:
-                raise ValueError("cant return None")
-            if not isinstance(flag, bool):
-                raise ValueError("returned value isn't bool")
+        if self._inner_table_is_packed():
+            for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
+                flag = op(row)
+                if flag is None:
+                    raise ValueError("cant return None")
+                if not isinstance(flag, bool):
+                    raise ValueError("returned value isn't bool")
 
-            selection_masks.append(flag)
+                selection_masks.append(flag)
+        else:
+            for row_index in range(self.table.num_rows):
+                origin_data = self.table.take([row_index]).to_pylist()[0]
+                input_dict = {key: val for key, val in origin_data.items()}
+                flag = op(input_dict)
+                if flag is None:
+                    raise ValueError("cant return None")
+                if not isinstance(flag, bool):
+                    raise ValueError("returned value isn't bool")
+
+                selection_masks.append(flag)
 
         return self.table.filter(mask=selection_masks)
 
@@ -477,16 +538,14 @@ class Table(Addable, Listable, Processable):
     def _col_op(self) -> _PyarrowColumnManipulator:
         return _PyarrowColumnManipulator(table=self.inner_table)
 
-    def is_data_packed(self) -> bool:
-        col_names = self.col_names()
-        return len(col_names) == 1 and QianfanDatasetPackColumnName in col_names
+    def is_dataset_packed(self) -> bool:
+        return _whether_dataset_is_packed(self.inner_table.column_names)
 
-    def is_data_grouped(self) -> bool:
-        col_names = self.col_names()
-        return QianfanDataGroupColumnName in col_names
+    def is_dataset_grouped(self) -> bool:
+        return _whether_dataset_is_grouped(self.inner_table.column_names)
 
     def _squash_group_number(self) -> None:
-        if not self.is_data_grouped():
+        if not self.is_dataset_grouped():
             log_warn("squash group number when table isn't grouped")
             return
         self.inner_table = self.inner_table.sort_by(QianfanDataGroupColumnName)
@@ -583,7 +642,7 @@ class Table(Addable, Listable, Processable):
             log_error("can't unpack a dataset when column '_pack' has None")
             return False
 
-        element = self.list(0)[QianfanDatasetPackColumnName]
+        element = self.list(0)
         if not (
             isinstance(element, (list, tuple))
             and element
@@ -643,7 +702,7 @@ class Table(Addable, Listable, Processable):
         self, add_new_group: bool = False, is_grouped: bool = True, group_id: int = -1
     ) -> Dict[str, Any]:
         kwargs: Dict[str, Any] = {}
-        if self.is_data_grouped():
+        if self.is_dataset_grouped():
             if group_id != -1:
                 kwargs = {
                     "group_id": group_id - 1,
@@ -661,7 +720,7 @@ class Table(Addable, Listable, Processable):
                 "add_new_group": add_new_group,
                 "is_grouped": is_grouped,
             }
-        elif self.is_data_packed():
+        elif self.is_dataset_packed():
             kwargs = {"is_dataset_packed": True}
 
         return kwargs

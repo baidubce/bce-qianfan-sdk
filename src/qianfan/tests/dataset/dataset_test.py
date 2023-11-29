@@ -70,7 +70,7 @@ def test_dataset_create():
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())
     assert fake_data_source.buffer == fake_data_source.fetch()
-    assert list(list_ret[0].keys())[0] == "prompt"
+    assert "prompt" in list_ret[0][0].keys()
 
     fake_data_source_2 = FakeDataSource(
         origin_data='{"prompt": "12", "response": [["12"]]}', format=FormatType.Json

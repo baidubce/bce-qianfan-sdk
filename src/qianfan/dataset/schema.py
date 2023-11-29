@@ -26,7 +26,7 @@ from qianfan.utils import log_error, log_info
 def _data_format_converter(func: Callable) -> Callable:
     @functools.wraps(func)
     def inner(schema: Schema, table: Table, *args: Any, **kwargs: Any) -> bool:
-        if table.is_data_packed():
+        if table.is_dataset_packed():
             log_info("unpack dataset before validating")
             table.unpack()
             result = func(schema, table, *args, **kwargs)

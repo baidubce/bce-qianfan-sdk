@@ -149,8 +149,10 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
             # 如果是纯文本，则放置在 prompt 一列下
-            line_data = [{"prompt": line} for line in str_content.split("\n")]
-            pyarrow_table = pyarrow.Table.from_pylist(line_data)
+            line_data = str_content.split("\n")
+            pyarrow_table = pyarrow.Table.from_pydict(
+                {QianfanDatasetPackColumnName: line_data}
+            )
         else:
             error = ValueError(f"unknown format type: {format_type}")
             log_error(str(error))
@@ -177,7 +179,7 @@ class Dataset(Table):
             list_of_json: List[str] = []
 
             # 如果是 Jsonl，则需要处理所有可能的情况
-            if self.is_data_packed():
+            if self.is_dataset_packed():
                 log_info("enter packed deserialization logic")
                 data_list = self.col_list(QianfanDatasetPackColumnName)[
                     QianfanDatasetPackColumnName
@@ -185,7 +187,7 @@ class Dataset(Table):
 
                 for entity in data_list:
                     list_of_json.append(json.dumps(entity, ensure_ascii=False))
-            elif self.is_data_grouped():
+            elif self.is_dataset_grouped():
                 log_info("enter grouped deserialization logic")
                 self._squash_group_number()
                 compo_list: List[List[Dict[str, Any]]] = []
@@ -288,7 +290,7 @@ class Dataset(Table):
         bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
-        organize_data_as_qianfan: bool = True,
+        organize_data_as_group: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -312,11 +314,11 @@ class Dataset(Table):
                 Hugging Face dataset name, not available now
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
-            organize_data_as_qianfan (bool):
+            organize_data_as_group (bool):
                 only available when data source's format is
-                FormatType.Jsonl. indicates whether
-                organize data within dataset in qianfan's format,
-                default to True, and when it's False, the
+                FormatType.Jsonl. Indicates whether
+                organize data within dataset in group format,
+                default to False, and when it's True, the
                 default format will be a group-based 2D structure.
             **kwargs (Any): optional arguments
 
@@ -344,7 +346,7 @@ class Dataset(Table):
             log_error(str(error))
             raise error
 
-        if source.format_type() == FormatType.Jsonl and organize_data_as_qianfan:
+        if table.is_dataset_grouped() and not organize_data_as_group:
             table.pack()
 
         return table
@@ -693,7 +695,8 @@ class Dataset(Table):
         append element(s) to dataset
 
         Args:
-            elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
+            elem (Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict]):
+                Elements added to dataset
             add_new_group (bool):
                 Whether elem has a new group id.
                 Only used when dataset is grouped.
@@ -724,7 +727,8 @@ class Dataset(Table):
         insert element(s) to dataset
 
         Args:
-            elem (Union[List[Dict], Tuple[Dict], Dict]): Elements added to dataset
+            elem (Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict]):
+                Elements added to dataset
             index (int): where to insert element(s)
             group_id (int):
                 which group id you want to apply to new element(s).

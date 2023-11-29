@@ -15,7 +15,7 @@
 test for data source
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pyarrow
 import pytest
@@ -128,10 +128,6 @@ def test_map_row():
     # map操作的函数返回值为空字典
     with pytest.raises(ValueError):
         table.map(lambda x: {})
-
-    # map操作的函数返回值字典的键与首行不匹配
-    with pytest.raises(ValueError):
-        table.map(lambda x: {"c": x["a"]})
 
 
 def test_filter_row():
@@ -323,13 +319,11 @@ def test_pack_table():
     }
 
     packed_row_table = [
-        {
-            QianfanDatasetPackColumnName: [
-                {"column1": "data1", "column2": "data2"},
-                {"column1": "data1", "column2": "data2"},
-            ]
-        },
-        {QianfanDatasetPackColumnName: [{"column1": "data1", "column2": "data2"}]},
+        [
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        [{"column1": "data1", "column2": "data2"}],
     ]
 
     assert table.col_list() == packed_table
@@ -457,3 +451,22 @@ def test_insert_group_data():
     group_col = table.col_list(QianfanDataGroupColumnName)[QianfanDataGroupColumnName]
 
     assert max(group_col) == 3
+
+
+def test_row_packed_map():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+    table.pack()
+
+    assert len(table) == 2
+
+    def _assert_map(obj: List[Dict]) -> List[Dict]:
+        assert isinstance(obj, list) and isinstance(obj[0], dict)
+        return obj
+
+    table.map(_assert_map)

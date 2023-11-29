@@ -158,8 +158,16 @@ class BaseResource(object):
             model = self._model
             endpoint = self._endpoint
         if endpoint is None:
-            m = self._default_model() if model is None else model
-            endpoint = self._supported_models()[m].endpoint
+            model_name = self._default_model() if model is None else model
+            model_info = self._supported_models().get(model_name, None)
+            if model_info is None:
+                raise errors.InvalidArgumentError(
+                    f"The provided model `{model}` is not in the list of supported"
+                    " models. If this is a recently added model, try using the"
+                    " `endpoint` arguments and create an issue to tell us. Supported"
+                    f" models: {self.models()}"
+                )
+            endpoint = model_info.endpoint
         else:
             endpoint = self._convert_endpoint(model, endpoint)
         return model, endpoint

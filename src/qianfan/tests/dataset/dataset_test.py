@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
+from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
@@ -64,7 +65,7 @@ def test_dataset_create():
         ),
         format=FormatType.Jsonl,
     )
-    dataset = Dataset.load(fake_data_source)
+    dataset = Dataset.load(fake_data_source, organize_data_as_qianfan=False)
     list_ret = dataset.list()
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())
@@ -131,3 +132,17 @@ def test_dataset_online_process():
     assert dataset.online_data_process(
         [FilterCheckNumberWords(number_words_min_cutoff=10)]
     )["is_succeeded"]
+
+
+def test_manipulator_group_add_and_delete():
+    dataset = Dataset.create_from_pyobj(
+        [{"test_column": "456"}, {"test_column": "123"}]
+    )
+    dataset.add_default_group_column()
+
+    assert QianfanDataGroupColumnName in dataset.col_names()
+    assert dataset.list()[1][QianfanDataGroupColumnName] == 1
+
+    dataset.delete_group_column()
+
+    assert QianfanDataGroupColumnName not in dataset.col_names()

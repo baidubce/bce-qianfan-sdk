@@ -288,7 +288,7 @@ class Dataset(Table):
         bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
-        organize_data_as_qianfan: bool = False,
+        organize_data_as_qianfan: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -314,9 +314,9 @@ class Dataset(Table):
                 schema used to validate loaded data, default to None
             organize_data_as_qianfan (bool):
                 only available when data source's format is
-                FormatType.Json. indicates whether
+                FormatType.Jsonl. indicates whether
                 organize data within dataset in qianfan's format,
-                default to False, which means not, and
+                default to True, and when it's False, the
                 default format will be a group-based 2D structure.
             **kwargs (Any): optional arguments
 
@@ -611,6 +611,36 @@ class Dataset(Table):
         log_error("should not reach there")
         return ret_dict
 
+    def add_default_group_column(self) -> Self:
+        """
+        add "_group" column to Dataset, the value
+        in "_group" column are sequential incremental
+
+        Returns:
+            Self: Dataset itself
+        """
+
+        if QianfanDataGroupColumnName in self.col_names():
+            # 如果已经存在，则不做任何处理
+            return self
+
+        return self.col_append(
+            {"name": QianfanDataGroupColumnName, "data": list(range(self.row_number()))}
+        )
+
+    def delete_group_column(self) -> Self:
+        """
+        remove "_group" column from Dataset
+
+        Returns:
+            Self: Dataset itself
+        """
+
+        if QianfanDataGroupColumnName not in self.col_names():
+            return self
+
+        return self.col_delete(QianfanDataGroupColumnName)
+
     # -------------------- Processable 相关 ----------------
     # 直接调用 Table 对象的接口方法
     # 这些接口不支持用在云端数据集上
@@ -863,7 +893,7 @@ class Dataset(Table):
 
         Args:
             elem (Dict[str, List]): dict containing element added to dataset
-                must has column name "name" and column data list "data"
+                must have column name "name" and column data list "data"
         Returns:
             Self: Dataset itself
         """

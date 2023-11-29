@@ -231,6 +231,32 @@ class ChatCompletion(BaseResource):
                     "stop",
                 },
             ),
+            "XuanYuan-70B-Chat-4bit": QfLLMInfo(
+                endpoint="/chat/xuanyuan_70b_chat",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
+                },
+            ),
+            "Qianfan-Chinese-Llama-2-13B": QfLLMInfo(
+                endpoint="/chat/qianfan_chinese_llama_2_13b",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
+                },
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 required_keys={"messages"},

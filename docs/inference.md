@@ -60,8 +60,12 @@ while True:
 - [Llama-2-70b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lkjfhiyt)
 - [Qianfan-BLOOMZ-7B-compressed](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/nllyzpcmp)
 - [Qianfan-Chinese-Llama-2-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sllyztytp)
+- [Qianfan-Chinese-Llama-2-13B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lo479b4b)
 - [ChatGLM2-6B-32K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Bllz001ff)
 - [AquilaChat-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ollz02e7i)
+- [XuanYuan-70B-Chat-4bit](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Ylp88e5jc)
+
+支持的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
 
@@ -113,6 +117,13 @@ async for r in resp:
 # 调用非平台内置的模型
 resp = comp.do(endpoint="your_custom_endpoint", prompt="你好")
 ```
+
+目前，平台预置的续写模型有：
+
+- [SQLCoder-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo472sa2)
+- [CodeLlama-7b-Instruct](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ylo47d03k)
+
+同时 SDK 也支持传入对话类模型实现续写任务。
 
 #### **Embedding 向量化**
 

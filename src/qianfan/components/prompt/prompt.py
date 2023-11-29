@@ -372,3 +372,108 @@ class Prompt(HubSerializable):
         Convert a dictionary to a prompt.
         """
         return cls(mode="local", **dic)
+
+    @classmethod
+    def base_prompt(
+        cls,
+        prompt: str,
+        background: str = "",
+        additional_data: str = "",
+        output_schema: str = "",
+    ) -> str:
+        """
+        Generates a base type prompt for language models.
+
+        Parameters:
+          prompt (str):
+            The main text prompt that defines the task or query for the language model.
+          background (str, optional):
+            Additional context or background information to provide more context to the
+            model.
+          additional_data (str, optional):
+            Extra data that can be included to enhance the specificity or details of
+            the prompt.
+          output_schema (str, optional):
+            The desired schema for formatting the output of the language model.
+
+        Please refer to the following link for more details about CRISPE prompt.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlo55g7t3
+        """
+        prompt = f"指令:{prompt}"
+        background = f"背景信息:{background}" if background != "" else ""
+        additional_data = f"补充数据:{additional_data}" if additional_data != "" else ""
+        output_schema = f"输出格式:{output_schema}" if output_schema != "" else ""
+        return "\n".join([prompt, background, additional_data, output_schema])
+
+    @classmethod
+    def crispe_prompt(
+        cls,
+        statement: str,
+        capacity: str = "",
+        insight: str = "",
+        personality: str = "",
+        experiment: str = "",
+    ) -> str:
+        """
+        Generates a CRISPE-type prompt for fine-tuning models.
+
+        Parameters:
+          statement (str):
+            The main task that the model should focus on.
+          capacity (str, optional):
+            Capacity information specifying what role you want the model to play.
+          insight (str, optional):
+            Insights or guidance to provide additional context for the fine-tuning task.
+          personality (str, optional):
+            The output style or personality of the model.
+          experiment (str, optional):
+            The limit of the output range of the model.
+
+        Please refer to the following link for more details about CRISPE prompt.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo56qd21
+        """
+        prompt_list = []
+        if capacity != "":
+            prompt_list.append(f"能力与角色：{capacity}")
+        if insight != "":
+            prompt_list.append(f"背景信息：{insight}")
+        if statement != "":
+            prompt_list.append(f"指令：{statement}")
+        if personality != "":
+            prompt_list.append(f"输出风格：{personality}")
+        if experiment != "":
+            prompt_list.append(f"输出范围：{experiment}")
+        return "\n".join(prompt_list)
+
+    @classmethod
+    def fewshot_prompt(
+        cls,
+        prompt: str = "",
+        examples: List[Tuple[str, str]] = [],
+    ) -> str:
+        """
+        Generates a few-shot prompt for model input.
+
+        Parameters:
+          prompt (str):
+            The main prompt that sets the context for what task should the model
+            focus on.
+          examples (List[Tuple[str, str]]):
+            A list of example tuples, where each tuple contains a model input string
+            and its corresponding expected output. These examples help the model
+            understand the desired behavior.
+
+        Please refer to the following link for more details about fewshot prompt.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlo57dbf4
+
+        """
+        if len(examples) == 0:
+            raise InvalidArgumentError("At least one example is required.")
+        examples_prompt = [f"输入:{inp}\n输出:{outp}" for inp, outp in examples]
+        output = "\n\n".join(examples_prompt)
+        if prompt != "":
+            output = prompt + "\n\n" + output
+        return output

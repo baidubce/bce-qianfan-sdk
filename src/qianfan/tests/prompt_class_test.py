@@ -189,3 +189,69 @@ def test_load_and_save():
         new_prompt = Prompt.from_file(tmp_file)
         assert new_prompt.template == template
         assert new_prompt.render(var1="test") == prompt.render(var1="test")
+
+
+def test_framework():
+    """
+    test prompt framework
+    """
+    # Basic 类型
+    basic_prompt = Prompt.base_prompt(
+        prompt="帮我写一个年终总结",
+        background="今年个人业绩情况为{var}。",
+        additional_data="要去做演讲，风格要简约。",
+        output_schema="输出内容要有成绩总结、遗留问题、改进措施和未来规划4项。",
+    )
+    assert (
+        basic_prompt
+        == "指令:帮我写一个年终总结\n背景信息:今年个人业绩情况为{var}。"
+        "\n补充数据:要去做演讲，风格要简约。\n输出格式:输出内容要有成绩总结、"
+        "遗留问题、改进措施和未来规划4项。"
+    )
+
+    basic_prompt = Prompt.base_prompt(
+        prompt="帮我写一个年终总结",
+    )
+    assert basic_prompt == "指令:帮我写一个年终总结\n\n\n"  # multiple \n is required
+
+    # CRISPE 类型
+    crispe_prompt = Prompt.crispe_prompt(
+        capacity="你现在是一个资深律师。",
+        insight="最近你接了一个财务侵占的官司，涉案金额{money}元，你是受害人的辩护律师。",
+        statement="请帮忙出一个法律公告，警示被告尽快偿还非法侵占的财务。",
+        personality="公告内容要严谨严肃专业。",
+        experiment="公告内容不宜超过800字。",
+    )
+    assert (
+        crispe_prompt
+        == "能力与角色：你现在是一个资深律师。"
+        "\n背景信息：最近你接了一个财务侵占的官司，涉案金额{money}元，"
+        "你是受害人的辩护律师。\n指令：请帮忙出一个法律公告，"
+        "警示被告尽快偿还非法侵占的财务。\n输出风格：公告内容要严谨严肃专业。"
+        "\n输出范围：公告内容不宜超过800字。"
+    )
+    crispe_prompt = Prompt.crispe_prompt(
+        insight="最近你接了一个财务侵占的官司，涉案金额{money}元，你是受害人的辩护律师。",
+        statement="请帮忙出一个法律公告，警示被告尽快偿还非法侵占的财务。",
+    )
+    assert (
+        crispe_prompt
+        == "背景信息：最近你接了一个财务侵占的官司，涉案金额{money}元，"
+        "你是受害人的辩护律师。\n指令：请帮忙出一个法律公告，"
+        "警示被告尽快偿还非法侵占的财务。"
+    )
+
+    # Fewshot 类型
+    fewshot_prompt = Prompt.fewshot_prompt(
+        prompt="现在在做一个数学计算游戏，请根据下述规则回答最后一个示例的问题",
+        examples=[("1 2", "3"), ("2 3", "5"), ("3 4", "")],
+    )
+    assert (
+        fewshot_prompt
+        == "现在在做一个数学计算游戏，请根据下述规则回答最后一个示例的问题\n\n输入:1"
+        " 2\n输出:3\n\n输入:2 3\n输出:5\n\n输入:3 4\n输出:"
+    )
+    fewshot_prompt = Prompt.fewshot_prompt(
+        examples=[("1 2", "3"), ("2 3", "5"), ("3 4", "")],
+    )
+    assert fewshot_prompt == "输入:1 2\n输出:3\n\n输入:2 3\n输出:5\n\n输入:3 4\n输出:"

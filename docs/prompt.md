@@ -114,6 +114,60 @@ prompt, _ = p.render(usage="测试")
 print(prompt) # => 这是一个用于测试的 Prompt
 ```
 
+### 框架类型
+
+为了能够让模型更好的理解输入，需要提供足够详细的信息，千帆提供了数个 Prompt 框架类型，能够帮助用户编写出足够高质量的 Prompt，目前 SDK 支持如下框架类型：
+
+- `NotUse`（默认）：不使用框架
+- `Basic`：通过指令、背景信息、补充数据、输出格式四个维度表述 Prompt，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlo55g7t3)
+- `CRISPE`：通过 **C**apacity and **R**ole 人设、**I**nsight 背景信息和上下文、**S**tatement 执行的任务、**P**ersonality 风格、**E**xperiment 实践几个维度表述 Prompt，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo56qd21)
+- `Fewshot`：通过少数几个示例指导模型进行回答，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilommtfb1)
+
+```python
+# 引入 PromptFrameworkType
+from qianfan.consts import PromptFrameworkType
+from qianfan.components import Prompt
+
+# Basic 类型
+basic_prompt = Prompt.base_prompt(
+    prompt="帮我写一个年终总结",
+    background="今年个人业绩情况为{var}。",
+    additional_data="要去做演讲，风格要简约。",
+    output_schema="输出内容要有成绩总结、遗留问题、改进措施和未来规划4项。"
+)
+prompt = Prompt(
+    template=basic_prompt,
+    framework_type=PromptFrameworkType.Basic
+)
+
+# CRISPE 类型
+crispe_prompt = Prompt.crispe_prompt(
+    capacity="你现在是一个资深律师。",
+    insight="最近你接了一个财务侵占的官司，涉案金额{money}元，你是受害人的辩护律师。",
+    statement="请帮忙出一个法律公告，警示被告尽快偿还非法侵占的财务。",
+    personality="公告内容要严谨严肃专业。",
+    experiment="公告内容不宜超过800字。",
+)
+prompt = Prompt(
+    template=crispe_prompt,
+    framework_type=PromptFrameworkType.CRISPE
+)
+
+# Fewshot 类型
+fewshot_prompt = Prompt.fewshot_prompt(
+    prompt="现在在做一个数学计算游戏，请根据下述规则回答最后一个示例的问题",
+    examples=[
+        ("1 2","3"),
+        ("2 3","5"),
+        ("3 4","")
+    ]
+)
+prompt = Prompt(
+    template=fewshot_prompt,
+    framework_type=PromptFrameworkType.Fewshot
+)
+```
+
 ## Prompt 接口
 
 目前支持的 Prompt 操作有：
@@ -159,12 +213,7 @@ resp = Prompt.create(
 )
 ```
 
-Prompt 框架类型包括 
-
-- `NotUse`（默认）：不使用框架
-- `Basic`：通过指令、背景信息、补充数据、输出格式四个维度表述 Prompt，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlo55g7t3)
-- `CRISPE`：通过 **C**apacity and **R**ole 人设、**I**nsight 背景信息和上下文、**S**tatement 执行的任务、**P**ersonality 风格、**E**xperiment 实践几个维度表述 Prompt，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo56qd21)
-- `Fewshot`：通过少数几个示例指导模型进行回答，详见 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilommtfb1)
+关于框架类型，参见 [框架类型](#框架类型) 一节。
 
 千帆还提供了针对文生图场景的 Prompt，与上述使用方式一致，区别在于额外提供了 `negative_templates` 和 `negative_variables` 字段，表示负面 Prompt，这一参数通过 `scene=PromptSceneType.Text2Image` 开启。
 

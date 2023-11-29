@@ -64,9 +64,9 @@ class Prompt(HubSerializable):
 
     def __init__(
         self,
-        mode: Literal["local", "remote"] = "remote",
         name: Optional[str] = None,
         template: Optional[str] = None,
+        mode: Optional[Literal["local", "remote"]] = None,
         identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"] = "{}",
         variables: Optional[List[str]] = None,
         labels: List[PromptLabel] = [],
@@ -109,9 +109,14 @@ class Prompt(HubSerializable):
           creator_name (Optional[str]):
             The name of the creator of the prompt.
         """
-        # if name is not provided, the mode will be `local`
-        if name is None:
-            mode = "local"
+        # if user does not provide mode, select mode according to other arguments
+        if mode is None:
+            if name is not None:
+                mode = "remote"
+            elif template is not None:
+                mode = "local"
+            else:
+                raise InvalidArgumentError("either name or template is required")
         self._mode = mode
         # in `remote` mode, the object is initialized by name
         if mode == "remote":

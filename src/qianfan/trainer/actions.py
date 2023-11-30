@@ -21,7 +21,6 @@ from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.base import (
     BaseAction,
-    EventHandler,
     with_event,
 )
 from qianfan.trainer.configs import DefaultTrainConfigMapping, DeployConfig, TrainConfig
@@ -55,10 +54,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def __init__(
         self,
         dataset: Optional[Dataset] = None,
-        event_handler: Optional[EventHandler] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
-        super().__init__(event_handler=event_handler)
+        super().__init__(**kwargs)
         self.dataset = dataset
 
     @with_event
@@ -73,6 +71,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             )
         log_debug("[load_dataset_action] prepare train-set")
         qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
+        print("==>")
         is_released = qf_data_src.release_dataset()
         if not is_released:
             raise InvalidArgumentError("dataset must be released")
@@ -365,16 +364,14 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     model_id: Optional[int]
     model_version_id: Optional[int]
 
-    def __init__(
-        self, deploy_config: Optional[DeployConfig] = None, **kwargs: Dict[str, Any]
-    ):
+    def __init__(self, deploy_config: Optional[DeployConfig] = None, **kwargs: Any):
         """
 
         Parameters:
             deploy_config (Optional[DeployConfig], optional):
                 deploy config include replicas and so on. Defaults to None.
         """
-        super().__init__(kwargs=kwargs)
+        super().__init__(**kwargs)
         self.deploy_config = deploy_config
 
     @with_event

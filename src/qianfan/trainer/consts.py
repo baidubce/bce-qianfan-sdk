@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
+from typing import Any, Dict
+
+from qianfan.resources import ChatCompletion, Completion, Embedding, Text2Image
 
 
 class ActionState(str, Enum):
@@ -36,7 +39,15 @@ class ActionState(str, Enum):
 class FinetuneStatus(str, Enum):
     Unknown = "Unknown"
     """未知状态"""
-    Created = "Created"
+    DatasetLoading = "DatasetLoading"
+    """数据集加载中"""
+    DatasetLoaded = "DatasetLoaded"
+    """数据集加载完成"""
+    DatasetLoadFailed = "DatasetLoadFailed"
+    """数据集加载失败"""
+    DatasetLoadStopped = "DatasetLoadStopped"
+    """数据集停止加载"""
+    TrainCreated = "TrainCreated"
     """任务创建，初始化"""
     Training = "Training"
     """训练中 对应训练任务运行时API状态的Running"""
@@ -92,3 +103,12 @@ class ServiceType(str, Enum):
     """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
     """Corresponding to the `Text2Image"""
+
+
+# service type -> resources class
+ServiceTypeResourcesMapping: Dict[ServiceType, Any] = {
+    ServiceType.Chat: ChatCompletion,
+    ServiceType.Completion: Completion,
+    ServiceType.Embedding: Embedding,
+    ServiceType.Text2Image: Text2Image,
+}

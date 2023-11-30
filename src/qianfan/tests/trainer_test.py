@@ -23,7 +23,7 @@ from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.consts import ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
-from qianfan.trainer.model import Model
+from qianfan.trainer.model import Model, Service
 
 
 class MyEventHandler(EventHandler):
@@ -147,4 +147,11 @@ def test_model_deploy():
     )
 
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
+    assert resp["result"] != ""
+
+
+def test_service():
+    svc = Service(model="ERNIE-Bot", service_type=ServiceType.Chat)
+    resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
+    assert resp is not None
     assert resp["result"] != ""

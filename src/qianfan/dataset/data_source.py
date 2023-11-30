@@ -1009,6 +1009,10 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: Whether releasing succeeded
         """
+        info = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+        status = info["releaseStatus"]
+        if status == DataReleaseStatus.Finished:
+            return True
         Data.release_dataset(self.id)
         while True:
             sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)

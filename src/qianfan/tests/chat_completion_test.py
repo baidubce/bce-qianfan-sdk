@@ -24,6 +24,7 @@ import pytest
 
 import qianfan
 import qianfan.tests.utils
+from qianfan.consts import Consts
 from qianfan.tests.utils import EnvHelper, fake_access_token
 
 QIANFAN_SUPPORT_CHAT_MODEL = {
@@ -226,6 +227,12 @@ def test_generate_multiturn_stream():
             messages.append(
                 {"role": "user", "content": TEST_MULTITURN_MESSAGES[turn + 1]}
             )
+
+
+def test_request_id():
+    chat_comp = qianfan.ChatCompletion()
+    resp = chat_comp.do(messages=TEST_MESSAGE, request_id="custom_req")
+    assert resp.headers[Consts.XResponseID] == "custom_req"
 
 
 @pytest.mark.asyncio

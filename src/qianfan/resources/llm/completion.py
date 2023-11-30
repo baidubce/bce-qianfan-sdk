@@ -337,6 +337,7 @@ class Completion(BaseResource):
         stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
@@ -374,6 +375,8 @@ class Completion(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        if request_id is not None:
+            kwargs["request_id"] = request_id
 
         return self._do(
             model,
@@ -393,6 +396,7 @@ class Completion(BaseResource):
         stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -430,6 +434,8 @@ class Completion(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        if request_id is not None:
+            kwargs["request_id"] = request_id
 
         return await self._ado(
             model,

@@ -16,7 +16,6 @@
 Library aimed to helping developer to interactive with LLM.
 """
 
-
 from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
 from qianfan.resources import (
     ChatCompletion,

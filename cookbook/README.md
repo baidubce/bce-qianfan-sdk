@@ -8,6 +8,7 @@
 - [图生文示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/text2image.ipynb)：展示了如何使用千帆 SDK 完成图生文任务。
 - [ERNIE Bot 搜索能力示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了 ENRIE Bot 的搜索增强能力和使用方法。
 - [批量预测示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了如何使用 SDK 批量对数据进行预测。
+- [Prompt 模版](./prompt.ipynb)：展示了如何使用 SDK 管理和使用 Prompt。
 
 
 ## Agent 相关

@@ -24,10 +24,11 @@ import random
 import threading
 import time
 from functools import wraps
+from io import BytesIO
 
 import flask
 import requests
-from flask import Flask, request
+from flask import Flask, request, send_file
 
 from qianfan.consts import APIErrorCode, Consts
 
@@ -1368,7 +1369,7 @@ def prompt_update():
     return json_response(
         {
             "log_id": "9sh0grwe6ydfi318",
-            "result": {"templateId": 732},
+            "result": {"templateId": 1733},
             "status": 200,
             "success": True,
         }
@@ -1386,6 +1387,90 @@ def prompt_delete():
 @app.route(Consts.PromptListAPI, methods=["POST"])
 @iam_auth_checker
 def prompt_list():
+    name = request.json.get("name", None)
+    if name is not None:
+        if "txt2img" in name:
+            return json_response(
+                {
+                    "log_id": "4235xa2mjupupcwe",
+                    "result": {
+                        "total": 239,
+                        "items": [
+                            {
+                                "templateId": 724,
+                                "templateName": name,
+                                "templateContent": "txt2img template {badvar} ((v1))",
+                                "templateVariables": "v1",
+                                "variableIdentifier": "(())",
+                                "negativeTemplateContent": "negative ((v3))",
+                                "negativeTemplateVariables": "v3",
+                                "labels": [
+                                    {
+                                        "labelId": 188,
+                                        "labelName": "图像生成",
+                                        "color": "#0099E6",
+                                    }
+                                ],
+                                "creatorName": "ut",
+                                "type": 1,
+                                "sceneType": 2,
+                                "frameworkType": 0,
+                            },
+                        ],
+                    },
+                    "status": 200,
+                    "success": True,
+                }
+            )
+        else:
+            return json_response(
+                {
+                    "log_id": "8cpba3jt9svbk81d",
+                    "result": {
+                        "total": 24,
+                        "items": [
+                            {
+                                "templateId": 11831,
+                                "templateName": "example_prompt",
+                                "templateContent": "template (v1) {v2} (v3)",
+                                "templateVariables": "v1",
+                                "variableIdentifier": "()",
+                                "labels": [
+                                    {
+                                        "labelId": 150,
+                                        "labelName": "test_label",
+                                        "color": "#0099E6",
+                                    }
+                                ],
+                                "creatorName": "ut",
+                                "type": 2,
+                                "sceneType": 1,
+                                "frameworkType": 2,
+                            },
+                            {
+                                "templateId": 11827,
+                                "templateName": name,
+                                "templateContent": "example template {var1}",
+                                "templateVariables": "var1",
+                                "variableIdentifier": "{}",
+                                "labels": [
+                                    {
+                                        "labelId": 150,
+                                        "labelName": "test",
+                                        "color": "#0099E6",
+                                    }
+                                ],
+                                "creatorName": "ut",
+                                "type": 2,
+                                "sceneType": 1,
+                                "frameworkType": 0,
+                            },
+                        ],
+                    },
+                    "status": 200,
+                    "success": True,
+                }
+            )
     return json_response(
         {
             "log_id": "4235xa2mjupupcwe",
@@ -2009,6 +2094,63 @@ def list_all_entity_in_dataset():
             "success": True,
         }
     )
+
+
+@app.route("/mock/hub/prompt", methods=["GET"])
+def mock_hub_file():
+    buffer = BytesIO()
+    content = """{
+    "sdk_version": "0.2.0",
+    "obj": {
+        "module": "qianfan.components.prompt.prompt",
+        "type": "Prompt",
+        "args": {
+            "name": "穿搭灵感",
+            "template": "请推荐三套{style}适合通勤的{gender}衣着搭配",
+            "variables": [
+                "style",
+                "gender"
+            ],
+            "labels": [
+                {
+                    "module": "qianfan.components.prompt.prompt",
+                    "type": "PromptLabel",
+                    "args": {
+                        "id": 1734,
+                        "name": "生活助手",
+                        "color": "#2468F2"
+                    }
+                }
+            ],
+            "identifier": "{}",
+            "type": {
+                "module": "qianfan.consts",
+                "type": "PromptType",
+                "args": {
+                    "value": 1
+                }
+            },
+            "scene_type": {
+                "module": "qianfan.consts",
+                "type": "PromptSceneType",
+                "args": {
+                    "value": 1
+                }
+            },
+            "framework_type": {
+                "module": "qianfan.consts",
+                "type": "PromptFrameworkType",
+                "args": {
+                    "value": 0
+                }
+            },
+            "creator_name": ""
+        }
+    }
+}"""
+    buffer.write(bytes(content, "utf-8"))
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="prompt.json")
 
 
 def _start_mock_server():

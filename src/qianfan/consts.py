@@ -17,6 +17,7 @@ Consts used in qianfan sdk
 """
 
 import enum
+from qianfan.version import VERSION
 
 
 class APIErrorCode(enum.Enum):
@@ -169,7 +170,7 @@ class Consts:
     STREAM_RESPONSE_PREFIX: str = "data: "
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
-    QianfanRequestIdDefaultPrefix: str = "qianfan"
+    QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"
 
 
 class DefaultLLMModel:

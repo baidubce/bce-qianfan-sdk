@@ -167,6 +167,9 @@ class Consts:
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
+    XRequestID: str = "Request_id"
+    XResponseID: str = "X-Baidu-Request-Id"
+    QianfanRequestIdDefaultPrefix: str = "qianfan"
 
 
 class DefaultLLMModel:

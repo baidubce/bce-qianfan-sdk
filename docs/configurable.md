@@ -49,3 +49,15 @@ chat_comp = qianfan.ChatCompletion()
 import qianfan
 chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```
+
+### request_id
+
+千帆SDK支持对用户对接口请求进行track，可以传入`request_id`作为参数以标记一次resources api 调用， 并在返回值中的header `X-Baidu-Request-id` 得到相对应的`request_id`
+不传入request的情况下，sdk将生成随机的request_id
+
+示例如下：
+```python
+import qianfan 
+chat_comp = qianfan.Completion()
+chat_comp = do(prompt="hi", request_id="sdk_01")
+```

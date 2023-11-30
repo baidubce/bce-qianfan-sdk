@@ -35,7 +35,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
-from qianfan.consts import DefaultValue
+from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn
@@ -359,9 +359,17 @@ class BaseResource(object):
         """
         generate header
         """
-        if "header" in kwargs:
-            return kwargs["header"]
-        return {}
+        if "header" not in kwargs:
+            kwargs["header"] = {}
+        kwargs["header"][Consts.XRequestID] = (
+            kwargs["request_id"]
+            if "request_id" in kwargs
+            else (
+                f"{Consts.QianfanRequestIdDefaultPrefix}-"
+                "{utils.generate_letter_num_random_id(32)}"
+            )
+        )
+        return kwargs["header"]
 
     def _generate_query(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any

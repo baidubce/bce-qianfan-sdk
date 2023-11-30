@@ -80,14 +80,19 @@ def completion_stream_response(model, prompt=""):
         ) + "\n\n"
 
 
-def json_response(data):
+def json_response(data, request_id=None):
     """
     wrapper of the response
     """
-    return flask.Response(
+
+    resp = flask.Response(
         json.dumps({**data, "_request": request.json, "_params": request.args}),
         mimetype="application/json",
+        # header=header
     )
+    if request_id is not None:
+        resp.headers[Consts.XResponseID] = request_id
+    return resp
 
 
 def chat_completion_stream_response(model, messages):
@@ -235,6 +240,31 @@ def chat(model_name):
     mock /chat/<model_name> chat completion api
     """
     r = request.json
+    request_header = request.headers
+    request_id = request_header[Consts.XRequestID]
+    if request_id == "custom_req":
+        return json_response(
+            {
+                "id": "as-bcmt5ct4id",
+                "object": "chat.completion",
+                "created": 1680167072,
+                "result": "-->end of truncated]",
+                "is_truncated": False,
+                "need_clear_history": False,
+                "usage": {
+                    "prompt_tokens": 7,
+                    "completion_tokens": 67,
+                    "total_tokens": 74,
+                },
+                "_for_ut": {
+                    "model": "truncated",
+                    "turn": None,
+                    "stream": False,
+                    "type": "chat",
+                },
+            },
+            request_id,
+        )
     # check messages
     check_result = check_messages(r["messages"])
     if model_name == "truncated":

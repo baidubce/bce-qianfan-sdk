@@ -59,8 +59,8 @@ def load(
 
     Parameters:
       src (Optional[str]):
-        A str indicating the source on qianfan platform. The str should be in the format 
-        of <type>/<name>.
+        A str indicating the source on qianfan platform. The str should be in the
+        format of <type>/<name>.
       json_str (Optional[str]):
         A JSON-formatted string containing the serialized representation of the object,
         which is the return value of the `hub.save` method.

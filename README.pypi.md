@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
-[Documentation](https://qianfan.readthedocs.io/en/stable/README.html) | [Github](https://github.com/baidubce/bce-qianfan-sdk) | [Cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook) 
+[Documentation](https://qianfan.readthedocs.io/en/stable/README.html) | [GitHub](https://github.com/baidubce/bce-qianfan-sdk) | [Cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook) 
 
 针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
 
@@ -91,15 +91,20 @@ print(resp["result"])
 
 ## 功能导览
 
-千帆平台提供了大模型相关的诸多能力，SDK 提供了对各能力的调用，具体功能如下：
+千帆平台提供了大模型相关的诸多能力，SDK 提供了对各能力的调用，具体介绍可以看到 [SDK 文档](https://qianfan.readthedocs.io/en/stable/README.html) 或者 [GitHub 仓库](https://github.com/baidubce/bce-qianfan-sdk)。
 
-- **大模型能力** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/inference.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/inference.md)]：调用千帆平台预置和用户调优后的模型，包括对话、续写、向量化、插件调用、文生图等模型。
-- **模型调优** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/train.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/train.md)]：在千帆平台上进行训练任务的创建、运行、详情获取以及停止等操作。
-- **模型管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/model_management.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/model_management.md)]：管理训练完成后的模型，包括获取模型、版本详情以及将训练任务发布为模型。
-- **模型服务** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/service.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/service.md)]：将模型发布成服务，实现通过模型调用，以及查询服务详情。
-- **数据集管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/dataset.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/dataset.md)]：能够在千帆平台上进行数据集的创建、发布、导入、获取详情以及删除等操作。
-- **Prompt 管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/prompt.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/prompt.md)]：管理文生文和文生图任务的 Prompt，包括创建、更新、删除、获取详情、获取列表以及获取标签列表。
-- **其他**：SDK 还提供一些辅助工具帮助更好地使用千帆所提供的功能
+- **大模型能力** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/inference.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/inference.md)]
+  - Chat 对话
+  - Completion 续写
+  - Embedding 向量化
+  - Plugin 插件调用
+  - Text2Image 文生图
+- **模型调优** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/train.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/train.md)]
+- **模型管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/model_management.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/model_management.md)]
+- **模型服务** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/service.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/service.md)]
+- **数据集管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/dataset.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/dataset.md)]
+- **Prompt 管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/prompt.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/prompt.md)]
+- **其他**
   - Tokenizer [[Doc](https://qianfan.readthedocs.io/en/stable/docs/utils.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/utils.md)]
   - 接口流控 [[Doc](https://qianfan.readthedocs.io/en/stable/docs/configurable.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/configurable.md)]
 

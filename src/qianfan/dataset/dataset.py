@@ -25,11 +25,13 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import pyarrow.json
 import requests
+from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 
 from qianfan import get_config
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -47,6 +49,9 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
+from qianfan.dataset.utils import (
+    _construct_table_from_nest_sequence,
+)
 from qianfan.errors import RequestError, ValidationError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
@@ -67,11 +72,30 @@ def _online_except_decorator(func: Callable) -> Callable:
 class Dataset(Table):
     """Dataset"""
 
-    # 内部的数据源对象，在 load 时被指定
-    inner_data_source_cache: Optional[DataSource] = None
+    def __init__(
+        self,
+        inner_table: PyarrowTable,
+        inner_data_source_cache: Optional[DataSource] = None,
+        inner_schema_cache: Optional[Schema] = None,
+    ) -> None:
+        """
+        Init a Dataset Object
 
-    # schema 对象的缓存，在 load 时被指定
-    inner_schema_cache: Optional[Schema] = None
+        Args:
+            inner_table (PyarrowTable):
+                a pyarrow.Table object wrapped by Table
+            inner_data_source_cache (Optional[DataSource]):
+                a data source cache where the dataset was loaded from
+            inner_schema_cache (Optional[Schema]):
+                schema cache used when dataset was loaded
+        """
+        super().__init__(inner_table)
+
+        # 内部的数据源对象，在 load 时被指定
+        self.inner_data_source_cache: Optional[DataSource] = inner_data_source_cache
+
+        # schema 对象的缓存，在 load 时被指定
+        self.inner_schema_cache: Optional[Schema] = inner_schema_cache
 
     @classmethod
     def _from_source(
@@ -109,11 +133,7 @@ class Dataset(Table):
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
             if isinstance(json_data_list[0], list):
-                inner_list: List[Dict[str, Any]] = []
-                for i in range(len(json_data_list)):
-                    for pair in json_data_list[i]:
-                        inner_list.append({**pair, QianfanDataGroupColumnName: i})
-                pyarrow_table = pyarrow.Table.from_pylist(inner_list)
+                pyarrow_table = _construct_table_from_nest_sequence(json_data_list)
             elif isinstance(json_data_list[0], dict):
                 # 如果读取的是一个 Json 字典的列表，则正常存储，此时行列的处理能力可用
                 pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
@@ -129,8 +149,10 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
             # 如果是纯文本，则放置在 prompt 一列下
-            line_data = [{"prompt": line} for line in str_content.split("\n")]
-            pyarrow_table = pyarrow.Table.from_pylist(line_data)
+            line_data = str_content.split("\n")
+            pyarrow_table = pyarrow.Table.from_pydict(
+                {QianfanDatasetPackColumnName: line_data}
+            )
         else:
             error = ValueError(f"unknown format type: {format_type}")
             log_error(str(error))
@@ -156,9 +178,18 @@ class Dataset(Table):
         elif format_type == FormatType.Jsonl:
             list_of_json: List[str] = []
 
-            # 如果是 Jsonl，则需要处理可能的分组情况
-            column_names = self.inner_table.column_names
-            if QianfanDataGroupColumnName in column_names:
+            # 如果是 Jsonl，则需要处理所有可能的情况
+            if self.is_dataset_packed():
+                log_info("enter packed deserialization logic")
+                data_list = self.col_list(QianfanDatasetPackColumnName)[
+                    QianfanDatasetPackColumnName
+                ]
+
+                for entity in data_list:
+                    list_of_json.append(json.dumps(entity, ensure_ascii=False))
+            elif self.is_dataset_grouped():
+                log_info("enter grouped deserialization logic")
+                self._squash_group_number()
                 compo_list: List[List[Dict[str, Any]]] = []
                 for row in self.inner_table.to_pylist():
                     group_index = row[QianfanDataGroupColumnName]
@@ -171,10 +202,12 @@ class Dataset(Table):
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
             elif isinstance(source, QianfanDataSource):
                 # 导出到千帆且非嵌套时需要使用特殊格式，只支持文本类数据
+                log_info("enter qianfan deserialization logic")
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(f"[{json.dumps(elem, ensure_ascii=False)}]")
             else:
+                log_info("enter else logic")
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
@@ -187,7 +220,7 @@ class Dataset(Table):
 
         elif format_type == FormatType.Text:
             # 导出为纯文本时，列的数量不可大于 1
-            if self.get_column_count() > 1:
+            if self.column_number() > 1:
                 error = ValueError(
                     "cannot export dataset to pure text if the number of column is"
                     " greater than 1"
@@ -208,6 +241,7 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
+        bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
@@ -232,6 +266,13 @@ class Dataset(Table):
                 f" {qianfan_dataset_create_args}, with args: {kwargs}"
             )
             return QianfanDataSource.create_bare_dataset(**qianfan_dataset_create_args)
+
+        if bos_load_args:
+            log_info(
+                "construct a new qianfan data source from bos loading:"
+                f" {bos_load_args}, with args: {kwargs}"
+            )
+            return QianfanDataSource.create_from_bos_file(**bos_load_args)
         if huggingface_name:
             error = ValueError("huggingface not supported yet")
             log_error(str(error))
@@ -241,32 +282,15 @@ class Dataset(Table):
         return None
 
     @classmethod
-    def _get_qianfan_schema(cls, source: QianfanDataSource) -> Schema:
-        """推断获取 Schema"""
-        template_type = source.template_type
-        if template_type == DataTemplateType.SortedConversation:
-            return QianfanSortedConversation()
-        if template_type == DataTemplateType.NonSortedConversation:
-            return QianfanSortedConversation()
-        if template_type == DataTemplateType.GenericText:
-            return QianfanGenericText()
-        if template_type == DataTemplateType.QuerySet:
-            return QianfanQuerySet()
-        if template_type == DataTemplateType.Text2Image:
-            return QianfanText2Image()
-
-        error = ValueError(f"schema didn't find for template type {template_type}")
-        log_error(str(error))
-        raise error
-
-    @classmethod
     def load(
         cls,
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
+        bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
+        organize_data_as_group: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -283,11 +307,20 @@ class Dataset(Table):
                 dataset local file path, default to None
             qianfan_dataset_id (Optional[int]):
                 qianfan dataset ID, default to None
+            bos_load_args: (Optional[Dict[str, Any]]):
+                create a dataset and import initial dataset content
+                from args
             huggingface_name (Optional[str]):
                 Hugging Face dataset name, not available now
-            schema: (Optional[Schema]):
+            schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
-            kwargs (Any): optional arguments
+            organize_data_as_group (bool):
+                only available when data source's format is
+                FormatType.Jsonl. Indicates whether
+                organize data within dataset in group format,
+                default to False, and when it's True, the
+                default format will be a group-based 2D structure.
+            **kwargs (Any): optional arguments
 
         Returns:
             Dataset: a dataset instance
@@ -298,6 +331,7 @@ class Dataset(Table):
             source = cls._from_args_to_source(
                 data_file=data_file,
                 qianfan_dataset_id=qianfan_dataset_id,
+                bos_load_args=bos_load_args,
                 huggingface_name=huggingface_name,
                 **kwargs,
             )
@@ -312,6 +346,9 @@ class Dataset(Table):
             log_error(str(error))
             raise error
 
+        if table.is_dataset_grouped() and not organize_data_as_group:
+            table.pack()
+
         return table
 
     def save(
@@ -320,7 +357,6 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
-        huggingface_name: Optional[str] = None,
         schema: Optional[Schema] = None,
         **kwargs: Any,
     ) -> bool:
@@ -341,8 +377,6 @@ class Dataset(Table):
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
                 default to None
-            huggingface_name (Optional[str]):
-                Hugging Face dataset name, not available now
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
             kwargs (Any): optional arguments
@@ -356,7 +390,7 @@ class Dataset(Table):
                 data_file,
                 qianfan_dataset_id,
                 qianfan_dataset_create_args,
-                huggingface_name,
+                is_download_to_local=False,
                 **kwargs,
             )
 
@@ -369,11 +403,11 @@ class Dataset(Table):
         # 如果导出的数据源是千帆，则强制构造 schema 进行检查，优先级最高
         if isinstance(source, QianfanDataSource):
             # 一个方法从 source 中抽取 schema 信息
-            schema = self._get_qianfan_schema(source)
+            schema = _get_qianfan_schema(source)
 
         # 校验
         if schema and not schema.validate(self):
-            error = ValidationError("validate failed when initialize dataset")
+            error = ValidationError("validate failed when save dataset")
             log_error(str(error))
             raise error
 
@@ -527,7 +561,12 @@ class Dataset(Table):
             log_warn("can't process qianfan dataset which isn't GenericText type")
             return ret_dict
 
-        operator_dict: Dict[str, List[Dict[str, Any]]] = {}
+        operator_dict: Dict[str, List[Dict[str, Any]]] = {
+            "clean": [],
+            "filter": [],
+            "deduplication": [],
+            "desensitization": [],
+        }
         for operator in operators:
             attr_dict = operator.model_dump()
             attr_dict.pop("operator_name")
@@ -536,9 +575,6 @@ class Dataset(Table):
             elem_dict = {"name": operator.operator_name, "args": attr_dict}
 
             operator_type = operator.operator_type
-            if operator_type not in operator_dict:
-                operator_dict[operator_type] = []
-
             operator_dict[operator_type].append(elem_dict)
 
         log_debug(f"operator args dict: {operator_dict}")
@@ -576,6 +612,36 @@ class Dataset(Table):
                 return ret_dict
         log_error("should not reach there")
         return ret_dict
+
+    def add_default_group_column(self) -> Self:
+        """
+        add "_group" column to Dataset, the value
+        in "_group" column are sequential incremental
+
+        Returns:
+            Self: Dataset itself
+        """
+
+        if QianfanDataGroupColumnName in self.col_names():
+            # 如果已经存在，则不做任何处理
+            return self
+
+        return self.col_append(
+            {"name": QianfanDataGroupColumnName, "data": list(range(self.row_number()))}
+        )
+
+    def delete_group_column(self) -> Self:
+        """
+        remove "_group" column from Dataset
+
+        Returns:
+            Self: Dataset itself
+        """
+
+        if QianfanDataGroupColumnName not in self.col_names():
+            return self
+
+        return self.col_delete(QianfanDataGroupColumnName)
 
     # -------------------- Processable 相关 ----------------
     # 直接调用 Table 对象的接口方法
@@ -622,16 +688,69 @@ class Dataset(Table):
     # 但是在云上数据集追加数据未来可以支持，本质是向数据集中导入新数据。
     # 目前不做修改，等待接口 ready
     @_online_except_decorator
-    def append(self, elem: Any) -> Self:
+    def append(
+        self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
+    ) -> Self:
         """
-        append an element to dataset
+        append element(s) to dataset
 
         Args:
-            elem (Union[List[Dict], Tuple[Dict], Dict]): elements added to dataset
+            elem (Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict]):
+                Elements added to dataset
+            add_new_group (bool):
+                Whether elem has a new group id.
+                Only used when dataset is grouped.
+            is_grouped (bool):
+                Are element in elem in same group.
+                Only used when dataset is grouped and elem is Sequence
+                and add_new_group was set True.
+                Default to True, all elements
+                will be in same group.
+                If it's True, each element will have
+                sequential incremental group id from last
+                available group id.
         Returns:
             Self: Dataset itself
         """
-        return super().append(elem)
+        return super().append(elem, add_new_group, is_grouped)
+
+    @_online_except_decorator
+    def insert(
+        self,
+        elem: Any,
+        index: Any,
+        group_id: int = -1,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+    ) -> Self:
+        """
+        insert element(s) to dataset
+
+        Args:
+            elem (Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict]):
+                Elements added to dataset
+            index (int): where to insert element(s)
+            group_id (int):
+                which group id you want to apply to new element(s).
+                Default to -1, which means let group id be automatically
+                inferred from table.
+            add_new_group (bool):
+                Whether elem has a new group id.
+                Only used when dataset is grouped
+                and group_id is -1
+            is_grouped (bool):
+                Are element in elem in same group.
+                Only used when dataset is grouped and elem is Sequence
+                and add_new_group was set True.
+                Default to True, all elements
+                will be in same group.
+                If it's True, each element will have
+                sequential incremental group id from last
+                available group id.
+        Returns:
+            Self: Dataset itself
+        """
+        return super().insert(elem, index, add_new_group, is_grouped)
 
     def list(
         self,
@@ -778,11 +897,25 @@ class Dataset(Table):
 
         Args:
             elem (Dict[str, List]): dict containing element added to dataset
-                must has column name "name" and column data list "data"
+                must have column name "name" and column data list "data"
         Returns:
             Self: Dataset itself
         """
         return super().col_append(elem)
+
+    @_online_except_decorator
+    def col_insert(self, elem: Any, index: Any) -> Self:
+        """
+        append a row to dataset
+
+        Args:
+            elem (Dict[str, List]): dict containing element added to dataset
+                must has column name "name" and column data list "data"
+            index (int): where to insert new column
+        Returns:
+            Self: Dataset itself
+        """
+        return super().col_insert(elem, index)
 
     # 等待接口 ready 才能对云端数据集做展示
     @_online_except_decorator
@@ -813,3 +946,22 @@ class Dataset(Table):
             List[str]: column name list
         """
         return super().col_names()
+
+
+def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
+    """推断获取 Schema"""
+    template_type = source.template_type
+    if template_type == DataTemplateType.SortedConversation:
+        return QianfanSortedConversation()
+    if template_type == DataTemplateType.NonSortedConversation:
+        return QianfanSortedConversation()
+    if template_type == DataTemplateType.GenericText:
+        return QianfanGenericText()
+    if template_type == DataTemplateType.QuerySet:
+        return QianfanQuerySet()
+    if template_type == DataTemplateType.Text2Image:
+        return QianfanText2Image()
+
+    error = ValueError(f"schema didn't find for template type {template_type}")
+    log_error(str(error))
+    raise error

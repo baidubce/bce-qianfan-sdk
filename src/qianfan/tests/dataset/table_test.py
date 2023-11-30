@@ -470,3 +470,16 @@ def test_row_packed_map():
         return obj
 
     table.map(_assert_map)
+
+
+def test_rename_column():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+    table = table.col_renames(["column3", "column4"])
+
+    assert table.col_names() == ["column3", "column4", QianfanDataGroupColumnName]

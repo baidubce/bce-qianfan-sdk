@@ -19,7 +19,8 @@
 import os
 import tempfile
 
-from qianfan.components import Prompt, PromptLabel, hub
+from qianfan.components import Prompt, PromptLabel
+from qianfan.components.hub import hub
 from qianfan.consts import PromptFrameworkType, PromptType
 
 
@@ -27,9 +28,10 @@ def test_prompt_hub():
     """
     test prompt hub
     """
-    p = Prompt(name="ut")
+    p = hub.load("prompt/ut")
+    assert isinstance(p, Prompt)
     s = hub.save(p)
-    new_p = hub.load(s)
+    new_p = hub.load(json_str=s)
     assert isinstance(new_p, Prompt)
     assert new_p._mode == "local"
     assert new_p.name == p.name
@@ -41,7 +43,8 @@ def test_prompt_hub():
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_file = os.path.join(tmp_dir, "prompt.json")
-        p = Prompt(name="txt2img_ut")
+        p = hub.load("prompt/ut")
+        assert isinstance(p, Prompt)
         hub.save(p, path=tmp_file)
         new_p = hub.load(path=tmp_file)
         assert isinstance(new_p, Prompt)

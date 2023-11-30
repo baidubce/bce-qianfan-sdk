@@ -22,11 +22,28 @@ from typing import Any, Dict, Optional
 import requests
 
 from qianfan.components.hub.interface import HubSerializable, loads
+from qianfan.components.prompt.prompt import Prompt
 from qianfan.errors import InvalidArgumentError, RequestError, ValidationError
 from qianfan.version import VERSION as sdk_version
 
+_hub_load_type: Dict[str, type[HubSerializable]] = {
+    "prompt": Prompt,
+}
+
+
+def _load_from_qianfan(src: str) -> Any:
+    path_list = src.split("/")
+    if len(path_list) < 2:
+        raise ValidationError("The src should be in the format of <type>/<name>")
+    var_type = path_list[0]
+    cls = _hub_load_type.get(var_type, None)
+    if cls is None:
+        raise ValidationError(f"The type {var_type} is not supported.")
+    return cls._hub_pull("/".join(path_list[1:]))
+
 
 def load(
+    src: Optional[str] = None,
     json_str: Optional[str] = None,
     path: Optional[str] = None,
     url: Optional[str] = None,
@@ -64,6 +81,8 @@ def load(
     loaded_object = load(url=url)
     ```
     """
+    if src is not None:
+        return _load_from_qianfan(src)
     # get `cls_desc` from different sources
     s = json_str
     if path is not None:
@@ -89,7 +108,10 @@ def load(
 
 
 def save(
-    obj: HubSerializable, path: Optional[str] = None, dump_args: Dict[str, Any] = {}
+    obj: HubSerializable,
+    to_platform: bool = False,
+    path: Optional[str] = None,
+    dump_args: Dict[str, Any] = {},
 ) -> str:
     """
     Serialize the given object and save it to different sources.
@@ -129,4 +151,10 @@ def save(
     if path is not None:
         with open(path, "w") as f:
             f.write(json_str)
+    if to_platform is True:
+        obj._hub_push()
     return json_str
+
+
+def push(obj: Any) -> None:
+    save(obj, to_platform=True)

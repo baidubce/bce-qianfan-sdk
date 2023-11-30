@@ -1339,7 +1339,7 @@ def prompt_update():
     return json_response(
         {
             "log_id": "9sh0grwe6ydfi318",
-            "result": {"templateId": 732},
+            "result": {"templateId": 1733},
             "status": 200,
             "success": True,
         }

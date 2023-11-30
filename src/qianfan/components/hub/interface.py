@@ -105,3 +105,16 @@ class HubSerializable(object):
         """
 
         return cls(**data)
+
+    @classmethod
+    def _hub_pull(cls, name: str) -> "HubSerializable":
+        """
+        load the object from qianfan platform
+        """
+        raise ValidationError(f"Not supported to pull {type(cls).__name__} from hub.")
+
+    def _hub_push(cls) -> None:
+        """
+        load the object from qianfan platform
+        """
+        raise ValidationError(f"Not supported to push {type(cls).__name__} to hub.")

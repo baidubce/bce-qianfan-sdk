@@ -20,6 +20,7 @@ import os
 import tempfile
 
 from qianfan.components import Prompt
+from qianfan.components.hub import hub
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
 
 
@@ -27,7 +28,8 @@ def test_init_remote_prompt():
     """
     Test init prompt from remote
     """
-    prompt = Prompt(name="ut")
+    prompt = hub.load("prompt/ut")
+    assert isinstance(prompt, Prompt)
     assert prompt._mode == "remote"
     assert prompt.id is not None
     assert prompt.name == "ut"
@@ -43,7 +45,8 @@ def test_init_remote_prompt():
     assert prompt.labels[0].id == 150
     assert ("example template v1", None) == prompt.render(var1="v1")
 
-    prompt = Prompt(name="txt2img")
+    prompt = hub.load("prompt/txt2img")
+    assert isinstance(prompt, Prompt)
     assert prompt._mode == "remote"
     assert prompt.id is not None
     assert prompt.name == "txt2img"
@@ -67,7 +70,7 @@ def test_init_local_prompt():
     """
     Test init prompt from local
     """
-    prompt = Prompt(mode="local", template="example template {var1}")
+    prompt = Prompt(template="example template {var1}")
     assert prompt._mode == "local"
     assert prompt.id is None
     assert prompt.name is None
@@ -83,7 +86,6 @@ def test_init_local_prompt():
 
     prompt = Prompt(
         name="txt2img",
-        mode="local",
         template="txt2img template {badvar} ((v1))",
         scene_type=PromptSceneType.Text2Image,
         negative_template="negative template ((v3))",
@@ -107,27 +109,28 @@ def test_upload_prompt():
     """
     Test upload prompt
     """
-    prompt = Prompt(mode="local", template="example template {var1}")
+    prompt = Prompt(template="example template {var1}")
     prompt.name = "ut"
     assert prompt._mode == "local"
     assert prompt.id is None
-    prompt.upload()
+    hub.push(prompt)
     # change to the id in mock response
     assert prompt.id == 732
     assert prompt._mode == "remote"
 
-    prompt = Prompt(name="ut")
+    prompt = hub.load("prompt/ut")
+    assert isinstance(prompt, Prompt)
     assert prompt._mode == "remote"
     prompt.set_template("new template {h1} {h2}")
     assert prompt.template == "new template {h1} {h2}"
     assert prompt.variables == ["h1", "h2"]
-    prompt.upload()
+    hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 11827
-    assert prompt.template == "example template {var1}"
+    assert prompt.id == 1733
 
-    prompt = Prompt(name="txt2img")
+    prompt = hub.load("prompt/txt2img")
+    assert isinstance(prompt, Prompt)
     assert prompt._mode == "remote"
     prompt.identifier = "{}"
     prompt.set_template("new template {h1} {h2}")
@@ -136,33 +139,29 @@ def test_upload_prompt():
     prompt.set_negative_template("new negative template {h1} {h3}")
     assert prompt.negative_template == "new negative template {h1} {h3}"
     assert prompt.negative_variables == ["h1", "h3"]
-    prompt.upload()
+    hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 724
-    assert prompt.template == "txt2img template {badvar} ((v1))"
-    assert prompt.negative_template == "negative ((v3))"
+    assert prompt.id == 1733
 
 
 def test_render():
     """
     test render prompt
     """
-    p = Prompt(template="{v1}{v2}x {v3}", mode="local")
+    p = Prompt(template="{v1}{v2}x {v3}")
     assert p.render(v1="a", v2="3", v3="4") == ("a3x 4", None)
     assert p.render(v1="a", v2="", v3="") == ("ax ", None)
 
-    p = Prompt(template="{v1}{{v2}}x {{v3}", identifier="{{}}", mode="local")
+    p = Prompt(template="{v1}{{v2}}x {{v3}", identifier="{{}}")
     assert p.variables == ["v2"]
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}3x {{v3}", None)
 
-    p = Prompt(template="{v1}{v2}x {v3}", identifier="{{}}", mode="local")
+    p = Prompt(template="{v1}{v2}x {v3}", identifier="{{}}")
     assert p.variables == []
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}{v2}x {v3}", None)
 
-    p = Prompt(
-        template="{v1}{v2}x {v3}", identifier="{}", variables=["v2", "v3"], mode="local"
-    )
+    p = Prompt(template="{v1}{v2}x {v3}", identifier="{}", variables=["v2", "v3"])
     assert p.variables == ["v2", "v3"]
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}3x 4", None)
 
@@ -171,7 +170,7 @@ def test_delete():
     """
     test delete prompt
     """
-    prompt = Prompt(name="ut")
+    prompt = hub.load("prompt/ut")
     prompt.delete()
     assert prompt.id is None
     assert prompt._mode == "local"
@@ -184,7 +183,7 @@ def test_load_and_save():
     template = "test template {var1}"
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_file = os.path.join(tmp_dir, "prompt.tpl")
-        prompt = Prompt(template=template, mode="local")
+        prompt = Prompt(template=template)
         prompt.save_to_file(tmp_file)
         new_prompt = Prompt.from_file(tmp_file)
         assert new_prompt.template == template

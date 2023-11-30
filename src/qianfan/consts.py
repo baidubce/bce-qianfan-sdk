@@ -17,6 +17,7 @@ Consts used in qianfan sdk
 """
 
 import enum
+
 from qianfan.version import VERSION
 
 

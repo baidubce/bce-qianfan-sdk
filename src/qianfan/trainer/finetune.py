@@ -121,7 +121,7 @@ class LLMFinetune(Trainer):
             event_handler=event_handler,
             **kwargs,
         )
-        self.model_publish = ModelPublishAction()
+        self.model_publish = ModelPublishAction(event_handler=event_handler)
 
         actions = [
             self.load_data_action,

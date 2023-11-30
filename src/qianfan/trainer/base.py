@@ -333,6 +333,22 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         return super().stop()
 
+    def register_event_handler(
+        self, event_handler: EventHandler, action_id: Optional[str] = None
+    ) -> None:
+        """
+        Register the event handler to specific the action.
+        Args:
+            event_handler (EventHandler): The event handler instance.
+        """
+        self.event_dispatcher = event_handler
+        for id, action in self.actions.items():
+            if action_id is None and id == action_id:
+                action.event_dispatcher == event_handler
+                break
+            else:
+                action.event_dispatcher = event_handler
+
 
 class Trainer(ABC):
     """
@@ -412,7 +428,7 @@ class Trainer(ABC):
         """
         for ppl in self.ppls:
             if ppl_id is None and ppl.id == ppl_id:
-                ppl.event_dispatcher == event_handler
+                ppl.register_event_handler(event_handler)
                 break
             else:
-                ppl.event_dispatcher = event_handler
+                ppl.register_event_handler(event_handler)

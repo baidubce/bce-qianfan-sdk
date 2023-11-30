@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.2.0"
+version = "0.2.1"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
-readme = "README.md"
+readme = "README.pypi.md"
 exclude = [
     "src/qianfan/tests",
     "src/qianfan/docs",
@@ -13,7 +13,7 @@ exclude = [
 ]
 homepage = "https://cloud.baidu.com/product/wenxinworkshop"
 repository = "https://github.com/baidubce/bce-qianfan-sdk"
-documentation = "https://qianfan.readthedocs.io/en/stable/qianfan.html"
+documentation = "https://qianfan.readthedocs.io/en/stable/README.html"
 keywords = ["baidu", "qianfan"]
 
 [tool.poetry.dependencies]

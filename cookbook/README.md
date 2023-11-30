@@ -8,6 +8,7 @@
 - [图生文示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/text2image.ipynb)：展示了如何使用千帆 SDK 完成图生文任务。
 - [ERNIE Bot 搜索能力示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了 ENRIE Bot 的搜索增强能力和使用方法。
 - [批量预测示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了如何使用 SDK 批量对数据进行预测。
+- [Prompt 模版](./prompt.ipynb)：展示了如何使用 SDK 管理和使用 Prompt。
 
 
 ## Agent 相关
@@ -21,3 +22,7 @@
 - [Baidu ElasticSearch](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/RAG/baidu_elasticsearch/qianfan_baidu_elasticsearch.ipynb)：展示了如何使用百度 ElasticSearch 向量数据库，对接千帆平台的模型管理和应用接入的能力，并构建一个RAG的知识问答场景。
 - [Weights & Biases](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/RAG/wandb.ipynb)：展示了如何将千帆模型对接至 Weights & Biases，并使用其提供的可视化能力进行模型训练过程监控。 
 - [Deep Lake](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/RAG/deeplake_retrieval_qa.ipynb)：展示了如何使用 Deep Lake 获取数据库，并基于该数据完成一个检索式问答系统。
+
+## 数据集相关
+
+- [简易数据集操作样例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/dataset/dataset101.ipynb)：展示了如何使用千帆 SDK 集成的数据集功能进行数据处理

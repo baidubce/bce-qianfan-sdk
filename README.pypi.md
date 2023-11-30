@@ -5,6 +5,8 @@
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
+[Documentation](https://qianfan.readthedocs.io/en/stable/README.html) | [GitHub](https://github.com/baidubce/bce-qianfan-sdk) | [Cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook) 
+
 针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
 
 ## 如何安装
@@ -44,7 +46,9 @@ resp = chat_comp.do(messages=[{
 print(resp["result"])
 ```
 
-除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
+除了通过环境变量设置外，千帆 SDK 还提供了 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](https://qianfan.readthedocs.io/en/stable/docs/configurable.html) 部分。
+
+除了模型调用外，千帆 SDK 还提供模型训练、数据管理等诸多功能，如何使用请参考 [SDK 使用文档](https://qianfan.readthedocs.io/en/stable/README.html)。
 
 <details>
 <summary> 其他认证方式 </summary>
@@ -87,92 +91,27 @@ print(resp["result"])
 
 ## 功能导览
 
-我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
+千帆平台提供了大模型相关的诸多能力，SDK 提供了对各能力的调用，具体介绍可以查看 [SDK 文档](https://qianfan.readthedocs.io/en/stable/README.html) 或者 [GitHub 仓库](https://github.com/baidubce/bce-qianfan-sdk)。
 
-### 大模型能力
+- **大模型能力** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/inference.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/inference.md)]
+  - Chat 对话
+  - Completion 续写
+  - Embedding 向量化
+  - Plugin 插件调用
+  - Text2Image 文生图
+- **模型调优** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/train.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/train.md)]
+- **模型管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/model_management.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/model_management.md)]
+- **模型服务** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/service.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/service.md)]
+- **数据集管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/dataset.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/dataset.md)]
+- **Prompt 管理** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/prompt.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/prompt.md)]
+- **其他**
+  - Tokenizer [[Doc](https://qianfan.readthedocs.io/en/stable/docs/utils.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/utils.md)]
+  - 接口流控 [[Doc](https://qianfan.readthedocs.io/en/stable/docs/configurable.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/configurable.md)]
 
-目前千帆 SDK 支持用户使用如下大模型预测能力，详见[预测服务](./docs/inference.md)
+详细信息请参考相应的文档。如果有任何问题，欢迎前往 [GitHub](https://github.com/baidubce/bce-qianfan-sdk) 提交 issue。
 
-+ Chat 对话
-+ Completion 续写
-+ Embedding 向量化
-+ Plugin 插件调用
-+ 文生图
+> 还可以通过 [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) 查看每个接口的详细说明。
 
-### 大模型调优
-
-目前千帆平台支持如下训练调优能力，详见[训练调优](./docs/train.md)
-- 创建训练任务
-- 创建任务运行
-- 获取任务运行详情
-- 停止任务运行
-
-### 模型管理
-
-目前千帆平台支持对训练完成后的模型进行管理，详见[模型管理](./docs/model_management.md)
-
-- 获取模型详情
-- 获取模型版本详情
-- 训练任务发布为模型
-
-### 模型服务
-
-千帆平台支持将模型发布成服务，详见[服务管理](./docs/service.md)
-
-- 创建服务
-- 查询服务详情
-
-### 平台数据集管理
-
-千帆平台提供 API 接口对数据集进行管理，详见[数据管理](./docs/data.md)
-
-目前支持的数据集管理操作有：
-- 创建数据集
-- 发起数据集发布任务
-- 发起数据集导入任务
-- 获取数据集详情
-- 获取数据集状态详情
-- 发起数据集导出任务
-- 删除数据集
-- 获取数据集导出记录
-- 获取数据集导入错误详情
-- 创建数据清洗任务
-- 查看数据清洗任务详情
-- 查看清洗任务列表
-- 删除数据清洗任务
-- 创建数据增强任务
-- 查看增强任务列表
-- 查看数据增强详情
-- 删除数据增强任务
-- 实体标注
-- 删除实体
-- 获取实体列表
-
-
-## 本地数据集处理
-
-千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
-
-
-### Prompt 管理
-
-千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
-
-目前支持的 Prompt 管理操作有：
-
-- 创建 Prompt
-- 更新 Prompt
-- 删除 Prompt
-- 获取 Prompt 详情
-- 获取 Prompt 列表
-- 获取 Prompt 标签列表
-
-### 其他
-- [tokenizer](./docs/utils.md)
-- [流量控制](./docs/configurable.md)
-
-
-> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License
 
 Apache-2.0

@@ -947,6 +947,18 @@ class Dataset(Table):
         """
         return super().col_names()
 
+    @_online_except_decorator
+    def col_renames(self, new_names: List[str]) -> Self:
+        """
+        rename all dataset column
+
+        Args:
+            new_names (List[str]): All new names for columns
+        Returns:
+            Self: A brand-new Dataset with new name
+        """
+        return super().col_renames(new_names)
+
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
     """推断获取 Schema"""

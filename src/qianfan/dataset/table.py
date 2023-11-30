@@ -284,7 +284,8 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
                 returned_data = op(row)
                 if not returned_data:
-                    raise ValueError("cant make data empty")
+                    log_warn("a row has been deleted from table")
+                    continue
                 if not isinstance(returned_data, list):
                     raise ValueError("returned value isn't list")
 
@@ -299,7 +300,8 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 input_dict = {key: val for key, val in origin_data.items()}
                 returned_data = op(input_dict)
                 if not returned_data:
-                    raise ValueError("cant make data empty")
+                    log_warn("a row has been deleted from table")
+                    continue
                 if not isinstance(returned_data, dict):
                     raise ValueError("returned value isn't dict")
 
@@ -514,6 +516,25 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
         if isinstance(index, int):
             raise ValueError("cannot delete column by int")
         return self.table.drop_columns(index)
+
+    def col_renames(self, new_names: List[str]) -> Self:
+        """
+        rename all dataset column
+
+        Args:
+            new_names (List[str]): All new names for columns
+        Returns:
+            Self: a new pyarrow table
+        """
+
+        if (
+            _whether_dataset_is_grouped(self.table.column_names)
+            and QianfanDataGroupColumnName not in new_names
+        ):
+            i = self.table.column_names.index(QianfanDataGroupColumnName)
+            new_names.insert(i, QianfanDataGroupColumnName)
+
+        return self.table.rename_columns(new_names)
 
 
 class Table(Addable, Listable, Processable):
@@ -909,6 +930,19 @@ class Table(Addable, Listable, Processable):
             List[str]: column name list
         """
         return self.inner_table.column_names
+
+    def col_renames(self, new_names: List[str]) -> Self:
+        """
+        rename all dataset column
+
+        Args:
+            new_names (List[str]): All new names for columns
+        Returns:
+            Self: A brand-new Table with new name
+        """
+        manipulator = self._col_op()
+        self.inner_table = manipulator.col_renames(new_names)
+        return self
 
     # 重写 get 和 del 的魔法方法
     def __getitem__(self, key: Any) -> Any:

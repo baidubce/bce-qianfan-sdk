@@ -125,10 +125,6 @@ def test_map_row():
     with pytest.raises(ValueError):
         table.map(lambda x: 1)
 
-    # map操作的函数返回值为空字典
-    with pytest.raises(ValueError):
-        table.map(lambda x: {})
-
 
 def test_filter_row():
     table = Table(inner_table=pyarrow.Table.from_pydict({"age": [1, 2, 3, 25, 26, 27]}))
@@ -470,3 +466,16 @@ def test_row_packed_map():
         return obj
 
     table.map(_assert_map)
+
+
+def test_rename_column():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+    table = table.col_renames(["column3", "column4"])
+
+    assert table.col_names() == ["column3", "column4", QianfanDataGroupColumnName]

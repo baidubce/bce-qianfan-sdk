@@ -91,7 +91,7 @@ print(resp["result"])
 
 ## 功能导览
 
-千帆平台提供了大模型相关的诸多能力，SDK 提供了对各能力的调用，具体介绍可以看到 [SDK 文档](https://qianfan.readthedocs.io/en/stable/README.html) 或者 [GitHub 仓库](https://github.com/baidubce/bce-qianfan-sdk)。
+千帆平台提供了大模型相关的诸多能力，SDK 提供了对各能力的调用，具体介绍可以查看 [SDK 文档](https://qianfan.readthedocs.io/en/stable/README.html) 或者 [GitHub 仓库](https://github.com/baidubce/bce-qianfan-sdk)。
 
 - **大模型能力** [[Doc](https://qianfan.readthedocs.io/en/stable/docs/inference.html)][[GitHub](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/inference.md)]
   - Chat 对话

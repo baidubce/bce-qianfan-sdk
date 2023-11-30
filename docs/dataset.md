@@ -62,10 +62,10 @@
 from qianfan.dataset import Dataset
 
 # 从本地文件导入
-dataset = Dataset.load(data_file="path/to/dataset_file.jsonl")
+ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
 
 # 从千帆导入
-dataset = Dataset.load(qianfan_dataset_id=42)
+ds = Dataset.load(qianfan_dataset_id=42)
 ```
 
 ## 处理数据集
@@ -86,7 +86,7 @@ def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
     "col2": row["col2"]
   }
 
-print(dataset.filter(filter_func).map(map_func).list())
+print(ds.filter(filter_func).map(map_func).list())
 ```
 
 ## 导出数据集
@@ -95,13 +95,13 @@ print(dataset.filter(filter_func).map(map_func).list())
 
 ```python
 # 导出到本地文件
-dataset.save(data_file="path/to/local_file.csv")
+ds.save(data_file="path/to/local_file.csv")
 
 # 导出到千帆平台
-dataset.save(qianfan_dataset_id=56)
+ds.save(qianfan_dataset_id=56)
 
 # 或者导出到它导入的地方
-dataset.save()
+ds.save()
 ```
 
 恭喜你，已经学会了如何使用千帆 Python SDK 的数据集相关能力。
@@ -120,8 +120,8 @@ dataset.save()
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.load(data_file="path/to/dataset_file.json")
-print(dataset.list())
+ds = Dataset.load(data_file="path/to/dataset_file.json")
+print(ds.list())
 ```
 
 SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，目前 SDK 支持的文件后缀名包括：
@@ -136,19 +136,19 @@ SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，�
 from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FormatType
 
-dataset = Dataset.load(
+ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
   file_format=FormatType.Json
 )
 
-print(dataset.list())
+print(ds.list())
 ```
 
 ### 导出
 
 和导入类似，用户可以通过 SDK 提供的 `save` 方法将数据集导出到本地文件中。
 
-如果是从文件导入创建的数据集，直接执行 `dataset.save()` 会将数据集数据覆盖写入到导入时的文件
+如果是从文件导入创建的数据集，直接执行 `ds.save()` 会将数据集数据覆盖写入到导入时的文件
 
 用户也可以传递 `data_file` 参数来指定导出到文件名和文件路径，同时可以传递 `file_format` 参数来指定导出的格式
 
@@ -156,13 +156,13 @@ print(dataset.list())
 from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import FormatType
 
-dataset = Dataset.load(
+ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
   file_format=FormatType.Json
 )
 
 
-dataset.save(
+ds.save(
   data_file="another/path/to/local_file",
   file_format=FormatType.Csv
 )
@@ -178,7 +178,7 @@ dataset.save(
 from qianfan.dataset import Dataset, FileDataSource
 
 file_source = FileDataSource(path="local_file.json")
-dataset = Dataset.load(file_source)
+ds = Dataset.load(file_source)
 ```
 
 `FileDataSource` 同样支持用户传递 `file_format` 自己手动指定文件类型
@@ -201,12 +201,12 @@ file_source = FileDataSource(
   file_format=FormatType.Json
 )
 
-dataset = Dataset.load(
+ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
   file_format=FormatType.Json
 )
 
-dataset.load(file_source)
+ds.save(file_source)
 ```
 
 ## 千帆平台
@@ -220,8 +220,8 @@ dataset.load(file_source)
 ```python
 from qianfan.dataset import Dataset
 
-dataset_qianfan = Dataset.load(qianfan_dataset_id=42)
-dataset_qianfan.list()
+ds_qianfan = Dataset.load(qianfan_dataset_id=42)
+print(ds_qianfan.list())
 ```
 
 此时 SDK 会将平台上的数据集缓存到当前工作目录中的  `.qianfan_dataset_cache` 文件夹中，免去重复创建带来的重复下载。缓存版本由 SDK 控制且保证最新，用户无需关注。
@@ -231,8 +231,8 @@ dataset_qianfan.list()
 ```python
 from qianfan.dataset import Dataset
 
-dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
-dataset_qianfan.list()
+ds_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
+print(ds_qianfan.list())
 ```
 
 ### 导出
@@ -247,7 +247,7 @@ dataset_qianfan.list()
   + storage_type: 千帆平台数据集存储类型
 
 ```python
-dataset_qianfan.save(
+ds_qianfan.save(
   qianfan_dataset_create_args={
     "name": "example_name",
     "template_type": DataTemplateType.NonSortedConversation,
@@ -259,9 +259,9 @@ dataset_qianfan.save(
 + 另一种导出方式是增量导出到已经存在的数据集当中：填写 `save` 函数的 `qianfan_dataset_id` 参数（和 `load` 方法一致）。如果是导出到原本导入的数据集，则可以忽略 `qianfan_dataset_id` 参数。
 
 ```python
-dataset_qianfan.save(qianfan_dataset_id=42)
+ds_qianfan.save(qianfan_dataset_id=42)
 # 如果是导出到原本导入的数据集，可以忽略该参数
-dataset_qianfan.save()
+ds_qianfan.save()
 ```
 
 ​		这种导出方式目前暂不支持导出到新数据集版本进行覆盖导出。若用户有覆盖导出的需求，请使用方式一。
@@ -295,8 +295,8 @@ data_source = QianfanDataSource.create_bare_dataset(
 from pyarrow import Table
 from qianfan.dataset import Dataset
 
-pyobj_dataset = Dataset.create_from_pyobj([{"column_name1": "column_data1"}])
-pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
+ds_pyobj = Dataset.create_from_pyobj([{"column_name1": "column_data1"}])
+ds_pyarrow_table = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
 ```
 
 ## 包装与拆分
@@ -304,7 +304,7 @@ pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...)
 除此之外，当用户以 jsonl \ txt 格式导入类数组形式文件，或者导入的是千帆平台的数据集时，SDK 支持传入 `organize_data_as_group` 参数，来指定将数据集组织成 SDK 内部的二维表格形式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
 
 ```python
-dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_group=True)
+ds = Dataset.load(qianfan_dataset_id=42, organize_data_as_group=True)
 ```
 
 设置 `organize_data_as_group=True` 或使用 `unpack()` 函数得到的千帆平台的数据集格式如下所示
@@ -348,20 +348,20 @@ dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_group=True)
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.create_from_pyobj([
+ds = Dataset.create_from_pyobj([
   {"column_name1": "column_data1"},
   {"column_name1": "column_data2"},
   {"column_name1": "column_data3"},
 ])
 
 # 取下标行
-print(dataset.list(0))
+print(ds.list(0))
 
 # 取指定下标的行
-print(dataset.list([0, 2]))
+print(ds.list([0, 2]))
 
 # 取闭区间内的行
-print(dataset.list(slice(0, 1)))
+print(ds.list(slice(0, 1)))
 ```
 
 除了调用 `list` 函数，用户还可以使用中括号来替代 `list` ，二者等价。因此上面的例子可以改写为：
@@ -369,20 +369,20 @@ print(dataset.list(slice(0, 1)))
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.create_from_pyobj([
+ds = Dataset.create_from_pyobj([
   {"column_name1": "column_data1"},
   {"column_name1": "column_data2"},
   {"column_name1": "column_data3"},
 ])
 
 # 取下标行
-print(dataset[0])
+print(ds[0])
 
 # 取指定下标的行
-print(dataset[[0, 2]])
+print(ds[[0, 2]])
 
 # 取闭区间内的行
-print(dataset[slice(0, 1)])
+print(ds[slice(0, 1)])
 ```
 
 ### 列
@@ -396,20 +396,20 @@ print(dataset[slice(0, 1)])
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.create_from_pyobj([{
+ds = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
   "column_name2": "column_data2",
   "column_name3": "column_data3",
 }])
 
 # 取下标列
-print(dataset.col_list(0))
+print(ds.col_list(0))
 
 # 取指定下标的列
-print(dataset.col_list([0, 2]))
+print(ds.col_list([0, 2]))
 
 # 取指定列名的列
-print(dataset.col_list(["column_name1", "column_name3"]))
+print(ds.col_list(["column_name1", "column_name3"]))
 ```
 
 如果用户使用的是列名字符串来查找列，那么上面的例子同样也可以使用 `[]` 来改写：
@@ -417,17 +417,17 @@ print(dataset.col_list(["column_name1", "column_name3"]))
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.create_from_pyobj([{
+ds = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
   "column_name2": "column_data2",
   "column_name3": "column_data3",
 }])
 
 # 取指定列名的列
-print(dataset["column_name1"])
+print(ds["column_name1"])
 
 # 取指定列名列表的列
-print(dataset[["column_name1", "column_name3"]])
+print(ds[["column_name1", "column_name3"]])
 ```
 
 ### 千帆数据集预览
@@ -440,13 +440,13 @@ print(dataset[["column_name1", "column_name3"]])
 ```python
 from qianfan.dataset import Dataset
 
-dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 
 # 单独检视某一实体
-print(dataset_qianfan[0])
+print(ds_qianfan[0])
 
 # 检视某一区间内的实体
-print(dataset_qianfan[slice(0, 2)])
+print(ds_qianfan[slice(0, 2)])
 ```
 
 ## 数据集清洗
@@ -460,13 +460,13 @@ print(dataset_qianfan[slice(0, 2)])
 ```python
 from qianfan.dataset import Dataset
 
-dataset = Dataset.create_from_pyobj([{
+ds = Dataset.create_from_pyobj([{
   "column_name1": "column_data1",
   "column_name2": "column_data2",
   "column_name3": "column_data3",
 }])
 
-dataset = dataset \
+ds = ds \
   .filter(lambda obj: obj["column_name1"] == "column_data1") \
   .filter(filter_func) \
   .filter(...) \
@@ -499,9 +499,9 @@ from qianfan.dataset.data_operator import (
   ReplaceEmails,
 )
 
-dataset_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 
-dataset_qianfan.online_data_process([
+ds_qianfan.online_data_process([
   RemoveInvisibleCharacter(),
   FilterCheckNumberWords(number_words_max_cutoff=1024),
   DeduplicationSimhash(distance=5),
@@ -520,17 +520,17 @@ from qianfan.dataset.schema import QianfanNonSortedConversation
 schema = QianfanNonSortedConversation()
 
 # 在 load 时使用
-dataset_qianfan = Dataset.load(qianfan_dataset_id=42, schema=schema)
+ds_qianfan = Dataset.load(qianfan_dataset_id=42, schema=schema)
 
 # 在 save 时使用
 # 如果在 load 时就已经传入了 schema ，
 # 则默认使用 load 的 schema 进行校验
 # 额外传入则会覆盖原有的 schema，
 # 使用新的 schema 进行校验
-dataset_qianfan.save(schema=schema)
+ds_qianfan.save(schema=schema)
 
 # 单独使用
-schema.validate(dataset_qianfan)
+schema.validate(ds_qianfan)
 ```
 
 ## 自行编写校验规则

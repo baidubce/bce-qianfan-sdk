@@ -19,6 +19,14 @@ Library aimed to helping developer to interactive with Dataset
 from qianfan.dataset.data_source import DataSource, FileDataSource, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.table import Table
+from qianfan.resources.console.consts import (
+    DataExportDestinationType,
+    DataProjectType,
+    DataSetType,
+    DataSourceType,
+    DataStorageType,
+    DataTemplateType,
+)
 
 __all__ = [
     "DataSource",
@@ -26,4 +34,10 @@ __all__ = [
     "QianfanDataSource",
     "Dataset",
     "Table",
+    "DataTemplateType",
+    "DataSetType",
+    "DataSourceType",
+    "DataStorageType",
+    "DataProjectType",
+    "DataExportDestinationType",
 ]

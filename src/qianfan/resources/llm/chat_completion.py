@@ -295,6 +295,7 @@ class ChatCompletion(BaseResource):
         stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
@@ -366,6 +367,9 @@ class ChatCompletion(BaseResource):
             return erniebot.ChatCompletion.create(  # type: ignore
                 model=model.lower(), stream=stream, **kwargs
             )
+        if request_id is not None:
+            kwargs["request_id"] = request_id
+
         resp = self._do(
             model,
             endpoint,
@@ -389,6 +393,7 @@ class ChatCompletion(BaseResource):
                 request_timeout,
                 backoff_factor,
                 truncated_continue_prompt,
+                **kwargs,
             )
         assert isinstance(resp, QfResponse)
         cur_content: str = resp["result"]
@@ -501,6 +506,7 @@ class ChatCompletion(BaseResource):
         stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
@@ -572,6 +578,9 @@ class ChatCompletion(BaseResource):
             return await erniebot.ChatCompletion.acreate(  # type: ignore
                 model=model.lower(), stream=stream, **kwargs
             )
+        if request_id is not None:
+            kwargs["request_id"] = request_id
+
         resp = await self._ado(
             model,
             endpoint,

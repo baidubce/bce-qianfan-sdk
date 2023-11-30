@@ -135,6 +135,7 @@ class Text2Image(BaseResource):
         with_decode: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
@@ -172,6 +173,9 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        if request_id is not None:
+            kwargs["request_id"] = request_id
+
         resp = self._do(
             model,
             endpoint,
@@ -195,6 +199,7 @@ class Text2Image(BaseResource):
         with_decode: Optional[str] = None,
         retry_count: int = 1,
         request_timeout: float = 60,
+        request_id: Optional[str] = None,
         backoff_factor: float = 0,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -233,6 +238,9 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        if request_id is not None:
+            kwargs["request_id"] = request_id
+
         resp = await self._ado(
             model,
             endpoint,

@@ -20,10 +20,12 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
+from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
+    QianfanGenericText,
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
@@ -63,12 +65,12 @@ def test_dataset_create():
         ),
         format=FormatType.Jsonl,
     )
-    dataset = Dataset.load(fake_data_source)
+    dataset = Dataset.load(fake_data_source, organize_data_as_qianfan=False)
     list_ret = dataset.list()
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())
     assert fake_data_source.buffer == fake_data_source.fetch()
-    assert list(list_ret[0].keys())[0] == "prompt"
+    assert "prompt" in list_ret[0][0].keys()
 
     fake_data_source_2 = FakeDataSource(
         origin_data='{"prompt": "12", "response": [["12"]]}', format=FormatType.Json
@@ -113,6 +115,14 @@ def test_dataset_create():
     with pytest.raises(Exception):
         dataset_5.save(schema=QianfanSortedConversation())
 
+    fake_data_source_6 = FakeDataSource(
+        origin_data="this\nis\nmulti\nline\ndata", format=FormatType.Text
+    )
+    dataset_6 = Dataset.load(fake_data_source_6)
+    dataset_6.save(schema=QianfanGenericText())
+
+    assert fake_data_source_6.origin_data == fake_data_source_6.buffer
+
 
 def test_dataset_online_process():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
@@ -122,3 +132,17 @@ def test_dataset_online_process():
     assert dataset.online_data_process(
         [FilterCheckNumberWords(number_words_min_cutoff=10)]
     )["is_succeeded"]
+
+
+def test_manipulator_group_add_and_delete():
+    dataset = Dataset.create_from_pyobj(
+        [{"test_column": "456"}, {"test_column": "123"}]
+    )
+    dataset.add_default_group_column()
+
+    assert QianfanDataGroupColumnName in dataset.col_names()
+    assert dataset.list()[1][QianfanDataGroupColumnName] == 1
+
+    dataset.delete_group_column()
+
+    assert QianfanDataGroupColumnName not in dataset.col_names()

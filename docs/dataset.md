@@ -98,7 +98,6 @@ print(dataset.filter(filter_func).map(map_func).list())
 dataset.save(data_file="path/to/local_file.csv")
 
 # 导出到千帆平台
-# 请确认导出的千帆数据集使用的是私有 BOS 存储
 dataset.save(qianfan_dataset_id=56)
 
 # 或者导出到它导入的地方
@@ -122,7 +121,7 @@ dataset.save()
 from qianfan.dataset import Dataset
 
 dataset = Dataset.load(data_file="path/to/dataset_file.json")
-print(dataset)
+print(dataset.list())
 ```
 
 SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，目前 SDK 支持的文件后缀名包括：
@@ -142,7 +141,7 @@ dataset = Dataset.load(
   file_format=FormatType.Json
 )
 
-print(dataset)
+print(dataset.list())
 ```
 
 ### 导出
@@ -185,7 +184,6 @@ dataset = Dataset.load(file_source)
 `FileDataSource` 同样支持用户传递 `file_format` 自己手动指定文件类型
 
 ```python, FileDataSource, FormatType
-
 file_source = FileDataSource(
   path="local_file",
   file_format=FormatType.Json
@@ -286,7 +284,8 @@ data_source = QianfanDataSource.create_bare_dataset(
 )
 ```
 
-> 注意，如果将 `QianfanDataSource` 用作 `save` 操作的入参，请确认该数据源是指向使用个人 BOS 存储的数据源，SDK 不支持从本地保存数据到平台的公共 BOS 中。如有相关需求，请将数据集导出至本地，然后通过平台页面手动上传。建议设置 `save` 的 `schema` 参数为对应平台数据集的校验模板，避免上传失败
+> 注意：如果将数据集 `save` 到千帆平台，请确认目的千帆平台数据集是使用个人 BOS 存储的数据集，SDK 不支持从本地保存数据到平台的公共 BOS 中。
+> 如有相关需求，用户可以向 `save` 函数中传递 `sup_storage_id` `sup_storage_path` 和 `sup_storage_region` 参数，指定用作中间存储的私有 BOS 信息
 
 ## Python 对象
 
@@ -302,20 +301,13 @@ pyarrow_table_dataset = Dataset.create_from_pyarrow_table(Table.from_pandas(...)
 
 ## 包装与拆分
 
-除此之外，当用户选择导入一个 jsonl 格式的文件，或者导入的是千帆平台的对话类数据集、Query 数据集时，SDK 支持传入 `organize_data_as_qianfan` 参数，来指定将数据集组织成千帆平台的对应格式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
+除此之外，当用户以 jsonl \ txt 格式导入类数组形式文件，或者导入的是千帆平台的数据集时，SDK 支持传入 `organize_data_as_group` 参数，来指定将数据集组织成 SDK 内部的二维表格形式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
 
 ```python
-dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_qianfan=True)
+dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_group=True)
 ```
 
-设置 `organize_data_as_qianfan=True` 或使用 `pack()` 函数得到的千帆平台的数据集格式如下所示
-
-| _pack |
-|----|
-| [{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response": [["12"]]}]   |
-| [{"prompt": "34", "response": [["34"]]}]  |
-
-使用 `unpack()` 函数得到的展开后的格式
+设置 `organize_data_as_group=True` 或使用 `unpack()` 函数得到的千帆平台的数据集格式如下所示
 
 | prompt | response | _group |
 |--------|----------|--------|
@@ -323,7 +315,21 @@ dataset = Dataset.load(qianfan_dataset_id=42, organize_data_as_qianfan=True)
 | 12     | [["12"]] | 0      |
 | 34     | [["34"]] | 1      |
 
-其中 `_group` 列表示数据集的分组信息。
+其中 `_group` 列表示数据集的分组信息。在这种格式下，用户可以更加方便的进行对行与列的处理。
+
+不设置 `organize_data_as_group` 或使用 `pack()` 函数得到的展开后的实际格式如下所示
+
+| _pack                                                                            |
+|----------------------------------------------------------------------------------|
+| [{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response": [["12"]]}] |
+| [{"prompt": "34", "response": [["34"]]}]                                         |
+
+
+但 SDK 在处理时会对上述格式进行封装与处理，最终在行的角度上屏蔽 `_pack` 列，展现给用户的数据形式是一个二维数组，而非二维表。如下所示：
+
+| [{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response": [["12"]]}] |
+|----------------------------------------------------------------------------------|
+| [{"prompt": "34", "response": [["34"]]}]                                         |
 
 # 数据集处理
 
@@ -420,7 +426,6 @@ dataset = Dataset.create_from_pyobj([{
 # 取指定列名的列
 print(dataset["column_name1"])
 
-
 # 取指定列名列表的列
 print(dataset[["column_name1", "column_name3"]])
 ```
@@ -472,6 +477,14 @@ dataset = dataset \
     "column_name3": "column_data3",
   }))
 ```
+
+### 特殊情况
+
+如果用户导入的数据集是类似列表格式的数据，基本的处理单位按行计，即传递给 `map()` 和 `filter()` 回调的内容是一行所表示的列表，而不是包含 "列名: 列值" 的字典。
+
+同样的， `list()` 的返回值也是包含了行列表的列表，而不是包含行字典的列表。
+
+`insert()` 与 `append()` 接受传递二维列表 `List[List[Any]]` 做批量插入，或传入 `List[Any]` 以及 `Any` 插入单行。
 
 ### 千帆平台的在线数据处理
 

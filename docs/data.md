@@ -22,7 +22,7 @@
 - [删除实体](#删除实体)
 - [获取实体列表](#获取实体列表)
 
-使用前需要引用入Data类
+使用前需要引用入 `Data` 类
 ```python
 from qianfan.resources import Data
 ```

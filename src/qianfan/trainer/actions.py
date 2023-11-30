@@ -71,6 +71,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             )
         log_debug("[load_dataset_action] prepare train-set")
         qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
+        print("==>")
         is_released = qf_data_src.release_dataset()
         if not is_released:
             raise InvalidArgumentError("dataset must be released")

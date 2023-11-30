@@ -408,6 +408,8 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             if svc_status != console_const.ServiceStatus.Deploying.value:
                 sft_model_endpoint = resp["result"]["uri"]
                 break
+            else:
+                log_info("please check console for service deployment")
             time.sleep(get_config().DEPLOY_STATUS_POLLING_INTERVAL)
 
         self.endpoint = sft_model_endpoint

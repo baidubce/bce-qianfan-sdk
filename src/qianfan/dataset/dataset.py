@@ -358,6 +358,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
+        replace_source: bool = False,
         **kwargs: Any,
     ) -> bool:
         """
@@ -379,6 +380,8 @@ class Dataset(Table):
                 default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            replace_source: (bool):
+                if replace the original source, default to False
             kwargs (Any): optional arguments
 
         Returns:
@@ -416,7 +419,10 @@ class Dataset(Table):
             kwargs["is_annotated"] = schema.is_annotated
 
         # 开始写入数据
-        return self._to_source(source, **kwargs)  # noqa
+        res = self._to_source(source, **kwargs)  # noqa
+        if res and replace_source:
+            self.inner_data_source_cache = source
+        return res
 
     @classmethod
     def create_from_pyobj(

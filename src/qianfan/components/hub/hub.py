@@ -17,7 +17,7 @@ Hub
 """
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 import requests
 
@@ -26,7 +26,7 @@ from qianfan.components.prompt.prompt import Prompt
 from qianfan.errors import InvalidArgumentError, RequestError, ValidationError
 from qianfan.version import VERSION as sdk_version
 
-_hub_load_type: Dict[str, type[HubSerializable]] = {
+_hub_load_type: Dict[str, Type[HubSerializable]] = {
     "prompt": Prompt,
 }
 

@@ -26,12 +26,16 @@ from qianfan.components.prompt.prompt import Prompt
 from qianfan.errors import InvalidArgumentError, RequestError, ValidationError
 from qianfan.version import VERSION as sdk_version
 
+# a map which maps the prefix of src to the class
 _hub_load_type: Dict[str, Type[HubSerializable]] = {
     "prompt": Prompt,
 }
 
 
 def _load_from_qianfan(src: str) -> Any:
+    """
+    Load the object from qianfan platform.
+    """
     path_list = src.split("/")
     if len(path_list) < 2:
         raise ValidationError("The src should be in the format of <type>/<name>")
@@ -54,6 +58,9 @@ def load(
     When multiple sources are provided, which source will be used is undefined.
 
     Parameters:
+      src (Optional[str]):
+        A str indicating the source on qianfan platform. The str should be in the format 
+        of <type>/<name>.
       json_str (Optional[str]):
         A JSON-formatted string containing the serialized representation of the object,
         which is the return value of the `hub.save` method.
@@ -68,15 +75,18 @@ def load(
 
     Example:
     ```python
-    # Example 1: Load from a JSON string
+    # Example 1: Load from qianfan platform
+    prompt = load("prompt/my_prompt")
+
+    # Example 2: Load from a JSON string
     data = save(obj)
     loaded_object = load(json_str=data)
 
-    # Example 2: Load from a file
+    # Example 3: Load from a file
     file_path = 'path/to/data.json'
     loaded_object = load(path=file_path)
 
-    # Example 3: Load from a URL
+    # Example 4: Load from a URL
     url = 'https://example.com/data.json'
     loaded_object = load(url=url)
     ```
@@ -124,6 +134,8 @@ def save(
     Parameters:
       obj (HubSerializable):
         The object to be serialized.
+      to_platform (bool):
+        Whether to push the object to qianfan platform.
       path (Optional[str]):
         The file path where the serialized data will be saved. If not provided, the
         serialized data is not saved to a file.
@@ -157,4 +169,14 @@ def save(
 
 
 def push(obj: Any) -> None:
+    """
+    Push the object to qianfan platform.
+
+    Parameters:
+      obj (HubSerializable):
+        The object to be pushed to qianfan platform.
+
+    Returns:
+      None
+    """
     save(obj, to_platform=True)

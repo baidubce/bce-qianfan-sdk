@@ -16,10 +16,13 @@ from qianfan.components import Prompt
 
 ### 快速使用
 
-平台上预置的 Prompt 以及用户自定义的模型都可以在 [千帆控制台](https://console.bce.baidu.com/qianfan/prompt/template) 获得，之后可以在 SDK 中用 Prompt 的名称快速获取 Prompt 对象，并进行渲染等操作。
+平台上预置的 Prompt 以及用户自定义的模型都可以在 [千帆控制台](https://console.bce.baidu.com/qianfan/prompt/template) 获得，之后可以在 SDK 的 hub 能力从平台快速获取 Prompt 对象，并进行渲染等操作。
 
 ```python
-p = Prompt(name="区域美食推荐")
+from qianfan.components.hub import hub
+
+# 获取平台上的 Prompt，name 为控制台上显示的名称
+p = hub.load("prompt/区域美食推荐")
 # 第二个参数是 negative prompt，仅文生图场景使用，此处可忽略
 prompt, _ = p.render(region="上海")
 
@@ -27,7 +30,7 @@ prompt, _ = p.render(region="上海")
 qianfan.Completion().do(prompt)
 
 # 文生图的 Prompt 使用方法相同，具体类型可以从控制台查看
-txt2img_prompt = Prompt(name="角色设计")
+txt2img_prompt = hub.load("prompt/角色设计")
 # 类型通过变量属性获取
 from qianfan.consts import PromptSceneType
 txt2img_prompt.scene_type == PromptSceneType.Text2Image # => True
@@ -42,12 +45,11 @@ qianfan.Text2Image().do(
 
 ### 本地 Prompt
 
-如果不想使用平台上的 Prompt，也可以传入 `template` 参数并设定 `mode="local"` 本地使用。
+如果不想使用平台上的 Prompt，也可以直接使用 `template` 参数构造 Prompt 对象。
 
 ```python
 p = Prompt(
     template="本地 prompt {var1}",
-    mode="local"
 )
 
 prompt, _ = p.render(var1="hello") # => 本地 prompt hello
@@ -55,7 +57,6 @@ prompt, _ = p.render(var1="hello") # => 本地 prompt hello
 # 文生图 Prompt 同样支持
 prompt = Prompt(
     name="txt2img",
-    mode="local",
     template="txt2img template ((v1))",
     scene_type=PromptSceneType.Text2Image, 
     negative_template="negative template ((v3))", # 负向 prompt
@@ -65,28 +66,27 @@ prompt = Prompt(
 
 ### 上传&更新 Prompt
 
-通过 `upload` 方法可以将本地 Prompt 上传到平台，或者是更新已有的 Prompt。
+通过 hub 能力可以将本地 Prompt 上传到平台，或者是更新已有的 Prompt。
 
 ```python
 p = Prompt(
     template="本地 prompt {var1}",
-    mode="local"
 )
 
 # 对于平台上的 prompt 来说，name 是必须的，因此上传前必须先设置
 p.name = "cookbook_prompt"
-p.upload()
+hub.push(p)
 
 p.id # => 188
 ```
 
-上传后就可以获得 Prompt 的 ID，之后可以通过 `id` 属性获取 Prompt 对象，也可以通过名称直接初始化。
+上传后就可以获得 Prompt 的 ID，之后可以通过 `id` 属性获取 Prompt 对象。
 
-对于已经是 `remote` 的 Prompt 来说，也可以对其更新。
+也可以对 prompt 进行更新后再推送至平台上进行更新。
 
 ```python
 p.set_template("新的 Prompt {new_var}")
-p.upload() # 更新至平台
+hub.push(p) # 更新至平台
 
 print(p.variables) # => ['new_var']
 print(p.render(new_var="hello")) # => 新的 Prompt hello
@@ -97,7 +97,7 @@ print(p.render(new_var="hello")) # => 新的 Prompt hello
 调用 `delete` 方法可以删除 Prompt，如果是本地 Prompt 或者预置 Prompt，那么该函数将没有作用，删除后 Prompt 仍可以本地使用。
 
 ```python
-p = Prompt(name="cookbook_prompt")
+p = hub.load("prompt/cookbook_prompt")
 p.delete()
 ```
 

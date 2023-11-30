@@ -81,10 +81,10 @@ class Prompt(HubSerializable):
         Initializes a Prompt object.
 
         Parameters:
-          name (Optional[str]):
-            The name of the prompt, required if mode is "remote".
           template (Optional[str]):
             The template string for the prompt, required if mode id "local".
+          name (Optional[str]):
+            The name of the prompt, required if mode is "remote".
           id (Optional[int]):
             The id of the prompt on platform.
           identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):

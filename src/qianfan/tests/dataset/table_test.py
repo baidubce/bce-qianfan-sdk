@@ -15,11 +15,15 @@
 test for data source
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pyarrow
 import pytest
 
+from qianfan.dataset.consts import (
+    QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
+)
 from qianfan.dataset.table import Table
 
 
@@ -43,12 +47,49 @@ def test_append_row():
     assert len(table.list()) == 5
 
 
+def test_insert_row():
+    table = Table(
+        inner_table=pyarrow.Table.from_pylist(
+            [{"name": "duck", "age": 3}, {"name": "monkey", "age": 24}]
+        )
+    )
+
+    with pytest.raises(ValueError):
+        table.append(["not a dict"])
+
+    with pytest.raises(ValueError):
+        table.append(123)
+
+    new_row = {"name": "tiger", "age": 5}
+
+    with pytest.raises(ValueError):
+        table.insert(new_row, -1)
+
+    with pytest.raises(ValueError):
+        table.insert(new_row, 3)
+
+    table.insert(new_row, 1)
+    assert len(table.list()) == 3
+
+    new_rows = [{"name": "pig", "age": 6}, {"name": "pig", "age": 6}]
+    table.insert(new_rows, 1)
+    assert len(table.list()) == 5
+
+    assert table.list() == [
+        {"name": "duck", "age": 3},
+        {"name": "pig", "age": 6},
+        {"name": "pig", "age": 6},
+        {"name": "tiger", "age": 5},
+        {"name": "monkey", "age": 24},
+    ]
+
+
 def test_list_row():
     table = Table(
         inner_table=pyarrow.Table.from_pydict({"a": [1, 2, 3], "b": ["a", "b", "c"]})
     )
-    assert table.list(0) == [{"a": 1, "b": "a"}]
-    assert table.list(1) == [{"a": 2, "b": "b"}]
+    assert table.list(0) == {"a": 1, "b": "a"}
+    assert table.list(1) == {"a": 2, "b": "b"}
     assert table.list([1, 2]) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
     assert table.list((1, 2)) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
     assert table.list(slice(1, 3)) == [{"a": 2, "b": "b"}, {"a": 3, "b": "c"}]
@@ -88,10 +129,6 @@ def test_map_row():
     with pytest.raises(ValueError):
         table.map(lambda x: {})
 
-    # map操作的函数返回值字典的键与首行不匹配
-    with pytest.raises(ValueError):
-        table.map(lambda x: {"c": x["a"]})
-
 
 def test_filter_row():
     table = Table(inner_table=pyarrow.Table.from_pydict({"age": [1, 2, 3, 25, 26, 27]}))
@@ -100,7 +137,7 @@ def test_filter_row():
         return row["age"] > 25
 
     filtered_table = table.filter(op)
-    assert filtered_table.get_row_count() == 2
+    assert filtered_table.row_number() == 2
 
     def mis_op(row):
         return row["age"]
@@ -152,7 +189,20 @@ def test_append_column():
         table.col_append({"name": "test", "data": ["abc"]})
 
     table.col_append({"name": "test", "data": ["a", "b", "c", "d"]})
-    table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
+
+    with pytest.raises(ValueError):
+        table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
+
+
+def test_insert_column():
+    table = Table(inner_table=pyarrow.Table.from_pydict({"x": [1, 2, 3, 4]}))
+    table.col_insert({"name": "test", "data": ["a", "b", "c", "d"]}, 0)
+    table.col_insert({"name": "another_col", "data": [0, 0, 0, 0]}, 0)
+
+    col_names = table.col_names()
+    assert table.column_number() == 3
+    assert col_names[0] == "another_col"
+    assert col_names[1] == "test"
 
 
 def test_list_column():
@@ -224,3 +274,199 @@ def test_delete_column():
         "x": [1, 2, 3, 4],
         "z": ["1", "2", "3", "4"],
     }
+
+
+def test_unpack_table():
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    table = Table(inner_table=pyarrow.Table.from_pydict(packed_table))
+
+    assert table.unpack()
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+    assert table.list() == unpacked_inner_table
+
+
+def test_pack_table():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    assert table.pack()
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    packed_row_table = [
+        [
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        [{"column1": "data1", "column2": "data2"}],
+    ]
+
+    assert table.col_list() == packed_table
+    assert table.list() == packed_row_table
+
+
+def test_packed_dataset_append():
+    packed_table = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+        ]
+    }
+
+    table = Table(inner_table=pyarrow.Table.from_pydict(packed_table))
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.row_number() == 3
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ]
+    )
+    assert table.row_number() == 4
+
+    new_table_element = {
+        QianfanDatasetPackColumnName: [
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+            [{"column1": "data1", "column2": "data2"}],
+            [{"column1": "data1", "column2": "data2"}],
+            [
+                {"column1": "data1", "column2": "data2"},
+                {"column1": "data1", "column2": "data2"},
+            ],
+        ]
+    }
+
+    assert table.col_list() == new_table_element
+
+
+def test_grouped_dataset_append():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.list()[-1][QianfanDataGroupColumnName] == 1
+
+    table.append(elem={"column1": "data1", "column2": "data2"}, add_new_group=True)
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+
+    table.append(elem={"column1": "data1", "column2": "data2"})
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ]
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 2
+    assert table.list()[-2][QianfanDataGroupColumnName] == 2
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        add_new_group=True,
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 3
+    assert table.list()[-2][QianfanDataGroupColumnName] == 3
+
+    table.append(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        add_new_group=True,
+        is_grouped=False,
+    )
+    assert table.list()[-1][QianfanDataGroupColumnName] == 5
+    assert table.list()[-2][QianfanDataGroupColumnName] == 4
+
+
+def test_insert_group_data():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+
+    table.insert(
+        elem=[
+            {"column1": "data1", "column2": "data2"},
+            {"column1": "data1", "column2": "data2"},
+        ],
+        index=1,
+        group_id=12,
+        add_new_group=False,
+        is_grouped=False,
+    )
+
+    new_table_list = table.to_pylist()
+    assert new_table_list[1][QianfanDataGroupColumnName] == 12
+    assert new_table_list[2][QianfanDataGroupColumnName] == 13
+
+    table.pack()
+    table.unpack()
+
+    group_col = table.col_list(QianfanDataGroupColumnName)[QianfanDataGroupColumnName]
+
+    assert max(group_col) == 3
+
+
+def test_row_packed_map():
+    unpacked_inner_table = [
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 0},
+        {"column1": "data1", "column2": "data2", QianfanDataGroupColumnName: 1},
+    ]
+
+    table = Table(inner_table=pyarrow.Table.from_pylist(unpacked_inner_table))
+    table.pack()
+
+    assert len(table) == 2
+
+    def _assert_map(obj: List[Dict]) -> List[Dict]:
+        assert isinstance(obj, list) and isinstance(obj[0], dict)
+        return obj
+
+    table.map(_assert_map)

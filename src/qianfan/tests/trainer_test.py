@@ -38,7 +38,7 @@ def test_load_data_action():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "test", console_consts.DataTemplateType.NonSortedConversation
     )
-    ds = Dataset.load(source=qianfan_data_source)
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     res = LoadDataSetAction(ds).exec({"dataset_id": 123})
     assert isinstance(res, dict)
@@ -91,7 +91,7 @@ def test_trainer_sft_run():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "test", console_consts.DataTemplateType.NonSortedConversation
     )
-    ds = Dataset.load(source=qianfan_data_source)
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
@@ -118,7 +118,7 @@ def test_trainer_sft_with_deploy():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "test", console_consts.DataTemplateType.NonSortedConversation
     )
-    ds = Dataset.load(source=qianfan_data_source)
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(

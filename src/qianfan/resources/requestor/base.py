@@ -26,7 +26,9 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    Optional,
     TypeVar,
+    Union,
 )
 
 import aiohttp
@@ -42,17 +44,62 @@ from qianfan.utils.logging import log_error, log_warn
 _T = TypeVar("_T")
 
 
+def _is_utf8_encoded_bytes(byte_str: bytes) -> bool:
+    """check whether bytes object is utf8 encoded"""
+    try:
+        byte_str.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
+def _get_body_str(byte_str: Optional[Union[bytes, str]]) -> Optional[Union[bytes, str]]:
+    """get utf8-decoded str"""
+    if byte_str is None:
+        return ""
+
+    if (
+        not byte_str
+        or isinstance(byte_str, str)
+        or not _is_utf8_encoded_bytes(byte_str)
+    ):
+        return byte_str
+
+    return str(byte_str, encoding="utf8")
+
+
 def _check_if_status_code_is_200(response: requests.Response) -> None:
     """
     check whether the status code of response is ok(200)
     if the status code is not 200, raise a `RequestError`
     """
     if response.status_code != 200:
-        raise errors.RequestError(
-            f"request failed with status code `{response.status_code}`, "
-            f"headers: `{response.headers}`, "
-            f"body: `{response.content!r}`"
+        failed_msg = (
+            f"http request url {response.url} failed "
+            f"with http status code {response.status_code}\n"
         )
+        if response.headers.get("X-Bce-Error-Code", ""):
+            failed_msg += (
+                f"error code from baidu: {response.headers['X-Bce-Error-Code']}\n"
+            )
+
+        if response.headers.get("X-Bce-Error-Message", ""):
+            failed_msg += (
+                f"error message from baidu: {response.headers['X-Bce-Error-Message']}\n"
+            )
+
+        request_body = _get_body_str(response.request.body)
+        response_body = _get_body_str(response.content)
+
+        failed_msg += (
+            f"request headers: {response.request.headers}\n"
+            f"request body: {request_body!r}\n"
+            f"response headers: {response.headers}\n"
+            f"response body: {response_body!r}"
+        )
+
+        log_error(failed_msg)
+        raise errors.RequestError(failed_msg)
 
 
 def _async_check_if_status_code_is_200(response: aiohttp.ClientResponse) -> None:

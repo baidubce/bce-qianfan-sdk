@@ -63,9 +63,9 @@ class Processable(ABC):
         """
 
 
-class Appendable(ABC):
+class Addable(ABC):
     """
-    make object 'appendable'
+    make object 'addable'
     """
 
     @abstractmethod
@@ -77,7 +77,20 @@ class Appendable(ABC):
             elem (Any): element to append
 
         Returns:
-            Self: a new Appendable object after appending
+            Self: a new Addable object after appending
+        """
+
+    @abstractmethod
+    def insert(self, elem: Any, index: Any) -> Self:
+        """
+        insert an element to Appendable object
+
+        Args:
+            elem (Any): element(s) to insert
+            index (Any): where to insert element(s)
+
+        Returns:
+            Self: a new Addable object after inserting
         """
 
 

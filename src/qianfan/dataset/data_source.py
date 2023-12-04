@@ -193,6 +193,8 @@ class FileDataSource(DataSource, BaseModel):
             raise ValueError("file path not found")
         if os.path.isdir(self.path):
             ret_content = ""
+
+            # 不保证读取文件的任何顺序性
             for filename in os.listdir(self.path):
                 if not filename.endswith(self.format_type().value):
                     continue
@@ -204,10 +206,10 @@ class FileDataSource(DataSource, BaseModel):
                 if not ret_content.endswith(os.linesep):
                     ret_content += os.linesep
 
-            return ret_content
+            return ret_content.strip(os.linesep)
         else:
             with open(self.path, mode="r") as file:
-                return file.read()
+                return file.read().strip(os.linesep)
 
     async def afetch(self, **kwargs: Any) -> str:
         """

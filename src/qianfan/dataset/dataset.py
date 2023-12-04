@@ -19,6 +19,7 @@ import csv
 import functools
 import io
 import json
+import os
 import uuid
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
@@ -128,7 +129,7 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
         elif format_type == FormatType.Jsonl:
             json_data_list = [
-                json.loads(line) for line in str_content.split("\n") if line
+                json.loads(line) for line in str_content.split(os.linesep) if line
             ]
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
@@ -149,7 +150,7 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
             # 如果是纯文本，则放置在 prompt 一列下
-            line_data = str_content.split("\n")
+            line_data = str_content.split(os.linesep)
             pyarrow_table = pyarrow.Table.from_pydict(
                 {QianfanDatasetPackColumnName: line_data}
             )
@@ -159,7 +160,7 @@ class Dataset(Table):
             raise error
 
         return cls(
-            inner_table=pyarrow_table,
+            inner_table=pyarrow_table.combine_chunks(),  # 性能优化，combine_chunks()
             inner_data_source_cache=source,
             inner_schema_cache=schema,
         )
@@ -211,7 +212,7 @@ class Dataset(Table):
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
-            return source.save("\n".join(list_of_json), **kwargs)
+            return source.save(os.linesep.join(list_of_json), **kwargs)
 
         elif format_type == FormatType.Csv:
             string_stream_buffer = io.StringIO()
@@ -228,7 +229,7 @@ class Dataset(Table):
                 log_error(str(error))
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
-            return source.save("\n".join(result_list), **kwargs)
+            return source.save(os.linesep.join(result_list), **kwargs)
 
         else:
             error = ValueError(f"unknown format type: {format_type}")
@@ -335,12 +336,14 @@ class Dataset(Table):
 
                 data = huggingface_dataset.data
                 if isinstance(data, dict):
-                    log_info("construct from pyarrow.Table list")
-                    complete_table = pyarrow.concat_tables(list(data.values()))
-                    return cls.create_from_pyarrow_table(complete_table)
-                elif isinstance(data, pyarrow.Table):
-                    log_info("construct from pyarrow.Table")
-                    return cls.create_from_pyarrow_table(data)
+                    log_info("construct from huggingface DatasetDict")
+                    pyarrow_table = pyarrow.concat_tables(
+                        [ds.table for ds in data.values()]
+                    )
+                    return cls.create_from_pyarrow_table(pyarrow_table.combine_chunks())
+                elif hasattr(data, "table"):
+                    log_info("construct from huggingface Dataset")
+                    return cls.create_from_pyarrow_table(data.table.combine_chunks())
 
                 err_msg = (
                     f"get unsupported data type {type(data)} from huggingface dataset"
@@ -471,12 +474,12 @@ class Dataset(Table):
         """
         if isinstance(data, list):
             return cls(
-                inner_table=pyarrow.Table.from_pylist(data),
+                inner_table=pyarrow.Table.from_pylist(data).combine_chunks(),
                 inner_schema_cache=schema,
             )
         else:
             return cls(
-                inner_table=pyarrow.Table.from_pydict(data),
+                inner_table=pyarrow.Table.from_pydict(data).combine_chunks(),
                 inner_schema_cache=schema,
             )
 
@@ -495,7 +498,7 @@ class Dataset(Table):
         Returns:
             Dataset: a dataset instance
         """
-        return cls(inner_table=table, inner_schema_cache=schema)
+        return cls(inner_table=table.combine_chunks(), inner_schema_cache=schema)
 
     def _is_dataset_located_in_qianfan(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):

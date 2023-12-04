@@ -15,6 +15,7 @@
 test for data source
 """
 import os
+import shutil
 
 from qianfan.dataset.data_source import FileDataSource, FormatType, QianfanDataSource
 from qianfan.resources.console.consts import (
@@ -54,6 +55,24 @@ def test_automatic_detect_file_format():
     os.remove("1.txt")
     os.remove(".1.json")
     os.remove("123")
+
+
+def test_read_from_folder():
+    os.makedirs("test_dirs", exist_ok=True)
+    with open("test_dirs/test_file1.txt", "w") as f:
+        f.write("test_file1")
+
+    with open("test_dirs/test_file2.txt", "w") as f:
+        f.write("test_file2")
+
+    f = FileDataSource(path="test_dirs")
+    content = f.fetch()
+    content_list = content.split(os.linesep)
+    content_list.sort()
+
+    assert content_list == ["test_file1", "test_file2"]
+
+    shutil.rmtree("test_dirs")
 
 
 def test_create_bare_qianfan_data_source():

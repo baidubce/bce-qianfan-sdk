@@ -154,7 +154,13 @@ class FileDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been written successfully
         """
-        with open(self.path, mode="w") as file:
+        if os.path.isdir(self.path):
+            file_path = os.path.join(
+                self.path, f"data_{uuid.uuid4()}.{self.format_type().value}"
+            )
+        else:
+            file_path = self.path
+        with open(file_path, mode="w") as file:
             file.write(data)
         return True
 
@@ -186,9 +192,22 @@ class FileDataSource(DataSource, BaseModel):
         if not os.path.exists(self.path):
             raise ValueError("file path not found")
         if os.path.isdir(self.path):
-            raise ValueError("cannot read from folder")
-        with open(self.path, mode="r") as file:
-            return file.read()
+            ret_content = ""
+            for filename in os.listdir(self.path):
+                if not filename.endswith(self.format_type().value):
+                    continue
+
+                file_path = os.path.join(self.path, filename)
+                with open(file_path, mode="r") as file:
+                    ret_content += file.read()
+
+                if not ret_content.endswith(os.linesep):
+                    ret_content += os.linesep
+
+            return ret_content
+        else:
+            with open(self.path, mode="r") as file:
+                return file.read()
 
     async def afetch(self, **kwargs: Any) -> str:
         """
@@ -229,8 +248,8 @@ class FileDataSource(DataSource, BaseModel):
 
         try:
             index = self.path.rfind(".")
-            # 查询不到的情况下默认使用纯文本格式
-            if index == -1:
+            # 读文件夹或查询不到的情况下默认使用纯文本格式
+            if os.path.isdir(self.path) or index == -1:
                 log_warn(f"use default format type {FormatType.Text}")
                 self.file_format = FormatType.Text
                 return self

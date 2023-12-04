@@ -242,7 +242,6 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[int] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
-        huggingface_name: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
         """从参数来构建数据源"""
@@ -273,10 +272,6 @@ class Dataset(Table):
                 f" {bos_load_args}, with args: {kwargs}"
             )
             return QianfanDataSource.create_from_bos_file(**bos_load_args)
-        if huggingface_name:
-            error = ValueError("huggingface not supported yet")
-            log_error(str(error))
-            raise error
 
         log_info("no datasource was constructed")
         return None
@@ -288,7 +283,7 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[int] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
-        huggingface_name: Optional[str] = None,
+        huggingface_dataset: Optional[Any] = None,
         schema: Optional[Schema] = None,
         organize_data_as_group: bool = False,
         **kwargs: Any,
@@ -310,8 +305,9 @@ class Dataset(Table):
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
                 from args
-            huggingface_name (Optional[str]):
-                Hugging Face dataset name, not available now
+            huggingface_dataset (Optional[Dict[str, Any], Any]):
+                Huggingface dataset object, only support
+                DatasetDict and Dataset of Huggingface datasets.
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
             organize_data_as_group (bool):
@@ -327,17 +323,45 @@ class Dataset(Table):
         """
 
         if not source:
+            if huggingface_dataset is not None:
+                log_info("construct dataset from huggingface dataset")
+                if not hasattr(huggingface_dataset, "data"):
+                    err_msg = (
+                        "huggingface_dataset should be either DatasetDict or Dataset of"
+                        " Huggingface datasets. "
+                    )
+                    log_error(err_msg)
+                    raise ValueError(log_error)
+
+                data = huggingface_dataset.data
+                if isinstance(data, dict):
+                    log_info("construct from pyarrow.Table list")
+                    complete_table = pyarrow.concat_tables(list(data.values()))
+                    return cls.create_from_pyarrow_table(complete_table)
+                elif isinstance(data, pyarrow.Table):
+                    log_info("construct from pyarrow.Table")
+                    return cls.create_from_pyarrow_table(data)
+
+                err_msg = (
+                    f"get unsupported data type {type(data)} from huggingface dataset"
+                )
+                log_error(err_msg)
+                raise TypeError(err_msg)
+
             log_info("no data source was provided, construct")
             source = cls._from_args_to_source(
                 data_file=data_file,
                 qianfan_dataset_id=qianfan_dataset_id,
                 bos_load_args=bos_load_args,
-                huggingface_name=huggingface_name,
                 **kwargs,
             )
 
         # 从数据源开始构建对象
-        assert source
+        if not source:
+            err_msg = "no data source or other arguments provided for loading"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
         table = cls._from_source(source, schema, **kwargs)
 
         # 校验
@@ -399,7 +423,10 @@ class Dataset(Table):
 
         # 获取数据源参数
         source = destination if destination else self.inner_data_source_cache
-        assert source
+        if not source:
+            err_msg = "no data source or other arguments provided for saving"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         # 首先检查是否有传入 schema 或者已经默认有了 schema
         schema = schema if schema else self.inner_schema_cache

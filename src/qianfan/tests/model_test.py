@@ -60,3 +60,68 @@ def test_publish_model():
     assert "modelId" in resp["result"]
     assert "versionId" in resp["result"]
     assert "version" in resp["result"]
+
+
+def test_create_evaluation_task():
+    """
+    test Model.create_evaluation_task
+    """
+    resp = Model.create_evaluation_task(
+        name="test_name",
+        version_info=[{"modelId": 12, "modelVersionId": 34}],
+        dataset_id=123,
+        eval_config={
+            "evalMode": "model,manual",
+            "appId": 1234,
+            "prompt": {
+                "templateContent": "?",
+                "metric": "no",
+                "steps": "steps",
+                "maxScore": 12
+            },
+            "evaluationDimension": [
+                {
+                    "dimension": "dimension",
+                    "description": "description",
+                }
+            ]
+        }
+    )
+
+    request = resp["_request"]
+
+
+def test_get_evaluation_info():
+    """
+    test Model.get_evaluation_info
+    """
+
+    resp = Model.get_evaluation_info(
+        123,
+    )
+
+    assert resp['_request']['id'] == 123
+
+
+def test_get_evaluation_result():
+    """
+    test Model.get_evaluation_result
+    """
+
+    resp = Model.get_evaluation_result(
+        123,
+    )
+
+    assert resp['_request']['id'] == 123
+
+
+def test_stop_evaluation_task():
+    """
+    test Model.stop_evaluation_task
+    """
+
+    resp = Model.stop_evaluation_task(
+        123,
+    )
+
+    assert resp['_request']['id'] == 123

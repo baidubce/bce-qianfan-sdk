@@ -129,7 +129,7 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
         elif format_type == FormatType.Jsonl:
             json_data_list = [
-                json.loads(line) for line in str_content.split(os.linesep) if line
+                json.loads(line) for line in str_content.split("\n") if line
             ]
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
@@ -150,7 +150,7 @@ class Dataset(Table):
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
             # 如果是纯文本，则放置在 prompt 一列下
-            line_data = str_content.split(os.linesep)
+            line_data = str_content.split("\n")
             pyarrow_table = pyarrow.Table.from_pydict(
                 {QianfanDatasetPackColumnName: line_data}
             )
@@ -212,7 +212,7 @@ class Dataset(Table):
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
-            return source.save(os.linesep.join(list_of_json), **kwargs)
+            return source.save("\n".join(list_of_json), **kwargs)
 
         elif format_type == FormatType.Csv:
             string_stream_buffer = io.StringIO()
@@ -229,7 +229,7 @@ class Dataset(Table):
                 log_error(str(error))
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
-            return source.save(os.linesep.join(result_list), **kwargs)
+            return source.save("\n".join(result_list), **kwargs)
 
         else:
             error = ValueError(f"unknown format type: {format_type}")

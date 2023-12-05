@@ -211,17 +211,17 @@ class FileDataSource(DataSource, BaseModel):
                     with open(file_path, mode="r") as f:
                         ret_content += f.read()
 
-                    if not ret_content.endswith(os.linesep):
-                        ret_content += os.linesep
+                    if not ret_content.endswith("\n"):
+                        ret_content += "\n"
 
                 for path in dir_list:
                     dfs_read_file(path)
 
             dfs_read_file(self.path)
-            return ret_content.strip(os.linesep)
+            return ret_content.strip("\n")
         else:
             with open(self.path, mode="r") as file:
-                return file.read().strip(os.linesep)
+                return file.read().strip("\n")
 
     async def afetch(self, **kwargs: Any) -> str:
         """

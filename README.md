@@ -148,6 +148,9 @@ print(resp["result"])
 - 删除实体
 - 获取实体列表
 
+## Trainer
+
+千帆 Python SDK 以Pipeline串联整个模型训练的流程，同时帮助用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
 
 ## 本地数据集处理
 

@@ -19,7 +19,6 @@ import csv
 import functools
 import io
 import json
-import uuid
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -28,6 +27,7 @@ import requests
 from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 
+import qianfan.utils.utils
 from qianfan import get_config
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
@@ -519,7 +519,9 @@ class Dataset(Table):
 
         log_info("create a new dataset group and dataset")
         new_data_source = QianfanDataSource.create_bare_dataset(
-            name=f"{origin_data_source.name}_etl_result_set_{uuid.uuid4()}",
+            name=(
+                f"etl_result_set_{qianfan.utils.utils.generate_letter_num_random_id()}"
+            ),
             template_type=origin_data_source.template_type,
             storage_type=origin_data_source.storage_type,
             storage_id=origin_data_source.storage_id,

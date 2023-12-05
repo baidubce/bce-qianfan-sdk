@@ -155,7 +155,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any,
-    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+    ) -> Union[AgentAction, AgentFinish]:
         """plan an action"""
         tool_history = _convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(
@@ -174,7 +174,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any,
-    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+    ) -> Union[AgentAction, AgentFinish]:
         """plan an action asynchronously"""
         tool_history = _convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(
@@ -263,7 +263,7 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any,
-    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+    ) -> Union[List[AgentAction], AgentFinish]:
         """plan an action"""
         tool_history = _convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(
@@ -281,7 +281,7 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         intermediate_steps: List[Tuple[AgentAction, str]],
         callbacks: Callbacks = None,
         **kwargs: Any,
-    ) -> Union[List[AgentAction], AgentAction, AgentFinish]:
+    ) -> Union[List[AgentAction], AgentFinish]:
         """plan an action asynchronously"""
         tool_history = _convert_action_into_message(intermediate_steps)
         messages = self.prompt.format_prompt(

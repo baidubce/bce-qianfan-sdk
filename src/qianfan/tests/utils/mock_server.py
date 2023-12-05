@@ -960,7 +960,7 @@ def get_evaluation_info():
     return json_response(
         {
             "result": {
-                "evaluationId": request.json['id'],
+                "evaluationId": request.json["id"],
                 "name": "eval_for_lama2",
                 "description": "",
                 "state": "Editing",
@@ -997,8 +997,7 @@ def get_evaluation_info():
                     "apiUrl": "/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
                     "prompt": {
                         "templateName": " 裁判员模型打分模板（含参考答案）",
-                        "templateContent":
-                            """
+                        "templateContent": """
                             你是一个好助手。请你为下面问题的回答打分
                             问题如下: {src}
                             标准答案如下：{tgt}
@@ -1018,8 +1017,7 @@ def get_evaluation_info():
                             原因: 此处只能回答评分原因
                             """,
                         "metric": "综合得分",
-                        "steps":
-                            """
+                        "steps": """
                             1.仔细阅读所提供的问题，确保你理解问题的要求和背景。
                             2.
                             仔细阅读所提供的标准答案，确保你理解问题的标准答案
@@ -1064,7 +1062,6 @@ def get_evaluation_result():
     mock get evaluation result api
     """
     return json_response(
-
         {
             "result": [
                 {
@@ -1079,7 +1076,7 @@ def get_evaluation_result():
                     "evaluationJobId": 2617,
                     "userId": 1,
                     "projectId": "",
-                    "evaluationId": request.json['id'],
+                    "evaluationId": request.json["id"],
                     "effectMetric": {
                         "accuracy": 0,
                         "f1Score": 0.095671654,
@@ -1097,29 +1094,19 @@ def get_evaluation_result():
                             "3": 2,
                             "4": 5,
                             "5": 1,
-                            "-1": 0
+                            "-1": 0,
                         },
                         "manualAvgScore": 2,
                         "goodCaseProportion": 1,
                         "subjectiveImpression": "1",
                         "manualScoreDistribution": [
-                            {
-                                "dimension": "满意度",
-                                "scoreDistribution": {
-                                    "2": 8
-                                }
-                            },
-                            {
-                                "dimension": "安全性",
-                                "scoreDistribution": {
-                                    "2": 8
-                                }
-                            }
-                        ]
-                    }
+                            {"dimension": "满意度", "scoreDistribution": {"2": 8}},
+                            {"dimension": "安全性", "scoreDistribution": {"2": 8}},
+                        ],
+                    },
                 }
             ],
-            "log_id": "2404206370"
+            "log_id": "2404206370",
         }
     )
 
@@ -1131,13 +1118,7 @@ def stop_evaluation_task():
     mock stop evaluation task api
     """
     return json_response(
-        {
-            "result": {
-                "result": True,
-                "errorMessage": ""
-            },
-            "log_id": "2398985472"
-        }
+        {"result": {"result": True, "errorMessage": ""}, "log_id": "2398985472"}
     )
 
 

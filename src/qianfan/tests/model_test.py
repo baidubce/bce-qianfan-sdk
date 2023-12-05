@@ -77,18 +77,19 @@ def test_create_evaluation_task():
                 "templateContent": "?",
                 "metric": "no",
                 "steps": "steps",
-                "maxScore": 12
+                "maxScore": 12,
             },
             "evaluationDimension": [
                 {
                     "dimension": "dimension",
                     "description": "description",
                 }
-            ]
-        }
+            ],
+        },
     )
 
     request = resp["_request"]
+    assert request["name"] == "test_name"
 
 
 def test_get_evaluation_info():
@@ -100,7 +101,7 @@ def test_get_evaluation_info():
         123,
     )
 
-    assert resp['_request']['id'] == 123
+    assert resp["_request"]["id"] == 123
 
 
 def test_get_evaluation_result():
@@ -112,7 +113,7 @@ def test_get_evaluation_result():
         123,
     )
 
-    assert resp['_request']['id'] == 123
+    assert resp["_request"]["id"] == 123
 
 
 def test_stop_evaluation_task():
@@ -124,4 +125,4 @@ def test_stop_evaluation_task():
         123,
     )
 
-    assert resp['_request']['id'] == 123
+    assert resp["_request"]["id"] == 123

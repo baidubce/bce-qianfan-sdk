@@ -24,7 +24,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
@@ -194,30 +194,19 @@ class FileDataSource(DataSource, BaseModel):
         if os.path.isdir(self.path):
             ret_content = ""
 
-            def dfs_read_file(dir_path: str) -> None:
-                nonlocal ret_content
-                dir_list: List[str] = []
-
-                # 不保证读取文件的任何顺序性
-                for filename in os.listdir(dir_path):
-                    if os.path.isdir(filename):
-                        dir_list.append(filename)
+            # 不保证文件读取的顺序性
+            for root, dirs, files in os.walk(self.path):
+                for file_name in files:
+                    if not file_name.endswith(self.format_type().value):
                         continue
 
-                    if not filename.endswith(self.format_type().value):
-                        continue
-
-                    file_path = os.path.join(dir_path, filename)
+                    file_path = os.path.join(root, file_name)
                     with open(file_path, mode="r") as f:
                         ret_content += f.read()
 
                     if not ret_content.endswith("\n"):
                         ret_content += "\n"
 
-                for path in dir_list:
-                    dfs_read_file(path)
-
-            dfs_read_file(self.path)
             return ret_content.strip("\n")
         else:
             with open(self.path, mode="r") as file:

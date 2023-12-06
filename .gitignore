@@ -58,3 +58,4 @@ poetry.lock
 .*_cache
 .env*
 .ipynb_checkpoints
+.DS_Store

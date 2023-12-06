@@ -8,6 +8,7 @@
     + 将千帆数据集导出为本地数据集
     + 将本地数据集通过私人 BOS 存储上传到千帆平台
   + 内存
+    + 从 HuggingFace 数据集创建 
     + 从 Python 对象创建数据集
     + 从  `pyarrow.Table`  创建数据集
 + 数据集处理
@@ -36,6 +37,7 @@
     + [导入](#导入-1)
     + [导出](#导出-1)
     + [千帆数据源](#千帆数据源)
+  * [从 HuggingFace 数据集导入](#从-huggingface-数据集导入)
   * [Python 对象](#python-对象)
   * [包装与拆分](#包装与拆分)
 - [数据集处理](#数据集处理)
@@ -144,13 +146,28 @@ ds = Dataset.load(
 print(ds.list())
 ```
 
+除了支持从本地文件导入数据集，SDK 还支持用户从文件夹中批量导入数据集。这种方式需要用户在导入时手动设置 `FormatType` 对象来指定需要读取的文件类型（默认为 txt），并手动维护将会被读取的文件的格式一致性。如果需要校验，可以设置 schema 参数。
+
+文件夹导入会遍历目标文件夹下的所有文件和子文件夹
+
+```python
+from qianfan.dataset import Dataset
+from qianfan.dataset.data_source import FormatType
+
+ds = Dataset.load(
+  data_file="path/to/folder",
+  file_format=FormatType.Json,
+)
+print(ds.list())
+```
+
 ### 导出
 
 和导入类似，用户可以通过 SDK 提供的 `save` 方法将数据集导出到本地文件中。
 
 如果是从文件导入创建的数据集，直接执行 `ds.save()` 会将数据集数据覆盖写入到导入时的文件
 
-用户也可以传递 `data_file` 参数来指定导出到文件名和文件路径，同时可以传递 `file_format` 参数来指定导出的格式
+用户可以传递 `data_file` 参数来指定导出到的文件路径，同时可以传递 `file_format` 参数来指定导出的格式
 
 ```python
 from qianfan.dataset import Dataset
@@ -164,6 +181,23 @@ ds = Dataset.load(
 
 ds.save(
   data_file="another/path/to/local_file",
+  file_format=FormatType.Csv
+)
+```
+
+`save` 方法同样支持用户传递文件夹路径，SDK 会自动为导出的文件进行命名，并且按照指定的格式导出（默认为 txt）
+
+```python
+from qianfan.dataset import Dataset
+from qianfan.dataset.data_source import FormatType
+
+ds = Dataset.load(
+  data_file="path/to/dataset_file_without_suffix",
+  file_format=FormatType.Json
+)
+
+ds.save(
+  data_file="path/to/folder",
   file_format=FormatType.Csv
 )
 ```
@@ -285,7 +319,24 @@ data_source = QianfanDataSource.create_bare_dataset(
 ```
 
 > 注意：如果将数据集 `save` 到千帆平台，请确认目的千帆平台数据集是使用个人 BOS 存储的数据集，SDK 不支持从本地保存数据到平台的公共 BOS 中。
-> 如有相关需求，用户可以向 `save` 函数中传递 `sup_storage_id` `sup_storage_path` 和 `sup_storage_region` 参数，指定用作中间存储的私有 BOS 信息
+> 如有相关需求，用户可以向 `save` 函数中传递 `sup_storage_id` `sup_storage_path` 和 `sup_storage_region` 参数，指定用作中间存储的私有 BOS 信息。使用的 BOS 必须是位于北京区域的 BOS 。
+
+## 从 HuggingFace 数据集导入
+
+用户如果想将已有的 HuggingFace 数据集转换到 SDK 的 `Dataset` 对象，只需要在 `load` 方法中的 `huggingface_dataset` 参数内传入 HuggingFace 数据集对象即可
+
+```python
+from datasets import load_dataset
+
+from qianfan.dataset import Dataset
+
+huggingface_ds = load_dataset(
+    "cais/mmlu", "abstract_algebra", split="auxiliary_train"
+)
+
+qianfan_ds = Dataset.load(huggingface_dataset=huggingface_ds)
+print(qianfan_ds.list())
+```
 
 ## Python 对象
 

@@ -59,18 +59,22 @@ def test_automatic_detect_file_format():
 
 def test_read_from_folder():
     os.makedirs("test_dirs", exist_ok=True)
+    os.makedirs("test_dirs/inner_test_dirs", exist_ok=True)
     with open("test_dirs/test_file1.txt", "w") as f:
         f.write("test_file1")
 
     with open("test_dirs/test_file2.txt", "w") as f:
         f.write("test_file2")
 
+    with open("test_dirs/inner_test_dirs/test_file3.txt", "w") as f:
+        f.write("test_file3")
+
     f = FileDataSource(path="test_dirs")
     content = f.fetch()
     content_list = content.split("\n")
     content_list.sort()
 
-    assert content_list == ["test_file1", "test_file2"]
+    assert content_list == ["test_file1", "test_file2", "test_file3"]
 
     shutil.rmtree("test_dirs")
 

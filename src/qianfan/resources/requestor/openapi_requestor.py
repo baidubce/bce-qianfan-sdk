@@ -104,6 +104,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         raise AccessTokenExpiredError
         """
         if "error_code" in body:
+            req_id = body.get("id", "")
             error_code = body["error_code"]
             err_msg = body.get("error_msg", "no error message found in response body")
             log_error(
@@ -115,7 +116,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 APIErrorCode.APITokenInvalid.value,
             }:
                 raise errors.AccessTokenExpiredError
-            raise errors.APIError(error_code, err_msg)
+            raise errors.APIError(error_code, err_msg, req_id)
 
     def llm(
         self,

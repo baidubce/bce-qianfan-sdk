@@ -13,6 +13,7 @@
 # limitations under the License.
 from typing import Any, Dict, Optional, cast
 
+from qianfan.config import get_config
 from qianfan.dataset import QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
@@ -121,8 +122,10 @@ class LLMFinetune(Trainer):
             event_handler=event_handler,
             **kwargs,
         )
-        self.model_publish = ModelPublishAction(event_handler=event_handler)
-
+        self.model_publish = ModelPublishAction(
+            event_handler=event_handler,
+            **kwargs,
+        )
         actions = [
             self.load_data_action,
             self.train_action,
@@ -142,7 +145,7 @@ class LLMFinetune(Trainer):
         self.ppls = [ppl]
         self.result = [None]
 
-    def run(self, **kwargs: Dict) -> Trainer:
+    def run(self, **kwargs: Any) -> Trainer:
         """_summary_
         run a pipeline to run the fine-tune process.
 
@@ -158,10 +161,16 @@ class LLMFinetune(Trainer):
             Trainer:
                 self, for chain invocation.
         """
-        self.input = kwargs.get("input")
+        self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to run")
-        self.result[0] = self.ppls[0].exec(self.input)
+        kwargs["backoff_factor"] = kwargs.get(
+            "backoff_factor", get_config().TRAINER_STATUS_POLLING_BACKOFF_FACTOR
+        )
+        kwargs["retry_times"] = kwargs.get(
+            "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
+        )
+        self.result[0] = self.ppls[0].exec(**kwargs)
         return self
 
     @property
@@ -203,7 +212,12 @@ class LLMFinetune(Trainer):
         Returns:
             LLMFinetune: _description_
         """
-        raise NotImplementedError("LLM Finetune not supported yet")
+        self.result[0] = self.ppls[0].resume(**kwargs)
+        return self
+
+    @property
+    def output(self) -> Any:
+        return self.result[0]
 
 
 # mapping for action state -> fine-tune status

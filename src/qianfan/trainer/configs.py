@@ -60,9 +60,10 @@ class DeployConfig(BaseModel):
     """
     description of service
     """
-    replicas: int
+    replicas: int = 1
     """
     replicas for model services, related to the capacity in QPS of model service.
+        default set to 1
     """
     pool_type: console_consts.DeployPoolType
     """

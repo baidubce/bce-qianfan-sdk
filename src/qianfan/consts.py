@@ -111,9 +111,11 @@ class DefaultValue:
     ExportStatusPollingInterval: float = 2
     ReleaseStatusPollingInterval: float = 2
     ETLStatusPollingInterval: float = 2
-    TrainStatusPollingInterval: float = 5
-    ModelPublishStatusPollingInterval: float = 2
-    DeployStatusPollingInterval: float = 2
+    TrainStatusPollingInterval: float = 30
+    TrainerStatusPollingBackoffFactor: float = 3
+    TrainerStatusPollingRetryTimes: float = 3
+    ModelPublishStatusPollingInterval: float = 30
+    DeployStatusPollingInterval: float = 30
     DefaultFinetuneTrainType: str = "ERNIE-Bot-turbo-0725"
 
     # 目前可直接下载到本地的千帆数据集解压后的大小上限

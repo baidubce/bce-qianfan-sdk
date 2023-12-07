@@ -19,6 +19,7 @@ Service API
 from typing import Any, Optional
 
 from qianfan.consts import Consts
+from qianfan.resources.console.consts import DeployPoolType
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
 
@@ -37,7 +38,7 @@ class Service(object):
         name: str,
         uri: str,
         replicas: int,
-        pool_type: int,
+        pool_type: DeployPoolType = DeployPoolType.PrivateResource,
         description: Optional[str] = None,
         **kwargs: Any
     ) -> QfRequest:
@@ -78,7 +79,7 @@ class Service(object):
             "name": name,
             "uri": uri,
             "replicas": replicas,
-            "poolType": pool_type,
+            "poolType": pool_type.value,
             **kwargs,
         }
         if description is not None:

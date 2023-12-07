@@ -468,7 +468,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         if does_release:
             log_info("release after saving starts")
-            return self.release_dataset()
+            return self.release_dataset(**kwargs)
         return True
 
     async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
@@ -1024,18 +1024,18 @@ class QianfanDataSource(DataSource, BaseModel):
 
         return dataset
 
-    def release_dataset(self) -> bool:
+    def release_dataset(self, **kwargs: Any) -> bool:
         """
         make a dataset released
 
         Returns:
             bool: Whether releasing succeeded
         """
-        info = Data.get_dataset_info(self.id)["result"]["versionInfo"]
+        info = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
         status = info["releaseStatus"]
         if status == DataReleaseStatus.Finished:
             return True
-        Data.release_dataset(self.id)
+        Data.release_dataset(self.id, **kwargs)
         while True:
             sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
             info = Data.get_dataset_info(self.id)["result"]["versionInfo"]

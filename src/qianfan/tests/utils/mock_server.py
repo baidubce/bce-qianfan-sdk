@@ -622,20 +622,24 @@ def get_finetune_job():
     """
     return json_response(
         {
-            "log_id": 123,
+            "log_id": "2475845384",
             "result": {
-                "id": 1,
-                "taskId": 1,
-                "taskName": "test",
+                "id": 8982,
+                "description": "",
+                "taskId": 17263,
+                "taskName": "0725_cqa_fin",
                 "version": 1,
-                "trainType": "ernieBotLite-v200",
+                "jobRunType": 0,
+                "trainType": "ernieBotLite-v201-8k",
                 "trainMode": "SFT",
-                "peftType": "ALL",
+                "peftType": "LoRA",
                 "trainStatus": "FINISH",
-                "startTime": "2023-05-05 00:00:00",
-                "finishtime": "2023-05-05 01:00:00",
-                "runTime": 3600,
-                "trainTime": 1800,
+                "progress": 0,
+                "runTime": 2525,
+                "trainTime": 732,
+                "startTime": "2023-12-07 11:40:00",
+                "finishTime": "2023-12-07 12:22:05",
+                "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1yeTNqeDg0Z3NoaWt4dnA3In0=",
             },
         }
     )

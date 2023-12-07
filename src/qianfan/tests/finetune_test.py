@@ -66,7 +66,7 @@ def test_get_finetune_job():
     resp = FineTune.get_job(task_id=123, job_id=456)
     assert resp["_request"] == {"taskId": 123, "jobId": 456}
     assert "id" in resp["result"]
-    assert "finishtime" in resp["result"]
+    assert "finishTime" in resp["result"]
     assert "log_id" in resp
     assert "trainMode" in resp["result"]
 

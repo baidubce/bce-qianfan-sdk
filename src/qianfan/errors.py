@@ -15,6 +15,8 @@
 """the collection of errors for this library
 """
 
+from typing import Any
+
 
 class QianfanError(Exception):
     """Base exception class for the qianfan sdk."""
@@ -31,14 +33,16 @@ class NotImplmentError(QianfanError):
 class APIError(QianfanError):
     """Base exception clas for the qianfan api error"""
 
-    def __init__(self, error_code: int, error_msg: str) -> None:
+    def __init__(self, error_code: int, error_msg: str, req_id: Any) -> None:
         """
         init with error code and error message from api response
         """
         self.error_code = error_code
         self.error_msg = error_msg
+        self.req_id = req_id
         super().__init__(
-            f"api return error, code: {self.error_code }, msg: {self.error_msg}"
+            f"api return error, req_id: {self.req_id} code: {self.error_code }, msg:"
+            f" {self.error_msg}"
         )
 
 

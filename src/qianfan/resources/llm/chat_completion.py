@@ -84,6 +84,7 @@ class ChatCompletion(BaseResource):
                     "stop",
                     "disable_search",
                     "enable_citation",
+                    "max_output_tokens",
                 },
             ),
             "ERNIE-Bot-4": QfLLMInfo(
@@ -100,6 +101,7 @@ class ChatCompletion(BaseResource):
                     "stop",
                     "disable_search",
                     "enable_citation",
+                    "max_output_tokens",
                 },
             ),
             "ERNIE-Bot-8k": QfLLMInfo(

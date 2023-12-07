@@ -511,6 +511,15 @@ class Dataset(Table):
             self.inner_data_source_cache.template_type == DataTemplateType.GenericText
         )
 
+    def is_dataset_located_in_qianfan(self) -> bool:
+        """
+        tell whether current is cloud dataset
+
+        Returns:
+            bool: whether current is cloud dataset
+        """
+        return self._is_dataset_located_in_qianfan()
+
     def _create_a_dataset_etl_task(
         self, operator_dict: Dict[str, List[Dict[str, Any]]]
     ) -> Tuple[int, int]:

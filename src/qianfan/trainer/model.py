@@ -17,7 +17,8 @@ from typing import Any, Dict, Iterator, Optional, Union
 
 from qianfan import resources as api
 from qianfan.config import get_config
-from qianfan.errors import InternalError, InvalidArgumentError
+from qianfan.dataset import Dataset, QianfanDataSource
+from qianfan.errors import InternalError, InvalidArgumentError, QianfanError
 from qianfan.resources import (
     ChatCompletion,
     Completion,
@@ -26,10 +27,12 @@ from qianfan.resources import (
     Text2Image,
 )
 from qianfan.resources.console import consts as console_const
+from qianfan.resources.console.model import Model as ResourceModel
 from qianfan.trainer.base import ExecuteSerializable
 from qianfan.trainer.configs import DeployConfig
 from qianfan.trainer.consts import ServiceType
-from qianfan.utils import log_info, log_warn
+from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.utils import generate_letter_num_random_id
 
 
 class Model(
@@ -238,6 +241,82 @@ class Model(
             Any: model instance
         """
         return pickle.loads(data)
+
+    def batch_run_on_qianfan(self, dataset: Dataset, **kwargs: Any) -> Dataset:
+        """
+        create batch run using specific dataset on qianfan
+        by evaluation ability of platform
+
+        Parameters:
+            dataset (Dataset):
+                A dataset instance which indicates a dataset on qianfan platform
+            **kwargs (Any):
+                Arbitrary keyword arguments
+
+        Returns:
+            Dataset: batch result contained in dataset
+        """
+
+        if not dataset.is_dataset_located_in_qianfan():
+            err_msg = "can't start a batch run task on non-qianfan dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        qianfan_data_source = dataset.inner_data_source_cache
+        assert isinstance(qianfan_data_source, QianfanDataSource)
+
+        log_info("start to create evaluation task in model")
+
+        resp = ResourceModel.create_evaluation_task(
+            name=f"model_run_{generate_letter_num_random_id()}",
+            version_info=[
+                {
+                    "modelId": self.id,
+                    "modelVersionId": self.version_id,
+                }
+            ],
+            dataset_id=qianfan_data_source.id,
+            eval_config={
+                "evalMode": "manual",
+                "evaluationDimension": [
+                    {"dimension": "满意度"},
+                ],
+            },
+            dataset_name=qianfan_data_source.name,
+            **kwargs,
+        ).body
+
+        eval_id = resp["result"]["evalId"]
+
+        log_debug(f"create evaluation task in model response: {resp}")
+        log_info(f"start to polling status of evaluation task {eval_id}")
+
+        while True:
+            eval_info = ResourceModel.get_evaluation_info(eval_id)
+            eval_state = eval_info["result"]["state"]
+
+            log_debug(f"current evaluation task info: {eval_info}")
+            log_info(f"current eval_state: {eval_state}")
+
+            if eval_state not in [
+                console_const.EvaluationTaskStatus.Pending.value,
+                console_const.EvaluationTaskStatus.Doing.value,
+            ]:
+                break
+            time.sleep(30)
+
+        if eval_state not in [
+            console_const.EvaluationTaskStatus.DoingWithManualBegin,
+            console_const.EvaluationTaskStatus.Done,
+        ]:
+            err_msg = f"can't finish evaluation task and failed with state {eval_state}"
+            log_error(err_msg)
+            raise QianfanError(err_msg)
+
+        result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetId"]
+        log_info(f"get result dataset id {result_dataset_id}")
+
+        return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
 
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):

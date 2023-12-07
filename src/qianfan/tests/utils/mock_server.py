@@ -963,7 +963,7 @@ def get_evaluation_info():
                 "evaluationId": request.json["id"],
                 "name": "eval_for_lama2",
                 "description": "",
-                "state": "Editing",
+                "state": "Done",
                 "evalUnits": [
                     {
                         "modelVersionId": 1819,
@@ -1029,8 +1029,8 @@ def get_evaluation_info():
                         "minScore": 0,
                         "maxScore": 7,
                     },
-                    "resultDatasetId": 0,
-                    "resultDatasetName": "",
+                    "resultDatasetId": 1,
+                    "resultDatasetName": "name",
                     "resultDatasetProjectType": 0,
                     "resultDatasetImportStatus": 0,
                     "resultDatasetReleaseStatus": 0,

@@ -1,3 +1,5 @@
+# Dataset 数据集组件
+
 千帆 Python SDK 提供了本地进行数据集管理、处理的能力。现阶段支持的功能有：
 + 数据集管理
   + 文件系统
@@ -22,7 +24,7 @@
     + 使用千帆平台校验规则
     + 自行编写校验规则
 
-# 目录
+## 目录
 
 - [快速开始](#快速开始)
   * [创建数据集](#创建数据集)
@@ -52,11 +54,11 @@
   * [自行编写校验规则](#自行编写校验规则)
 
 
-# 快速开始
+## 快速开始
 
 如果用户想要快速上手数据集相关能力，可按照下列三步进行操作。
 
-## 创建数据集
+### 创建数据集
 
 创建数据集最简单的方法，就是从本地文件创建、或从千帆平台导出
 
@@ -70,7 +72,7 @@ ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
 ds = Dataset.load(qianfan_dataset_id=42)
 ```
 
-## 处理数据集
+### 处理数据集
 
 当你已经创建好数据集后，就可以对数据进行处理了。
 
@@ -91,7 +93,7 @@ def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
 print(ds.filter(filter_func).map(map_func).list())
 ```
 
-## 导出数据集
+### 导出数据集
 
 处理完数据集后，你可以将数据集导出到本地文件、或上传到千帆平台。
 
@@ -110,13 +112,13 @@ ds.save()
 
 接下来将会更加细致的讲解各个模块和功能点之间的作用
 
-# 数据集管理
+## 数据集管理
 
 千帆 Python SDK 现支持用户通过 SDK 对本地或千帆平台的数据集进行管理，以及通过多种方式创建数据集。
 
-## 文件系统
+### 文件系统
 
-### 导入
+#### 导入
 用户可以通过 SDK，读取特定格式的文件，并且转换成内存中的数据集对象以供检视、清洗和转换。
 
 ```python
@@ -161,7 +163,7 @@ ds = Dataset.load(
 print(ds.list())
 ```
 
-### 导出
+#### 导出
 
 和导入类似，用户可以通过 SDK 提供的 `save` 方法将数据集导出到本地文件中。
 
@@ -202,7 +204,7 @@ ds.save(
 )
 ```
 
-### 文件数据源
+#### 文件数据源
 
 除了在 `load` 中传递文件路径创建数据集，SDK 还支持通过文件数据源 `FileDataSource` 来创建数据集。
 
@@ -243,11 +245,11 @@ ds = Dataset.load(
 ds.save(file_source)
 ```
 
-## 千帆平台
+### 千帆平台
 
 千帆 Python SDK 对接了千帆平台，让用户可以在本地对平台数据集进行处理
 
-### 导入
+#### 导入
 
 `Dataset`  对象封装的 `load ` 方法支持用户传入已经存在的千帆平台数据集版本 ID 以在本地创建一个数据集
 
@@ -269,7 +271,7 @@ ds_qianfan = Dataset.load(qianfan_dataset_id=42, is_download_to_local=False)
 print(ds_qianfan.list())
 ```
 
-### 导出
+#### 导出
 
 用户可以将数据集导出到千帆平台的数据集中，千帆 Python SDK 支持两种导出方式：
 
@@ -300,7 +302,7 @@ ds_qianfan.save()
 
 ​		这种导出方式目前暂不支持导出到新数据集版本进行覆盖导出。若用户有覆盖导出的需求，请使用方式一。
 
-### 	千帆数据源
+#### 千帆数据源
 
 和从文件系统导入一致，千帆 Python SDK 也同样内置了千帆数据源，用作数据集 `load` 或者 `save` 操作的入参。目前 SDK 支持用户在本地全新创建一个千帆数据源，代表在千帆平台上创建一个新的数据集组，默认包含一个数据集；或者在本地创建一个千帆数据源以代表平台上已经存在的数据集。
 
@@ -321,7 +323,7 @@ data_source = QianfanDataSource.create_bare_dataset(
 > 注意：如果将数据集 `save` 到千帆平台，请确认目的千帆平台数据集是使用个人 BOS 存储的数据集，SDK 不支持从本地保存数据到平台的公共 BOS 中。
 > 如有相关需求，用户可以向 `save` 函数中传递 `sup_storage_id` `sup_storage_path` 和 `sup_storage_region` 参数，指定用作中间存储的私有 BOS 信息。使用的 BOS 必须是位于北京区域的 BOS 。
 
-## 从 HuggingFace 数据集导入
+### 从 HuggingFace 数据集导入
 
 用户如果想将已有的 HuggingFace 数据集转换到 SDK 的 `Dataset` 对象，只需要在 `load` 方法中的 `huggingface_dataset` 参数内传入 HuggingFace 数据集对象即可
 
@@ -338,7 +340,7 @@ qianfan_ds = Dataset.load(huggingface_dataset=huggingface_ds)
 print(qianfan_ds.list())
 ```
 
-## Python 对象
+### Python 对象
 
 `Dataset` 类还提供了 `create_from_pyobj` 方法与 `create_from_pyarrow_table` 方法来创建一个新的本地数据集对象，分别使用 Python 的集合对象或者 `pyarrow.Table` 对象来创建数据集
 
@@ -350,7 +352,7 @@ ds_pyobj = Dataset.create_from_pyobj([{"column_name1": "column_data1"}])
 ds_pyarrow_table = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
 ```
 
-## 包装与拆分
+### 包装与拆分
 
 除此之外，当用户以 jsonl \ txt 格式导入类数组形式文件，或者导入的是千帆平台的数据集时，SDK 支持传入 `organize_data_as_group` 参数，来指定将数据集组织成 SDK 内部的二维表格形式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
 
@@ -382,13 +384,13 @@ ds = Dataset.load(qianfan_dataset_id=42, organize_data_as_group=True)
 |----------------------------------------------------------------------------------|
 | [{"prompt": "34", "response": [["34"]]}]                                         |
 
-# 数据集处理
+## 数据集处理
 
 在创建了 `Dataset` 对象后，用户可以使用千帆 Python SDK 的功能，对数据集进行简单的本地或在线处理。
 
-## 数据集检视
+### 数据集检视
 
-### 行
+#### 行
 
 用户可以使用 `Dataset` 的 `list` 函数对数据集的行进行检视。`list` 的返回值是包含了行数据的列表，每条行数据是包含了列名与列数据的字典。`list` 函数可以接受的入参类型包括：
 
@@ -436,7 +438,7 @@ print(ds[[0, 2]])
 print(ds[slice(0, 1)])
 ```
 
-### 列
+#### 列
 
 `Dataset` 同时也支持用户使用 `col_list` 对列进行检视。`col_list` 的返回值是一个字典，其中的键为列名，值为列元素。`col_list` 函数可以接受的入参类型包括：
 
@@ -481,7 +483,7 @@ print(ds["column_name1"])
 print(ds[["column_name1", "column_name3"]])
 ```
 
-### 千帆数据集预览
+#### 千帆数据集预览
 
 如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `list` 函数或 `[]` 对云上数据集进行本地预览，而无需下载数据。此时返回的是包含云上数据实体的字典列表。可接受的入参类型包括：
 
@@ -500,11 +502,11 @@ print(ds_qianfan[0])
 print(ds_qianfan[slice(0, 2)])
 ```
 
-## 数据集清洗
+### 数据集清洗
 
 千帆 Python SDK 提供了简单的数据清洗能力，分为本地数据清洗与千帆平台的在线数据处理
 
-### 本地数据集清洗
+#### 本地数据集清洗
 
 在创建 `Dataset` 后，用户可以使用 `map` ，`filter` ，`append`，`insert` ，`delete` 等函数对行进行修改；也可以使用 `col_map` ，`col_filter` ，`col_append` ，`col_delete` 等函数对列进行修改。以上函数都支持链式调用。
 
@@ -529,7 +531,7 @@ ds = ds \
   }))
 ```
 
-### 特殊情况
+#### 特殊情况
 
 如果用户导入的数据集是类似列表格式的数据，基本的处理单位按行计，即传递给 `map()` 和 `filter()` 回调的内容是一行所表示的列表，而不是包含 "列名: 列值" 的字典。
 
@@ -537,7 +539,7 @@ ds = ds \
 
 `insert()` 与 `append()` 接受传递二维列表 `List[List[Any]]` 做批量插入，或传入 `List[Any]` 以及 `Any` 插入单行。
 
-### 千帆平台的在线数据处理
+#### 千帆平台的在线数据处理
 
 如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
 
@@ -560,7 +562,7 @@ ds_qianfan.online_data_process([
 ])
 ```
 
-## 数据集校验
+### 数据集校验
 
 为了方便用户对数据集的格式以及内容进行校验，千帆 Python SDK 内提供了 `Schema` 类用于数据集格式与内容的校验，同时提供了针对千帆平台部分数据集类型的 `Schema` 实现。用户可以在 `load` 或者 `save` 时指定 `schema` 参数，传入一个 `Schema` 类的对象，以在不同的阶段对数据集进行校验；也可以单独创建一个 `Schema` 对象，调用 `validate` 方法对数据集进行校验
 
@@ -584,7 +586,7 @@ ds_qianfan.save(schema=schema)
 schema.validate(ds_qianfan)
 ```
 
-## 自行编写校验规则
+### 自行编写校验规则
 
 用户可以编写派生自 `Schema` 的子类，实现自己的校验逻辑
 

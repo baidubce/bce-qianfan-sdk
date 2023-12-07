@@ -946,6 +946,186 @@ def publish_model():
     )
 
 
+@app.route(Consts.ModelEvalCreateAPI, methods=["POST"])
+@iam_auth_checker
+def create_evaluation_task():
+    """
+    mock create evaluation task api
+    """
+    return json_response({"result": {"evalId": 585}, "log_id": "2255352990"})
+
+
+@app.route(Consts.ModelEvalInfoAPI, methods=["POST"])
+@iam_auth_checker
+def get_evaluation_info():
+    """
+    mock get evaluation task info api
+    """
+    return json_response(
+        {
+            "result": {
+                "evaluationId": request.json["id"],
+                "name": "eval_for_lama2",
+                "description": "",
+                "state": "Done",
+                "evalUnits": [
+                    {
+                        "modelVersionId": 1819,
+                        "modelId": 1354,
+                        "modelName": "Llama_2_7b_all",
+                        "modelVersion": "1",
+                        "modelSource": "Train",
+                        "state": "Editing",
+                        "modelVersionDesc": "",
+                        "message": "",
+                        "modelTags": None,
+                    }
+                ],
+                "datasetId": 1337,
+                "datasetName": "预置数据集>AGI_EVAL>V1",
+                "computeResourceConf": {
+                    "vmType": 1,
+                    "vmNumber": 8,
+                    "computeResourceId": "",
+                    "cpu": 0,
+                    "memory": 0,
+                },
+                "evalStandardConf": {
+                    "evalMode": "model,manual,rule",
+                    "scoreModes": ["similarity", "accuracy"],
+                    "stopWordsPath": "",
+                    "appId": 1483416585,
+                    "appAk": "uiuj6hZY5HUrlFej1deMUAKM",
+                    "appSk": "Imvaecl8UrUPTMOyFSraxpt1IpkGFTCp",
+                    "apiName": "ERNIE-Bot",
+                    "apiUrl": "/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+                    "prompt": {
+                        "templateName": " 裁判员模型打分模板（含参考答案）",
+                        "templateContent": """
+                            你是一个好助手。请你为下面问题的回答打分
+                            问题如下: {src}
+                            标准答案如下：{tgt}
+                            回答如下：{prediction}
+                            评分的指标如下：综合得分
+                            请你遵照以下的评分步骤：1.
+                            仔细阅读所提供的问题，确保你理解问题的要求和背景。
+                            2.
+                            仔细阅读所提供的标准答案，确保你理解问题的标准答案
+                            3.
+                            阅读答案，并检查是否用词不当
+                            4.
+                            检查答案是否严格遵照了题目的要求，包括答题方式、答题长度、答题格式等等。
+                            根据答案的综合水平给出0到7的评分。如果答案存在明显的不合理之处，则应给出一个较低的评分。如果答案符合以上要求并且与参考答案含义相似，则应给出一个较高的评分。
+                            你的回答模版如下:
+                            评分: 此处只能回答整数评分
+                            原因: 此处只能回答评分原因
+                            """,
+                        "metric": "综合得分",
+                        "steps": """
+                            1.仔细阅读所提供的问题，确保你理解问题的要求和背景。
+                            2.
+                            仔细阅读所提供的标准答案，确保你理解问题的标准答案
+                            3.
+                            阅读答案，并检查是否用词不当
+                            4.
+                            检查答案是否严格遵照了题目的要求，包括答题方式、答题长度、答题格式等等。
+                            """,
+                        "minScore": 0,
+                        "maxScore": 7,
+                    },
+                    "resultDatasetId": 1,
+                    "resultDatasetName": "name",
+                    "resultDatasetProjectType": 0,
+                    "resultDatasetImportStatus": 0,
+                    "resultDatasetReleaseStatus": 0,
+                    "evaluationDimension": [
+                        {
+                            "dimension": "满意度",
+                            "description": "",
+                            "minScore": 0,
+                            "maxScore": 2,
+                        },
+                        {
+                            "dimension": "安全性",
+                            "description": "安全性备注",
+                            "minScore": 0,
+                            "maxScore": 2,
+                        },
+                    ],
+                },
+            },
+            "log_id": "4245751552",
+        }
+    )
+
+
+@app.route(Consts.ModelEvalResultAPI, methods=["POST"])
+@iam_auth_checker
+def get_evaluation_result():
+    """
+    mock get evaluation result api
+    """
+    return json_response(
+        {
+            "result": [
+                {
+                    "modelName": "llama213blora",
+                    "modelVersion": "1",
+                    "modelVersionSource": "Train",
+                    "evalMode": "model,manual,rule",
+                    "evaluationName": "eval_混合_单模型",
+                    "id": "65544bbadcb373c893b080df",
+                    "modelVersionId": 1576,
+                    "modelId": 1164,
+                    "evaluationJobId": 2617,
+                    "userId": 1,
+                    "projectId": "",
+                    "evaluationId": request.json["id"],
+                    "effectMetric": {
+                        "accuracy": 0,
+                        "f1Score": 0.095671654,
+                        "rouge_1": 0.063611045,
+                        "rouge_2": 0.004779625,
+                        "rouge_l": 0.072322726,
+                        "bleu4": 0.004749891,
+                        "avgJudgeScore": 3.875,
+                        "stdJudgeScore": 0.59947896,
+                        "medianJudgeScore": 4,
+                        "scoreDistribution": {
+                            "0": 0,
+                            "1": 0,
+                            "2": 0,
+                            "3": 2,
+                            "4": 5,
+                            "5": 1,
+                            "-1": 0,
+                        },
+                        "manualAvgScore": 2,
+                        "goodCaseProportion": 1,
+                        "subjectiveImpression": "1",
+                        "manualScoreDistribution": [
+                            {"dimension": "满意度", "scoreDistribution": {"2": 8}},
+                            {"dimension": "安全性", "scoreDistribution": {"2": 8}},
+                        ],
+                    },
+                }
+            ],
+            "log_id": "2404206370",
+        }
+    )
+
+
+@app.route(Consts.ModelEvalStopAPI, methods=["POST"])
+@iam_auth_checker
+def stop_evaluation_task():
+    """
+    mock stop evaluation task api
+    """
+    return json_response(
+        {"result": {"result": True, "errorMessage": ""}, "log_id": "2398985472"}
+    )
+
+
 @app.route(Consts.ServiceCreateAPI, methods=["POST"])
 @iam_auth_checker
 def create_service():

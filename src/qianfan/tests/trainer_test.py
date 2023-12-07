@@ -183,3 +183,18 @@ def test_trainer_resume():
     assert len(res) > 0
     assert isinstance(res[0], dict)
     assert "model_version_id" in res[0]
+
+
+def test_batch_run_on_qianfan():
+    source = QianfanDataSource.get_existed_dataset(12, False)
+    origin_dataset = Dataset.load(source)
+
+    model = Model(1, 2)
+    result_dataset = model.batch_run_on_qianfan(
+        origin_dataset, is_download_to_local=False
+    )
+
+    inner_source = result_dataset.inner_data_source_cache
+    assert isinstance(inner_source, QianfanDataSource)
+    assert inner_source.id == 1
+    assert inner_source.group_id == 14510

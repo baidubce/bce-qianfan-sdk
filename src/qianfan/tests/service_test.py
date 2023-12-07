@@ -18,19 +18,21 @@
 
 
 from qianfan.resources import Service
+from qianfan.resources.console.consts import DeployPoolType
 
 
 def test_create_service():
     """
     test Service.create
     """
+    #  test all deploy config
     resp = Service.create(
         model_id=846,
         model_version_id=168,
         name="sdk_test",
         uri="sdk_ut",
         replicas=1,
-        pool_type=2,
+        pool_type=DeployPoolType.PrivateResource,
         description="description_ut",
     )
     assert resp["_request"] == {
@@ -39,7 +41,7 @@ def test_create_service():
         "name": "sdk_test",
         "uri": "sdk_ut",
         "replicas": 1,
-        "poolType": 2,
+        "poolType": DeployPoolType.PrivateResource,
         "description": "description_ut",
     }
     result = resp["result"]

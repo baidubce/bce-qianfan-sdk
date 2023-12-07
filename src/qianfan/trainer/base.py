@@ -15,12 +15,23 @@ import copy
 import pickle
 from abc import ABC, abstractmethod
 from threading import Lock
-from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+)
 
-from qianfan.errors import InternalError
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
-from qianfan.utils import log_debug, log_error, utils
+from qianfan.utils import log_debug, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
@@ -140,7 +151,7 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         ...
 
     @abstractmethod
-    def resume(self, **kwargs: Dict) -> None:
+    def resume(self, **kwargs: Dict) -> Output:
         """
         Action resume from last input, sub-class should implement this method
         with their own resuming logic. BaseAction don not support last input
@@ -203,19 +214,22 @@ def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
 
     """
 
-    def wrapper(self: BaseAction, input: Any, **kwargs: Any) -> Any:
-        try:
-            log_debug(f"action[{self.id}] Preceding")
-            self.action_event(ActionState.Preceding, "", {})
-            resp = func(self, input=input, **kwargs)
-            self.action_event(ActionState.Done, "", resp)
-            log_debug(f"action[{self.id}] Done")
-            return resp
-        except Exception as e:
-            log_error(f"action[{self.id}] error {e}")
-            self.action_error_event(e)
+    def wrapper(self: BaseAction, **kwargs: Any) -> Any:
+        """
+        mehtod wrapper
+        """
+        # try:
+        log_debug(f"action[{self.__class__.__name__}][{self.id}] Preceding")
+        self.action_event(ActionState.Preceding, "", {})
+        resp = func(self, **kwargs)
+        self.action_event(ActionState.Done, "", resp)
+        log_debug(f"action[{self.__class__.__name__}][{self.id}] Done")
+        return resp
+        # except Exception as e:
+        #     log_error(f"action[{self.__class__.__name__}][{self.id}] error {e}")
+        #     self.action_error_event(e)
 
-            return {"error": e}
+        #     return {"error": e}
 
     return wrapper
 
@@ -265,7 +279,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.actions[action.id] = action
             self.seq.append(action.id)
         self.post_actions = post_actions
-        self._state: Optional[Any] = None
+        self._state: str = ""
         self._sync_lock = Lock()
         self._stop: bool = False
         self._last_output: Optional[Dict[str, Any]] = None
@@ -281,23 +295,39 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         Return:
             Dict[str, Any]: The output of the pipeline.
         """
+        return self.exec_from(input, 0, **kwargs)
+
+    def exec_from(
+        self,
+        input: Optional[Dict[str, Any]] = None,
+        start: Optional[Union[int, str]] = 0,
+        **kwargs: Dict,
+    ) -> Dict[str, Any]:
+        if isinstance(start, str):
+            start_idx = self.seq.index(start)
+        elif isinstance(start, int):
+            start_idx = start
+        else:
+            raise InvalidArgumentError(
+                "pipeline start must be index of sequence or key of action"
+            )
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
-        for k in self.seq:
+        for i, k in enumerate(self.seq):
             if self._stop:
                 break
+            if i < start_idx:
+                continue
             if self.event_dispatcher is not None:
                 self.action_event(
                     ActionState.Running, "pipeline running", {"action": k}
                 )
             self._state = k
-            output = self.actions[k].exec(output, **kwargs)
-
+            output = self.actions[k].exec(input=output, **kwargs)
             if output.get("error") is not None:
                 raise InternalError(cast(str, output.get("error")))
 
         for next in self.post_actions:
             next.exec(copy.deepcopy(output), **kwargs)
-
         return output
 
     def __getitem__(self, key: str) -> Optional[BaseAction]:
@@ -314,15 +344,18 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         """
         return self.actions.get(key)
 
-    def resume(self, **kwargs: Dict) -> None:
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
         """
         resume pipeline running from last stopped or failed action.
         """
-        for k in self.seq:
-            if k != self._state:
-                continue
-            self.actions[k].exec(input, **kwargs)
-        return None
+        self._stop = False
+        last_output = self.actions[self._state].resume(**kwargs)
+        if self.seq[-1] == self._state:
+            # last node return directly
+            return last_output
+        idx = self.seq.index(self._state) + 1
+        return self.exec_from(last_output, idx, **kwargs)
 
     def stop(self, **kwargs: Dict) -> None:
         """
@@ -331,6 +364,11 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         with self._sync_lock:
             self._stop = True
 
+        action = self.actions.get(self._state)
+        if action is None:
+            raise InternalError("unknown action to stop")
+        else:
+            action.stop()
         return super().stop()
 
     def register_event_handler(
@@ -432,3 +470,17 @@ class Trainer(ABC):
                 break
             else:
                 ppl.register_event_handler(event_handler)
+
+    @property
+    def actions(self) -> Dict[str, BaseAction]:
+        """
+        Get the available actions for trainer.
+        Returns:
+            List[str]: The list of action names.
+        """
+        return self.ppls[0].actions
+
+    @property
+    @abstractmethod
+    def output(self) -> Any:
+        ...

@@ -40,7 +40,7 @@ def test_load_data_action():
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
-    res = LoadDataSetAction(ds).exec({"dataset_id": 123})
+    res = LoadDataSetAction(ds).exec(input={"dataset_id": 123})
     assert isinstance(res, dict)
     assert "datasets" in res
 
@@ -50,13 +50,12 @@ def test_train_action():
     ta = TrainAction("ERNIE-Bot-turbo-0725")
 
     output = ta.exec(
-        {
+        input={
             "datasets": [
                 {"type": console_consts.TrainDatasetType.Platform.value, "id": ds_id}
             ]
         }
     )
-    print("output", output)
     assert isinstance(output, dict)
     assert "task_id" in output and "job_id" in output
 
@@ -64,7 +63,7 @@ def test_train_action():
 def test_model_publish_action():
     publish_action = ModelPublishAction()
 
-    output = publish_action.exec({"task_id": 47923, "job_id": 33512})
+    output = publish_action.exec(input={"task_id": 47923, "job_id": 33512})
     assert isinstance(output, dict)
     assert "model_version_id" in output and "model_id" in output
 
@@ -74,7 +73,7 @@ def test_service_deploy_action():
     deploy_action = DeployAction(deploy_config=deploy_config)
 
     output = deploy_action.exec(
-        {"task_id": 47923, "job_id": 33512, "model_id": 1, "model_version_id": 39}
+        input={"task_id": 47923, "job_id": 33512, "model_id": 1, "model_version_id": 39}
     )
     assert isinstance(output, dict)
     assert "service_id" in output and "service_endpoint" in output
@@ -122,7 +121,7 @@ def test_trainer_sft_with_deploy():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725",
+        train_type="Llama-2-7b",
         dataset=ds,
         train_config=train_config,
         deploy_config=deploy_config,
@@ -155,6 +154,34 @@ def test_service():
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
     assert resp is not None
     assert resp["result"] != ""
+
+
+def test_trainer_resume():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        name="test", template_type=console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+
+    sft_task = LLMFinetune(
+        train_type="ERNIE-Bot-turbo-0725",
+        dataset=ds,
+    )
+    ppl = sft_task.ppls[0]
+
+    # 构造一个中断的训练任务
+    for k, ac in ppl.actions.items():
+        if ac.__class__.__name__ == TrainAction.__name__:
+            train_action_key = k
+            ac.task_id = 112
+            ac.job_id = 123
+    ppl._state = train_action_key
+    sft_task.resume()
+    res = sft_task.result
+    assert res is not None
+    assert isinstance(res, list)
+    assert len(res) > 0
+    assert isinstance(res[0], dict)
+    assert "model_version_id" in res[0]
 
 
 def test_batch_run_on_qianfan():

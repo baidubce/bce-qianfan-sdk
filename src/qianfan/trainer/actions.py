@@ -20,6 +20,7 @@ from qianfan.dataset.dataset import Dataset, QianfanDataSource
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.base import (
+    ActionState,
     BaseAction,
     with_event,
 )
@@ -28,13 +29,19 @@ from qianfan.trainer.consts import (
     ModelTypeMapping,
 )
 from qianfan.trainer.model import Model
-from qianfan.utils import log_debug, utils
+from qianfan.utils import (
+    log_debug,
+    log_error,
+    log_info,
+    log_warn,
+    utils,
+)
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """LoadDataSetAction
     Action for dataset's loading, invokes the dataset's save method
-    to gaurantee the dataset is loaded in Qianfan platform.
+    to guarantee the dataset is loaded in Qianfan platform.
     Sample:
         ```
         load_action = LoadDataSetAction(dataset=Dataset(id=1))
@@ -61,6 +68,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        return self._exec(input, **kwargs)
+
+    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        """
+        Load dataset implementation, may called by exec and resume.
+        """
         if self.dataset is None:
             raise InvalidArgumentError("dataset must be set")
         if self.dataset.inner_data_source_cache is None:
@@ -71,11 +84,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             )
         log_debug("[load_dataset_action] prepare train-set")
         qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
-        print("==>")
-        is_released = qf_data_src.release_dataset()
+        is_released = qf_data_src.release_dataset(**kwargs)
         if not is_released:
+            log_error("[load_dataset_action] dataset not released")
             raise InvalidArgumentError("dataset must be released")
         log_debug("[load_dataset_action] dataset loaded successfully")
+        self.qf_dataset_id = qf_data_src.id
         return {
             "datasets": [
                 {
@@ -85,8 +99,27 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             ]
         }
 
-    def resume(self, **kwargs: Dict) -> None:
-        raise NotImplementedError("LoadDataset.resume() is not implemented")
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        """
+        resume method for load dataset action.
+
+        Returns:
+            Dict[str, Any]: datasets metainfo including
+            dataset_id and dataset_type.
+        """
+        if self.qf_dataset_id:
+            log_debug("[load_dataset_action] dataset loading already done")
+            return {
+                "datasets": [
+                    {
+                        "id": self.qf_dataset_id,
+                        "type": console_consts.TrainDatasetType.Platform.value,
+                    }
+                ]
+            }
+        log_debug("[load_dataset_action] dataset loading resumed")
+        return self._exec(**kwargs)
 
 
 class TrainAction(
@@ -94,10 +127,10 @@ class TrainAction(
 ):
     """
     Class for Train Action, Synchronous invocation of the training API,
-    taking a dataset metainfo dict as input and producing a model metadata
-    as output. Concretly, `exec` is called for running.
+    taking a dataset metadata dict as input and producing a model metadata
+    as output. Concretely, `exec` is called for running.
 
-    Note: this action is not involved with model publising, please use use
+    Note: this action is not involved with model publishing, please use use
     `ModelPublishAction` for publishing model.
 
     Sample:
@@ -128,6 +161,16 @@ class TrainAction(
     """train config"""
     train_mode: console_consts.TrainMode = console_consts.TrainMode.SFT
     """train mode"""
+    task_name: str = ""
+    """train task name"""
+    task_description: Optional[str] = None
+    """train task description"""
+    job_description: Optional[str] = None
+    """train job description"""
+    _input: Optional[Dict[str, Any]] = None
+    """train input"""
+    result: Optional[Dict[str, Any]] = None
+    """"train result"""
 
     def __init__(
         self,
@@ -137,6 +180,9 @@ class TrainAction(
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
         train_mode: Optional[console_consts.TrainMode] = None,
+        task_name: Optional[str] = None,
+        task_description: Optional[str] = None,
+        job_description: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -153,6 +199,14 @@ class TrainAction(
                 used in incr train, model train task_id. Defaults to None.
             job_id (Optional[int], optional):
                 used in incr train, mod train job_id. Defaults to None.
+            train_mode (Optional[console_consts.TrainMode], optional):
+                train mode, e.g. `sft`, `incremental`. Defaults to None.
+            task_name (Optional[str], optional):
+                train task name. Defaults to None.
+            task_description (Optional[str], optional):
+                train task description. Defaults to None.
+            job_description (Optional[str], optional):
+                train job description. Defaults to None.
         """
         super().__init__(**kwargs)
         self.task_id = task_id
@@ -178,6 +232,13 @@ class TrainAction(
             )
         if train_mode is not None:
             self.train_mode = train_mode
+        self.task_name = (
+            f"task_{utils.generate_letter_num_random_id()}"
+            if task_name is None
+            else task_name
+        )
+        self.task_description = task_description
+        self.job_description = job_description
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -223,6 +284,12 @@ class TrainAction(
                     {'task_id': 47923, 'job_id': 33512}
                     ```
         """
+        # for resume
+        if self._input is None:
+            self._input = input
+        return self._exec(input, **kwargs)
+
+    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         # 校验数据集
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
@@ -233,14 +300,18 @@ class TrainAction(
             return self._exec_incremental(input, **kwargs)
 
         # request for create model train task
-        self.task_name = f"task_{utils.generate_letter_num_random_id()}"
-        resp = api.FineTune.create_task(self.task_name)
+        resp = api.FineTune.create_task(
+            name=self.task_name,
+            description=self.task_description,
+            **kwargs,
+        )
         self.task_id = cast(int, resp["result"]["id"])
         log_debug(f"[train_action] create fine-tune task: {self.task_id}")
 
         assert self.train_config is not None
         req_job = {
             "taskId": self.task_id,
+            "description": self.job_description,
             "baseTrainType": self.base_model,
             "trainType": self.train_type,
             "trainMode": self.train_mode.value,
@@ -258,36 +329,88 @@ class TrainAction(
         req_job["trainConfig"] = {
             key: value for key, value in tc_dict.items() if value is not None
         }
-        create_job_resp = api.FineTune.create_job(req_job)
+        create_job_resp = api.FineTune.create_job(req_job, **kwargs)
         self.job_id = cast(int, create_job_resp["result"]["id"])
         log_debug(f"[train_action] create fine-tune job_id: {self.job_id}")
 
         # 获取job状态，是否训练完成
+        self._wait_model_trained(**kwargs)
+        self.result = {**input, "task_id": self.task_id, "job_id": self.job_id}
+        assert self.result is not None
+        return self.result
+
+    def _wait_model_trained(self, **kwargs: Dict) -> None:
+        if self.task_id is None or self.job_id is None:
+            raise InvalidArgumentError("task_id and job_id must not be None")
         while True:
             job_status_resp = api.FineTune.get_job(
-                task_id=self.task_id, job_id=self.job_id
+                task_id=self.task_id,
+                job_id=self.job_id,
+                **kwargs,
             )
             job_status = job_status_resp["result"]["trainStatus"]
-            if job_status != console_consts.TrainStatus.Running:
+            log_info(
+                f"[train_action] fine-tune running... current status: {job_status},"
+                f" check vdl report in {job_status_resp['result']['vdlLink']}"
+            )
+            self.action_event(ActionState.Running, "train running", job_status_resp)
+            if job_status == console_consts.TrainStatus.Finish:
                 break
-            time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
-
-        log_debug(
+            elif job_status in [
+                console_consts.TrainStatus.Fail,
+                console_consts.TrainStatus.Stop,
+            ]:
+                log_error(
+                    f"[train_action] fine-tune job {self.task_id}/{self.job_id} has"
+                    f" ended, {job_status_resp}"
+                )
+                break
+            else:
+                time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
+        log_info(
             f"[train_action] fine-tune job has ended: {self.job_id} with status:"
             f" {job_status}"
         )
-        return {**input, "task_id": self.task_id, "job_id": self.job_id}
 
-    def resume(self, **kwargs: Dict) -> None:
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
         """
         resume method for train action
 
-        Args:
-            **kwargs (Dict[str, Any]):
+        Parameters:
+            **kwargs (Dict):
                 input args for action resume
 
         """
-        raise NotImplementedError("TrainAction.resume() is not implemented")
+        if self.result is not None:
+            log_warn("[train_action] already done")
+            return self.result
+        self.action_event(ActionState.Running, "train resume")
+        if self.task_id is not None and self.job_id is not None:
+            log_info(
+                f"[train_action] resume from created job {self.task_id}/{self.job_id}"
+            )
+            self._wait_model_trained(**kwargs)
+            self.result = {"task_id": self.task_id, "job_id": self.job_id}
+            return self.result
+        else:
+            if self._input is None:
+                self._input = {}
+            return self._exec(self._input, **kwargs)
+
+    def stop(self, **kwargs: Dict) -> None:
+        """
+        stop method for train action
+
+        Parameters:
+            **kwargs (Dict):
+                input args for action stop
+        """
+        if self.task_id is None or self.job_id is None:
+            log_warn("[train_action] task_id or job_id not set, training not started")
+            return
+        api.FineTune.stop_job(self.task_id, self.job_id)
+        log_debug(f"train job {self.task_id}/{self.job_id} stopped")
 
     def get_default_train_config(self, model_type: str) -> TrainConfig:
         return DefaultTrainConfigMapping.get(
@@ -313,30 +436,66 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     ```
     """
 
+    task_id: Optional[int] = None
+    """task id"""
+    job_id: Optional[int] = None
+    """job id"""
+    result: Optional[Dict[str, Any]] = None
+    """result of model publish action"""
+    model: Optional[Model] = None
+    """model object"""
+
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        self.task_id = int(input.get("task_id", ""))
-        self.job_id = int(input.get("job_id", ""))
-        model = Model(task_id=self.task_id, job_id=self.job_id)
         if self.task_id == "" or self.job_id == "":
             raise InvalidArgumentError("task_id or job_id must be set")
+        self.task_id = int(input.get("task_id", ""))
+        self.job_id = int(input.get("job_id", ""))
+        self.model = Model(task_id=self.task_id, job_id=self.job_id)
+        return self._exec(input, **kwargs)
 
-        model.publish()
-        log_debug(
-            f"[model_publish_action] model: {self.task_id}_{self.job_id} has been"
-            " published."
-        )
-        output = {
-            "task_id": self.task_id,
-            "job_id": self.job_id,
-            "model_id": model.id,
-            "model_version_id": model.version_id,
-            "model": model,
-        }
-        return output
+    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        if self.model is None:
+            raise InvalidArgumentError("model must be set when in model publish._exec")
+        log_debug("[model_publish_action] start model publish")
+        try:
+            self.action_event(
+                ActionState.Running,
+                "model publish",
+                {
+                    "task_id": self.task_id,
+                    "job_id": self.job_id,
+                },
+            )
+            self.model.publish(name=input.get("name", ""), **kwargs)
+            log_debug(
+                f"[model publish] model: {self.task_id}_{self.job_id} has been"
+                " published."
+            )
 
-    def resume(self, **kwargs: Dict) -> None:
-        raise NotImplementedError("ModelPublishAction.resume() is not implemented")
+            self.result = {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+                "model_id": self.model.id,
+                "model_version_id": self.model.version_id,
+                "model": self.model,
+            }
+            return self.result
+        except Exception as e:
+            log_error(f"[model_publish_action] model publish error: {e}")
+            raise e
+
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        # raise NotImplementedError("ModelPublishAction.resume() is not implemented")
+        if self.result is not None:
+            return self.result
+        if self.model is not None:
+            return self._exec()
+        if self.task_id is None or self.job_id is None:
+            raise InvalidArgumentError("task_id or job_id not set, resume failed")
+        self.model = Model(task_id=self.task_id, job_id=self.job_id)
+        return self._exec(**kwargs)
 
 
 class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -361,8 +520,15 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """
 
     deploy_config: Optional[DeployConfig]
+    """deploy config include replicas and so on"""
     model_id: Optional[int]
+    """model id"""
     model_version_id: Optional[int]
+    """model version id"""
+    _input: Optional[Dict[str, Any]] = None
+    """input of action"""
+    result: Optional[Dict[str, Any]] = None
+    """result of action"""
 
     def __init__(self, deploy_config: Optional[DeployConfig] = None, **kwargs: Any):
         """
@@ -375,7 +541,10 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.deploy_config = deploy_config
 
     @with_event
-    def exec(self, input: Dict[str, Any], **kwargs: Dict) -> Dict[str, Any]:
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+        # for resume
+        if self._input is None:
+            self._input = input
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy_config must be set")
         if input.get("model") is None:
@@ -383,35 +552,56 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.model_version_id = input.get("model_version_id")
             if self.model_id is None or self.model_version_id is None:
                 raise InvalidArgumentError("model_id or model_version_id must be set")
-            log_debug(
-                "[deploy_action] try deploy model"
-                f" {self.model_id}_{self.model_version_id}"
-            )
-            model = Model(self.model_id, self.model_version_id)
+
+            self.model = Model(self.model_id, self.model_version_id)
         else:
-            model = cast(Model, input.get("model"))
-            if model is None:
+            self.model = cast(Model, input.get("model"))
+            if self.model is None:
                 raise InvalidArgumentError(
                     "must input with model or model id and version id"
                 )
-            self.model_id = model.id
-            self.model_version_id = model.version_id
-        model.deploy(self.deploy_config)
-        if model.service is not None:
+            self.model_id = self.model.id
+            self.model_version_id = self.model.version_id
+        return self._exec(**kwargs)
+
+    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        if self.deploy_config is None:
+            raise InvalidArgumentError("deploy_config must be set in deploy._exec")
+        log_debug(
+            f"[deploy_action] try deploy model {self.model.id}_{self.model.version_id}"
+        )
+        self.action_event(
+            ActionState.Running,
+            "ready to deploy",
+            {
+                "model": self.model,
+            },
+        )
+        # deploy model
+        self.model.deploy(self.deploy_config, **kwargs)
+        if self.model.service is not None:
             log_debug(
                 "[deploy_action] model"
                 f" {self.model_id}_{self.model_version_id} deployed successfully with"
-                f" service: {model.service.id} endpoint:{model.service.endpoint}"
+                " service:"
+                f" {self.model.service.id} endpoint:{self.model.service.endpoint}"
             )
             return {
                 **input,
-                "service_id": model.service.id,
-                "service_endpoint": model.service.endpoint,
-                "service": model.service,
-                "model": model,
+                "service_id": self.model.service.id,
+                "service_endpoint": self.model.service.endpoint,
+                "service": self.model.service,
+                "model": self.model,
             }
         else:
             raise InternalError("model.service is not available")
 
-    def resume(self, **kwargs: Dict) -> None:
-        raise NotImplementedError("DeployAction.resume() is not implemented")
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        if self.model_id is not None and self.model_version_id is not None:
+            self.model = Model(self.model_id, self.model_version_id)
+        elif self.model is None:
+            raise InvalidArgumentError(
+                "either (model_id and version_id) or model must be set"
+            )
+        return self._exec()

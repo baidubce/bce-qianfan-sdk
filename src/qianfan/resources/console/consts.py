@@ -147,8 +147,8 @@ class TrainMode(str, Enum):
 
 
 class DeployPoolType(int, Enum):
-    PrivateResource = 1
-    PublicResource = 2
+    PublicResource = 1
+    PrivateResource = 2
 
 
 class EntityListingType(int, Enum):

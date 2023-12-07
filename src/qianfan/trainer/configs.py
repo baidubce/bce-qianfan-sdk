@@ -60,9 +60,10 @@ class DeployConfig(BaseModel):
     """
     description of service
     """
-    replicas: int
+    replicas: int = 1
     """
     replicas for model services, related to the capacity in QPS of model service.
+        default set to 1
     """
     pool_type: console_consts.DeployPoolType
     """
@@ -83,6 +84,12 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         max_seq_len=4096,
         peft_type="LoRA",
     ),
+    "ERNIE-Bot-turbo-0922": TrainConfig(
+        epoch=1,
+        learning_rate=0.0003,
+        max_seq_len=4096,
+        peft_type="LoRA",
+    ),
     "ERNIE-Bot-turbo-0516": TrainConfig(
         epoch=1,
         batch_size=32,
@@ -96,7 +103,7 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
     ),
     "Llama-2-7b": TrainConfig(
         epoch=1,
-        batch_size=1,
+        batch_size=4,
         learning_rate=0.00002,
         peft_type="LoRA",
     ),

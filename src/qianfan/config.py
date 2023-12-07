@@ -69,6 +69,12 @@ class GlobalConfig(BaseSettings):
     TRAIN_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.TrainStatusPollingInterval
     )
+    TRAINER_STATUS_POLLING_BACKOFF_FACTOR: float = Field(
+        default=DefaultValue.TrainerStatusPollingBackoffFactor
+    )
+    TRAINER_STATUS_POLLING_RETRY_TIMES: float = Field(
+        default=DefaultValue.TrainerStatusPollingRetryTimes
+    )
     MODEL_PUBLISH_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.ModelPublishStatusPollingInterval
     )

@@ -228,7 +228,6 @@ def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
         except Exception as e:
             log_error(f"action[{self.__class__.__name__}][{self.id}] error {e}")
             self.action_error_event(e)
-
             return {"error": e}
 
     return wrapper

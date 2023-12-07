@@ -90,7 +90,7 @@ class Model(object):
         model_name: Optional[str] = None,
         model_id: Optional[int] = None,
         tags: Optional[List[str]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> QfRequest:
         """
         Publishes a trained model to the model repository.
@@ -126,4 +126,145 @@ class Model(object):
             req.json_body["modelId"] = model_id
         if tags is not None:
             req.json_body["tags"] = tags
+        return req
+
+    @classmethod
+    @console_api_request
+    def create_evaluation_task(
+        cls,
+        name: str,
+        version_info: List[Dict[str, Any]],
+        dataset_id: int,
+        eval_config: Dict[str, Any],
+        description: Optional[str] = None,
+        pending_eval_id: Optional[int] = None,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Create an evaluation task on model(s) with dataset
+
+        Parameters:
+            name (str):
+                the evaluation name you want to use
+            version_info (List[Dict[str, Any]]):
+                a list of model info which will be evaluated
+            dataset_id (int):
+                dataset's id for evaluation
+            eval_config (Dict[str, Any]):
+                the detail info about how to conduct this evaluation
+            description (Optional[str]):
+                description about evaluation, default to None.
+            pending_eval_id (Optional[int]):
+                the id of evaluation which doesn't start yet,
+                you can set this parameter to modify the spec of
+                specific evaluation and start it. Default to None
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlpbyhl9o
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalCreateAPI)
+        request_json = {
+            "name": name,
+            "versionEvalInfo": version_info,
+            "datasetId": dataset_id,
+            "evalStandardConf": eval_config,
+            "computeResourceConf": {"vmType": 1, "vmNumber": 8},
+        }
+
+        if "dataset_name" in kwargs:
+            request_json["datasetName"] = kwargs["dataset_name"]
+
+        if pending_eval_id:
+            request_json["id"] = pending_eval_id
+
+        if description:
+            request_json["description"] = description
+
+        req.json_body = request_json
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_evaluation_info(
+        cls,
+        eval_id: int,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get an evaluation task info
+
+        Parameters:
+            eval_id (int):
+                the id of evaluation you want to check
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wlpbyj1dn
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalInfoAPI)
+        req.json_body = {"id": eval_id}
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_evaluation_result(
+        cls,
+        eval_id: int,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get the result of an evaluation
+
+        Parameters:
+            eval_id (int):
+                the id of evaluation you want to check
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/7lpbyk8fj
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalResultAPI)
+        req.json_body = {"id": eval_id}
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def stop_evaluation_task(
+        cls,
+        eval_id: int,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Stop an evaluation task
+
+        Parameters:
+            eval_id (int):
+                the id of evaluation you want to stop
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/klpbyl1ea
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalStopAPI)
+        req.json_body = {"id": eval_id}
+
         return req

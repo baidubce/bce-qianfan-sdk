@@ -173,3 +173,22 @@ class ETLTaskStatus(int, Enum):
     """清洗失败"""
     Paused: int = 5
     """清洗暂停"""
+
+
+class EvaluationTaskStatus(str, Enum):
+    Pending: str = "Pending"
+    """任务已提交，待调度"""
+    Doing: str = "Doing"
+    """任务已调度，执行中"""
+    DoingWithManualBegin: str = "DoingWithManualBegin"
+    """运行中（可人工标注）"""
+    Stopping: str = "Stopping"
+    """任务停止中"""
+    Done: str = "Done"
+    """评估任务全部评估成功"""
+    PartlyDone: str = "PartlyDone"
+    """评估任务部分评估成功"""
+    Failed: str = "Failed"
+    """评估任务全部失败"""
+    Stopped: str = "Stopped"
+    """任务已全部停止"""

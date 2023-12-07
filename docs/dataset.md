@@ -323,7 +323,7 @@ data_source = QianfanDataSource.create_bare_dataset(
 > 注意：如果将数据集 `save` 到千帆平台，请确认目的千帆平台数据集是使用个人 BOS 存储的数据集，SDK 不支持从本地保存数据到平台的公共 BOS 中。
 > 如有相关需求，用户可以向 `save` 函数中传递 `sup_storage_id` `sup_storage_path` 和 `sup_storage_region` 参数，指定用作中间存储的私有 BOS 信息。使用的 BOS 必须是位于北京区域的 BOS 。
 
-## 从 HuggingFace 数据集导入
+### 从 HuggingFace 数据集导入
 
 用户如果想将已有的 HuggingFace 数据集转换到 SDK 的 `Dataset` 对象，只需要在 `load` 方法中的 `huggingface_dataset` 参数内传入 HuggingFace 数据集对象即可
 

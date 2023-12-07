@@ -541,7 +541,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.deploy_config = deploy_config
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
         # for resume
         if self._input is None:
             self._input = input
@@ -578,7 +578,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             },
         )
         # deploy model
-        self.model.deploy(self.deploy_config)
+        self.model.deploy(self.deploy_config, **kwargs)
         if self.model.service is not None:
             log_debug(
                 "[deploy_action] model"

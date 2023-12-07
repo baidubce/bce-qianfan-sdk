@@ -107,7 +107,7 @@ class Model(
             )
         return self.service.exec(input, **kwargs)
 
-    def deploy(self, deploy_config: DeployConfig) -> "Service":
+    def deploy(self, deploy_config: DeployConfig, **kwargs: Any) -> "Service":
         """
         model deploy
 
@@ -119,7 +119,7 @@ class Model(
             Service: model service instance
         """
         if self.service is None:
-            self.service = model_deploy(self, deploy_config)
+            self.service = model_deploy(self, deploy_config, **kwargs)
             return self.service
         log_info("model service already existed")
         return self.service
@@ -189,7 +189,6 @@ class Model(
             raise InvalidArgumentError("task id or job id not found")
         # 判断训练任务已经训练完成
         while True:
-            print("kwargs", kwargs)
             job_status_resp = api.FineTune.get_job(
                 task_id=self.task_id,
                 job_id=self.job_id,
@@ -523,15 +522,24 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             resp = api.Service.get(id=self.id, **kwargs)
             svc_status = resp["result"]["serviceStatus"]
 
-            if svc_status != console_const.ServiceStatus.Deploying.value:
-                sft_model_endpoint = resp["result"]["uri"]
-                break
-            else:
+            if svc_status in [
+                console_const.ServiceStatus.Deploying.value,
+                console_const.ServiceStatus.New.value,
+            ]:
                 log_info(
                     "please check web console"
                     " `https://console.bce.baidu.com/qianfan/ais/console/onlineService`,for"
                     " service  deployment payment."
                 )
+            elif svc_status == console_const.ServiceStatus.Done:
+                sft_model_endpoint = resp["result"]["uri"]
+                log_info(
+                    f"service {self.id} has been deployed in `/{sft_model_endpoint}` "
+                )
+                break
+            else:
+                log_error(f"service {self.id} has been ended in {svc_status}")
+                break
             time.sleep(get_config().DEPLOY_STATUS_POLLING_INTERVAL)
 
         self.endpoint = sft_model_endpoint
@@ -561,7 +569,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         return pickle.loads(data)
 
 
-def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
+def model_deploy(model: Model, deploy_config: DeployConfig, **kwargs: Any) -> Service:
     """
     model deployment implement, a polling loop will be called after
     deploy task created.
@@ -581,5 +589,5 @@ def model_deploy(model: Model, deploy_config: DeployConfig) -> Service:
         deploy_config=deploy_config,
         service_type=deploy_config.service_type,
     )
-    svc.deploy()
+    svc.deploy(**kwargs)
     return svc

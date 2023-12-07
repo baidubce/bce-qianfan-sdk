@@ -44,7 +44,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
                 f"console api request failed with error code: {error_code}, err msg:"
                 f" {err_msg}, please check the api doc"
             )
-            raise errors.APIError(req_id, error_code, err_msg)
+            raise errors.APIError(error_code, err_msg, req_id)
 
     def _request_console_api(
         self, req: QfRequest, ak: str, sk: str, retry_config: RetryConfig

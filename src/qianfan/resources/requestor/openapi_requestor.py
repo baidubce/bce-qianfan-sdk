@@ -116,7 +116,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 APIErrorCode.APITokenInvalid.value,
             }:
                 raise errors.AccessTokenExpiredError
-            raise errors.APIError(req_id, error_code, err_msg)
+            raise errors.APIError(error_code, err_msg, req_id)
 
     def llm(
         self,

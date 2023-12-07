@@ -124,17 +124,19 @@ class Model(
         log_info("model service already existed")
         return self.service
 
-    def publish(self, name: str = "") -> "Model":
+    def publish(self, name: str = "", **kwargs: Any) -> "Model":
         """
         model publish, before deploying a model, it should be published.
 
         Parameters:
-            name (str, optional):
+            name str:
                 model name. Defaults to "m_{task_id}{job_id}".
         """
         if self.version_id:
             # already released
-            model_detail_resp = api.Model.detail(model_version_id=self.version_id)
+            model_detail_resp = api.Model.detail(
+                model_version_id=self.version_id, **kwargs
+            )
             self.id = model_detail_resp["result"]["modelId"]
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
@@ -144,10 +146,10 @@ class Model(
             ]["runId"]
             log_info(f"check model {self.id}/{self.version_id} published...")
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
-                self._wait_for_publish()
+                self._wait_for_publish(**kwargs)
 
         if self.id:
-            list_resp = api.Model.list(self.id)
+            list_resp = api.Model.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
@@ -158,7 +160,9 @@ class Model(
             ]
             if self.version_id is None:
                 raise InvalidArgumentError("model version id not found")
-            model_detail_resp = api.Model.detail(model_version_id=self.version_id)
+            model_detail_resp = api.Model.detail(
+                model_version_id=self.version_id, **kwargs
+            )
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["taskId"]
@@ -166,7 +170,7 @@ class Model(
                 "trainSourceExtra"
             ]["runId"]
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
-                self._wait_for_publish()
+                self._wait_for_publish(**kwargs)
 
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"
@@ -174,6 +178,7 @@ class Model(
             is_new=True,
             model_name=self.model_name,
             version_meta={"taskId": self.task_id, "iterationId": self.job_id},
+            **kwargs,
         )
         log_info(
             f"check train job: {self.task_id}/{self.job_id} status before publishing"
@@ -184,8 +189,11 @@ class Model(
             raise InvalidArgumentError("task id or job id not found")
         # 判断训练任务已经训练完成
         while True:
+            print("kwargs", kwargs)
             job_status_resp = api.FineTune.get_job(
-                task_id=self.task_id, job_id=self.job_id
+                task_id=self.task_id,
+                job_id=self.job_id,
+                **kwargs,
             )
             job_status = job_status_resp["result"]["trainStatus"]
             log_info(f"model publishing keep polling, current status {job_status}")
@@ -200,7 +208,7 @@ class Model(
         if self.id is None:
             raise InvalidArgumentError("model id not found")
         # 获取模型版本信息：
-        model_list_resp = api.Model.list(model_id=self.id)
+        model_list_resp = api.Model.list(model_id=self.id, **kwargs)
         model_version_list = model_list_resp["result"]["modelVersionList"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")
@@ -208,11 +216,11 @@ class Model(
 
         if self.version_id is None:
             raise InvalidArgumentError("model version id not found")
-        self._wait_for_publish()
+        self._wait_for_publish(**kwargs)
 
         return self
 
-    def _wait_for_publish(self) -> None:
+    def _wait_for_publish(self, **kwargs: Any) -> None:
         """
         call a polling loop to wait until the model is published.
 
@@ -224,7 +232,9 @@ class Model(
             raise InvalidArgumentError("model version id not found")
         log_info("model ready to publish")
         while True:
-            model_detail_info = api.Model.detail(model_version_id=self.version_id)
+            model_detail_info = api.Model.detail(
+                model_version_id=self.version_id, **kwargs
+            )
             model_version_state = model_detail_info["result"]["state"]
             log_info(f"check model publish status: {model_version_state}")
             if model_version_state == console_const.ModelState.Ready:
@@ -409,7 +419,11 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.id is None:
             return ""
         else:
-            resp = api.Service.get(id=self.id)
+            resp = api.Service.get(
+                id=self.id,
+                retry_count=get_config().TRAINER_STATUS_POLLING_RETRY_TIMES,
+                backoff_factor=get_config().TRAINER_STATUS_POLLING_BACKOFF_FACTOR,
+            )
         return resp["result"]["serviceStatus"]
 
     def exec(
@@ -473,7 +487,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         else:
             raise InvalidArgumentError(f"unsupported service type {self.service_type}")
 
-    def deploy(self) -> "Service":
+    def deploy(self, **kwargs: Any) -> "Service":
         if self.model is None:
             raise InvalidArgumentError("model not found")
         model = self.model
@@ -497,6 +511,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             ),
             replicas=self.deploy_config.replicas,
             pool_type=self.deploy_config.pool_type,
+            **kwargs,
         )
 
         self.id = svc_publish_resp["result"]["serviceId"]
@@ -505,7 +520,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             raise InternalError("service id not found")
         # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
         while True:
-            resp = api.Service.get(id=self.id)
+            resp = api.Service.get(id=self.id, **kwargs)
             svc_status = resp["result"]["serviceStatus"]
 
             if svc_status != console_const.ServiceStatus.Deploying.value:

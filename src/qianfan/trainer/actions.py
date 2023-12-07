@@ -329,7 +329,7 @@ class TrainAction(
         req_job["trainConfig"] = {
             key: value for key, value in tc_dict.items() if value is not None
         }
-        create_job_resp = api.FineTune.create_job(req_job)
+        create_job_resp = api.FineTune.create_job(req_job, **kwargs)
         self.job_id = cast(int, create_job_resp["result"]["id"])
         log_debug(f"[train_action] create fine-tune job_id: {self.job_id}")
 
@@ -467,7 +467,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     "job_id": self.job_id,
                 },
             )
-            self.model.publish()
+            self.model.publish(name=input.get("name", ""), **kwargs)
             log_debug(
                 f"[model publish] model: {self.task_id}_{self.job_id} has been"
                 " published."

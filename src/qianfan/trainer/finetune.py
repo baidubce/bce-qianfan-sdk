@@ -167,7 +167,7 @@ class LLMFinetune(Trainer):
         kwargs["backoff_factor"] = kwargs.get(
             "backoff_factor", get_config().TRAINER_STATUS_POLLING_BACKOFF_FACTOR
         )
-        kwargs["retry_times"] = kwargs.get(
+        kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
         self.result[0] = self.ppls[0].exec(**kwargs)

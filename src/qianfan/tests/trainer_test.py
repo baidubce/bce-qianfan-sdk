@@ -56,7 +56,6 @@ def test_train_action():
             ]
         }
     )
-    print("output", output)
     assert isinstance(output, dict)
     assert "task_id" in output and "job_id" in output
 
@@ -122,7 +121,7 @@ def test_trainer_sft_with_deploy():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725",
+        train_type="Llama-2-7b",
         dataset=ds,
         train_config=train_config,
         deploy_config=deploy_config,

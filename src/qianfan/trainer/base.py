@@ -31,7 +31,7 @@ from typing import (
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
-from qianfan.utils import log_debug, log_error, utils
+from qianfan.utils import log_debug, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
@@ -218,18 +218,18 @@ def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
         """
         mehtod wrapper
         """
-        try:
-            log_debug(f"action[{self.__class__.__name__}][{self.id}] Preceding")
-            self.action_event(ActionState.Preceding, "", {})
-            resp = func(self, **kwargs)
-            self.action_event(ActionState.Done, "", resp)
-            log_debug(f"action[{self.__class__.__name__}][{self.id}] Done")
-            return resp
-        except Exception as e:
-            log_error(f"action[{self.__class__.__name__}][{self.id}] error {e}")
-            self.action_error_event(e)
+        # try:
+        log_debug(f"action[{self.__class__.__name__}][{self.id}] Preceding")
+        self.action_event(ActionState.Preceding, "", {})
+        resp = func(self, **kwargs)
+        self.action_event(ActionState.Done, "", resp)
+        log_debug(f"action[{self.__class__.__name__}][{self.id}] Done")
+        return resp
+        # except Exception as e:
+        #     log_error(f"action[{self.__class__.__name__}][{self.id}] error {e}")
+        #     self.action_error_event(e)
 
-            return {"error": e}
+        #     return {"error": e}
 
     return wrapper
 

@@ -30,5 +30,5 @@
 
 ## Trainer相关
 
-- [Trainer全流程Fine-tune示例](./finetune/trainer_finetune_dataset2deploy.ipynb)：展示了如何使用千帆SDK `Trainer` 实现数据集->SFT微调->发布模型->模型评估->服务部署->推理这样一个模型开发完整流程。
+- [Trainer全流程Fine-tune示例](./finetune/trainer_finetune.ipynb)：展示了如何使用千帆SDK `Trainer` 实现数据集->SFT微调->发布模型->模型评估->服务部署->推理这样一个模型开发完整流程。
 - [Trainer流程控制](./finetune/trainer_finetune_event_resume.ipynb)：展示了如何使用千帆SDK `Trainer` 实现事件回调，任务恢复等功能

@@ -42,18 +42,6 @@ class Completion(BaseResource):
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
         preset model list of Completions
-        support model:
-         - ERNIE-Bot-turbo
-         - ERNIE-Bot
-         - ERNIE-Bot-4
-         - BLOOMZ-7B
-         - Llama-2-7b-chat
-         - Llama-2-13b-chat
-         - Llama-2-70b-chat
-         - Qianfan-BLOOMZ-7B-compressed
-         - Qianfan-Chinese-Llama-2-7B
-         - ChatGLM2-6B-32K
-         - AquilaChat-7B
 
         Args:
             None
@@ -252,6 +240,17 @@ class Completion(BaseResource):
                     "penalty_score",
                     "stop",
                 },
+            ),
+            "ChatLaw": QfLLMInfo(
+                endpoint="/chat/chatlaw",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_p",
+                    "extra_parameters",
+                }
             ),
             "SQLCoder-7B": QfLLMInfo(
                 endpoint="/completions/sqlcoder_7b",

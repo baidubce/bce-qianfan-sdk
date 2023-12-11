@@ -4,7 +4,7 @@
 
 ## 千帆服务相关
 
-- [千帆全流程示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/finetune/console-finetune.ipynb)：展示了如何使用千帆 SDK 实现数据集->SFT微调->发布模型->推理这样一个模型开发完整流程。
+- [千帆全流程示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/finetune/api_based_finetune.ipynb)：展示了如何使用千帆 SDK 实现数据集->SFT微调->发布模型->推理这样一个模型开发完整流程。
 - [图生文示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/text2image.ipynb)：展示了如何使用千帆 SDK 完成图生文任务。
 - [ERNIE Bot 搜索能力示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了 ENRIE Bot 的搜索增强能力和使用方法。
 - [批量预测示例](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook/eb_search.ipynb)：展示了如何使用 SDK 批量对数据进行预测。

@@ -243,13 +243,12 @@ class Completion(BaseResource):
             ),
             "ChatLaw": QfLLMInfo(
                 endpoint="/chat/chatlaw",
-                required_keys={"messages"},
+                required_keys={"messages", "extra_parameters"},
                 optional_keys={
                     "stream",
                     "user_id",
                     "temperature",
                     "top_p",
-                    "extra_parameters",
                 }
             ),
             "SQLCoder-7B": QfLLMInfo(

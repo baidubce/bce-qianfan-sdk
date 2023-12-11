@@ -258,7 +258,7 @@ class ChatCompletion(BaseResource):
                     "user_id",
                     "temperature",
                     "top_p",
-                }
+                },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",

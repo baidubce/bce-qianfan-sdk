@@ -249,7 +249,7 @@ class Completion(BaseResource):
                     "user_id",
                     "temperature",
                     "top_p",
-                }
+                },
             ),
             "SQLCoder-7B": QfLLMInfo(
                 endpoint="/completions/sqlcoder_7b",

@@ -70,8 +70,7 @@ def test_read_from_folder():
         f.write("test_file3")
 
     f = FileDataSource(path="test_dirs")
-    content = f.fetch()
-    content_list = content.split("\n")
+    content_list = f.fetch()
     content_list.sort()
 
     assert content_list == ["test_file1", "test_file2", "test_file3"]

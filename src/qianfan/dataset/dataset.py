@@ -127,7 +127,7 @@ class Dataset(Table):
         )
 
         if isinstance(content, str):
-            content = list(content)
+            content = [content]
 
         if format_type == FormatType.Json:
             json_dict_list: List[Dict[str, Any]] = []

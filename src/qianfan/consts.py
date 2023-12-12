@@ -80,6 +80,12 @@ class Env:
     GetEntityContentFailedRetryTimes: str = (
         "QIANFAN_GET_ENTITY_CONTENT_FAILED_RETRY_TIMES"
     )
+    RetryCount: str = "QIANFAN_LLM_API_RETRY_COUNT"
+    RetryTimeout: str = "QIANFAN_LLM_API_RETRY_TIMEOUT"
+    RetryBackoffFactor: str = "QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR"
+    ConsoleRetryCount: str = "QIANFAN_CONSOLE_API_RETRY_COUNT"
+    ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
+    ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
 
 
 class DefaultValue:
@@ -101,6 +107,9 @@ class DefaultValue:
     RetryCount: int = 1
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 0
+    ConsoleRetryCount: int = 1
+    ConsoleRetryTimeout: float = 60
+    ConsoleRetryBackoffFactor: float = 0
     QpsLimit: float = 0
     DotEnvConfigFile: str = ".env"
 

@@ -107,7 +107,13 @@ class Dataset(Table):
         is_a_text_file_an_entry: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
-        """内部封装的从数据源导出字节流并构建数据集的方法"""
+        """
+        内部封装的从数据源导出字节流并构建数据集的方法
+        当设置了 is_a_text_file_an_entry = True，
+        且是读取 txt 格式的文件夹数据，则此时将
+        一个文件中的所有文本作为一条数据，而不是
+        按照一行文本作为一条数据
+        """
         if isinstance(source, QianfanDataSource) and not source.download_when_init:
             # 如果是云上的数据集，则直接创建空表。
             # 云上数据集的相关处理能力暂不可用
@@ -171,6 +177,8 @@ class Dataset(Table):
             # 如果是纯文本，则放置在 prompt 一列下
             line_data: List[str] = []
             for str_content in content:
+                # 如果指定了按照文件为粒度进行读取，
+                # 则此时一行数据就是一个文本中的所有文件
                 if is_a_text_file_an_entry:
                     line_data.append(str_content)
                 else:

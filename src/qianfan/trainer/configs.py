@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
-from qianfan.resources.llm.base import BaseResource
+
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.consts import PeftType, ServiceType
 
@@ -65,7 +65,9 @@ class DeployConfig(BaseModel):
     replicas for model services, related to the capacity in QPS of model service.
         default set to 1
     """
-    pool_type: console_consts.DeployPoolType = console_consts.DeployPoolType.PrivateResource
+    pool_type: console_consts.DeployPoolType = (
+        console_consts.DeployPoolType.PrivateResource
+    )
     """
     resource pool type, public resource will be shared with others.
     """

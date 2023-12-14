@@ -466,13 +466,13 @@ class TrainAction(
             job_status = job_status_resp["result"]["trainStatus"]
             job_progress = job_status_resp["result"]["progress"]
             log_info(
-                f"[train_action] fine-tune running... current status: {job_status}, {job_progress}% "
-                f"check train log in https://console.bce.baidu.com/qianfan/train/sft/{self.task_id}/{self.job_id}/detail/traininglog"
+                f"[train_action] fine-tune running... current status: {job_status},"
+                f" {job_progress}% "
+                "check train log in"
+                f" https://console.bce.baidu.com/qianfan/train/sft/{self.task_id}/{self.job_id}/detail/traininglog"
             )
             if job_progress >= 50:
-                log_info(
-                    f" check vdl report in {job_status_resp['result']['vdlLink']}"
-                )
+                log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")
             self.action_event(ActionState.Running, "train running", job_status_resp)
             if job_status == console_consts.TrainStatus.Finish:
                 break

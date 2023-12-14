@@ -18,13 +18,12 @@ data source which is related to download/upload
 import datetime
 import json
 import os.path
-import shutil
 import uuid
 import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
 from time import sleep
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
@@ -45,7 +44,12 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 from qianfan.resources.console.data import Data
-from qianfan.utils.bos_uploader import generate_bos_file_path, upload_content_to_bos
+from qianfan.utils.bos_uploader import (
+    generate_bos_file_path,
+    get_bos_file_shared_url,
+    upload_content_to_bos,
+    upload_file_to_bos,
+)
 from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
 
 
@@ -93,7 +97,7 @@ class DataSource(ABC):
         """
 
     @abstractmethod
-    def fetch(self, **kwargs: Any) -> str:
+    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Fetch data from source
 
@@ -101,11 +105,11 @@ class DataSource(ABC):
             **kwargs (Any): optional arguments
 
         Returns:
-            str: content retrieved from data source
+            Union[str, List[str]]: content retrieved from data source
         """
 
     @abstractmethod
-    async def afetch(self, **kwargs: Any) -> str:
+    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Asynchronously fetch data from source
 
@@ -113,7 +117,7 @@ class DataSource(ABC):
             **kwargs (Any): optional arguments
 
         Returns:
-            str: content retrieved from data source
+            Union[str, List[str]]: content retrieved from data source
         """
 
     @abstractmethod
@@ -178,7 +182,7 @@ class FileDataSource(DataSource, BaseModel):
         """
         raise NotImplementedError()
 
-    def fetch(self, **kwargs: Any) -> str:
+    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Read data from file.
 
@@ -186,13 +190,14 @@ class FileDataSource(DataSource, BaseModel):
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            str: A string containing the data read from the file.
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
         """
         # 检查文件是否存在且非目录
         if not os.path.exists(self.path):
             raise ValueError("file path not found")
         if os.path.isdir(self.path):
-            ret_content = ""
+            ret_list: List[str] = []
 
             # 不保证文件读取的顺序性
             for root, dirs, files in os.walk(self.path):
@@ -202,17 +207,14 @@ class FileDataSource(DataSource, BaseModel):
 
                     file_path = os.path.join(root, file_name)
                     with open(file_path, mode="r") as f:
-                        ret_content += f.read()
+                        ret_list.append(f.read())
 
-                    if not ret_content.endswith("\n"):
-                        ret_content += "\n"
-
-            return ret_content.strip("\n")
+            return ret_list
         else:
             with open(self.path, mode="r") as file:
                 return file.read().strip("\n")
 
-    async def afetch(self, **kwargs: Any) -> str:
+    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Asynchronously Read data from file.
         Not available currently
@@ -221,7 +223,8 @@ class FileDataSource(DataSource, BaseModel):
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            str: A string containing the data read from the file.
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
         """
         raise NotImplementedError()
 
@@ -282,12 +285,15 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
 
 
 def _create_import_data_task_and_wait_for_success(
-    dataset_id: int, is_annotated: bool, file_path: str
+    dataset_id: int,
+    is_annotated: bool,
+    file_path: str,
+    source_type: DataSourceType = DataSourceType.PrivateBos,
 ) -> bool:
     Data.create_data_import_task(
         dataset_id,
         is_annotated,
-        DataSourceType.PrivateBos,
+        source_type,
         file_path,
     )
 
@@ -366,7 +372,8 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def save(
         self,
-        data: str,
+        data: Optional[str] = None,
+        zip_file_path: Optional[str] = None,
         is_annotated: bool = False,
         does_release: bool = False,
         sup_storage_id: str = "",
@@ -380,7 +387,9 @@ class QianfanDataSource(DataSource, BaseModel):
         user BOS storage
 
          Args:
-            data (str): data waiting to be uploaded。
+            data (str): data waiting to be uploaded. Default to None
+            zip_file_path (Optional[str]):
+                zip file path which contains data files, default to None.
             is_annotated (bool): has data been annotated, default to False
             does_release (bool):
                 does release dataset
@@ -409,6 +418,15 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been uploaded successfully
         """
+        if data and zip_file_path:
+            err_msg = "can't set 'data' and 'zip_file_path' simultaneously"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if not data and not zip_file_path:
+            err_msg = "must set either 'data' or 'zip_file_path'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         if sup_storage_id and sup_storage_path and sup_storage_region:
             storage_id = sup_storage_id
@@ -423,14 +441,13 @@ class QianfanDataSource(DataSource, BaseModel):
             assert self.storage_region
             storage_region = self.storage_region
         elif self.storage_type == DataStorageType.PublicBos:
+            err_msg = "don't support upload dataset to dataset which use platform bos"
+            log_error(err_msg)
             raise NotImplementedError()
         else:
             err_msg = "can't get storage info for uploading to qianfan"
             log_error(err_msg)
             raise ValueError(err_msg)
-
-        suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
-        file_path = f"{storage_path}data_{uuid.uuid4()}.{suffix}"
 
         ak = self.ak if self.ak else get_config().ACCESS_KEY
         sk = self.sk if self.sk else get_config().SECRET_KEY
@@ -445,26 +462,62 @@ class QianfanDataSource(DataSource, BaseModel):
             log_warn("no region was provided when upload data to user BOS")
             return False
 
+        if not zip_file_path:
+            suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
+            file_path = f"{storage_path}data_{uuid.uuid4()}.{suffix}"
+        else:
+            file_path = f"{storage_path}{os.path.split(zip_file_path)[-1]}"
+
         log_info("start to upload data to user BOS")
         log_debug(
             f"bucket path: {file_path} bucket name: {storage_id} bos region:"
             f" {storage_region}"
         )
-        upload_content_to_bos(
-            data,
-            file_path,
-            storage_id,
-            storage_region,
-            ak,
-            sk,
-        )
+
+        if data:
+            log_info("upload dataset as string")
+            upload_content_to_bos(
+                data,
+                file_path,
+                storage_id,
+                storage_region,
+                ak,
+                sk,
+            )
+        elif zip_file_path:
+            log_info("upload dataset as zip")
+            upload_file_to_bos(
+                zip_file_path,
+                file_path,
+                storage_id,
+                storage_region,
+                ak,
+                sk,
+            )
+        else:
+            err_msg = "unexpected conditional branch error when upload dataset to bos"
+            log_error(err_msg)
+            raise Exception(err_msg)
+
         log_info("uploading data to user BOS finished")
 
-        complete_file_path = generate_bos_file_path(storage_id, file_path)
-        if not _create_import_data_task_and_wait_for_success(
-            self.id, is_annotated, complete_file_path
-        ):
-            return False
+        if not zip_file_path:
+            complete_file_path = generate_bos_file_path(storage_id, file_path)
+            if not _create_import_data_task_and_wait_for_success(
+                self.id, is_annotated, complete_file_path
+            ):
+                log_warn("import data from bos file failed")
+                return False
+        else:
+            shared_str = get_bos_file_shared_url(
+                file_path, storage_id, storage_region, ak, sk
+            )
+            log_info(f"get shared file url: {shared_str}")
+            if not _create_import_data_task_and_wait_for_success(
+                self.id, is_annotated, shared_str, DataSourceType.SharedZipUrl
+            ):
+                log_warn("import data from shared zip url failed")
+                return False
 
         if does_release:
             log_info("release after saving starts")
@@ -529,7 +582,6 @@ class QianfanDataSource(DataSource, BaseModel):
             or parser.parse(info["modifyTime"])
             > self._get_latest_export_record(**kwargs)[1]
         ):
-            # TODO 支持导出到用户 BOS，现在默认导出到平台 BOS
             log_info("start to export dataset")
             Data.create_dataset_export_task(
                 self.id, DataExportDestinationType.PlatformBos, **kwargs
@@ -604,8 +656,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 raise error
 
             # 解压到本地
-            zip_f.extractall()
-            shutil.move(json_file_name, content_path)
+            zip_f.extractall(content_path)
 
         log_info(f"unzip dataset to path {content_path} successfully")
         with open(info_path, mode="w") as f:
@@ -613,7 +664,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_info(f"write dataset info to path {info_path} successfully")
 
-    def _get_and_update_dataset_cache(self, **kwargs: Any) -> str:
+    def _get_and_update_dataset_cache(self, **kwargs: Any) -> Union[str, List[str]]:
         """从本地缓存中获取数据集，并且更新或者下载数据集"""
 
         # 检查目录，如果不存在目录则创建
@@ -667,9 +718,21 @@ class QianfanDataSource(DataSource, BaseModel):
             log_error(f"an error occurred in fetch cache: {str(e)}")
             raise
 
-        with open(content_path, mode="r") as f:
+        if os.path.isfile(content_path):
+            with open(content_path, mode="r") as f:
+                self.download_when_init = True
+                return f.read()
+
+        else:
+            ret_list: List[str] = []
+            for root, dirs, files in os.walk(content_path):
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, mode="r") as f:
+                        ret_list.append(f.read())
+
             self.download_when_init = True
-            return f.read()
+            return ret_list
 
     def _check_is_any_data_existed_in_dataset(self, **kwargs: Any) -> bool:
         """检查远端数据集是否为空"""
@@ -677,7 +740,7 @@ class QianfanDataSource(DataSource, BaseModel):
         qianfan_resp = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
         return qianfan_resp["entityCount"] != 0
 
-    def fetch(self, **kwargs: Any) -> str:
+    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Read data from qianfan or local cache。
 
@@ -685,7 +748,7 @@ class QianfanDataSource(DataSource, BaseModel):
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            str: A string containing the data.
+            Union[str, List[str]]: content retrieved from data source
         """
         if self.ak and self.sk:
             kwargs["ak"] = self.ak
@@ -697,7 +760,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         return self._get_and_update_dataset_cache(**kwargs)
 
-    async def afetch(self, **kwargs: Any) -> str:
+    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
         Asynchronously read data from qianfan or local cache。
         Not available currently
@@ -706,7 +769,7 @@ class QianfanDataSource(DataSource, BaseModel):
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            str: A string containing the data.
+            Union[str, List[str]]: content retrieved from data source
         """
         raise NotImplementedError()
 

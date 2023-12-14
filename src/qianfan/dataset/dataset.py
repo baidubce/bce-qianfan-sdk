@@ -19,15 +19,16 @@ import csv
 import functools
 import io
 import json
+import os
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from zipfile import ZipFile
 
 import pyarrow.json
 import requests
 from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 
-import qianfan.utils.utils
 from qianfan import get_config
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
@@ -56,6 +57,7 @@ from qianfan.errors import RequestError, ValidationError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
 from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.utils import generate_letter_num_random_id
 
 
 # 装饰器，用来阻塞部分对云上数据集（非本地）的操作请求
@@ -99,9 +101,19 @@ class Dataset(Table):
 
     @classmethod
     def _from_source(
-        cls, source: DataSource, schema: Optional[Schema], **kwargs: Any
+        cls,
+        source: DataSource,
+        schema: Optional[Schema],
+        is_a_text_file_an_entry: bool = False,
+        **kwargs: Any,
     ) -> "Dataset":
-        """内部封装的从数据源导出字节流并构建数据集的方法"""
+        """
+        内部封装的从数据源导出字节流并构建数据集的方法
+        当设置了 is_a_text_file_an_entry = True，
+        且是读取 txt 格式的文件夹数据，则此时将
+        一个文件中的所有文本作为一条数据，而不是
+        按照一行文本作为一条数据
+        """
         if isinstance(source, QianfanDataSource) and not source.download_when_init:
             # 如果是云上的数据集，则直接创建空表。
             # 云上数据集的相关处理能力暂不可用
@@ -113,23 +125,33 @@ class Dataset(Table):
             )
 
         # 从数据源获取字符串格式的数据集。以及数据集的解析格式
-        str_content = source.fetch(**kwargs)
+        content = source.fetch(**kwargs)
         format_type = source.format_type()
 
         log_debug(
-            f"content (type: {format_type}) fetched from data source: \n{str_content}"
+            f"content (type: {format_type}) fetched from data source: \n{content}"
         )
 
+        if isinstance(content, str):
+            content = [content]
+
         if format_type == FormatType.Json:
-            data_py_rep = json.loads(str_content)
-            # 如果导入的是一个字典，则需要转换成列表才能被读取
-            if not isinstance(data_py_rep, list):
-                data_py_rep = [data_py_rep]
-            pyarrow_table = pyarrow.Table.from_pylist(data_py_rep)
+            json_dict_list: List[Dict[str, Any]] = []
+            for str_content in content:
+                data_py_rep = json.loads(str_content)
+                # 如果导入的是一个字典，则需要转换成列表才能被读取
+                if not isinstance(data_py_rep, list):
+                    data_py_rep = [data_py_rep]
+                json_dict_list.extend(data_py_rep)
+            pyarrow_table = pyarrow.Table.from_pylist(json_dict_list)
         elif format_type == FormatType.Jsonl:
-            json_data_list = [
-                json.loads(line) for line in str_content.split("\n") if line
-            ]
+            json_data_list: List[Dict[str, Any]] = []
+            for str_content in content:
+                tmp_list = [
+                    json.loads(line) for line in str_content.split("\n") if line
+                ]
+                json_data_list.extend(tmp_list)
+
             if not json_data_list:
                 raise ValueError("no data in jsonline file")
             if isinstance(json_data_list[0], list):
@@ -145,11 +167,22 @@ class Dataset(Table):
                 raise error
         elif format_type == FormatType.Csv:
             # csv 不支持嵌套格式
-            csv_data = [row for row in csv.DictReader(str_content)]
+            csv_data: List[Dict[str, Any]] = []
+            for str_content in content:
+                tmp_data = [row for row in csv.DictReader(str_content)]
+                csv_data.extend(tmp_data)
+
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
             # 如果是纯文本，则放置在 prompt 一列下
-            line_data = str_content.split("\n")
+            line_data: List[str] = []
+            for str_content in content:
+                # 如果指定了按照文件为粒度进行读取，
+                # 则此时一行数据就是一个文本中的所有文件
+                if is_a_text_file_an_entry:
+                    line_data.append(str_content)
+                else:
+                    line_data.extend(str_content.split("\n"))
             pyarrow_table = pyarrow.Table.from_pydict(
                 {QianfanDatasetPackColumnName: line_data}
             )
@@ -228,6 +261,25 @@ class Dataset(Table):
                 log_error(str(error))
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
+
+            if isinstance(source, QianfanDataSource):
+                tmp_zip_file_name = (
+                    f"tmp_zip_file_{generate_letter_num_random_id()}.zip"
+                )
+
+                try:
+                    with ZipFile(tmp_zip_file_name, mode="w") as tmp_zip:
+                        for i in range(len(result_list)):
+                            tmp_zip.writestr(
+                                f"generic_text_file_{i}.txt", data=result_list[i]
+                            )
+
+                    result = source.save(zip_file_path=tmp_zip_file_name, **kwargs)
+                    return result
+                finally:
+                    if os.path.exists(tmp_zip_file_name):
+                        os.remove(tmp_zip_file_name)
+
             return source.save("\n".join(result_list), **kwargs)
 
         else:
@@ -528,13 +580,11 @@ class Dataset(Table):
 
         log_info("create a new dataset group and dataset")
         new_data_source = QianfanDataSource.create_bare_dataset(
-            name=(
-                f"etl_result_set_{qianfan.utils.utils.generate_letter_num_random_id()}"
-            ),
+            name=f"etl_result_set_{generate_letter_num_random_id()}",
             template_type=origin_data_source.template_type,
             storage_type=origin_data_source.storage_type,
             storage_id=origin_data_source.storage_id,
-            storage_path=origin_data_source.storage_path,
+            storage_path=origin_data_source.storage_raw_path,
             ak=origin_data_source.ak,
             sk=origin_data_source.sk,
         )
@@ -875,6 +925,17 @@ class Dataset(Table):
                 elem["entity_content"] = resp.text
 
             return result
+
+    def row_number(self) -> int:
+        if (
+            isinstance(self.inner_data_source_cache, QianfanDataSource)
+            and not self.inner_data_source_cache.download_when_init
+        ):
+            return Data.get_dataset_info(self.inner_data_source_cache.id)["result"][
+                "versionInfo"
+            ]["entityCount"]
+        else:
+            return super().row_number()
 
     def __getitem__(self, key: Any) -> Any:
         if (

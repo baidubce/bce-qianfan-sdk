@@ -84,6 +84,14 @@ class GlobalConfig(BaseSettings):
     DEFAULT_FINE_TUNE_TRAIN_TYPE: str = Field(
         default=DefaultValue.DefaultFinetuneTrainType
     )
+    LLM_API_RETRY_COUNT: int = Field(default=DefaultValue.RetryCount)
+    LLM_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.RetryTimeout)
+    LLM_API_RETRY_BACKOFF_FACTOR: int = Field(default=DefaultValue.RetryBackoffFactor)
+    CONSOLE_API_RETRY_COUNT: int = Field(default=DefaultValue.ConsoleRetryCount)
+    CONSOLE_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.ConsoleRetryTimeout)
+    CONSOLE_API_RETRY_BACKOFF_FACTOR: int = Field(
+        default=DefaultValue.ConsoleRetryBackoffFactor
+    )
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

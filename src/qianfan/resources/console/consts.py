@@ -25,9 +25,13 @@ class DataProjectType(int, Enum):
     """
 
     Conversation: int = 20
+    """对话类"""
     GenericText: int = 401
+    """返文本类"""
     QuerySet: int = 402
+    """Query 查询类"""
     Text2Image: int = 705
+    """文生图类"""
 
 
 class DataTemplateType(int, Enum):
@@ -36,30 +40,43 @@ class DataTemplateType(int, Enum):
     """
 
     NonSortedConversation: int = 2000
+    """非排序对话"""
     SortedConversation: int = 2001
+    """含排序对话"""
     GenericText: int = 40100
+    """泛文本"""
     QuerySet: int = 40200
+    """Query 查询"""
     Text2Image: int = 70500
+    """文生图"""
 
 
 class DataSetType(int, Enum):
     TextOnly: int = 4
+    """文本类数据集"""
     MultiModel: int = 7
+    """多模态数据集"""
 
 
 class DataStorageType(str, Enum):
     PublicBos: str = "sysBos"
+    """平台公共 Bos"""
     PrivateBos: str = "usrBos"
+    """用户私有 Bos"""
 
 
 class DataSourceType(int, Enum):
     PrivateBos: int = 1
+    """私有 Bos"""
     SharedZipUrl: int = 2
+    """包含 zip 压缩包的分享链接"""
 
 
 class DataExportDestinationType(int, Enum):
     PlatformBos: int = 0
+    """导出到平台 Bos"""
     PrivateBos: int = 1
+    """导出到私有 Bos"""
 
 
 class DataImportStatus(int, Enum):

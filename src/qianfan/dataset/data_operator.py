@@ -106,7 +106,7 @@ class FilterCheckCharacterRepetitionRemoval(Filter):
     """Filter class to check character repetition removal"""
 
     operator_name: str = "filter_check_character_repetition_removal"
-    character_repetition_max_cutoff: float
+    default_character_repetition_max_cutoff: float
 
 
 class FilterCheckSpecialCharacters(Filter):

@@ -6,6 +6,9 @@
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
 针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
+## 整体架构
+
+![framwwork](/docs/imgs/sdk_framework.png)
 
 ## 如何安装
 
@@ -99,64 +102,11 @@ print(resp["result"])
 + Plugin 插件调用
 + 文生图
 
-### 大模型调优
-
-目前千帆平台支持如下训练调优能力，详见[训练调优](./docs/train.md)
-- 创建训练任务
-- 创建任务运行
-- 获取任务运行详情
-- 停止任务运行
-
-### 模型管理
-
-目前千帆平台支持对训练完成后的模型进行管理，详见[模型管理](./docs/model_management.md)
-
-- 获取模型详情
-- 获取模型版本详情
-- 训练任务发布为模型
-- 发起模型评估任务
-- 查看模型评估详情
-- 查看模型评估报告
-- 停止模型评估任务
-
-### 模型服务
-
-千帆平台支持将模型发布成服务，详见[服务管理](./docs/service.md)
-
-- 创建服务
-- 查询服务详情
-
-### 平台数据集管理
-
-千帆平台提供 API 接口对数据集进行管理，详见[数据管理](./docs/data.md)
-
-目前支持的数据集管理操作有：
-- 创建数据集
-- 发起数据集发布任务
-- 发起数据集导入任务
-- 获取数据集详情
-- 获取数据集状态详情
-- 发起数据集导出任务
-- 删除数据集
-- 获取数据集导出记录
-- 获取数据集导入错误详情
-- 创建数据清洗任务
-- 查看数据清洗任务详情
-- 查看清洗任务列表
-- 删除数据清洗任务
-- 创建数据增强任务
-- 查看增强任务列表
-- 查看数据增强详情
-- 删除数据增强任务
-- 实体标注
-- 删除实体
-- 获取实体列表
-
-## Trainer
+### Trainer
 
 千帆 Python SDK 以Pipeline串联整个模型训练的流程，同时帮助用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
 
-## 本地数据集处理
+### 本地数据集处理
 
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
 
@@ -178,8 +128,8 @@ print(resp["result"])
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)
 
-
-> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
+> Check [**Api docs contents**](./docs/api_contents.md) and
+> [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License
 
 Apache-2.0

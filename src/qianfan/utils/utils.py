@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import asyncio
-import importlib
+import importlib.util
 import os
 import secrets
 import string

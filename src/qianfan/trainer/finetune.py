@@ -28,11 +28,13 @@ from qianfan.trainer.base import (
     Pipeline,
     Trainer,
 )
-from qianfan.trainer.configs import DeployConfig, TrainConfig
+from qianfan.trainer.configs import (
+    DeployConfig,
+    TrainConfig,
+)
 from qianfan.trainer.consts import (
     ActionState,
     FinetuneStatus,
-    ModelTypeMapping,
     ServiceStatus,
 )
 
@@ -91,9 +93,6 @@ class LLMFinetune(Trainer):
         ```
         """
         # 校验train_type, base_model_type
-        if base_model is None and ModelTypeMapping.get(train_type) is not None:
-            base_model = ModelTypeMapping.get(train_type)
-
         if base_model is None or base_model == "":
             raise InvalidArgumentError("base_model is empty")
 

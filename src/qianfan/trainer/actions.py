@@ -24,9 +24,12 @@ from qianfan.trainer.base import (
     BaseAction,
     with_event,
 )
-from qianfan.trainer.configs import DefaultTrainConfigMapping, DeployConfig, TrainConfig
-from qianfan.trainer.consts import (
-    ModelTypeMapping,
+from qianfan.trainer.configs import (
+    DefaultTrainConfigMapping,
+    DeployConfig,
+    ModelInfoMapping,
+    TrainConfig,
+    TrainLimit,
 )
 from qianfan.trainer.model import Model
 from qianfan.utils import (
@@ -220,16 +223,22 @@ class TrainAction(
                 raise InvalidArgumentError("train_type must be specified")
             # train from base model
             self.train_type = train_type
-            self.base_model = (
-                ModelTypeMapping.get(self.train_type)
-                if base_model is None
-                else base_model
-            )
+            if base_model is None:
+                model_info = ModelInfoMapping.get(self.train_type)
+                if model_info is None:
+                    raise InvalidArgumentError(
+                        "base_model_type must be specified caused train_type:"
+                        f" {self.train_type} is not found"
+                    )
+                self.base_model = model_info.base_model_type
+            else:
+                self.base_model = base_model
             self.train_config = (
                 train_config
                 if train_config is not None
                 else self.get_default_train_config(train_type)
             )
+        self.validateTrainConfig()
         if train_mode is not None:
             self.train_mode = train_mode
         self.task_name = (
@@ -239,6 +248,112 @@ class TrainAction(
         )
         self.task_description = task_description
         self.job_description = job_description
+
+    def validateTrainConfig(self) -> None:
+        """
+        validate train_config with ModelInfo Limits
+
+        Raises:
+            InvalidArgumentError: _description_
+        """
+        if self.train_config is None:
+            raise InvalidArgumentError("none train_config")
+        if self.train_type not in ModelInfoMapping:
+            log_warn(
+                f"[train_action] train_type {self.train_type} not found, it may be not"
+                " supported"
+            )
+        else:
+            train_type_model_info = ModelInfoMapping[self.train_type]
+            if (
+                self.train_config.peft_type
+                not in train_type_model_info.support_peft_types
+            ):
+                log_warn(
+                    f"[train_action] train_type {self.train_type}, peft_type"
+                    f" {self.train_config.peft_type} not found, it may be not supported"
+                )
+            else:
+                if (
+                    train_type_model_info.specific_peft_types_params_limit is not None
+                    and self.train_config.peft_type
+                    in train_type_model_info.specific_peft_types_params_limit
+                ):
+                    self._validate_train_config(
+                        train_type_model_info.specific_peft_types_params_limit[
+                            self.train_config.peft_type
+                        ],
+                    )
+                else:
+                    self._validate_train_config(
+                        train_type_model_info.common_params_limit
+                    )
+
+    def _validate_train_config(self, train_limit: TrainLimit) -> None:
+        """
+        validate train_config with a specific train_limit
+
+        Args:
+            train_limit (TrainLimit): _description_
+
+        Raises:
+            InvalidArgumentError: _description_
+        """
+        if self.train_config is None:
+            raise InvalidArgumentError("validate train_config is none")
+        if (
+            self.train_config.batch_size
+            and train_limit.batch_size_limit
+            and not (
+                train_limit.batch_size_limit[0]
+                <= self.train_config.batch_size
+                <= self.train_config.batch_size
+                > train_limit.batch_size_limit[1]
+            )
+        ):
+            log_warn(
+                f"[train_action] current batch_size: {self.train_config.batch_size},"
+                f" but suggested batch size in [{train_limit.batch_size_limit[0]},"
+                f" {train_limit.batch_size_limit[1]}]"
+            )
+        if (
+            self.train_config.epoch
+            and train_limit.epoch_limit
+            and not (
+                train_limit.epoch_limit[0]
+                <= self.train_config.epoch
+                <= train_limit.epoch_limit[1]
+            )
+        ):
+            log_warn(
+                f"[train_action] current epoch: {self.train_config.epoch}, but"
+                f" suggested epoch in [{train_limit.epoch_limit[0]},"
+                f" {train_limit.epoch_limit[1]}]"
+            )
+        if (
+            self.train_config.max_seq_len
+            and train_limit.max_seq_len_options
+            and self.train_config.max_seq_len not in train_limit.max_seq_len_options
+        ):
+            log_warn(
+                f"[train_action] current max_seq_len: {self.train_config.max_seq_len},"
+                f" but supported max_seq_len may be [{train_limit.max_seq_len_options}]"
+            )
+        if (
+            self.train_config.learning_rate
+            and train_limit.learning_rate_limit
+            and not (
+                train_limit.learning_rate_limit[0]
+                <= self.train_config.learning_rate
+                <= train_limit.learning_rate_limit[1]
+            )
+        ):
+            log_warn(
+                "[train_action] current learning rate:"
+                f" {self.train_config.learning_rate}, but suggested learning rate in"
+                f" [{train_limit.learning_rate_limit[0]},"
+                f" {train_limit.learning_rate_limit[1]}]"
+            )
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict

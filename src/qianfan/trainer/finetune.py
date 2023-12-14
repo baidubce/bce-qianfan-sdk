@@ -92,9 +92,9 @@ class LLMFinetune(Trainer):
         )
         ```
         """
-        # 校验train_type, base_model_type
-        if base_model is None or base_model == "":
-            raise InvalidArgumentError("base_model is empty")
+        # 校验train_type
+        if train_type is None or train_type == "":
+            raise InvalidArgumentError("train_type is empty")
 
         # 校验dataset
         if dataset is None:

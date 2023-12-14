@@ -94,13 +94,10 @@ def test_tool_to_function_call_schema():
         "parameters": {
             "type": "object",
             "properties": {
-                "test_param": {
-                    "type": "string",
-                    "description": "test param"
-                }
+                "test_param": {"type": "string", "description": "test param"}
             },
             "required": ["test_param"],
-        }
+        },
     }
 
 
@@ -123,10 +120,7 @@ def test_parameter_to_json_schema():
         type="string",
         description="test param",
     )
-    assert parameter.to_json_schema() == {
-        "type": "string",
-        "description": "test param"
-    }
+    assert parameter.to_json_schema() == {"type": "string", "description": "test param"}
 
 
 def test_nested_parameter_to_json_schema():
@@ -159,9 +153,9 @@ def test_nested_parameter_to_json_schema():
                         required=True,
                     ),
                 ],
-                required=True
-            )
-        ]
+                required=True,
+            ),
+        ],
     )
     assert parameter.to_json_schema() == {
         "type": "object",
@@ -184,8 +178,8 @@ def test_nested_parameter_to_json_schema():
                         "description": "nested int param",
                     }
                 },
-                "required": ["nested_int_param"]
-            }
+                "required": ["nested_int_param"],
+            },
         },
-        "required": ["required_nested_param", "nested_object"]
+        "required": ["required_nested_param", "nested_object"],
     }

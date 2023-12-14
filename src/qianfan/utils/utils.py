@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import importlib
 import os
 import secrets
 import string
@@ -195,3 +196,11 @@ def generate_letter_num_random_id(len: int = 10) -> str:
     return "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(len)
     )
+
+
+def assert_package_installed(package_name: str) -> None:
+    if importlib.util.find_spec(package_name) is None:
+        raise ImportError(
+            f"Unable to import {package_name} package, "
+            f"please install it using 'pip install {package_name}'."
+        )

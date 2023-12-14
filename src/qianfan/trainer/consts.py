@@ -80,18 +80,13 @@ class ServiceStatus(str, Enum):
     """服务发布任务停止"""
 
 
-# model train type -> default train config
-ModelTypeMapping = {
-    "ERNIE-Bot-turbo-0725": "ERNIE-Bot-turbo",
-    "ERNIE-Bot-turbo-0516": "ERNIE-Bot-turbo",
-    "ERNIE-Bot-turbo-0704": "ERNIE-Bot-turbo",
-    "Llama-2-7b": "Llama-2",
-    "Llama-2-13b": "Llama-2",
-    "SQLCoder-7B": "SQLCoder",
-    "ChatGLM2-6B": "ChatGLM2",
-    "Baichuan2-13B": "Baichuan2-13B",
-    "BLOOMZ-7B": "BLOOMZ",
-}
+class PeftType(str, Enum):
+    ALL = "ALL"
+    """全量更新"""
+    PTuning = "P-tuning"
+    """p-tuning"""
+    LoRA = "LoRA"
+    """LoRA"""
 
 
 class ServiceType(str, Enum):

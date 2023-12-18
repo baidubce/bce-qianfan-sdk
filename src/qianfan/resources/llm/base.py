@@ -88,13 +88,20 @@ class BatchRequestFuture(object):
         """
         concurrent.futures.wait(self._future_list)
 
-    def results(self) -> List[Union[QfResponse, Iterator[QfResponse]]]:
+    def results(self) -> List[Union[QfResponse, Iterator[QfResponse], Exception]]:
         """
         Wait for all tasks to be finished, and return the results.
         The order of the elements in the output is the same as the order
         of the elements in the input.
         """
-        return [future.result() for future in self._future_list]
+        l = []
+        for future in self._future_list:
+            try:
+                res = future.result()
+                l.append(res)
+            except Exception as e:
+                l.append(e)
+        return l
 
     def task_count(self) -> int:
         """

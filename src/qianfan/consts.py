@@ -124,6 +124,7 @@ class DefaultValue:
     TrainerStatusPollingBackoffFactor: float = 3
     TrainerStatusPollingRetryTimes: float = 3
     ModelPublishStatusPollingInterval: float = 30
+    ModelBatchRunStatusPollingInterval: float = 30
     DeployStatusPollingInterval: float = 30
     DefaultFinetuneTrainType: str = "ERNIE-Bot-turbo-0725"
 

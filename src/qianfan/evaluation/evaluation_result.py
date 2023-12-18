@@ -11,18 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
 """
-constants for dataset using
+The result of a evaluation
 """
 
-# 千帆数据集本地缓存文件夹的相对路径
-QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
+from typing import Any, Dict
 
-# 包装成单列表时使用的列名
-QianfanDatasetPackColumnName = "_pack"
+from qianfan.dataset import Dataset
 
-# 分组时应用的列名
-QianfanDataGroupColumnName = "_group"
 
-# 当数据集内存储的是泛文本数据时使用的默认列名
-QianfanGenericTextDatasetDefaultColumnName = "_generic_test"
+class EvaluationResult:
+    # 用于存放对输入输出的评估结果
+    # 用户应该使用 Dataset.
+    result_dataset: Dataset
+
+    metrics: Dict[str, Dict[str, Any]]

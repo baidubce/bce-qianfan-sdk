@@ -78,6 +78,9 @@ class GlobalConfig(BaseSettings):
     MODEL_PUBLISH_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.ModelPublishStatusPollingInterval
     )
+    MODEL_BATCH_RUN_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ModelBatchRunStatusPollingInterval
+    )
     DEPLOY_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.DeployStatusPollingInterval
     )

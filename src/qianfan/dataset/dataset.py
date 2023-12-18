@@ -33,6 +33,7 @@ from qianfan import get_config
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
     QianfanDatasetPackColumnName,
+    QianfanGenericTextDatasetDefaultColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -55,7 +56,11 @@ from qianfan.dataset.utils import (
 )
 from qianfan.errors import RequestError, ValidationError
 from qianfan.resources import Data
-from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
+from qianfan.resources.console.consts import (
+    DataTemplateType,
+    ETLTaskStatus,
+)
+from qianfan.trainer.model import BatchRunnable
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -79,6 +84,8 @@ class Dataset(Table):
         inner_table: PyarrowTable,
         inner_data_source_cache: Optional[DataSource] = None,
         inner_schema_cache: Optional[Schema] = None,
+        input_columns: Optional[List[str]] = None,
+        reference_column: Optional[str] = None,
     ) -> None:
         """
         Init a Dataset Object
@@ -90,6 +97,10 @@ class Dataset(Table):
                 a data source cache where the dataset was loaded from
             inner_schema_cache (Optional[Schema]):
                 schema cache used when dataset was loaded
+            input_columns (Optional[List[str]]):
+                which columns should be extracted as inputs
+            reference_column (Optional[str]):
+                which column should be extracted as reference
         """
         super().__init__(inner_table)
 
@@ -98,6 +109,12 @@ class Dataset(Table):
 
         # schema 对象的缓存，在 load 时被指定
         self.inner_schema_cache: Optional[Schema] = inner_schema_cache
+
+        # 输入列的列名列表
+        self.input_columns = input_columns
+
+        # 预期结果列的列名
+        self.reference_column = reference_column
 
     @classmethod
     def _from_source(
@@ -184,7 +201,7 @@ class Dataset(Table):
                 else:
                     line_data.extend(str_content.split("\n"))
             pyarrow_table = pyarrow.Table.from_pydict(
-                {QianfanDatasetPackColumnName: line_data}
+                {QianfanGenericTextDatasetDefaultColumnName: line_data}
             )
         else:
             error = ValueError(f"unknown format type: {format_type}")
@@ -510,6 +527,7 @@ class Dataset(Table):
         cls,
         data: Union[List[Dict[str, Any]], Dict[str, List]],
         schema: Optional[Schema] = None,
+        **kwargs: Any,
     ) -> "Dataset":
         """
         create a dataset from python dict or list
@@ -519,6 +537,8 @@ class Dataset(Table):
                 python object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            **kwargs (Any):
+                optional arguments
 
         Returns:
             Dataset: a dataset instance
@@ -527,29 +547,41 @@ class Dataset(Table):
             return cls(
                 inner_table=pyarrow.Table.from_pylist(data).combine_chunks(),
                 inner_schema_cache=schema,
+                **kwargs,
             )
         else:
             return cls(
                 inner_table=pyarrow.Table.from_pydict(data).combine_chunks(),
                 inner_schema_cache=schema,
+                **kwargs,
             )
 
     @classmethod
     def create_from_pyarrow_table(
-        cls, table: pyarrow.Table, schema: Optional[Schema] = None
+        cls,
+        table: pyarrow.Table,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
     ) -> "Dataset":
         """
         create a dataset from pyarrow table
 
         Args:
-            table (pyarrow): pyarrow table object used to create dataset。
+            table (pyarrow):
+                pyarrow table object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            **kwargs (Any):
+                optional arguments
 
         Returns:
             Dataset: a dataset instance
         """
-        return cls(inner_table=table.combine_chunks(), inner_schema_cache=schema)
+        return cls(
+            inner_table=table.combine_chunks(),
+            inner_schema_cache=schema,
+            **kwargs,
+        )
 
     def _is_dataset_located_in_qianfan(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
@@ -565,12 +597,21 @@ class Dataset(Table):
 
     def is_dataset_located_in_qianfan(self) -> bool:
         """
-        tell whether current is cloud dataset
+        tell whether current dataset is cloud-based dataset
 
         Returns:
-            bool: whether current is cloud dataset
+            bool: whether current dataset is cloud-based dataset
         """
         return self._is_dataset_located_in_qianfan()
+
+    def is_dataset_generic_text(self) -> bool:
+        """
+        tell whether current dataset is generic text dataset
+
+        Returns:
+            bool: whether current dataset is generic text dataset
+        """
+        return self._is_dataset_generic_text()
 
     def _create_a_dataset_etl_task(
         self, operator_dict: Dict[str, List[Dict[str, Any]]]
@@ -1065,6 +1106,45 @@ class Dataset(Table):
             Self: A brand-new Dataset with new name
         """
         return super().col_renames(new_names)
+
+    @property
+    @_online_except_decorator
+    def get_output_data(self) -> List[Any]:
+        """
+        get output data in dataset
+
+        Returns:
+            List[Any]: list of output data column
+        """
+        return self.col_list(self.reference_column)[self.reference_column]
+
+    @property
+    @_online_except_decorator
+    def get_input_data(self) -> Dict[str, List[Any]]:
+        """
+        get input columns data in dataset
+
+        Returns:
+            Dict[str, List[Any]]: a dict
+                which indicates the "column name-column data" pairs
+        """
+        return self[self.input_columns]
+
+    def test_using_llm(self, runnable: BatchRunnable, **kwargs: Any) -> "Dataset":
+        """
+        using llm to get output on current dataset
+
+        Args:
+            runnable (Union[Model, Service]):
+                llm used to test
+            **kwargs (Any):
+                optional argument dict
+
+        Returns:
+            Dataset: A dataset contains inputs, reference outputs and llm outputs
+        """
+
+        return runnable.batch_run_on_qianfan(self, **kwargs)
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

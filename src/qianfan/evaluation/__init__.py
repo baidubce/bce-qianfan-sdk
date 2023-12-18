@@ -11,18 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
-constants for dataset using
+Library aimed to helping developer to evaluate their model on qianfan
 """
-
-# 千帆数据集本地缓存文件夹的相对路径
-QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
-
-# 包装成单列表时使用的列名
-QianfanDatasetPackColumnName = "_pack"
-
-# 分组时应用的列名
-QianfanDataGroupColumnName = "_group"
-
-# 当数据集内存储的是泛文本数据时使用的默认列名
-QianfanGenericTextDatasetDefaultColumnName = "_generic_test"

@@ -63,3 +63,13 @@
 - 删除实体
 - 获取实体列表
 
+### 平台prompt管理
+
+目前支持的 Prompt 管理操作有，详见[Prompt 管理](./prompt.md)
+
+- 创建 Prompt
+- 更新 Prompt
+- 删除 Prompt
+- 获取 Prompt 详情
+- 获取 Prompt 列表
+- 获取 Prompt 标签列表

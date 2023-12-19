@@ -10,6 +10,13 @@
 
 ![framwwork](/docs/imgs/sdk_framework.png)
 
+千帆SDK的整体架构可以分为2大部分，一部分是resource层，即对接封装千帆大模型平台的所有API能力；另一部分是SDK在此基础上结合大模型应用开发所需的能力衍生而来的包括`Dataset`,`Trainer`,`Agent`等易用的组件。
+具体来说：
+- Dataset：实现了千帆平台和本地数据集，以及开源数据集的加载、处理以及常见的清洗操作。
+- Trainer：提供了基于千帆平台训练模型的接口，包括模型训练、模型评估、模型发布、服务发布等。
+- Agent：提供了基于千帆平台大模型能力的Agent框架以及Tool。
+- Component：包括Prompt等常见大模型应用开发组件。
+
 ## 如何安装
 
 目前千帆 SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装。安装千帆 SDK 需要 3.7.0 或更高的 Python 版本
@@ -100,36 +107,30 @@ print(resp["result"])
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
-+ 文生图
++ Text2Image 文生图
 
-### Trainer
+### LMOps能力
+#### Trainer
 
-千帆 Python SDK 以Pipeline串联整个模型训练的流程，同时帮助用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
+千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
 
-### 本地数据集处理
+#### Dataset
 
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
 
-
-### Prompt 管理
+#### Prompt
 
 千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
 
-目前支持的 Prompt 管理操作有：
+### Resources
 
-- 创建 Prompt
-- 更新 Prompt
-- 删除 Prompt
-- 获取 Prompt 详情
-- 获取 Prompt 列表
-- 获取 Prompt 标签列表
+平台API能力汇总，详见[**平台API能力**](./docs/api_contents.md) and
 
 ### 其他
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)
 
-> Check [**Api docs contents**](./docs/api_contents.md) and
-> [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
+> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License
 
 Apache-2.0

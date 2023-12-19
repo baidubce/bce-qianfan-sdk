@@ -18,7 +18,7 @@ Utils for console api
 import functools
 from typing import Any, Awaitable, Callable
 
-from qianfan.consts import DefaultValue
+from qianfan import get_config
 from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.utils import _get_console_ak_sk
@@ -43,11 +43,12 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         inner function of wrapper
         """
         ak, sk = _get_console_ak_sk(**kwargs)
+        config = get_config()
         retry_config = RetryConfig(
-            retry_count=kwargs.get("retry_count", DefaultValue.RetryCount),
-            timeout=kwargs.get("request_timeout", DefaultValue.RetryTimeout),
+            retry_count=kwargs.get("retry_count", config.CONSOLE_API_RETRY_COUNT),
+            timeout=kwargs.get("request_timeout", config.CONSOLE_API_RETRY_TIMEOUT),
             backoff_factor=kwargs.get(
-                "backoff_factor", DefaultValue.RetryBackoffFactor
+                "backoff_factor", config.CONSOLE_API_RETRY_BACKOFF_FACTOR
             ),
         )
         req = func(*args, **kwargs)
@@ -75,11 +76,12 @@ def async_console_api_request(
         inner function of wrapper
         """
         ak, sk = _get_console_ak_sk(**kwargs)
+        config = get_config()
         retry_config = RetryConfig(
-            retry_count=kwargs.get("retry_count", DefaultValue.RetryCount),
-            timeout=kwargs.get("request_timeout", DefaultValue.RetryTimeout),
+            retry_count=kwargs.get("retry_count", config.CONSOLE_API_RETRY_COUNT),
+            timeout=kwargs.get("request_timeout", config.CONSOLE_API_RETRY_TIMEOUT),
             backoff_factor=kwargs.get(
-                "backoff_factor", DefaultValue.RetryBackoffFactor
+                "backoff_factor", config.CONSOLE_API_RETRY_BACKOFF_FACTOR
             ),
         )
         req = await func(*args, **kwargs)

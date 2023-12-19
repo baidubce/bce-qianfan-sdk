@@ -20,7 +20,7 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.configs import DeployConfig, TrainConfig
-from qianfan.trainer.consts import ServiceType
+from qianfan.trainer.consts import PeftType, ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
 from qianfan.trainer.model import Model, Service
@@ -86,6 +86,7 @@ def test_trainer_sft_run():
         learning_rate=0.00002,
         max_seq_len=4096,
         trainset_rate=20,
+        peft_type=PeftType.ALL,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "test", console_consts.DataTemplateType.NonSortedConversation

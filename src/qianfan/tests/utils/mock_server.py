@@ -634,7 +634,7 @@ def get_finetune_job():
                 "trainMode": "SFT",
                 "peftType": "LoRA",
                 "trainStatus": "FINISH",
-                "progress": 0,
+                "progress": 51,
                 "runTime": 2525,
                 "trainTime": 732,
                 "startTime": "2023-12-07 11:40:00",

@@ -29,10 +29,46 @@ def upload_content_to_bos(
     ak: str,
     sk: str,
 ) -> None:
+    """直接上传 str 到指定 BOS 路径"""
     bos_config = BceClientConfiguration(
         credentials=BceCredentials(ak, sk), endpoint=f"{region}.bcebos.com"
     )
     BosClient(bos_config).put_object_from_string(bucket_name, remote_file_path, data)
+
+
+def upload_file_to_bos(
+    file_path: str,
+    remote_file_path: str,
+    bucket_name: str,
+    region: str,
+    ak: str,
+    sk: str,
+) -> None:
+    """上传本地文件到指定 BOS 路径"""
+    bos_config = BceClientConfiguration(
+        credentials=BceCredentials(ak, sk), endpoint=f"{region}.bcebos.com"
+    )
+
+    BosClient(bos_config).put_object_from_file(bucket_name, remote_file_path, file_path)
+
+
+def get_bos_file_shared_url(
+    remote_file_path: str,
+    bucket_name: str,
+    region: str,
+    ak: str,
+    sk: str,
+) -> str:
+    """获取 BOS 中的文件的分享链接，时效 30 分钟"""
+    bos_config = BceClientConfiguration(
+        credentials=BceCredentials(ak, sk), endpoint=f"{region}.bcebos.com"
+    )
+
+    return (
+        BosClient(bos_config)
+        .generate_pre_signed_url(bucket_name, remote_file_path)
+        .decode("utf-8")
+    )
 
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:

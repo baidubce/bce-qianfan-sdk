@@ -15,7 +15,7 @@
 """
 Console API Requestor
 """
-
+from copy import deepcopy
 from typing import Any, Dict
 from urllib.parse import urlparse
 
@@ -54,8 +54,9 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         """
 
         def _helper() -> QfResponse:
-            ConsoleAPIRequestor._sign(req, ak, sk)
-            return self._request(req)
+            req_copy = deepcopy(req)
+            ConsoleAPIRequestor._sign(req_copy, ak, sk)
+            return self._request(req_copy)
 
         return self._with_retry(retry_config, _helper)
 

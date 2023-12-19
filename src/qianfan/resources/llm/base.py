@@ -94,14 +94,14 @@ class BatchRequestFuture(object):
         The order of the elements in the output is the same as the order
         of the elements in the input.
         """
-        results = []
+        res_list: List[Union[QfResponse, Iterator[QfResponse], Exception]] = []
         for future in self._future_list:
             try:
                 res = future.result()
-                results.append(res)
+                res_list.append(res)
             except Exception as e:
-                results.append(e)
-        return results
+                res_list.append(e)
+        return res_list
 
     def task_count(self) -> int:
         """

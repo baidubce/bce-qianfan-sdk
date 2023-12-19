@@ -41,7 +41,7 @@ from qianfan.utils.utils import generate_letter_num_random_id
 
 class BatchRunnable(abc.ABC):
     @abc.abstractmethod
-    def batch_run_on_qianfan(self, dataset: Dataset, **kwargs: Any) -> Dataset:
+    def batch_inference(self, dataset: Dataset, **kwargs: Any) -> Dataset:
         """
         an interface to create a batch run task on specific dataset
 
@@ -51,6 +51,14 @@ class BatchRunnable(abc.ABC):
             **kwargs (Any):
                 optional keyword arguments
         """
+
+
+def init_batch_runnable_instance(inst_type: str, **kwargs: Any) -> BatchRunnable:
+    if inst_type == "Model":
+        return Model(**kwargs)
+    if inst_type == "Service":
+        return Service(**kwargs)
+    raise ValueError(f"unexpected type: {inst_type}")
 
 
 class Model(
@@ -153,7 +161,7 @@ class Model(
         """
         if self.version_id:
             # already released
-            model_detail_resp = api.Model.detail(
+            model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             self.id = model_detail_resp["result"]["modelId"]
@@ -168,7 +176,7 @@ class Model(
                 self._wait_for_publish(**kwargs)
 
         if self.id:
-            list_resp = api.Model.list(self.id, **kwargs)
+            list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
@@ -179,7 +187,7 @@ class Model(
             ]
             if self.version_id is None:
                 raise InvalidArgumentError("model version id not found")
-            model_detail_resp = api.Model.detail(
+            model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             self.task_id = model_detail_resp["result"]["sourceExtra"][
@@ -193,7 +201,7 @@ class Model(
 
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"
-        model_publish_resp = api.Model.publish(
+        model_publish_resp = ResourceModel.publish(
             is_new=True,
             model_name=self.model_name,
             version_meta={"taskId": self.task_id, "iterationId": self.job_id},
@@ -226,7 +234,7 @@ class Model(
         if self.id is None:
             raise InvalidArgumentError("model id not found")
         # 获取模型版本信息：
-        model_list_resp = api.Model.list(model_id=self.id, **kwargs)
+        model_list_resp = ResourceModel.list(model_id=self.id, **kwargs)
         model_version_list = model_list_resp["result"]["modelVersionList"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")
@@ -250,7 +258,7 @@ class Model(
             raise InvalidArgumentError("model version id not found")
         log_info("model ready to publish")
         while True:
-            model_detail_info = api.Model.detail(
+            model_detail_info = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             model_version_state = model_detail_info["result"]["state"]
@@ -288,7 +296,7 @@ class Model(
         """
         return pickle.loads(data)
 
-    def batch_run_on_qianfan(self, dataset: Dataset, **kwargs: Any) -> Dataset:
+    def batch_inference(self, dataset: Dataset, **kwargs: Any) -> Dataset:
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
@@ -427,8 +435,6 @@ class Service(
         else:
             raise InvalidArgumentError("invalid model service")
         self.deploy_config = deploy_config
-        self.service_type = service_type
-        # if self.endpoint is not None and self.service_type is None:
 
     @property
     def status(self) -> str:
@@ -594,7 +600,7 @@ class Service(
         """
         return pickle.loads(data)
 
-    def batch_run_on_qianfan(
+    def batch_inference(
         self,
         dataset: Dataset,
         **kwargs: Any,

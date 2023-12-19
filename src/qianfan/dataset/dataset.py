@@ -60,7 +60,8 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
     ETLTaskStatus,
 )
-from qianfan.trainer.model import BatchRunnable
+from qianfan.trainer.consts import ServiceType
+from qianfan.trainer.model import init_batch_runnable_instance
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -1130,13 +1131,31 @@ class Dataset(Table):
         """
         return self[self.input_columns]
 
-    def test_using_llm(self, runnable: BatchRunnable, **kwargs: Any) -> "Dataset":
+    def test_using_llm(
+        self,
+        model_id: Optional[int] = None,
+        model_version_id: Optional[int] = None,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        service_type: Optional[ServiceType] = ServiceType.Chat,
+        **kwargs: Any,
+    ) -> "Dataset":
         """
-        using llm to get output on current dataset
+        using arguments to init an llm instance
+        and get output on current dataset from it
+        set only model arguments our service arguments to instantiating
 
         Args:
-            runnable (Union[Model, Service]):
-                llm used to test
+            model_id (Optional[int]):
+                id of your own model, default to None
+            model_version_id (Optional[int]):
+                version id of your own model, default to None
+            service_model (Optional[str]):
+                name of model you want to use as service, default to None
+            service_endpoint (Optional[str]):
+                endpoint of service, default to None
+            service_type: (Optional[ServiceType]):
+                the service type of service, default to ServiceType.Chat
             **kwargs (Any):
                 optional argument dict
 
@@ -1144,7 +1163,23 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        return runnable.batch_run_on_qianfan(self, **kwargs)
+        if model_id and model_version_id:
+            runnable = init_batch_runnable_instance(
+                "Model", id=model_id, version_id=model_version_id
+            )
+        elif service_model or service_endpoint:
+            runnable = init_batch_runnable_instance(
+                "Service",
+                endpoint=service_endpoint,
+                model=service_model,
+                service_type=service_type,
+            )
+        else:
+            err_msg = "no sufficient argument has been passed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        return runnable.batch_inference(self, **kwargs)
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

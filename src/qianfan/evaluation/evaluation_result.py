@@ -23,8 +23,17 @@ from qianfan.dataset import Dataset
 
 
 class EvaluationResult:
-    # 用于存放对输入输出的评估结果
-    # 用户应该使用 Dataset.
-    result_dataset: Dataset
+    """Evaluation Result"""
 
-    metrics: Dict[str, Dict[str, Any]]
+    def __init__(self, result_dataset: Dataset, metrics: Dict[str, Dict[str, Any]]):
+        """
+        instantiate an evaluation result
+
+        Args:
+            result_dataset (Dataset):
+                a dataset containing evaluation result
+            metrics (Dict[str, Dict[str, Any]]):
+                overall evaluation metric collections
+        """
+        self.result_dataset = result_dataset
+        self.metrics = metrics

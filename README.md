@@ -10,12 +10,12 @@
 
 ![framwwork](/docs/imgs/sdk_framework.png)
 
-千帆SDK的整体架构可以分为2大部分，一部分是resource层，即对接封装千帆大模型平台的所有API能力；另一部分是SDK在此基础上结合大模型应用开发所需的能力衍生而来的包括`Dataset`,`Trainer`,`Agent`等易用的组件。
+千帆SDK的整体架构可以分为2大部分，一部分是resource层，即对接封装千帆大模型平台的所有API能力；另一部分是SDK在此基础上结合大模型应用开发所需的能力衍生而来的包括`Dataset`,`Trainer`等易用的模块组件。
 具体来说：
 - Dataset：实现了千帆平台和本地数据集，以及开源数据集的加载、处理以及常见的清洗操作。
 - Trainer：提供了基于千帆平台训练模型的接口，包括模型训练、模型评估、模型发布、服务发布等。
-- Agent：提供了基于千帆平台大模型能力的Agent框架以及Tool。
-- Component：包括Prompt等常见大模型应用开发组件。
+- Extensions：提供了大模型的拓展能力框架，包括了基于千帆的Agent框架以及Tool等能力。
+- Component：包括Prompt，Hub等常见AI应用开发组件。
 
 ## 如何安装
 
@@ -110,21 +110,59 @@ print(resp["result"])
 + Text2Image 文生图
 
 ### LMOps能力
-#### Trainer
-
-千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
 
 #### Dataset
 
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
+以下是一个通过加载本地数据集并进行数据处理的例子
+```python
+from qianfan.dataset import Dataset
+# 从本地文件导入
+ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
+
+def filter_func(row: Dict[str, Any]) -> bool:
+  return "sensitive data for example" not in row["col1"]
+
+def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
+  return {
+    "col1": row["col1"].replace("sensitive data for example", ""),
+    "col2": row["col2"]
+  }
+
+print(ds.filter(filter_func).map(map_func).list())
+```
+
+#### Trainer
+
+千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
+以下是一个快速实现ERNIE-Bot-turbo fine-tuning的例子：
+```python
+from qianfan.dataset import Dataset
+from qianfan.trainer import LLMFinetune
+
+# 加载千帆平台上的数据集，is_download_to_local=False表示不下载数据集到本地，而是直接使用
+ds: Dataset = Dataset.load(qianfan_dataset_id=111, is_download_to_local=False)
+
+# 新建trainer LLMFinetune，最少传入train_type和dataset
+# 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
+trainer = LLMFinetune(
+    train_type="ERNIE-Bot-turbo-0725",
+    dataset=ds, 
+)
+
+trainer.run()
+
+```
+
+### 扩展与组件
 
 #### Prompt
 
 千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
 
-### Resources
+### API Resources
 
-平台API能力汇总，详见[**平台API能力**](./docs/api_contents.md) and
+平台API能力汇总，详见[**平台API能力**](./docs/api_contents.md)
 
 ### 其他
 - [tokenizer](./docs/utils.md)

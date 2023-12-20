@@ -14,7 +14,7 @@
 """
 dataset core concept, a wrap of data processing, data transmission and data validation
 """
-
+import codecs
 import csv
 import functools
 import io
@@ -190,7 +190,8 @@ class Dataset(Table):
             # csv 不支持嵌套格式
             csv_data: List[Dict[str, Any]] = []
             for str_content in content:
-                tmp_data = [row for row in csv.DictReader(str_content)]
+                string_buffer = io.StringIO(str_content)
+                tmp_data = [row for row in csv.DictReader(string_buffer)]
                 csv_data.extend(tmp_data)
 
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
@@ -270,6 +271,7 @@ class Dataset(Table):
 
         elif format_type == FormatType.Csv:
             bytes_stream_buffer = io.BytesIO()
+            bytes_stream_buffer.write(codecs.BOM_UTF8)
             pyarrow_csv.write_csv(self.inner_table, bytes_stream_buffer)
             return source.save(bytes_stream_buffer.getvalue().decode("utf-8"), **kwargs)
 

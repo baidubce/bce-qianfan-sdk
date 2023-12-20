@@ -17,9 +17,8 @@
 manager which manage whole procedure of evaluation
 """
 import time
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Union
 
-from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field, model_validator
 
 from qianfan import get_config
@@ -36,7 +35,7 @@ from qianfan.evaluation.evaluator import (
 )
 from qianfan.resources import Model as ResourceModel
 from qianfan.resources.console.consts import EvaluationTaskStatus
-from qianfan.trainer import Model
+from qianfan.trainer import Model, Service
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -88,13 +87,13 @@ class EvaluationManager(BaseModel):
         return input_dict
 
     def eval(
-        self, models: List[Runnable], dataset: Dataset, **kwargs: Any
+        self, llms: List[Union[Model, Service]], dataset: Dataset, **kwargs: Any
     ) -> Optional[EvaluationResult]:
         """
         Evaluate the performance of models on the dataset.
 
         Args:
-            models (List[Runnable]): List of models to be evaluated.
+            llms (List[Union[Model, Service]]): List of models or service to be evaluated.
             dataset (Dataset): The dataset on which models will be evaluated.
             **kwargs (Any): Other keyword arguments.
 
@@ -105,7 +104,7 @@ class EvaluationManager(BaseModel):
             raise NotImplementedError()
 
         if self.qianfan_evaluators:
-            if any([not isinstance(inst, Model) for inst in models]):
+            if any([not isinstance(inst, Model) for inst in llms]):
                 err_msg = "only Model instance can use QianfanEvaluator"
                 log_error(err_msg)
                 raise ValueError(err_msg)
@@ -186,7 +185,7 @@ class EvaluationManager(BaseModel):
                 "evalMode", ""
             ).strip(",")
 
-            model_objs: List[Model] = models  # noqa
+            model_objs: List[Model] = llms  # noqa
             qianfan_data_source = dataset.inner_data_source_cache
             assert isinstance(qianfan_data_source, QianfanDataSource)
 

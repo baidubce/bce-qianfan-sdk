@@ -74,7 +74,7 @@ class QianfanRuleEvaluator(QianfanEvaluator):
 
     using_similarity: bool = Field(default=False)
     using_accuracy: bool = Field(default=False)
-    stop_words: Optional[str] = Field(default=True)
+    stop_words: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
     def rule_validation(self) -> "QianfanRuleEvaluator":

@@ -15,3 +15,11 @@
 """
 Library aimed to helping developer to evaluate their model on qianfan
 """
+
+from qianfan.evaluation.evaluation_manager import EvaluationManager
+from qianfan.evaluation.evaluation_result import EvaluationResult
+
+__all__ = [
+    "EvaluationManager",
+    "EvaluationResult",
+]

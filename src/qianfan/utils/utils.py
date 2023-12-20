@@ -199,8 +199,12 @@ def generate_letter_num_random_id(len: int = 10) -> str:
 
 
 def assert_package_installed(package_name: str) -> None:
-    if importlib.util.find_spec(package_name) is None:
+    if not check_package_installed(package_name):
         raise ImportError(
             f"Unable to import {package_name} package, "
             f"please install it using 'pip install {package_name}'."
         )
+
+
+def check_package_installed(package_name: str) -> bool:
+    return importlib.util.find_spec(package_name) is not None

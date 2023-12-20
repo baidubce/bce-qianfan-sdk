@@ -19,6 +19,7 @@
 from typing import List, Optional, Type
 
 from qianfan.components.tool.base_tool import BaseTool, ToolParameter
+from qianfan.utils.utils import check_package_installed
 
 
 def test_tool_base():
@@ -102,6 +103,9 @@ def test_tool_to_function_call_schema():
 
 
 def test_tool_from_langchain_tool():
+    if not check_package_installed("langchain"):
+        return
+
     from langchain.tools.base import BaseTool as LangchainBaseTool
     from pydantic.v1 import BaseModel, Field
 
@@ -136,6 +140,9 @@ def test_tool_from_langchain_tool():
 
 
 def test_tool_from_langchain_func_tool():
+    if not check_package_installed("langchain"):
+        return
+
     from langchain.tools.base import Tool as LangchainTool
     from pydantic.v1 import BaseModel, Field
 
@@ -168,6 +175,9 @@ def test_tool_from_langchain_func_tool():
 
 
 def test_tool_from_langchain_decorator_tool():
+    if not check_package_installed("langchain"):
+        return
+
     from langchain.tools.base import tool
 
     @tool

@@ -16,13 +16,15 @@
 """
 manager which manage whole procedure of evaluation
 """
-
+import time
 from typing import Any, Dict, List, Optional, Set
 
 from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field, model_validator
 
+from qianfan import get_config
 from qianfan.dataset import Dataset, QianfanDataSource
+from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
 from qianfan.evaluation.evaluator import (
@@ -33,8 +35,9 @@ from qianfan.evaluation.evaluator import (
     QianfanRuleEvaluator,
 )
 from qianfan.resources import Model as ResourceModel
+from qianfan.resources.console.consts import EvaluationTaskStatus
 from qianfan.trainer import Model
-from qianfan.utils import log_error, log_info, log_warn
+from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
 
@@ -203,5 +206,40 @@ class EvaluationManager(BaseModel):
             task_url = f"https://console.bce.baidu.com/qianfan/modelcenter/model/eval/detail/task/{eval_id}"
 
             log_info(f"please check webpage {task_url} to get further information")
+
+            while True:
+                eval_info = ResourceModel.get_evaluation_info(eval_id)
+                eval_state = eval_info["result"]["state"]
+
+                log_debug(f"current evaluation task info: {eval_info}")
+                log_info(f"current eval_state: {eval_state}")
+
+                if eval_state not in [
+                    EvaluationTaskStatus.Pending.value,
+                    EvaluationTaskStatus.Doing.value,
+                ]:
+                    break
+                time.sleep(get_config().EVALUATION_ONLINE_POLLING_INTERVAL)
+
+            if eval_state not in [
+                EvaluationTaskStatus.DoingWithManualBegin,
+                EvaluationTaskStatus.Done,
+            ]:
+                err_msg = (
+                    f"can't finish evaluation task and failed with state {eval_state}"
+                )
+                log_error(err_msg)
+                raise QianfanError(err_msg)
+
+            if eval_state == EvaluationTaskStatus.DoingWithManualBegin:
+                log_warn("can't fetch any metrics due to manual mode has been set")
+                return None
+
+            result_list = ResourceModel.get_evaluation_result(eval_id)["result"]
+            metric_list: Dict[str, Dict[str, Any]] = {
+                result["modelName"]: result["effectMetric"] for result in result_list
+            }
+
+            return EvaluationResult(metrics=metric_list)
 
         return None

@@ -78,8 +78,8 @@ class GlobalConfig(BaseSettings):
     MODEL_PUBLISH_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.ModelPublishStatusPollingInterval
     )
-    MODEL_BATCH_RUN_STATUS_POLLING_INTERVAL: float = Field(
-        default=DefaultValue.ModelBatchRunStatusPollingInterval
+    BATCH_RUN_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.BatchRunStatusPollingInterval
     )
     DEPLOY_STATUS_POLLING_INTERVAL: float = Field(
         default=DefaultValue.DeployStatusPollingInterval
@@ -94,6 +94,9 @@ class GlobalConfig(BaseSettings):
     CONSOLE_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.ConsoleRetryTimeout)
     CONSOLE_API_RETRY_BACKOFF_FACTOR: int = Field(
         default=DefaultValue.ConsoleRetryBackoffFactor
+    )
+    EVALUATION_ONLINE_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.EvaluationOnlinePollingInterval
     )
 
 

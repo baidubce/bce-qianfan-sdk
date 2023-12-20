@@ -124,7 +124,7 @@ class DefaultValue:
     TrainerStatusPollingBackoffFactor: float = 3
     TrainerStatusPollingRetryTimes: float = 3
     ModelPublishStatusPollingInterval: float = 30
-    ModelBatchRunStatusPollingInterval: float = 30
+    BatchRunStatusPollingInterval: float = 30
     DeployStatusPollingInterval: float = 30
     DefaultFinetuneTrainType: str = "ERNIE-Bot-turbo-0725"
 
@@ -133,6 +133,8 @@ class DefaultValue:
     # 目前限制 2GB，防止用户内存爆炸
     ExportFileSizeLimit: int = 1024 * 1024 * 1024 * 2
     GetEntityContentFailedRetryTimes: int = 3
+
+    EvaluationOnlinePollingInterval: float = 30
 
 
 class Consts:

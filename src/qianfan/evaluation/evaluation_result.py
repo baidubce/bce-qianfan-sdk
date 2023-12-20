@@ -17,7 +17,7 @@
 The result of a evaluation
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from qianfan.dataset import Dataset
 
@@ -25,15 +25,19 @@ from qianfan.dataset import Dataset
 class EvaluationResult:
     """Evaluation Result"""
 
-    def __init__(self, result_dataset: Dataset, metrics: Dict[str, Dict[str, Any]]):
+    def __init__(
+        self,
+        result_dataset: Optional[Dataset] = None,
+        metrics: Optional[Dict[str, Dict[str, Any]]] = None,
+    ):
         """
         instantiate an evaluation result
 
         Args:
-            result_dataset (Dataset):
-                a dataset containing evaluation result
-            metrics (Dict[str, Dict[str, Any]]):
-                overall evaluation metric collections
+            result_dataset (Optional[Dataset]):
+                a dataset containing evaluation result, default to None
+            metrics (Optional[Dict[str, Dict[str, Any]]]):
+                overall evaluation metric collections, default to None
         """
         self.result_dataset = result_dataset
         self.metrics = metrics

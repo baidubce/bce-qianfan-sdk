@@ -685,7 +685,7 @@ class ChatCompletion(BaseResource):
 
     def batch_do(
         self,
-        messages_list: List[Union[List[Dict], QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages]],
         worker_num: int = 1,
         **kwargs: Any,
     ) -> BatchRequestFuture:

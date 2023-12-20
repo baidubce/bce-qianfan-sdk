@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from qianfan.trainer.actions import (
+    BaseAction,
     DeployAction,
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
 )
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.finetune import LLMFinetune, Trainer
 from qianfan.trainer.model import Model, Service
 
 __all__ = [

@@ -101,6 +101,17 @@ class QfResponse(Mapping):
     The JSON-formatted body of the response.
     """
 
+    statistic: Dict[str, Any] = default_field({})
+    """
+    key:
+    `request_latency`: request elapsed time in seconds, or received elapsed time
+        of each response if stream=True
+    `first_token_latency`: first token elapsed time int seconds
+        only existed in streaming calling
+    `total_latency`: resource elapsed time int seconds, include request, serialization
+        and the waiting time if `rate_limit` is set.
+    """
+
     def __getitem__(self, item: str) -> Any:
         """
         get item by operator[]

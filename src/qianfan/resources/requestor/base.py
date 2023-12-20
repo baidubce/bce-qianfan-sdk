@@ -17,6 +17,7 @@ API Requestor for SDK
 """
 
 import asyncio
+import inspect
 import json
 import time
 from typing import (
@@ -115,6 +116,102 @@ def _async_check_if_status_code_is_200(response: aiohttp.ClientResponse) -> None
         )
 
 
+def _with_latency(func: Callable) -> Callable:
+    """
+    general decorator to add latency info into response
+    """
+    sign = inspect.signature(func)
+    if inspect.iscoroutinefunction(func):
+        return _async_latency(func)
+    elif sign.return_annotation is Iterator[QfResponse]:
+        return _stream_latency(func)
+    elif sign.return_annotation is QfResponse:
+        return _latency(func)
+    elif sign.return_annotation is AsyncIterator[QfResponse]:
+        return _async_stream_latency(func)
+    return func
+
+
+def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
+    """
+    a decorator to add latency info into response
+    """
+
+    def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
+        resp = func(*args, **kwargs)
+        resp.statistic["total_latency"] = resp.statistic["first_token_latency"]
+        return resp
+
+    return wrapper
+
+
+def _async_latency(
+    func: Callable[..., Awaitable[QfResponse]]
+) -> Callable[..., Awaitable[QfResponse]]:
+    """
+    a decorator to add latency info into async response
+    """
+
+    async def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
+        resp = await func(*args, **kwargs)
+        resp.statistic["total_latency"] = resp.statistic["first_token_latency"]
+        return resp
+
+    return wrapper
+
+
+def _stream_latency(
+    func: Callable[..., Iterator[QfResponse]]
+) -> Callable[..., Iterator[QfResponse]]:
+    """
+    a decorator to add latency info into stream response
+    """
+
+    def wrapper(*args: Any, **kwargs: Any) -> Iterator[QfResponse]:
+        start_time = time.perf_counter()
+        first_token_latency: Optional[float] = None
+        resp = func(*args, **kwargs)
+        sse_block_receive_time = time.perf_counter()
+        for r in resp:
+            if first_token_latency is None:
+                first_token_latency = time.perf_counter() - start_time
+            r.statistic["request_latency"] = (
+                time.perf_counter() - sse_block_receive_time
+            )
+            r.statistic["first_token_latency"] = first_token_latency
+            r.statistic["total_latency"] = time.perf_counter() - start_time
+            sse_block_receive_time = time.perf_counter()
+            yield r
+
+    return wrapper
+
+
+def _async_stream_latency(
+    func: Callable[..., AsyncIterator[QfResponse]]
+) -> Callable[..., AsyncIterator[QfResponse]]:
+    """
+    a decorator to add latency info into async stream response
+    """
+
+    async def wrapper(*args: Any, **kwargs: Any) -> AsyncIterator[QfResponse]:
+        start_time = time.perf_counter()
+        first_token_latency: Optional[float] = None
+        resp = func(*args, **kwargs)
+        sse_block_receive_time = time.perf_counter()
+        async for r in resp:
+            if first_token_latency is None:
+                first_token_latency = time.perf_counter() - start_time
+            r.statistic["request_latency"] = (
+                time.perf_counter() - sse_block_receive_time
+            )
+            r.statistic["first_token_latency"] = first_token_latency
+            r.statistic["total_latency"] = time.perf_counter() - start_time
+            sse_block_receive_time = time.perf_counter()
+            yield r
+
+    return wrapper
+
+
 class BaseAPIRequestor(object):
     """
     Base class of API Requestor
@@ -127,6 +224,7 @@ class BaseAPIRequestor(object):
         self._client = HTTPClient()
         self._rate_limiter = RateLimiter(**kwargs)
 
+    @_with_latency
     def _request(
         self,
         request: QfRequest,
@@ -144,8 +242,11 @@ class BaseAPIRequestor(object):
             raise errors.RequestError(
                 f"Got invalid json response from server, body: {response.content!r}"
             )
-        return data_postprocess(self._parse_response(body, response))
+        resp = self._parse_response(body, response)
+        resp.statistic["request_latency"] = response.elapsed.total_seconds()
+        return data_postprocess(resp)
 
+    @_with_latency
     def _request_stream(
         self,
         request: QfRequest,
@@ -178,6 +279,7 @@ class BaseAPIRequestor(object):
             parsed = self._parse_response(json_body, resp)
             yield data_postprocess(parsed)
 
+    @_with_latency
     async def _async_request(
         self,
         request: QfRequest,
@@ -188,6 +290,7 @@ class BaseAPIRequestor(object):
         """
         async with self._rate_limiter:
             response, session = await self._client.arequest(request)
+        start = time.perf_counter()
         async with session:
             async with response:
                 _async_check_if_status_code_is_200(response)
@@ -198,8 +301,11 @@ class BaseAPIRequestor(object):
                         "Got invalid json response from server, body:"
                         f" {response.content}"
                     )
-                return data_postprocess(self._parse_async_response(body, response))
+                resp = self._parse_async_response(body, response)
+                resp.statistic["request_latency"] = time.perf_counter() - start
+                return data_postprocess(resp)
 
+    @_with_latency
     async def _async_request_stream(
         self,
         request: QfRequest,

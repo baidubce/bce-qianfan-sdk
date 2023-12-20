@@ -18,6 +18,7 @@ base tool definition
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
+from qianfan.utils.utils import assert_package_installed
 
 
 class ToolParameter(BaseModel):
@@ -70,6 +71,36 @@ class ToolParameter(BaseModel):
 
         return schema
 
+    @staticmethod
+    def from_pydantic_v1_schema(schema: Dict[str, Any]) -> "ToolParameter":
+        """
+        Converts a pydantic v1 model into a tool parameter.
+        :param schema: pydantic model schema
+        :return: tool parameter
+        """
+        name = schema["title"]
+        parameter_type = schema["type"]
+        description = schema.get("description", None)
+        properties = None
+
+        if "properties" in schema:
+            properties = []
+            for prop_name, prop_schema in schema["properties"].items():
+                prop = ToolParameter.from_pydantic_v1_schema(prop_schema)
+                prop.name = prop_name
+                properties.append(prop)
+
+            required_properties = schema.get("required", [])
+            for prop in properties:
+                prop.required = prop.name in required_properties
+
+        return ToolParameter(
+            name=name,
+            type=parameter_type,
+            description=description,
+            properties=properties,
+        )
+
 
 class BaseTool:
     """
@@ -113,3 +144,29 @@ class BaseTool:
             "description": self.description,
             "parameters": root_parameter.to_json_schema(),
         }
+
+    @staticmethod
+    def from_langchain_tool(langchain_tool: Any) -> "BaseTool":
+        assert_package_installed("langchain")
+        from langchain.tools.base import BaseTool as LangchainBaseTool
+
+        if not isinstance(langchain_tool, LangchainBaseTool):
+            raise TypeError(
+                "tool must be an instance of langchain.tools.base.BaseTool, got"
+                f" {type(langchain_tool)}"
+            )
+
+        root_parameter = ToolParameter.from_pydantic_v1_schema(
+            langchain_tool.get_input_schema().schema()
+        )
+        root_properties = root_parameter.properties if root_parameter.properties else []
+
+        class Tool(BaseTool):
+            name = langchain_tool.name
+            description = langchain_tool.description
+            parameters = root_properties
+
+            def run(self, parameters: Any = None) -> Any:
+                return langchain_tool._run(**parameters)
+
+        return Tool()

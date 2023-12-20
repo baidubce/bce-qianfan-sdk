@@ -16,7 +16,7 @@
     Unit test for Tool
 """
 
-from typing import List
+from typing import List, Optional, Type
 
 from qianfan.components.tool.base_tool import BaseTool, ToolParameter
 
@@ -99,6 +99,93 @@ def test_tool_to_function_call_schema():
             "required": ["test_param"],
         },
     }
+
+
+def test_tool_from_langchain_tool():
+    from langchain.tools.base import BaseTool as LangchainBaseTool
+    from pydantic.v1 import BaseModel, Field
+
+    class CalculatorToolSchema(BaseModel):
+        a: int = Field(description="a description")
+        b: int = Field(description="b description")
+        prefix: Optional[str] = Field(description="prefix description")
+
+    class CalculatorTool(LangchainBaseTool):
+        name: str = "calculator"
+        description: str = "calculator description"
+        args_schema: Type[BaseModel] = CalculatorToolSchema
+
+        def _run(self, a: int, b: int, prefix: Optional[str] = None):
+            return a + b if prefix is None else prefix + str(a + b)
+
+    tool = BaseTool.from_langchain_tool(CalculatorTool())
+    assert tool.name == "calculator"
+    assert tool.description == "calculator description"
+    assert len(tool.parameters) == 3
+    assert tool.parameters[0] == ToolParameter(
+        name="a", type="integer", description="a description", required=True
+    )
+    assert tool.parameters[1] == ToolParameter(
+        name="b", type="integer", description="b description", required=True
+    )
+    assert tool.parameters[2] == ToolParameter(
+        name="prefix", type="string", description="prefix description", required=False
+    )
+    assert tool.run({"a": 1, "b": 2}) == 3
+    assert tool.run({"a": 1, "b": 2, "prefix": "result: "}) == "result: 3"
+
+
+def test_tool_from_langchain_func_tool():
+    from langchain.tools.base import Tool as LangchainTool
+    from pydantic.v1 import BaseModel, Field
+
+    def hello(a: str, b: str) -> str:
+        return f"hello {a} {b}"
+
+    class FuncToolSchema(BaseModel):
+        a: str = Field(description="a description")
+        b: str = Field(description="b description")
+
+    tool = BaseTool.from_langchain_tool(
+        LangchainTool.from_function(
+            func=hello,
+            name="hello",
+            description="hello description",
+            args_schema=FuncToolSchema,
+        )
+    )
+
+    assert tool.name == "hello"
+    assert tool.description == "hello description"
+    assert len(tool.parameters) == 2
+    assert tool.parameters[0] == ToolParameter(
+        name="a", type="string", description="a description", required=True
+    )
+    assert tool.parameters[1] == ToolParameter(
+        name="b", type="string", description="b description", required=True
+    )
+    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
+
+
+def test_tool_from_langchain_decorator_tool():
+    from langchain.tools.base import tool
+
+    @tool
+    def hello_tool(
+        a: str,
+        b: str,
+    ) -> str:
+        """Say hello"""
+        return f"hello {a} {b}"
+
+    tool = BaseTool.from_langchain_tool(hello_tool)
+
+    assert tool.name == "hello_tool"
+    assert tool.description == "hello_tool(a: str, b: str) -> str - Say hello"
+    assert len(tool.parameters) == 2
+    assert tool.parameters[0] == ToolParameter(name="a", type="string", required=True)
+    assert tool.parameters[1] == ToolParameter(name="b", type="string", required=True)
+    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
 
 
 def test_parameter_base():

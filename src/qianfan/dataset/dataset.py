@@ -37,7 +37,6 @@ from qianfan.components import Prompt
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
     QianfanDatasetPackColumnName,
-    QianfanGenericTextDatasetDefaultColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -209,7 +208,7 @@ class Dataset(Table):
                 else:
                     line_data.extend(str_content.split("\n"))
             pyarrow_table = pyarrow.Table.from_pydict(
-                {QianfanGenericTextDatasetDefaultColumnName: line_data}
+                {QianfanDatasetPackColumnName: line_data}
             )
         else:
             error = ValueError(f"unknown format type: {format_type}")
@@ -1328,6 +1327,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
+        system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1341,6 +1341,8 @@ class Dataset(Table):
             is_chat_service (bool):
                 the service type of service, default to True.
                 Service will be Completion if False
+            system_prompt (str):
+                Optional system text for input using, default to ""
             **kwargs (Any):
                 Arbitrary keyword arguments
 
@@ -1348,9 +1350,6 @@ class Dataset(Table):
             prompt_template (Optional[Prompt]):
                 Optional Prompt used as input of llm, default to None.
                 Only used when your Service is a Completion service
-            system_prompt (Optional[str]):
-                Optional system text for input using, default to None.
-                Only used when your Service is a ChatCompletion service
 
         Returns:
             Dataset: batch result contained in dataset
@@ -1368,7 +1367,6 @@ class Dataset(Table):
             raise ValueError(err_msg)
 
         prompt_template: Optional[Prompt] = kwargs.get("prompt_template", None)
-        system_prompt: Optional[str] = kwargs.get("system_prompt", None)
 
         if prompt_template:
             log_info("prompt template detected, start to check template variables")
@@ -1388,25 +1386,23 @@ class Dataset(Table):
             service: Union[ChatCompletion, Completion], *args: Any, **kwargs: Any
         ) -> List[str]:
             output_list: List[str] = []
-            future_list = service.batch_do(*args, **kwargs)._future_list  # noqa
-            for idx in range(len(future_list)):
-                future = future_list[idx]
-                try:
-                    result = future.result()
-                    if isinstance(result, QfResponse):
-                        output_list.append(result.body["result"])
-                    else:
-                        result_str = ""
-                        for r in result:
-                            result_str += r.body["result"]
-                        output_list.append(result_str)
-                except Exception as e:
+            results = service.batch_do(*args, **kwargs).results()  # noqa
+            for idx in range(len(results)):
+                result = results[idx]
+                if isinstance(result, QfResponse):
+                    output_list.append(result.body["result"])
+                elif isinstance(result, Exception):
                     log_warn(
                         "an exception has occurred during batch requesting and its"
-                        f" result will be empty string. exception: {e}\ninput:"
+                        f" result will be empty string. exception: {result}\ninput:"
                         f" {input_str_list[idx]}"
                     )
                     output_list.append("")
+                else:
+                    result_str = ""
+                    for r in result:
+                        result_str += r.body["result"]
+                    output_list.append(result_str)
 
             return output_list
 
@@ -1444,7 +1440,9 @@ class Dataset(Table):
                         )
                     )
 
-            output_list = _batch_do_on_service(service, input_str_list, **kwargs)
+            output_list = _batch_do_on_service(
+                service, input_str_list, system=system_prompt, **kwargs
+            )
             return Dataset.create_from_pyobj(
                 {
                     **input_dict,

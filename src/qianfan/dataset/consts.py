@@ -23,6 +23,3 @@ QianfanDatasetPackColumnName = "_pack"
 
 # 分组时应用的列名
 QianfanDataGroupColumnName = "_group"
-
-# 当数据集内存储的是泛文本数据时使用的默认列名
-QianfanGenericTextDatasetDefaultColumnName = "_generic_test"

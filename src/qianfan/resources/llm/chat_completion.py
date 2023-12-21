@@ -55,6 +55,8 @@ class ChatCompletion(BaseResource):
                     "penalty_score",
                     "user_id",
                     "system",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "ERNIE-Bot": QfLLMInfo(
@@ -73,6 +75,7 @@ class ChatCompletion(BaseResource):
                     "disable_search",
                     "enable_citation",
                     "max_output_tokens",
+                    "tool_choice",
                 },
             ),
             "ERNIE-Bot-4": QfLLMInfo(
@@ -109,6 +112,18 @@ class ChatCompletion(BaseResource):
                 },
             ),
             "ERNIE-Bot-turbo-AI": QfLLMInfo(
+                endpoint="/chat/ai_apaas",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "system",
+                    "user_id",
+                },
+            ),
+            "EB-turbo-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},
                 optional_keys={
@@ -258,6 +273,19 @@ class ChatCompletion(BaseResource):
                     "user_id",
                     "temperature",
                     "top_p",
+                },
+            ),
+            "Yi-34B-Chat": QfLLMInfo(
+                endpoint="/chat/yi_34b_chat",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
                 },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(

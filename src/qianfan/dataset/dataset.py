@@ -28,8 +28,8 @@ from zipfile import ZipFile
 
 import pyarrow.json
 import requests
-from pyarrow import csv as pyarrow_csv
 from pyarrow import Table as PyarrowTable
+from pyarrow import csv as pyarrow_csv
 from typing_extensions import Self
 
 from qianfan import ChatCompletion, Completion, QfResponse, QfRole, get_config

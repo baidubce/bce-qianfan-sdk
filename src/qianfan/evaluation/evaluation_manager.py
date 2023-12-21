@@ -93,9 +93,12 @@ class EvaluationManager(BaseModel):
         Evaluate the performance of models on the dataset.
 
         Args:
-            llms (List[Union[Model, Service]]): List of models or service to be evaluated.
-            dataset (Dataset): The dataset on which models will be evaluated.
-            **kwargs (Any): Other keyword arguments.
+            llms (List[Union[Model, Service]]):
+                List of models or service to be evaluated.
+            dataset (Dataset):
+                The dataset on which models will be evaluated.
+            **kwargs (Any):
+                Other keyword arguments.
 
         Returns:
             Optional[EvaluationResult]: Evaluation result of models on the dataset.
@@ -185,7 +188,7 @@ class EvaluationManager(BaseModel):
                 "evalMode", ""
             ).strip(",")
 
-            model_objs: List[Model] = llms  # noqa
+            model_objs: List[Model] = llms  # type: ignore
             qianfan_data_source = dataset.inner_data_source_cache
             assert isinstance(qianfan_data_source, QianfanDataSource)
 

@@ -138,8 +138,9 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
     """
 
     def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
+        start_time = time.perf_counter()
         resp = func(*args, **kwargs)
-        resp.statistic["total_latency"] = resp.statistic["first_token_latency"]
+        resp.statistic["total_latency"] = time.perf_counter() - start_time
         return resp
 
     return wrapper
@@ -153,8 +154,9 @@ def _async_latency(
     """
 
     async def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
+        start_time = time.perf_counter()
         resp = await func(*args, **kwargs)
-        resp.statistic["total_latency"] = resp.statistic["first_token_latency"]
+        resp.statistic["total_latency"] = time.perf_counter() - start_time
         return resp
 
     return wrapper

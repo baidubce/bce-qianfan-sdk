@@ -27,6 +27,8 @@
 ## 数据集相关
 
 - [简易数据集操作样例](./dataset/dataset101.ipynb)：展示了如何使用千帆 SDK 集成的数据集功能进行数据处理
+- [如何使用 SDK 发起在线数据清洗](./dataset/how_to_use_qianfan_operator.ipynb)：展示了如何使用千帆 SDK 发起在线数据清洗任务
+- [使用数据集进行批量推理](./dataset/batch_inference_using_dataset.ipynb)：展示了数据集与千帆模型和服务结合的批量推理能力
 
 ## Trainer相关
 

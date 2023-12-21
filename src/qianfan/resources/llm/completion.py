@@ -327,6 +327,10 @@ class Completion(BaseResource):
         """
         if model is not None and model in ChatCompletion._supported_models():
             return ChatCompletion()._convert_endpoint(model, endpoint)
+        if endpoint in [
+            info.endpoint for info in list(Completion._supported_models().values())
+        ]:
+            return endpoint
         return f"/completions/{endpoint}"
 
     def do(

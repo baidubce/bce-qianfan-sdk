@@ -192,7 +192,9 @@ class Dataset(Table):
             # csv 不支持嵌套格式
             csv_data: List[Dict[str, Any]] = []
             for str_content in content:
-                string_buffer = io.StringIO(str_content)
+                string_buffer = io.StringIO(
+                    str_content.strip(codecs.BOM_UTF8.decode(encoding="utf-8"))
+                )
                 tmp_data = [row for row in csv.DictReader(string_buffer)]
                 csv_data.extend(tmp_data)
 
@@ -1199,7 +1201,7 @@ class Dataset(Table):
         model_version_id: Optional[int] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = True,
+        is_chat_service: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1326,7 +1328,7 @@ class Dataset(Table):
         self,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = True,
+        is_chat_service: bool = False,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":

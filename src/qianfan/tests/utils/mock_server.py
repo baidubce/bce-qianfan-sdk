@@ -2337,6 +2337,327 @@ def mock_hub_file():
     return send_file(buffer, as_attachment=True, download_name="prompt.json")
 
 
+@app.route(Consts.ModelAPIPrefix + "/erniebot/plugins", methods=["POST"])
+def eb_plugin():
+    return json_response(
+        {
+            "id": "as-sky7jr2cay",
+            "object": "chat.completion",
+            "created": 1703036786,
+            "result": (
+                "以下是我对图片的理解：\n图中是一条笔直的公路，路旁有黄色的交通柱，"
+                "天空上有白云，太阳已经落下，天空呈现出蓝色。"
+                "\n可以参考下面的提问方式:\n示例1) 请根据图片描述，"
+                "写一篇500字以上的文章，描述这幅图片带来的情感和感受。\n示例2)"
+                " 请根据图片描述，创作一篇500字以上的短篇小说，描述图中场景，人物心情，"
+                "以及可能发生的故事。\n示例3) 请根据图片内容，创作一首5句以上的现代诗，"
+                "表达对这幅图片的感受和情感。\n"
+            ),
+            "is_truncated": False,
+            "need_clear_history": False,
+            "plugin_info": [
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": "",
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"REMOVED","actionName":"","actionContent":"","usage":{"total_tokens":174},"eventName":"message"}\n{"errCode":0,"errMsg":"","status":"","rawText":"","actionName":"","actionContent":"","usage":{"total_tokens":174},"eventName":"lastMessage"}',
+                    "status": "2",
+                    "api_id": "ImageAI.QA",
+                },
+            ],
+            "plugin_metas": [
+                {
+                    "pluginMameForModel": "",
+                    "pluginNameForHuman": "说图解画",
+                    "operationId": "QA",
+                    "pluginVersion": "1.0.0",
+                    "pluginId": "1069:1.0.0",
+                    "apiId": "ImageAI.QA",
+                    "logoUrl": "https://imagetalks.bj.bcebos.com/ImageTalks.png",
+                    "uiMeta": "",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 42,
+                "completion_tokens": 124,
+                "total_tokens": 166,
+                "plugins": [
+                    {
+                        "name": "ImageAI",
+                        "parse_tokens": 0,
+                        "abstract_tokens": 0,
+                        "search_tokens": 0,
+                        "total_tokens": 174,
+                    }
+                ],
+            },
+        }
+    )
+
+
+@app.route(Consts.ModelAPIPrefix + "/plugin/<endpoint>/", methods=["POST"])
+def plugin(endpoint):
+    return json_response(
+        {
+            "id": "as-xx111",
+            "object": "chat.completion",
+            "created": 1703153237,
+            "result": (
+                "使用知识库查询数据集创建案例，您可以参考以下步骤进行操作：\n\n1."
+                " 确定数据集类型和目标：首先，您需要确定您要创建的数据集类型，"
+                "例如文本、图像、音频等。同时，您需要明确数据集的目标，"
+                "例如用于训练机器学习模型、进行数据挖掘等。\n2."
+                " 收集数据：根据您的数据集类型和目标，收集相关的数据。"
+                "您可以通过网络爬虫、公开数据集、合作伙伴等方式获取数据。\n3."
+                " 数据清洗和预处理：在收集到数据后，您需要对数据进行清洗和预处理，"
+                "以去除无效、重复或错误的数据，并对数据进行标准化、归一化等处理，"
+                "以便于后续的分析和建模。\n4. 构建知识库：根据您的数据和目标，"
+                "构建一个适当的知识库。知识库可以包括事实、规则、概念等，"
+                "用于指导后续的数据集创建过程。\n5. 创建数据集：使用知识库中的信息，"
+                "对原始数据进行分类、聚类、标签化等处理，"
+                "从而生成一个具有结构化标签或有序关系的新数据集。\n6."
+                " 评估和优化：在创建数据集后，您需要对数据集的质量和有效性进行评估。"
+                "根据评估结果，您可以对知识库或数据预处理步骤进行调整和优化，"
+                "以提高数据集的质量和准确性。\n\n请注意，"
+                "以上步骤可能因具体的数据集类型和目标而有所不同。在实际操作中，"
+                "您可能需要根据具体情况进行调整和优化。"
+            ),
+            "is_truncated": False,
+            "need_clear_history": False,
+            "finish_reason": "normal",
+            "usage": {
+                "prompt_tokens": 1342,
+                "completion_tokens": 310,
+                "total_tokens": 1652,
+            },
+            "meta_info": {
+                "plugin_id": "uuid-zhishiku",
+                "request": {
+                    "query": "使用知识库查询数据集创建案例",
+                    "kbIds": ["65362edb8dcc93865e371221"],
+                    "score": 0,
+                    "topN": 5,
+                },
+                "response": {
+                    "retCode": 1,
+                    "message": "",
+                    "result": {
+                        "besQueryCostMilsec3": 296,
+                        "dbQueryCostMilsec1": 0,
+                        "embeddedCostMilsec2": 288,
+                        "responses": [
+                            {
+                                "charsNum": 425,
+                                "contentKey": "",
+                                "docId": "1939336a-fd2b-4798-8cec-ed2752682e2d",
+                                "docName": "互联网信息服务深度合成管理规定.txt",
+                                "docType": 0,
+                                "enableStatus": 1,
+                                "hitNum": 4,
+                                "isShardDeleted": False,
+                                "kbId": "65362edb8dcc93865e371221",
+                                "kbName": "test_hj_kndb",
+                                "next": {
+                                    "charsNum": 102,
+                                    "contentKey": "",
+                                    "contentKeyUrl": "http://easydata.bj.bcebos.com/_system_/knowledge/kb-rtan0widq1m7292e/doc/1939336a-fd2b-4798-8cec-ed2752682e2d/shard/5a4214eb-5802-4f8c-8071-67a346dfdf1a?authorization=bce-auth-v1%2F50c8bb753dcb4e1d8646bb1ffefd3503%2F2023-12-21T10%3A07%3A05Z%2F3600%2Fhost%2Fe318d41e6e787d6597fee6ec337c5126090c7f67eb753009222a677f9dfe137a",
+                                    "contentUrl": "http://easydata.bj.bcebos.com/_system_/knowledge/kb-rtan0widq1m7292e/doc/1939336a-fd2b-4798-8cec-ed2752682e2d/shard/5a4214eb-5802-4f8c-8071-67a346dfdf1a?authorization=bce-auth-v1%2F50c8bb753dcb4e1d8646bb1ffefd3503%2F2023-12-21T10%3A07%3A05Z%2F3600%2Fhost%2Fe318d41e6e787d6597fee6ec337c5126090c7f67eb753009222a677f9dfe137a",
+                                    "docId": "1939336a-fd2b-4798-8cec-ed2752682e2d",
+                                    "docName": "",
+                                    "docType": 0,
+                                    "enableStatus": 1,
+                                    "hitNum": 10,
+                                    "isShardDeleted": False,
+                                    "kbId": "65362edb8dcc93865e371221",
+                                    "kbName": "test_hj_kndb",
+                                    "score": 0,
+                                    "shardId": "5a4214eb-5802-4f8c-8071-67a346dfdf1a",
+                                    "shardIndex": 10,
+                                },
+                                "previous": {
+                                    "charsNum": 402,
+                                    "contentKey": "",
+                                    "contentKeyUrl": "http://easydata.bj.bcebos.com/_system_/knowledge/kb-rtan0widq1m7292e/doc/1939336a-fd2b-4798-8cec-ed2752682e2d/shard/0e07162c-c3bc-494d-8c99-227182b38a4b?authorization=bce-auth-v1%2F50c8bb753dcb4e1d8646bb1ffefd3503%2F2023-12-21T10%3A07%3A05Z%2F3600%2Fhost%2Ff3dc2911bf36c241a2d4edeb3d788403f93c6978bb1df29b860b84ee29447cb8",
+                                    "contentUrl": "http://easydata.bj.bcebos.com/_system_/knowledge/kb-rtan0widq1m7292e/doc/1939336a-fd2b-4798-8cec-ed2752682e2d/shard/0e07162c-c3bc-494d-8c99-227182b38a4b?authorization=bce-auth-v1%2F50c8bb753dcb4e1d8646bb1ffefd3503%2F2023-12-21T10%3A07%3A05Z%2F3600%2Fhost%2Ff3dc2911bf36c241a2d4edeb3d788403f93c6978bb1df29b860b84ee29447cb8",
+                                    "docId": "1939336a-fd2b-4798-8cec-ed2752682e2d",
+                                    "docName": "",
+                                    "docType": 0,
+                                    "enableStatus": 1,
+                                    "hitNum": 18,
+                                    "isShardDeleted": False,
+                                    "kbId": "65362edb8dcc93865e371221",
+                                    "kbName": "test_hj_kndb",
+                                    "score": 0,
+                                    "shardId": "0e07162c-c3bc-494d-8c99-227182b38a4b",
+                                    "shardIndex": 8,
+                                },
+                                "score": 0.47072577,
+                                "shardId": "78106dc5-8474-4d28-b064-4eef34b51620",
+                                "shardIndex": 9,
+                                "content": (
+                                    "（一）篇章生成、文本风格转换、"
+                                    "问答对话等生成或者编辑文本内容的技术；\n\n（二）文本转语音、"
+                                    "语音转换、"
+                                    "语音属性编辑等生成或者编辑语音内容的技术；\n\n（三）音乐生成、"
+                                    "场景声编辑等生成或者编辑非语音内容的技术；\n\n（四）人脸生成、"
+                                    "人脸替换、人物属性编辑、人脸操控、"
+                                    "姿态操控等生成或者编辑图像、"
+                                    "视频内容中生物特征的技术；\n\n（五）图像生成、"
+                                    "图像增强、图像修复等生成或者编辑图像、"
+                                    "视频内容中非生物特征的技术；\n\n（六）三维重建、"
+                                    "数字仿真等生成或者编辑数字人物、虚拟场景的技术。"
+                                    "\n\n深度合成服务提供者，"
+                                    "是指提供深度合成服务的组织、个人。"
+                                    "\n\n深度合成服务技术支持者，"
+                                    "是指为深度合成服务提供技术支持的组织、个人。"
+                                    "\n\n深度合成服务使用者，是指使用深度合成服务制作、"
+                                    "复制、发布、传播信息的组织、个人。\n\n训练数据，"
+                                    "是指被用于训练机器学习模型的标注或者基准数据集。"
+                                    "\n\n沉浸式拟真场景，"
+                                    "是指应用深度合成技术生成或者编辑的、"
+                                    "可供参与者体验或者互动的、"
+                                    "具有高度真实感的虚拟场景。"
+                                ),
+                                "is_truncated": False,
+                            }
+                        ],
+                        "urlSignedCostMilsec4": 301,
+                    },
+                    "doc_nums": 5,
+                },
+                "action": "llm",
+                "action_input": [
+                    "现在你的任务是根据给定的材料回答用户的问题，"
+                    "你会解答我关于problem的问题。你需要根据已提供的材料知识进行回答，"
+                    "不能自己编撰。\n你的任务是做一名问答助手，"
+                    "根据【检索结果】来回答最后的【问题】。在回答问题时，"
+                    "你需要注意以下几点：\n1.【检索结果】有多条，"
+                    "每条【检索结果】之间由-分隔。"
+                    "\n2.如果某条【检索结果】与【问题】无关，"
+                    "就不要参考这条【检索结果】。\n3.请直接回答问题，"
+                    "不要强调客服的职责。此外，避免出现无关话术，"
+                    '如"根据【检索结果】..."等。\n\n【检索结果】\n- （一）篇章生成、'
+                    "文本风格转换、"
+                    "问答对话等生成或者编辑文本内容的技术；\n\n（二）文本转语音、"
+                    "语音转换、"
+                    "语音属性编辑等生成或者编辑语音内容的技术；\n\n（三）音乐生成、"
+                    "场景声编辑等生成或者编辑非语音内容的技术；\n\n（四）人脸生成、"
+                    "人脸替换、人物属性编辑、人脸操控、姿态操控等生成或者编辑图像、"
+                    "视频内容中生物特征的技术；\n\n（五）图像生成、图像增强、"
+                    "图像修复等生成或者编辑图像、"
+                    "视频内容中非生物特征的技术；\n\n（六）三维重建、"
+                    "数字仿真等生成或者编辑数字人物、虚拟场景的技术。"
+                    "\n\n深度合成服务提供者，是指提供深度合成服务的组织、个人。"
+                    "\n\n深度合成服务技术支持者，是指为深度合成服务提供技术支持的组织、"
+                    "个人。\n\n深度合成服务使用者，是指使用深度合成服务制作、复制、"
+                    "发布、传播信息的组织、个人。\n\n训练数据，"
+                    "是指被用于训练机器学习模型的标注或者基准数据集。"
+                    "\n\n沉浸式拟真场景，是指应用深度合成技术生成或者编辑的、"
+                    "可供参与者体验或者互动的、具有高度真实感的虚拟场景。\n- 第十条"
+                    " 深度合成服务提供者应当加强深度合成内容管理，"
+                    "采取技术或者人工方式对深度合成服务使用者的输入数据和合成结果进行审核。"
+                    "\n\n深度合成服务提供者应当建立健全用于识别违法和不良信息的特征库，"
+                    "完善入库标准、规则和程序，记录并留存相关网络日志。"
+                    "\n\n深度合成服务提供者发现违法和不良信息的，应当依法采取处置措施，"
+                    "保存有关记录，"
+                    "及时向网信部门和有关主管部门报告；对相关深度合成服务使用者依法依约采取警示、"
+                    "限制功能、暂停服务、关闭账号等处置措施。\n\n第十一条"
+                    " 深度合成服务提供者应当建立健全辟谣机制，"
+                    "发现利用深度合成服务制作、复制、发布、传播虚假信息的，"
+                    "应当及时采取辟谣措施，保存有关记录，"
+                    "并向网信部门和有关主管部门报告。\n\n第十二条"
+                    " 深度合成服务提供者应当设置便捷的用户申诉和公众投诉、举报入口，"
+                    "公布处理流程和反馈时限，及时受理、处理和反馈处理结果。\n-"
+                    " （一）生成或者编辑人脸、"
+                    "人声等生物识别信息的；\n\n（二）生成或者编辑可能涉及国家安全、"
+                    "国家形象、国家利益和社会公共利益的特殊物体、"
+                    "场景等非生物识别信息的。\n\n第十六条"
+                    " 深度合成服务提供者对使用其服务生成或者编辑的信息内容，"
+                    "应当采取技术措施添加不影响用户使用的标识，并依照法律、"
+                    "行政法规和国家有关规定保存日志信息。\n\n第十七条"
+                    " 深度合成服务提供者提供以下深度合成服务，"
+                    "可能导致公众混淆或者误认的，"
+                    "应当在生成或者编辑的信息内容的合理位置、区域进行显著标识，"
+                    "向公众提示深度合成情况：\n\n（一）智能对话、"
+                    "智能写作等模拟自然人进行文本的生成或者编辑服务；\n\n（二）合成人声、"
+                    "仿声等语音生成或者显著改变个人身份特征的编辑服务；\n\n（三）人脸生成、"
+                    "人脸替换、人脸操控、姿态操控等人物图像、"
+                    "视频生成或者显著改变个人身份特征的编辑服务；\n\n（四）沉浸式拟真场景等生成或者编辑服务；\n\n（五）其他具有生成或者显著改变信息内容功能的服务。"
+                    "\n- 第二十一条 网信部门和电信主管部门、"
+                    "公安部门依据职责对深度合成服务开展监督检查。"
+                    "深度合成服务提供者和技术支持者应当依法予以配合，并提供必要的技术、"
+                    "数据等支持和协助。"
+                    "\n\n网信部门和有关主管部门发现深度合成服务存在较大信息安全风险的，"
+                    "可以按照职责依法要求深度合成服务提供者和技术支持者采取暂停信息更新、"
+                    "用户账号注册或者其他相关服务等措施。"
+                    "深度合成服务提供者和技术支持者应当按照要求采取措施，进行整改，"
+                    "消除隐患。\n\n第二十二条"
+                    " 深度合成服务提供者和技术支持者违反本规定的，依照有关法律、"
+                    "行政法规的规定处罚；造成严重后果的，依法从重处罚。"
+                    "\n\n构成违反治安管理行为的，"
+                    "由公安机关依法给予治安管理处罚；构成犯罪的，依法追究刑事责任。"
+                    "\n\n第五章 附则\n\n第二十三条"
+                    " 本规定中下列用语的含义：\n\n深度合成技术，是指利用深度学习、"
+                    "虚拟现实等生成合成类算法制作文本、图像、音频、视频、"
+                    "虚拟场景等网络信息的技术，包括但不限于：。\n- 第十三条"
+                    " 互联网应用商店等应用程序分发平台应当落实上架审核、日常管理、"
+                    "应急处置等安全管理责任，核验深度合成类应用程序的安全评估、"
+                    "备案等情况；对违反国家有关规定的，应当及时采取不予上架、警示、"
+                    "暂停服务或者下架等处置措施。\n\n第三章"
+                    " 数据和技术管理规范\n\n第十四条"
+                    " 深度合成服务提供者和技术支持者应当加强训练数据管理，"
+                    "采取必要措施保障训练数据安全；训练数据包含个人信息的，"
+                    "应当遵守个人信息保护的有关规定。"
+                    "\n\n深度合成服务提供者和技术支持者提供人脸、"
+                    "人声等生物识别信息编辑功能的，"
+                    "应当提示深度合成服务使用者依法告知被编辑的个人，并取得其单独同意。"
+                    "\n\n第十五条 深度合成服务提供者和技术支持者应当加强技术管理，"
+                    "定期审核、评估、验证生成合成类算法机制机理。"
+                    "\n\n深度合成服务提供者和技术支持者提供具有以下功能的模型、"
+                    "模板等工具的，"
+                    "应当依法自行或者委托专业机构开展安全评估：\n\n（一）生成或者编辑人脸、"
+                    "人声等生物识别信息的；。"
+                    "\n\n\n【问题】\n使用知识库查询数据集创建案例\n\n【回答】\n"
+                ],
+                "action_output": "",
+            },
+            "log_id": 1107539952111324513,
+        }
+    )
+
+
 def _start_mock_server():
     """
     run mock server

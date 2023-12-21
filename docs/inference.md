@@ -216,18 +216,20 @@ for r in task:
         # 否则会是一个 Exception 对象，用户需要进行错误处理
     except Exception as e:
         print(e)
+
 # 也可以通过 task.results() 来等待所有推理任务完成并获取所有结果
-# 但也同样需要进行错误处理
-try:
-    results = task.results()
-except Exception as e:
-    print(e)
+results = task.results()
 # 或者仅等待所有任务完成，避免因返回的数据量较大导致过多的内存占用
 # 之后可再采用上述遍历的方式逐个获取结果
 task.wait()
 # 结果与输入一一对应，结果与 `do` 返回类型一致
+# 如果某条记录运行时发生异常，那么对应的值将是运行时所抛出的异常对象
 for prompt, result in zip(prompt_list, results):
-    print(prompt, result)
+    if isinstance(result, Exception):
+        # 处理异常
+    else:
+        # 处理正常结果
+        print(prompt, result)
 
 
 # 异步调用

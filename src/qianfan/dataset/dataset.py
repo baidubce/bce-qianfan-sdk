@@ -192,7 +192,9 @@ class Dataset(Table):
             # csv 不支持嵌套格式
             csv_data: List[Dict[str, Any]] = []
             for str_content in content:
-                string_buffer = io.StringIO(str_content.strip(codecs.BOM_UTF8.decode(encoding="utf-8")))
+                string_buffer = io.StringIO(
+                    str_content.strip(codecs.BOM_UTF8.decode(encoding="utf-8"))
+                )
                 tmp_data = [row for row in csv.DictReader(string_buffer)]
                 csv_data.extend(tmp_data)
 

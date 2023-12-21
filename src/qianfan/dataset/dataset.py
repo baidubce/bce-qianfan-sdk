@@ -90,6 +90,7 @@ class Dataset(Table):
         inner_schema_cache: Optional[Schema] = None,
         input_columns: Optional[List[str]] = None,
         reference_column: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Init a Dataset Object
@@ -105,6 +106,8 @@ class Dataset(Table):
                 which columns should be extracted as inputs
             reference_column (Optional[str]):
                 which column should be extracted as reference
+            **kwargs (Any):
+                optional arguments
         """
         super().__init__(inner_table)
 

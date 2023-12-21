@@ -14,22 +14,26 @@
 """
 dataset core concept, a wrap of data processing, data transmission and data validation
 """
-
+import codecs
 import csv
 import functools
 import io
 import json
 import os
+import time
+from copy import deepcopy
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 from zipfile import ZipFile
 
 import pyarrow.json
 import requests
 from pyarrow import Table as PyarrowTable
+from pyarrow import csv as pyarrow_csv
 from typing_extensions import Self
 
-from qianfan import get_config
+from qianfan import ChatCompletion, Completion, QfResponse, QfRole, get_config
+from qianfan.components import Prompt
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
     QianfanDatasetPackColumnName,
@@ -53,9 +57,13 @@ from qianfan.dataset.table import Table
 from qianfan.dataset.utils import (
     _construct_table_from_nest_sequence,
 )
-from qianfan.errors import RequestError, ValidationError
-from qianfan.resources import Data
-from qianfan.resources.console.consts import DataTemplateType, ETLTaskStatus
+from qianfan.errors import QianfanError, RequestError, ValidationError
+from qianfan.resources import Data, Model
+from qianfan.resources.console.consts import (
+    DataTemplateType,
+    ETLTaskStatus,
+    EvaluationTaskStatus,
+)
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -79,6 +87,9 @@ class Dataset(Table):
         inner_table: PyarrowTable,
         inner_data_source_cache: Optional[DataSource] = None,
         inner_schema_cache: Optional[Schema] = None,
+        input_columns: Optional[List[str]] = None,
+        reference_column: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Init a Dataset Object
@@ -90,6 +101,12 @@ class Dataset(Table):
                 a data source cache where the dataset was loaded from
             inner_schema_cache (Optional[Schema]):
                 schema cache used when dataset was loaded
+            input_columns (Optional[List[str]]):
+                which columns should be extracted as inputs
+            reference_column (Optional[str]):
+                which column should be extracted as reference
+            **kwargs (Any):
+                optional arguments
         """
         super().__init__(inner_table)
 
@@ -98,6 +115,12 @@ class Dataset(Table):
 
         # schema 对象的缓存，在 load 时被指定
         self.inner_schema_cache: Optional[Schema] = inner_schema_cache
+
+        # 输入列的列名列表
+        self.input_columns = input_columns
+
+        # 预期结果列的列名
+        self.reference_column = reference_column
 
     @classmethod
     def _from_source(
@@ -169,7 +192,8 @@ class Dataset(Table):
             # csv 不支持嵌套格式
             csv_data: List[Dict[str, Any]] = []
             for str_content in content:
-                tmp_data = [row for row in csv.DictReader(str_content)]
+                string_buffer = io.StringIO(str_content)
+                tmp_data = [row for row in csv.DictReader(string_buffer)]
                 csv_data.extend(tmp_data)
 
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
@@ -195,6 +219,7 @@ class Dataset(Table):
             inner_table=pyarrow_table.combine_chunks(),  # 性能优化，combine_chunks()
             inner_data_source_cache=source,
             inner_schema_cache=schema,
+            **kwargs,
         )
 
     def _to_source(self, source: DataSource, **kwargs: Any) -> bool:
@@ -247,9 +272,10 @@ class Dataset(Table):
             return source.save("\n".join(list_of_json), **kwargs)
 
         elif format_type == FormatType.Csv:
-            string_stream_buffer = io.StringIO()
-            pyarrow.csv.write_csv(self.inner_table, string_stream_buffer)
-            return source.save(string_stream_buffer.getvalue(), **kwargs)
+            bytes_stream_buffer = io.BytesIO()
+            bytes_stream_buffer.write(codecs.BOM_UTF8)
+            pyarrow_csv.write_csv(self.inner_table, bytes_stream_buffer)
+            return source.save(bytes_stream_buffer.getvalue().decode("utf-8"), **kwargs)
 
         elif format_type == FormatType.Text:
             # 导出为纯文本时，列的数量不可大于 1
@@ -327,6 +353,24 @@ class Dataset(Table):
 
         log_info("no datasource was constructed")
         return None
+
+    def _set_qianfan_default_io_column(self) -> None:
+        cache_data_source = self.inner_data_source_cache
+        if not isinstance(cache_data_source, QianfanDataSource):
+            return
+
+        if cache_data_source.template_type in [
+            DataTemplateType.NonSortedConversation,
+            DataTemplateType.SortedConversation,
+            DataTemplateType.QuerySet,
+        ]:
+            self.input_columns = ["prompt"]
+
+        if cache_data_source.template_type in [
+            DataTemplateType.NonSortedConversation,
+            DataTemplateType.SortedConversation,
+        ]:
+            self.reference_column = "reference"
 
     @classmethod
     def load(
@@ -424,6 +468,8 @@ class Dataset(Table):
             log_error(str(error))
             raise error
 
+        table._set_qianfan_default_io_column()
+
         if table.is_dataset_grouped() and not organize_data_as_group:
             table.pack()
 
@@ -510,6 +556,7 @@ class Dataset(Table):
         cls,
         data: Union[List[Dict[str, Any]], Dict[str, List]],
         schema: Optional[Schema] = None,
+        **kwargs: Any,
     ) -> "Dataset":
         """
         create a dataset from python dict or list
@@ -519,6 +566,8 @@ class Dataset(Table):
                 python object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            **kwargs (Any):
+                optional arguments
 
         Returns:
             Dataset: a dataset instance
@@ -527,29 +576,41 @@ class Dataset(Table):
             return cls(
                 inner_table=pyarrow.Table.from_pylist(data).combine_chunks(),
                 inner_schema_cache=schema,
+                **kwargs,
             )
         else:
             return cls(
                 inner_table=pyarrow.Table.from_pydict(data).combine_chunks(),
                 inner_schema_cache=schema,
+                **kwargs,
             )
 
     @classmethod
     def create_from_pyarrow_table(
-        cls, table: pyarrow.Table, schema: Optional[Schema] = None
+        cls,
+        table: pyarrow.Table,
+        schema: Optional[Schema] = None,
+        **kwargs: Any,
     ) -> "Dataset":
         """
         create a dataset from pyarrow table
 
         Args:
-            table (pyarrow): pyarrow table object used to create dataset。
+            table (pyarrow):
+                pyarrow table object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            **kwargs (Any):
+                optional arguments
 
         Returns:
             Dataset: a dataset instance
         """
-        return cls(inner_table=table.combine_chunks(), inner_schema_cache=schema)
+        return cls(
+            inner_table=table.combine_chunks(),
+            inner_schema_cache=schema,
+            **kwargs,
+        )
 
     def _is_dataset_located_in_qianfan(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
@@ -565,12 +626,21 @@ class Dataset(Table):
 
     def is_dataset_located_in_qianfan(self) -> bool:
         """
-        tell whether current is cloud dataset
+        tell whether current dataset is cloud-based dataset
 
         Returns:
-            bool: whether current is cloud dataset
+            bool: whether current dataset is cloud-based dataset
         """
         return self._is_dataset_located_in_qianfan()
+
+    def is_dataset_generic_text(self) -> bool:
+        """
+        tell whether current dataset is generic text dataset
+
+        Returns:
+            bool: whether current dataset is generic text dataset
+        """
+        return self._is_dataset_generic_text()
 
     def _create_a_dataset_etl_task(
         self, operator_dict: Dict[str, List[Dict[str, Any]]]
@@ -624,38 +694,29 @@ class Dataset(Table):
         log_info(f"created etl task id: {etl_id}")
         return etl_id, new_data_source.id
 
-    # 因为要针对数据集在千帆上的在线处理，所以需要加一些额外的处理逻辑。
-    # 例如通过平台的 API 发起数据清洗任务
-    def online_data_process(self, operators: List[QianfanOperator]) -> Dict[str, Any]:
+    def start_online_data_process_task(self, operators: List[QianfanOperator]) -> int:
         """
         create an online ETL task on qianfan
-        not available currently
 
         Args:
             operators (List[QianfanOperator]): operators applied to ETL task
 
         Returns:
-            Dict[str, Any]: ETL task info, contains 3 field:
-                is_succeeded (bool): whether ETL task succeed
-                etl_task_id (Optional[int]): etl task id, only
-                    exists when etl task is created successfully
-                new_dataset_id (Optional[int]): dataset id which
-                    stores data after etl, only exists when etl
-                    task is succeeded
+            int: etl task id
         """
-
-        ret_dict: Dict[str, Any] = {"is_succeeded": False}
 
         if not self._is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
-            log_warn("can't process a non-qianfan dataset on qianfan")
-            return ret_dict
+            err_msg = "can't process a non-qianfan dataset on qianfan"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         if not self._is_dataset_generic_text():
             # 如果数据集不是泛文本，也不支持清洗
-            log_warn("can't process qianfan dataset which isn't GenericText type")
-            return ret_dict
+            err_msg = "can't process qianfan dataset which isn't GenericText type"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         operator_dict: Dict[str, List[Dict[str, Any]]] = {
             "clean": [],
@@ -676,37 +737,80 @@ class Dataset(Table):
         log_debug(f"operator args dict: {operator_dict}")
         log_info("start to creating an etl task")
 
-        etl_id, new_dataset_id = self._create_a_dataset_etl_task(operator_dict)
+        etl_id = self._create_a_dataset_etl_task(operator_dict)[0]
+        return etl_id
+
+    @staticmethod
+    def check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]:
+        """
+        check etl task result using etl task id
+
+        Args:
+            etl_id (int):
+                etl task id
+        Returns:
+            Optional[Union[bool, int]]: return None when task is still on processing.
+                return False if task failed and return dataset id which contains data
+                after clean
+        """
+        result = Data.get_dataset_etl_task_info(etl_id)["result"]
+        if result["processStatus"] == ETLTaskStatus.Finished.value:
+            log_info(f"data etl task {etl_id} succeeded")
+            return result["destDatasetId"]
+        if result["processStatus"] == ETLTaskStatus.Running.value:
+            log_info(f"data etl task {etl_id} running")
+            return None
+        if result["processStatus"] == ETLTaskStatus.Paused.value:
+            log_warn(f"etl task {etl_id} paused")
+            return None
+        if result["processStatus"] in [
+            ETLTaskStatus.Failed.value,
+            ETLTaskStatus.Interrupted.value,
+        ]:
+            log_warn(
+                f"etl task {etl_id} terminated with status code:"
+                f" {result['processStatus']}"
+            )
+            return False
+
+        return False
+
+    def online_data_process(self, operators: List[QianfanOperator]) -> Dict[str, Any]:
+        """
+        create an online ETL task on qianfan
+
+        Args:
+            operators (List[QianfanOperator]): operators applied to ETL task
+
+        Returns:
+            Dict[str, Any]: ETL task info, contains 3 field:
+                is_succeeded (bool): whether ETL task succeed
+                etl_task_id (Optional[int]): etl task id, only
+                    exists when etl task is created successfully
+                new_dataset_id (Optional[int]): dataset id which
+                    stores data after etl, only exists when etl
+                    task is succeeded
+        """
+
+        etl_id = self.start_online_data_process_task(operators)
 
         log_debug(f"get etl id {etl_id}")
         log_info("creating etl task successfully")
 
-        ret_dict["etl_task_id"] = etl_id
+        ret_dict: Dict[str, Any] = {"is_succeeded": False, "etl_task_id": etl_id}
 
         while True:
             sleep(get_config().ETL_STATUS_POLLING_INTERVAL)
-            result = Data.get_dataset_etl_task_info(etl_id)["result"]
-            if result["processStatus"] == ETLTaskStatus.Finished.value:
-                log_info(f"data etl task {etl_id} succeeded")
+            result = self.check_online_data_process_result(etl_id)
+            if result is None:
+                continue
+            if not result:
+                return ret_dict
+            else:
+                ret_dict["new_dataset_id"] = result
                 ret_dict["is_succeeded"] = True
-                ret_dict["new_dataset_id"] = new_dataset_id
-                return ret_dict
-            if result["processStatus"] == ETLTaskStatus.Running.value:
-                log_info(f"data etl task {etl_id} running, keep polling")
-                continue
-            if result["processStatus"] == ETLTaskStatus.Paused.value:
-                log_warn(f"etl task {etl_id} paused")
-                continue
-            if result["processStatus"] in [
-                ETLTaskStatus.Failed.value,
-                ETLTaskStatus.Interrupted.value,
-            ]:
-                log_warn(
-                    f"etl task {etl_id} terminated with status code:"
-                    f" {result['processStatus']}"
-                )
-                return ret_dict
-        log_error("should not reach there")
+                break
+
         return ret_dict
 
     def add_default_group_column(self) -> Self:
@@ -1065,6 +1169,347 @@ class Dataset(Table):
             Self: A brand-new Dataset with new name
         """
         return super().col_renames(new_names)
+
+    @property
+    @_online_except_decorator
+    def get_reference_data(self) -> List[Any]:
+        """
+        get reference data in dataset
+
+        Returns:
+            List[Any]: list of output data column
+        """
+        return self.col_list(self.reference_column)[self.reference_column]
+
+    @property
+    @_online_except_decorator
+    def get_input_data(self) -> Dict[str, List[Any]]:
+        """
+        get input columns data in dataset
+
+        Returns:
+            Dict[str, List[Any]]: a dict
+                which indicates the "column name-column data" pairs
+        """
+        return self[self.input_columns]
+
+    def test_using_llm(
+        self,
+        model_id: Optional[int] = None,
+        model_version_id: Optional[int] = None,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        is_chat_service: bool = True,
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        using arguments to init an llm instance
+        and get output on current dataset from it
+        set only model arguments our service arguments to instantiating
+
+        Args:
+            model_id (Optional[int]):
+                id of your own model, default to None
+            model_version_id (Optional[int]):
+                version id of your own model, default to None
+            service_model (Optional[str]):
+                name of model you want to use as service, default to None
+            service_endpoint (Optional[str]):
+                endpoint of service, default to None
+            is_chat_service (bool):
+                the service type of service, default to True.
+                Service will be Completion if False
+            **kwargs (Any):
+                optional argument dict
+
+        Returns:
+            Dataset: A dataset contains inputs, reference outputs and llm outputs
+        """
+
+        if model_id and model_version_id:
+            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        elif service_model or service_endpoint:
+            return self._batch_inference_on_service(
+                service_model, service_endpoint, is_chat_service, **kwargs
+            )
+        else:
+            err_msg = "no sufficient argument has been passed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+    def _batch_inference_on_model(
+        self, model_id: int, model_version_id: int, **kwargs: Any
+    ) -> "Dataset":
+        """
+        create batch run using specific dataset on qianfan
+        by evaluation ability of platform
+
+        Parameters:
+            model_id (int):
+                id of your own model, default to None
+            model_version_id (int):
+                version id of your own model, default to None
+            **kwargs (Any):
+                Arbitrary keyword arguments
+
+        Returns:
+            Dataset: batch result contained in dataset
+        """
+
+        if not self.is_dataset_located_in_qianfan():
+            err_msg = "can't start a batch run task on non-qianfan dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if self.is_dataset_generic_text():
+            err_msg = "can't start a batch run task on generic text dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        qianfan_data_source = self.inner_data_source_cache
+        assert isinstance(qianfan_data_source, QianfanDataSource)
+
+        log_info("start to create evaluation task in model")
+
+        resp = Model.create_evaluation_task(
+            name=f"model_run_{generate_letter_num_random_id()}",
+            version_info=[
+                {
+                    "modelId": model_id,
+                    "modelVersionId": model_version_id,
+                }
+            ],
+            dataset_id=qianfan_data_source.id,
+            eval_config={
+                "evalMode": "manual",
+                "evaluationDimension": [
+                    {"dimension": "满意度"},
+                ],
+            },
+            dataset_name=qianfan_data_source.name,
+            **kwargs,
+        ).body
+
+        eval_id = resp["result"]["evalId"]
+
+        log_debug(f"create evaluation task in model response: {resp}")
+        log_info(f"start to polling status of evaluation task {eval_id}")
+
+        while True:
+            eval_info = Model.get_evaluation_info(eval_id)
+            eval_state = eval_info["result"]["state"]
+
+            log_debug(f"current evaluation task info: {eval_info}")
+            log_info(f"current eval_state: {eval_state}")
+
+            if eval_state not in [
+                EvaluationTaskStatus.Pending.value,
+                EvaluationTaskStatus.Doing.value,
+            ]:
+                break
+            time.sleep(get_config().BATCH_RUN_STATUS_POLLING_INTERVAL)
+
+        if eval_state not in [
+            EvaluationTaskStatus.DoingWithManualBegin,
+            EvaluationTaskStatus.Done,
+        ]:
+            err_msg = f"can't finish evaluation task and failed with state {eval_state}"
+            log_error(err_msg)
+            raise QianfanError(err_msg)
+
+        result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetId"]
+        log_info(f"get result dataset id {result_dataset_id}")
+
+        return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+
+    def _batch_inference_on_service(
+        self,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        is_chat_service: bool = True,
+        system_prompt: str = "",
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        create batch run using specific dataset on qianfan
+
+        Args:
+            service_model (Optional[str]):
+                name of model you want to use as service, default to None
+            service_endpoint (Optional[str]):
+                endpoint of service, default to None
+            is_chat_service (bool):
+                the service type of service, default to True.
+                Service will be Completion if False
+            system_prompt (str):
+                Optional system text for input using, default to ""
+            **kwargs (Any):
+                Arbitrary keyword arguments
+
+        Keyword arguments:
+            prompt_template (Optional[Prompt]):
+                Optional Prompt used as input of llm, default to None.
+                Only used when your Service is a Completion service
+
+        Returns:
+            Dataset: batch result contained in dataset
+        """
+
+        if self.is_dataset_located_in_qianfan():
+            err_msg = "can't start a batch run task on qianfan dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        input_columns = self.input_columns
+        if not input_columns:
+            err_msg = "no input column has been set"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        prompt_template: Optional[Prompt] = kwargs.get("prompt_template", None)
+
+        if prompt_template:
+            log_info("prompt template detected, start to check template variables")
+            for column in input_columns:
+                if column not in prompt_template.variables:
+                    err_msg = f"input column {column} not in prompt template"
+                    log_error(err_msg)
+                    raise ValueError(err_msg)
+
+        service: Union[ChatCompletion, Completion]
+        if is_chat_service:
+            service = ChatCompletion(service_model, service_endpoint)
+        else:
+            service = Completion(service_model, service_endpoint)
+
+        def _batch_do_on_service(
+            service: Union[ChatCompletion, Completion], *args: Any, **kwargs: Any
+        ) -> List[str]:
+            output_list: List[str] = []
+            results = service.batch_do(*args, **kwargs).results()  # noqa
+            for idx in range(len(results)):
+                result = results[idx]
+                if isinstance(result, QfResponse):
+                    output_list.append(result.body["result"])
+                elif isinstance(result, Exception):
+                    log_warn(
+                        "an exception has occurred during batch requesting and its"
+                        f" result will be empty string. exception: {result}\ninput:"
+                        f" {input_str_list[idx]}"
+                    )
+                    output_list.append("")
+                else:
+                    result_str = ""
+                    for r in result:
+                        result_str += r.body["result"]
+                    output_list.append(result_str)
+
+            return output_list
+
+        if isinstance(service, Completion):
+            input_dict = self.get_input_data
+
+            if self.is_dataset_grouped() or self.is_dataset_packed():
+                err_msg = (
+                    "can't have a grouped or packed dataset as batch run task dataset"
+                    " when service is Completion"
+                )
+                log_error(err_msg)
+                raise TypeError(err_msg)
+
+            input_str_list: List[str] = []
+
+            for i in range(self.row_number()):
+                if prompt_template:
+                    input_str_list.append(
+                        prompt_template.render(
+                            **{
+                                column_name: input_dict[column_name][i]
+                                for column_name in input_columns
+                            },
+                            **kwargs,
+                        )[0]
+                    )
+                else:
+                    input_str_list.append(
+                        "\n".join(
+                            [
+                                input_dict[column_name][i]
+                                for column_name in input_columns
+                            ]
+                        )
+                    )
+
+            output_list = _batch_do_on_service(
+                service, input_str_list, system=system_prompt, **kwargs
+            )
+            return Dataset.create_from_pyobj(
+                {
+                    **input_dict,
+                    "input_prompt": input_str_list,
+                    "llm_output": output_list,
+                },
+                input_columns=self.input_columns,
+                reference_column=self.reference_column,
+            )
+        else:
+
+            def _extract_string(data: Union[str, Iterator[str]]) -> str:
+                if isinstance(data, str):
+                    return data
+                elif hasattr(data, "__iter__"):
+                    for item in data:
+                        return _extract_string(item)
+                return ""
+
+            if len(input_columns) > 1:
+                err_msg = (
+                    "input column list should only have 1 column name when your Service"
+                    " is ChatCompletion"
+                )
+                log_error(err_msg)
+                raise TypeError(err_msg)
+
+            reference_column = self.reference_column
+            if not reference_column:
+                err_msg = "no reference column has been set"
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+            input_column = input_columns[0]
+
+            dataset = deepcopy(self)
+            if not dataset.is_dataset_grouped() and not dataset.is_dataset_packed():
+                dataset.add_default_group_column()
+
+            if dataset.is_dataset_grouped():
+                dataset.pack()
+
+            input_chat_list: List[List[Dict[str, Any]]] = []
+            for chat in dataset.list():
+                input_messages: List[Dict[str, Any]] = []
+                for i in range(len(chat)):
+                    input_messages.append(
+                        {"role": QfRole.User.value, "content": chat[i][input_column]}
+                    )
+                    if i != len(chat) - 1:
+                        input_messages.append(
+                            {
+                                "role": QfRole.Assistant.value,
+                                "content": chat[i][_extract_string(reference_column)],
+                            }
+                        )
+
+                input_chat_list.append(input_messages)
+
+            output_list = _batch_do_on_service(
+                service, input_chat_list, system=system_prompt, **kwargs
+            )
+            return Dataset.create_from_pyobj(
+                {"input_chats": input_chat_list, "llm_output": output_list},
+                input_columns=dataset.input_columns,
+                reference_column=reference_column,
+            )
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

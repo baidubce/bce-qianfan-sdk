@@ -479,3 +479,16 @@ def test_rename_column():
     table = table.col_renames(["column3", "column4"])
 
     assert table.col_names() == ["column3", "column4", QianfanDataGroupColumnName]
+
+
+def test_pure_text_dataset():
+    packed_dataset = {QianfanDatasetPackColumnName: ["hello", "world"]}
+
+    table = Table(inner_table=pyarrow.Table.from_pydict(packed_dataset))
+    assert table.list([0, 1]) == ["hello", "world"]
+
+    table.insert("nihao", 0)
+    assert table.list(0) == "nihao"
+
+    table.append(["test", "text"])
+    assert table.list([3, 4]) == ["test", "text"]

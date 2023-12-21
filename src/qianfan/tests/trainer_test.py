@@ -190,9 +190,7 @@ def test_batch_run_on_qianfan():
     origin_dataset = Dataset.load(source)
 
     model = Model(1, 2)
-    result_dataset = model.batch_run_on_qianfan(
-        origin_dataset, is_download_to_local=False
-    )
+    result_dataset = model.batch_inference(origin_dataset, is_download_to_local=False)
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)

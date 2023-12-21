@@ -11,27 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qianfan.trainer.actions import (
-    BaseAction,
-    DeployAction,
-    LoadDataSetAction,
-    ModelPublishAction,
-    TrainAction,
-)
-from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune, Trainer
-from qianfan.trainer.model import Model, Service
+
+"""
+Library aimed to helping developer to evaluate their model on qianfan
+"""
+
+from qianfan.evaluation.evaluation_manager import EvaluationManager
+from qianfan.evaluation.evaluation_result import EvaluationResult
 
 __all__ = [
-    "LLMFinetune",
-    "Model",
-    "Service",
-    "BaseAction",
-    "Trainer",
-    "EventHandler",
-    "Event",
-    "TrainAction",
-    "LoadDataSetAction",
-    "DeployAction",
-    "ModelPublishAction",
+    "EvaluationManager",
+    "EvaluationResult",
 ]

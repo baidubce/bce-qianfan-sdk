@@ -48,7 +48,7 @@ class BaiduSearchTool(BaseTool):
         """
         :param top_n: top n results which will be retrieved
         :param channel: the search channel
-        :param model: the model will be used to summarize the results
+        :param client: the model client will be used to summarize the results
         """
         self.top_n = top_n
         self.channel = channel
@@ -58,6 +58,9 @@ class BaiduSearchTool(BaseTool):
             self.client = client
 
     def run(self, parameters: Dict[str, str] = {}) -> Dict[str, Any]:
+        """
+        Run the tool and get the summary and reference of the search query
+        """
         query = parameters["search_query"]
         tool_params: Dict[str, Any] = {
             "tools": [

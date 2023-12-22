@@ -15,9 +15,9 @@
 baidu search tool
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from qianfan import ChatCompletion, Completion
+from qianfan import ChatCompletion, Completion, QfResponse
 from qianfan.components.tool.base_tool import BaseTool, ToolParameter
 
 
@@ -37,6 +37,7 @@ class BaiduSearchTool(BaseTool):
             required=True,
         )
     ]
+    client: Union[Completion, ChatCompletion]
 
     def __init__(
         self,
@@ -56,9 +57,9 @@ class BaiduSearchTool(BaseTool):
         else:
             self.client = client
 
-    def run(self, parameters: Dict[str, str] = {}) -> List[Dict[str, str]]:
+    def run(self, parameters: Dict[str, str] = {}) -> Dict[str, Any]:
         query = parameters["search_query"]
-        tool_params = {
+        tool_params: Dict[str, Any] = {
             "tools": [
                 {
                     "type": "tool",
@@ -80,7 +81,7 @@ class BaiduSearchTool(BaseTool):
         }
         if isinstance(self.client, Completion):
             resp = self.client.do(prompt=query, **tool_params)
-        else:
+        else:  # isinstance(self.client, ChatCompletion)
             resp = self.client.do(
                 messages=[
                     {
@@ -90,6 +91,7 @@ class BaiduSearchTool(BaseTool):
                 ],
                 **tool_params
             )
+        assert isinstance(resp, QfResponse)
         reference = []
         if "tools_info" in resp and resp["tools_info"]["name"] == "baidu_search":
             reference = resp["tools_info"]["baidu_search"]

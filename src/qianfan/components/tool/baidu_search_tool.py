@@ -17,8 +17,8 @@ baidu search tool
 
 from typing import Dict, List, Optional, Union
 
+from qianfan import ChatCompletion, Completion
 from qianfan.components.tool.base_tool import BaseTool, ToolParameter
-from qianfan import Completion, ChatCompletion
 
 
 class BaiduSearchTool(BaseTool):
@@ -90,5 +90,11 @@ class BaiduSearchTool(BaseTool):
                 ],
                 **tool_params
             )
+        reference = []
+        if "tools_info" in resp and resp["tools_info"]["name"] == "baidu_search":
+            reference = resp["tools_info"]["baidu_search"]
 
-        return resp["result"]
+        return {
+            "summary": resp["result"],
+            "reference": reference,
+        }

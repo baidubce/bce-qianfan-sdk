@@ -714,7 +714,7 @@ class ChatCompletion(BaseResource):
     def batch_do(
         self,
         messages_list: Union[List[List[Dict]], List[QfMessages]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -724,8 +724,9 @@ class ChatCompletion(BaseResource):
           messages_list: List[Union[List[Dict], QfMessages]]:
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `ChatCompletion.do` for other parameters such as
             `model`, `endpoint`, `retry_count`, etc.
@@ -751,7 +752,7 @@ class ChatCompletion(BaseResource):
     async def abatch_do(
         self,
         messages_list: List[Union[List[Dict], QfMessages]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -761,8 +762,9 @@ class ChatCompletion(BaseResource):
           messages_list: List[Union[List[Dict], QfMessages]]:
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `ChatCompletion.do` for other parameters such as
             `model`, `endpoint`, `retry_count`, etc.

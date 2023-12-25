@@ -55,13 +55,14 @@ class BatchRequestFuture(object):
     def __init__(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> None:
         """
         Init batch request future
         """
         future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
-        self._executor = ThreadPoolExecutor(max_workers=worker_num)
+        max_workers = worker_num if worker_num else len(tasks) + 1
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
         for task in tasks:
             future = self._executor.submit(task)
             future.add_done_callback(self._future_callback)
@@ -469,19 +470,25 @@ class BaseResource(object):
         tasks: Sequence[
             Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
         async do batch prediction
         """
-        if worker_num <= 0:
+        if worker_num is not None and worker_num <= 0:
             raise errors.InvalidArgumentError("worker_num must be greater than 0")
-        sem = asyncio.Semaphore(worker_num)
+        if worker_num:
+            sem = asyncio.Semaphore(worker_num)
+        else:
+            sem = None
 
         async def _with_concurrency_limit(
             task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-            async with sem:
+            if sem:
+                async with sem:
+                    return await task
+            else:
                 return await task
 
         return await asyncio.gather(

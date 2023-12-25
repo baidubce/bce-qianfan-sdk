@@ -222,7 +222,7 @@ class Embedding(BaseResource):
     def batch_do(
         self,
         texts_list: List[List[str]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -231,8 +231,9 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Completion.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
@@ -256,7 +257,7 @@ class Embedding(BaseResource):
     async def abatch_do(
         self,
         texts_list: List[List[str]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -266,8 +267,9 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Embedding.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.

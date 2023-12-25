@@ -39,6 +39,7 @@ from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn
+from qianfan.utils.utils import generate_letter_num_random_id
 
 # This is used when user provides `endpoint`
 # In such cases, SDK cannot know which model the user is using
@@ -374,7 +375,7 @@ class BaseResource(object):
             if "request_id" in kwargs
             else (
                 f"{Consts.QianfanRequestIdDefaultPrefix}-"
-                "{utils.generate_letter_num_random_id(32)}"
+                f"{generate_letter_num_random_id(32)}"
             )
         )
         return kwargs["header"]
@@ -456,12 +457,12 @@ class BaseResource(object):
     def _batch_request(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> BatchRequestFuture:
         """
         create batch prediction task and return future
         """
-        if worker_num <= 0:
+        if worker_num is not None and worker_num <= 0:
             raise errors.InvalidArgumentError("worker_num must be greater than 0")
         return BatchRequestFuture(tasks, worker_num)
 

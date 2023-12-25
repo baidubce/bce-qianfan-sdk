@@ -1239,6 +1239,50 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
+    async def atest_using_llm(
+        self,
+        model_id: Optional[int] = None,
+        model_version_id: Optional[int] = None,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        is_chat_service: bool = False,
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        using arguments to init an llm instance
+        and get output on current dataset from it asynchronously
+        set only model arguments our service arguments to instantiating
+
+        Args:
+            model_id (Optional[int]):
+                id of your own model, default to None
+            model_version_id (Optional[int]):
+                version id of your own model, default to None
+            service_model (Optional[str]):
+                name of model you want to use as service, default to None
+            service_endpoint (Optional[str]):
+                endpoint of service, default to None
+            is_chat_service (bool):
+                the service type of service, default to True.
+                Service will be Completion if False
+            **kwargs (Any):
+                optional argument dict
+
+        Returns:
+            Dataset: A dataset contains inputs, reference outputs and llm outputs
+        """
+
+        if model_id and model_version_id:
+            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        elif service_model or service_endpoint:
+            return await self._async_batch_inference_on_service(
+                service_model, service_endpoint, is_chat_service, **kwargs
+            )
+        else:
+            err_msg = "no sufficient argument has been passed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
     def _batch_inference_on_model(
         self, model_id: int, model_version_id: int, **kwargs: Any
     ) -> "Dataset":
@@ -1357,6 +1401,114 @@ class Dataset(Table):
             Dataset: batch result contained in dataset
         """
 
+        service = self._check_and_generate_service(
+            service_model, service_endpoint, is_chat_service, **kwargs
+        )
+
+        if isinstance(service, Completion):
+            input_str_list = self._get_input_str_list(**kwargs)
+            output_list = self._batch_do_on_service(
+                service, input_str_list, system=system_prompt, **kwargs
+            )
+            return Dataset.create_from_pyobj(
+                {
+                    **self.get_input_data,
+                    "input_prompt": input_str_list,
+                    "llm_output": output_list,
+                },
+                input_columns=self.input_columns,
+                reference_column=self.reference_column,
+            )
+        else:
+            input_chat_list = self._get_input_chat_list(**kwargs)
+            output_list = self._batch_do_on_service(
+                service, input_chat_list, system=system_prompt, **kwargs
+            )
+            new_input_column_name = "input_chats"
+            new_reference_column_name = "llm_output"
+            return Dataset.create_from_pyobj(
+                {
+                    new_input_column_name: input_chat_list,
+                    new_reference_column_name: output_list,
+                },
+                input_columns=new_input_column_name,
+                reference_column=new_reference_column_name,
+            )
+
+    async def _async_batch_inference_on_service(
+        self,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        is_chat_service: bool = False,
+        system_prompt: str = "",
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        asynchronously create batch run using specific dataset on qianfan
+
+        Args:
+            service_model (Optional[str]):
+                name of model you want to use as service, default to None
+            service_endpoint (Optional[str]):
+                endpoint of service, default to None
+            is_chat_service (bool):
+                the service type of service, default to True.
+                Service will be Completion if False
+            system_prompt (str):
+                Optional system text for input using, default to ""
+            **kwargs (Any):
+                Arbitrary keyword arguments
+
+        Keyword arguments:
+            prompt_template (Optional[Prompt]):
+                Optional Prompt used as input of llm, default to None.
+                Only used when your Service is a Completion service
+
+        Returns:
+            Dataset: batch result contained in dataset
+        """
+
+        service = self._check_and_generate_service(
+            service_model, service_endpoint, is_chat_service, **kwargs
+        )
+
+        if isinstance(service, Completion):
+            input_str_list = self._get_input_str_list(**kwargs)
+            output_list = await self._async_batch_do_on_service(
+                service, input_str_list, system=system_prompt, **kwargs
+            )
+            return Dataset.create_from_pyobj(
+                {
+                    **self.get_input_data,
+                    "input_prompt": input_str_list,
+                    "llm_output": output_list,
+                },
+                input_columns=self.input_columns,
+                reference_column=self.reference_column,
+            )
+        else:
+            input_chat_list = self._get_input_chat_list(**kwargs)
+            output_list = await self._async_batch_do_on_service(
+                service, input_chat_list, system=system_prompt, **kwargs
+            )
+            new_input_column_name = "input_chats"
+            new_reference_column_name = "llm_output"
+            return Dataset.create_from_pyobj(
+                {
+                    new_input_column_name: input_chat_list,
+                    new_reference_column_name: output_list,
+                },
+                input_columns=new_input_column_name,
+                reference_column=new_reference_column_name,
+            )
+
+    def _check_and_generate_service(
+        self,
+        service_model: Optional[str] = None,
+        service_endpoint: Optional[str] = None,
+        is_chat_service: bool = False,
+        **kwargs: Any,
+    ) -> Union[ChatCompletion, Completion]:
         if self.is_dataset_located_in_qianfan():
             err_msg = "can't start a batch run task on qianfan dataset"
             log_error(err_msg)
@@ -1384,134 +1536,154 @@ class Dataset(Table):
         else:
             service = Completion(service_model, service_endpoint)
 
-        def _batch_do_on_service(
-            service: Union[ChatCompletion, Completion], *args: Any, **kwargs: Any
-        ) -> List[str]:
-            output_list: List[str] = []
-            results = service.batch_do(*args, **kwargs).results()  # noqa
-            for idx in range(len(results)):
-                result = results[idx]
-                if isinstance(result, QfResponse):
-                    output_list.append(result.body["result"])
-                elif isinstance(result, Exception):
-                    log_warn(
-                        "an exception has occurred during batch requesting and its"
-                        f" result will be empty string. exception: {result}\ninput:"
-                        f" {input_str_list[idx]}"
-                    )
-                    output_list.append("")
-                else:
-                    result_str = ""
-                    for r in result:
-                        result_str += r.body["result"]
-                    output_list.append(result_str)
+        return service
 
-            return output_list
+    def _get_input_str_list(self, **kwargs: Any) -> List[str]:
+        prompt_template: Optional[Prompt] = kwargs.get("prompt_template", None)
+        input_dict = self.get_input_data
+        assert self.input_columns
 
-        if isinstance(service, Completion):
-            input_dict = self.get_input_data
-
-            if self.is_dataset_grouped() or self.is_dataset_packed():
-                err_msg = (
-                    "can't have a grouped or packed dataset as batch run task dataset"
-                    " when service is Completion"
-                )
-                log_error(err_msg)
-                raise TypeError(err_msg)
-
-            input_str_list: List[str] = []
-
-            for i in range(self.row_number()):
-                if prompt_template:
-                    input_str_list.append(
-                        prompt_template.render(
-                            **{
-                                column_name: input_dict[column_name][i]
-                                for column_name in input_columns
-                            },
-                            **kwargs,
-                        )[0]
-                    )
-                else:
-                    input_str_list.append(
-                        "\n".join(
-                            [
-                                input_dict[column_name][i]
-                                for column_name in input_columns
-                            ]
-                        )
-                    )
-
-            output_list = _batch_do_on_service(
-                service, input_str_list, system=system_prompt, **kwargs
+        if self.is_dataset_grouped() or self.is_dataset_packed():
+            err_msg = (
+                "can't have a grouped or packed dataset as batch run task dataset"
+                " when service is Completion"
             )
-            return Dataset.create_from_pyobj(
-                {
-                    **input_dict,
-                    "input_prompt": input_str_list,
-                    "llm_output": output_list,
-                },
-                input_columns=self.input_columns,
-                reference_column=self.reference_column,
-            )
-        else:
+            log_error(err_msg)
+            raise TypeError(err_msg)
 
-            def _extract_string(data: Union[str, Iterator[str]]) -> str:
-                if isinstance(data, str):
-                    return data
-                elif hasattr(data, "__iter__"):
-                    for item in data:
-                        return _extract_string(item)
-                return ""
+        input_str_list: List[str] = []
 
-            if len(input_columns) > 1:
-                err_msg = (
-                    "input column list should only have 1 column name when your Service"
-                    " is ChatCompletion"
+        for i in range(self.row_number()):
+            if prompt_template:
+                input_str_list.append(
+                    prompt_template.render(
+                        **{
+                            column_name: input_dict[column_name][i]
+                            for column_name in self.input_columns
+                        },
+                        **kwargs,
+                    )[0]
                 )
-                log_error(err_msg)
-                raise TypeError(err_msg)
+            else:
+                input_str_list.append(
+                    "\n".join(
+                        [
+                            input_dict[column_name][i]
+                            for column_name in self.input_columns
+                        ]
+                    )
+                )
 
-            reference_column = self.reference_column
-            if not reference_column:
-                err_msg = "no reference column has been set"
-                log_error(err_msg)
-                raise ValueError(err_msg)
+        return input_str_list
 
-            input_column = input_columns[0]
+    def _get_input_chat_list(self, **kwargs: Any) -> List[List[Dict[str, Any]]]:
+        def _extract_string(data: Union[str, Iterator[str]]) -> str:
+            if isinstance(data, str):
+                return data
+            elif hasattr(data, "__iter__"):
+                for item in data:
+                    return _extract_string(item)
+            return ""
 
-            dataset = deepcopy(self)
-            if not dataset.is_dataset_grouped() and not dataset.is_dataset_packed():
-                dataset.add_default_group_column()
+        assert self.input_columns
 
-            if dataset.is_dataset_grouped():
-                dataset.pack()
+        if len(self.input_columns) > 1:
+            err_msg = (
+                "input column list should only have 1 column name when your Service"
+                " is ChatCompletion"
+            )
+            log_error(err_msg)
+            raise TypeError(err_msg)
 
-            input_chat_list: List[List[Dict[str, Any]]] = []
-            for chat in dataset.list():
-                input_messages: List[Dict[str, Any]] = []
-                for i in range(len(chat)):
+        reference_column = self.reference_column
+        if not reference_column:
+            err_msg = "no reference column has been set"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        input_column = self.input_columns[0]
+
+        dataset = deepcopy(self)
+        if not dataset.is_dataset_grouped() and not dataset.is_dataset_packed():
+            dataset.add_default_group_column()
+
+        if dataset.is_dataset_grouped():
+            dataset.pack()
+
+        input_chat_list: List[List[Dict[str, Any]]] = []
+        for chat in dataset.list():
+            input_messages: List[Dict[str, Any]] = []
+            for i in range(len(chat)):
+                input_messages.append(
+                    {"role": QfRole.User.value, "content": chat[i][input_column]}
+                )
+                if i != len(chat) - 1:
                     input_messages.append(
-                        {"role": QfRole.User.value, "content": chat[i][input_column]}
+                        {
+                            "role": QfRole.Assistant.value,
+                            "content": chat[i][_extract_string(reference_column)],
+                        }
                     )
-                    if i != len(chat) - 1:
-                        input_messages.append(
-                            {
-                                "role": QfRole.Assistant.value,
-                                "content": chat[i][_extract_string(reference_column)],
-                            }
-                        )
 
-                input_chat_list.append(input_messages)
+            input_chat_list.append(input_messages)
 
-            output_list = _batch_do_on_service(
-                service, input_chat_list, system=system_prompt, **kwargs
-            )
-            return Dataset.create_from_pyobj(
-                {"input_chats": input_chat_list, "llm_output": output_list},
-                input_columns=dataset.input_columns,
-                reference_column=reference_column,
-            )
+        return input_chat_list
+
+    def _batch_do_on_service(
+        self,
+        service: Union[ChatCompletion, Completion],
+        input_list: Union[List[str], List[List[Dict[str, Any]]]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> List[str]:
+        output_list: List[str] = []
+        results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
+        for idx in range(len(results)):
+            result = results[idx]
+            if isinstance(result, QfResponse):
+                output_list.append(result.body["result"])
+            elif isinstance(result, Exception):
+                log_warn(
+                    "an exception has occurred during batch requesting and its"
+                    f" result will be empty string. exception: {result}\ninput:"
+                    f" {input_list[idx]}"
+                )
+                output_list.append("")
+            else:
+                result_str = ""
+                for r in result:
+                    result_str += r.body["result"]
+                output_list.append(result_str)
+
+        return output_list
+
+    async def _async_batch_do_on_service(
+        self,
+        service: Union[ChatCompletion, Completion],
+        input_list: Union[List[str], List[List[Dict[str, Any]]]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> List[str]:
+        output_list: List[str] = []
+        results = await service.abatch_do(input_list, *args, **kwargs)  # type: ignore
+        for idx in range(len(results)):
+            result = results[idx]
+            if isinstance(result, QfResponse):
+                output_list.append(result.body["result"])
+            elif isinstance(result, Exception):
+                log_warn(
+                    "an exception has occurred during batch requesting and its"
+                    f" result will be empty string. exception: {result}\ninput:"
+                    f" {input_list[idx]}"
+                )
+                output_list.append("")
+            else:
+                result_str = ""
+                async for r in result:
+                    result_str += r.body["result"]
+                output_list.append(result_str)
+
+        return output_list
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

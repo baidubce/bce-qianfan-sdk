@@ -284,7 +284,7 @@ def test_nested_parameter_to_json_schema():
 
 
 def test_baidu_search_tool():
-    tool = BaiduSearchTool()
+    tool = BaiduSearchTool(with_reference=True)
     res = tool.run({"search_query": "上海天气"})
     assert (
         res["summary"]
@@ -305,11 +305,19 @@ def test_baidu_search_tool():
     ]
 
     tool = BaiduSearchTool()
+    res = tool.run({"search_query": "上海天气"})
+    assert (
+        res
+        == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
+        "风力小于3级，空气质量优**^[1]^。"
+    )
+
+    tool = BaiduSearchTool(with_reference=True)
     res = tool.run({"search_query": "no_search"})
     assert res["reference"] == []
 
     client = qianfan.Completion()
-    tool = BaiduSearchTool(client=client)
+    tool = BaiduSearchTool(client=client, with_reference=True)
     res = tool.run({"search_query": "上海天气"})
     assert (
         res["summary"]

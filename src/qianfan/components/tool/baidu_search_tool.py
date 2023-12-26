@@ -44,11 +44,13 @@ class BaiduSearchTool(BaseTool):
         top_n: int = 2,
         channel: str = "normal",
         client: Optional[Union[Completion, ChatCompletion]] = None,
+        with_reference: bool = False,
     ):
         """
         :param top_n: top n results which will be retrieved
         :param channel: the search channel
         :param client: the model client will be used to summarize the results
+        :param with_reference: whether return reference in the tool output
         """
         self.top_n = top_n
         self.channel = channel
@@ -56,8 +58,9 @@ class BaiduSearchTool(BaseTool):
             self.client = Completion(model="ERNIE-Bot-turbo")
         else:
             self.client = client
+        self.with_reference = with_reference
 
-    def run(self, parameters: Dict[str, str] = {}) -> Dict[str, Any]:
+    def run(self, parameters: Dict[str, str] = {}) -> Union[str, Dict[str, Any]]:
         """
         Run the tool and get the summary and reference of the search query
         """
@@ -95,6 +98,10 @@ class BaiduSearchTool(BaseTool):
                 **tool_params
             )
         assert isinstance(resp, QfResponse)
+
+        if not self.with_reference:
+            return resp["result"]
+
         reference = []
         if "tools_info" in resp and resp["tools_info"]["name"] == "baidu_search":
             reference = resp["tools_info"]["baidu_search"]

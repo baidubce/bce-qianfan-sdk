@@ -1693,12 +1693,17 @@ class Dataset(Table):
 
         return output_list
 
-    def log_latency_info(self, result: QfResponse, index: int, stream_index: int = 1) -> None:
+    def log_latency_info(
+        self, result: QfResponse, index: int, stream_index: int = 1
+    ) -> None:
         if result.statistic:
             request_latency = result.statistic.get("request_latency", None)
             total_latency = result.statistic.get("total_latency", None)
 
-            log_info(f"数据 {index} 的第 {stream_index} 片回包请求响应时延: {request_latency}, 传输完成时延: {total_latency}")
+            log_info(
+                f"数据 {index} 的第 {stream_index} 片回包请求响应时延:"
+                f" {request_latency}, 传输完成时延: {total_latency}"
+            )
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

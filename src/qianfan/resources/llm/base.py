@@ -200,11 +200,20 @@ class BaseResource(object):
 
         """
         config = get_config()
-        if retry_count == DefaultValue.RetryCount and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount:
+        if (
+            retry_count == DefaultValue.RetryCount
+            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
+        ):
             retry_count = config.LLM_API_RETRY_COUNT
-        if request_timeout == DefaultValue.RetryTimeout and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout:
+        if (
+            request_timeout == DefaultValue.RetryTimeout
+            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
+        ):
             request_timeout = config.LLM_API_RETRY_TIMEOUT
-        if backoff_factor == DefaultValue.RetryBackoffFactor and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor:
+        if (
+            backoff_factor == DefaultValue.RetryBackoffFactor
+            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
+        ):
             backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
 
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
@@ -255,11 +264,20 @@ class BaseResource(object):
 
         """
         config = get_config()
-        if retry_count == DefaultValue.RetryCount and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount:
+        if (
+            retry_count == DefaultValue.RetryCount
+            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
+        ):
             retry_count = config.LLM_API_RETRY_COUNT
-        if request_timeout == DefaultValue.RetryTimeout and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout:
+        if (
+            request_timeout == DefaultValue.RetryTimeout
+            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
+        ):
             request_timeout = config.LLM_API_RETRY_TIMEOUT
-        if backoff_factor == DefaultValue.RetryBackoffFactor and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor:
+        if (
+            backoff_factor == DefaultValue.RetryBackoffFactor
+            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
+        ):
             backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
 
         model, endpoint = self._update_model_and_endpoint(model, endpoint)

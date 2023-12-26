@@ -1642,6 +1642,7 @@ class Dataset(Table):
             result = results[idx]
             if isinstance(result, QfResponse):
                 output_list.append(result.body["result"])
+                self.log_latency_info(result, idx)
             elif isinstance(result, Exception):
                 log_warn(
                     "an exception has occurred during batch requesting and its"
@@ -1651,8 +1652,11 @@ class Dataset(Table):
                 output_list.append("")
             else:
                 result_str = ""
+                index = 0
                 for r in result:
                     result_str += r.body["result"]
+                    index += 1
+                    self.log_latency_info(r, idx, index)
                 output_list.append(result_str)
 
         return output_list
@@ -1670,6 +1674,7 @@ class Dataset(Table):
             result = results[idx]
             if isinstance(result, QfResponse):
                 output_list.append(result.body["result"])
+                self.log_latency_info(result, idx)
             elif isinstance(result, Exception):
                 log_warn(
                     "an exception has occurred during batch requesting and its"
@@ -1679,11 +1684,21 @@ class Dataset(Table):
                 output_list.append("")
             else:
                 result_str = ""
+                index = 0
                 async for r in result:
                     result_str += r.body["result"]
+                    index += 1
+                    self.log_latency_info(r, idx, index)
                 output_list.append(result_str)
 
         return output_list
+
+    def log_latency_info(self, result: QfResponse, index: int, stream_index: int = 1) -> None:
+        if result.statistic:
+            request_latency = result.statistic.get("request_latency", None)
+            total_latency = result.statistic.get("total_latency", None)
+
+            log_info(f"数据 {index} 的第 {stream_index} 片回包请求响应时延: {request_latency}, 传输完成时延: {total_latency}")
 
 
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:

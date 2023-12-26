@@ -383,8 +383,8 @@ class BaseAPIRequestor(object):
                 return func(*args)
             except errors.APIError as e:
                 if e.error_code in {
-                    APIErrorCode.ServerHighLoad,
-                    APIErrorCode.QPSLimitReached,
+                    APIErrorCode.ServerHighLoad.value,
+                    APIErrorCode.QPSLimitReached.value,
                 }:
                     log_warn(
                         f"got error code {e.error_code} from server, retrying... count:"
@@ -418,8 +418,8 @@ class BaseAPIRequestor(object):
                 return await func(*args)
             except errors.APIError as e:
                 if e.error_code in {
-                    APIErrorCode.ServerHighLoad,
-                    APIErrorCode.QPSLimitReached,
+                    APIErrorCode.ServerHighLoad.value,
+                    APIErrorCode.QPSLimitReached.value,
                 }:
                     log_warn(
                         f"got error code {e.error_code} from server, retrying... count:"

@@ -16,7 +16,7 @@ from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
-from qianfan.consts import DefaultLLMModel
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResource,
@@ -107,10 +107,10 @@ class Embedding(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -166,10 +166,10 @@ class Embedding(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """

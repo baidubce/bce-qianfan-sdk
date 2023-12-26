@@ -35,6 +35,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
+from qianfan import get_config
 from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
@@ -198,6 +199,14 @@ class BaseResource(object):
             **kwargs (dict): kv dict data。
 
         """
+        config = get_config()
+        if retry_count == DefaultValue.RetryCount and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount:
+            retry_count = config.LLM_API_RETRY_COUNT
+        if request_timeout == DefaultValue.RetryTimeout and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout:
+            request_timeout = config.LLM_API_RETRY_TIMEOUT
+        if backoff_factor == DefaultValue.RetryBackoffFactor and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor:
+            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
@@ -245,6 +254,14 @@ class BaseResource(object):
             None
 
         """
+        config = get_config()
+        if retry_count == DefaultValue.RetryCount and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount:
+            retry_count = config.LLM_API_RETRY_COUNT
+        if request_timeout == DefaultValue.RetryTimeout and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout:
+            request_timeout = config.LLM_API_RETRY_TIMEOUT
+        if backoff_factor == DefaultValue.RetryBackoffFactor and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor:
+            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,

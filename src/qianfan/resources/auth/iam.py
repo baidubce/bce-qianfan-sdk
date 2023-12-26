@@ -37,7 +37,8 @@ def iam_sign(
     credentials = BceCredentials(ak, sk)
     timestamp = time.time()
     x_bce_date = get_canonical_time(timestamp)
-    request.headers["x-bce-date"] = str(x_bce_date, encoding="utf-8")
+    request.headers["x-bce-date"] = x_bce_date.decode()
+
     authorization = sign(
         credentials,
         str.encode(request.method),
@@ -49,4 +50,4 @@ def iam_sign(
         headers_to_sign={str.encode(k.lower()) for k in request.headers.keys()},
     )
 
-    request.headers["Authorization"] = str(authorization, encoding="utf-8")
+    request.headers["Authorization"] = authorization.decode()

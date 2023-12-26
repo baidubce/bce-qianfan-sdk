@@ -37,6 +37,9 @@ pyarrow = [
 ]
 python-dateutil = "^2.8.2"
 
+[tool.poetry.scripts]
+qianfan = "qianfan.components.client.main:main"
+
 [tool.poetry.group.dev.dependencies]
 sphinx = ">=5"
 pytest = ">=7.0.0"

@@ -161,7 +161,7 @@ class Dataset(Table):
         if format_type == FormatType.Json:
             json_dict_list: List[Dict[str, Any]] = []
             for str_content in content:
-                data_py_rep = json.loads(str_content)
+                data_py_rep = json.loads(str_content, strict=False)
                 # 如果导入的是一个字典，则需要转换成列表才能被读取
                 if not isinstance(data_py_rep, list):
                     data_py_rep = [data_py_rep]
@@ -171,7 +171,7 @@ class Dataset(Table):
             json_data_list: List[Dict[str, Any]] = []
             for str_content in content:
                 tmp_list = [
-                    json.loads(line) for line in str_content.split("\n") if line
+                    json.loads(line, strict=False) for line in str_content.split("\n") if line
                 ]
                 json_data_list.extend(tmp_list)
 
@@ -271,7 +271,10 @@ class Dataset(Table):
                 dict_list = self.inner_table.to_pylist()
                 for elem in dict_list:
                     list_of_json.append(json.dumps(elem, ensure_ascii=False))
-            return source.save("\n".join(list_of_json), **kwargs)
+            if isinstance(source, FileDataSource) and source.save_as_folder:
+                return source.save(list_of_json, **kwargs)
+            else:
+                return source.save("\n".join(list_of_json), **kwargs)
 
         elif format_type == FormatType.Csv:
             bytes_stream_buffer = io.BytesIO()
@@ -308,7 +311,10 @@ class Dataset(Table):
                     if os.path.exists(tmp_zip_file_name):
                         os.remove(tmp_zip_file_name)
 
-            return source.save("\n".join(result_list), **kwargs)
+            if isinstance(source, FileDataSource) and source.save_as_folder:
+                return source.save(result_list, **kwargs)
+            else:
+                return source.save("\n".join(result_list), **kwargs)
 
         else:
             error = ValueError(f"unknown format type: {format_type}")

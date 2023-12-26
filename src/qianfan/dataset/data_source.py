@@ -146,35 +146,44 @@ class FileDataSource(DataSource, BaseModel):
 
     path: str
     file_format: Optional[FormatType] = Field(default=None)
+    save_as_folder: bool = Field(default=False)
 
-    def save(self, data: str, **kwargs: Any) -> bool:
+    def save(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
         """
         Write data to file。
 
         Args:
-            data (str): data waiting to be written。
+            data (Union[str, List[str]]): data waiting to be written。
             **kwargs (Any): optional arguments。
 
         Returns:
             bool: has data been written successfully
         """
-        if os.path.isdir(self.path):
-            file_path = os.path.join(
-                self.path, f"data_{uuid.uuid4()}.{self.format_type().value}"
-            )
+        if isinstance(data, str):
+            if os.path.isdir(self.path):
+                file_path = os.path.join(
+                    self.path, f"data_{uuid.uuid4()}.{self.format_type().value}"
+                )
+            else:
+                file_path = self.path
+            with open(file_path, mode="w") as file:
+                file.write(data)
+            return True
         else:
-            file_path = self.path
-        with open(file_path, mode="w") as file:
-            file.write(data)
-        return True
+            os.makedirs(self.path)
+            for index in range(len(data)):
+                entry = data[index]
+                with open(os.path.join(self.path, f"entry_{index}.{self.format_type().value}"), mode="w") as file:
+                    file.write(entry)
+            return True
 
-    async def asave(self, data: str, **kwargs: Any) -> bool:
+    async def asave(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
         """
         Asynchronously Write data to file。
         Not available currently
 
         Args:
-            data (str): data waiting to be written。
+            data (Union[str, List[str]]): data waiting to be written。
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -566,7 +575,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_info(
             f"latest dataset with time{latest_record_time} "
-            f"for dataset id {export_records[newest_record_index]['id']}"
+            f"for dataset {self.id}"
         )
         return export_records[newest_record_index], latest_record_time
 

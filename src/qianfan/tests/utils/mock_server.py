@@ -15,7 +15,7 @@
 """
     Mock server for unit test
 """
-
+import io
 # disable line too long lint error in this file
 # ruff: noqa: E501
 
@@ -23,6 +23,7 @@ import json
 import random
 import threading
 import time
+import zipfile
 from functools import wraps
 from io import BytesIO
 
@@ -1325,7 +1326,7 @@ def get_dataset_info():
                     "displayName": "",
                     "importStatus": 2,
                     "importProgress": 100,
-                    "exportStatus": -1,
+                    "exportStatus": 2,
                     "exportProgress": 0,
                     "dataType": 4,
                     "projectType": 20,
@@ -1495,7 +1496,7 @@ def get_export_record():
                     "status": 2,
                     "recordNum": 9,
                     "exportTo": 0,
-                    "downloadUrl": "url",
+                    "downloadUrl": "http://127.0.0.1:8866/url",
                     "startTime": "2023-11-07 10:04:44",
                     "finishTime": "2023-11-07 10:04:53",
                 }
@@ -1504,6 +1505,18 @@ def get_export_record():
             "success": True,
         }
     )
+
+
+@app.route("/url", methods=["GET"])
+def get_mock_zip_file():
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, mode="w") as f:
+        f.writestr("1.jsonl", data='[{"prompt": "请根据下面的新闻生成摘要\n生成摘要如下:", "response": [["修改后的立法法全文公布"]]}]')
+
+    def gen() -> bytes:
+        yield bio.getvalue()
+
+    return flask.Response(gen())
 
 
 @app.route(Consts.PromptCreateAPI, methods=["POST"])

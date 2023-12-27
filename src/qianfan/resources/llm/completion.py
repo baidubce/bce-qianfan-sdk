@@ -113,6 +113,18 @@ class Completion(BaseResource):
                     "user_id",
                 },
             ),
+            "EB-turbo-AppBuilder": QfLLMInfo(
+                endpoint="/chat/ai_apaas",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "system",
+                    "user_id",
+                },
+            ),
             "BLOOMZ-7B": QfLLMInfo(
                 endpoint="/chat/bloomz_7b1",
                 required_keys={"messages"},
@@ -329,6 +341,10 @@ class Completion(BaseResource):
         """
         if model is not None and model in ChatCompletion._supported_models():
             return ChatCompletion()._convert_endpoint(model, endpoint)
+        if endpoint in [
+            info.endpoint for info in list(Completion._supported_models().values())
+        ]:
+            return endpoint
         return f"/completions/{endpoint}"
 
     def do(

@@ -21,7 +21,7 @@ from qianfan.resources.llm.base import (
     BaseResource,
     BatchRequestFuture,
 )
-from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
+from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
 
 
 class Plugin(BaseResource):
@@ -30,16 +30,18 @@ class Plugin(BaseResource):
 
     """
 
-    def __init__(
-        self, model: Optional[str] = None, endpoint: Optional[str] = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, endpoint: Optional[str] = None, **kwargs: Any) -> None:
         """
-        Init for Plugin
-        `model` will not be accepted
+        Init for Plugins including
+        Qianfan plugin: endpoint must be specified.
+        EB plugin: plugins params must be specified.
         """
-        if model is not None:
-            raise errors.InvalidArgumentError("`model` is not supported for plugin")
-        super().__init__(model, endpoint, **kwargs)
+        if endpoint is None:
+            # 转换成一言插件
+            model = "EBPlugin"
+            super().__init__(model, endpoint, **kwargs)
+        else:
+            super().__init__(endpoint=endpoint, **kwargs)
 
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
@@ -54,6 +56,12 @@ class Plugin(BaseResource):
 
         """
         return {
+            "EBPlugin": QfLLMInfo(
+                # 一言插件
+                endpoint="/erniebot/plugins",
+                required_keys={"messages", "plugins"},
+                optional_keys={"user_id", "extra_data"},
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 # the key of api is "query", which is conflict with query in params
@@ -68,22 +76,27 @@ class Plugin(BaseResource):
     @classmethod
     def _default_model(self) -> str:
         """
-        default model of ChatCompletion `ERNIE-Bot-turbo`
+        default model of Plugin is  `EBPlugin`
 
         Args:
             None
 
         Returns:
-           "ERNIE-Bot-turbo"
+           "EBPlugin"
 
         """
-        return UNSPECIFIED_MODEL
+        return "EBPlugin"
 
     def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
         convert endpoint to ChatCompletion API endpoint
         """
-        return f"/plugin/{endpoint}/"
+        if endpoint != "":
+            # 千帆插件
+            return f"/plugin/{endpoint}/"
+        else:
+            # 一言插件
+            return "/erniebot/plugins"
 
     def _check_params(
         self,
@@ -99,8 +112,6 @@ class Plugin(BaseResource):
         check params
         plugin does not support model and endpoint arguments
         """
-        if model is not None:
-            raise errors.InvalidArgumentError("model is not supported in plugin")
         return super()._check_params(
             model,
             endpoint,
@@ -111,24 +122,10 @@ class Plugin(BaseResource):
             **kwargs,
         )
 
-    def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
-    ) -> JsonBody:
-        """
-        Plugin needs to transform body (`prompt` -> `query`)
-        """
-        if endpoint == "":
-            raise errors.ArgumentNotFoundError("`endpoint` must be provided")
-        body = super()._generate_body(model, endpoint, stream, **kwargs)
-        # "query" is conflict with query in params, so "prompt" is the argument in SDK
-        # so we need to change "prompt" back to "query" here
-        body["query"] = body["prompt"]
-        del body["prompt"]
-        return body
-
     def do(
         self,
-        prompt: str,
+        query: Union[str, QfResponse, List[Dict]],
+        plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -142,8 +139,10 @@ class Plugin(BaseResource):
         Execute a plugin action on the provided input prompt and generate responses.
 
         Parameters:
-          prompt (str):
-            The user input or prompt for which a response is generated.
+          query Union[str, QfResponse, List[Dict]]:
+            The user input for which a response is generated.
+          plugins (Optional[List[str]]):
+            A list of plugins to be used.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -171,10 +170,18 @@ class Plugin(BaseResource):
         ```
 
         """
-        kwargs["prompt"] = prompt
-        if request_id is not None:
-            kwargs["request_id"] = request_id
-
+        if isinstance(query, str):
+            kwargs["prompt"] = query
+            if request_id is not None:
+                kwargs["request_id"] = request_id
+        elif isinstance(query, list):
+            kwargs["messages"] = query
+        elif isinstance(query, QfMessages):
+            kwargs["messages"] = query._to_list()
+        else:
+            raise errors.InvalidArgumentError(f"invalid query type {type(query)}")
+        if plugins:
+            kwargs["plugins"] = plugins
         return self._do(
             model,
             endpoint,
@@ -187,7 +194,8 @@ class Plugin(BaseResource):
 
     async def ado(
         self,
-        prompt: str,
+        query: Union[str, QfResponse, List[Dict]],
+        plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -202,8 +210,10 @@ class Plugin(BaseResource):
         responses.
 
         Parameters:
-          prompt (str):
-            The user input or prompt for which a response is generated.
+          query Union[str, QfResponse, List[Dict]]:
+            The user input for which a response is generated.
+          plugins (Optional[List[str]]):
+            A list of plugins to be used.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -231,9 +241,18 @@ class Plugin(BaseResource):
         ```
 
         """
-        kwargs["prompt"] = prompt
-        if request_id is not None:
-            kwargs["request_id"] = request_id
+        if isinstance(query, str):
+            kwargs["prompt"] = query
+            if request_id is not None:
+                kwargs["request_id"] = request_id
+        elif isinstance(query, list):
+            kwargs["messages"] = query
+        elif isinstance(query, QfMessages):
+            kwargs["messages"] = query._to_list()
+        else:
+            raise errors.InvalidArgumentError(f"invalid query type {type(query)}")
+        if plugins:
+            kwargs["plugins"] = plugins
 
         return await self._ado(
             model,
@@ -247,7 +266,7 @@ class Plugin(BaseResource):
 
     def batch_do(
         self,
-        prompt_list: List[str],
+        query_list: List[Union[str, QfResponse, List[Dict]]],
         worker_num: int = 1,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -256,7 +275,7 @@ class Plugin(BaseResource):
         generate responses.
 
         Parameters:
-          prompt_list (List[str]):
+          query_list List[Union[str, QfResponse, List[Dict]]]:
             The list user input or prompt for which a response is generated.
           worker_num (int):
             The number of prompts to process at the same time.
@@ -276,15 +295,13 @@ class Plugin(BaseResource):
         ```
 
         """
-        task_list = [
-            partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
-        ]
+        task_list = [partial(self.do, query=query, **kwargs) for query in query_list]
 
         return self._batch_request(task_list, worker_num)
 
     async def abatch_do(
         self,
-        prompt_list: List[str],
+        query_list: List[Union[str, QfResponse, List[Dict]]],
         worker_num: int = 1,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -293,7 +310,7 @@ class Plugin(BaseResource):
         responses.
 
         Parameters:
-          prompt_list (List[str]):
+          query_list List[Union[str, QfResponse, List[Dict]]]:
             The list user input or prompt for which a response is generated.
           worker_num (int):
             The number of prompts to process at the same time.
@@ -309,5 +326,5 @@ class Plugin(BaseResource):
         ```
 
         """
-        tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
+        tasks = [self.ado(query, **kwargs) for query in query_list]
         return await self._abatch_request(tasks, worker_num)

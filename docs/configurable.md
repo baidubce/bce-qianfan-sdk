@@ -59,5 +59,5 @@ chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
 ```python
 import qianfan 
 chat_comp = qianfan.Completion()
-chat_comp = do(prompt="hi", request_id="sdk_01")
+resp = chat_comp.do(prompt="hi", request_id="sdk_req_01")
 ```

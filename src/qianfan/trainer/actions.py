@@ -16,7 +16,6 @@ from typing import Any, Dict, Optional, cast
 
 from qianfan import resources as api
 from qianfan.config import get_config
-from qianfan.dataset.dataset import Dataset, QianfanDataSource
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.base import (
@@ -59,6 +58,8 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
     """
 
+    from qianfan.dataset.dataset import Dataset
+
     dataset: Optional[Dataset] = None
 
     def __init__(
@@ -74,6 +75,8 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        from qianfan.dataset.dataset import QianfanDataSource
+
         """
         Load dataset implementation, may called by exec and resume.
         """

@@ -65,7 +65,7 @@ def test_dataset_create():
         ),
         format=FormatType.Jsonl,
     )
-    dataset = Dataset.load(fake_data_source, organize_data_as_qianfan=False)
+    dataset = Dataset.load(fake_data_source, organize_data_as_group=False)
     list_ret = dataset.list()
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())

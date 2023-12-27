@@ -36,7 +36,9 @@ from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 
 def _create_new_table_for_add(
-    elem: Union[List[List[Dict]], List[Dict], Tuple[Dict], Dict],
+    elem: Union[
+        List[List[Dict]], List[Dict], Tuple[Dict], Dict, List[str], Tuple[str], str
+    ],
     is_dataset_packed: bool = False,
     add_new_group: bool = False,
     is_grouped: bool = True,
@@ -57,6 +59,8 @@ def _create_new_table_for_add(
             if isinstance(elem[0], dict):
                 return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: [elem]})
             elif isinstance(elem[0], list) and isinstance(elem[0][0], dict):
+                return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: elem})
+            elif isinstance(elem[0], str):
                 return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: elem})
             else:
                 err_msg = f"element cannot be instance of {type(elem)}"
@@ -101,7 +105,12 @@ def _create_new_table_for_add(
 
         log_debug(f"row data after processing: {elem}")
         return pyarrow.Table.from_pylist([elem])
-
+    elif isinstance(elem, str):
+        if not is_dataset_packed:
+            err_msg = "can't add string when your table isn't packed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+        return pyarrow.Table.from_pylist([{QianfanDatasetPackColumnName: elem}])
     else:
         err_msg = f"element cannot be instance of {type(elem)}"
         log_error(err_msg)

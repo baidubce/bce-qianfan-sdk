@@ -16,9 +16,10 @@ import time
 from typing import Any, Dict, Iterator, Optional, Union
 
 from qianfan import resources as api
+from qianfan.components import Prompt
 from qianfan.config import get_config
-from qianfan.dataset import Dataset, QianfanDataSource
-from qianfan.errors import InternalError, InvalidArgumentError, QianfanError
+from qianfan.dataset import Dataset
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.resources import (
     ChatCompletion,
     Completion,
@@ -31,8 +32,7 @@ from qianfan.resources.console.model import Model as ResourceModel
 from qianfan.trainer.base import ExecuteSerializable
 from qianfan.trainer.configs import DeployConfig
 from qianfan.trainer.consts import ServiceType
-from qianfan.utils import log_debug, log_error, log_info, log_warn
-from qianfan.utils.utils import generate_letter_num_random_id
+from qianfan.utils import log_error, log_info, log_warn
 
 
 class Model(
@@ -134,7 +134,7 @@ class Model(
         """
         if self.version_id:
             # already released
-            model_detail_resp = api.Model.detail(
+            model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             self.id = model_detail_resp["result"]["modelId"]
@@ -149,7 +149,7 @@ class Model(
                 self._wait_for_publish(**kwargs)
 
         if self.id:
-            list_resp = api.Model.list(self.id, **kwargs)
+            list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
@@ -160,7 +160,7 @@ class Model(
             ]
             if self.version_id is None:
                 raise InvalidArgumentError("model version id not found")
-            model_detail_resp = api.Model.detail(
+            model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             self.task_id = model_detail_resp["result"]["sourceExtra"][
@@ -174,7 +174,7 @@ class Model(
 
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"
-        model_publish_resp = api.Model.publish(
+        model_publish_resp = ResourceModel.publish(
             is_new=True,
             model_name=self.model_name,
             version_meta={"taskId": self.task_id, "iterationId": self.job_id},
@@ -207,7 +207,7 @@ class Model(
         if self.id is None:
             raise InvalidArgumentError("model id not found")
         # 获取模型版本信息：
-        model_list_resp = api.Model.list(model_id=self.id, **kwargs)
+        model_list_resp = ResourceModel.list(model_id=self.id, **kwargs)
         model_version_list = model_list_resp["result"]["modelVersionList"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")
@@ -231,7 +231,7 @@ class Model(
             raise InvalidArgumentError("model version id not found")
         log_info("model ready to publish")
         while True:
-            model_detail_info = api.Model.detail(
+            model_detail_info = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             model_version_state = model_detail_info["result"]["state"]
@@ -269,7 +269,7 @@ class Model(
         """
         return pickle.loads(data)
 
-    def batch_run_on_qianfan(self, dataset: Dataset, **kwargs: Any) -> Dataset:
+    def batch_inference(self, dataset: Dataset, **kwargs: Any) -> Dataset:
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
@@ -284,66 +284,7 @@ class Model(
             Dataset: batch result contained in dataset
         """
 
-        if not dataset.is_dataset_located_in_qianfan():
-            err_msg = "can't start a batch run task on non-qianfan dataset"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        qianfan_data_source = dataset.inner_data_source_cache
-        assert isinstance(qianfan_data_source, QianfanDataSource)
-
-        log_info("start to create evaluation task in model")
-
-        resp = ResourceModel.create_evaluation_task(
-            name=f"model_run_{generate_letter_num_random_id()}",
-            version_info=[
-                {
-                    "modelId": self.id,
-                    "modelVersionId": self.version_id,
-                }
-            ],
-            dataset_id=qianfan_data_source.id,
-            eval_config={
-                "evalMode": "manual",
-                "evaluationDimension": [
-                    {"dimension": "满意度"},
-                ],
-            },
-            dataset_name=qianfan_data_source.name,
-            **kwargs,
-        ).body
-
-        eval_id = resp["result"]["evalId"]
-
-        log_debug(f"create evaluation task in model response: {resp}")
-        log_info(f"start to polling status of evaluation task {eval_id}")
-
-        while True:
-            eval_info = ResourceModel.get_evaluation_info(eval_id)
-            eval_state = eval_info["result"]["state"]
-
-            log_debug(f"current evaluation task info: {eval_info}")
-            log_info(f"current eval_state: {eval_state}")
-
-            if eval_state not in [
-                console_const.EvaluationTaskStatus.Pending.value,
-                console_const.EvaluationTaskStatus.Doing.value,
-            ]:
-                break
-            time.sleep(30)
-
-        if eval_state not in [
-            console_const.EvaluationTaskStatus.DoingWithManualBegin,
-            console_const.EvaluationTaskStatus.Done,
-        ]:
-            err_msg = f"can't finish evaluation task and failed with state {eval_state}"
-            log_error(err_msg)
-            raise QianfanError(err_msg)
-
-        result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetId"]
-        log_info(f"get result dataset id {result_dataset_id}")
-
-        return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        return dataset.test_using_llm(self.id, self.version_id, **kwargs)
 
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):
@@ -401,8 +342,6 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         else:
             raise InvalidArgumentError("invalid model service")
         self.deploy_config = deploy_config
-        self.service_type = service_type
-        # if self.endpoint is not None and self.service_type is None:
 
     @property
     def status(self) -> str:
@@ -567,6 +506,40 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             Any: model instance
         """
         return pickle.loads(data)
+
+    def batch_inference(
+        self,
+        dataset: Dataset,
+        prompt_template: Optional[Prompt] = None,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Dataset:
+        """
+        create batch run using specific dataset on qianfan
+
+        Args:
+            dataset (Dataset):
+                A dataset instance which indicates a dataset on qianfan platform
+            prompt_template (Optional[Prompt]):
+                Optional Prompt used as input of llm, default to None.
+                Only used when your Service is a Completion service
+            system_prompt (Optional[str]):
+                Optional system text for input using, default to None.
+                Only used when your Service is a ChatCompletion service
+            **kwargs (Any):
+                Arbitrary keyword arguments
+
+        Returns:
+            Dataset: batch result contained in dataset
+        """
+
+        return dataset.test_using_llm(
+            service_model=self.model.name if self.model else None,
+            service_endpoint=self.endpoint,
+            is_chat_service=isinstance(self.get_res(), ChatCompletion),
+            prompt_template=prompt_template,
+            system_prompt=system_prompt,
+        )
 
 
 def model_deploy(model: Model, deploy_config: DeployConfig, **kwargs: Any) -> Service:

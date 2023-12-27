@@ -5,11 +5,19 @@
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
-针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
+## 简介
+
+![framwwork](/docs/imgs/sdk_framework.png)
+
+千帆SDK提供大模型工具链最佳实践，让AI工作流和AI原生应用优雅且便捷地访问千帆大模型平台。SDK核心能力包含三大部分：大模型推理，大模型训练，以及通用和扩展:
+
+- `大模型推理`：实现了对一言（ERNIE-Bot）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding等。
+- `大模型训练`：基于平台能力支持端到端的大模型训练过程，包括训练数据，精调/预训练，以及模型服务等。
+- `通用与扩展`：通用能力包括了Prompt/Debug/Client等常见的AI开发工具。扩展能力则基于千帆特性适配常见的中间层框架。
 
 ## 如何安装
 
-目前千帆 SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装。安装千帆 SDK 需要 3.7.0 或更高的 Python 版本
+目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装，Python需要 3.7.0 或更高的版本。其他语言的SDK敬请期待。
 
 ```
 pip install qianfan
@@ -89,95 +97,76 @@ print(resp["result"])
 
 我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
 
-### 大模型能力
+### 大模型推理
 
-目前千帆 SDK 支持用户使用如下大模型预测能力，详见[预测服务](./docs/inference.md)
+目前千帆 SDK 支持用户使用如下大模型预测能力，详见[推理服务](./docs/inference.md)
 
 + Chat 对话
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
-+ 文生图
++ Text2Image 文生图
 
-### 大模型调优
+### 大模型训练
 
-目前千帆平台支持如下训练调优能力，详见[训练调优](./docs/train.md)
-- 创建训练任务
-- 创建任务运行
-- 获取任务运行详情
-- 停止任务运行
+在预置模型无法满足业务场景时，可使用大模型精调和预训练接口，来定制专属大模型。大致流程可分为：准备数据(Dataset) -> 训练(Trainer) -> 模型评估(Evaluation) -> 服务(Service)；
 
-### 模型管理
-
-目前千帆平台支持对训练完成后的模型进行管理，详见[模型管理](./docs/model_management.md)
-
-- 获取模型详情
-- 获取模型版本详情
-- 训练任务发布为模型
-- 发起模型评估任务
-- 查看模型评估详情
-- 查看模型评估报告
-- 停止模型评估任务
-
-### 模型服务
-
-千帆平台支持将模型发布成服务，详见[服务管理](./docs/service.md)
-
-- 创建服务
-- 查询服务详情
-
-### 平台数据集管理
-
-千帆平台提供 API 接口对数据集进行管理，详见[数据管理](./docs/data.md)
-
-目前支持的数据集管理操作有：
-- 创建数据集
-- 发起数据集发布任务
-- 发起数据集导入任务
-- 获取数据集详情
-- 获取数据集状态详情
-- 发起数据集导出任务
-- 删除数据集
-- 获取数据集导出记录
-- 获取数据集导入错误详情
-- 创建数据清洗任务
-- 查看数据清洗任务详情
-- 查看清洗任务列表
-- 删除数据清洗任务
-- 创建数据增强任务
-- 查看增强任务列表
-- 查看数据增强详情
-- 删除数据增强任务
-- 实体标注
-- 删除实体
-- 获取实体列表
-
-## Trainer
-
-千帆 Python SDK 以Pipeline串联整个模型训练的流程，同时帮助用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
-
-## 本地数据集处理
+#### Dataset
 
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
+以下是一个通过加载本地数据集并进行数据处理的例子
+```python
+from qianfan.dataset import Dataset
+# 从本地文件导入
+ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
 
+def filter_func(row: Dict[str, Any]) -> bool:
+  return "sensitive data for example" not in row["col1"]
 
-### Prompt 管理
+def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
+  return {
+    "col1": row["col1"].replace("sensitive data for example", ""),
+    "col2": row["col2"]
+  }
+
+print(ds.filter(filter_func).map(map_func).list())
+```
+
+#### Trainer
+
+千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
+以下是一个快速实现ERNIE-Bot-turbo fine-tuning的例子：
+```python
+from qianfan.dataset import Dataset
+from qianfan.trainer import LLMFinetune
+
+# 加载千帆平台上的数据集，is_download_to_local=False表示不下载数据集到本地，而是直接使用
+ds: Dataset = Dataset.load(qianfan_dataset_id=111, is_download_to_local=False)
+
+# 新建trainer LLMFinetune，最少传入train_type和dataset
+# 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
+trainer = LLMFinetune(
+    train_type="ERNIE-Bot-turbo-0725",
+    dataset=ds, 
+)
+
+trainer.run()
+
+```
+
+### 通用与扩展
+
+#### Prompt
 
 千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
 
-目前支持的 Prompt 管理操作有：
+### API Resources
 
-- 创建 Prompt
-- 更新 Prompt
-- 删除 Prompt
-- 获取 Prompt 详情
-- 获取 Prompt 列表
-- 获取 Prompt 标签列表
+平台API能力汇总，详见[**平台API能力**](./docs/api_contents.md)
 
 ### 其他
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)
-
 
 > Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License

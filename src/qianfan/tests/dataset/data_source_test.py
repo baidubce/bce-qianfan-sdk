@@ -237,8 +237,6 @@ def test_qianfan_data_source_load():
         content = ds.fetch()[0]
         assert len(json.loads(content, strict=False)) == 1
         content = ds.fetch()[0]
-        assert json.loads(content, strict=False)[0]["response"] == [
-            ["no response"]
-        ]
+        assert json.loads(content, strict=False)[0]["response"] == [["no response"]]
     finally:
         shutil.rmtree(QianfanDatasetLocalCacheDir)

@@ -1513,10 +1513,7 @@ def get_mock_zip_file():
     with zipfile.ZipFile(bio, mode="w") as f:
         f.writestr(
             "1.jsonl",
-            data=(
-                '[{"prompt": "a prompt", "response":'
-                ' [["no response"]]}]'
-            ),
+            data='[{"prompt": "a prompt", "response": [["no response"]]}]',
         )
 
     def gen() -> bytes:

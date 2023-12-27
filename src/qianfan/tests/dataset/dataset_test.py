@@ -16,6 +16,7 @@ test for data set
 """
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pydantic import BaseModel
@@ -146,3 +147,51 @@ def test_manipulator_group_add_and_delete():
     dataset.delete_group_column()
 
     assert QianfanDataGroupColumnName not in dataset.col_names()
+
+
+def test_branch_load():
+    fds = FakeDataSource(origin_data="", format=FormatType.Jsonl)
+    with pytest.raises(ValueError, match="no data in jsonline file"):
+        Dataset.load(source=fds)
+
+    fds.origin_data = '{"prompt": "result"}'
+    ds = Dataset.load(source=fds)
+    fds.format = FormatType.Csv
+    ds.save(fds)
+    fds.origin_data = fds.buffer
+    Dataset.load(fds)
+
+
+@patch("qianfan.dataset.data_source.upload_content_to_bos", return_value=None)
+@patch("qianfan.dataset.data_source.upload_file_to_bos", return_value=None)
+def test_branch_save(*args, **kwargs):
+    fake_data_source = FakeDataSource(
+        origin_data=(
+            '[{"prompt": "12", "response": [["12"]]}, {"prompt": "12", "response":'
+            ' [["12"]]}]'
+        ),
+        format=FormatType.Jsonl,
+    )
+    ds = Dataset.load(source=fake_data_source)
+    ds.unpack()
+    ds.save(fake_data_source)
+
+    from qianfan.tests.dataset.data_source_test import create_an_empty_qianfan_datasource
+
+    fake_qianfan_data_source = create_an_empty_qianfan_datasource()
+    ds = Dataset.create_from_pyobj([{"prompt": "nihao", "response": [["hello"]]}])
+
+    ds.save(fake_qianfan_data_source)
+    ds.save(FakeDataSource(origin_data="", format=FormatType.Jsonl))
+
+    fake_qianfan_data_source = create_an_empty_qianfan_datasource()
+    fake_qianfan_data_source.data_format_type = FormatType.Text
+    fake_qianfan_data_source.template_type = DataTemplateType.GenericText
+    fake_qianfan_data_source.project_type = DataTemplateType.GenericText
+    ds = Dataset.create_from_pyobj({"text": ["wenben"]})
+    ds.save(fake_qianfan_data_source)
+
+    ds = Dataset.create_from_pyobj({"prompt": [1, 2], "response": [3, 4]})
+    ds.save(FakeDataSource(origin_data="", format=FormatType.Csv))
+    with pytest.raises(ValueError):
+        ds.save(FakeDataSource(origin_data="", format=FormatType.Text))

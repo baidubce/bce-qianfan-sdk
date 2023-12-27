@@ -171,7 +171,9 @@ class Dataset(Table):
             json_data_list: List[Dict[str, Any]] = []
             for str_content in content:
                 tmp_list = [
-                    json.loads(line, strict=False) for line in str_content.split("\n") if line
+                    json.loads(line, strict=False)
+                    for line in str_content.split("\n")
+                    if line
                 ]
                 json_data_list.extend(tmp_list)
 

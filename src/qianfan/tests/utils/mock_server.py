@@ -16,9 +16,9 @@
     Mock server for unit test
 """
 import io
+
 # disable line too long lint error in this file
 # ruff: noqa: E501
-
 import json
 import random
 import threading
@@ -1511,7 +1511,13 @@ def get_export_record():
 def get_mock_zip_file():
     bio = io.BytesIO()
     with zipfile.ZipFile(bio, mode="w") as f:
-        f.writestr("1.jsonl", data='[{"prompt": "请根据下面的新闻生成摘要\n生成摘要如下:", "response": [["修改后的立法法全文公布"]]}]')
+        f.writestr(
+            "1.jsonl",
+            data=(
+                '[{"prompt": "请根据下面的新闻生成摘要\n生成摘要如下:", "response":'
+                ' [["修改后的立法法全文公布"]]}]'
+            ),
+        )
 
     def gen() -> bytes:
         yield bio.getvalue()

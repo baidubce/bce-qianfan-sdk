@@ -173,7 +173,12 @@ class FileDataSource(DataSource, BaseModel):
             os.makedirs(self.path)
             for index in range(len(data)):
                 entry = data[index]
-                with open(os.path.join(self.path, f"entry_{index}.{self.format_type().value}"), mode="w") as file:
+                with open(
+                    os.path.join(
+                        self.path, f"entry_{index}.{self.format_type().value}"
+                    ),
+                    mode="w",
+                ) as file:
                     file.write(entry)
             return True
 
@@ -573,10 +578,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 )
                 continue
 
-        log_info(
-            f"latest dataset with time{latest_record_time} "
-            f"for dataset {self.id}"
-        )
+        log_info(f"latest dataset with time{latest_record_time} for dataset {self.id}")
         return export_records[newest_record_index], latest_record_time
 
     def _fetch_data_from_remote(self, zip_file_path: str, **kwargs: Any) -> Dict:

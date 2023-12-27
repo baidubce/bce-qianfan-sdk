@@ -191,7 +191,9 @@ def create_an_empty_qianfan_datasource() -> QianfanDataSource:
 @patch("qianfan.dataset.data_source.upload_file_to_bos", return_value=None)
 def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     ds = create_an_empty_qianfan_datasource()
-    with pytest.raises(ValueError, match="can't set 'data' and 'zip_file_path' simultaneously"):
+    with pytest.raises(
+        ValueError, match="can't set 'data' and 'zip_file_path' simultaneously"
+    ):
         ds.save("1", "2")
 
     with pytest.raises(ValueError, match="must set either 'data' or 'zip_file_path'"):
@@ -207,7 +209,9 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     config.ACCESS_KEY = ""
     config.SECRET_KEY = ""
 
-    assert not ds.save("1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj")
+    assert not ds.save(
+        "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
+    )
     ds.ak = "1"
     assert not ds.save("1")
     ds.sk = "2"
@@ -216,8 +220,15 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     config.ACCESS_KEY = "1"
     config.SECRET_KEY = "2"
 
-    assert ds.save("1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj")
-    assert ds.save(zip_file_path="1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj")
+    assert ds.save(
+        "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
+    )
+    assert ds.save(
+        zip_file_path="1",
+        sup_storage_id="1",
+        sup_storage_path="/sdasd/",
+        sup_storage_region="bj",
+    )
 
 
 def test_qianfan_data_source_load():
@@ -226,6 +237,8 @@ def test_qianfan_data_source_load():
         content = ds.fetch()[0]
         assert len(json.loads(content, strict=False)) == 1
         content = ds.fetch()[0]
-        assert json.loads(content, strict=False)[0]["response"] == [["修改后的立法法全文公布"]]
+        assert json.loads(content, strict=False)[0]["response"] == [
+            ["修改后的立法法全文公布"]
+        ]
     finally:
         shutil.rmtree(QianfanDatasetLocalCacheDir)

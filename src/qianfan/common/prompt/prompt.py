@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from qianfan.components.hub.interface import HubSerializable
+from qianfan.common.hub.interface import HubSerializable
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console.prompt import Prompt as PromptResource

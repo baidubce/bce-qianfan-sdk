@@ -1514,8 +1514,8 @@ def get_mock_zip_file():
         f.writestr(
             "1.jsonl",
             data=(
-                '[{"prompt": "请根据下面的新闻生成摘要\n生成摘要如下:", "response":'
-                ' [["修改后的立法法全文公布"]]}]'
+                '[{"prompt": "a prompt", "response":'
+                ' [["no response"]]}]'
             ),
         )
 

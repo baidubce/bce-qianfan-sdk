@@ -99,12 +99,12 @@ def test_save_to_folder():
         os.makedirs(folder_path)
 
         f = FileDataSource(path=folder_path, file_format=FormatType.Text)
-        f.save("这是一条数据")
+        f.save("this is a data")
         assert os.path.isdir(folder_path)
         for root, dirs, files in os.walk(folder_path):
             assert len(files) == 1
 
-        file_content = "这是一条数据"
+        file_content = "this is a data"
 
         f = FileDataSource(path=file_name)
         f.save(file_content)
@@ -122,7 +122,7 @@ def test_save_as_folder():
 
     try:
         f = FileDataSource(path=folder_path, save_as_folder=True)
-        f.save(["文件1", "文件2"])
+        f.save(["file1", "file2"])
         for root, dirs, files in os.walk(folder_path):
             assert len(files) == 2
     finally:
@@ -238,7 +238,7 @@ def test_qianfan_data_source_load():
         assert len(json.loads(content, strict=False)) == 1
         content = ds.fetch()[0]
         assert json.loads(content, strict=False)[0]["response"] == [
-            ["修改后的立法法全文公布"]
+            ["no response"]
         ]
     finally:
         shutil.rmtree(QianfanDatasetLocalCacheDir)

@@ -176,7 +176,9 @@ def test_branch_save(*args, **kwargs):
     ds.unpack()
     ds.save(fake_data_source)
 
-    from qianfan.tests.dataset.data_source_test import create_an_empty_qianfan_datasource
+    from qianfan.tests.dataset.data_source_test import (
+        create_an_empty_qianfan_datasource,
+    )
 
     fake_qianfan_data_source = create_an_empty_qianfan_datasource()
     ds = Dataset.create_from_pyobj([{"prompt": "nihao", "response": [["hello"]]}])

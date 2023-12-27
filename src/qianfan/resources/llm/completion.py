@@ -60,6 +60,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "user_id",
+                    "tools",
+                    "tool_choice",
                     "system",
                 },
             ),

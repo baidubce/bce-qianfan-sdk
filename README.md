@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
-## 整体架构
+## 简介
 
 ![framwwork](/docs/imgs/sdk_framework.png)
 
@@ -17,7 +17,7 @@
 
 ## 如何安装
 
-目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装。安装千帆 SDK 需要 3.7.0 或更高的 Python 版本。其他语言的SDK版本敬请期待。
+目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装，Python需要 3.7.0 或更高的版本。其他语言的SDK敬请期待。
 
 ```
 pip install qianfan

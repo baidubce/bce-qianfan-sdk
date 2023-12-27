@@ -18,7 +18,7 @@ baidu search tool
 from typing import Any, Dict, List, Optional, Union
 
 from qianfan import ChatCompletion, Completion, QfResponse
-from qianfan.components.tool.base_tool import BaseTool, ToolParameter
+from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 
 
 class BaiduSearchTool(BaseTool):

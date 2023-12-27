@@ -19,8 +19,8 @@
 import os
 import tempfile
 
-from qianfan.components import Prompt
-from qianfan.components.hub import hub
+from qianfan.common import Prompt
+from qianfan.common.hub import hub
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
 
 

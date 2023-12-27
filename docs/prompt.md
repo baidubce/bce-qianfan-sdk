@@ -11,7 +11,7 @@ SDK 提供了 `Prompt` 类，可以方便快速地使用千帆的 Prompt 能力�
 可以通过如下方式引用
 
 ```
-from qianfan.components import Prompt
+from qianfan.common import Prompt
 ```
 
 ### 快速使用
@@ -19,7 +19,7 @@ from qianfan.components import Prompt
 平台上预置的 Prompt 以及用户自定义的模型都可以在 [千帆控制台](https://console.bce.baidu.com/qianfan/prompt/template) 获得，之后可以在 SDK 的 hub 能力从平台快速获取 Prompt 对象，并进行渲染等操作。
 
 ```python
-from qianfan.components.hub import hub
+from qianfan.common.hub import hub
 
 # 获取平台上的 Prompt，name 为控制台上显示的名称
 p = hub.load("prompt/区域美食推荐")
@@ -126,7 +126,7 @@ print(prompt) # => 这是一个用于测试的 Prompt
 ```python
 # 引入 PromptFrameworkType
 from qianfan.consts import PromptFrameworkType
-from qianfan.components import Prompt
+from qianfan.common import Prompt
 
 # Basic 类型
 basic_prompt = Prompt.base_prompt(

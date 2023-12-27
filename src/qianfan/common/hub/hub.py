@@ -21,8 +21,8 @@ from typing import Any, Dict, Optional, Type
 
 import requests
 
-from qianfan.components.hub.interface import HubSerializable, loads
-from qianfan.components.prompt.prompt import Prompt
+from qianfan.common.hub.interface import HubSerializable, loads
+from qianfan.common.prompt.prompt import Prompt
 from qianfan.errors import InvalidArgumentError, RequestError, ValidationError
 from qianfan.version import VERSION as sdk_version
 

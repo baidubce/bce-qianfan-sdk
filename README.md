@@ -5,21 +5,20 @@
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 
-针对百度智能云千帆大模型平台，我们推出了一套 Python SDK（下称千帆 SDK），方便用户通过代码接入并调用千帆大模型平台的能力。
 ## 整体架构
 
 ![framwwork](/docs/imgs/sdk_framework.png)
 
-千帆SDK的整体架构可以分为2大部分，一部分是resource层，即对接封装千帆大模型平台的所有API能力；另一部分是SDK在此基础上结合大模型应用开发所需的能力衍生而来的包括`Dataset`,`Trainer`等易用的模块组件。
+为了让AI工作流/AI原生应用更便捷且友好的使用千帆大模型平台, 千帆SDK提供了一系列工具，其包含三大部分功能：大模型推理，大模型训练，以及通用和扩展
+
 具体来说：
-- Dataset：实现了千帆平台和本地数据集，以及开源数据集的加载、处理以及常见的清洗操作。
-- Trainer：提供了基于千帆平台训练模型的接口，包括模型训练、模型评估、模型发布、服务发布等。
-- Extensions：提供了大模型的拓展能力框架，包括了基于千帆的Agent框架以及Tool等能力。
-- Component：包括Prompt，Hub等常见AI应用开发组件。
+- 大模型推理：实现了对一言(Ernie-Bot)系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding等。
+- 大模型训练：基于平台能力支持端到端的大模型训练过程，包括训练数据，精调/预训练，以及模型服务等。
+- 通用与扩展：通用能力包括了Prompt/Debug/Client等常见的AI开发工具。扩展能力则基于千帆特性适配常见的中间层框架。
 
 ## 如何安装
 
-目前千帆 SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装。安装千帆 SDK 需要 3.7.0 或更高的 Python 版本
+目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装。安装千帆 SDK 需要 3.7.0 或更高的 Python 版本。其他语言的SDK版本敬请期待。
 
 ```
 pip install qianfan
@@ -99,9 +98,9 @@ print(resp["result"])
 
 我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
 
-### 大模型能力
+### 大模型推理
 
-目前千帆 SDK 支持用户使用如下大模型预测能力，详见[预测服务](./docs/inference.md)
+目前千帆 SDK 支持用户使用如下大模型预测能力，详见[推理服务](./docs/inference.md)
 
 + Chat 对话
 + Completion 续写
@@ -109,7 +108,9 @@ print(resp["result"])
 + Plugin 插件调用
 + Text2Image 文生图
 
-### LMOps能力
+### 大模型训练
+
+在预置模型无法满足业务场景时，可使用大模型精调和预训练接口，来定制专属大模型。大致流程可分为：准备数据(Dataset) -> 训练(Trainer) -> 模型评估(Evaluation) -> 服务(Service)；
 
 #### Dataset
 
@@ -154,7 +155,7 @@ trainer.run()
 
 ```
 
-### 扩展与组件
+### 通用与扩展
 
 #### Prompt
 

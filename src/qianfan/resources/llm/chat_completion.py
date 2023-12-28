@@ -113,6 +113,20 @@ class ChatCompletion(BaseResource):
                     "user_id",
                 },
             ),
+            "ERNIE-Bot-turbo-pro": QfLLMInfo(
+                endpoint="/chat/eb-instant",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                },
+            ),
             "ERNIE-Bot-turbo-AI": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},

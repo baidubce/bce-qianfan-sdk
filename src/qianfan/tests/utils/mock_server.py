@@ -386,7 +386,49 @@ def chat(model_name):
                     },
                 }
             )
-
+    if "tools" in r and r["messages"][0]["content"] != "no_search":
+        return json_response(
+            {
+                "id": "as-wfhb6enh7c",
+                "object": "chat.completion",
+                "created": 1703228415,
+                "result": (
+                    "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
+                    "风力小于3级，空气质量优**^[1]^。"
+                ),
+                "is_truncated": False,
+                "need_clear_history": False,
+                "usage": {
+                    "prompt_tokens": 3,
+                    "completion_tokens": 40,
+                    "total_tokens": 1434,
+                    "tool_tokens": 1391,
+                    "tool_usage": [
+                        {
+                            "name": "baidu_search",
+                            "tool_point": 8000,
+                            "baidu_search": {"triggers_number": 1},
+                        }
+                    ],
+                },
+                "tools_info": {
+                    "name": "baidu_search",
+                    "rewrite_query": "上海今天天气",
+                    "baidu_search": [
+                        {
+                            "index": 1,
+                            "url": "http://www.weather.com.cn/weather/101020100.shtml",
+                            "title": "上海天气预报_一周天气预报",
+                        },
+                        {
+                            "index": 2,
+                            "url": "https://m.tianqi.com/shanghai/15/",
+                            "title": "上海天气预报15天_上海天气预报15天查询,上海未来15天天 ...",
+                        },
+                    ],
+                },
+            }
+        )
     return json_response(
         {
             "id": "as-bcmt5ct4iy",
@@ -2302,7 +2344,7 @@ def mock_hub_file():
     content = """{
     "sdk_version": "0.2.0",
     "obj": {
-        "module": "qianfan.components.prompt.prompt",
+        "module": "qianfan.common.prompt.prompt",
         "type": "Prompt",
         "args": {
             "name": "穿搭灵感",
@@ -2313,7 +2355,7 @@ def mock_hub_file():
             ],
             "labels": [
                 {
-                    "module": "qianfan.components.prompt.prompt",
+                    "module": "qianfan.common.prompt.prompt",
                     "type": "PromptLabel",
                     "args": {
                         "id": 1734,

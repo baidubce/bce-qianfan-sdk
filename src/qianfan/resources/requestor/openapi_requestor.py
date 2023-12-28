@@ -108,8 +108,9 @@ class QfAPIRequestor(BaseAPIRequestor):
             error_code = body["error_code"]
             err_msg = body.get("error_msg", "no error message found in response body")
             log_error(
-                f"api request failed with error code: {error_code}, err msg: {err_msg},"
-                " please check https://cloud.baidu.com/doc/WENXINWORKSHOP/s/tlmyncueh"
+                f"api request req_id: {req_id} failed with error code: {error_code},"
+                f" err msg: {err_msg}, please check"
+                " https://cloud.baidu.com/doc/WENXINWORKSHOP/s/tlmyncueh"
             )
             if error_code in {
                 APIErrorCode.APITokenExpired.value,

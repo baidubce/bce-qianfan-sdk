@@ -15,10 +15,11 @@
 """
     Unit test for Tool
 """
-
 from typing import List, Optional, Type
 
-from qianfan.components.tool.base_tool import BaseTool, ToolParameter
+import qianfan
+from qianfan.common.tool.baidu_search_tool import BaiduSearchTool
+from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 from qianfan.utils.utils import check_package_installed
 
 
@@ -280,3 +281,58 @@ def test_nested_parameter_to_json_schema():
         },
         "required": ["required_nested_param", "nested_object"],
     }
+
+
+def test_baidu_search_tool():
+    tool = BaiduSearchTool(with_reference=True)
+    res = tool.run({"search_query": "上海天气"})
+    assert (
+        res["summary"]
+        == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
+        "风力小于3级，空气质量优**^[1]^。"
+    )
+    assert res["reference"] == [
+        {
+            "index": 1,
+            "url": "http://www.weather.com.cn/weather/101020100.shtml",
+            "title": "上海天气预报_一周天气预报",
+        },
+        {
+            "index": 2,
+            "url": "https://m.tianqi.com/shanghai/15/",
+            "title": "上海天气预报15天_上海天气预报15天查询,上海未来15天天 ...",
+        },
+    ]
+
+    tool = BaiduSearchTool()
+    res = tool.run({"search_query": "上海天气"})
+    assert (
+        res
+        == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
+        "风力小于3级，空气质量优**^[1]^。"
+    )
+
+    tool = BaiduSearchTool(with_reference=True)
+    res = tool.run({"search_query": "no_search"})
+    assert res["reference"] == []
+
+    client = qianfan.Completion()
+    tool = BaiduSearchTool(client=client, with_reference=True)
+    res = tool.run({"search_query": "上海天气"})
+    assert (
+        res["summary"]
+        == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
+        "风力小于3级，空气质量优**^[1]^。"
+    )
+    assert res["reference"] == [
+        {
+            "index": 1,
+            "url": "http://www.weather.com.cn/weather/101020100.shtml",
+            "title": "上海天气预报_一周天气预报",
+        },
+        {
+            "index": 2,
+            "url": "https://m.tianqi.com/shanghai/15/",
+            "title": "上海天气预报15天_上海天气预报15天查询,上海未来15天天 ...",
+        },
+    ]

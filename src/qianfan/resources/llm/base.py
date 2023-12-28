@@ -39,8 +39,7 @@ from qianfan import get_config
 from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
-from qianfan.utils import log_info, log_warn
-from qianfan.utils.utils import generate_letter_num_random_id
+from qianfan.utils import log_info, log_warn, utils
 
 # This is used when user provides `endpoint`
 # In such cases, SDK cannot know which model the user is using
@@ -410,7 +409,7 @@ class BaseResource(object):
             if "request_id" in kwargs
             else (
                 f"{Consts.QianfanRequestIdDefaultPrefix}-"
-                f"{generate_letter_num_random_id(32)}"
+                f"{utils.generate_letter_num_random_id(16)}"
             )
         )
         return kwargs["header"]

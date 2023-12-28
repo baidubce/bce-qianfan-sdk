@@ -33,7 +33,7 @@ from pyarrow import csv as pyarrow_csv
 from typing_extensions import Self
 
 from qianfan import ChatCompletion, Completion, QfResponse, QfRole, get_config
-from qianfan.components import Prompt
+from qianfan.common import Prompt
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
     QianfanDatasetPackColumnName,

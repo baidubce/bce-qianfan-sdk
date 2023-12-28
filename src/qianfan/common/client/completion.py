@@ -79,13 +79,23 @@ class CompletionClient(object):
 
 
 def completion_entry(
-    messages: List[str] = typer.Argument(..., help="Messages"),
-    model: str = typer.Option(DefaultLLMModel.Completion, help="Model name"),
-    endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
-    plain: bool = typer.Option(False, help="Plain mode"),
+    messages: List[str] = typer.Argument(..., help="Messages List"),
+    model: str = typer.Option(
+        DefaultLLMModel.Completion,
+        help="Model name of the completion model.",
+        autocompletion=qianfan.Completion.models,
+    ),
+    endpoint: Optional[str] = typer.Option(
+        None,
+        help=(
+            "Endpoint of the completion model. This option will override `model`"
+            " option."
+        ),
+    ),
+    plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
 ) -> None:
     """
-    Entry of the completion command.
+    Complete the provided prompt or messages.
     """
     if len(messages) % 2 != 1:
         print_error_msg("The number of messages must be odd.")

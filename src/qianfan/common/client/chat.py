@@ -22,11 +22,11 @@ from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfRole
-from qianfan.consts import DefaultLLMModel
 from qianfan.common.client.utils import (
     create_client,
     print_error_msg,
 )
+from qianfan.consts import DefaultLLMModel
 
 END_PROMPT = "\exit"
 
@@ -107,13 +107,22 @@ class ChatClient(object):
 
 
 def chat_entry(
-    model: str = typer.Option(DefaultLLMModel.ChatCompletion, help="Model name"),
-    endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
+    model: str = typer.Option(
+        DefaultLLMModel.ChatCompletion,
+        help="Model name of the chat model.",
+        autocompletion=qianfan.ChatCompletion.models,
+    ),
+    endpoint: Optional[str] = typer.Option(
+        None,
+        help="Endpoint of the chat model. This option will override `model` option.",
+    ),
     # tui: bool = typer.Option(False, help="Using Terminal UI"),
-    multi_line: bool = typer.Option(False, help="Multi-line mode"),
+    multi_line: bool = typer.Option(
+        False, help="Multi-line mode which need to press enter twice to submit message."
+    ),
 ) -> None:
     """
-    Entry of the chat command.
+    Chat with the LLM in the terminal.
     """
     client = ChatClient(model, endpoint, multi_line)
     client.chat_in_terminal()

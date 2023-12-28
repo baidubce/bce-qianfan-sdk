@@ -27,6 +27,24 @@ app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 
 
+def version_callback(value: bool) -> None:
+    """
+    Print qianfan sdk version
+    """
+    if value:
+        print(qianfan.__version__)
+        raise typer.Exit()
+
+
+def qianfan_config_callback(
+    ctx: typer.Context, param: typer.CallbackParam, value: str
+) -> None:
+    if value is not None and len(value.strip()) > 0:
+        config_name = param.name
+        qianfan_config_name = config_name.upper()
+        qianfan.get_config().__setattr__(qianfan_config_name, value)
+
+
 def main() -> None:
     """
     Main function of qianfan client.
@@ -35,15 +53,33 @@ def main() -> None:
 
 
 @app.callback()
-def entry(access_key: Optional[str] = "", secret_key: Optional[str] = "") -> None:
+def entry(
+    access_key: Optional[str] = typer.Option(
+        None, callback=qianfan_config_callback, help="Access key from Qianfan IAM."
+    ),
+    secret_key: Optional[str] = typer.Option(
+        None, callback=qianfan_config_callback, help="Secret key from Qianfan IAM."
+    ),
+    ak: Optional[str] = typer.Option(
+        None,
+        callback=qianfan_config_callback,
+        help="API key of Qianfan App.",
+    ),
+    sk: Optional[str] = typer.Option(
+        None, callback=qianfan_config_callback, help="Secret key of Qianfan App."
+    ),
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Print version.",
+    ),
+) -> None:
     """
-    entry of the whole client
-    init global qianfan config
+    Qianfan CLI which provides access to various Qianfan services.
     """
-    if access_key:
-        qianfan.get_config().ACCESS_KEY = access_key
-    if secret_key:
-        qianfan.get_config().SECRET_KEY = secret_key
+    pass
 
 
 if __name__ == "__main__":

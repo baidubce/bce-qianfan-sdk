@@ -438,11 +438,12 @@ class BaseResource(object):
         """
         raise NotImplementedError
 
-    def models(self) -> Set[str]:
+    @classmethod
+    def models(cls) -> Set[str]:
         """
         get all supported model names
         """
-        models = set(self._supported_models().keys())
+        models = set(cls._supported_models().keys())
         models.remove(UNSPECIFIED_MODEL)
         return models
 

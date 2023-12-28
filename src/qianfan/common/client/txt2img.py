@@ -31,15 +31,25 @@ def txt2img_entry(
     negative_prompt: str = typer.Option(
         default="", help="The negative prompt to generate image"
     ),
-    model: str = typer.Option(DefaultLLMModel.Text2Image, help="The model to use"),
-    endpoint: Optional[str] = typer.Option(None, help="The endpoint to use"),
+    model: str = typer.Option(
+        DefaultLLMModel.Text2Image,
+        help="Model name of the Text2Image model.",
+        autocompletion=qianfan.Text2Image.models,
+    ),
+    endpoint: Optional[str] = typer.Option(
+        None,
+        help=(
+            "Endpoint of the Text2Image model. This option will override `model`"
+            " option."
+        ),
+    ),
     output: Optional[Path] = typer.Option(
         Path(f"./{timestamp()}.jpg"), help="The output file location"
     ),
-    plain: bool = typer.Option(False, help="Whether to print plain text"),
+    plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
 ) -> None:
     """
-    Generate images from text.
+    Generate images based on the provided prompt.
     """
     if check_package_installed("PIL"):
         from PIL import Image

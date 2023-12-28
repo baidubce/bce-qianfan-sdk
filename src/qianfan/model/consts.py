@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import Any, Dict
-
-from qianfan.resources import ChatCompletion, Completion, Embedding, Text2Image
 
 
 class ServiceType(str, Enum):
@@ -26,12 +23,3 @@ class ServiceType(str, Enum):
     """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
     """Corresponding to the `Text2Image"""
-
-
-# service type -> resources class
-ServiceTypeResourcesMapping: Dict[ServiceType, Any] = {
-    ServiceType.Chat: ChatCompletion,
-    ServiceType.Completion: Completion,
-    ServiceType.Embedding: Embedding,
-    ServiceType.Text2Image: Text2Image,
-}

@@ -20,6 +20,7 @@ from qianfan.evaluation.evaluator import (
     QianfanRuleEvaluator,
 )
 from qianfan.model import DeployConfig, Model, Service
+from qianfan.model.consts import ServiceType
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
     DeployAction,
@@ -29,7 +30,7 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.configs import TrainConfig
-from qianfan.trainer.consts import PeftType, ServiceType
+from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
 

@@ -23,7 +23,7 @@
 pip install qianfan
 ```
 
-在安装完成后，用户即可在代码内引入千帆 SDK 并使用
+在安装完成后，用户可以参考 [文档](./docs/cli.md) 在命令行中快速使用千帆平台功能，或者在代码内引入千帆 SDK 并使用
 
 ```python
 import qianfan

@@ -11,6 +11,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 **基础参数**:
 
 > **IMPORTANT**：以下参数必须位于 command 命令之前，否则会被识别成命令的参数而无法生效。
+>
 > CLI 也同样支持使用 [环境变量](./configurable.md) 和 [.env 文件](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env) 的形式配置参数。
 
 * `--access-key TEXT`：百度智能云安全认证 Access Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
@@ -75,6 +76,8 @@ $ qianfan completion [OPTIONS] MESSAGES...
 ```console
 $ qianfan txt2img [OPTIONS] PROMPT
 ```
+
+该命令依赖 [Pillow](https://pypi.org/project/Pillow/)，需要使用该功能的话可以通过 `pip install Pillow` 安装，具体参考 [Pillow 安装文档](https://pillow.readthedocs.io/en/latest/installation.html)。
 
 **Arguments 参数**:
 

@@ -11,6 +11,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 **基础参数**:
 
 > **IMPORTANT**：以下参数必须位于 command 命令之前，否则会被识别成命令的参数而无法生效。
+> CLI 也同样支持使用 [环境变量](./configurable.md) 和 [.env 文件](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env) 的形式配置参数。
 
 * `--access-key TEXT`：百度智能云安全认证 Access Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--secret-key TEXT`：百度智能云安全认证 Secret Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。

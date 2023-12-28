@@ -36,7 +36,6 @@ $ qianfan-cli chat [OPTIONS]
 
 * `--model TEXT`: 模型名称  [default: ERNIE-Bot-turbo]
 * `--endpoint TEXT`: 模型的 endpoint
-* `--plain / --no-plain`: 普通文本模式，不使用特殊字符  [default: no-plain]
 * `--multi-line / --no-multi-line`: 多行模式，通过两次回车确认提交消息  [default: no-multi-line]
 * `--help`: 展示帮助文档
 
@@ -80,6 +79,6 @@ $ qianfan-cli txt2img [OPTIONS] PROMPT
 * `--negative-prompt TEXT`: 生成图片的负向 prompt
 * `--model TEXT`: 使用的模型名称  [default: Stable-Diffusion-XL]
 * `--endpoint TEXT`: 使用的模型 endpoint
-* `--output PATH`: 输出的文件名称  [default: 20231228_144127.jpg]
+* `--output PATH`: 输出的文件名称  [default: %Y%m%d_%H%M%S.jpg]
 * `--plain / --no-plain`: 普通文本模式，不使用特殊字符  [default: no-plain]
 * `--help`: 展示帮助文档

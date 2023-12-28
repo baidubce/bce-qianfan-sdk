@@ -1209,7 +1209,7 @@ class Dataset(Table):
         model_version_id: Optional[int] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = False,
+        is_chat_service: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1253,7 +1253,7 @@ class Dataset(Table):
         model_version_id: Optional[int] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = False,
+        is_chat_service: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1376,11 +1376,55 @@ class Dataset(Table):
 
         return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
 
+    def _get_completion_return_dataset(
+        self, input_str_list: List[str], output_list: List[str]
+    ) -> "Dataset":
+        new_input_column_name = "input_prompt"
+        new_reference_column_name = "llm_output"
+        old_reference_column_name = "expected_output"
+
+        table_dict = {
+            **self.get_input_data,
+            new_input_column_name: input_str_list,
+            new_reference_column_name: output_list,
+        }
+        if self.reference_column:
+            table_dict[old_reference_column_name] = self.get_reference_data
+
+        return Dataset.create_from_pyobj(
+            table_dict,
+            input_columns=self.input_columns,
+            reference_column=old_reference_column_name,
+        )
+
+    def _get_chat_return_dataset(
+        self,
+        input_list: List[List[Dict[str, Any]]],
+        output_list: List[str],
+        reference_list: List[Any],
+    ) -> "Dataset":
+        if not self.is_dataset_grouped() and not self.is_dataset_packed():
+            input_str_list = [conv[0]["content"] for conv in input_list]
+            return self._get_completion_return_dataset(input_str_list, output_list)
+
+        new_input_column_name = "input_chats"
+        new_reference_column_name = "llm_output"
+        old_reference_column_name = "expected_output"
+        return Dataset.create_from_pyobj(
+            {
+                new_input_column_name: input_list,
+                new_reference_column_name: output_list,
+                old_reference_column_name: reference_list,
+            },
+            input_columns=new_input_column_name,
+            reference_column=new_reference_column_name,
+        )
+
     def _batch_inference_on_service(
         self,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = False,
+        is_chat_service: bool = True,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
@@ -1418,29 +1462,16 @@ class Dataset(Table):
             output_list = self._batch_do_on_service(
                 service, input_str_list, system=system_prompt, **kwargs
             )
-            return Dataset.create_from_pyobj(
-                {
-                    **self.get_input_data,
-                    "input_prompt": input_str_list,
-                    "llm_output": output_list,
-                },
-                input_columns=self.input_columns,
-                reference_column=self.reference_column,
-            )
+
+            return self._get_completion_return_dataset(input_str_list, output_list)
         else:
-            input_chat_list = self._get_input_chat_list(**kwargs)
+            input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
             output_list = self._batch_do_on_service(
                 service, input_chat_list, system=system_prompt, **kwargs
             )
-            new_input_column_name = "input_chats"
-            new_reference_column_name = "llm_output"
-            return Dataset.create_from_pyobj(
-                {
-                    new_input_column_name: input_chat_list,
-                    new_reference_column_name: output_list,
-                },
-                input_columns=new_input_column_name,
-                reference_column=new_reference_column_name,
+
+            return self._get_chat_return_dataset(
+                input_chat_list, output_list, reference_list
             )
 
     async def _async_batch_inference_on_service(
@@ -1485,29 +1516,16 @@ class Dataset(Table):
             output_list = await self._async_batch_do_on_service(
                 service, input_str_list, system=system_prompt, **kwargs
             )
-            return Dataset.create_from_pyobj(
-                {
-                    **self.get_input_data,
-                    "input_prompt": input_str_list,
-                    "llm_output": output_list,
-                },
-                input_columns=self.input_columns,
-                reference_column=self.reference_column,
-            )
+
+            return self._get_completion_return_dataset(input_str_list, output_list)
         else:
-            input_chat_list = self._get_input_chat_list(**kwargs)
+            input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
             output_list = await self._async_batch_do_on_service(
                 service, input_chat_list, system=system_prompt, **kwargs
             )
-            new_input_column_name = "input_chats"
-            new_reference_column_name = "llm_output"
-            return Dataset.create_from_pyobj(
-                {
-                    new_input_column_name: input_chat_list,
-                    new_reference_column_name: output_list,
-                },
-                input_columns=new_input_column_name,
-                reference_column=new_reference_column_name,
+
+            return self._get_chat_return_dataset(
+                input_chat_list, output_list, reference_list
             )
 
     def _check_and_generate_service(
@@ -1584,7 +1602,16 @@ class Dataset(Table):
 
         return input_str_list
 
-    def _get_input_chat_list(self, **kwargs: Any) -> List[List[Dict[str, Any]]]:
+    def _get_input_chat_list(
+        self, **kwargs: Any
+    ) -> Tuple[List[List[Dict[str, Any]]], List[Any]]:
+        if not self.is_dataset_packed() and not self.is_dataset_grouped():
+            input_str_list = self._get_input_str_list()
+            return [
+                [{"role": QfRole.User.value, "content": prompt}]
+                for prompt in input_str_list
+            ], []
+
         def _extract_string(data: Union[str, Iterator[str]]) -> str:
             if isinstance(data, str):
                 return data
@@ -1619,23 +1646,28 @@ class Dataset(Table):
             dataset.pack()
 
         input_chat_list: List[List[Dict[str, Any]]] = []
+        reference_list: List[Any] = []
         for chat in dataset.list():
             input_messages: List[Dict[str, Any]] = []
             for i in range(len(chat)):
                 input_messages.append(
                     {"role": QfRole.User.value, "content": chat[i][input_column]}
                 )
+                reference = _extract_string(chat[i][reference_column])
+
                 if i != len(chat) - 1:
                     input_messages.append(
                         {
                             "role": QfRole.Assistant.value,
-                            "content": chat[i][_extract_string(reference_column)],
+                            "content": reference,
                         }
                     )
+                else:
+                    reference_list.append(reference)
 
             input_chat_list.append(input_messages)
 
-        return input_chat_list
+        return input_chat_list, reference_list
 
     def _batch_do_on_service(
         self,
@@ -1706,11 +1738,10 @@ class Dataset(Table):
     ) -> None:
         if result.statistic:
             request_latency = result.statistic.get("request_latency", None)
-            total_latency = result.statistic.get("total_latency", None)
 
-            log_info(
+            log_debug(
                 f"数据 {index} 的第 {stream_index} 片回包请求响应时延:"
-                f" {request_latency}, 传输完成时延: {total_latency}"
+                f" {request_latency}"
             )
 
 

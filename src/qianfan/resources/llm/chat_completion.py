@@ -114,7 +114,7 @@ class ChatCompletion(BaseResource):
                 },
             ),
             "ERNIE-Bot-turbo-pro": QfLLMInfo(
-                endpoint="/chat/eb-instant",
+                endpoint="/chat/eb_turbo_pro",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

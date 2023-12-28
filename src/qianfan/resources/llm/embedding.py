@@ -62,6 +62,11 @@ class Embedding(BaseResource):
                 required_keys={"input"},
                 optional_keys={"user_id"},
             ),
+            "tao-8k": QfLLMInfo(
+                endpoint="/embeddings/tao_8k",
+                required_keys={"input"},
+                optional_keys={"user_id"},
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="", required_keys={"input"}, optional_keys=set()
             ),

@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from qianfan.config import get_config
 from qianfan.consts import Consts
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.resources.console.app import _App
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest, RetryConfig
 from qianfan.utils import (
@@ -283,70 +282,14 @@ class Auth(object):
                 "no enough credential found, any one of (access_key, secret_key),"
                 " (ak, sk), access_token must be provided"
             )
-
-    def _update_ak_sk_from_app_list(self, app_list: List[Dict[str, Any]]) -> None:
-        """
-        select the latest app from `app_list` and update ak, sk
-        """
-        if len(app_list) == 0:
-            raise InvalidArgumentError(
-                "no app found, please create an app first on qianfan console:"
-                " https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
-            )
-        appid = get_config().APPID
-        # the last app is the latest one
-        selected_app = app_list[-1]
-        if appid is None:
-            # if user does not provide appid, use the latest one
-            log_info(
-                "no appid provided, using the latest one which id is"
-                f" {selected_app['id']}"
-            )
-        else:
-            # find the uesr required app
-            tmp = [app for app in app_list if app["id"] == appid]
-            if len(tmp) == 0:
-                log_warn(
-                    f"The provided appid {appid} is not found, please check the"
-                    " id and the sdk will use the latest one which id is"
-                    f" {selected_app['id']}"
-                )
-            else:
-                selected_app = tmp[0]
-        self._ak = selected_app["ak"]
-        self._sk = selected_app["sk"]
+        if self._access_key is not None and self._secret_key is not None:
+            self._registered = True
 
     def _register(self) -> None:
         """
         register the access token to manager, so that it can be refreshed automatically
         """
         if not self._registered:
-            # when user only provides access_key and secret_key
-            # sdk needs to get ak and sk by access_key
-            if (
-                self._access_key is not None
-                and self._secret_key is not None
-                and self._ak is None
-                and self._sk is None
-            ):
-                self._ak, self._sk = Auth._console_ak_to_app_ak.get(
-                    (self._access_key, self._secret_key), (None, None)
-                )
-                if self._ak is None:
-                    resp = _App.list(
-                        access_key=self._access_key, secret_key=self._secret_key
-                    )
-                    app_list = resp["result"]["appList"]
-                    self._update_ak_sk_from_app_list(app_list)
-                    if self._ak is None or self._sk is None:
-                        # ak and sk should already be set
-                        # otherwise an exception should already be raised
-                        raise InternalError
-                    Auth._console_ak_to_app_ak[(self._access_key, self._secret_key)] = (
-                        self._ak,
-                        self._sk,
-                    )
-
             if self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided
                 if self._ak is None or self._sk is None:
@@ -367,18 +310,6 @@ class Auth(object):
         register the access token to manager, so that it can be refreshed automatically
         """
         if not self._registered:
-            if (
-                self._access_key is not None
-                and self._secret_key is not None
-                and self._ak is None
-                and self._sk is None
-            ):
-                resp = await _App.alist(
-                    access_key=self._access_key, secret_key=self._secret_key
-                )
-                app_list = resp["result"]["appList"]
-                self._update_ak_sk_from_app_list(app_list)
-
             if self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided
                 if self._ak is None or self._sk is None:
@@ -435,6 +366,7 @@ class Auth(object):
             return self._access_token
         self._register()
         if self._ak is None or self._sk is None:
+            return ""
             raise InvalidArgumentError(
                 "no enough credential found, any one of (access_key, secret_key),"
                 " (ak, sk), access_token must be provided"
@@ -449,6 +381,7 @@ class Auth(object):
             return self._access_token
         await self._aregister()
         if self._ak is None or self._sk is None:
+            return ""
             raise InvalidArgumentError(
                 "no enough credential found, any one of (access_key, secret_key),"
                 " (ak, sk), access_token must be provided"

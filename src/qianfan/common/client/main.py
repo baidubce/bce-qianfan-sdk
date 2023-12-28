@@ -21,7 +21,7 @@ from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.txt2img import txt2img_entry
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)

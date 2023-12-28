@@ -127,9 +127,9 @@ class Plugin(BaseResource):
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
-        Plugin needs to transform body (`prompt` -> `query`)
+        Plugin needs to transform body (`_query` -> `query`)
         """
-        if endpoint != "":
+        if model is None:
             body = super()._generate_body(model, endpoint, stream, **kwargs)
             # "query" is conflict with QfRequest.query in params, so "_query" is
             # the argument in SDK so we need to change "_query" back to "query" here

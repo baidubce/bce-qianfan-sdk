@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterator, Optional, Union
 
 from qianfan import resources as api
 from qianfan.common import Prompt
+from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.config import get_config
 from qianfan.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError
@@ -31,7 +32,6 @@ from qianfan.resources import (
 )
 from qianfan.resources.console import consts as console_const
 from qianfan.resources.console.model import Model as ResourceModel
-from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.utils import log_error, log_info, log_warn
 
 

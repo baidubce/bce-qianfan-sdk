@@ -27,8 +27,8 @@ from typing import (
     cast,
 )
 
-from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.common.runnable.base import ExecuteSerializable
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
 from qianfan.utils import log_debug, log_error, utils

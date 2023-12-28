@@ -113,6 +113,20 @@ class Completion(BaseResource):
                     "user_id",
                 },
             ),
+            "ERNIE-Bot-turbo-pro": QfLLMInfo(
+                endpoint="/chat/eb-instant",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                },
+            ),
             "EB-turbo-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},
@@ -281,6 +295,19 @@ class Completion(BaseResource):
             "CodeLlama-7b-Instruct": QfLLMInfo(
                 endpoint="/completions/codellama_7b_instruct",
                 required_keys={"prompt"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
+                },
+            ),
+            "Yi-34B-Chat": QfLLMInfo(
+                endpoint="/chat/yi_34b_chat",
+                required_keys={"messages"},
                 optional_keys={
                     "stream",
                     "user_id",

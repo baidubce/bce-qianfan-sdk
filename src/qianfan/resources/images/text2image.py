@@ -57,6 +57,9 @@ class Text2Image(BaseResource):
                     "steps",
                     "sampler_index",
                     "user_id",
+                    "seed",
+                    "cfg_scale",
+                    "style",
                 },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(

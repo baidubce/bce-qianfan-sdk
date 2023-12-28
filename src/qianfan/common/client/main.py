@@ -39,10 +39,15 @@ def version_callback(value: bool) -> None:
 def qianfan_config_callback(
     ctx: typer.Context, param: typer.CallbackParam, value: str
 ) -> None:
+    """
+    update qianfan config
+    """
     if value is not None and len(value.strip()) > 0:
         config_name = param.name
-        qianfan_config_name = config_name.upper()
-        qianfan.get_config().__setattr__(qianfan_config_name, value)
+        if config_name is not None:
+            # arguments name should be lowercase of the variable in config
+            qianfan_config_name = config_name.upper()
+            qianfan.get_config().__setattr__(qianfan_config_name, value)
 
 
 def main() -> None:

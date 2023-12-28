@@ -17,11 +17,12 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from PIL import Image
+from rich.console import Console
 
 import qianfan
-from qianfan.components.client.utils import create_client, timestamp
+from qianfan.components.client.utils import create_client, print_error_msg, timestamp
 from qianfan.consts import DefaultLLMModel
+from qianfan.utils.utils import check_package_installed
 
 
 def txt2img_entry(
@@ -34,15 +35,30 @@ def txt2img_entry(
     output: Optional[Path] = typer.Option(
         Path(f"./{timestamp()}.jpg"), help="The output file location"
     ),
+    plain: bool = typer.Option(False, help="Whether to print plain text"),
 ) -> None:
     """
     Generate images from text.
     """
+    if check_package_installed("PIL"):
+        from PIL import Image
+    else:
+        print_error_msg(
+            "Pillow is required for this command. You can install it using `pip install"
+            " Pillow`"
+        )
+        raise typer.Exit(1)
     client = create_client(qianfan.Text2Image, model, endpoint)
     kwargs = {}
     if negative_prompt != "":
         kwargs["negative_prompt"] = negative_prompt
-    resp = client.do(prompt=prompt, with_decode="base64", **kwargs)
+    if plain:
+        resp = client.do(prompt=prompt, with_decode="base64", **kwargs)
+    else:
+        with Console().status("Generating"):
+            resp = client.do(prompt=prompt, with_decode="base64", **kwargs)
     img_data = resp["body"]["data"][0]["image"]
     img = Image.open(io.BytesIO(img_data))
+    # avoid compressing the image
     img.save(output, quality=100, subsampling=0)
+    print(f"Image saved to {output}")

@@ -5,8 +5,8 @@ import typer
 import qianfan
 from qianfan.components.client.chat import chat_entry
 from qianfan.components.client.completion import completion_entry
-from qianfan.components.client.txt2img import txt2img_entry
 from qianfan.components.client.dataset import dataset_app
+from qianfan.components.client.txt2img import txt2img_entry
 
 app = typer.Typer()
 app.command(name="chat")(chat_entry)

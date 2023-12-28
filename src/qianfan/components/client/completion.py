@@ -15,40 +15,63 @@
 from typing import List, Optional
 
 import typer
-from rich import print
+from rich import print as rprint
+from rich.console import Console
+from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfRole
 from qianfan.components.client.utils import create_client, print_error_msg
 
 
-def completion_single(message: str, client: qianfan.Completion) -> None:
-    res = client.do(prompt=message)
-    print(res["result"])
+class CompletionClient(object):
+    def __init__(self, model: str, endpoint: Optional[str], plain: bool):
+        self.model = model
+        self.endpoint = endpoint
+        self.plain = plain
+        self.console = Console()
 
+    def completion_single(self, message: str) -> None:
+        client = create_client(qianfan.Completion, self.model, self.endpoint)
 
-def completion_multi(messages: List[str], client: qianfan.ChatCompletion) -> None:
-    msg_history = Messages()
-    for i, message in enumerate(messages):
-        if i % 2 == 0:
-            msg_history.append(message, role=QfRole.User)
+        if self.plain:
+            res = client.do(prompt=message)
+            print(res["result"])
         else:
-            msg_history.append(message, role=QfRole.Assistant)
-    res = client.do(messages=msg_history)
-    print(res["result"])
+            with self.console.status("Generating"):
+                res = client.do(prompt=message)
+            rprint(Markdown(res["result"]))
+
+    def completion_multi(self, messages: List[str]) -> None:
+        msg_history = Messages()
+        for i, message in enumerate(messages):
+            if i % 2 == 0:
+                msg_history.append(message, role=QfRole.User)
+            else:
+                msg_history.append(message, role=QfRole.Assistant)
+        client = create_client(qianfan.ChatCompletion, self.model, self.endpoint)
+
+        if self.plain:
+            res = client.do(messages=msg_history)
+            print(res["result"])
+        else:
+            with self.console.status("Generating"):
+                res = client.do(messages=msg_history)
+            rprint(Markdown(res["result"]))
 
 
 def completion_entry(
     messages: List[str] = typer.Argument(..., help="Messages"),
     model: str = typer.Option("ERNIE-Bot-turbo", help="Model name"),
     endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
+    plain: bool = typer.Option(False, help="Plain mode"),
 ):
     if len(messages) % 2 != 1:
         print_error_msg("The number of messages must be odd.")
         raise typer.Exit(code=1)
+    client = CompletionClient(model, endpoint, plain)
+
     if len(messages) == 1:
-        client = create_client(qianfan.Completion, model, endpoint)
-        completion_single(messages[0], client)
+        client.completion_single(messages[0])
     else:
-        client = create_client(qianfan.ChatCompletion, model, endpoint)
-        completion_multi(messages, client)
+        client.completion_multi(messages)

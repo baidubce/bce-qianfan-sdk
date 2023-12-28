@@ -13,9 +13,11 @@
 # limitations under the License.
 
 
-import typer
-from qianfan.dataset import Dataset
 from typing import Optional
+
+import typer
+
+from qianfan.dataset import Dataset
 
 dataset_app = typer.Typer()
 
@@ -68,7 +70,10 @@ def predict(
     endpoint: Optional[str] = typer.Option(None, help="The endpoint to predict."),
     is_chat: bool = typer.Option(False, help="Whether the dataset is a chat."),
     output: Optional[str] = typer.Option(None, help="The output file."),
+    input_column: str = typer.Option("", help="The input column."),
 ):
     ds = load_dataset(dataset)
+    input_column = input_column.split(",")
+    ds.input_columns = input_column
     res = ds.test_using_llm(service_model=model)
     res.save(data_file=output)

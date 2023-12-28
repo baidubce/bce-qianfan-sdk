@@ -21,7 +21,7 @@ from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.txt2img import txt2img_entry
 
-app = typer.Typer(no_args_is_help=True)
+app = typer.Typer(no_args_is_help=True, rich_markup_mode="rich")
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
@@ -60,18 +60,48 @@ def main() -> None:
 @app.callback()
 def entry(
     access_key: Optional[str] = typer.Option(
-        None, callback=qianfan_config_callback, help="Access key from Qianfan IAM."
+        None,
+        callback=qianfan_config_callback,
+        help=(
+            "Access key from"
+            " [link=https://console.bce.baidu.com/iam/#/iam/accesslist]Qianfan"
+            " IAM[/link]."
+            " [link=https://cloud.baidu.com/doc/Reference/s/9jwvz2egb]Reference"
+            " here[/link]."
+        ),
     ),
     secret_key: Optional[str] = typer.Option(
-        None, callback=qianfan_config_callback, help="Secret key from Qianfan IAM."
+        None,
+        callback=qianfan_config_callback,
+        help=(
+            "Secret key from"
+            " [link=https://console.bce.baidu.com/iam/#/iam/accesslist]Qianfan"
+            " IAM[/link]."
+            " [link=https://cloud.baidu.com/doc/Reference/s/9jwvz2egb]Reference"
+            " here[/link]."
+        ),
     ),
     ak: Optional[str] = typer.Option(
         None,
         callback=qianfan_config_callback,
-        help="API key of Qianfan App.",
+        help=(
+            "API key of"
+            " [link=https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application]Qianfan"
+            " App[/link]."
+            " [link=https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake]Reference"
+            " here[/link]."
+        ),
     ),
     sk: Optional[str] = typer.Option(
-        None, callback=qianfan_config_callback, help="Secret key of Qianfan App."
+        None,
+        callback=qianfan_config_callback,
+        help=(
+            "Secret key"
+            " [link=https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application]Qianfan"
+            " App[/link]."
+            " [link=https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake]Reference"
+            " here[/link]."
+        ),
     ),
     version: Optional[bool] = typer.Option(
         None,

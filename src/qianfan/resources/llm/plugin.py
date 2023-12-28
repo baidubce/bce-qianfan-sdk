@@ -16,6 +16,7 @@ from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
+from qianfan.consts import DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResource,
@@ -129,10 +130,10 @@ class Plugin(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -199,10 +200,10 @@ class Plugin(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -267,7 +268,7 @@ class Plugin(BaseResource):
     def batch_do(
         self,
         query_list: List[Union[str, QfResponse, List[Dict]]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -277,8 +278,9 @@ class Plugin(BaseResource):
         Parameters:
           query_list List[Union[str, QfResponse, List[Dict]]]:
             The list user input or prompt for which a response is generated.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Plugin.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
@@ -302,7 +304,7 @@ class Plugin(BaseResource):
     async def abatch_do(
         self,
         query_list: List[Union[str, QfResponse, List[Dict]]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -312,8 +314,9 @@ class Plugin(BaseResource):
         Parameters:
           query_list List[Union[str, QfResponse, List[Dict]]]:
             The list user input or prompt for which a response is generated.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Plugin.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.

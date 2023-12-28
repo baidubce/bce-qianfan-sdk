@@ -259,7 +259,7 @@ class Text2Image(BaseResource):
     def batch_do(
         self,
         prompt_list: List[str],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -269,8 +269,9 @@ class Text2Image(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The list user input or prompt for which a response is generated.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Plugin.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
@@ -296,7 +297,7 @@ class Text2Image(BaseResource):
     async def abatch_do(
         self,
         prompt_list: List[str],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -306,8 +307,9 @@ class Text2Image(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The list user input or prompt for which a response is generated.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Plugin.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.

@@ -16,7 +16,7 @@ from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
-from qianfan.consts import DefaultLLMModel
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResource,
@@ -107,10 +107,10 @@ class Embedding(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -166,10 +166,10 @@ class Embedding(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -222,7 +222,7 @@ class Embedding(BaseResource):
     def batch_do(
         self,
         texts_list: List[List[str]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -231,8 +231,9 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Completion.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
@@ -256,7 +257,7 @@ class Embedding(BaseResource):
     async def abatch_do(
         self,
         texts_list: List[List[str]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -266,8 +267,9 @@ class Embedding(BaseResource):
         Parameters:
           texts_list (List[List[str]]):
             List of the input text list to generate the embeddings.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Embedding.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.

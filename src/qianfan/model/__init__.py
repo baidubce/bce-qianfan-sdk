@@ -11,4 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from qianfan.model.configs import DeployConfig
 from qianfan.model.model import Model, Service
+
+__all__ = ["Model", "Service", "DeployConfig"]

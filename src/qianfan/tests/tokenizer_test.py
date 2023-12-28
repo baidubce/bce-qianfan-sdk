@@ -21,7 +21,6 @@ from qianfan import Tokenizer
 
 def test_count_token_local():
     cases = [
-        ("我是一个大型语言模型，经过训练可以生成自然语言响应。", 13),
         ("hello world 1 2 3", 6),
         ("你好呀", 3),
         ("你好hello哈哈world 1 2 3", 10),

@@ -11,29 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, Optional, cast, List
+from typing import Any, Dict, List, Optional, cast
 
 from qianfan.config import get_config
 from qianfan.dataset import QianfanDataSource
-from qianfan.evaluation.evaluator import Evaluator
 from qianfan.errors import InvalidArgumentError
+from qianfan.evaluation.evaluator import Evaluator
+from qianfan.model.configs import DeployConfig
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
     DeployAction,
+    EvaluateAction,
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
-    EvaluateAction,
 )
 from qianfan.trainer.base import (
     EventHandler,
     Pipeline,
     Trainer,
 )
-from qianfan.trainer.configs import (
-    DeployConfig,
-    TrainConfig,
-)
+from qianfan.trainer.configs import TrainConfig
 from qianfan.trainer.consts import (
     ActionState,
     FinetuneStatus,
@@ -264,5 +262,5 @@ fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Done: FinetuneStatus.EvaluationFinished,
         ActionState.Error: FinetuneStatus.EvaluationFailed,
         ActionState.Stopped: FinetuneStatus.EvaluationStopped,
-    }
+    },
 }

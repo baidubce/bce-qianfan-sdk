@@ -14,24 +14,24 @@
 import pytest
 
 from qianfan.dataset import Dataset, QianfanDataSource
+from qianfan.errors import InvalidArgumentError
+from qianfan.evaluation.evaluator import (
+    QianfanRefereeEvaluator,
+    QianfanRuleEvaluator,
+)
+from qianfan.model import DeployConfig, Model, Service
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
     DeployAction,
+    EvaluateAction,
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.configs import DeployConfig, TrainConfig
+from qianfan.trainer.configs import TrainConfig
 from qianfan.trainer.consts import PeftType, ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
-from qianfan.model.model import Model, Service
-from qianfan.evaluation.evaluator import Evaluator
-from qianfan.evaluation import EvaluationManager
-from qianfan.trainer.actions import EvaluateAction
-
-from qianfan.errors import InvalidArgumentError
-from qianfan.evaluation.evaluator import QianfanEvaluator, QianfanRuleEvaluator
 
 
 class MyEventHandler(EventHandler):
@@ -158,7 +158,7 @@ def test_model_deploy():
     assert resp["result"] != ""
 
 
-def test_service():
+def test_service_exec():
     svc = Service(model="ERNIE-Bot", service_type=ServiceType.Chat)
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
     assert resp is not None
@@ -205,10 +205,11 @@ def test_batch_run_on_qianfan():
     assert inner_source.id == 1
     assert inner_source.group_id == 14510
 
+
 # 测试_parse_from_input方法
 def test__parse_from_input():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.DataTemplateType.NonSortedConversation
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_accuracy=True)]  # 创建一些评估器
@@ -217,10 +218,12 @@ def test__parse_from_input():
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
     assert result.id == 17000
-    assert result.version_id  == 12333
+    assert result.version_id == 12333
     input = {"service": Service(model="ERNIE-Bot")}
     result = action._parse_from_input(input)
-    assert isinstance(result, Service)  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
+    assert isinstance(
+        result, Service
+    )  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
     input = {"model_id": 17001, "model_version_id": 12666}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
@@ -230,29 +233,67 @@ def test__parse_from_input():
     with pytest.raises(InvalidArgumentError):
         action._parse_from_input(input)
 
-# 测试exec方法
-def test_exec():
+
+# 测试eval action exec方法
+def test_eval_action_exec():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.DataTemplateType.NonSortedConversation
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
     action = EvaluateAction(test_dataset, test_evaluators)
     input = {"model": Model(17002, 12444)}
     result = action.exec(input=input)
-    assert result["eval_res"] is not None  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
+    assert (
+        result["eval_res"] is not None
+    )  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
     result.pop("eval_res")
     assert input == result  # 断言输入数据被保留在结果中
 
-# 测试resume方法
-def test_resume():
+
+# 测试eval action resume方法
+def test_eval_action_resume():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.DataTemplateType.NonSortedConversation
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
     action = EvaluateAction(test_dataset, test_evaluators)
     action._input = {"model": Model(17002, 12444)}
     result = action.resume()
-    assert result["eval_res"] is not None  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
-    
+    assert (
+        result["eval_res"] is not None
+    )  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
+
+
+def test_trainer_sft_with_eval():
+    train_config = TrainConfig(
+        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
+    )
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "train", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+    qianfan_eval_data_source = QianfanDataSource.create_bare_dataset(
+        "eval", console_consts.DataTemplateType.NonSortedConversation
+    )
+    eval_ds = Dataset.load(source=qianfan_eval_data_source, organize_data_as_group=True)
+    eh = MyEventHandler()
+    sft_task = LLMFinetune(
+        train_type="Llama-2-7b",
+        dataset=ds,
+        train_config=train_config,
+        event_handler=eh,
+        eval_dataset=eval_ds,
+        evaluators=[QianfanRefereeEvaluator(app_id=18890)],
+    )
+    sft_task.run()
+    res = sft_task.result
+    assert res is not None
+    assert isinstance(res, list)
+    assert len(res) > 0
+    assert isinstance(res[0], dict)
+    assert "model_version_id" in res[0]
+    assert len(eh.events) > 0
+    assert res[0].get("eval_res") is not None
+    print("res", res[0].get("eval_res"))

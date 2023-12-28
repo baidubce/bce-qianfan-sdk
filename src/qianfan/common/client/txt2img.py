@@ -21,7 +21,7 @@ from rich.console import Console
 
 import qianfan
 from qianfan import QfResponse
-from qianfan.components.client.utils import create_client, print_error_msg, timestamp
+from qianfan.common.client.utils import create_client, print_error_msg, timestamp
 from qianfan.consts import DefaultLLMModel
 from qianfan.utils.utils import check_package_installed
 

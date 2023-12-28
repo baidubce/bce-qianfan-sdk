@@ -21,7 +21,7 @@ from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfResponse, QfRole
-from qianfan.components.client.utils import create_client, print_error_msg
+from qianfan.common.client.utils import create_client, print_error_msg
 
 
 class CompletionClient(object):

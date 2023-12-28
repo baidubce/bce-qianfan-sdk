@@ -5,7 +5,7 @@
 **使用方法**:
 
 ```console
-$ qianfan-cli [OPTIONS] COMMAND [ARGS]...
+$ qianfan [OPTIONS] COMMAND [ARGS]...
 ```
 
 **基础参数**:
@@ -29,7 +29,7 @@ $ qianfan-cli [OPTIONS] COMMAND [ARGS]...
 **用法**:
 
 ```console
-$ qianfan-cli chat [OPTIONS]
+$ qianfan chat [OPTIONS]
 ```
 
 **Options 选项**:
@@ -46,7 +46,7 @@ $ qianfan-cli chat [OPTIONS]
 **用法**:
 
 ```console
-$ qianfan-cli completion [OPTIONS] MESSAGES...
+$ qianfan completion [OPTIONS] MESSAGES...
 ```
 
 **Arguments 参数**:
@@ -67,7 +67,7 @@ $ qianfan-cli completion [OPTIONS] MESSAGES...
 **用法**:
 
 ```console
-$ qianfan-cli txt2img [OPTIONS] PROMPT
+$ qianfan txt2img [OPTIONS] PROMPT
 ```
 
 **Arguments 参数**:

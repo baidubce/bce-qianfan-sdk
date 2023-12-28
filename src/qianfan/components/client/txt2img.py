@@ -14,12 +14,13 @@
 
 import io
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import typer
 from rich.console import Console
 
 import qianfan
+from qianfan import QfResponse
 from qianfan.components.client.utils import create_client, print_error_msg, timestamp
 from qianfan.consts import DefaultLLMModel
 from qianfan.utils.utils import check_package_installed
@@ -49,7 +50,7 @@ def txt2img_entry(
         )
         raise typer.Exit(1)
     client = create_client(qianfan.Text2Image, model, endpoint)
-    kwargs = {}
+    kwargs: Dict[str, Any] = {}
     if negative_prompt != "":
         kwargs["negative_prompt"] = negative_prompt
     if plain:
@@ -57,6 +58,7 @@ def txt2img_entry(
     else:
         with Console().status("Generating"):
             resp = client.do(prompt=prompt, with_decode="base64", **kwargs)
+    assert isinstance(resp, QfResponse)
     img_data = resp["body"]["data"][0]["image"]
     img = Image.open(io.BytesIO(img_data))
     # avoid compressing the image

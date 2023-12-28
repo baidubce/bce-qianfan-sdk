@@ -20,29 +20,44 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 import qianfan
-from qianfan import Messages, QfRole
+from qianfan import Messages, QfResponse, QfRole
 from qianfan.components.client.utils import create_client, print_error_msg
 
 
 class CompletionClient(object):
+    """
+    Client class for completion command.
+    """
+
     def __init__(self, model: str, endpoint: Optional[str], plain: bool):
+        """
+        Init the client.
+        """
         self.model = model
         self.endpoint = endpoint
         self.plain = plain
         self.console = Console()
 
     def completion_single(self, message: str) -> None:
+        """
+        Use Completion to complete the given message.
+        """
         client = create_client(qianfan.Completion, self.model, self.endpoint)
 
         if self.plain:
             res = client.do(prompt=message)
+            assert isinstance(res, QfResponse)
             print(res["result"])
         else:
             with self.console.status("Generating"):
                 res = client.do(prompt=message)
+            assert isinstance(res, QfResponse)
             rprint(Markdown(res["result"]))
 
     def completion_multi(self, messages: List[str]) -> None:
+        """
+        Use ChatCompletion to complete the given messages.
+        """
         msg_history = Messages()
         for i, message in enumerate(messages):
             if i % 2 == 0:
@@ -53,10 +68,12 @@ class CompletionClient(object):
 
         if self.plain:
             res = client.do(messages=msg_history)
+            assert isinstance(res, QfResponse)
             print(res["result"])
         else:
             with self.console.status("Generating"):
                 res = client.do(messages=msg_history)
+            assert isinstance(res, QfResponse)
             rprint(Markdown(res["result"]))
 
 
@@ -65,7 +82,10 @@ def completion_entry(
     model: str = typer.Option("ERNIE-Bot-turbo", help="Model name"),
     endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
     plain: bool = typer.Option(False, help="Plain mode"),
-):
+) -> None:
+    """
+    Entry of the completion command.
+    """
     if len(messages) % 2 != 1:
         print_error_msg("The number of messages must be odd.")
         raise typer.Exit(code=1)

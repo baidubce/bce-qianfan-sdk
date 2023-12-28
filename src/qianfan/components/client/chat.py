@@ -12,19 +12,27 @@ from qianfan.components.client.utils import (
     create_client,
     print_error_msg,
 )
-from qianfan.utils.logging import log_warn
-from qianfan.utils.utils import check_package_installed
 
 END_PROMPT = "\exit"
 
 
 class ChatClient(object):
+    """
+    Client object for the chat command
+    """
+
     def __init__(self, model: str, endpoint: Optional[str], multi_line: bool) -> None:
+        """
+        Init the chat client
+        """
         self.client = create_client(qianfan.ChatCompletion, model, endpoint)
         self.multi_line = multi_line
         self.console = Console()
 
     def chat_in_terminal(self) -> None:
+        """
+        Chat in terminal
+        """
         messages = Messages()
         if self.multi_line:
             print(
@@ -82,28 +90,40 @@ class ChatClient(object):
             messages.append(s, role=QfRole.Assistant)
             print()
 
-    def chat_in_tui(self) -> None:
-        if not check_package_installed("textual"):
-            log_warn(
-                "Textual library is required for the enhanced terminal UI experience."
-                " You can install it using `pip install textual`. Without Textual, the"
-                " program will run in a standard command-line interface mode."
-                " Alternatively, you can use the `--plain` option to suppress this"
-                " warning."
-            )
-            return self.chat_in_terminal()
-        self.chat_in_terminal()
+    # def chat_in_tui(self) -> None:
+    #     """
+    #     Create a terminal UI for the chat.
+    #     """
+    #     if not check_package_installed("textual"):
+    #         print_warn_msg(
+    #             "Textual library is required for the enhanced terminal UI experience."
+    #             " You can install it using 'pip install textual'."
+    #         )
+    #         print_warn_msg(
+    #             "Without Textual, the program will run in a standard command-line"
+    #             " interface mode."
+    #         )
+    #         print_warn_msg(
+    #             "Alternatively, you can use the `--no-tui` option to suppress this"
+    #             " warning."
+    #         )
+    #         return self.chat_in_terminal()
+    #     self.chat_in_terminal()
 
 
 def chat_entry(
     model: str = typer.Option("ERNIE-Bot-turbo", help="Model name"),
     endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
-    plain: bool = typer.Option(False, help="Plain text mode"),
+    # tui: bool = typer.Option(False, help="Using Terminal UI"),
     multi_line: bool = typer.Option(False, help="Multi-line mode"),
-):
+) -> None:
+    """
+    Entry of the chat command.
+    """
     client = ChatClient(model, endpoint, multi_line)
+    client.chat_in_terminal()
 
-    if plain:
-        client.chat_in_terminal()
-    else:
-        client.chat_in_tui()
+    # if not tui:
+    #     client.chat_in_terminal()
+    # else:
+    #     client.chat_in_tui()

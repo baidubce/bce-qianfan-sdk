@@ -16,24 +16,32 @@ from datetime import datetime
 from typing import Any, Optional, Type, TypeVar
 
 from rich import print
-from rich.prompt import Prompt
 
 from qianfan.resources.llm.base import BaseResource
 
-T = TypeVar("T", bound=BaseResource)
+BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 
 
-class NewLinePrompt(Prompt):
-    prompt_suffix = ":\n"
+def print_error_msg(msg: str) -> None:
+    """
+    Print an error message in the console.
+    """
+    print(f"[bold red]ERROR[/bold red]: {msg}")
 
 
-def print_error_msg(msg: str):
-    print(f"[bold red]Error[/bold red]: {msg}")
+def print_warn_msg(msg: str) -> None:
+    """
+    Print a warning message in the console.
+    """
+    print(f"[bold orange1]WARN[/bold orange1]: {msg}")
 
 
 def create_client(
-    type: Type[T], model: str, endpoint: Optional[str], **kwargs: Any
-) -> T:
+    type: Type[BaseResourceType], model: str, endpoint: Optional[str], **kwargs: Any
+) -> BaseResourceType:
+    """
+    Create the client according to the type, model and endpoint.
+    """
     if endpoint is not None:
         return type(endpoint=endpoint, **kwargs)
     else:
@@ -41,4 +49,7 @@ def create_client(
 
 
 def timestamp(time: datetime = datetime.now()) -> str:
+    """
+    Return a timestamp string used in the client.
+    """
     return time.strftime("%Y%m%d_%H%M%S")

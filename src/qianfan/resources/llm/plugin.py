@@ -22,7 +22,7 @@ from qianfan.resources.llm.base import (
     BaseResource,
     BatchRequestFuture,
 )
-from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
+from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse
 
 
 class Plugin(BaseResource):
@@ -67,7 +67,7 @@ class Plugin(BaseResource):
                 endpoint="",
                 # the key of api is "query", which is conflict with query in params
                 # use "prompt" to substitute
-                required_keys={"prompt"},
+                required_keys={"_query"},
                 optional_keys={
                     "user_id",
                 },
@@ -123,6 +123,22 @@ class Plugin(BaseResource):
             **kwargs,
         )
 
+    def _generate_body(
+        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+    ) -> JsonBody:
+        """
+        Plugin needs to transform body (`prompt` -> `query`)
+        """
+        if endpoint != "":
+            body = super()._generate_body(model, endpoint, stream, **kwargs)
+            # "query" is conflict with QfRequest.query in params, so "_query" is
+            # the argument in SDK so we need to change "_query" back to "query" here
+            body["query"] = body["_query"]
+            del body["_query"]
+            return body
+        else:
+            return super()._generate_body(model, endpoint, stream, **kwargs)
+
     def do(
         self,
         query: Union[str, QfResponse, List[Dict]],
@@ -172,7 +188,7 @@ class Plugin(BaseResource):
 
         """
         if isinstance(query, str):
-            kwargs["prompt"] = query
+            kwargs["_query"] = query
             if request_id is not None:
                 kwargs["request_id"] = request_id
         elif isinstance(query, list):
@@ -243,7 +259,7 @@ class Plugin(BaseResource):
 
         """
         if isinstance(query, str):
-            kwargs["prompt"] = query
+            kwargs["_query"] = query
             if request_id is not None:
                 kwargs["request_id"] = request_id
         elif isinstance(query, list):

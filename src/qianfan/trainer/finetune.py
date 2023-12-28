@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, List
 
 from qianfan.config import get_config
 from qianfan.dataset import QianfanDataSource
+from qianfan.evaluation.evaluator import Evaluator
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
@@ -22,6 +23,7 @@ from qianfan.trainer.actions import (
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
+    EvaluateAction,
 )
 from qianfan.trainer.base import (
     EventHandler,
@@ -54,6 +56,8 @@ class LLMFinetune(Trainer):
         deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
         base_model: Optional[str] = None,
+        eval_dataset: Optional[Any] = None,
+        evaluators: Optional[List[Evaluator]] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -136,7 +140,12 @@ class LLMFinetune(Trainer):
                 event_handler=event_handler,
             )
             actions.append(self.deploy_action)
-
+        if eval_dataset is not None and evaluators is not None:
+            self.eval_action = EvaluateAction(
+                eval_dataset=eval_dataset,
+                evaluators=evaluators,
+            )
+            actions.append(self.eval_action)
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
@@ -249,4 +258,11 @@ fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Error: ServiceStatus.DeployFailed,
         ActionState.Stopped: ServiceStatus.DeployStopped,
     },
+    EvaluateAction.__class__.__name__: {
+        ActionState.Preceding: FinetuneStatus.EvaluationCreated,
+        ActionState.Running: FinetuneStatus.EvaluationRunning,
+        ActionState.Done: FinetuneStatus.EvaluationFinished,
+        ActionState.Error: FinetuneStatus.EvaluationFailed,
+        ActionState.Stopped: FinetuneStatus.EvaluationStopped,
+    }
 }

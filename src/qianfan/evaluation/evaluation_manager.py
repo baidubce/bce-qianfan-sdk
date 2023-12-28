@@ -35,7 +35,7 @@ from qianfan.evaluation.evaluator import (
 )
 from qianfan.resources import Model as ResourceModel
 from qianfan.resources.console.consts import EvaluationTaskStatus
-from qianfan.trainer import Model, Service
+from qianfan.model import Model, Service
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 

@@ -63,6 +63,16 @@ class FinetuneStatus(str, Enum):
     """模型发布失败"""
     ModelPublished = "ModelPublished"
     """模型发布成功"""
+    EvaluationCreated = "EvaluationCreated"
+    """评估任务创建，初始化"""
+    EvaluationRunning = "EvaluationRunning"
+    """模型服务评估中"""
+    EvaluationFailed = "EvaluationFailed"
+    """模型服务评估失败"""
+    EvaluationStopped = "EvaluationStopped"
+    """模型服务评估停止"""
+    EvaluationFinished = "EvaluationFinished"
+    """模型服务评估完成"""
 
 
 class ServiceStatus(str, Enum):

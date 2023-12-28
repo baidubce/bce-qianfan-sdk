@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pytest
+
 from qianfan.dataset import Dataset, QianfanDataSource
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
@@ -23,7 +25,13 @@ from qianfan.trainer.configs import DeployConfig, TrainConfig
 from qianfan.trainer.consts import PeftType, ServiceType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
-from qianfan.trainer.model import Model, Service
+from qianfan.model.model import Model, Service
+from qianfan.evaluation.evaluator import Evaluator
+from qianfan.evaluation import EvaluationManager
+from qianfan.trainer.actions import EvaluateAction
+
+from qianfan.errors import InvalidArgumentError
+from qianfan.evaluation.evaluator import QianfanEvaluator, QianfanRuleEvaluator
 
 
 class MyEventHandler(EventHandler):
@@ -40,7 +48,7 @@ def test_load_data_action():
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
-    res = LoadDataSetAction(ds).exec(input={"dataset_id": 123})
+    res = LoadDataSetAction(ds).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
 
@@ -196,3 +204,55 @@ def test_batch_run_on_qianfan():
     assert isinstance(inner_source, QianfanDataSource)
     assert inner_source.id == 1
     assert inner_source.group_id == 14510
+
+# 测试_parse_from_input方法
+def test__parse_from_input():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+    test_evaluators = [QianfanRuleEvaluator(using_accuracy=True)]  # 创建一些评估器
+    action = EvaluateAction(test_dataset, test_evaluators)
+    input = {"model": Model(17000, 12333)}
+    result = action._parse_from_input(input)
+    assert isinstance(result, Model)
+    assert result.id == 17000
+    assert result.version_id  == 12333
+    input = {"service": Service(model="ERNIE-Bot")}
+    result = action._parse_from_input(input)
+    assert isinstance(result, Service)  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
+    input = {"model_id": 17001, "model_version_id": 12666}
+    result = action._parse_from_input(input)
+    assert isinstance(result, Model)
+    assert result.id == 17001
+    assert result.version_id == 12666
+    input = {}
+    with pytest.raises(InvalidArgumentError):
+        action._parse_from_input(input)
+
+# 测试exec方法
+def test_exec():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+    test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
+    action = EvaluateAction(test_dataset, test_evaluators)
+    input = {"model": Model(17002, 12444)}
+    result = action.exec(input=input)
+    assert result["eval_res"] is not None  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
+    result.pop("eval_res")
+    assert input == result  # 断言输入数据被保留在结果中
+
+# 测试resume方法
+def test_resume():
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+    test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
+    action = EvaluateAction(test_dataset, test_evaluators)
+    action._input = {"model": Model(17002, 12444)}
+    result = action.resume()
+    assert result["eval_res"] is not None  # 假设eval_res不为None，具体内容需要根据实际情况进行断言
+    

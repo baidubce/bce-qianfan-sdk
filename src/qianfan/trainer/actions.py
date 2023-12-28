@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
-from typing import Any, Dict, Optional, cast
-
+from qianfan.dataset.dataset import Dataset
+from typing import Any, Dict, Optional, cast, Union
+from qianfan.evaluation import EvaluationManager
+from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvaluator
 from qianfan import resources as api
 from qianfan.config import get_config
 from qianfan.errors import InternalError, InvalidArgumentError
@@ -30,7 +32,7 @@ from qianfan.trainer.configs import (
     TrainConfig,
     TrainLimit,
 )
-from qianfan.trainer.model import Model
+from qianfan.model.model import Model, Service
 from qianfan.utils import (
     log_debug,
     log_error,
@@ -728,3 +730,70 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 "either (model_id and version_id) or model must be set"
             )
         return self._exec()
+
+class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """EvaluateAction
+    Action for evaluate models or services.
+    """
+    
+    eval_manager: Optional[EvaluationManager] = None
+    """evaluation manager for evaluate models or services."""
+    eval_dataset: Optional[Dataset] = None
+    _input: Optional[Dict[str, Any]] = None
+    """input of action"""
+    result: Optional[Dict[str, Any]] = None
+    """result of action"""
+
+    def __init__(self, eval_dataset: Dataset, evaluators: Evaluator, **kwargs: Any):    
+        super().__init__(**kwargs)
+        self.eval_dataset = eval_dataset
+        self.eval_manager = EvaluationManager(
+            local_evaluators=[eval for eval in evaluators if isinstance(eval, LocalEvaluator)],
+            qianfan_evaluators=[eval for eval in evaluators if isinstance(eval, QianfanEvaluator)],
+        )
+
+    @with_event
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+        self._input = input
+        log_info(f"[evaluation_action] begin to do evaluation, input: {self._input}")
+        llm = self._parse_from_input(self._input)
+        res = self._exec(llm, **kwargs)
+        self.result = {
+            "eval_res": res,
+            **input
+        }
+        return self.result
+    
+    def _parse_from_input(self, input: Dict[str, Any]={}) -> Union[Model, Service]:
+        if input.get("service"):
+            llm = input.get("service")
+        elif input.get("model") :
+            llm = input.get("model")
+        elif input.get("model_id") and input.get("model_version_id"):
+            llm = Model(input["model_id"], input["model_version_id"])
+        else:
+            log_error(f"[evaluation_action] invalid llm input error {self._input}")
+            raise InvalidArgumentError("model or service must be set in evaluation action")
+        return llm
+
+    def _exec(self, llm: Union[Model, Service], **kwargs: Dict) -> Any:
+        self.action_event(
+            ActionState.Running,
+            "ready to evaluate",
+            {
+                "llm": llm,
+                "dataset": self.eval_dataset,
+            },
+        )
+        log_info(f"[evaluation_action] running evaluation...")
+        return self.eval_manager.eval([llm], self.eval_dataset)
+
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        llm = self._parse_from_input(self._input)
+        res = self._exec(llm, **kwargs)
+        self.result = {
+            "eval_res": res,
+            **self._input
+        }
+        return self.result

@@ -22,6 +22,7 @@ from rich.markdown import Markdown
 import qianfan
 from qianfan import Messages, QfResponse, QfRole
 from qianfan.common.client.utils import create_client, print_error_msg
+from qianfan.consts import DefaultLLMModel
 
 
 class CompletionClient(object):
@@ -79,7 +80,7 @@ class CompletionClient(object):
 
 def completion_entry(
     messages: List[str] = typer.Argument(..., help="Messages"),
-    model: str = typer.Option("ERNIE-Bot-turbo", help="Model name"),
+    model: str = typer.Option(DefaultLLMModel.Completion, help="Model name"),
     endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
     plain: bool = typer.Option(False, help="Plain mode"),
 ) -> None:

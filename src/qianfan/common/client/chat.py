@@ -22,6 +22,7 @@ from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfRole
+from qianfan.consts import DefaultLLMModel
 from qianfan.common.client.utils import (
     create_client,
     print_error_msg,
@@ -104,29 +105,9 @@ class ChatClient(object):
             messages.append(s, role=QfRole.Assistant)
             print()
 
-    # def chat_in_tui(self) -> None:
-    #     """
-    #     Create a terminal UI for the chat.
-    #     """
-    #     if not check_package_installed("textual"):
-    #         print_warn_msg(
-    #             "Textual library is required for the enhanced terminal UI experience."
-    #             " You can install it using 'pip install textual'."
-    #         )
-    #         print_warn_msg(
-    #             "Without Textual, the program will run in a standard command-line"
-    #             " interface mode."
-    #         )
-    #         print_warn_msg(
-    #             "Alternatively, you can use the `--no-tui` option to suppress this"
-    #             " warning."
-    #         )
-    #         return self.chat_in_terminal()
-    #     self.chat_in_terminal()
-
 
 def chat_entry(
-    model: str = typer.Option("ERNIE-Bot-turbo", help="Model name"),
+    model: str = typer.Option(DefaultLLMModel.ChatCompletion, help="Model name"),
     endpoint: Optional[str] = typer.Option(None, help="Endpoint"),
     # tui: bool = typer.Option(False, help="Using Terminal UI"),
     multi_line: bool = typer.Option(False, help="Multi-line mode"),

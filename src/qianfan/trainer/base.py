@@ -19,7 +19,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Generic,
     List,
     Optional,
     Sequence,
@@ -28,6 +27,7 @@ from typing import (
     cast,
 )
 
+from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
@@ -35,56 +35,6 @@ from qianfan.utils import log_debug, log_error, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
-
-
-class Executable(Generic[Input, Output], ABC):
-    """
-    generic abstraction class of executable
-
-    """
-
-    @abstractmethod
-    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
-        ...
-
-
-class Serializable(ABC):
-    """
-    generic abstraction class of serializable.
-    especially for the model, service, and trainer.
-    """
-
-    @abstractmethod
-    def dumps(self) -> Optional[bytes]:
-        """
-        dumps
-
-        Returns:
-            serialized bytes data
-        """
-        ...
-
-    @abstractmethod
-    def loads(self, data: bytes) -> Any:
-        """
-        loads
-
-        Parameters:
-            data (bytes): load
-
-        Returns:
-            Any: _description_
-        """
-        ...
-
-
-class ExecuteSerializable(Executable[Input, Output], Serializable):
-    """
-    set of executable and serializable. subclass implement it to support
-    exec and dumps/loads.
-    """
-
-    ...
 
 
 class BaseAction(ExecuteSerializable[Input, Output], ABC):

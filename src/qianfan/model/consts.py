@@ -11,24 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qianfan.trainer.actions import (
-    BaseAction,
-    DeployAction,
-    LoadDataSetAction,
-    ModelPublishAction,
-    TrainAction,
-)
-from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune, Trainer
+from enum import Enum
 
-__all__ = [
-    "LLMFinetune",
-    "BaseAction",
-    "Trainer",
-    "EventHandler",
-    "Event",
-    "TrainAction",
-    "LoadDataSetAction",
-    "DeployAction",
-    "ModelPublishAction",
-]
+
+class ServiceType(str, Enum):
+    Chat = "Chat"
+    """Corresponding to the `ChatCompletion`"""
+    Completion = "Completion"
+    """Corresponding to the `Completion`"""
+    Embedding = "Embedding"
+    """Corresponding to the `Embedding`"""
+    Text2Image = "Text2Image"
+    """Corresponding to the `Text2Image"""

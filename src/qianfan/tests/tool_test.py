@@ -18,8 +18,8 @@
 from typing import List, Optional, Type
 
 import qianfan
-from qianfan.components.tool.baidu_search_tool import BaiduSearchTool
-from qianfan.components.tool.base_tool import BaseTool, ToolParameter
+from qianfan.common.tool.baidu_search_tool import BaiduSearchTool
+from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 from qianfan.utils.utils import check_package_installed
 
 

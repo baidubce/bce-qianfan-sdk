@@ -17,7 +17,7 @@ wikipedia tool
 
 from typing import Dict, List, Optional
 
-from qianfan.components.tool.base_tool import BaseTool, ToolParameter
+from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 from qianfan.utils.utils import assert_package_installed
 
 

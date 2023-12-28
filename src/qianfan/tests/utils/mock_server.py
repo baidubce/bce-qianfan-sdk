@@ -2328,7 +2328,7 @@ def mock_hub_file():
     content = """{
     "sdk_version": "0.2.0",
     "obj": {
-        "module": "qianfan.components.prompt.prompt",
+        "module": "qianfan.common.prompt.prompt",
         "type": "Prompt",
         "args": {
             "name": "穿搭灵感",
@@ -2339,7 +2339,7 @@ def mock_hub_file():
             ],
             "labels": [
                 {
-                    "module": "qianfan.components.prompt.prompt",
+                    "module": "qianfan.common.prompt.prompt",
                     "type": "PromptLabel",
                     "args": {
                         "id": 1734,

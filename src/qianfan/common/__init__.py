@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.components.prompt.prompt import Prompt, PromptLabel
+from qianfan.common.prompt.prompt import Prompt, PromptLabel
 
 __all__ = ["Prompt", "PromptLabel"]

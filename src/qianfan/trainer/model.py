@@ -16,7 +16,7 @@ import time
 from typing import Any, Dict, Iterator, Optional, Union
 
 from qianfan import resources as api
-from qianfan.components import Prompt
+from qianfan.common import Prompt
 from qianfan.config import get_config
 from qianfan.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError

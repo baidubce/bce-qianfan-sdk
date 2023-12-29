@@ -37,7 +37,6 @@ from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.requestor.base import BaseAPIRequestor
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_error, log_info
-from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 
 _T = TypeVar("_T")
 
@@ -229,12 +228,14 @@ class QfAPIRequestor(BaseAPIRequestor):
             auth = self._auth
         access_token = auth.access_token()
         if access_token == "":
+            # use IAM auth
             access_key = auth._access_key
             secret_key = auth._secret_key
             if access_key is None or secret_key is None:
                 raise errors.AccessTokenExpiredError
             self._sign(req, access_key, secret_key)
         else:
+            # use openapi auth
             req.query["access_token"] = access_token
         return req
 
@@ -248,12 +249,14 @@ class QfAPIRequestor(BaseAPIRequestor):
             auth = self._auth
         access_token = await auth.a_access_token()
         if access_token == "":
+            # use IAM auth
             access_key = auth._access_key
             secret_key = auth._secret_key
             if access_key is None or secret_key is None:
                 raise errors.AccessTokenExpiredError
             self._sign(req, access_key, secret_key)
         else:
+            # use openapi auth
             req.query["access_token"] = access_token
         return req
 

@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from qianfan.config import get_config
 from qianfan.consts import Consts
@@ -282,7 +282,11 @@ class Auth(object):
                 "no enough credential found, any one of (access_key, secret_key),"
                 " (ak, sk), access_token must be provided"
             )
-        if self._access_key is not None and self._secret_key is not None:
+        if (
+            self._access_token is None
+            and (self._ak is None or self._sk is None)
+            and (self._access_key is not None and self._secret_key is not None)
+        ):
             self._registered = True
 
     def _register(self) -> None:
@@ -366,11 +370,9 @@ class Auth(object):
             return self._access_token
         self._register()
         if self._ak is None or self._sk is None:
+            # use access_key and secret_key to auth
+            # so no access_token here
             return ""
-            raise InvalidArgumentError(
-                "no enough credential found, any one of (access_key, secret_key),"
-                " (ak, sk), access_token must be provided"
-            )
         return AuthManager().get_access_token(self._ak, self._sk)
 
     async def a_access_token(self) -> str:
@@ -381,9 +383,7 @@ class Auth(object):
             return self._access_token
         await self._aregister()
         if self._ak is None or self._sk is None:
+            # use access_key and secret_key to auth
+            # so no access_token here
             return ""
-            raise InvalidArgumentError(
-                "no enough credential found, any one of (access_key, secret_key),"
-                " (ak, sk), access_token must be provided"
-            )
         return await AuthManager().aget_access_token(self._ak, self._sk)

@@ -20,19 +20,17 @@ import functools
 import io
 import json
 import os
-import time
 from copy import deepcopy
 from time import sleep
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 from zipfile import ZipFile
 
 import pyarrow.json
-import requests
 from pyarrow import Table as PyarrowTable
 from pyarrow import csv as pyarrow_csv
 from typing_extensions import Self
 
-from qianfan import ChatCompletion, Completion, QfResponse, QfRole, get_config
+from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
@@ -45,26 +43,28 @@ from qianfan.dataset.data_source import (
     FormatType,
     QianfanDataSource,
 )
+from qianfan.dataset.dataset_utils import (
+    _async_batch_do_on_service,
+    _batch_do_on_service,
+    _check_and_generate_service,
+    _create_a_dataset_etl_task,
+    _get_qianfan_schema,
+    _list_cloud_data,
+    _start_an_evaluation_task_for_model_batch_inference,
+    check_online_data_process_result,
+)
 from qianfan.dataset.schema import (
-    QianfanGenericText,
-    QianfanQuerySet,
     QianfanSchema,
-    QianfanSortedConversation,
-    QianfanText2Image,
     Schema,
 )
 from qianfan.dataset.table import Table
-from qianfan.dataset.utils import (
-    _construct_table_from_nest_sequence,
-)
-from qianfan.errors import QianfanError, RequestError, ValidationError
-from qianfan.resources import Data, Model
+from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
+from qianfan.errors import ValidationError
+from qianfan.resources import Data
 from qianfan.resources.console.consts import (
     DataTemplateType,
-    ETLTaskStatus,
-    EvaluationTaskStatus,
 )
-from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils import log_debug, log_error, log_info
 from qianfan.utils.utils import generate_letter_num_random_id
 
 
@@ -652,58 +652,6 @@ class Dataset(Table):
         """
         return self._is_dataset_generic_text()
 
-    def _create_a_dataset_etl_task(
-        self, operator_dict: Dict[str, List[Dict[str, Any]]]
-    ) -> Tuple[int, int]:
-        origin_data_source = self.inner_data_source_cache
-        assert isinstance(origin_data_source, QianfanDataSource)
-
-        log_info("create a new dataset group and dataset")
-        new_data_source = QianfanDataSource.create_bare_dataset(
-            name=f"etl_result_set_{generate_letter_num_random_id()}",
-            template_type=origin_data_source.template_type,
-            storage_type=origin_data_source.storage_type,
-            storage_id=origin_data_source.storage_id,
-            storage_path=origin_data_source.storage_raw_path,
-            ak=origin_data_source.ak,
-            sk=origin_data_source.sk,
-        )
-
-        log_debug(
-            f"new dataset id: {new_data_source.id} , and name: {new_data_source.name}"
-        )
-        log_info("new dataset group and dataset created, start creating etl task")
-
-        Data.create_dataset_etl_task(
-            source_dataset_id=origin_data_source.id,
-            destination_dataset_id=new_data_source.id,
-            operations=operator_dict,
-        )
-
-        etl_result = Data.get_dataset_etl_task_list()["result"]
-        if etl_result.get("processingCount", 0) == 0:
-            message = "get empty etl task list after creating an etl task"
-            log_error(message)
-            raise ValueError(message)
-
-        etl_list = etl_result.get("items", [])
-        etl_id: Optional[int] = None
-        for task in etl_list:
-            if (
-                task["sourceDatasetId"] == origin_data_source.id
-                and task["destDatasetId"] == new_data_source.id
-            ):
-                etl_id = task["etlId"]
-                break
-
-        if etl_id is None:
-            message = "can't find matched processing etl task"
-            log_error(message)
-            raise ValueError(message)
-
-        log_info(f"created etl task id: {etl_id}")
-        return etl_id, new_data_source.id
-
     def start_online_data_process_task(self, operators: List[QianfanOperator]) -> int:
         """
         create an online ETL task on qianfan
@@ -747,43 +695,10 @@ class Dataset(Table):
         log_debug(f"operator args dict: {operator_dict}")
         log_info("start to creating an etl task")
 
-        etl_id = self._create_a_dataset_etl_task(operator_dict)[0]
+        etl_id = _create_a_dataset_etl_task(
+            self.inner_data_source_cache, operator_dict
+        )[0]
         return etl_id
-
-    @staticmethod
-    def check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]:
-        """
-        check etl task result using etl task id
-
-        Args:
-            etl_id (int):
-                etl task id
-        Returns:
-            Optional[Union[bool, int]]: return None when task is still on processing.
-                return False if task failed and return dataset id which contains data
-                after clean
-        """
-        result = Data.get_dataset_etl_task_info(etl_id)["result"]
-        if result["processStatus"] == ETLTaskStatus.Finished.value:
-            log_info(f"data etl task {etl_id} succeeded")
-            return result["destDatasetId"]
-        if result["processStatus"] == ETLTaskStatus.Running.value:
-            log_info(f"data etl task {etl_id} running")
-            return None
-        if result["processStatus"] == ETLTaskStatus.Paused.value:
-            log_warn(f"etl task {etl_id} paused")
-            return None
-        if result["processStatus"] in [
-            ETLTaskStatus.Failed.value,
-            ETLTaskStatus.Interrupted.value,
-        ]:
-            log_warn(
-                f"etl task {etl_id} terminated with status code:"
-                f" {result['processStatus']}"
-            )
-            return False
-
-        return False
 
     def online_data_process(self, operators: List[QianfanOperator]) -> Dict[str, Any]:
         """
@@ -811,7 +726,7 @@ class Dataset(Table):
 
         while True:
             sleep(get_config().ETL_STATUS_POLLING_INTERVAL)
-            result = self.check_online_data_process_result(etl_id)
+            result = check_online_data_process_result(etl_id)
             if result is None:
                 continue
             if not result:
@@ -823,6 +738,7 @@ class Dataset(Table):
 
         return ret_dict
 
+    @_online_except_decorator
     def add_default_group_column(self) -> Self:
         """
         add "_group" column to Dataset, the value
@@ -840,6 +756,7 @@ class Dataset(Table):
             {"name": QianfanDataGroupColumnName, "data": list(range(self.row_number()))}
         )
 
+    @_online_except_decorator
     def delete_group_column(self) -> Self:
         """
         remove "_group" column from Dataset
@@ -981,64 +898,7 @@ class Dataset(Table):
             log_info(f"list local dataset data by {by}")
             return super().list(by)
         else:
-            assert isinstance(self.inner_data_source_cache, QianfanDataSource)
-            log_info(f"list qianfan dataset data by {by}")
-
-            if isinstance(by, str):
-                message = "can't get entity by string from qianfan"
-                log_error(message)
-                raise ValueError(message)
-            elif isinstance(by, (list, tuple)):
-                message = "can't get entity by sequence from qianfan"
-                log_error(message)
-                raise ValueError(message)
-
-            args = {"dataset_id": self.inner_data_source_cache.id}
-
-            if isinstance(by, int):
-                args["offset"] = by
-                args["page_size"] = 1
-            elif isinstance(by, slice):
-                args["offset"] = by.start
-                args["page_size"] = by.stop - by.start
-
-            log_debug(f"request qianfan dataset list args: {args}")
-            resp = Data.list_all_entity_in_dataset(**{**kwargs, **args})["result"][
-                "items"
-            ]
-            log_info("received dataset list from qianfan dataset")
-            log_debug(f"request qianfan dataset list response items: {resp}")
-            result = [
-                {"entity_id": record["id"], "entity_url": record["url"]}
-                for record in resp
-            ]
-
-            for elem in result:
-                for i in range(get_config().GET_ENTITY_CONTENT_FAILED_RETRY_TIMES):
-                    log_info(
-                        f"retrieve single entity from {elem['entity_url']} in try {i}"
-                    )
-                    resp = requests.get(elem["entity_url"])
-                    if resp.status_code == 200:
-                        break
-                    log_warn(f"request url {elem['entity_url']} failed, retry")
-
-                if resp.status_code != 200:
-                    message = (
-                        f"request content of entity {elem['entity_id']} from"
-                        f" {elem['entity_url']} failed"
-                    )
-                    log_error(message)
-                    raise RequestError(message)
-
-                log_info(
-                    f"retrieve single entity from {elem['entity_url']} succeeded, with"
-                    f" content: {resp.text}"
-                )
-                elem.pop("entity_url")
-                elem["entity_content"] = resp.text
-
-            return result
+            _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
 
     def row_number(self) -> int:
         if (
@@ -1320,59 +1180,9 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        qianfan_data_source = self.inner_data_source_cache
-        assert isinstance(qianfan_data_source, QianfanDataSource)
-
-        log_info("start to create evaluation task in model")
-
-        resp = Model.create_evaluation_task(
-            name=f"model_run_{generate_letter_num_random_id()}",
-            version_info=[
-                {
-                    "modelId": model_id,
-                    "modelVersionId": model_version_id,
-                }
-            ],
-            dataset_id=qianfan_data_source.id,
-            eval_config={
-                "evalMode": "manual",
-                "evaluationDimension": [
-                    {"dimension": "满意度"},
-                ],
-            },
-            dataset_name=qianfan_data_source.name,
-            **kwargs,
-        ).body
-
-        eval_id = resp["result"]["evalId"]
-
-        log_debug(f"create evaluation task in model response: {resp}")
-        log_info(f"start to polling status of evaluation task {eval_id}")
-
-        while True:
-            eval_info = Model.get_evaluation_info(eval_id)
-            eval_state = eval_info["result"]["state"]
-
-            log_debug(f"current evaluation task info: {eval_info}")
-            log_info(f"current eval_state: {eval_state}")
-
-            if eval_state not in [
-                EvaluationTaskStatus.Pending.value,
-                EvaluationTaskStatus.Doing.value,
-            ]:
-                break
-            time.sleep(get_config().BATCH_RUN_STATUS_POLLING_INTERVAL)
-
-        if eval_state not in [
-            EvaluationTaskStatus.DoingWithManualBegin,
-            EvaluationTaskStatus.Done,
-        ]:
-            err_msg = f"can't finish evaluation task and failed with state {eval_state}"
-            log_error(err_msg)
-            raise QianfanError(err_msg)
-
-        result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetId"]
-        log_info(f"get result dataset id {result_dataset_id}")
+        result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
+            self.inner_data_source_cache, model_id, model_version_id
+        )
 
         return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
 
@@ -1452,21 +1262,29 @@ class Dataset(Table):
         Returns:
             Dataset: batch result contained in dataset
         """
+        if self.is_dataset_located_in_qianfan():
+            err_msg = "can't start a batch run task on qianfan dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
-        service = self._check_and_generate_service(
-            service_model, service_endpoint, is_chat_service, **kwargs
+        service = _check_and_generate_service(
+            self.input_columns,
+            service_model,
+            service_endpoint,
+            is_chat_service,
+            **kwargs,
         )
 
         if isinstance(service, Completion):
             input_str_list = self._get_input_str_list(**kwargs)
-            output_list = self._batch_do_on_service(
+            output_list = _batch_do_on_service(
                 service, input_str_list, system=system_prompt, **kwargs
             )
 
             return self._get_completion_return_dataset(input_str_list, output_list)
         else:
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
-            output_list = self._batch_do_on_service(
+            output_list = _batch_do_on_service(
                 service, input_chat_list, system=system_prompt, **kwargs
             )
 
@@ -1506,63 +1324,35 @@ class Dataset(Table):
         Returns:
             Dataset: batch result contained in dataset
         """
+        if self.is_dataset_located_in_qianfan():
+            err_msg = "can't start a batch run task on qianfan dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
-        service = self._check_and_generate_service(
-            service_model, service_endpoint, is_chat_service, **kwargs
+        service = _check_and_generate_service(
+            self.input_columns,
+            service_model,
+            service_endpoint,
+            is_chat_service,
+            **kwargs,
         )
 
         if isinstance(service, Completion):
             input_str_list = self._get_input_str_list(**kwargs)
-            output_list = await self._async_batch_do_on_service(
+            output_list = await _async_batch_do_on_service(
                 service, input_str_list, system=system_prompt, **kwargs
             )
 
             return self._get_completion_return_dataset(input_str_list, output_list)
         else:
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
-            output_list = await self._async_batch_do_on_service(
+            output_list = await _async_batch_do_on_service(
                 service, input_chat_list, system=system_prompt, **kwargs
             )
 
             return self._get_chat_return_dataset(
                 input_chat_list, output_list, reference_list
             )
-
-    def _check_and_generate_service(
-        self,
-        service_model: Optional[str] = None,
-        service_endpoint: Optional[str] = None,
-        is_chat_service: bool = False,
-        **kwargs: Any,
-    ) -> Union[ChatCompletion, Completion]:
-        if self.is_dataset_located_in_qianfan():
-            err_msg = "can't start a batch run task on qianfan dataset"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        input_columns = self.input_columns
-        if not input_columns:
-            err_msg = "no input column has been set"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        prompt_template: Optional[Prompt] = kwargs.get("prompt_template", None)
-
-        if prompt_template:
-            log_info("prompt template detected, start to check template variables")
-            for column in input_columns:
-                if column not in prompt_template.variables:
-                    err_msg = f"input column {column} not in prompt template"
-                    log_error(err_msg)
-                    raise ValueError(err_msg)
-
-        service: Union[ChatCompletion, Completion]
-        if is_chat_service:
-            service = ChatCompletion(service_model, service_endpoint)
-        else:
-            service = Completion(service_model, service_endpoint)
-
-        return service
 
     def _get_input_str_list(self, **kwargs: Any) -> List[str]:
         prompt_template: Optional[Prompt] = kwargs.get("prompt_template", None)
@@ -1606,7 +1396,7 @@ class Dataset(Table):
         self, **kwargs: Any
     ) -> Tuple[List[List[Dict[str, Any]]], List[Any]]:
         if not self.is_dataset_packed() and not self.is_dataset_grouped():
-            input_str_list = self._get_input_str_list()
+            input_str_list = self._get_input_str_list(**kwargs)
             return [
                 [{"role": QfRole.User.value, "content": prompt}]
                 for prompt in input_str_list
@@ -1668,97 +1458,3 @@ class Dataset(Table):
             input_chat_list.append(input_messages)
 
         return input_chat_list, reference_list
-
-    def _batch_do_on_service(
-        self,
-        service: Union[ChatCompletion, Completion],
-        input_list: Union[List[str], List[List[Dict[str, Any]]]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> List[str]:
-        output_list: List[str] = []
-        results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
-        for idx in range(len(results)):
-            result = results[idx]
-            if isinstance(result, QfResponse):
-                output_list.append(result.body["result"])
-                self.log_latency_info(result, idx)
-            elif isinstance(result, Exception):
-                log_warn(
-                    "an exception has occurred during batch requesting and its"
-                    f" result will be empty string. exception: {result}\ninput:"
-                    f" {input_list[idx]}"
-                )
-                output_list.append("")
-            else:
-                result_str = ""
-                index = 0
-                for r in result:
-                    result_str += r.body["result"]
-                    index += 1
-                    self.log_latency_info(r, idx, index)
-                output_list.append(result_str)
-
-        return output_list
-
-    async def _async_batch_do_on_service(
-        self,
-        service: Union[ChatCompletion, Completion],
-        input_list: Union[List[str], List[List[Dict[str, Any]]]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> List[str]:
-        output_list: List[str] = []
-        results = await service.abatch_do(input_list, *args, **kwargs)  # type: ignore
-        for idx in range(len(results)):
-            result = results[idx]
-            if isinstance(result, QfResponse):
-                output_list.append(result.body["result"])
-                self.log_latency_info(result, idx)
-            elif isinstance(result, Exception):
-                log_warn(
-                    "an exception has occurred during batch requesting and its"
-                    f" result will be empty string. exception: {result}\ninput:"
-                    f" {input_list[idx]}"
-                )
-                output_list.append("")
-            else:
-                result_str = ""
-                index = 0
-                async for r in result:
-                    result_str += r.body["result"]
-                    index += 1
-                    self.log_latency_info(r, idx, index)
-                output_list.append(result_str)
-
-        return output_list
-
-    def log_latency_info(
-        self, result: QfResponse, index: int, stream_index: int = 1
-    ) -> None:
-        if result.statistic:
-            request_latency = result.statistic.get("request_latency", None)
-
-            log_debug(
-                f"数据 {index} 的第 {stream_index} 片回包请求响应时延:"
-                f" {request_latency}"
-            )
-
-
-def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
-    """推断获取 Schema"""
-    template_type = source.template_type
-    if template_type == DataTemplateType.SortedConversation:
-        return QianfanSortedConversation()
-    if template_type == DataTemplateType.NonSortedConversation:
-        return QianfanSortedConversation()
-    if template_type == DataTemplateType.GenericText:
-        return QianfanGenericText()
-    if template_type == DataTemplateType.QuerySet:
-        return QianfanQuerySet()
-    if template_type == DataTemplateType.Text2Image:
-        return QianfanText2Image()
-
-    error = ValueError(f"schema didn't find for template type {template_type}")
-    log_error(str(error))
-    raise error

@@ -19,12 +19,18 @@ import typer
 import qianfan
 from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
+from qianfan.common.client.embedding import embedding_entry
 from qianfan.common.client.txt2img import txt2img_entry
 
-app = typer.Typer(no_args_is_help=True, rich_markup_mode="rich")
+app = typer.Typer(
+    no_args_is_help=True,
+    rich_markup_mode="rich",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
+app.command(name="embedding", no_args_is_help=True)(embedding_entry)
 
 
 def version_callback(value: bool) -> None:
@@ -106,6 +112,7 @@ def entry(
     version: Optional[bool] = typer.Option(
         None,
         "--version",
+        "-v",
         callback=version_callback,
         is_eager=True,
         help="Print version.",

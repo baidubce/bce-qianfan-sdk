@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan import resources as api
 from qianfan.config import get_config
+from qianfan.dataset.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError
+from qianfan.evaluation import EvaluationManager
+from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvaluator
+from qianfan.model import Model, Service
+from qianfan.model.configs import DeployConfig
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.base import (
     ActionState,
@@ -25,12 +30,10 @@ from qianfan.trainer.base import (
 )
 from qianfan.trainer.configs import (
     DefaultTrainConfigMapping,
-    DeployConfig,
     ModelInfoMapping,
     TrainConfig,
     TrainLimit,
 )
-from qianfan.trainer.model import Model
 from qianfan.utils import (
     log_debug,
     log_error,
@@ -721,6 +724,14 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        """
+        resume method for deploy action
+
+        Parameters:
+            **kwargs (Dict):
+                input args for action resume
+
+        """
         if self.model_id is not None and self.model_version_id is not None:
             self.model = Model(self.model_id, self.model_version_id)
         elif self.model is None:
@@ -728,3 +739,142 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 "either (model_id and version_id) or model must be set"
             )
         return self._exec()
+
+
+class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """EvaluateAction
+    Action for evaluate models or services.
+    Sample:
+    input:
+        ```
+        {'model_id': 47923, 'model_version_id': 33512}
+        ```
+    output:
+        ```
+        {'eval_res': EvaluationResult ...}
+        ```
+    """
+
+    eval_manager: Optional[EvaluationManager] = None
+    """evaluation manager for evaluate models or services."""
+    eval_dataset: Optional[Dataset] = None
+    _input: Optional[Dict[str, Any]] = None
+    """input of action"""
+    result: Optional[Dict[str, Any]] = None
+    """result of action"""
+
+    def __init__(
+        self, eval_dataset: Dataset, evaluators: List[Evaluator], **kwargs: Any
+    ):
+        """
+        init method for evaluate action
+
+        Parameters:
+            eval_dataset Dataset:
+                dataset for evaluation, use Dataset.load() to create.
+            evaluators List[Evaluator]:
+                evaluators for evaluation, include local and qianfan remote evaluators.
+                Specifically, qianfan_evaluators are only available for Model.
+        """
+        super().__init__(**kwargs)
+        self.eval_dataset = eval_dataset
+        local_evaluators = [
+            eval for eval in evaluators if isinstance(eval, LocalEvaluator)
+        ]
+        qianfan_evaluators = [
+            eval for eval in evaluators if isinstance(eval, QianfanEvaluator)
+        ]
+        self.eval_manager = EvaluationManager(
+            local_evaluators=local_evaluators if len(local_evaluators) > 0 else None,
+            qianfan_evaluators=(
+                qianfan_evaluators if len(qianfan_evaluators) > 0 else None
+            ),
+        )
+
+    @with_event
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+        """
+        exec evaluation
+
+        Parameters:
+            input (Dict[str, Any], optional): input dict with model/service info.
+            Defaults to {}.
+
+        Returns:
+            Dict[str, Any]: output the result with the original input
+        """
+        self._input = input
+        log_info(f"[evaluation_action] begin to do evaluation, input: {self._input}")
+        llm = self._parse_from_input(self._input)
+        res = self._exec(llm, **kwargs)
+        self.result = {"eval_res": res, **input}
+        return self.result
+
+    def _parse_from_input(self, input: Dict[str, Any] = {}) -> Union[Model, Service]:
+        """
+        Parses and returns the model or service object based on the input parameters.
+
+        Parameters:
+            input (Dict[str, Any], optional): . Defaults to {}.
+
+        Returns:
+            Union[Model, Service]: parsed model or service object
+        """
+
+        if input.get("service"):
+            llm = input.get("service")
+        elif input.get("model"):
+            llm = input.get("model")
+        elif input.get("model_id") and input.get("model_version_id"):
+            llm = Model(input["model_id"], input["model_version_id"])
+        else:
+            log_error(f"[evaluation_action] invalid llm input error {self._input}")
+            raise InvalidArgumentError(
+                "model or service must be set in evaluation action"
+            )
+        assert isinstance(llm, (Model, Service))
+        return llm
+
+    def _exec(self, llm: Union[Model, Service], **kwargs: Dict) -> Any:
+        """
+        accept a llm model/service to do evaluation
+
+        Parameters:
+            llm (Union[Model, Service]): model to do evaluation
+
+        Returns:
+            Any: evaluation result object
+        """
+        assert self.eval_manager is not None
+        if self.eval_dataset is None:
+            raise InvalidArgumentError("eval_dataset must be set")
+        self.action_event(
+            ActionState.Running,
+            "ready to evaluate",
+            {
+                "llm": llm,
+                "dataset": self.eval_dataset,
+            },
+        )
+        log_info("[evaluation_action] running evaluation...")
+        return self.eval_manager.eval([llm], self.eval_dataset, **kwargs)
+
+    @with_event
+    def resume(self, **kwargs: Dict) -> Dict[str, Any]:
+        """
+        resume method for eval action
+
+        Parameters:
+            **kwargs (Dict):
+                input args for action resume
+
+        """
+        if self._input is None:
+            log_error(
+                "[evaluation_action] previous input not found, call run() instead."
+            )
+            raise ValueError("input not found")
+        llm = self._parse_from_input(self._input)
+        res = self._exec(llm, **kwargs)
+        self.result = {"eval_res": res, **self._input}
+        return self.result

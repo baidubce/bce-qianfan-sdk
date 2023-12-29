@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import Any, Dict
-
-from qianfan.resources import ChatCompletion, Completion, Embedding, Text2Image
 
 
 class ActionState(str, Enum):
@@ -63,6 +60,16 @@ class FinetuneStatus(str, Enum):
     """模型发布失败"""
     ModelPublished = "ModelPublished"
     """模型发布成功"""
+    EvaluationCreated = "EvaluationCreated"
+    """评估任务创建，初始化"""
+    EvaluationRunning = "EvaluationRunning"
+    """模型服务评估中"""
+    EvaluationFailed = "EvaluationFailed"
+    """模型服务评估失败"""
+    EvaluationStopped = "EvaluationStopped"
+    """模型服务评估停止"""
+    EvaluationFinished = "EvaluationFinished"
+    """模型服务评估完成"""
 
 
 class ServiceStatus(str, Enum):
@@ -98,12 +105,3 @@ class ServiceType(str, Enum):
     """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
     """Corresponding to the `Text2Image"""
-
-
-# service type -> resources class
-ServiceTypeResourcesMapping: Dict[ServiceType, Any] = {
-    ServiceType.Chat: ChatCompletion,
-    ServiceType.Completion: Completion,
-    ServiceType.Embedding: Embedding,
-    ServiceType.Text2Image: Text2Image,
-}

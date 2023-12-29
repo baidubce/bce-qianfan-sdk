@@ -113,6 +113,20 @@ class ChatCompletion(BaseResource):
                     "user_id",
                 },
             ),
+            "ERNIE-Bot-turbo-pro": QfLLMInfo(
+                endpoint="/chat/eb_turbo_pro",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                },
+            ),
             "ERNIE-Bot-turbo-AI": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},
@@ -323,10 +337,10 @@ class ChatCompletion(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
@@ -463,9 +477,9 @@ class ChatCompletion(BaseResource):
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        retry_count: int = 1,
-        request_timeout: float = 60,
-        backoff_factor: float = 0,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> Iterator[QfResponse]:
@@ -534,10 +548,10 @@ class ChatCompletion(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
@@ -674,9 +688,9 @@ class ChatCompletion(BaseResource):
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        retry_count: int = 1,
-        request_timeout: float = 60,
-        backoff_factor: float = 0,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         **kwargs: Any,
     ) -> AsyncIterator[QfResponse]:
@@ -716,7 +730,7 @@ class ChatCompletion(BaseResource):
     def batch_do(
         self,
         messages_list: Union[List[List[Dict]], List[QfMessages]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -726,8 +740,9 @@ class ChatCompletion(BaseResource):
           messages_list: List[Union[List[Dict], QfMessages]]:
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `ChatCompletion.do` for other parameters such as
             `model`, `endpoint`, `retry_count`, etc.
@@ -753,7 +768,7 @@ class ChatCompletion(BaseResource):
     async def abatch_do(
         self,
         messages_list: List[Union[List[Dict], QfMessages]],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -763,8 +778,9 @@ class ChatCompletion(BaseResource):
           messages_list: List[Union[List[Dict], QfMessages]]:
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `ChatCompletion.do` for other parameters such as
             `model`, `endpoint`, `retry_count`, etc.

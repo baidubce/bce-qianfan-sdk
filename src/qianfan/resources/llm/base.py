@@ -35,6 +35,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
+from qianfan import get_config
 from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
@@ -55,13 +56,14 @@ class BatchRequestFuture(object):
     def __init__(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> None:
         """
         Init batch request future
         """
         future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
-        self._executor = ThreadPoolExecutor(max_workers=worker_num)
+        max_workers = worker_num if worker_num else len(tasks) + 1
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
         for task in tasks:
             future = self._executor.submit(task)
             future.add_done_callback(self._future_callback)
@@ -196,6 +198,23 @@ class BaseResource(object):
             **kwargs (dict): kv dict data。
 
         """
+        config = get_config()
+        if (
+            retry_count == DefaultValue.RetryCount
+            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
+        ):
+            retry_count = config.LLM_API_RETRY_COUNT
+        if (
+            request_timeout == DefaultValue.RetryTimeout
+            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
+        ):
+            request_timeout = config.LLM_API_RETRY_TIMEOUT
+        if (
+            backoff_factor == DefaultValue.RetryBackoffFactor
+            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
+        ):
+            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
@@ -243,6 +262,23 @@ class BaseResource(object):
             None
 
         """
+        config = get_config()
+        if (
+            retry_count == DefaultValue.RetryCount
+            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
+        ):
+            retry_count = config.LLM_API_RETRY_COUNT
+        if (
+            request_timeout == DefaultValue.RetryTimeout
+            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
+        ):
+            request_timeout = config.LLM_API_RETRY_TIMEOUT
+        if (
+            backoff_factor == DefaultValue.RetryBackoffFactor
+            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
+        ):
+            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
@@ -456,12 +492,12 @@ class BaseResource(object):
     def _batch_request(
         self,
         tasks: Sequence[Callable[[], Union[QfResponse, Iterator[QfResponse]]]],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> BatchRequestFuture:
         """
         create batch prediction task and return future
         """
-        if worker_num <= 0:
+        if worker_num is not None and worker_num <= 0:
             raise errors.InvalidArgumentError("worker_num must be greater than 0")
         return BatchRequestFuture(tasks, worker_num)
 
@@ -470,19 +506,25 @@ class BaseResource(object):
         tasks: Sequence[
             Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ],
-        worker_num: int,
+        worker_num: Optional[int] = None,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
         async do batch prediction
         """
-        if worker_num <= 0:
+        if worker_num is not None and worker_num <= 0:
             raise errors.InvalidArgumentError("worker_num must be greater than 0")
-        sem = asyncio.Semaphore(worker_num)
+        if worker_num:
+            sem = asyncio.Semaphore(worker_num)
+        else:
+            sem = None
 
         async def _with_concurrency_limit(
             task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-            async with sem:
+            if sem:
+                async with sem:
+                    return await task
+            else:
                 return await task
 
         return await asyncio.gather(

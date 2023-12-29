@@ -23,7 +23,7 @@ from typing import (
     Union,
 )
 
-from qianfan.consts import DefaultLLMModel
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResource,
@@ -111,6 +111,20 @@ class Completion(BaseResource):
                     "disable_search",
                     "enable_citation",
                     "user_id",
+                },
+            ),
+            "ERNIE-Bot-turbo-pro": QfLLMInfo(
+                endpoint="/chat/eb_turbo_pro",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
                 },
             ),
             "EB-turbo-AppBuilder": QfLLMInfo(
@@ -291,6 +305,19 @@ class Completion(BaseResource):
                     "stop",
                 },
             ),
+            "Yi-34B-Chat": QfLLMInfo(
+                endpoint="/chat/yi_34b_chat",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
+                },
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 required_keys={"prompt"},
@@ -341,10 +368,6 @@ class Completion(BaseResource):
         """
         if model is not None and model in ChatCompletion._supported_models():
             return ChatCompletion()._convert_endpoint(model, endpoint)
-        if endpoint in [
-            info.endpoint for info in list(Completion._supported_models().values())
-        ]:
-            return endpoint
         return f"/completions/{endpoint}"
 
     def do(
@@ -353,10 +376,10 @@ class Completion(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -412,10 +435,10 @@ class Completion(BaseResource):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
-        retry_count: int = 1,
-        request_timeout: float = 60,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
-        backoff_factor: float = 0,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -468,7 +491,7 @@ class Completion(BaseResource):
     def batch_do(
         self,
         prompt_list: List[str],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
@@ -477,8 +500,9 @@ class Completion(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The input prompt list to generate the continuation from.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Completion.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
@@ -504,7 +528,7 @@ class Completion(BaseResource):
     async def abatch_do(
         self,
         prompt_list: List[str],
-        worker_num: int = 1,
+        worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
@@ -513,8 +537,9 @@ class Completion(BaseResource):
         Parameters:
           prompt_list (List[str]):
             The input prompt list to generate the continuation from.
-          worker_num (int):
-            The number of prompts to process at the same time.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
           kwargs (Any):
             Please refer to `Completion.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.

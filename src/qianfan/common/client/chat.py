@@ -107,17 +107,6 @@ class ChatClient(object):
             rprint()
 
 
-def list_model_callback(value: bool) -> None:
-    """
-    Print models of ChatCompletion and exit.
-    """
-    if value:
-        models = qianfan.ChatCompletion.models()
-        for m in sorted(models):
-            print(m)
-        raise typer.Exit()
-
-
 def chat_entry(
     model: str = typer.Option(
         DefaultLLMModel.ChatCompletion,

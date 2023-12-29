@@ -147,13 +147,24 @@ def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
     raise error
 
 
-def log_latency_info(result: QfResponse, index: int, stream_index: int = 1) -> None:
+def log_latency_info(result: QfResponse, index: int, stream_index: int = 1) -> Tuple:
     if result.statistic:
         request_latency = result.statistic.get("request_latency", None)
+        if "first_token_latency" in result.statistic:
+            first_token_latency = result.statistic["first_token_latency"]
+            total_latency = result.statistic["total_latency"]
+            log_debug(
+                f"数据 {index} 的第 {stream_index} 片回包请求响应时延:"
+                f" {request_latency}, 包的首 token 时延: {first_token_latency}"
+            )
+            return request_latency, first_token_latency, total_latency
 
         log_debug(
             f"数据 {index} 的第 {stream_index} 片回包请求响应时延: {request_latency}"
         )
+        return tuple([request_latency])
+
+    return tuple()
 
 
 def _batch_do_on_service(
@@ -161,16 +172,19 @@ def _batch_do_on_service(
     input_list: Union[List[str], List[List[Dict[str, Any]]]],
     *args: Any,
     **kwargs: Any,
-) -> List[str]:
+) -> Tuple[List[str], List[float], List[float]]:
     if "prompt_template" in kwargs:
         kwargs.pop("prompt_template")
     output_list: List[str] = []
+    request_latency_list: List[float] = []
+    first_token_latency_list: List[float] = []
     results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
             output_list.append(result.body["result"])
-            log_latency_info(result, idx)
+            latencies = log_latency_info(result, idx)
+            request_latency_list.append(latencies[0])
         elif isinstance(result, Exception):
             log_warn(
                 "an exception has occurred during batch requesting and its"
@@ -181,13 +195,18 @@ def _batch_do_on_service(
         else:
             result_str = ""
             index = 0
+            first_token_latency: float = 0
+            total_latency: float = 0
             for r in result:
                 result_str += r.body["result"]
                 index += 1
-                log_latency_info(r, idx, index)
+                latencies = log_latency_info(r, idx, index)
+                first_token_latency, total_latency = latencies[1], latencies[2]
             output_list.append(result_str)
+            request_latency_list.append(total_latency)
+            first_token_latency_list.append(first_token_latency)
 
-    return output_list
+    return output_list, request_latency_list, first_token_latency_list
 
 
 async def _async_batch_do_on_service(
@@ -195,16 +214,19 @@ async def _async_batch_do_on_service(
     input_list: Union[List[str], List[List[Dict[str, Any]]]],
     *args: Any,
     **kwargs: Any,
-) -> List[str]:
+) -> Tuple[List[str], List[float], List[float]]:
     if "prompt_template" in kwargs:
         kwargs.pop("prompt_template")
     output_list: List[str] = []
+    request_latency_list: List[float] = []
+    first_token_latency_list: List[float] = []
     results = await service.abatch_do(input_list, *args, **kwargs)  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
             output_list.append(result.body["result"])
-            log_latency_info(result, idx)
+            latencies = log_latency_info(result, idx)
+            request_latency_list.append(latencies[0])
         elif isinstance(result, Exception):
             log_warn(
                 "an exception has occurred during batch requesting and its"
@@ -215,13 +237,18 @@ async def _async_batch_do_on_service(
         else:
             result_str = ""
             index = 0
+            first_token_latency: float = 0
+            total_latency: float = 0
             async for r in result:
                 result_str += r.body["result"]
                 index += 1
-                log_latency_info(r, idx, index)
+                latencies = log_latency_info(r, idx, index)
+                first_token_latency, total_latency = latencies[1], latencies[2]
             output_list.append(result_str)
+            request_latency_list.append(total_latency)
+            first_token_latency_list.append(first_token_latency)
 
-    return output_list
+    return output_list, request_latency_list, first_token_latency_list
 
 
 def _list_cloud_data(

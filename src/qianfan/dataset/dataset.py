@@ -1070,6 +1070,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
+        does_show_latency: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1089,6 +1090,13 @@ class Dataset(Table):
             is_chat_service (bool):
                 the service type of service, default to True.
                 Service will be Completion if False
+            does_show_latency (bool):
+                whether result dataset contain latency info column when
+                using Service as evaluated object.
+                Depending on different request mode (stream and non-stream),
+                it will contains request_complete_latency or
+                (first_token_latency, request_complete_latency) combo.
+                Default to True
             **kwargs (Any):
                 optional argument dict
 
@@ -1100,7 +1108,11 @@ class Dataset(Table):
             return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return self._batch_inference_on_service(
-                service_model, service_endpoint, is_chat_service, **kwargs
+                service_model,
+                service_endpoint,
+                is_chat_service,
+                does_show_latency,
+                **kwargs,
             )
         else:
             err_msg = "no sufficient argument has been passed"
@@ -1114,6 +1126,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
+        does_show_latency: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -1133,6 +1146,13 @@ class Dataset(Table):
             is_chat_service (bool):
                 the service type of service, default to True.
                 Service will be Completion if False
+            does_show_latency (bool):
+                whether result dataset contain latency info column when
+                using Service as evaluated object.
+                Depending on different request mode (stream and non-stream),
+                it will contains request_complete_latency or
+                (first_token_latency, request_complete_latency) combo.
+                Default to True
             **kwargs (Any):
                 optional argument dict
 
@@ -1144,7 +1164,11 @@ class Dataset(Table):
             return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return await self._async_batch_inference_on_service(
-                service_model, service_endpoint, is_chat_service, **kwargs
+                service_model,
+                service_endpoint,
+                is_chat_service,
+                does_show_latency,
+                **kwargs,
             )
         else:
             err_msg = "no sufficient argument has been passed"
@@ -1187,11 +1211,19 @@ class Dataset(Table):
         return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
 
     def _get_completion_return_dataset(
-        self, input_str_list: List[str], output_list: List[str]
+        self,
+        input_str_list: List[str],
+        output_list: List[str],
+        request_latency_list: List[float],
+        first_token_latency_list: List[float],
+        does_show_latency: bool,
     ) -> "Dataset":
         new_input_column_name = "input_prompt"
         new_reference_column_name = "llm_output"
         old_reference_column_name = "expected_output"
+
+        request_latency_column_name = "request_complete_latency"
+        first_token_latency_column_name = "first_token_latency"
 
         table_dict = {
             **self.get_input_data,
@@ -1200,6 +1232,11 @@ class Dataset(Table):
         }
         if self.reference_column:
             table_dict[old_reference_column_name] = self.get_reference_data
+
+        if does_show_latency:
+            if len(first_token_latency_list) != 0:
+                table_dict[first_token_latency_column_name] = first_token_latency_list
+            table_dict[request_latency_column_name] = request_latency_list
 
         return Dataset.create_from_pyobj(
             table_dict,
@@ -1212,20 +1249,40 @@ class Dataset(Table):
         input_list: List[List[Dict[str, Any]]],
         output_list: List[str],
         reference_list: List[Any],
+        request_latency_list: List[float],
+        first_token_latency_list: List[float],
+        does_show_latency: bool,
     ) -> "Dataset":
         if not self.is_dataset_grouped() and not self.is_dataset_packed():
             input_str_list = [conv[0]["content"] for conv in input_list]
-            return self._get_completion_return_dataset(input_str_list, output_list)
+            return self._get_completion_return_dataset(
+                input_str_list,
+                output_list,
+                request_latency_list,
+                first_token_latency_list,
+                does_show_latency,
+            )
 
         new_input_column_name = "input_chats"
         new_reference_column_name = "llm_output"
         old_reference_column_name = "expected_output"
+
+        request_latency_column_name = "request_complete_latency"
+        first_token_latency_column_name = "first_token_latency"
+
+        table_dict: Dict[str, Any] = {
+            new_input_column_name: input_list,
+            new_reference_column_name: output_list,
+            old_reference_column_name: reference_list,
+        }
+
+        if does_show_latency:
+            if len(first_token_latency_list) != 0:
+                table_dict[first_token_latency_column_name] = first_token_latency_list
+            table_dict[request_latency_column_name] = request_latency_list
+
         return Dataset.create_from_pyobj(
-            {
-                new_input_column_name: input_list,
-                new_reference_column_name: output_list,
-                old_reference_column_name: reference_list,
-            },
+            table_dict,
             input_columns=new_input_column_name,
             reference_column=new_reference_column_name,
         )
@@ -1235,6 +1292,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
+        does_show_latency: bool = True,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
@@ -1249,6 +1307,13 @@ class Dataset(Table):
             is_chat_service (bool):
                 the service type of service, default to True.
                 Service will be Completion if False
+            does_show_latency (bool):
+                whether result dataset contain latency info column when
+                using Service as evaluated object.
+                Depending on different request mode (stream and non-stream),
+                it will contains request_complete_latency or
+                (first_token_latency, request_complete_latency) combo.
+                Default to True
             system_prompt (str):
                 Optional system text for input using, default to ""
             **kwargs (Any):
@@ -1277,26 +1342,42 @@ class Dataset(Table):
 
         if isinstance(service, Completion):
             input_str_list = self._get_input_str_list(**kwargs)
-            output_list = _batch_do_on_service(
-                service, input_str_list, system=system_prompt, **kwargs
+            output_list, request_latency_list, first_token_latency_list = (
+                _batch_do_on_service(
+                    service, input_str_list, system=system_prompt, **kwargs
+                )
             )
 
-            return self._get_completion_return_dataset(input_str_list, output_list)
+            return self._get_completion_return_dataset(
+                input_str_list,
+                output_list,
+                request_latency_list,
+                first_token_latency_list,
+                does_show_latency,
+            )
         else:
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
-            output_list = _batch_do_on_service(
-                service, input_chat_list, system=system_prompt, **kwargs
+            output_list, request_latency_list, first_token_latency_list = (
+                _batch_do_on_service(
+                    service, input_chat_list, system=system_prompt, **kwargs
+                )
             )
 
             return self._get_chat_return_dataset(
-                input_chat_list, output_list, reference_list
+                input_chat_list,
+                output_list,
+                reference_list,
+                request_latency_list,
+                first_token_latency_list,
+                does_show_latency,
             )
 
     async def _async_batch_inference_on_service(
         self,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
-        is_chat_service: bool = False,
+        is_chat_service: bool = True,
+        does_show_latency: bool = True,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
@@ -1311,6 +1392,13 @@ class Dataset(Table):
             is_chat_service (bool):
                 the service type of service, default to True.
                 Service will be Completion if False
+            does_show_latency (bool):
+                whether result dataset contain latency info column when
+                using Service as evaluated object.
+                Depending on different request mode (stream and non-stream),
+                it will contains request_complete_latency or
+                (first_token_latency, request_complete_latency) combo.
+                Default to True
             system_prompt (str):
                 Optional system text for input using, default to ""
             **kwargs (Any):
@@ -1339,19 +1427,34 @@ class Dataset(Table):
 
         if isinstance(service, Completion):
             input_str_list = self._get_input_str_list(**kwargs)
-            output_list = await _async_batch_do_on_service(
-                service, input_str_list, system=system_prompt, **kwargs
+            output_list, request_latency_list, first_token_latency_list = (
+                await _async_batch_do_on_service(
+                    service, input_str_list, system=system_prompt, **kwargs
+                )
             )
 
-            return self._get_completion_return_dataset(input_str_list, output_list)
+            return self._get_completion_return_dataset(
+                input_str_list,
+                output_list,
+                request_latency_list,
+                first_token_latency_list,
+                does_show_latency,
+            )
         else:
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
-            output_list = await _async_batch_do_on_service(
-                service, input_chat_list, system=system_prompt, **kwargs
+            output_list, request_latency_list, first_token_latency_list = (
+                await _async_batch_do_on_service(
+                    service, input_chat_list, system=system_prompt, **kwargs
+                )
             )
 
             return self._get_chat_return_dataset(
-                input_chat_list, output_list, reference_list
+                input_chat_list,
+                output_list,
+                reference_list,
+                request_latency_list,
+                first_token_latency_list,
+                does_show_latency,
             )
 
     def _get_input_str_list(self, **kwargs: Any) -> List[str]:

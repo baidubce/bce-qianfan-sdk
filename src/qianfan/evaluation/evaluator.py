@@ -16,7 +16,7 @@
 """
 collection of evaluator
 """
-
+import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -27,7 +27,7 @@ from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
-from qianfan.utils import log_error
+from qianfan.utils import log_error, log_warn
 
 
 class Evaluator(BaseModel, ABC):
@@ -36,16 +36,6 @@ class Evaluator(BaseModel, ABC):
     @abstractmethod
     def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
         """evaluate one entry"""
-
-
-class BatchEvaluator(ABC):
-    """an class for evaluating whole batch"""
-
-    @abstractmethod
-    def evaluate_on_batch(
-        self, inputs: List[str], references: List[str], outputs: List[str]
-    ) -> Dict[str, Any]:
-        """evaluate over whole batch"""
 
 
 class LocalEvaluator(Evaluator, ABC):
@@ -123,3 +113,33 @@ class QianfanManualEvaluator(QianfanEvaluator):
             ManualEvaluatorDimension(dimension="满意度")
         ] + dimensions
         return input_dict
+
+
+try:
+    from opencompass.openicl.icl_evaluator import BaseEvaluator
+
+    class OpenCompassLocalEvaluator(LocalEvaluator):
+        class Config:
+            arbitrary_types_allowed = True
+
+        open_compass_evaluator: BaseEvaluator
+
+        @model_validator(mode="after")
+        def _check_open_compass_evaluator(self) -> "OpenCompassLocalEvaluator":
+            signature = inspect.signature(self.open_compass_evaluator.score)
+            params = list(signature.parameters.keys())
+            params.sort()
+            if params != ["predictions", "references", "self"]:
+                raise ValueError(
+                    f"unsupported opencompass evaluator {self.open_compass_evaluator}"
+                )
+            return self
+
+        def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
+            return self.open_compass_evaluator.score(output, reference)  # type: ignore
+
+except ModuleNotFoundError:
+    log_warn(
+        "opencompass not found on your packages, OpenCompassLocalEvaluator not"
+        " available now"
+    )

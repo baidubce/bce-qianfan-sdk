@@ -1340,7 +1340,6 @@ class Dataset(Table):
                     {"dimension": "满意度"},
                 ],
             },
-            dataset_name=qianfan_data_source.name,
             **kwargs,
         ).body
 

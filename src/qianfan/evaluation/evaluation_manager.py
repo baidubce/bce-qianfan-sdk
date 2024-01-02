@@ -200,7 +200,6 @@ class EvaluationManager(BaseModel):
                 ],
                 dataset_id=qianfan_data_source.id,
                 eval_config=input_argument_dict,
-                dataset_name=qianfan_data_source.name,
                 **kwargs,
             ).body
 

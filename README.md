@@ -168,12 +168,14 @@ trainer.run()
 - [tokenizer](./docs/utils.md)
 - [流量控制](./docs/configurable.md)
 
+> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
+
+
 ### 联系我们
 如使用过程中遇到什么问题，或对SDK功能有建议，可通过如下方式联系我们
 - [GitHub issues](https://github.com/baidubce/bce-qianfan-sdk/issues)
 - [百度智能云工单](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279) （百度专家即时服务）
 
-> Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 ## License
 
 Apache-2.0

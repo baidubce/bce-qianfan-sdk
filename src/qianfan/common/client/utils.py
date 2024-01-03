@@ -13,20 +13,28 @@
 # limitations under the License.
 
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional, Type, TypeVar
 
+import click
+import typer
 from rich import print
 
+import qianfan
 from qianfan.resources.llm.base import BaseResource
+from qianfan.utils.bos_uploader import get_bos_bucket_location
+from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 
 
-def print_error_msg(msg: str) -> None:
+def print_error_msg(msg: str, exit=False) -> None:
     """
     Print an error message in the console.
     """
     print(f"[bold red]ERROR[/bold red]: {msg}")
+    if exit:
+        raise typer.Exit(1)
 
 
 def print_warn_msg(msg: str) -> None:
@@ -34,6 +42,20 @@ def print_warn_msg(msg: str) -> None:
     Print a warning message in the console.
     """
     print(f"[bold orange1]WARN[/bold orange1]: {msg}")
+
+
+def print_info_msg(msg: str) -> None:
+    """
+    Print an info message in the console.
+    """
+    print(f"[bold]INFO[/bold]: {msg}")
+
+
+def print_success_msg(msg: str) -> None:
+    """
+    Print a success message in the console.
+    """
+    print(f"[bold green]SUCCESS[/bold green]: {msg}")
 
 
 def create_client(
@@ -53,3 +75,46 @@ def timestamp(time: datetime = datetime.now()) -> str:
     Return a timestamp string used in the client.
     """
     return time.strftime("%Y%m%d_%H%M%S")
+
+
+def enum_list(enum_type: Type[Enum]) -> list:
+    """
+    Return a list of the enum values.
+    """
+    members = enum_type.__members__.keys()
+    return [camel_to_snake(member) for member in members]
+
+
+def enum_typer(enum_type: Type[Enum]):
+    return {"click_type": click.Choice(enum_list(enum_type)), "callback": enum_callback}
+
+
+def enum_callback(ctx: typer.Context, param: typer.CallbackParam, value: str) -> Any:
+    """
+    update qianfan config
+    """
+    if value is not None and len(value.strip()) > 0:
+        return snake_to_camel(value)
+
+
+def assert_not_none(value: Any, var_name) -> None:
+    """
+    Assert the value is not none.
+    """
+    if not value:
+        print_error_msg(f"{var_name} is required.")
+        raise typer.Exit(1)
+
+
+def bos_bucket_region(bucket: str) -> str:
+    """
+    Get the bos bucket location.
+    """
+    global_config = qianfan.get_config()
+    region = get_bos_bucket_location(
+        bucket,
+        global_config.BOS_HOST_REGION,
+        global_config.ACCESS_KEY,
+        global_config.SECRET_KEY,
+    )
+    return region

@@ -135,6 +135,7 @@ class DefaultValue:
     GetEntityContentFailedRetryTimes: int = 3
 
     EvaluationOnlinePollingInterval: float = 30
+    BosHostRegion: str = "bj"
 
 
 class Consts:

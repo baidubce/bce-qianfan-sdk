@@ -98,6 +98,7 @@ class GlobalConfig(BaseSettings):
     EVALUATION_ONLINE_POLLING_INTERVAL: float = Field(
         default=DefaultValue.EvaluationOnlinePollingInterval
     )
+    BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

@@ -146,8 +146,7 @@ class QfAPIRequestor(BaseAPIRequestor):
             req = self._add_access_token(req)
             if stream:
                 return self._request_stream(req, data_postprocess=data_postprocess)
-            resp = self._request(req, data_postprocess=data_postprocess)
-            return resp
+            return self._request(req, data_postprocess=data_postprocess)
 
         return self._with_retry(retry_config, _helper)
 

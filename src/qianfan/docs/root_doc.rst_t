@@ -26,6 +26,7 @@ Tips:
    docs/utils.md
    docs/configurable.md
    docs/dataset.md
+   docs/cli.md
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}

@@ -21,7 +21,12 @@ from rich.console import Console
 
 import qianfan
 from qianfan import QfResponse
-from qianfan.common.client.utils import create_client, print_error_msg, timestamp
+from qianfan.common.client.utils import (
+    create_client,
+    list_model_option,
+    print_error_msg,
+    timestamp,
+)
 from qianfan.consts import DefaultLLMModel
 from qianfan.utils.utils import check_package_installed
 
@@ -47,6 +52,7 @@ def txt2img_entry(
         Path(f"./{timestamp()}.jpg"), help="The output file location"
     ),
     plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
+    list_model: bool = list_model_option,
 ) -> None:
     """
     Generate images based on the provided prompt.

@@ -51,7 +51,7 @@ class TrainConfig(BaseModel):
     """normalization params"""
     lora_rank: Optional[int] = None
     """loRA rank"""
-    lora_all_linear: Optional[bool] = None
+    lora_all_linear: Optional[Any] = None
     """loRA all linear layer"""
 
     extras: Dict[str, Any] = {}

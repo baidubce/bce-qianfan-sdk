@@ -14,10 +14,20 @@
 """
 base tool definition
 """
-
-from typing import Any, Dict, List, Optional
+import random
+import string
+from typing import Any, Dict, List, Optional, Type
 
 from pydantic import BaseModel
+from pydantic.v1 import (
+    BaseModel as PydanticV1BaseModel,
+)
+from pydantic.v1 import (
+    Field as PydanticV1Field,
+)
+from pydantic.v1 import (
+    create_model as create_pydantic_v1_model,
+)
 from qianfan.utils.utils import assert_package_installed
 
 
@@ -70,6 +80,40 @@ class ToolParameter(BaseModel):
                 schema["required"] = required_properties
 
         return schema
+
+    def to_pydantic_v1_model(self) -> Type[PydanticV1BaseModel]:
+        """
+        Converts the parameter to a pydantic v1 model.
+        :return: pydantic model
+        """
+        type_mapping = {
+            "string": str,
+            "integer": int,
+            "number": float,
+            "boolean": bool,
+            "object": dict,
+            "array": list,
+        }
+
+        fields: Any = {}
+
+        if self.properties:
+            for prop in self.properties:
+                prop_type = (
+                    type_mapping.get(prop.type, Any)
+                    if prop.type != "object"
+                    else prop.to_pydantic_v1_model()
+                )
+                prop_default = ... if prop.required else None
+                fields[prop.name] = (
+                    prop_type,
+                    PydanticV1Field(default=prop_default, description=prop.description),
+                )
+
+        characters = string.ascii_letters + string.digits
+        random_model_name = "".join(random.sample(characters, 6))
+
+        return create_pydantic_v1_model(random_model_name, **fields)
 
     @staticmethod
     def from_pydantic_v1_schema(schema: Dict[str, Any]) -> "ToolParameter":
@@ -168,5 +212,24 @@ class BaseTool:
 
             def run(self, parameters: Any = None) -> Any:
                 return langchain_tool._run(**parameters)
+
+        return Tool()
+
+    def to_langchain_tool(self) -> Any:
+        assert_package_installed("langchain")
+        from langchain.tools.base import BaseTool as LangchainBaseTool
+
+        tool_schema = ToolParameter(
+            name="root", type="object", properties=self.parameters
+        ).to_pydantic_v1_model()
+        tool_run = self.run
+
+        class Tool(LangchainBaseTool):
+            name: str = self.name
+            description: str = self.description
+            args_schema: Type[PydanticV1BaseModel] = tool_schema
+
+            def _run(self, **kwargs: Any) -> Any:
+                return tool_run(kwargs)
 
         return Tool()

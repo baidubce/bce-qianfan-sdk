@@ -52,6 +52,8 @@ class APIErrorCode(enum.Enum):
     InvalidArgumentSystem = 336104
     InvalidArgumentUserSetting = 336105
 
+    ConsoleInternalError = 500000
+
 
 class Env:
     """
@@ -112,6 +114,12 @@ class DefaultValue:
     ConsoleRetryCount: int = 1
     ConsoleRetryTimeout: float = 60
     ConsoleRetryBackoffFactor: float = 0
+    ConsoleRetryJitter: int = 1
+    ConsoleRetryErrCodes: Set = {
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.ConsoleInternalError.value
+    }
     QpsLimit: float = 0
     DotEnvConfigFile: str = ".env"
 

@@ -43,7 +43,18 @@ class TrainConfig(BaseModel):
     """
     rate for dataset to spilt 
     """
-    extras: Any = None
+    logging_steps: Optional[int] = None
+    """log saving interval steps"""
+    warmup_ratio: Optional[float] = None
+    """warmup ratio"""
+    weight_decay: Optional[float] = None
+    """normalization params"""
+    lora_rank: Optional[int] = None
+    """loRA rank"""
+    lora_all_linear: Optional[bool] = None
+    """loRA all linear layer"""
+
+    extras: Dict[str, Any] = {}
 
 
 class TrainLimit(BaseModel):
@@ -55,6 +66,14 @@ class TrainLimit(BaseModel):
     """epoch limit"""
     learning_rate_limit: Optional[Tuple[float, float]] = None
     """learning rate limit"""
+    log_steps_limit: Optional[Tuple[int, int]] = None
+    """log steps limit"""
+    warnmup_ratio_limit: Optional[Tuple[float, float]] = None
+    """warmup_ratio limit"""
+    weight_decay_limit: Optional[Tuple[float, float]] = None
+    """weight_decay limit"""
+    lora_rank_options: Optional[List[int]] = None
+    """loRA rank options"""
 
 
 class ModelInfo(BaseModel):
@@ -83,6 +102,10 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=(4096, 8192),
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000002, 0.0002),
+            log_steps_limit=(1, 100),
+            warnmup_ratio_limit=(0.01, 0.5),
+            weight_decay_limit=(0.0001, 0.1),
+            lora_rank_options=[2, 4, 8],
         ),
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
@@ -228,6 +251,10 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         learning_rate=0.0003,
         max_seq_len=4096,
         peft_type=PeftType.LoRA,
+        logging_steps=1,
+        warmup_ratio=0.10,
+        weight_decay=0.0100,
+        lora_rank=8,
     ),
     "ERNIE-Bot-turbo-0725": TrainConfig(
         epoch=1,

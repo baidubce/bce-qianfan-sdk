@@ -380,7 +380,7 @@ class Dataset(Table):
             DataTemplateType.NonSortedConversation,
             DataTemplateType.SortedConversation,
         ]:
-            self.reference_column = "reference"
+            self.reference_column = "response"
 
     @classmethod
     def load(

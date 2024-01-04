@@ -101,7 +101,7 @@ $ qianfan txt2img [OPTIONS] PROMPT
 
 ### dataset 数据集
 
-![](./imgs/cli/dataset.gif)
+![](./imgs/cli/dataset.webp)
 
 **用法**:
 

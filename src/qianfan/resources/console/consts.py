@@ -209,3 +209,16 @@ class EvaluationTaskStatus(str, Enum):
     """评估任务全部失败"""
     Stopped: str = "Stopped"
     """任务已全部停止"""
+
+
+class ServiceType(str, Enum):
+    Chat: str = "chat"
+    """ChatCompletion Service"""
+    Completions: str = "completions"
+    """Completion Service"""
+    Embeddings: str = "embeddings"
+    """Embeddings Service"""
+    Text2image: str = "text2image"
+    """Text2image Service"""
+    Image2text: str = "image2text"
+    """Image2text Service"""

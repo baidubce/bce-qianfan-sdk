@@ -1232,6 +1232,83 @@ def get_service():
     )
 
 
+@app.route(Consts.ServiceListAPI, methods=["POST"])
+@iam_auth_checker
+def list_service():
+    """
+    mock create service api
+    """
+    services = [
+        {
+            "name": "ERNIE-Bot 4.0",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "ERNIE-Bot-8K",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_bot_8k",
+            "apiType": "chat",
+            "chargeStatus": "NOTOPEN",
+            "versionList": [{"trainType": "ernieBot_8k", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "ERNIE-Bot",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "Stable-Diffusion-XL",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/sd_xl",
+            "apiType": "text2image",
+            "chargeStatus": "FREE",
+            "versionList": [
+                {
+                    "trainType": "stablediffusion_VXL",
+                    "serviceStatus": "Done",
+                }
+            ],
+        },
+        {
+            "name": "Embedding-V1",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "bge-large-zh",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_zh",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "bge-large-en",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_en",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+    ]
+
+    apiTypes = request.json.get("apiTypefilter")
+    if apiTypes:
+        services = [service for service in services if service["apiType"] in apiTypes]
+    return json_response(
+        {
+            "log_id": "3333888838",
+            "result": {
+                "common": services,
+                "custom": [],
+            },
+        }
+    )
+
+
 @app.route(Consts.DatasetCreateAPI, methods=["POST"])
 @iam_auth_checker
 def create_dataset():

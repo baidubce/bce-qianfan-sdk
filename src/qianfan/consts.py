@@ -157,6 +157,7 @@ class Consts:
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
+    ServiceListAPI: str = "/wenxinworkshop/service/list"
     DatasetCreateAPI: str = "/wenxinworkshop/dataset/create"
     DatasetReleaseAPI: str = "/wenxinworkshop/dataset/release"
     DatasetImportAPI: str = "/wenxinworkshop/dataset/import"

@@ -14,11 +14,11 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 import click
 import typer
-from rich import print
+from rich import print as rprint
 
 import qianfan
 from qianfan.resources.llm.base import BaseResource
@@ -26,13 +26,19 @@ from qianfan.utils.bos_uploader import get_bos_bucket_location
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
+command_to_resource_type: Dict[str, Type[BaseResource]] = {
+    "chat": qianfan.ChatCompletion,
+    "txt2img": qianfan.Text2Image,
+    "completion": qianfan.Completion,
+    "embedding": qianfan.Embedding,
+}
 
 
-def print_error_msg(msg: str, exit=False) -> None:
+def print_error_msg(msg: str, exit: bool = False) -> None:
     """
     Print an error message in the console.
     """
-    print(f"[bold red]ERROR[/bold red]: {msg}")
+    rprint(f"[bold red]ERROR[/bold red]: {msg}")
     if exit:
         raise typer.Exit(1)
 
@@ -41,21 +47,21 @@ def print_warn_msg(msg: str) -> None:
     """
     Print a warning message in the console.
     """
-    print(f"[bold orange1]WARN[/bold orange1]: {msg}")
+    rprint(f"[bold orange1]WARN[/bold orange1]: {msg}")
 
 
 def print_info_msg(msg: str) -> None:
     """
     Print an info message in the console.
     """
-    print(f"[bold]INFO[/bold]: {msg}")
+    rprint(f"[bold]INFO[/bold]: {msg}")
 
 
 def print_success_msg(msg: str) -> None:
     """
     Print a success message in the console.
     """
-    print(f"[bold green]SUCCESS[/bold green]: {msg}")
+    rprint(f"[bold green]SUCCESS[/bold green]: {msg}")
 
 
 def create_client(
@@ -85,7 +91,7 @@ def enum_list(enum_type: Type[Enum]) -> list:
     return [camel_to_snake(member) for member in members]
 
 
-def enum_typer(enum_type: Type[Enum]):
+def enum_typer(enum_type: Type[Enum]) -> Dict[str, Any]:
     return {"click_type": click.Choice(enum_list(enum_type)), "callback": enum_callback}
 
 
@@ -97,7 +103,7 @@ def enum_callback(ctx: typer.Context, param: typer.CallbackParam, value: str) ->
         return snake_to_camel(value)
 
 
-def assert_not_none(value: Any, var_name) -> None:
+def assert_not_none(value: Any, var_name: str) -> None:
     """
     Assert the value is not none.
     """
@@ -111,6 +117,9 @@ def bos_bucket_region(bucket: str) -> str:
     Get the bos bucket location.
     """
     global_config = qianfan.get_config()
+    if global_config.ACCESS_KEY is None or global_config.SECRET_KEY is None:
+        print_error_msg("ACCESS_KEY and SECRET_KEY are required.")
+        raise typer.Exit(1)
     region = get_bos_bucket_location(
         bucket,
         global_config.BOS_HOST_REGION,
@@ -118,3 +127,31 @@ def bos_bucket_region(bucket: str) -> str:
         global_config.SECRET_KEY,
     )
     return region
+
+
+def list_model_callback(
+    ctx: typer.Context, param: typer.CallbackParam, value: bool
+) -> None:
+    """
+    Print models of ChatCompletion and exit.
+    """
+    if value:
+        cmd = ctx.command
+        if cmd.name is None:
+            print_error_msg("No command is specified.")
+            raise typer.Exit(1)
+        t = command_to_resource_type[cmd.name]
+        models = t.models()
+        for m in sorted(models):
+            print(m)
+        raise typer.Exit()
+
+
+list_model_option = typer.Option(
+    None,
+    "--list-model",
+    "-l",
+    callback=list_model_callback,
+    is_eager=True,
+    help="Print supported models.",
+)

@@ -57,8 +57,8 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
-    check_online_data_process_result,
-    extract_string,
+    _check_online_data_process_result,
+    _extract_string,
 )
 from qianfan.dataset.schema import (
     QianfanSchema,
@@ -733,7 +733,7 @@ class Dataset(Table):
 
         while True:
             sleep(get_config().ETL_STATUS_POLLING_INTERVAL)
-            result = check_online_data_process_result(etl_id)
+            result = _check_online_data_process_result(etl_id)
             if result is None:
                 continue
             if not result:
@@ -1225,7 +1225,7 @@ class Dataset(Table):
                     "prompt": entry["prompt"],
                     NewInputPromptColumnName: entry["prompt"],
                     LLMOutputColumnName: entry["model_response"][0]["content"],
-                    OldReferenceColumnName: extract_string(entry["response"]),
+                    OldReferenceColumnName: _extract_string(entry["response"]),
                 }
             )
 
@@ -1545,7 +1545,7 @@ class Dataset(Table):
                 input_messages.append(
                     {"role": QfRole.User.value, "content": chat[i][input_column]}
                 )
-                reference = extract_string(chat[i][reference_column])
+                reference = _extract_string(chat[i][reference_column])
 
                 if i != len(chat) - 1:
                     input_messages.append(

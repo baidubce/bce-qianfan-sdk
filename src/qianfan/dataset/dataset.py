@@ -53,12 +53,12 @@ from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
     _batch_do_on_service,
     _check_and_generate_service,
+    _check_online_data_process_result,
     _create_a_dataset_etl_task,
+    _extract_string,
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
-    _check_online_data_process_result,
-    _extract_string,
 )
 from qianfan.dataset.schema import (
     QianfanSchema,

@@ -1,27 +1,30 @@
-## 千帆 CLI
+## CLI 命令行工具
 
 千帆 SDK 提供了 CLI 工具，方便在命令行中直接使用千帆平台各项功能。
 
 **使用方法**:
 
+使用前需要配置鉴权相关信息，关于 Access Key 和 Secret Key 的获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。除了使用环境变量，也可以通过下方命令行参数传递，或者是通过当前文件夹的 [.env 文件](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env) 配置。
+
 ```console
+$ export QIANFAN_ACCESS_KEY=your-access-key
+$ export QIANFAN_SECRET_KEY=your-secret-key
+$
 $ qianfan [OPTIONS] COMMAND [ARGS]...
 ```
 
 **基础参数**:
 
 > **IMPORTANT**：以下参数必须位于 command 命令之前，否则会被识别成命令的参数而无法生效。
->
-> CLI 也同样支持使用 [环境变量](./configurable.md) 和 [.env 文件](https://github.com/baidubce/bce-qianfan-sdk/blob/main/dotenv_config_sample.env) 的形式配置参数。
 
 * `--access-key TEXT`：百度智能云安全认证 Access Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--secret-key TEXT`：百度智能云安全认证 Secret Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--ak TEXT` [过时]：千帆平台应用的 API Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--sk TEXT` [过时]：千帆平台应用的 Secret Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
-* `--version`：打印版本信息。
+* `--version -v`：打印版本信息。
 * `--install-completion`：为当前 shell 安装自动补全脚本。
 * `--show-completion`：展示自动补全脚本。
-* `--help`：打印帮助文档。
+* `--help -h`：打印帮助文档。
 
 **命令**:
 
@@ -44,6 +47,7 @@ $ qianfan chat [OPTIONS]
 * `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
 * `--endpoint TEXT`：模型的 endpoint
 * `--multi-line / --no-multi-line`：多行模式，通过两次回车确认提交消息  [default：no-multi-line]
+* `--list-model -l`：打印支持的模型名称列表
 * `--help`：展示帮助文档
 
 ### completion 补全
@@ -65,6 +69,7 @@ $ qianfan completion [OPTIONS] MESSAGES...
 * `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
 * `--endpoint TEXT`：模型的 endpoint
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
+* `--list-model -l`：打印支持的模型名称列表
 * `--help`：展示帮助文档
 
 ### txt2img 文生图
@@ -90,4 +95,5 @@ $ qianfan txt2img [OPTIONS] PROMPT
 * `--endpoint TEXT`：使用的模型 endpoint
 * `--output PATH`：输出的文件名称  [default：`%Y%m%d_%H%M%S.jpg`]
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
+* `--list-model -l`：打印支持的模型名称列表
 * `--help`：展示帮助文档

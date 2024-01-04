@@ -15,7 +15,7 @@
 from typing import Optional
 
 import typer
-from rich import print
+from rich import print as rprint
 from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
@@ -24,6 +24,7 @@ import qianfan
 from qianfan import Messages, QfRole
 from qianfan.common.client.utils import (
     create_client,
+    list_model_option,
     print_error_msg,
 )
 from qianfan.consts import DefaultLLMModel
@@ -50,16 +51,16 @@ class ChatClient(object):
         """
         messages = Messages()
         if self.multi_line:
-            print(
+            rprint(
                 "[bold]Hint[/bold]: Press enter [bold]twice[/bold] to submit your"
                 f" message, and use '{END_PROMPT}' to end the conversation."
             )
         else:
-            print(
+            rprint(
                 "[bold]Hint[/bold]: Press enter to submit your message, and use"
                 f" '{END_PROMPT}' to end the conversation."
             )
-            print(
+            rprint(
                 "[bold]Hint[/bold]: If you want to submit multiple lines, use the"
                 " '--multi-line' option."
             )
@@ -67,7 +68,7 @@ class ChatClient(object):
         while True:
             # loop the input and check whether the input is valid
             while True:
-                print("[yellow bold]Enter your message[/yellow bold]:")
+                rprint("[yellow bold]Enter your message[/yellow bold]:")
                 if self.multi_line:
                     input_list = []
                     input = None
@@ -88,11 +89,11 @@ class ChatClient(object):
             # print an empty line to separate the input and output
             # only needed in non multi-line mode
             if not self.multi_line:
-                print()
-            print("[blue][bold]Model response:[/bold][/blue]")
+                rprint()
+            rprint("[blue][bold]Model response:[/bold][/blue]")
 
             if message == END_PROMPT:
-                print("Bye!")
+                rprint("Bye!")
                 raise typer.Exit()
 
             with Live(Markdown("Thinking..."), auto_refresh=False) as live:
@@ -103,7 +104,7 @@ class ChatClient(object):
                         s += resp["result"]
                         live.update(Markdown(s), refresh=True)
             messages.append(s, role=QfRole.Assistant)
-            print()
+            rprint()
 
 
 def chat_entry(
@@ -120,6 +121,7 @@ def chat_entry(
     multi_line: bool = typer.Option(
         False, help="Multi-line mode which need to press enter twice to submit message."
     ),
+    list_model: Optional[bool] = list_model_option,
 ) -> None:
     """
     Chat with the LLM in the terminal.

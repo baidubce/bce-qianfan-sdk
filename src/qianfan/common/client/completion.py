@@ -21,7 +21,11 @@ from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfResponse, QfRole
-from qianfan.common.client.utils import create_client, print_error_msg
+from qianfan.common.client.utils import (
+    create_client,
+    list_model_option,
+    print_error_msg,
+)
 from qianfan.consts import DefaultLLMModel
 
 
@@ -93,6 +97,7 @@ def completion_entry(
         ),
     ),
     plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
+    list_model: bool = list_model_option,
 ) -> None:
     """
     Complete the provided prompt or messages.

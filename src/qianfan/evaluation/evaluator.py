@@ -123,7 +123,7 @@ try:
             signature = inspect.signature(self.open_compass_evaluator.score)
             params = list(signature.parameters.keys())
             params.sort()
-            if params != ["predictions", "references", "self"]:
+            if params != ["predictions", "references"]:
                 raise ValueError(
                     f"unsupported opencompass evaluator {self.open_compass_evaluator}"
                 )
@@ -132,7 +132,7 @@ try:
         def evaluate(
             self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
         ) -> Dict[str, Any]:
-            return self.open_compass_evaluator.score(output, reference)  # type: ignore
+            return self.open_compass_evaluator.score([output], [reference])  # type: ignore
 
 except ModuleNotFoundError:
     log_warn(

@@ -104,6 +104,8 @@ class EvaluationManager(BaseModel):
         output: List[str],
     ) -> List[Dict[str, Any]]:
         result_list: List[Dict[str, Any]] = []
+        if start >= end:
+            return result_list
         assert self.local_evaluators
         for i in range(start, end):
             result: Dict[str, Any] = {}
@@ -133,7 +135,7 @@ class EvaluationManager(BaseModel):
                     pool.submit(
                         self._eval_worker,
                         i * sector_length,
-                        (i + 1) * sector_length,
+                        min((i + 1) * sector_length, len(dataset)),
                         ds_dict[NewInputPromptColumnName],
                         ds_dict[LLMOutputColumnName],
                         ds_dict[OldReferenceColumnName],
@@ -144,7 +146,7 @@ class EvaluationManager(BaseModel):
                     pool.submit(
                         self._eval_worker,
                         i * sector_length,
-                        (i + 1) * sector_length,
+                        min((i + 1) * sector_length, len(dataset)),
                         ds_dict[NewInputChatColumnName],
                         ds_dict[LLMOutputColumnName],
                         ds_dict[OldReferenceColumnName],
@@ -184,27 +186,24 @@ class EvaluationManager(BaseModel):
             Optional[EvaluationResult]: Evaluation result of models on the dataset.
         """
         if len(set(type(llm) for llm in llms)) > 1:
-            err_msg = (
-                "local evaluator should use only either Model or Service, not both"
-                " togather"
-            )
+            err_msg = "should use only either Model or Service, not both togather"
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        llm_tags: List[str] = []
-        for llm in llms:
-            if isinstance(llm, Service):
-                if llm.model:
-                    llm_key_str = f"{llm.id}_{llm.endpoint}_{llm.model.name}"
-                else:
-                    llm_key_str = f"{llm.id}_{llm.endpoint}"
-            elif isinstance(llm, Model):
-                llm_key_str = f"{llm.id}_{llm.version_id}_{llm.name}"
-            else:
-                llm_key_str = ""
-            llm_tags.append(llm_key_str)
-
         if self.local_evaluators:
+            llm_tags: List[str] = []
+            for llm in llms:
+                if isinstance(llm, Service):
+                    if llm.model:
+                        llm_key_str = f"{llm.id}_{llm.endpoint}_{llm.model.name}"
+                    else:
+                        llm_key_str = f"{llm.id}_{llm.endpoint}"
+                elif isinstance(llm, Model):
+                    llm_key_str = f"{llm.id}_{llm.version_id}_{llm.name}"
+                else:
+                    llm_key_str = ""
+                llm_tags.append(llm_key_str)
+
             future_dict: Dict[int, Future] = {}
             pool = ThreadPoolExecutor()
             for index in range(len(llms)):
@@ -256,7 +255,9 @@ class EvaluationManager(BaseModel):
                             input_column_name = NewInputChatColumnName
 
                     if not expected_output_list:
-                        expected_output_list = result
+                        expected_output_list = result[OldReferenceColumnName][
+                            OldReferenceColumnName
+                        ]
 
                 except Exception as e:
                     err_msg = (
@@ -265,11 +266,13 @@ class EvaluationManager(BaseModel):
                     )
                     log_warn(err_msg)
 
-            new_response_list: List[List[Dict[str, Any]]] = [[]] * len(llm_input_list)
+            new_response_list: List[List[Dict[str, Any]]] = []
             for index, response_list in llm_response_list.items():
                 for inner_index in range(len(response_list)):
+                    while len(new_response_list) <= inner_index:
+                        new_response_list.append([])
                     eval_result = llm_evaluation_result_dict[index][inner_index]
-                    new_response_list[index].append(
+                    new_response_list[inner_index].append(
                         {
                             "content": response_list[inner_index],
                             "llm_tag": llm_tags[index],

@@ -33,9 +33,14 @@ from typing_extensions import Self
 from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
 from qianfan.dataset.consts import (
+    FirstTokenLatencyColumnName,
+    LLMOutputColumnName,
+    NewInputChatColumnName,
+    NewInputPromptColumnName,
+    OldReferenceColumnName,
     QianfanDataGroupColumnName,
-    QianfanDatasetPackColumnName, NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName,
-    NewInputChatColumnName, RequestLatencyColumnName, FirstTokenLatencyColumnName,
+    QianfanDatasetPackColumnName,
+    RequestLatencyColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -52,7 +57,8 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
-    check_online_data_process_result, extract_string,
+    check_online_data_process_result,
+    extract_string,
 )
 from qianfan.dataset.schema import (
     QianfanSchema,
@@ -1214,12 +1220,14 @@ class Dataset(Table):
 
         new_list: List[Dict[str, Any]] = []
         for entry in result_dataset.list():
-            new_list.append({
-                "prompt": entry["prompt"],
-                NewInputPromptColumnName: entry["prompt"],
-                LLMOutputColumnName: entry["model_response"][0]["content"],
-                OldReferenceColumnName: extract_string(entry["response"])
-            })
+            new_list.append(
+                {
+                    "prompt": entry["prompt"],
+                    NewInputPromptColumnName: entry["prompt"],
+                    LLMOutputColumnName: entry["model_response"][0]["content"],
+                    OldReferenceColumnName: extract_string(entry["response"]),
+                }
+            )
 
         return Dataset.create_from_pyobj(new_list)
 

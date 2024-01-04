@@ -16,20 +16,22 @@
 """
 manager which manage whole procedure of evaluation
 """
-import concurrent.futures
 import math
-import os
+import multiprocessing
 import time
-from concurrent.futures import Future, ThreadPoolExecutor, ALL_COMPLETED, wait
-from copy import deepcopy
+from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Set, Union
 
 from pydantic import BaseModel, Field, model_validator
 
 from qianfan import get_config
 from qianfan.dataset import Dataset, QianfanDataSource
-from qianfan.dataset.consts import NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName, \
-    NewInputChatColumnName
+from qianfan.dataset.consts import (
+    LLMOutputColumnName,
+    NewInputChatColumnName,
+    NewInputPromptColumnName,
+    OldReferenceColumnName,
+)
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -93,8 +95,16 @@ class EvaluationManager(BaseModel):
 
         return input_dict
 
-    def _eval_worker(self, start: int, end: int, input: List[Union[str, List[Dict[str, Any]]]], reference: List[str], output: List[str]) -> List[Dict[str, Any]]:
+    def _eval_worker(
+        self,
+        start: int,
+        end: int,
+        input: List[Union[str, List[Dict[str, Any]]]],
+        reference: List[str],
+        output: List[str],
+    ) -> List[Dict[str, Any]]:
         result_list: List[Dict[str, Any]] = []
+        assert self.local_evaluators
         for i in range(start, end):
             result: Dict[str, Any] = {}
             for evaluator in self.local_evaluators:
@@ -102,21 +112,44 @@ class EvaluationManager(BaseModel):
             result_list.append(result)
         return result_list
 
-
-    def _run_evaluator_locally(self, dataset: Dataset, **kwargs: Any) -> List[Dict[str, Any]]:
-        if NewInputPromptColumnName in dataset.col_names:
-            ds_dict = dataset.col_list([NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName])
+    def _run_evaluator_locally(
+        self, dataset: Dataset, **kwargs: Any
+    ) -> List[Dict[str, Any]]:
+        if NewInputPromptColumnName in dataset.col_names():
+            ds_dict = dataset.col_list(
+                [NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName]
+            )
         else:
-            ds_dict = dataset.col_list([NewInputChatColumnName, LLMOutputColumnName, OldReferenceColumnName])
+            ds_dict = dataset.col_list(
+                [NewInputChatColumnName, LLMOutputColumnName, OldReferenceColumnName]
+            )
 
-        sector_length = math.ceil(len(dataset) / os.cpu_count())
+        sector_length = math.ceil(len(dataset) / multiprocessing.cpu_count())
         pool = ThreadPoolExecutor()
         future_list: List[Future] = []
-        for i in range(os.cpu_count()):
-            if NewInputPromptColumnName in dataset.col_names:
-                future_list.append(pool.submit(self._eval_worker, i * sector_length, (i+1) * sector_length, ds_dict[NewInputPromptColumnName], ds_dict[LLMOutputColumnName], ds_dict[OldReferenceColumnName]))
+        for i in range(multiprocessing.cpu_count()):
+            if NewInputPromptColumnName in dataset.col_names():
+                future_list.append(
+                    pool.submit(
+                        self._eval_worker,
+                        i * sector_length,
+                        (i + 1) * sector_length,
+                        ds_dict[NewInputPromptColumnName],
+                        ds_dict[LLMOutputColumnName],
+                        ds_dict[OldReferenceColumnName],
+                    )
+                )
             else:
-                future_list.append(pool.submit(self._eval_worker, i * sector_length, (i+1) * sector_length, ds_dict[NewInputChatColumnName], ds_dict[LLMOutputColumnName], ds_dict[OldReferenceColumnName]))
+                future_list.append(
+                    pool.submit(
+                        self._eval_worker,
+                        i * sector_length,
+                        (i + 1) * sector_length,
+                        ds_dict[NewInputChatColumnName],
+                        ds_dict[LLMOutputColumnName],
+                        ds_dict[OldReferenceColumnName],
+                    )
+                )
 
         wait(future_list, return_when=ALL_COMPLETED)
         result_list: List[Dict[str, Any]] = []
@@ -125,7 +158,9 @@ class EvaluationManager(BaseModel):
                 result = future.result()
                 result_list.extend(result)
             except Exception as e:
-                err_msg = f"an fatal error occurred when evaluate llm output in batch: {e}"
+                err_msg = (
+                    f"an fatal error occurred when evaluate llm output in batch: {e}"
+                )
                 log_error(err_msg)
                 raise e
 
@@ -149,7 +184,10 @@ class EvaluationManager(BaseModel):
             Optional[EvaluationResult]: Evaluation result of models on the dataset.
         """
         if len(set(type(llm) for llm in llms)) > 1:
-            err_msg = "local evaluator should use only either Model or Service, not both togather"
+            err_msg = (
+                "local evaluator should use only either Model or Service, not both"
+                " togather"
+            )
             log_error(err_msg)
             raise ValueError(err_msg)
 
@@ -172,9 +210,20 @@ class EvaluationManager(BaseModel):
             for index in range(len(llms)):
                 llm = llms[index]
                 if isinstance(llm, Model):
-                    future_dict[index] = pool.submit(dataset.test_using_llm, model_id=llm.id, model_version_id=llm.version_id, **kwargs)
+                    future_dict[index] = pool.submit(
+                        dataset.test_using_llm,
+                        model_id=llm.id,
+                        model_version_id=llm.version_id,
+                        **kwargs,
+                    )
                 elif isinstance(llm, Service):
-                    future_dict[index] = pool.submit(dataset.test_using_llm, service_model=llm.model, service_endpoint=llm.endpoint, **kwargs)
+                    model_name = None if not llm.model else llm.model.name
+                    future_dict[index] = pool.submit(
+                        dataset.test_using_llm,
+                        service_model=model_name,
+                        service_endpoint=llm.endpoint,
+                        **kwargs,
+                    )
             wait(list(future_dict.values()), return_when=ALL_COMPLETED)
 
             llm_evaluation_result_dict: Dict[int, List[Dict[str, Any]]] = {}
@@ -184,36 +233,49 @@ class EvaluationManager(BaseModel):
 
             input_column_name: str = ""
 
-            for index, future in future_dict:
+            for index, future in future_dict.items():
                 try:
                     result = future.result()
-                    llm_response_list[index] = result[LLMOutputColumnName][LLMOutputColumnName]
-                    llm_evaluation_result_dict[index] = self._run_evaluator_locally(result)
+                    llm_response_list[index] = result[LLMOutputColumnName][
+                        LLMOutputColumnName
+                    ]
+                    llm_evaluation_result_dict[index] = self._run_evaluator_locally(
+                        result
+                    )
 
                     if not llm_input_list:
                         if NewInputPromptColumnName in result.col_names():
-                            llm_input_list = result[NewInputPromptColumnName][NewInputPromptColumnName]
+                            llm_input_list = result[NewInputPromptColumnName][
+                                NewInputPromptColumnName
+                            ]
                             input_column_name = NewInputPromptColumnName
                         else:
-                            llm_input_list = result[NewInputChatColumnName][NewInputChatColumnName]
+                            llm_input_list = result[NewInputChatColumnName][
+                                NewInputChatColumnName
+                            ]
                             input_column_name = NewInputChatColumnName
 
                     if not expected_output_list:
                         expected_output_list = result
 
                 except Exception as e:
-                    err_msg = f"an error occurred when doing batch inference in evaluation: {e}"
+                    err_msg = (
+                        "an error occurred when doing batch inference in"
+                        f" evaluation: {e}"
+                    )
                     log_warn(err_msg)
 
             new_response_list: List[List[Dict[str, Any]]] = [[]] * len(llm_input_list)
-            for index, response_list in llm_response_list:
+            for index, response_list in llm_response_list.items():
                 for inner_index in range(len(response_list)):
                     eval_result = llm_evaluation_result_dict[index][inner_index]
-                    new_response_list[index].append({
-                        "content": response_list[inner_index],
-                        "llm_tag": llm_tags[index],
-                        **eval_result,
-                    })
+                    new_response_list[index].append(
+                        {
+                            "content": response_list[inner_index],
+                            "llm_tag": llm_tags[index],
+                            **eval_result,
+                        }
+                    )
 
             dataset_data = {
                 input_column_name: llm_input_list,
@@ -221,7 +283,9 @@ class EvaluationManager(BaseModel):
                 "model_content": new_response_list,
             }
 
-            return EvaluationResult(result_dataset=Dataset.create_from_pyobj(dataset_data))
+            return EvaluationResult(
+                result_dataset=Dataset.create_from_pyobj(dataset_data)
+            )
 
         if self.qianfan_evaluators:
             # 检查是否有不支持的实例
@@ -346,7 +410,8 @@ class EvaluationManager(BaseModel):
                 log_error(err_msg)
                 raise QianfanError(err_msg)
 
-            # 如果是进入人工评估阶段，则返回空，当前无法获取到评估的单条结果，且无法获取到指标信息
+            # 如果是进入人工评估阶段，则返回空
+            # 当前无法获取到评估的单条结果，且无法获取到指标信息
             if eval_state == EvaluationTaskStatus.DoingWithManualBegin:
                 log_warn("can't fetch any metrics due to manual mode has been set")
                 return None

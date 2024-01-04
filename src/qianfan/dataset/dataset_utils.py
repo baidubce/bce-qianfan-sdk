@@ -16,7 +16,7 @@
 utilities dataset needs
 """
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, Iterator
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import requests
 

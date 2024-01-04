@@ -34,7 +34,9 @@ class Evaluator(BaseModel, ABC):
     """an class for evaluating single entry"""
 
     @abstractmethod
-    def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
+    def evaluate(
+        self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+    ) -> Dict[str, Any]:
         """evaluate one entry"""
 
 
@@ -45,7 +47,9 @@ class LocalEvaluator(Evaluator, ABC):
 class QianfanEvaluator(Evaluator):
     """empty implementation base class for qianfan evaluator"""
 
-    def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
+    def evaluate(
+        self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+    ) -> Dict[str, Any]:
         # 因为这个方法并不应该被实现，所以此处返回空值
         return {}
 
@@ -125,7 +129,9 @@ try:
                 )
             return self
 
-        def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
+        def evaluate(
+            self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+        ) -> Dict[str, Any]:
             return self.open_compass_evaluator.score(output, reference)  # type: ignore
 
 except ModuleNotFoundError:

@@ -18,7 +18,7 @@ collection of evaluator
 """
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -34,7 +34,7 @@ class Evaluator(BaseModel, ABC):
     """an class for evaluating single entry"""
 
     @abstractmethod
-    def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
+    def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
         """evaluate one entry"""
 
 
@@ -45,7 +45,7 @@ class LocalEvaluator(Evaluator, ABC):
 class QianfanEvaluator(Evaluator):
     """empty implementation base class for qianfan evaluator"""
 
-    def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
+    def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
         # 因为这个方法并不应该被实现，所以此处返回空值
         return {}
 
@@ -62,17 +62,7 @@ class QianfanRefereeEvaluator(QianfanEvaluator):
 class QianfanRuleEvaluator(QianfanEvaluator):
     """qianfan rule evaluator config class"""
 
-    using_similarity: bool = Field(default=False)
-    using_accuracy: bool = Field(default=False)
     stop_words: Optional[str] = Field(default=None)
-
-    @model_validator(mode="after")
-    def rule_validation(self) -> "QianfanRuleEvaluator":
-        if not self.using_accuracy and not self.using_similarity:
-            err_msg = "no rule has been specified"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-        return self
 
 
 class ManualEvaluatorDimension(BaseModel):
@@ -135,7 +125,7 @@ try:
                 )
             return self
 
-        def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
+        def evaluate(self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str) -> Dict[str, Any]:
             return self.open_compass_evaluator.score(output, reference)  # type: ignore
 
 except ModuleNotFoundError:

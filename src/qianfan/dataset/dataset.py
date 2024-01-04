@@ -22,7 +22,7 @@ import json
 import os
 from copy import deepcopy
 from time import sleep
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from zipfile import ZipFile
 
 import pyarrow.json
@@ -34,7 +34,8 @@ from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
 from qianfan.dataset.consts import (
     QianfanDataGroupColumnName,
-    QianfanDatasetPackColumnName,
+    QianfanDatasetPackColumnName, NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName,
+    NewInputChatColumnName, RequestLatencyColumnName, FirstTokenLatencyColumnName,
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
@@ -51,7 +52,7 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
-    check_online_data_process_result,
+    check_online_data_process_result, extract_string,
 )
 from qianfan.dataset.schema import (
     QianfanSchema,
@@ -663,7 +664,7 @@ class Dataset(Table):
             int: etl task id
         """
 
-        if not self._is_dataset_located_in_qianfan():
+        if not self.is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             err_msg = "can't process a non-qianfan dataset on qianfan"
@@ -894,7 +895,7 @@ class Dataset(Table):
         Returns:
             Any: dataset row list
         """
-        if not self._is_dataset_located_in_qianfan():
+        if not self.is_dataset_located_in_qianfan():
             log_info(f"list local dataset data by {by}")
             return super().list(by)
         else:
@@ -977,8 +978,8 @@ class Dataset(Table):
         append a row to dataset
 
         Args:
-            elem (Dict[str, List]): dict containing element added to dataset
-                must have column name "name" and column data list "data"
+            elem (Dict[str, List]): a dict containing element added to dataset, which
+                must has column name "name" and column data list "data"
         Returns:
             Self: Dataset itself
         """
@@ -1208,7 +1209,19 @@ class Dataset(Table):
             self.inner_data_source_cache, model_id, model_version_id
         )
 
-        return Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        result_dataset = Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        result_dataset.unpack()
+
+        new_list: List[Dict[str, Any]] = []
+        for entry in result_dataset.list():
+            new_list.append({
+                "prompt": entry["prompt"],
+                NewInputPromptColumnName: entry["prompt"],
+                LLMOutputColumnName: entry["model_response"][0]["content"],
+                OldReferenceColumnName: extract_string(entry["response"])
+            })
+
+        return Dataset.create_from_pyobj(new_list)
 
     def _get_completion_return_dataset(
         self,
@@ -1218,30 +1231,23 @@ class Dataset(Table):
         first_token_latency_list: List[float],
         does_show_latency: bool,
     ) -> "Dataset":
-        new_input_column_name = "input_prompt"
-        new_reference_column_name = "llm_output"
-        old_reference_column_name = "expected_output"
-
-        request_latency_column_name = "request_complete_latency"
-        first_token_latency_column_name = "first_token_latency"
-
         table_dict = {
             **self.get_input_data,
-            new_input_column_name: input_str_list,
-            new_reference_column_name: output_list,
+            NewInputPromptColumnName: input_str_list,
+            LLMOutputColumnName: output_list,
         }
         if self.reference_column:
-            table_dict[old_reference_column_name] = self.get_reference_data
+            table_dict[OldReferenceColumnName] = self.get_reference_data
 
         if does_show_latency:
             if len(first_token_latency_list) != 0:
-                table_dict[first_token_latency_column_name] = first_token_latency_list
-            table_dict[request_latency_column_name] = request_latency_list
+                table_dict[RequestLatencyColumnName] = first_token_latency_list
+            table_dict[FirstTokenLatencyColumnName] = request_latency_list
 
         return Dataset.create_from_pyobj(
             table_dict,
             input_columns=self.input_columns,
-            reference_column=old_reference_column_name,
+            reference_column=OldReferenceColumnName,
         )
 
     def _get_chat_return_dataset(
@@ -1263,28 +1269,21 @@ class Dataset(Table):
                 does_show_latency,
             )
 
-        new_input_column_name = "input_chats"
-        new_reference_column_name = "llm_output"
-        old_reference_column_name = "expected_output"
-
-        request_latency_column_name = "request_complete_latency"
-        first_token_latency_column_name = "first_token_latency"
-
         table_dict: Dict[str, Any] = {
-            new_input_column_name: input_list,
-            new_reference_column_name: output_list,
-            old_reference_column_name: reference_list,
+            NewInputChatColumnName: input_list,
+            LLMOutputColumnName: output_list,
+            OldReferenceColumnName: reference_list,
         }
 
         if does_show_latency:
             if len(first_token_latency_list) != 0:
-                table_dict[first_token_latency_column_name] = first_token_latency_list
-            table_dict[request_latency_column_name] = request_latency_list
+                table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
+            table_dict[RequestLatencyColumnName] = request_latency_list
 
         return Dataset.create_from_pyobj(
             table_dict,
-            input_columns=new_input_column_name,
-            reference_column=new_reference_column_name,
+            input_columns=[NewInputChatColumnName],
+            reference_column=LLMOutputColumnName,
         )
 
     def _batch_inference_on_service(
@@ -1505,14 +1504,6 @@ class Dataset(Table):
                 for prompt in input_str_list
             ], []
 
-        def _extract_string(data: Union[str, Iterator[str]]) -> str:
-            if isinstance(data, str):
-                return data
-            elif hasattr(data, "__iter__"):
-                for item in data:
-                    return _extract_string(item)
-            return ""
-
         assert self.input_columns
 
         if len(self.input_columns) > 1:
@@ -1546,7 +1537,7 @@ class Dataset(Table):
                 input_messages.append(
                     {"role": QfRole.User.value, "content": chat[i][input_column]}
                 )
-                reference = _extract_string(chat[i][reference_column])
+                reference = extract_string(chat[i][reference_column])
 
                 if i != len(chat) - 1:
                     input_messages.append(

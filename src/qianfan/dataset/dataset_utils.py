@@ -16,7 +16,7 @@
 utilities dataset needs
 """
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, Iterator
 
 import requests
 
@@ -409,3 +409,12 @@ def _check_and_generate_service(
         service = Completion(service_model, service_endpoint)
 
     return service
+
+
+def extract_string(data: Union[str, Iterator[str]]) -> str:
+    if isinstance(data, str):
+        return data
+    elif hasattr(data, "__iter__"):
+        for item in data:
+            return extract_string(item)
+    return ""

@@ -661,15 +661,15 @@ class Table(Addable, Listable, Processable):
             bool: whether unpacking succeeded
         """
         if QianfanDatasetPackColumnName not in self.col_names():
-            log_error("can't pack a dataset without '_pack' column")
+            log_warn("can't pack a dataset without '_pack' column")
             return False
 
         if len(self.col_names()) != 1:
-            log_error("dataset should only contain '_pack' column")
+            log_warn("dataset should only contain '_pack' column")
             return False
 
         if self.inner_table.column(QianfanDatasetPackColumnName).null_count:
-            log_error("can't unpack a dataset when column '_pack' has None")
+            log_warn("can't unpack a dataset when column '_pack' has None")
             return False
 
         element = self.list(0)
@@ -678,7 +678,7 @@ class Table(Addable, Listable, Processable):
             and element
             and isinstance(element[0], dict)
         ):
-            log_error(f"dataset has element not supported: {element}")
+            log_warn(f"dataset has element not supported: {element}")
             return False
 
         data_list = self.to_pydict()[QianfanDatasetPackColumnName]

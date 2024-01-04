@@ -210,6 +210,7 @@ class EvaluationTaskStatus(str, Enum):
     Stopped: str = "Stopped"
     """任务已全部停止"""
 
+
 class ServiceType(str, Enum):
     Chat: str = "chat"
     """ChatCompletion Service"""

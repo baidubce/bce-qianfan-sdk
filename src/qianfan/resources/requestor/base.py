@@ -16,7 +16,6 @@
 API Requestor for SDK
 """
 
-import asyncio
 import inspect
 import json
 import time
@@ -34,9 +33,15 @@ from typing import (
 
 import aiohttp
 import requests
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 import qianfan.errors as errors
-from qianfan.consts import APIErrorCode, Consts
+from qianfan.consts import Consts
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
@@ -376,33 +381,29 @@ class BaseAPIRequestor(object):
         """
         retry wrapper
         """
-        retry_count = 0
 
-        while retry_count < config.retry_count - 1:
-            try:
-                return func(*args)
-            except errors.APIError as e:
-                if e.error_code in {
-                    APIErrorCode.ServerHighLoad.value,
-                    APIErrorCode.QPSLimitReached.value,
-                }:
+        def predicate_api_err_code(result: Any) -> bool:
+            if isinstance(result, errors.APIError):
+                if result.error_code in config.retry_err_codes:
                     log_warn(
-                        f"got error code {e.error_code} from server, retrying... count:"
-                        f" {retry_count}"
+                        f"got error code {result.error_code} from server, retrying... "
                     )
-                else:
-                    # other error cannot be recovered by retrying, so directly raise
-                    raise
-            except requests.RequestException as e:
-                log_error(f"request exception: {e}, retrying... count: {retry_count}")
-            # other exception cannot be recovered by retrying
-            # will be directly raised
+                    return True
+            if isinstance(result, requests.RequestException):
+                log_error(f"request exception: {result}, retrying...")
+                return True
+            return False
 
-            time.sleep(config.backoff_factor * (2**retry_count))
-            retry_count += 1
-        # the last retry
-        # exception will be directly raised
-        return func(*args)
+        @retry(
+            wait=wait_exponential_jitter(jitter=config.jitter, max=config.timeout),
+            retry=retry_if_exception(predicate_api_err_code),
+            stop=stop_after_attempt(config.retry_count),
+            reraise=True,
+        )
+        def _retry_wrapper(*args: Any) -> _T:
+            return func(*args)
+
+        return _retry_wrapper(*args)
 
     async def _async_with_retry(
         self, config: RetryConfig, func: Callable[..., Awaitable[_T]], *args: Any
@@ -410,33 +411,26 @@ class BaseAPIRequestor(object):
         """
         async retry wrapper
         """
-        retry_count = 0
 
-        # the last retry will not catch exception
-        while retry_count < config.retry_count - 1:
-            try:
-                return await func(*args)
-            except errors.APIError as e:
-                if e.error_code in {
-                    APIErrorCode.ServerHighLoad.value,
-                    APIErrorCode.QPSLimitReached.value,
-                }:
+        def predicate_api_err_code(result: Any) -> bool:
+            if isinstance(result, errors.APIError):
+                if result.error_code in config.retry_err_codes:
                     log_warn(
-                        f"got error code {e.error_code} from server, retrying... count:"
-                        f" {retry_count}"
+                        f"got error code {result.error_code} from server, retrying... "
                     )
-                else:
-                    # other error cannot be recovered by retrying, so directly raise
-                    raise
-            except aiohttp.ClientError as e:
-                log_warn(
-                    f"async request exception: {e}, retrying... count: {retry_count}"
-                )
-            # other exception cannot be recovered by retrying
-            # will be directly raised
+                    return True
+            if isinstance(result, aiohttp.ClientError):
+                log_error(f"request exception: {result}, retrying...")
+                return True
+            return False
 
-            await asyncio.sleep(config.backoff_factor * (2**retry_count))
-            retry_count += 1
-        # the last retry
-        # exception will be directly raised
-        return await func(*args)
+        @retry(
+            wait=wait_exponential_jitter(jitter=config.jitter, max=config.timeout),
+            retry=retry_if_exception(predicate_api_err_code),
+            stop=stop_after_attempt(config.retry_count),
+            reraise=True,
+        )
+        async def _retry_wrapper(*args: Any) -> _T:
+            return await func(*args)
+
+        return await _retry_wrapper(*args)

@@ -201,6 +201,23 @@ class QfAPIRequestor(BaseAPIRequestor):
         req.retry_config = retry_config
         return req
 
+    @staticmethod
+    def _sign(request: QfRequest, ak: str, sk: str) -> None:
+        """
+        sign the request
+        """
+        url = request.url
+        parsed_uri = urlparse(request.url)
+        host = parsed_uri.netloc
+        request.url = parsed_uri.path
+        request.headers = {
+            "Content-Type": "application/json",
+            "Host": host,
+            **request.headers,
+        }
+        iam_sign(ak, sk, request)
+        request.url = url
+
     def _add_access_token(
         self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
@@ -211,8 +228,15 @@ class QfAPIRequestor(BaseAPIRequestor):
             auth = self._auth
         access_token = auth.access_token()
         if access_token == "":
-            raise errors.AccessTokenExpiredError
-        req.query["access_token"] = access_token
+            # use IAM auth
+            access_key = auth._access_key
+            secret_key = auth._secret_key
+            if access_key is None or secret_key is None:
+                raise errors.AccessTokenExpiredError
+            self._sign(req, access_key, secret_key)
+        else:
+            # use openapi auth
+            req.query["access_token"] = access_token
         return req
 
     async def _async_add_access_token(
@@ -225,8 +249,15 @@ class QfAPIRequestor(BaseAPIRequestor):
             auth = self._auth
         access_token = await auth.a_access_token()
         if access_token == "":
-            raise errors.AccessTokenExpiredError
-        req.query["access_token"] = access_token
+            # use IAM auth
+            access_key = auth._access_key
+            secret_key = auth._secret_key
+            if access_key is None or secret_key is None:
+                raise errors.AccessTokenExpiredError
+            self._sign(req, access_key, secret_key)
+        else:
+            # use openapi auth
+            req.query["access_token"] = access_token
         return req
 
     def _llm_api_url(self, endpoint: str) -> str:

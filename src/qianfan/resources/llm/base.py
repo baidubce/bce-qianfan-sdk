@@ -189,6 +189,8 @@ class BaseResource(object):
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        retry_jitter: float = DefaultValue.RetryJitter,
+        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -214,6 +216,16 @@ class BaseResource(object):
             and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
         ):
             backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+        if (
+            retry_jitter == DefaultValue.RetryJitter
+            and config.LLM_API_RETRY_JITTER != DefaultValue.RetryJitter
+        ):
+            retry_jitter = config.LLM_API_RETRY_JITTER
+        if (
+            retry_err_codes == DefaultValue.RetryErrCodes
+            and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
+        ):
+            retry_err_codes = config.LLM_API_RETRY_ERR_CODES
 
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
@@ -229,6 +241,8 @@ class BaseResource(object):
             retry_count=retry_count,
             timeout=request_timeout,
             backoff_factor=backoff_factor,
+            jitter=retry_jitter,
+            retry_err_codes=retry_err_codes,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
         resp = self._client.llm(
@@ -250,6 +264,8 @@ class BaseResource(object):
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        retry_jitter: float = DefaultValue.RetryJitter,
+        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -278,6 +294,16 @@ class BaseResource(object):
             and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
         ):
             backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+        if (
+            retry_jitter == DefaultValue.RetryJitter
+            and config.LLM_API_RETRY_JITTER != DefaultValue.RetryJitter
+        ):
+            retry_jitter = config.LLM_API_RETRY_JITTER
+        if (
+            retry_err_codes == DefaultValue.RetryErrCodes
+            and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
+        ):
+            retry_err_codes = config.LLM_API_RETRY_ERR_CODES
 
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
@@ -293,6 +319,8 @@ class BaseResource(object):
             retry_count=retry_count,
             timeout=request_timeout,
             backoff_factor=backoff_factor,
+            jitter=retry_jitter,
+            retry_err_codes=retry_err_codes,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
         resp = await self._client.async_llm(

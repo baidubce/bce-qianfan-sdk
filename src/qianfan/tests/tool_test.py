@@ -199,6 +199,203 @@ def test_tool_from_langchain_decorator_tool():
     assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
 
 
+def test_tool_to_langchain_tool():
+    if not check_package_installed("langchain"):
+        return
+
+    class TestTool(BaseTool):
+        name: str = "test_tool"
+        description: str = "test tool"
+        parameters: List[ToolParameter] = [
+            ToolParameter(
+                name="test_param",
+                type="string",
+                description="test param",
+                required=True,
+            )
+        ]
+
+        def run(self, parameters=None):
+            return parameters["test_param"]
+
+    tool = TestTool()
+    langchain_tool = tool.to_langchain_tool()
+    assert langchain_tool.name == "test_tool"
+    assert langchain_tool.description == "test tool"
+
+    tool_schema = langchain_tool.get_input_schema().schema()
+    model_title = tool_schema["title"]
+    assert langchain_tool.get_input_schema().schema() == {
+        "title": model_title,
+        "type": "object",
+        "properties": {
+            "test_param": {
+                "description": "test param",
+                "title": "Test Param",
+                "type": "string",
+            }
+        },
+        "required": ["test_param"],
+    }
+
+    assert tool.run({"test_param": "value"}) == "value"
+    assert langchain_tool.invoke({"test_param": "value"}) == "value"
+
+
+def test_complex_args_tool_to_langchain_tool():
+    if not check_package_installed("langchain"):
+        return
+
+    class ComplexTestTool(BaseTool):
+        name: str = "test_tool"
+        description: str = "test tool"
+        parameters: List[ToolParameter] = [
+            ToolParameter(
+                name="required_string",
+                type="string",
+                description="required string",
+                required=True,
+            ),
+            ToolParameter(
+                name="required_integer",
+                type="integer",
+                description="required integer",
+                required=True,
+            ),
+            ToolParameter(
+                name="optional_number",
+                type="number",
+                description="optional number",
+                required=False,
+            ),
+            ToolParameter(
+                name="required_boolean",
+                type="boolean",
+                description="required boolean",
+                required=True,
+            ),
+            ToolParameter(
+                name="required_object",
+                type="object",
+                description="required object",
+                properties=[
+                    ToolParameter(
+                        name="required_nested_string",
+                        type="string",
+                        description="required nested string",
+                        required=True,
+                    ),
+                ],
+                required=True,
+            ),
+            ToolParameter(
+                name="optional_array",
+                type="array",
+                description="optional array",
+                required=False,
+            ),
+            ToolParameter(
+                name="optional_invalid_type",
+                type="invalid_type",
+                description="optional invalid type",
+                required=False,
+            ),
+        ]
+
+        def run(self, parameters=None):
+            return (
+                parameters["required_integer"] if parameters["required_boolean"] else 0
+            )
+
+    tool = ComplexTestTool()
+    langchain_tool = tool.to_langchain_tool()
+
+    assert langchain_tool.name == "test_tool"
+    assert langchain_tool.description == "test tool"
+
+    tool_schema = langchain_tool.get_input_schema().schema()
+    model_title = tool_schema["title"]
+    object_model_title = list(tool_schema["definitions"])[0]
+    assert langchain_tool.get_input_schema().schema() == {
+        "title": model_title,
+        "type": "object",
+        "properties": {
+            "required_string": {
+                "description": "required string",
+                "title": "Required String",
+                "type": "string",
+            },
+            "required_integer": {
+                "description": "required integer",
+                "title": "Required Integer",
+                "type": "integer",
+            },
+            "optional_number": {
+                "description": "optional number",
+                "title": "Optional Number",
+                "type": "number",
+            },
+            "required_boolean": {
+                "description": "required boolean",
+                "title": "Required Boolean",
+                "type": "boolean",
+            },
+            "required_object": {
+                "allOf": [{"$ref": "#/definitions/" + object_model_title}],
+                "description": "required object",
+                "title": "Required Object",
+            },
+            "optional_array": {
+                "description": "optional array",
+                "title": "Optional Array",
+                "type": "array",
+                "items": {},
+            },
+            "optional_invalid_type": {
+                "description": "optional invalid type",
+                "title": "Optional Invalid Type",
+            },
+        },
+        "required": [
+            "required_string",
+            "required_integer",
+            "required_boolean",
+            "required_object",
+        ],
+        "definitions": {
+            object_model_title: {
+                "properties": {
+                    "required_nested_string": {
+                        "description": "required nested string",
+                        "title": "Required Nested String",
+                        "type": "string",
+                    }
+                },
+                "required": ["required_nested_string"],
+                "title": object_model_title,
+                "type": "object",
+            }
+        },
+    }
+
+    args_one = {
+        "required_string": "required_string",
+        "required_integer": 1,
+        "required_boolean": True,
+        "required_object": {"required_nested_string": "required_nested_string"},
+    }
+    args_zero = {
+        "required_string": "required_string",
+        "required_integer": 1,
+        "required_boolean": False,
+        "required_object": {"required_nested_string": "required_nested_string"},
+    }
+    assert tool.run(args_one) == 1
+    assert tool.run(args_zero) == 0
+    assert langchain_tool.invoke(args_one) == 1
+    assert langchain_tool.invoke(args_zero) == 0
+
+
 def test_parameter_base():
     parameter = ToolParameter(
         name="test_param",

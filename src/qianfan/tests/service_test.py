@@ -18,7 +18,7 @@
 
 
 from qianfan.resources import Service
-from qianfan.resources.console.consts import DeployPoolType
+from qianfan.resources.console.consts import DeployPoolType, ServiceType
 
 
 def test_create_service():
@@ -57,3 +57,18 @@ def test_service_detail():
     assert resp["_request"] == {"serviceId": 108}
     assert "vmConfig" in resp["result"]
     assert "creator" in resp["result"]
+
+
+def test_service_list():
+    """
+    test Service.list
+    """
+    resp = Service.list()
+    assert resp["_request"] == {}
+    assert "custom" in resp["result"]
+    assert "common" in resp["result"]
+
+    for item in list(ServiceType):
+        resp = Service.list(api_type_filter=[item])
+        for common_service in resp["result"]["common"]:
+            assert common_service["apiType"] == item.value

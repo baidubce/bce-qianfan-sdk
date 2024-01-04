@@ -17,6 +17,7 @@ Consts used in qianfan sdk
 """
 
 import enum
+from typing import Set
 
 from qianfan.version import VERSION
 
@@ -50,6 +51,8 @@ class APIErrorCode(enum.Enum):
     InvalidHTTPMethod = 336101
     InvalidArgumentSystem = 336104
     InvalidArgumentUserSetting = 336105
+
+    ConsoleInternalError = 500000
 
 
 class Env:
@@ -106,10 +109,17 @@ class DefaultValue:
     AccessTokenRefreshMinInterval: float = 3600
     RetryCount: int = 1
     RetryTimeout: float = 60
-    RetryBackoffFactor: float = 0
+    RetryBackoffFactor: float = 1
+    RetryJitter: float = 1
     ConsoleRetryCount: int = 1
     ConsoleRetryTimeout: float = 60
     ConsoleRetryBackoffFactor: float = 0
+    ConsoleRetryJitter: int = 1
+    ConsoleRetryErrCodes: Set = {
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.ConsoleInternalError.value,
+    }
     QpsLimit: float = 0
     DotEnvConfigFile: str = ".env"
 
@@ -136,6 +146,10 @@ class DefaultValue:
 
     EvaluationOnlinePollingInterval: float = 30
     BosHostRegion: str = "bj"
+    RetryErrCodes: Set = {
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+    }
 
 
 class Consts:
@@ -158,6 +172,7 @@ class Consts:
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
+    ServiceListAPI: str = "/wenxinworkshop/service/list"
     DatasetCreateAPI: str = "/wenxinworkshop/dataset/create"
     DatasetReleaseAPI: str = "/wenxinworkshop/dataset/release"
     DatasetImportAPI: str = "/wenxinworkshop/dataset/import"

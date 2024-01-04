@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from qianfan.trainer.consts import ActionState
 
@@ -28,14 +27,16 @@ class Event:
     nodes.
     """
 
-    action_id: Optional[str] = None
+    action_class: Type
+    action_id: str
     action_state: ActionState
     description: Optional[str] = None
     data: Any = None
 
     def __init__(
         self,
-        action_id: Optional[str],
+        action_class: Type,
+        action_id: str,
         state: ActionState,
         description: Optional[str] = None,
         data: Any = None,
@@ -44,6 +45,8 @@ class Event:
         init method of event
 
         Parameters:
+            action_class (type):
+                The class type of the Action.
             action_id (str):
                 The id of the Action, auto-generated when action is created.
             action_state (ActionState):
@@ -53,6 +56,7 @@ class Event:
             data (Any):
                 for different event state, the data may be different.
         """
+        self.action_class = action_class
         self.action_id = action_id
         self.action_state = state
         self.description = description
@@ -65,10 +69,7 @@ class Event:
         Returns:
             str: fields str of event
         """
-        try:
-            return json.dumps(self.__dict__)
-        except Exception:
-            return str(self.__dict__)
+        return str(self.__dict__)
 
 
 class EventHandler:

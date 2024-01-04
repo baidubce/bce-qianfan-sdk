@@ -1216,6 +1216,9 @@ class Dataset(Table):
         )
 
         result_dataset = Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        if result_dataset.is_dataset_located_in_qianfan():
+            return result_dataset
+
         result_dataset.unpack()
 
         new_list: List[Dict[str, Any]] = []

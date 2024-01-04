@@ -88,7 +88,14 @@ def json_response(data, request_id=None, status_code=200):
     """
 
     resp = flask.Response(
-        json.dumps({**data, "_request": request.json, "_params": request.args}),
+        json.dumps(
+            {
+                **data,
+                "_request": request.json,
+                "_params": request.args,
+                "_header": dict(request.headers),
+            }
+        ),
         mimetype="application/json",
         status=status_code,
         # header=header
@@ -155,21 +162,27 @@ def access_token_checker(func):
         wrapper for function
         if "expired" in access_token, return token expired error
         """
-        access_token = request.args.get("access_token")
-        if access_token is None:
-            return json_response(
-                {
-                    "error_code": 110,
-                    "error_msg": "Access token invalid or no longer valid",
-                }
-            )
-        if "expired" in access_token:
-            return json_response(
-                {
-                    "error_code": 111,
-                    "error_msg": "Access token expired",
-                }
-            )
+        # openapi also supports iam auth
+        bce_date = request.headers.get("x-bce-date")
+        authorization = request.headers.get("authorization")
+
+        if bce_date is None or authorization is None:
+            # if iam auth credentail is not provided, check access token
+            access_token = request.args.get("access_token")
+            if access_token is None:
+                return json_response(
+                    {
+                        "error_code": 110,
+                        "error_msg": "Access token invalid or no longer valid",
+                    }
+                )
+            if "expired" in access_token:
+                return json_response(
+                    {
+                        "error_code": 111,
+                        "error_msg": "Access token expired",
+                    }
+                )
         try:
             # if "_delay" in request.json, sleep for a while
             # this argument is for unit test

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from qianfan.trainer.consts import ActionState
 
@@ -28,6 +28,7 @@ class Event:
     nodes.
     """
 
+    action_class: Optional[Type] = None
     action_id: Optional[str] = None
     action_state: ActionState
     description: Optional[str] = None
@@ -35,6 +36,7 @@ class Event:
 
     def __init__(
         self,
+        action_class: Optional[type],
         action_id: Optional[str],
         state: ActionState,
         description: Optional[str] = None,
@@ -53,6 +55,7 @@ class Event:
             data (Any):
                 for different event state, the data may be different.
         """
+        self.action_class = action_class
         self.action_id = action_id
         self.action_state = state
         self.description = description

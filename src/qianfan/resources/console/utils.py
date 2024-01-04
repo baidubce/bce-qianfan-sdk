@@ -50,6 +50,10 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             backoff_factor=kwargs.get(
                 "backoff_factor", config.CONSOLE_API_RETRY_BACKOFF_FACTOR
             ),
+            jitter=kwargs.get("retry_jitter", config.CONSOLE_API_RETRY_JITTER),
+            retry_err_codes=kwargs.get(
+                "retry_err_codes", config.CONSOLE_API_RETRY_ERR_CODES
+            ),
         )
         req = func(*args, **kwargs)
         return ConsoleAPIRequestor()._request_console_api(req, ak, sk, retry_config)
@@ -82,6 +86,10 @@ def async_console_api_request(
             timeout=kwargs.get("request_timeout", config.CONSOLE_API_RETRY_TIMEOUT),
             backoff_factor=kwargs.get(
                 "backoff_factor", config.CONSOLE_API_RETRY_BACKOFF_FACTOR
+            ),
+            jitter=kwargs.get("retry_jitter", config.CONSOLE_API_RETRY_JITTER),
+            retry_err_codes=kwargs.get(
+                "retry_err_codes", config.CONSOLE_API_RETRY_ERR_CODES
             ),
         )
         req = await func(*args, **kwargs)

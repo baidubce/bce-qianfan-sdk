@@ -82,7 +82,7 @@ def completion_stream_response(model, prompt=""):
         ) + "\n\n"
 
 
-def json_response(data, request_id=None):
+def json_response(data, request_id=None, status_code=200):
     """
     wrapper of the response
     """
@@ -90,6 +90,7 @@ def json_response(data, request_id=None):
     resp = flask.Response(
         json.dumps({**data, "_request": request.json, "_params": request.args}),
         mimetype="application/json",
+        status=status_code,
         # header=header
     )
     if request_id is not None:
@@ -452,12 +453,29 @@ def chat(model_name):
     )
 
 
+retry_cnt = {}
+
+
 @app.route(Consts.ModelAPIPrefix + "/completions/<model_name>", methods=["POST"])
 @access_token_checker
 def completions(model_name):
     """
     mock /completions/<model_name> completion api
     """
+    if model_name.startswith("test_retry"):
+        global retry_cnt
+        print("mock retry cnt", retry_cnt)
+        if model_name not in retry_cnt:
+            retry_cnt[model_name] = 1
+        if retry_cnt[model_name] % 3 != 0:
+            # need retry
+            retry_cnt[model_name] = (retry_cnt[model_name] + 1) % 3
+            return json_response(
+                {
+                    "error_code": 336100,
+                    "error_msg": "high load",
+                }
+            )
     r = request.json
     if "stream" in r and r["stream"]:
         return flask.Response(

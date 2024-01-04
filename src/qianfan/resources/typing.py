@@ -51,7 +51,9 @@ class RetryConfig:
 
     retry_count: int = 1
     timeout: float = 10
-    backoff_factor: float = 0
+    backoff_factor: float = 1
+    jitter: float = 1
+    retry_err_codes: Set[int] = default_field({})
 
 
 @dataclass

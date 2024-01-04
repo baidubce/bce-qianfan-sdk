@@ -89,9 +89,13 @@ class GlobalConfig(BaseSettings):
     )
     LLM_API_RETRY_COUNT: int = Field(default=DefaultValue.RetryCount)
     LLM_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.RetryTimeout)
-    LLM_API_RETRY_BACKOFF_FACTOR: int = Field(default=DefaultValue.RetryBackoffFactor)
+    LLM_API_RETRY_BACKOFF_FACTOR: float = Field(default=DefaultValue.RetryBackoffFactor)
+    LLM_API_RETRY_JITTER: float = Field(default=DefaultValue.RetryJitter)
+    LLM_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.RetryErrCodes)
     CONSOLE_API_RETRY_COUNT: int = Field(default=DefaultValue.ConsoleRetryCount)
     CONSOLE_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.ConsoleRetryTimeout)
+    CONSOLE_API_RETRY_JITTER: float = Field(default=DefaultValue.ConsoleRetryJitter)
+    CONSOLE_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.ConsoleRetryErrCodes)
     CONSOLE_API_RETRY_BACKOFF_FACTOR: int = Field(
         default=DefaultValue.ConsoleRetryBackoffFactor
     )

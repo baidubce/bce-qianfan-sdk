@@ -17,6 +17,7 @@ Consts used in qianfan sdk
 """
 
 import enum
+from typing import Set
 
 from qianfan.version import VERSION
 
@@ -106,7 +107,8 @@ class DefaultValue:
     AccessTokenRefreshMinInterval: float = 3600
     RetryCount: int = 1
     RetryTimeout: float = 60
-    RetryBackoffFactor: float = 0
+    RetryBackoffFactor: float = 1
+    RetryJitter: float = 1
     ConsoleRetryCount: int = 1
     ConsoleRetryTimeout: float = 60
     ConsoleRetryBackoffFactor: float = 0
@@ -135,6 +137,10 @@ class DefaultValue:
     GetEntityContentFailedRetryTimes: int = 3
 
     EvaluationOnlinePollingInterval: float = 30
+    RetryErrCodes: Set = {
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+    }
 
 
 class Consts:

@@ -101,6 +101,8 @@ $ qianfan txt2img [OPTIONS] PROMPT
 
 ### dataset 数据集
 
+![](./imgs/cli/dataset.gif)
+
 **用法**:
 
 ```console

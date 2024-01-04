@@ -53,7 +53,7 @@ def test_retry_retry_cnt():
         assert resp is not None
         assert resp["code"] == 200
         assert "id" in resp["body"]
-        assert resp["object"] == "completion"    
+        assert resp["object"] == "completion"
 
     comp = qianfan.Completion(endpoint="test_retry2")
     resp = comp.do(prompt="test", retry_count=3)

@@ -118,7 +118,7 @@ class DefaultValue:
     ConsoleRetryErrCodes: Set = {
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,
-        APIErrorCode.ConsoleInternalError.value
+        APIErrorCode.ConsoleInternalError.value,
     }
     QpsLimit: float = 0
     DotEnvConfigFile: str = ".env"

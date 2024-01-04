@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-utilities dataset needs
+utilities table needs
 """
 
 from typing import Any, Dict, List, Sequence

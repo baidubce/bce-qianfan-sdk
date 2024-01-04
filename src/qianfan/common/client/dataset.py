@@ -15,7 +15,7 @@
 
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import typer
 from rich.console import Console, Group
@@ -36,12 +36,19 @@ from qianfan.dataset import Dataset, DataStorageType, DataTemplateType
 from qianfan.dataset.data_source import QianfanDataSource
 from qianfan.utils.bos_uploader import parse_bos_path
 
-dataset_app = typer.Typer(no_args_is_help=True)
+dataset_app = typer.Typer(
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 QIANFAN_PATH_PREFIX = "qianfan://"
 
 
-def extract_id_from_path(path: str):
+def extract_id_from_path(path: str) -> Optional[int]:
+    """
+    Extract dataset id from path.
+    Return 0 if path is not a qianfan dataset.
+    """
     if path.startswith(QIANFAN_PATH_PREFIX):
         id = path[len(QIANFAN_PATH_PREFIX) :]
         try:
@@ -58,41 +65,63 @@ def extract_id_from_path(path: str):
     return None
 
 
-def load_dataset(path: str, **kwargs: Any):
+def load_dataset(path: str, **kwargs: Any) -> Dataset:
+    """Load dataset from platform or local file based on the format of path."""
     qianfan_dataset_id = extract_id_from_path(path)
     if qianfan_dataset_id:
         return Dataset.load(qianfan_dataset_id=qianfan_dataset_id, **kwargs)
     return Dataset.load(data_file=path, **kwargs)
 
 
-SAVE_DATASET_PANEL = "Platform Dataset Options (Required when saving to platform)"
+PANEL_FOR_CREATE_DATASET = (
+    "Platform Dataset Options (Required when creating a new dataset on platform)"
+)
 
 
 @dataset_app.command()
 def save(
-    src: str = typer.Argument(..., help="The source of the dataset."),
-    dst: Optional[str] = typer.Argument(None, help="The destination of the dataset."),
-    dataset_name: Optional[str] = typer.Option(
-        None, help="The name of the dataset.", rich_help_panel=SAVE_DATASET_PANEL
+    src: str = typer.Argument(
+        ...,
+        help=(
+            "The source of the dataset. The value can be a file path or qianfan"
+            " dataset url (qianfan://{model_version_id})."
+        ),
     ),
-    dataset_template_type: Optional[str] = typer.Option(
+    dst: Optional[str] = typer.Argument(
+        None,
+        help=(
+            "The destination of the dataset. The dataset will be saved to a file if the"
+            " value is a path. Alternatively, the dataset can be appended to an"
+            " existing dataset on the platform if an qianfan dataset url is provided"
+            " (qianfan://{model_version_id}). If this value is not provided, a new"
+            " dataset will be created on the platform."
+        ),
+    ),
+    dataset_name: Optional[str] = typer.Option(
+        None,
+        help="The name of the dataset on the platform.",
+        rich_help_panel=PANEL_FOR_CREATE_DATASET,
+    ),
+    dataset_template_type: str = typer.Option(
         "non_sorted_conversation",
         help="The type of the dataset.",
         **enum_typer(DataTemplateType),
-        rich_help_panel=SAVE_DATASET_PANEL,
+        rich_help_panel=PANEL_FOR_CREATE_DATASET,
     ),
-    dataset_storage_type: Optional[str] = typer.Option(
+    dataset_storage_type: str = typer.Option(
         "private_bos",
         help="The storage type of the dataset.",
         **enum_typer(DataStorageType),
-        rich_help_panel=SAVE_DATASET_PANEL,
+        rich_help_panel=PANEL_FOR_CREATE_DATASET,
     ),
     bos_path: str = typer.Option(
         "",
-        help="The storage type.",
-        rich_help_panel=SAVE_DATASET_PANEL,
+        help=(
+            "Path to the dataset file stored on BOS. Required when saving to the"
+            " platform. (e.g. bos://bucket/path/)"
+        ),
     ),
-):
+) -> None:
     """Save dataset to platform or local file."""
     console = Console()
     with console.status("Loading dataset..."):
@@ -103,17 +132,20 @@ def save(
         print_info_msg(
             "No destination specified. A new dataset will be created on the platform."
         )
-        client_utils.assert_not_none(bos_path, "bos_path")
-        client_utils.assert_not_none(dataset_name, "dataset_name")
-        dataset_template_type = DataTemplateType[dataset_template_type]
-        dataset_storage_type = DataStorageType[dataset_storage_type]
+        assert (
+            bos_path is not None
+        ), "bos_path is required when saving to a new dataset."
+        assert (
+            dataset_name is not None
+        ), "dataset_name is required when saving to a new dataset."
+
         bucket, path = parse_bos_path(bos_path)
         with console.status("Saving dataset to platform..."):
             src_dataset.save(
                 qianfan_dataset_create_args={
                     "name": dataset_name,
-                    "template_type": dataset_template_type,
-                    "storage_type": dataset_storage_type,
+                    "template_type": DataTemplateType[dataset_template_type],
+                    "storage_type": DataStorageType[dataset_storage_type],
                     "storage_id": bucket,
                     "storage_path": path,
                 },
@@ -150,26 +182,47 @@ def save(
         return
     else:
         # save to local file
-        path = Path(dst)
-        absolute_path = str(path.absolute())
+        dst_path = Path(dst)
+        dst_abs_path = str(dst_path.absolute())
         print_info_msg("The dataset will be saved to local file.")
-        src_dataset.save(data_file=absolute_path)
-        print_success_msg("Dataset has beed saved to: " + absolute_path)
+        src_dataset.save(data_file=dst_abs_path)
+        print_success_msg("Dataset has beed saved to: " + dst_abs_path)
 
 
 @dataset_app.command()
 def view(
-    dataset: str = typer.Argument(..., help="The dataset to view."),
-    row: Optional[str] = typer.Option(None, help="The row to view."),
-    column: Optional[str] = typer.Option(None, help="The column to view."),
-):
+    dataset: str = typer.Argument(
+        ...,
+        help=(
+            "The dataset to view. The value can be a file path or qianfan"
+            " dataset url (qianfan://{model_version_id})."
+        ),
+    ),
+    row: Optional[str] = typer.Option(
+        None,
+        help=(
+            "The row to view. Use commas(,) to view multiple rows and dashes(-) to"
+            " denote a range of data. (e.g. 1,3-5,12)"
+        ),
+    ),
+    column: Optional[str] = typer.Option(
+        None,
+        help=(
+            "The columns to view. Use comma(,) to separate the names of each column."
+            " (e.g. prompt,response)"
+        ),
+    ),
+) -> None:
     """
-    List dataset.
+    View the content of the dataset.
     """
+    console = Console()
+    with console.status("Loading dataset..."):
+        ds = load_dataset(dataset)
     # list of (start_idx, end_idx)
     row_list = []
     if row is None:
-        row_list.append((0, len(dataset)))
+        row_list.append((0, len(ds)))
     else:
         row_l = row.split(",")
         num_re = re.compile(r"^(\d+)$")  # example: 12
@@ -189,15 +242,12 @@ def view(
             print_error_msg("Invalid row index: " + r)
             raise typer.Exit(1)
 
-    console = Console()
-    with console.status("Loading dataset..."):
-        dataset: Dataset = load_dataset(dataset)
     table = Table(expand=True)
-    if len(dataset) == 0:
+    if len(ds) == 0:
         print_error_msg("The dataset is empty.")
         raise typer.Exit(1)
 
-    sample_row = dataset[0]
+    sample_row = ds[0]
     if isinstance(sample_row, list):
         sample_data = sample_row[0]
     else:
@@ -215,7 +265,7 @@ def view(
 
     for start, end in row_list:
         for i in range(start, end):
-            data = dataset[i]
+            data = ds[i]
             if isinstance(data, list):
                 for j, item in enumerate(data):
                     table_data = []
@@ -226,6 +276,7 @@ def view(
                         table_data.append("")
                     for key in col_list:
                         text_content = Pretty(item[key], overflow="fold")
+                        render_content: Any
                         if j == 0:
                             # frist row doesn't need rule
                             render_content = text_content
@@ -234,34 +285,43 @@ def view(
                         table_data.append(render_content)
                     table.add_row(*table_data, end_section=(j == len(data) - 1))
             else:
-                table_data = [str(i)]
+                table_data_list: List[Any] = [str(i)]
                 for key in col_list:
                     text_content = Pretty(data[key], overflow="fold")
-                    table_data.append(text_content)
-                table.add_row(*table_data, end_section=True)
+                    table_data_list.append(text_content)
+                table.add_row(*table_data_list, end_section=True)
 
     console.print(table)
 
 
 @dataset_app.command()
 def predict(
-    dataset: str = typer.Argument(..., help="The dataset to predict."),
+    dataset: str = typer.Argument(
+        ...,
+        help=(
+            "The dataset to predict. The value can be a file path or qianfan"
+            " dataset url (qianfan://{model_version_id})."
+        ),
+    ),
     model: str = typer.Option(
-        DefaultLLMModel.ChatCompletion, help="The model to predict."
+        DefaultLLMModel.ChatCompletion, help="The model used to predict."
     ),
-    endpoint: Optional[str] = typer.Option(None, help="The endpoint to predict."),
-    output: Optional[Path] = typer.Option(
-        Path(f"./{timestamp()}.jsonl"), help="The output file location"
+    endpoint: Optional[str] = typer.Option(
+        None,
+        help="The endpoint used to predict. The option will override 'model' option.",
     ),
-    input_columns: str = typer.Option("prompt", help="The input column."),
+    output: Path = typer.Option(
+        Path(f"./{timestamp()}.jsonl"), help="The output dataset file location."
+    ),
+    input_columns: str = typer.Option("prompt", help="The input name of column."),
     reference_column: Optional[str] = typer.Option(None, help="The reference column."),
-):
+) -> None:
     """Predict the dataset using a model and save to local file."""
-    input_columns = input_columns.split(",")
+    input_column_list = input_columns.split(",")
     console = Console()
     with console.status("Loading dataset..."):
         ds = load_dataset(
-            dataset, input_columns=input_columns, reference_column=reference_column
+            dataset, input_columns=input_column_list, reference_column=reference_column
         )
     with console.status("Predicting..."):
         if endpoint is not None:

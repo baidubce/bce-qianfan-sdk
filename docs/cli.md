@@ -28,6 +28,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `chat` 对话
 * `completion` 补全
 * `txt2img` 文生图
+* `dataset` 数据集
 
 ### chat 对话
 
@@ -91,3 +92,87 @@ $ qianfan txt2img [OPTIONS] PROMPT
 * `--output PATH`：输出的文件名称  [default：`%Y%m%d_%H%M%S.jpg`]
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--help`：展示帮助文档
+
+### dataset 数据集
+
+**用法**:
+
+```console
+$ qianfan dataset [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options 选项**:
+
+* `--help`：展示帮助文档
+
+**Commands 命令**:
+
+* `predict`：调用大模型对数据集进行预测，并保存到本地文件。
+* `save`：保存数据集至本地文件或平台。
+* `view`：预览数据集内容。
+
+#### predict 数据集预测
+
+调用大模型对数据集进行预测，并保存到本地文件。
+
+**用法**:
+
+```console
+$ qianfan dataset predict [OPTIONS] DATASET
+```
+
+**Arguments 参数**:
+
+* `DATASET`：待预测的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。  [required]
+
+**Options 选项**:
+
+* `--model TEXT`：预测用的模型名称，可以用 `qianfan chat --list-model` 获取模型列表。  [default：ERNIE-Bot-turbo]
+* `--endpoint TEXT`：预测用的模型 endpoint，该选项会覆盖 `--model` 选项。
+* `--output PATH`：输出的文件路径。  [default：`%Y%m%d_%H%M%S.jsonl`]
+* `--input-columns TEXT`：输入的列名称。  [default：prompt]
+* `--reference-column TEXT`：参考答案的列名称。
+* `--help`：展示帮助文档。
+
+### save 数据集保存
+
+保存数据集至本地文件或平台。
+
+**用法**:
+
+```console
+$ qianfan dataset save [OPTIONS] SRC [DST]
+```
+
+**Arguments 参数**:
+
+* `SRC`：源数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。 [required]
+* `[DST]`：目标数据集。如果值是一个本地文件路径，那么数据将保存至该文件中。或者可以提供一个已有的千帆数据集链接 (qianfan://{model_version_id})，那么数据将被追加至该数据集中。如果不提供该值，那么将会在平台上创建一个新的数据集，此时需要提供创建数据集所需的一些参数，具体见下文。
+
+**Options 选项**:
+
+* `--dataset-name TEXT`：新建数据集的名称，仅在不提供 `DST` 参数时需要。
+* `--dataset-template-type [non_sorted_conversation|sorted_conversation|generic_text|query_set|text2_image]`：数据集的类型，仅在不提供 `DST` 参数时需要。  [default：non_sorted_conversation]
+* `--dataset-storage-type [public_bos|private_bos]`：数据集存储的类型，仅在不提供 `DST` 参数时需要。  [default：private_bos]
+* `--bos-path TEXT`：数据集保存在 BOS 上的路径，仅在保存至平台时需要。 (e.g. bos://bucket/path/)
+* `--help`：展示帮助文档。
+
+### view 数据集预览
+
+预览数据集内容。
+
+**用法**:
+
+```console
+$ qianfan dataset view [OPTIONS] DATASET
+```
+
+**Arguments 参数**:
+
+* `DATASET`：待预览的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。[required]
+
+**Options 参数**:
+
+* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围。 (e.g. 1,3-5,12)
+* `--column TEXT`：待预览的数据集的列。用 `,` 分隔每个列名称。 (e.g. prompt,response)
+* `--help`：展示帮助文档。

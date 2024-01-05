@@ -346,6 +346,21 @@ class EvaluationManager(BaseModel):
                         input_argument_dict.get("evalMode", "") + "rule,"
                     )
 
+                    rule_list: List[str] = []
+                    if evaluator.using_similarity:
+                        rule_list.append("similarity")
+                    if evaluator.using_accuracy:
+                        rule_list.append("accuracy")
+
+                    if not rule_list:
+                        err_msg = (
+                            "no rule has been set despite using QianfanRuleEvaluator"
+                        )
+                        log_error(err_msg)
+                        raise ValueError(err_msg)
+
+                    input_argument_dict["scoreModes"] = rule_list
+
                     # 添加停用词表
                     if evaluator.stop_words:
                         input_argument_dict["stopWordsPath"] = evaluator.stop_words

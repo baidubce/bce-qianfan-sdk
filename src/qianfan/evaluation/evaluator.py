@@ -66,6 +66,8 @@ class QianfanRefereeEvaluator(QianfanEvaluator):
 class QianfanRuleEvaluator(QianfanEvaluator):
     """qianfan rule evaluator config class"""
 
+    using_similarity: bool = Field(default=False)
+    using_accuracy: bool = Field(default=False)
     stop_words: Optional[str] = Field(default=None)
 
 
@@ -136,6 +138,6 @@ try:
 
 except ModuleNotFoundError:
     log_warn(
-        "opencompass not found on your packages, OpenCompassLocalEvaluator not"
-        " available now"
+        "opencompass not found in your packages, OpenCompassLocalEvaluator not"
+        " available now. if you want to use it please execute 'pip install opencompass'"
     )

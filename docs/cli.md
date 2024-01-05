@@ -116,8 +116,16 @@ $ qianfan dataset [OPTIONS] COMMAND [ARGS]...
 **Commands 命令**:
 
 * `predict`：调用大模型对数据集进行预测，并保存到本地文件。
+* `download`：下载数据集。
+* `upload`：上传数据集。
 * `save`：保存数据集至本地文件或平台。
 * `view`：预览数据集内容。
+
+> ⚠️ 在下方各个数据集的命令中，涉及数据集 id 均指平台上的数据集版本 id，与 Dataset 模块定义一致，具体获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Uloic6krs)。
+>
+> 使用时可以直接传数据集的 id，也可以使用链接形式避免与文件名产生歧义，格式为 `qianfan://{model_version_id}`，例如 `qianfan://18562`。
+>
+> 如果由于本地文件名为数字，导致和数据集 id 混淆，可以在文件名前增加 `./` 避免歧义，例如 `./18562`。
 
 #### predict 数据集预测
 
@@ -142,9 +150,57 @@ $ qianfan dataset predict [OPTIONS] DATASET
 * `--reference-column TEXT`：参考答案的列名称。
 * `--help`：展示帮助文档。
 
-### save 数据集保存
+#### download 数据集下载
+
+下载数据集至本地。
+
+![](./imgs/cli/dataset_download.webp)
+
+**用法**:
+
+```console
+$ qianfan dataset download [OPTIONS] DATASET_ID
+```
+
+**Arguments 参数**:
+
+* `DATASET_ID`：待下载的数据集版本 id。 [required]
+
+**Options 选项**:
+
+* `--output TEXT`：输出的文件名称  [default：`%Y%m%d_%H%M%S.jpg`]
+* `--help`：展示帮助文档。
+
+#### upload 数据集上传
+
+上传本地数据集文件至平台。
+
+**用法**:
+
+```console
+$ qianfan dataset upload [OPTIONS] PATH [DST]
+```
+
+**Arguments 参数**:
+
+* `SRC`：数据集文件路径。 [required]
+* `[DST]`：目标数据集 id，该参数可选。如果不提供该值，那么将会在平台上创建一个新的数据集，否则数据将被追加至所提供的数据集中。值可以是数据集的 id 或者是千帆数据集链接 (qianfan://{model_version_id})。
+
+**Options 选项**:
+
+* `--dataset-name TEXT`：新建数据集的名称，仅在不提供 `DST` 参数时需要。
+* `--dataset-template-type [non_sorted_conversation|sorted_conversation|generic_text|query_set|text2_image]`：数据集的类型，仅在不提供 `DST` 参数时需要。  [default：non_sorted_conversation]
+* `--dataset-storage-type [public_bos|private_bos]`：数据集存储的类型，仅在不提供 `DST` 参数时需要。  [default：private_bos]
+* `--bos-path TEXT`：数据集保存在 BOS 上的路径。 (e.g. bos://bucket/path/)  [required]
+* `--help`：展示帮助文档。
+
+#### save 数据集保存
 
 保存数据集至本地文件或平台。
+
+> `upload` 和 `download` 命令提供了更为方便的上传和下载数据集的方法，满足需求的前提下建议优先使用这两个命令。
+> 
+> `save` 命令提供了更为灵活的数据集保存功能，例如平台数据拷贝至另一个平台数据集中，可以满足更为复杂的需求。
 
 **用法**:
 
@@ -165,7 +221,7 @@ $ qianfan dataset save [OPTIONS] SRC [DST]
 * `--bos-path TEXT`：数据集保存在 BOS 上的路径，仅在保存至平台时需要。 (e.g. bos://bucket/path/)
 * `--help`：展示帮助文档。
 
-### view 数据集预览
+#### view 数据集预览
 
 预览数据集内容。
 

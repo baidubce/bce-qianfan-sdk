@@ -49,6 +49,12 @@ def extract_id_from_path(path: str) -> Optional[int]:
     Extract dataset id from path.
     Return 0 if path is not a qianfan dataset.
     """
+    try:
+        # if path is an integer, it is a dataset id
+        return int(path)
+    except ValueError:
+        pass
+
     if path.startswith(QIANFAN_PATH_PREFIX):
         id = path[len(QIANFAN_PATH_PREFIX) :]
         try:
@@ -190,6 +196,78 @@ def save(
 
 
 @dataset_app.command()
+def download(
+    dataset_id: str = typer.Argument(
+        ...,
+        help=(
+            "The version id of the dataset on the qianfan platform. The value can be"
+            " qianfan dataset id or url(qianfan://{model_version_id})."
+        ),
+    ),
+    output: Path = typer.Option(Path(f"{timestamp()}.jsonl"), help="Output file path."),
+) -> None:
+    """Download dataset to local file."""
+    dataset_path = extract_id_from_path(dataset_id)
+    if dataset_path is None:
+        print_error_msg("Invalid dataset id.")
+        raise typer.Exit(1)
+    save(dataset_id, str(output.absolute()))
+
+
+@dataset_app.command()
+def upload(
+    path: Path = typer.Argument(
+        ...,
+        help="The path of the dataset file.",
+    ),
+    dst: Optional[str] = typer.Argument(
+        None,
+        help=(
+            "The destination of the dataset. If this value is not provided, a new"
+            " dataset will be created on the platform. Alternatively, the dataset can"
+            " be appended to an existing dataset on the platform if an qianfan dataset"
+            " id or url(qianfan://{model_version_id}) is provided . "
+        ),
+    ),
+    dataset_name: Optional[str] = typer.Option(
+        None,
+        help="The name of the dataset on the platform.",
+    ),
+    bos_path: str = typer.Option(
+        ...,
+        help=(
+            "Path to the dataset file stored on BOS. Required when saving to the"
+            " platform. (e.g. bos://bucket/path/)"
+        ),
+    ),
+    dataset_template_type: str = typer.Option(
+        "non_sorted_conversation",
+        help="The type of the dataset.",
+        **enum_typer(DataTemplateType),
+    ),
+    dataset_storage_type: str = typer.Option(
+        "private_bos",
+        help="The storage type of the dataset.",
+        **enum_typer(DataStorageType),
+    ),
+):
+    """Upload dataset to platform."""
+    if dst is not None:
+        dataset_id = extract_id_from_path(dst)
+        if dataset_id is None:
+            print_error_msg("Invalid dst dataset id.")
+            raise typer.Exit(1)
+    save(
+        str(path.absolute()),
+        dst,
+        dataset_name=dataset_name,
+        dataset_template_type=dataset_template_type,
+        dataset_storage_type=dataset_storage_type,
+        bos_path=bos_path,
+    )
+
+
+@dataset_app.command()
 def view(
     dataset: str = typer.Argument(
         ...,
@@ -212,6 +290,7 @@ def view(
             " (e.g. prompt,response)"
         ),
     ),
+    raw: bool = typer.Option(False, "--raw", help="Print raw data."),
 ) -> None:
     """
     View the content of the dataset.
@@ -266,6 +345,9 @@ def view(
     for start, end in row_list:
         for i in range(start, end):
             data = ds[i]
+            if raw:
+                print(data)
+                continue
             if isinstance(data, list):
                 for j, item in enumerate(data):
                     table_data = []
@@ -290,8 +372,8 @@ def view(
                     text_content = Pretty(data[key], overflow="fold")
                     table_data_list.append(text_content)
                 table.add_row(*table_data_list, end_section=True)
-
-    console.print(table)
+    if not raw:
+        console.print(table)
 
 
 @dataset_app.command()

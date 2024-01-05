@@ -250,7 +250,7 @@ def upload(
         help="The storage type of the dataset.",
         **enum_typer(DataStorageType),
     ),
-):
+) -> None:
     """Upload dataset to platform."""
     if dst is not None:
         dataset_id = extract_id_from_path(dst)

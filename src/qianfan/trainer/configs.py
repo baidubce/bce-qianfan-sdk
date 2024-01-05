@@ -51,7 +51,7 @@ class TrainConfig(BaseModel):
     """normalization params"""
     lora_rank: Optional[int] = None
     """loRA rank"""
-    lora_all_linear: Optional[Any] = None
+    lora_all_linear: Optional[str] = None
     """loRA all linear layer"""
 
     extras: Dict[str, Any] = {}
@@ -255,6 +255,7 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         warmup_ratio=0.10,
         weight_decay=0.0100,
         lora_rank=8,
+        lora_all_linear="True",
     ),
     "ERNIE-Bot-turbo-0725": TrainConfig(
         epoch=1,

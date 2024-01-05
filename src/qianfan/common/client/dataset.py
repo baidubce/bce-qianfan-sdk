@@ -39,6 +39,7 @@ from qianfan.utils.bos_uploader import parse_bos_path
 dataset_app = typer.Typer(
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
+    help="Dataset utils.",
 )
 
 QIANFAN_PATH_PREFIX = "qianfan://"

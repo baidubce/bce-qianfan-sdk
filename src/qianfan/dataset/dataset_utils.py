@@ -16,7 +16,7 @@
 utilities dataset needs
 """
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import requests
 
@@ -41,7 +41,7 @@ from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
 
-def check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]:
+def _check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]:
     """
     check etl task result using etl task id
 
@@ -409,3 +409,12 @@ def _check_and_generate_service(
         service = Completion(service_model, service_endpoint)
 
     return service
+
+
+def _extract_string(data: Union[str, Iterator[str]]) -> str:
+    if isinstance(data, str):
+        return data
+    elif hasattr(data, "__iter__"):
+        for item in data:
+            return _extract_string(item)
+    return ""

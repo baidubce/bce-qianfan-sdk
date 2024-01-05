@@ -23,3 +23,21 @@ QianfanDatasetPackColumnName = "_pack"
 
 # 分组时应用的列名
 QianfanDataGroupColumnName = "_group"
+
+# 批量推理结果中，实际输入 Prompt 的列名
+NewInputPromptColumnName = "input_prompt"
+
+# 批量推理结果中，实际输入对话的列名
+NewInputChatColumnName = "input_chats"
+
+# 批量推理结果中，大模型输出结果的列名
+LLMOutputColumnName = "llm_output"
+
+# 批量推理结果中，预期结果的列名
+OldReferenceColumnName = "expected_output"
+
+# 批量推理结果中，请求耗时的列名
+RequestLatencyColumnName = "request_complete_latency"
+
+# 批量推理结果中，首 token 耗时的列名
+FirstTokenLatencyColumnName = "first_token_latency"

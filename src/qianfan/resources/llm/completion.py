@@ -113,7 +113,7 @@ class Completion(BaseResource):
                     "user_id",
                 },
             ),
-            "ERNIE-Bot-turbo-pro": QfLLMInfo(
+            "ERNIE-Speed": QfLLMInfo(
                 endpoint="/chat/eb_turbo_pro",
                 required_keys={"messages"},
                 optional_keys={

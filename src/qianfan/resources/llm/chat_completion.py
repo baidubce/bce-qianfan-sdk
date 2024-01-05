@@ -57,8 +57,6 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                     "system",
-                    "tools",
-                    "tool_choice",
                 },
             ),
             "ERNIE-Bot": QfLLMInfo(

@@ -137,6 +137,8 @@ class Completion(BaseResource):
                     "penalty_score",
                     "system",
                     "user_id",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "BLOOMZ-7B": QfLLMInfo(
@@ -150,6 +152,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Llama-2-7b-chat": QfLLMInfo(
@@ -163,6 +167,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Llama-2-13b-chat": QfLLMInfo(
@@ -176,6 +182,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Llama-2-70b-chat": QfLLMInfo(
@@ -189,6 +197,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Qianfan-BLOOMZ-7B-compressed": QfLLMInfo(
@@ -202,6 +212,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Qianfan-Chinese-Llama-2-7B": QfLLMInfo(
@@ -215,6 +227,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "ChatGLM2-6B-32K": QfLLMInfo(
@@ -228,6 +242,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "AquilaChat-7B": QfLLMInfo(
@@ -241,6 +257,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "XuanYuan-70B-Chat-4bit": QfLLMInfo(
@@ -254,6 +272,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Qianfan-Chinese-Llama-2-13B": QfLLMInfo(
@@ -267,6 +287,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "ChatLaw": QfLLMInfo(
@@ -277,6 +299,8 @@ class Completion(BaseResource):
                     "user_id",
                     "temperature",
                     "top_p",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "SQLCoder-7B": QfLLMInfo(
@@ -290,6 +314,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "CodeLlama-7b-Instruct": QfLLMInfo(
@@ -303,6 +329,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             "Yi-34B-Chat": QfLLMInfo(
@@ -316,6 +344,8 @@ class Completion(BaseResource):
                     "top_p",
                     "penalty_score",
                     "stop",
+                    "tools",
+                    "tool_choice",
                 },
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(

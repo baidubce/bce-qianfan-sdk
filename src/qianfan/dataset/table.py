@@ -31,7 +31,7 @@ from qianfan.dataset.process_interface import (
     Listable,
     Processable,
 )
-from qianfan.dataset.utils import _construct_table_from_nest_sequence
+from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 

@@ -127,9 +127,13 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         dispatch_event(
             self.event_dispatcher,
             Event(
-                self.__class__.__name__ + self.id,
+                self.__class__,
+                self.id,
                 ActionState.Error,
-                f"action_error: action[{self.id}], msg:{str(e)}",
+                (
+                    f"action_error: action_type[{self.__class__.__name__}]"
+                    f" action_id[{self.id}], msg:{str(e)}"
+                ),
                 {"error": str(e)},
             ),
         )
@@ -146,9 +150,13 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         dispatch_event(
             self.event_dispatcher,
             Event(
-                f"{self.__class__.__name__}_{self.id}",
+                self.__class__,
+                self.id,
                 state,
-                f"action_event: action[{self.id}], msg:{msg}",
+                (
+                    f"action_event: action_type[{self.__class__.__name__}]"
+                    f" action_id[{self.id}], msg:{msg}"
+                ),
                 data,
             ),
         )

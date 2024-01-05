@@ -19,6 +19,7 @@ import typer
 import qianfan
 from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
+from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
 from qianfan.common.client.txt2img import txt2img_entry
 
@@ -31,6 +32,7 @@ app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
+app.add_typer(dataset_app, name="dataset")
 
 
 def version_callback(value: bool) -> None:

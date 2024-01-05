@@ -15,6 +15,7 @@
 import asyncio
 import importlib.util
 import os
+import re
 import secrets
 import string
 import threading
@@ -208,3 +209,12 @@ def assert_package_installed(package_name: str) -> None:
 
 def check_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
+
+
+def camel_to_snake(name: str) -> str:
+    name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+
+
+def snake_to_camel(name: str) -> str:
+    return "".join([x.capitalize() for x in name.split("_")])

@@ -15,6 +15,7 @@
 utility for
 uploading content to bos
 """
+from typing import Tuple
 
 from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.bce_client_configuration import BceClientConfiguration
@@ -73,3 +74,30 @@ def get_bos_file_shared_url(
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
     return f"bos:/{bucket_name}{absolute_path}"
+
+
+def get_bos_bucket_location(
+    bucket_name: str,
+    region: str,
+    ak: str,
+    sk: str,
+) -> str:
+    """获取 BOS bucket 的 region"""
+    bos_config = BceClientConfiguration(
+        credentials=BceCredentials(ak, sk), endpoint=f"{region}.bcebos.com"
+    )
+
+    return BosClient(bos_config).get_bucket_location(bucket_name)
+
+
+def parse_bos_path(bos_path: str) -> Tuple[str, str]:
+    """解析 bos 路径，返回 bucket 和 path"""
+    path = ""
+    if bos_path.startswith("bos://"):
+        path = bos_path[6:]
+    elif bos_path.startswith("bos:/"):
+        path = bos_path[5:]
+    else:
+        raise ValueError(f"invalid bos path {bos_path}")
+    index = path.find("/")
+    return path[:index], path[index:]

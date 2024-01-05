@@ -145,6 +145,7 @@ class DefaultValue:
     GetEntityContentFailedRetryTimes: int = 3
 
     EvaluationOnlinePollingInterval: float = 30
+    BosHostRegion: str = "bj"
     RetryErrCodes: Set = {
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,

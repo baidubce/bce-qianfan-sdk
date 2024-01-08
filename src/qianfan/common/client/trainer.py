@@ -33,6 +33,9 @@ from qianfan.common.client.utils import (
     replace_logger_handler,
     timestamp,
 )
+
+from qianfan.model.consts import ServiceType
+from qianfan.resources.console.consts import DeployPoolType
 from qianfan.consts import DefaultLLMModel
 from qianfan.dataset import Dataset, DataStorageType, DataTemplateType
 from qianfan.dataset.data_source import QianfanDataSource
@@ -41,7 +44,14 @@ from qianfan.trainer import LLMFinetune
 from qianfan.trainer.base import Pipeline
 from qianfan.trainer.configs import TrainConfig
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.actions import LoadDataSetAction, TrainAction, ModelPublishAction
+from qianfan.trainer.actions import (
+    DeployAction,
+    EvaluateAction,
+    LoadDataSetAction,
+    TrainAction,
+    ModelPublishAction,
+)
+from qianfan.model.configs import DeployConfig
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.common.client.dataset import load_dataset
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
@@ -91,7 +101,11 @@ class MyEventHandler(EventHandler):
             )
             if not self.vdl_printed:
                 self.progress.log(
-                    "Check this vdl link to view training progres: "
+                    f"Training task id: {resp['result']['taskId']}, job id:"
+                    f" {resp['result']['id']}, task name: {resp['result']['taskName']}"
+                )
+                self.progress.log(
+                    "Check this vdl link to view training progress: "
                     + resp["result"]["vdlLink"]
                 )
                 self.vdl_printed = True
@@ -104,7 +118,36 @@ class MyEventHandler(EventHandler):
             self.current_task = self.progress.add_task(
                 "Publish", start=True, total=None
             )
+            self.progress.log("Start publishing model...")
+        if event.action_state == ActionState.Running:
+            pass
+        if event.action_state == ActionState.Done:
+            data = event.data
+            self.progress.update(self.current_task, total=100, completed=100)
+            self.progress.log(
+                f"Model has been published successfully. Model id: {data['model_id']}."
+                f" Model version id: {data['model_version_id']}"
+            )
 
+    def handle_deploy(self, event: Event) -> None:
+        if event.action_state == ActionState.Preceding:
+            self.current_task = self.progress.add_task("Deploy", start=True, total=None)
+            self.progress.log("Start deploying service...")
+        if event.action_state == ActionState.Running:
+            pass
+        if event.action_state == ActionState.Done:
+            self.progress.update(self.current_task, total=100, completed=100)
+            data = event.data
+            self.progress.log(
+                "Service has been deployed successfully. Service id:"
+                f" {data['service_id']}. Service endpoint: {data['service_endpoint']}"
+            )
+
+    def handle_evaluate(self, event: Event) -> None:
+        if event.action_state == ActionState.Preceding:
+            self.current_task = self.progress.add_task(
+                "Evaluate", start=True, total=None
+            )
         if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
@@ -126,6 +169,8 @@ class MyEventHandler(EventHandler):
             LoadDataSetAction: self.handle_load_data,
             TrainAction: self.handle_train,
             ModelPublishAction: self.handle_publish,
+            DeployAction: self.handle_deploy,
+            EvaluateAction: self.handle_evaluate,
             Pipeline: self.handle_pipeline,
         }
         handler = handle_map.get(event.action_class)
@@ -153,9 +198,16 @@ def run(
         train_config=TrainConfig(
             batch_size=1, epoch=1, learning_rate=0.00002, peft_type=PeftType.ALL
         ),
+        deploy_config=DeployConfig(
+            name="sdkcqasvc",
+            endpoint_prefix="sdkcqa1",
+            replicas=1,  # 副本数， 与qps强绑定
+            pool_type=DeployPoolType.PrivateResource,  # 私有资源池
+            service_type=ServiceType.Chat,
+        ),
     )
     trainer.run()
-    console.log("Finished!")
+    console.log("Trainer finished!")
     import time
 
     time.sleep(0.1)

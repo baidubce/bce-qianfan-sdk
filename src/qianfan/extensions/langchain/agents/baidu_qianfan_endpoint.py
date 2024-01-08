@@ -92,7 +92,7 @@ def _agent_input_keys() -> List[str]:
 
 def _agent_validate_logical_core(values: dict) -> dict:
     """check if llm is valid"""
-    if not isinstance(values["llm"], QianfanChatEndpoint):
+    if not isinstance(values["llm"], QianfanChatEndpoint):  # type: ignore
         raise ValueError("Only supported with QianfanChatEndpoint models.")
     if not (values["llm"].model == "ERNIE-Bot" or values["llm"].model == "ERNIE-Bot-4"):
         raise ValueError(

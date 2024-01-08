@@ -53,6 +53,7 @@ sphinx-rtd-theme = ">=1.2.0"
 mypy = ">=1.4.0"
 myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
+types-protobuf = "4.24.0.4"
 
 [tool.poetry.extras]
 langchain = ["langchain"]

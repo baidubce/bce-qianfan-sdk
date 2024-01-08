@@ -26,7 +26,7 @@ class GlobalConfig(BaseSettings):
     """
 
     class Config:
-        env_file_encoding = 'utf-8'
+        env_file_encoding = "utf-8"
         env_prefix = "QIANFAN_"
         case_sensitive = True
 

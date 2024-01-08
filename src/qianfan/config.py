@@ -11,145 +11,110 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 from typing import Optional
 
-from dynaconf import Dynaconf, Validator
 from typing_extensions import deprecated
 
-from qianfan.consts import DefaultValue
+from qianfan.consts import DefaultValue, Env
+from qianfan.pydantic import BaseSettings, Field
 
-_GLOBAL_CONFIG: Optional[Dynaconf] = None
+
+class GlobalConfig(BaseSettings):
+    """
+    The global config of whole qianfan sdk
+    """
+
+    class Config:
+        env_file_encoding = 'utf-8'
+        env_prefix = "QIANFAN_"
+        case_sensitive = True
+
+    AK: Optional[str] = Field(default=None)
+    SK: Optional[str] = Field(default=None)
+    ACCESS_KEY: Optional[str] = Field(default=None)
+    SECRET_KEY: Optional[str] = Field(default=None)
+    ACCESS_TOKEN: Optional[str] = Field(default=None)
+    BASE_URL: str = Field(default=DefaultValue.BaseURL)
+    AUTH_TIMEOUT: float = Field(default=DefaultValue.AuthTimeout)
+    DISABLE_EB_SDK: bool = Field(default=DefaultValue.DisableErnieBotSDK)
+    EB_SDK_INSTALLED: bool = Field(default=False)
+    IAM_SIGN_EXPIRATION_SEC: int = Field(default=DefaultValue.IAMSignExpirationSeconds)
+    CONSOLE_API_BASE_URL: str = Field(default=DefaultValue.ConsoleAPIBaseURL)
+    ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float = Field(
+        default=DefaultValue.AccessTokenRefreshMinInterval
+    )
+    QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
+    APPID: Optional[int] = Field(default=None)
+
+    # for private
+    ENABLE_PRIVATE: bool = Field(default=DefaultValue.EnablePrivate)
+    ENABLE_AUTH: Optional[bool] = Field(default=None)
+    ACCESS_CODE: Optional[str] = Field(default=None)
+    IMPORT_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ImportStatusPollingInterval
+    )
+    EXPORT_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ExportStatusPollingInterval
+    )
+    RELEASE_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ReleaseStatusPollingInterval
+    )
+    EXPORT_FILE_SIZE_LIMIT: int = Field(default=DefaultValue.ExportFileSizeLimit)
+    ETL_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ETLStatusPollingInterval
+    )
+    GET_ENTITY_CONTENT_FAILED_RETRY_TIMES: int = Field(
+        default=DefaultValue.GetEntityContentFailedRetryTimes
+    )
+    TRAIN_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.TrainStatusPollingInterval
+    )
+    TRAINER_STATUS_POLLING_BACKOFF_FACTOR: float = Field(
+        default=DefaultValue.TrainerStatusPollingBackoffFactor
+    )
+    TRAINER_STATUS_POLLING_RETRY_TIMES: float = Field(
+        default=DefaultValue.TrainerStatusPollingRetryTimes
+    )
+    MODEL_PUBLISH_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.ModelPublishStatusPollingInterval
+    )
+    BATCH_RUN_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.BatchRunStatusPollingInterval
+    )
+    DEPLOY_STATUS_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.DeployStatusPollingInterval
+    )
+    DEFAULT_FINE_TUNE_TRAIN_TYPE: str = Field(
+        default=DefaultValue.DefaultFinetuneTrainType
+    )
+    LLM_API_RETRY_COUNT: int = Field(default=DefaultValue.RetryCount)
+    LLM_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.RetryTimeout)
+    LLM_API_RETRY_BACKOFF_FACTOR: float = Field(default=DefaultValue.RetryBackoffFactor)
+    LLM_API_RETRY_JITTER: float = Field(default=DefaultValue.RetryJitter)
+    LLM_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.RetryErrCodes)
+    CONSOLE_API_RETRY_COUNT: int = Field(default=DefaultValue.ConsoleRetryCount)
+    CONSOLE_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.ConsoleRetryTimeout)
+    CONSOLE_API_RETRY_JITTER: float = Field(default=DefaultValue.ConsoleRetryJitter)
+    CONSOLE_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.ConsoleRetryErrCodes)
+    CONSOLE_API_RETRY_BACKOFF_FACTOR: int = Field(
+        default=DefaultValue.ConsoleRetryBackoffFactor
+    )
+    EVALUATION_ONLINE_POLLING_INTERVAL: float = Field(
+        default=DefaultValue.EvaluationOnlinePollingInterval
+    )
+    BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
 
 
-def get_config() -> Dynaconf:
+_GLOBAL_CONFIG: Optional[GlobalConfig] = None
+
+
+def get_config() -> GlobalConfig:
     global _GLOBAL_CONFIG
     if not _GLOBAL_CONFIG:
         try:
-            _none_default_value_key_list = [
-                "AK",
-                "SK",
-                "ACCESS_KEY",
-                "SECRET_KEY",
-                "ACCESS_TOKEN",
-                "APPID",
-                "ENABLE_AUTH",
-                "ACCESS_CODE",
-            ]
-
-            _GLOBAL_CONFIG = Dynaconf(
-                validators=[
-                    Validator(*_none_default_value_key_list, default=None),
-                    Validator("BASE_URL", default=DefaultValue.BaseURL),
-                    Validator("AUTH_TIMEOUT", default=DefaultValue.AuthTimeout),
-                    Validator(
-                        "DISABLE_EB_SDK", default=DefaultValue.DisableErnieBotSDK
-                    ),
-                    Validator("EB_SDK_INSTALLED", default=False),
-                    Validator(
-                        "IAM_SIGN_EXPIRATION_SEC",
-                        default=DefaultValue.IAMSignExpirationSeconds,
-                    ),
-                    Validator(
-                        "CONSOLE_API_BASE_URL", default=DefaultValue.ConsoleAPIBaseURL
-                    ),
-                    Validator(
-                        "ACCESS_TOKEN_REFRESH_MIN_INTERVAL",
-                        default=DefaultValue.AccessTokenRefreshMinInterval,
-                    ),
-                    Validator("QPS_LIMIT", default=DefaultValue.QpsLimit),
-                    Validator("ENABLE_PRIVATE", default=DefaultValue.EnablePrivate),
-                    Validator(
-                        "IMPORT_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.ImportStatusPollingInterval,
-                    ),
-                    Validator(
-                        "EXPORT_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.ExportStatusPollingInterval,
-                    ),
-                    Validator(
-                        "RELEASE_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.ReleaseStatusPollingInterval,
-                    ),
-                    Validator(
-                        "EXPORT_FILE_SIZE_LIMIT",
-                        default=DefaultValue.ExportFileSizeLimit,
-                    ),
-                    Validator(
-                        "ETL_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.ETLStatusPollingInterval,
-                    ),
-                    Validator(
-                        "GET_ENTITY_CONTENT_FAILED_RETRY_TIMES",
-                        default=DefaultValue.GetEntityContentFailedRetryTimes,
-                    ),
-                    Validator(
-                        "TRAIN_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.TrainStatusPollingInterval,
-                    ),
-                    Validator(
-                        "TRAINER_STATUS_POLLING_BACKOFF_FACTOR",
-                        default=DefaultValue.TrainerStatusPollingBackoffFactor,
-                    ),
-                    Validator(
-                        "TRAINER_STATUS_POLLING_RETRY_TIMES",
-                        default=DefaultValue.TrainerStatusPollingRetryTimes,
-                    ),
-                    Validator(
-                        "MODEL_PUBLISH_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.ModelPublishStatusPollingInterval,
-                    ),
-                    Validator(
-                        "BATCH_RUN_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.BatchRunStatusPollingInterval,
-                    ),
-                    Validator(
-                        "DEPLOY_STATUS_POLLING_INTERVAL",
-                        default=DefaultValue.DeployStatusPollingInterval,
-                    ),
-                    Validator(
-                        "DEFAULT_FINE_TUNE_TRAIN_TYPE",
-                        default=DefaultValue.DefaultFinetuneTrainType,
-                    ),
-                    Validator("LLM_API_RETRY_COUNT", default=DefaultValue.RetryCount),
-                    Validator(
-                        "LLM_API_RETRY_TIMEOUT", default=DefaultValue.RetryTimeout
-                    ),
-                    Validator(
-                        "LLM_API_RETRY_BACKOFF_FACTOR",
-                        default=DefaultValue.RetryBackoffFactor,
-                    ),
-                    Validator("LLM_API_RETRY_JITTER", default=DefaultValue.RetryJitter),
-                    Validator(
-                        "LLM_API_RETRY_ERR_CODES", default=DefaultValue.RetryErrCodes
-                    ),
-                    Validator(
-                        "CONSOLE_API_RETRY_COUNT",
-                        default=DefaultValue.ConsoleRetryCount,
-                    ),
-                    Validator(
-                        "CONSOLE_API_RETRY_TIMEOUT",
-                        default=DefaultValue.ConsoleRetryTimeout,
-                    ),
-                    Validator(
-                        "CONSOLE_API_RETRY_JITTER",
-                        default=DefaultValue.ConsoleRetryJitter,
-                    ),
-                    Validator(
-                        "CONSOLE_API_RETRY_ERR_CODES",
-                        default=DefaultValue.ConsoleRetryErrCodes,
-                    ),
-                    Validator(
-                        "CONSOLE_API_RETRY_BACKOFF_FACTOR",
-                        default=DefaultValue.ConsoleRetryBackoffFactor,
-                    ),
-                    Validator(
-                        "EVALUATION_ONLINE_POLLING_INTERVAL",
-                        default=DefaultValue.EvaluationOnlinePollingInterval,
-                    ),
-                    Validator("BOS_HOST_REGION", default=DefaultValue.BosHostRegion),
-                ],
-                load_dotenv=True,
-                envvar_prefix="QIANFAN",
+            _GLOBAL_CONFIG = GlobalConfig(  # type: ignore
+                _env_file=os.getenv(Env.DotEnvConfigFile, DefaultValue.DotEnvConfigFile)
             )
         except Exception as e:
             # todo 解决引入 Logger 带来的循环引用问题

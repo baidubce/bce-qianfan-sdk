@@ -15,6 +15,8 @@
 """
     Unit test for config
 """
+import os
+
 from qianfan import get_config
 from qianfan.consts import DefaultValue
 
@@ -24,3 +26,12 @@ def test_rewrite_config_through_code():
     assert get_config().AUTH_TIMEOUT == DefaultValue.AuthTimeout
     config_center.AUTH_TIMEOUT = 114514
     assert get_config().AUTH_TIMEOUT == 114514
+
+
+def test_read_from_dot_env():
+    try:
+        with open(".env", "w") as f:
+            f.write('QIANFAN_ACCESS_TOKEN="test_token"')
+        assert get_config().ACCESS_TOKEN == "test_token"
+    finally:
+        os.remove(".env")

@@ -13,8 +13,7 @@
 # limitations under the License.
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel
-
+from qianfan.pydantic import BaseModel
 from qianfan.trainer.consts import PeftType
 
 

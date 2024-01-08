@@ -108,7 +108,8 @@ def test_tool_from_langchain_tool():
         return
 
     from langchain.tools.base import BaseTool as LangchainBaseTool
-    from pydantic.v1 import BaseModel, Field
+
+    from qianfan.pydantic import BaseModel, Field
 
     class CalculatorToolSchema(BaseModel):
         a: int = Field(description="a description")
@@ -145,7 +146,8 @@ def test_tool_from_langchain_func_tool():
         return
 
     from langchain.tools.base import Tool as LangchainTool
-    from pydantic.v1 import BaseModel, Field
+
+    from qianfan.pydantic import BaseModel, Field
 
     def hello(a: str, b: str) -> str:
         return f"hello {a} {b}"

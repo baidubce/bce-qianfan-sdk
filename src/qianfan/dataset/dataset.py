@@ -690,7 +690,7 @@ class Dataset(Table):
             "desensitization": [],
         }
         for operator in operators:
-            attr_dict = operator.model_dump()
+            attr_dict = operator.dict()
             attr_dict.pop("operator_name")
             attr_dict.pop("operator_type")
 

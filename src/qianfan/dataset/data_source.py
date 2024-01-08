@@ -27,11 +27,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
-from qianfan.pydantic import BaseModel, Field, root_validator
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
+from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataExportStatus,

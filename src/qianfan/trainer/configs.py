@@ -14,7 +14,6 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from qianfan.pydantic import BaseModel
-
 from qianfan.trainer.consts import PeftType
 
 

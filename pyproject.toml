@@ -72,7 +72,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests"]
+exclude = ["qianfan/tests", "qianfan/pydantic"]
 
 
 [build-system]

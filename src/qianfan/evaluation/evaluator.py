@@ -20,13 +20,12 @@ import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
-from qianfan.pydantic import BaseModel, Field, root_validator
-
 from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMaxScore,
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
+from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.utils import log_error, log_warn
 
 
@@ -121,7 +120,9 @@ try:
         open_compass_evaluator: BaseEvaluator
 
         @root_validator
-        def _check_open_compass_evaluator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        def _check_open_compass_evaluator(
+            cls, values: Dict[str, Any]
+        ) -> Dict[str, Any]:
             open_compass_evaluator = values["open_compass_evaluator"]
             signature = inspect.signature(open_compass_evaluator.score)
             params = list(signature.parameters.keys())

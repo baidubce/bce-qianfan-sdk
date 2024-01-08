@@ -22,8 +22,6 @@ import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Set, Union
 
-from qianfan.pydantic import BaseModel, Field, root_validator
-
 from qianfan import get_config
 from qianfan.dataset import Dataset, QianfanDataSource
 from qianfan.dataset.consts import (
@@ -43,6 +41,7 @@ from qianfan.evaluation.evaluator import (
     QianfanRuleEvaluator,
 )
 from qianfan.model import Model, Service
+from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.resources import Model as ResourceModel
 from qianfan.resources.console.consts import EvaluationTaskStatus
 from qianfan.utils import log_debug, log_error, log_info, log_warn

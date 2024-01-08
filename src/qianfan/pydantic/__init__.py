@@ -17,6 +17,6 @@ Pydantic compatible layer
 """
 
 try:
-    from pydantic.v1 import *  # noqa: F403
+    from pydantic.v1 import *  # noqa
 except ImportError:
-    from pydantic import *  # noqa: F403
+    from pydantic import *  # noqa

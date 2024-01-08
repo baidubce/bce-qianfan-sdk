@@ -22,6 +22,7 @@ from rich.console import Console, Group
 from rich.pretty import Pretty
 from rich.rule import Rule
 from rich.table import Table
+import qianfan
 from qianfan.errors import InternalError
 
 import qianfan.common.client.utils as client_utils
@@ -29,7 +30,7 @@ from qianfan.common.client.utils import (
     enum_typer,
     print_error_msg,
     print_info_msg,
-    print_success_msg,
+    replace_logger_handler,
     timestamp,
 )
 from qianfan.consts import DefaultLLMModel
@@ -44,15 +45,15 @@ from qianfan.trainer.actions import LoadDataSetAction, TrainAction, ModelPublish
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.common.client.dataset import load_dataset
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
-
+from qianfan.utils.logging import log_info, log_error
 
 trainer_app = typer.Typer(no_args_is_help=True)
 
 
 class MyEventHandler(EventHandler):
-    def __init__(self) -> None:
+    def __init__(self, console) -> None:
         super().__init__()
-        self.console = Console()
+        self.console = console
         self.progress = Progress(
             SpinnerColumn(finished_text=":white_check_mark:"),
             *Progress.get_default_columns(),
@@ -60,67 +61,57 @@ class MyEventHandler(EventHandler):
             console=self.console,
             transient=False,
         )
-        self.load_data_task = self.progress.add_task(
-            "Load data", total=100, start=False, visible=False
-        )
-        self.train_task = self.progress.add_task(
-            "Train", total=100, start=False, visible=False
-        )
-        self.publish_task = self.progress.add_task(
-            "Publish", total=100, start=False, visible=False
-        )
         self.current_task = None
-        self.vdl_printed = False
 
     def handle_load_data(self, event: Event) -> None:
-        if self.current_task is None:
-            self.current_task = "load_data"
-            self.progress.start_task(self.load_data_task)
-            self.progress.update(self.load_data_task, visible=True)
-        if (
-            event.action_state == ActionState.Preceding
-            or event.action_state == ActionState.Running
-        ):
+        if event.action_state == ActionState.Preceding:
+            self.current_task = self.progress.add_task(
+                "Load Data", start=True, total=None
+            )
+
+        if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            self.progress.update(self.load_data_task, completed=100)
+            self.progress.update(self.current_task, total=100, completed=100)
 
     def handle_pipeline(self, event: Event) -> None:
         self.current_task = None
         if event.action_state == ActionState.Preceding:
             self.progress.start()
-        pass
 
     def handle_train(self, event: Event) -> None:
-        if self.current_task is None:
-            self.current_task = "train"
-            self.progress.start_task(self.train_task)
-            self.progress.update(self.train_task, visible=True)
+        if event.action_state == ActionState.Preceding:
+            self.current_task = self.progress.add_task("Train", start=True, total=100)
+            self.vdl_printed = False
+            self.progress.log("Start training...")
         if event.action_state == ActionState.Running:
             resp = event.data
-            self.progress.update(self.train_task, completed=resp["result"]["progress"])
+            self.progress.update(
+                self.current_task, completed=resp["result"]["progress"]
+            )
             if not self.vdl_printed:
-                self.progress.log("vdl link: " + resp["result"]["vdlLink"])
+                self.progress.log(
+                    "Check this vdl link to view training progres: "
+                    + resp["result"]["vdlLink"]
+                )
                 self.vdl_printed = True
         if event.action_state == ActionState.Done:
             resp = event.data
-            self.progress.update(self.train_task, completed=100)
+            self.progress.update(self.current_task, completed=100)
 
     def handle_publish(self, event: Event) -> None:
-        if self.current_task is None:
-            self.current_task = "publish_model"
-            self.progress.start_task(self.publish_task)
-            self.progress.update(self.publish_task, visible=True)
-        if (
-            event.action_state == ActionState.Preceding
-            or event.action_state == ActionState.Running
-        ):
+        if event.action_state == ActionState.Preceding:
+            self.current_task = self.progress.add_task(
+                "Publish", start=True, total=None
+            )
+
+        if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            self.progress.update(self.load_data_task, completed=100)
+            self.progress.update(self.current_task, total=100, completed=100)
 
     def dispatch(self, event: Event) -> None:
-        self.progress.log(str(event))
+        # self.progress.log(str(event))
         if event.action_state == ActionState.Stopped:
             print_error_msg(f"{event.action_class.__name__} {event.action_id} stopped.")
             return
@@ -151,7 +142,9 @@ def run(
     """
     Run a trainer job.
     """
-    callback = MyEventHandler()
+    # qianfan.enable_log("INFO")
+    console = replace_logger_handler()
+    callback = MyEventHandler(console=console)
     ds = Dataset.load(qianfan_dataset_id=dataset_id)
     trainer = LLMFinetune(
         dataset=ds,
@@ -162,3 +155,7 @@ def run(
         ),
     )
     trainer.run()
+    console.log("Finished!")
+    import time
+
+    time.sleep(0.1)

@@ -17,13 +17,17 @@ from enum import Enum
 from typing import Any, Dict, Optional, Type, TypeVar
 
 import click
+import rich
 import typer
 from rich import print as rprint
+from rich.console import Console
 
 import qianfan
+import qianfan.utils.logging as qianfan_logging
 from qianfan.resources.llm.base import BaseResource
 from qianfan.utils.bos_uploader import get_bos_bucket_location
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
+from rich.logging import RichHandler
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 command_to_resource_type: Dict[str, Type[BaseResource]] = {
@@ -145,6 +149,16 @@ def list_model_callback(
         for m in sorted(models):
             print(m)
         raise typer.Exit()
+
+
+def replace_logger_handler() -> Console:
+    console = Console(log_time_format="[%m/%d/%y %H:%M:%S]")
+    logger = qianfan_logging.logger._logger
+    handlers = logger.handlers
+    for handler in handlers:
+        logger.removeHandler(handler)
+    logger.addHandler(RichHandler(console=console))
+    return console
 
 
 list_model_option = typer.Option(

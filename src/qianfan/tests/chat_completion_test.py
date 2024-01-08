@@ -633,3 +633,12 @@ async def test_batch_predict_async():
     assert 5 >= time.time() - start_time >= 3
     for input, output in zip(messages_list, results):
         assert input[0]["content"] in output["result"]
+
+
+def test_auth_using_iam():
+    qianfan.get_config().AK = None
+    qianfan.get_config().SK = None
+
+    results = qianfan.ChatCompletion().do(messages=TEST_MESSAGE[:1])
+    assert "X-Bce-Date" in results["_header"]
+    assert "Authorization" in results["_header"]

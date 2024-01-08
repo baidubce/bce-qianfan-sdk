@@ -16,9 +16,9 @@
 """
 collection of evaluator
 """
-
+import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -27,25 +27,17 @@ from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
-from qianfan.utils import log_error
+from qianfan.utils import log_error, log_warn
 
 
 class Evaluator(BaseModel, ABC):
     """an class for evaluating single entry"""
 
     @abstractmethod
-    def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
-        """evaluate one entry"""
-
-
-class BatchEvaluator(ABC):
-    """an class for evaluating whole batch"""
-
-    @abstractmethod
-    def evaluate_on_batch(
-        self, inputs: List[str], references: List[str], outputs: List[str]
+    def evaluate(
+        self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
     ) -> Dict[str, Any]:
-        """evaluate over whole batch"""
+        """evaluate one entry"""
 
 
 class LocalEvaluator(Evaluator, ABC):
@@ -55,7 +47,9 @@ class LocalEvaluator(Evaluator, ABC):
 class QianfanEvaluator(Evaluator):
     """empty implementation base class for qianfan evaluator"""
 
-    def evaluate(self, input: str, reference: str, output: str) -> Dict[str, Any]:
+    def evaluate(
+        self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+    ) -> Dict[str, Any]:
         # 因为这个方法并不应该被实现，所以此处返回空值
         return {}
 
@@ -75,14 +69,6 @@ class QianfanRuleEvaluator(QianfanEvaluator):
     using_similarity: bool = Field(default=False)
     using_accuracy: bool = Field(default=False)
     stop_words: Optional[str] = Field(default=None)
-
-    @model_validator(mode="after")
-    def rule_validation(self) -> "QianfanRuleEvaluator":
-        if not self.using_accuracy and not self.using_similarity:
-            err_msg = "no rule has been specified"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-        return self
 
 
 class ManualEvaluatorDimension(BaseModel):
@@ -123,3 +109,35 @@ class QianfanManualEvaluator(QianfanEvaluator):
             ManualEvaluatorDimension(dimension="满意度")
         ] + dimensions
         return input_dict
+
+
+try:
+    from opencompass.openicl.icl_evaluator import BaseEvaluator
+
+    class OpenCompassLocalEvaluator(LocalEvaluator):
+        class Config:
+            arbitrary_types_allowed = True
+
+        open_compass_evaluator: BaseEvaluator
+
+        @model_validator(mode="after")
+        def _check_open_compass_evaluator(self) -> "OpenCompassLocalEvaluator":
+            signature = inspect.signature(self.open_compass_evaluator.score)
+            params = list(signature.parameters.keys())
+            params.sort()
+            if params != ["predictions", "references"]:
+                raise ValueError(
+                    f"unsupported opencompass evaluator {self.open_compass_evaluator}"
+                )
+            return self
+
+        def evaluate(
+            self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+        ) -> Dict[str, Any]:
+            return self.open_compass_evaluator.score([output], [reference])  # type: ignore
+
+except ModuleNotFoundError:
+    log_warn(
+        "opencompass not found in your packages, OpenCompassLocalEvaluator not"
+        " available now. if you want to use it please execute 'pip install opencompass'"
+    )

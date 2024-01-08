@@ -82,14 +82,22 @@ def completion_stream_response(model, prompt=""):
         ) + "\n\n"
 
 
-def json_response(data, request_id=None):
+def json_response(data, request_id=None, status_code=200):
     """
     wrapper of the response
     """
 
     resp = flask.Response(
-        json.dumps({**data, "_request": request.json, "_params": request.args}),
+        json.dumps(
+            {
+                **data,
+                "_request": request.json,
+                "_params": request.args,
+                "_header": dict(request.headers),
+            }
+        ),
         mimetype="application/json",
+        status=status_code,
         # header=header
     )
     if request_id is not None:
@@ -154,21 +162,27 @@ def access_token_checker(func):
         wrapper for function
         if "expired" in access_token, return token expired error
         """
-        access_token = request.args.get("access_token")
-        if access_token is None:
-            return json_response(
-                {
-                    "error_code": 110,
-                    "error_msg": "Access token invalid or no longer valid",
-                }
-            )
-        if "expired" in access_token:
-            return json_response(
-                {
-                    "error_code": 111,
-                    "error_msg": "Access token expired",
-                }
-            )
+        # openapi also supports iam auth
+        bce_date = request.headers.get("x-bce-date")
+        authorization = request.headers.get("authorization")
+
+        if bce_date is None or authorization is None:
+            # if iam auth credentail is not provided, check access token
+            access_token = request.args.get("access_token")
+            if access_token is None:
+                return json_response(
+                    {
+                        "error_code": 110,
+                        "error_msg": "Access token invalid or no longer valid",
+                    }
+                )
+            if "expired" in access_token:
+                return json_response(
+                    {
+                        "error_code": 111,
+                        "error_msg": "Access token expired",
+                    }
+                )
         try:
             # if "_delay" in request.json, sleep for a while
             # this argument is for unit test
@@ -452,12 +466,29 @@ def chat(model_name):
     )
 
 
+retry_cnt = {}
+
+
 @app.route(Consts.ModelAPIPrefix + "/completions/<model_name>", methods=["POST"])
 @access_token_checker
 def completions(model_name):
     """
     mock /completions/<model_name> completion api
     """
+    if model_name.startswith("test_retry"):
+        global retry_cnt
+        print("mock retry cnt", retry_cnt)
+        if model_name not in retry_cnt:
+            retry_cnt[model_name] = 1
+        if retry_cnt[model_name] % 3 != 0:
+            # need retry
+            retry_cnt[model_name] = (retry_cnt[model_name] + 1) % 3
+            return json_response(
+                {
+                    "error_code": 336100,
+                    "error_msg": "high load",
+                }
+            )
     r = request.json
     if "stream" in r and r["stream"]:
         return flask.Response(
@@ -1227,6 +1258,83 @@ def get_service():
                 "creator": "百里慕蕊",
                 "createTime": 1694586667,
                 "modifyTime": 1695728714,
+            },
+        }
+    )
+
+
+@app.route(Consts.ServiceListAPI, methods=["POST"])
+@iam_auth_checker
+def list_service():
+    """
+    mock create service api
+    """
+    services = [
+        {
+            "name": "ERNIE-Bot 4.0",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "ERNIE-Bot-8K",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_bot_8k",
+            "apiType": "chat",
+            "chargeStatus": "NOTOPEN",
+            "versionList": [{"trainType": "ernieBot_8k", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "ERNIE-Bot",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "Stable-Diffusion-XL",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/sd_xl",
+            "apiType": "text2image",
+            "chargeStatus": "FREE",
+            "versionList": [
+                {
+                    "trainType": "stablediffusion_VXL",
+                    "serviceStatus": "Done",
+                }
+            ],
+        },
+        {
+            "name": "Embedding-V1",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "bge-large-zh",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_zh",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "bge-large-en",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_en",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+    ]
+
+    apiTypes = request.json.get("apiTypefilter")
+    if apiTypes:
+        services = [service for service in services if service["apiType"] in apiTypes]
+    return json_response(
+        {
+            "log_id": "3333888838",
+            "result": {
+                "common": services,
+                "custom": [],
             },
         }
     )

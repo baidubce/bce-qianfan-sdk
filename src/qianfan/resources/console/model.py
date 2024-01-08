@@ -19,8 +19,10 @@ Model API
 from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
+from qianfan.resources.console.consts import DataStorageType
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
+from qianfan.utils import log_error
 
 
 class Model(object):
@@ -138,6 +140,9 @@ class Model(object):
         eval_config: Dict[str, Any],
         description: Optional[str] = None,
         pending_eval_id: Optional[int] = None,
+        result_dataset_storage_type: DataStorageType = DataStorageType.PublicBos,
+        result_dataset_storage_id: Optional[str] = None,
+        result_dataset_raw_path: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -158,6 +163,15 @@ class Model(object):
                 the id of evaluation which doesn't start yet,
                 you can set this parameter to modify the spec of
                 specific evaluation and start it. Default to None
+            result_dataset_storage_type (DataStorageType):
+                where to place evaluation result dataset,
+                default to DataStorageType.PublicBos
+            result_dataset_storage_id (Optional[str]):
+                user bos id, only used when result_dataset_storage_type is
+                DataStorageType.PrivateBos, default to None.
+            result_dataset_raw_path (Optional[str]):
+                bos path, only used when result_dataset_storage_type is
+                DataStorageType.PrivateBos, default to None.
             **kwargs (Any):
                 arbitrary arguments
 
@@ -174,10 +188,19 @@ class Model(object):
             "datasetId": dataset_id,
             "evalStandardConf": eval_config,
             "computeResourceConf": {"vmType": 1, "vmNumber": 8},
+            "resultDatasetStorageType": result_dataset_storage_type.value,
         }
 
-        if "dataset_name" in kwargs:
-            request_json["datasetName"] = kwargs["dataset_name"]
+        if result_dataset_storage_type != DataStorageType.PublicBos:
+            if not result_dataset_storage_id or not result_dataset_raw_path:
+                err_msg = (
+                    "result_dataset_storage_id or result_dataset_raw_path is empty when"
+                    " result_dataset_storage_type isn't DataStorageType.PublicBos"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
+            request_json["resultDatasetStorageId"] = result_dataset_storage_id
+            request_json["resultDatasetRawPath"] = result_dataset_raw_path
 
         if pending_eval_id:
             request_json["id"] = pending_eval_id

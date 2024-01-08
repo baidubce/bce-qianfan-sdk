@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
-from pydantic import BaseModel, Field, model_validator
+from qianfan.pydantic import BaseModel, Field, root_validator
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
@@ -261,24 +261,26 @@ class FileDataSource(DataSource, BaseModel):
         """
         self.file_format = format_type
 
-    @model_validator(mode="after")
-    def _format_check(self) -> "FileDataSource":
-        if self.file_format:
-            return self
+    @root_validator
+    def _format_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if values["file_format"]:
+            return values
+
+        path = values["path"]
 
         try:
-            index = self.path.rfind(".")
+            index = path.rfind(".")
             # 读文件夹或查询不到的情况下默认使用纯文本格式
-            if os.path.isdir(self.path) or index == -1:
+            if os.path.isdir(path) or index == -1:
                 log_warn(f"use default format type {FormatType.Text}")
-                self.file_format = FormatType.Text
-                return self
-            suffix = self.path[index + 1 :]
+                values["file_format"] = FormatType.Text
+                return values
+            suffix = path[index + 1 :]
             for t in FormatType:
                 if t.value == suffix:
-                    self.file_format = t
+                    values["file_format"] = t
                     log_info(f"use format type {t}")
-                    return self
+                    return values
             raise ValueError(f"cannot match proper format type for {suffix}")
         except Exception as e:
             log_error(str(e))

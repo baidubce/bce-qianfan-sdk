@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import pyarrow
 import pyarrow.compute as pc
 from pyarrow import Table as PyarrowTable
-from pydantic import BaseModel
+from qianfan.pydantic import BaseModel
 from typing_extensions import Self
 
 from qianfan.dataset.consts import (

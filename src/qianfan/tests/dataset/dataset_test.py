@@ -19,7 +19,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from pydantic import BaseModel
+from qianfan.pydantic import BaseModel
 
 from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords

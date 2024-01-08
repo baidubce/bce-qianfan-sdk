@@ -22,7 +22,7 @@ import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Set, Union
 
-from pydantic import BaseModel, Field, model_validator
+from qianfan.pydantic import BaseModel, Field, root_validator
 
 from qianfan import get_config
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -55,7 +55,7 @@ class EvaluationManager(BaseModel):
     local_evaluators: Optional[List[LocalEvaluator]] = Field(default=None)
     qianfan_evaluators: Optional[List[QianfanEvaluator]] = Field(default=None)
 
-    @model_validator(mode="before")
+    @root_validator
     @classmethod
     def _check_evaluators(cls, input_dict: Any) -> Any:
         """校验传入的参数"""

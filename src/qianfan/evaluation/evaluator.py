@@ -20,7 +20,7 @@ import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, model_validator
+from qianfan.pydantic import BaseModel, Field, root_validator
 
 from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMaxScore,
@@ -85,7 +85,7 @@ class QianfanManualEvaluator(QianfanEvaluator):
         default=[ManualEvaluatorDimension(dimension="满意度")]
     )
 
-    @model_validator(mode="before")
+    @root_validator
     @classmethod
     def dimension_validation(cls, input_dict: Any) -> Any:
         assert isinstance(input_dict, dict)
@@ -120,16 +120,17 @@ try:
 
         open_compass_evaluator: BaseEvaluator
 
-        @model_validator(mode="after")
-        def _check_open_compass_evaluator(self) -> "OpenCompassLocalEvaluator":
-            signature = inspect.signature(self.open_compass_evaluator.score)
+        @root_validator
+        def _check_open_compass_evaluator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            open_compass_evaluator = values["open_compass_evaluator"]
+            signature = inspect.signature(open_compass_evaluator.score)
             params = list(signature.parameters.keys())
             params.sort()
             if params != ["predictions", "references"]:
                 raise ValueError(
-                    f"unsupported opencompass evaluator {self.open_compass_evaluator}"
+                    f"unsupported opencompass evaluator {type(open_compass_evaluator)}"
                 )
-            return self
+            return values
 
         def evaluate(
             self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str

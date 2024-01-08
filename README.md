@@ -4,6 +4,7 @@
 [![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
+[![Feedback](https://img.shields.io/badge/feedback-here-green)](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279)
 
 ## 简介
 
@@ -171,7 +172,7 @@ trainer.run()
 > Check [**API References**](https://qianfan.readthedocs.io/en/stable/qianfan.html) for more details.
 
 
-### 联系我们
+## 联系我们
 如使用过程中遇到什么问题，或对SDK功能有建议，可通过如下方式联系我们
 - [GitHub issues](https://github.com/baidubce/bce-qianfan-sdk/issues)
 - [百度智能云工单](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279) （百度专家即时服务）

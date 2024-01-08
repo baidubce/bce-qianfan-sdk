@@ -4,6 +4,7 @@
 [![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)
 [![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
+[![Feedback](https://img.shields.io/badge/feedback-here-green)](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279)
 
 [Documentation](https://qianfan.readthedocs.io/en/stable/README.html) | [GitHub](https://github.com/baidubce/bce-qianfan-sdk) | [Cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook) 
 

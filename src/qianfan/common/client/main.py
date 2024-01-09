@@ -15,6 +15,7 @@
 from typing import Optional
 
 import typer
+from rich.prompt import Prompt
 
 import qianfan
 from qianfan.common.client.chat import chat_entry
@@ -22,6 +23,7 @@ from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
 from qianfan.common.client.txt2img import txt2img_entry
+from qianfan.common.client.utils import print_error_msg, print_info_msg
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -33,6 +35,8 @@ app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
 app.add_typer(dataset_app, name="dataset")
+
+_enable_traceback = False
 
 
 def version_callback(value: bool) -> None:
@@ -62,7 +66,13 @@ def main() -> None:
     """
     Main function of qianfan client.
     """
-    app()
+    try:
+        app()
+    except Exception as e:
+        if _enable_traceback:
+            raise
+        else:
+            print_error_msg(e)
 
 
 @app.callback()
@@ -119,11 +129,52 @@ def entry(
         is_eager=True,
         help="Print version.",
     ),
+    enable_traceback: bool = typer.Option(
+        False, "--enable-traceback", help="Print traceback when exception is thrown."
+    ),
 ) -> None:
     """
     Qianfan CLI which provides access to various Qianfan services.
     """
-    pass
+    global _enable_traceback
+    _enable_traceback = enable_traceback
+
+    ak = qianfan.get_config().AK
+    sk = qianfan.get_config().SK
+    access_key = qianfan.get_config().ACCESS_KEY
+    secret_key = qianfan.get_config().SECRET_KEY
+
+    if ak is None or sk is None:
+        print_info_msg(
+            'No enough credential found. Please provide your "access key" and "secret'
+            ' key".'
+        )
+        print_info_msg(
+            "You can find your key at"
+            " https://console.bce.baidu.com/iam/#/iam/accesslist"
+        )
+        print_info_msg(
+            "You can also set the credential using environment variable"
+            ' "QIANFAN_ACCESS_KEY" and "QIANFAN_SECRET_KEY".'
+        )
+        print()
+        if access_key is None:
+            while True:
+                access_key = Prompt.ask("Please input your [b i]Access Key[/b i]")
+                if len(access_key) != 0:
+                    qianfan.get_config().ACCESS_KEY = access_key
+                    break
+                else:
+                    print_error_msg("Access key cannot be empty.")
+        if secret_key is None:
+            while True:
+                secret_key = Prompt.ask("Please input your [b i]Secret Key[/b i]")
+                if len(secret_key) != 0:
+                    qianfan.get_config().SECRET_KEY = secret_key
+                    break
+                else:
+                    print_error_msg("Secret key cannot be empty.")
+        print()
 
 
 if __name__ == "__main__":

@@ -145,36 +145,37 @@ def entry(
     secret_key = qianfan.get_config().SECRET_KEY
 
     if ak is None or sk is None:
-        print_info_msg(
-            'No enough credential found. Please provide your "access key" and "secret'
-            ' key".'
-        )
-        print_info_msg(
-            "You can find your key at"
-            " https://console.bce.baidu.com/iam/#/iam/accesslist"
-        )
-        print_info_msg(
-            "You can also set the credential using environment variable"
-            ' "QIANFAN_ACCESS_KEY" and "QIANFAN_SECRET_KEY".'
-        )
-        print()
-        if access_key is None:
-            while True:
-                access_key = Prompt.ask("Please input your [b i]Access Key[/b i]")
-                if len(access_key) != 0:
-                    qianfan.get_config().ACCESS_KEY = access_key
-                    break
-                else:
-                    print_error_msg("Access key cannot be empty.")
-        if secret_key is None:
-            while True:
-                secret_key = Prompt.ask("Please input your [b i]Secret Key[/b i]")
-                if len(secret_key) != 0:
-                    qianfan.get_config().SECRET_KEY = secret_key
-                    break
-                else:
-                    print_error_msg("Secret key cannot be empty.")
-        print()
+        if access_key is None or secret_key is None:
+            print_info_msg(
+                'No enough credential found. Please provide your "access key" and'
+                ' "secret key".'
+            )
+            print_info_msg(
+                "You can find your key at"
+                " https://console.bce.baidu.com/iam/#/iam/accesslist"
+            )
+            print_info_msg(
+                "You can also set the credential using environment variable"
+                ' "QIANFAN_ACCESS_KEY" and "QIANFAN_SECRET_KEY".'
+            )
+            print()
+            if access_key is None:
+                while True:
+                    access_key = Prompt.ask("Please input your [b i]Access Key[/b i]")
+                    if len(access_key) != 0:
+                        qianfan.get_config().ACCESS_KEY = access_key
+                        break
+                    else:
+                        print_error_msg("Access key cannot be empty.")
+            if secret_key is None:
+                while True:
+                    secret_key = Prompt.ask("Please input your [b i]Secret Key[/b i]")
+                    if len(secret_key) != 0:
+                        qianfan.get_config().SECRET_KEY = secret_key
+                        break
+                    else:
+                        print_error_msg("Secret key cannot be empty.")
+            print()
 
 
 if __name__ == "__main__":

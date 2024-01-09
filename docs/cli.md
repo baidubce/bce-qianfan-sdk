@@ -123,7 +123,7 @@ $ qianfan dataset [OPTIONS] COMMAND [ARGS]...
 
 > ⚠️ 在下方各个数据集的命令中，涉及数据集 id 均指平台上的数据集版本 id，与 Dataset 模块定义一致，具体获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Uloic6krs)。
 >
-> 使用时可以直接传数据集的 id，也可以使用链接形式避免与文件名产生歧义，格式为 `qianfan://{model_version_id}`，例如 `qianfan://18562`。
+> 使用时可以直接传数据集的 id，也可以使用链接形式避免与文件名产生歧义，格式为 `qianfan://{dataset_version_id}`，例如 `qianfan://18562`。
 >
 > 如果由于本地文件名为数字，导致和数据集 id 混淆，可以在文件名前增加 `./` 避免歧义，例如 `./18562`。
 
@@ -139,7 +139,7 @@ $ qianfan dataset predict [OPTIONS] DATASET
 
 **Arguments 参数**:
 
-* `DATASET`：待预测的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。  [required]
+* `DATASET`：待预测的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。  [required]
 
 **Options 选项**:
 
@@ -184,7 +184,7 @@ $ qianfan dataset upload [OPTIONS] PATH [DST]
 **Arguments 参数**:
 
 * `SRC`：数据集文件路径。 [required]
-* `[DST]`：目标数据集 id，该参数可选。如果不提供该值，那么将会在平台上创建一个新的数据集，否则数据将被追加至所提供的数据集中。值可以是数据集的 id 或者是千帆数据集链接 (qianfan://{model_version_id})。
+* `[DST]`：目标数据集 id，该参数可选。如果不提供该值，那么将会在平台上创建一个新的数据集，否则数据将被追加至所提供的数据集中。值可以是数据集的 id 或者是千帆数据集链接 (qianfan://{dataset_version_id})。
 
 **Options 选项**:
 
@@ -210,8 +210,8 @@ $ qianfan dataset save [OPTIONS] SRC [DST]
 
 **Arguments 参数**:
 
-* `SRC`：源数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。 [required]
-* `[DST]`：目标数据集。如果值是一个本地文件路径，那么数据将保存至该文件中。或者可以提供一个已有的千帆数据集链接 (qianfan://{model_version_id})，那么数据将被追加至该数据集中。如果不提供该值，那么将会在平台上创建一个新的数据集，此时需要提供创建数据集所需的一些参数，具体见下文。
+* `SRC`：源数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。 [required]
+* `[DST]`：目标数据集。如果值是一个本地文件路径，那么数据将保存至该文件中。或者可以提供一个已有的千帆数据集链接 (qianfan://{dataset_version_id})，那么数据将被追加至该数据集中。如果不提供该值，那么将会在平台上创建一个新的数据集，此时需要提供创建数据集所需的一些参数，具体见下文。
 
 **Options 选项**:
 
@@ -233,7 +233,7 @@ $ qianfan dataset view [OPTIONS] DATASET
 
 **Arguments 参数**:
 
-* `DATASET`：待预览的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。[required]
+* `DATASET`：待预览的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。[required]
 
 **Options 参数**:
 

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The readline library needs to be imported first to
+# ensure that Chinese input works properly in the client.
+import readline  # noqa
 from typing import Optional
 
 import typer

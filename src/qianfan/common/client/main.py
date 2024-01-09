@@ -72,7 +72,7 @@ def main() -> None:
         if _enable_traceback:
             raise
         else:
-            print_error_msg(e)
+            print_error_msg(str(e))
 
 
 @app.callback()

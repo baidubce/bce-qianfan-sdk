@@ -15,6 +15,7 @@
 from typing import Optional
 
 import typer
+from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
 from qianfan.common.client.chat import chat_entry
@@ -27,6 +28,7 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=False,
 )
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
@@ -62,19 +64,8 @@ def main() -> None:
     """
     Main function of qianfan client.
     """
-    x = typer.main.get_command(app)
-    # override default completion help message
-    for i, param in enumerate(x.params):
-        if param.name == "install_completion":
-            x.params[i].help = (
-                "Install the auto completion script for the specified shell."
-            )
-        if param.name == "show_completion":
-            param.help = (
-                "Show the auto completion script for the specified shell, to copy it or"
-                " customize the installation."
-            )
-    x()
+    completion_init()
+    app()
 
 
 @app.callback()
@@ -130,6 +121,25 @@ def entry(
         callback=version_callback,
         is_eager=True,
         help="Print version.",
+    ),
+    install_completion: bool = typer.Option(
+        None,
+        "--install-completion",
+        is_flag=True,
+        callback=install_callback,
+        expose_value=False,
+        help="Install the auto completion script for the specified shell.",
+    ),
+    show_completion: bool = typer.Option(
+        None,
+        "--show-completion",
+        is_flag=True,
+        callback=show_callback,
+        expose_value=False,
+        help=(
+            "Show the auto completion script for the specified shell, to copy it or"
+            " customize the installation."
+        ),
     ),
 ) -> None:
     """

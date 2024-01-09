@@ -22,32 +22,17 @@ from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
 from qianfan.common.client.txt2img import txt2img_entry
-from typer._completion_shared import Shells
 
 app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
-    add_completion=False,
 )
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
 app.add_typer(dataset_app, name="dataset")
-
-
-@app.command(
-    no_args_is_help=True,
-    help="Show completion for the specified shell, to copy or customize it.",
-)
-def show(ctx: typer.Context, shell: Shells) -> None:
-    typer.completion.show_callback(ctx, None, shell)
-
-
-@app.command(no_args_is_help=True, help="Install completion for the specified shell.")
-def install(ctx: typer.Context, shell: Shells) -> None:
-    typer.completion.install_callback(ctx, None, shell)
 
 
 def version_callback(value: bool) -> None:
@@ -77,7 +62,19 @@ def main() -> None:
     """
     Main function of qianfan client.
     """
-    app()
+    x = typer.main.get_command(app)
+    # override default completion help message
+    for i, param in enumerate(x.params):
+        if param.name == "install_completion":
+            x.params[i].help = (
+                "Install the auto completion script for the specified shell."
+            )
+        if param.name == "show_completion":
+            param.help = (
+                "Show the auto completion script for the specified shell, to copy it or"
+                " customize the installation."
+            )
+    x()
 
 
 @app.callback()

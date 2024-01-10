@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, wait
+from typing import Optional, List
+from click import Group
 
 import typer
 from rich import print as rprint
 from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
+from rich.spinner import Spinner
 
 import qianfan
 from qianfan import Messages, QfRole
@@ -28,6 +31,10 @@ from qianfan.common.client.utils import (
     print_error_msg,
 )
 from qianfan.consts import DefaultLLMModel
+from rich.table import Table
+
+from qianfan.errors import InternalError
+from qianfan.resources.typing import QfMessages
 
 END_PROMPT = "\exit"
 
@@ -41,15 +48,23 @@ class ChatClient(object):
         """
         Init the chat client
         """
-        self.client = create_client(qianfan.ChatCompletion, model, endpoint)
+        self.clients: List[qianfan.ChatCompletion] = []
+        models = model.split(",")
+        endpoints = endpoint.split(",") if endpoint else []
+        for m in models:
+            self.clients.append(qianfan.ChatCompletion(model=m))
+        for e in endpoints:
+            self.clients.append(qianfan.ChatCompletion(endpoint=e))
+        self.msg_history = [QfMessages() for _ in range(len(self.clients))]
         self.multi_line = multi_line
         self.console = Console()
+        self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
 
     def chat_in_terminal(self) -> None:
         """
         Chat in terminal
         """
-        messages = Messages()
+
         if self.multi_line:
             rprint(
                 "[bold]Hint[/bold]: Press enter [bold]twice[/bold] to submit your"
@@ -85,7 +100,9 @@ class ChatClient(object):
                 # if message is empty, print error message and continue to input
                 print_error_msg("Message cannot be empty!\n")
 
-            messages.append(message)
+            for i in range(len(self.clients)):
+                self.msg_history[i].append(message)
+
             # print an empty line to separate the input and output
             # only needed in non multi-line mode
             if not self.multi_line:
@@ -96,14 +113,67 @@ class ChatClient(object):
                 rprint("Bye!")
                 raise typer.Exit()
 
-            with Live(Markdown("Thinking..."), auto_refresh=False) as live:
-                response = self.client.do(messages=messages, stream=True)
-                s = ""
-                for resp in response:
-                    if not resp["is_end"]:
-                        s += resp["result"]
-                        live.update(Markdown(s), refresh=True)
-            messages.append(s, role=QfRole.Assistant)
+            if len(self.clients) == 1:
+                with Live(Markdown("Thinking..."), auto_refresh=False) as live:
+                    response = self.clients[0].do(
+                        messages=self.msg_history[0], stream=True
+                    )
+                    s = ""
+                    for resp in response:
+                        if not resp["is_end"]:
+                            s += resp["result"]
+                            live.update(Markdown(s), refresh=True)
+            else:
+                msg_list = [["", False] for _ in range(len(self.clients))]
+
+                def gen_table():
+                    table = Table()
+                    live_list = []
+                    for client, msg in zip(self.clients, msg_list):
+                        title: str
+                        if client._model is not None:
+                            title = f"Model [green]{client._model}[/green]"
+                        elif client._endpoint is not None:
+                            title = f"Endpoint [green]{client._endpoint}[/green]"
+                        else:
+                            raise InternalError(
+                                "No model or endpoint specified in ChatCompletion."
+                            )
+                        if msg[1] is False:
+                            render_title = Spinner("dots", text=title)
+                        else:
+                            render_title = title
+                        table.add_column(render_title, overflow="fold")
+                        live_list.append(
+                            Markdown(msg[0] if len(msg[0]) != 0 else "Thinking...")
+                        )
+                    table.add_row(*live_list)
+                    return table
+
+                with Live(
+                    gen_table(), auto_refresh=True, refresh_per_second=24
+                ) as live:
+
+                    def haha(client: qianfan.ChatCompletion, i: int):
+                        response = client.do(messages=self.msg_history[i], stream=True)
+                        s = ""
+                        for resp in response:
+                            if not resp["is_end"]:
+                                msg_list[i][0] += resp["result"]
+                            else:
+                                msg_list[i][1] = True
+                            live.update(gen_table(), refresh=True)
+
+                    task_list = []
+                    for i, client in enumerate(self.clients):
+                        task = self.thread_pool.submit(haha, client, i)
+                        task_list.append(task)
+                    wait(task_list)
+
+                    for i, msg in enumerate(msg_list):
+                        self.msg_history[i].append(msg[0], role=QfRole.Assistant)
+                    live.update(gen_table(), refresh=True)
+            # messages.append(s, role=QfRole.Assistant)
             rprint()
 
 

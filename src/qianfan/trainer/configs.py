@@ -13,8 +13,10 @@
 # limitations under the License.
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from qianfan.errors import InvalidArgumentError
 from qianfan.pydantic import BaseModel
 from qianfan.trainer.consts import PeftType
+from qianfan.utils import log_error
 
 
 class TrainConfig(BaseModel):
@@ -54,6 +56,28 @@ class TrainConfig(BaseModel):
     """loRA all linear layer"""
 
     extras: Dict[str, Any] = {}
+
+    @classmethod
+    def load(cls, path: str) -> "TrainConfig":
+        import yaml
+
+        try:
+            from pathlib import Path
+
+            path_obj = Path(path)
+            if path_obj.suffix == ".yaml":
+                with open(path_obj, "r") as file:
+                    data = yaml.safe_load(file)
+                    return TrainConfig.parse_obj(data)
+            elif path_obj.suffix == ".json":
+                return cls.parse_file(path)
+            else:
+                raise InvalidArgumentError("unsupported file to parse: {path}")
+        except FileNotFoundError as e:
+            log_error(f"load train_config from file: {path} not found")
+            raise e
+        except Exception as e:
+            raise e
 
 
 class TrainLimit(BaseModel):

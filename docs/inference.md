@@ -158,6 +158,7 @@ resp = emb.do(endpoint="your_custom_endpoint", texts=[
 
 #### **Plugin 插件**
 
+##### 千帆平台插件编排
 千帆大模型平台支持使用平台插件并进行编排，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。在使用这一功能前需要先[创建应用](https://console.bce.baidu.com/qianfan/plugin/service/list)、设定服务地址、将服务地址作为参数传入千帆 SDK
 
 ```python
@@ -178,6 +179,9 @@ resp = await plugin.ado(endpoint="your_custom_endpoint", prompt="你好", stream
 async for r in resp:
     print(r)
 ```
+
+##### 一言插件
+千帆大模型平台除了支持
 
 #### **文生图**
 千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。

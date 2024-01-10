@@ -1,7 +1,7 @@
 from typing import Any
 
 from qianfan.model.consts import ServiceType
-from qianfan.pydantic import BaseModel
+from qianfan.common.pydantic import BaseModel
 from qianfan.resources.console import consts as console_consts
 
 

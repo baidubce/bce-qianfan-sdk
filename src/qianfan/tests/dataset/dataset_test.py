@@ -29,7 +29,7 @@ from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
-from qianfan.pydantic import BaseModel
+from qianfan.common.pydantic import BaseModel
 from qianfan.resources.console.consts import DataTemplateType
 
 

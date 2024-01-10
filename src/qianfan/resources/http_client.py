@@ -25,10 +25,18 @@ class HTTPClient(object):
     object used to make http request
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ssl: bool = True, **kwargs) -> None:
         """
         init sync and async request session
+
+        Args:
+            ssl (bool):
+                whether to use ssl verification in connection,
+                default to True
+            **kwargs (Any):
+                arbitrary arguments
         """
+        self.ssl = ssl
         self._session = requests.session()
 
     def request(self, req: QfRequest) -> requests.Response:
@@ -36,7 +44,7 @@ class HTTPClient(object):
         sync request
         """
         resp = self._session.request(
-            **req.requests_args(), timeout=req.retry_config.timeout
+            **req.requests_args(), timeout=req.retry_config.timeout, verify=self.ssl,
         )
         return resp
 
@@ -47,7 +55,7 @@ class HTTPClient(object):
         sync stream request
         """
         resp = self._session.request(
-            **req.requests_args(), stream=True, timeout=req.retry_config.timeout
+            **req.requests_args(), stream=True, timeout=req.retry_config.timeout, verify=self.ssl
         )
         for line in resp.iter_lines():
             yield line, resp
@@ -60,7 +68,7 @@ class HTTPClient(object):
         """
         session = aiohttp.ClientSession()
         timeout = aiohttp.ClientTimeout(total=req.retry_config.timeout)
-        response = await session.request(**req.requests_args(), timeout=timeout)
+        response = await session.request(**req.requests_args(), timeout=timeout, ssl=self.ssl)
         return response, session
 
     async def arequest_stream(
@@ -71,6 +79,6 @@ class HTTPClient(object):
         """
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=req.retry_config.timeout)
-            async with session.request(**req.requests_args(), timeout=timeout) as resp:
+            async with session.request(**req.requests_args(), timeout=timeout, ssl=self.ssl) as resp:
                 async for line in resp.content:
                     yield line, resp

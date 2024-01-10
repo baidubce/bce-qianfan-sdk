@@ -22,8 +22,8 @@ aiolimiter = ">=1.1.0"
 importlib-metadata = { version = ">=1.4.0", python = "<=3.7" }
 bce-python-sdk = ">=0.8.79"
 typing-extensions = { version = ">=4.0.0", python = "<=3.10" }
-pydantic = ">=2"
-pydantic-settings = ">=2.0.3"
+pydantic = "*"
+python-dotenv = "<=0.21.1"
 langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8" },
@@ -73,7 +73,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests"]
+exclude = ["qianfan/tests", "qianfan/pydantic"]
 
 
 [build-system]

@@ -170,6 +170,8 @@ class Consts:
     ModelEvalInfoAPI: str = "/wenxinworkshop/modelrepo/eval/detail"
     ModelEvalResultAPI: str = "/wenxinworkshop/modelrepo/eval/report"
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
+    ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
+    ModelEvalResultExportStatusAPI: str = "/wenxinworkshop/modelrepo/eval/result/export/info"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     ServiceListAPI: str = "/wenxinworkshop/service/list"

@@ -211,6 +211,31 @@ class EvaluationTaskStatus(str, Enum):
     """任务已全部停止"""
 
 
+class EvaluationResultExportDestinationType(str, Enum):
+    PublicBos: str = "local"
+    """导出到平台 Bos"""
+    PrivateBos: str = "storage"
+    """导出到用户 Bos"""
+
+
+class EvaluationResultExportRange(str, Enum):
+    Total: str = "total"
+    """导出全部"""
+    Part: str = "part"
+    """导出指定部分"""
+
+
+class EvaluationResultExportField(str, Enum):
+    Prompt: str = "prompt"
+    """提示词"""
+    Prediction: str = "prediction"
+    """模型回答"""
+    Completion: str = "completion"
+    """预期回答"""
+    Metrics: str = "metrics"
+    """评估指标"""
+
+
 class ServiceType(str, Enum):
     Chat: str = "chat"
     """ChatCompletion Service"""

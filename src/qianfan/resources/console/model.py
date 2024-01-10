@@ -19,7 +19,8 @@ Model API
 from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
-from qianfan.resources.console.consts import DataStorageType
+from qianfan.resources.console.consts import DataStorageType, EvaluationResultExportDestinationType, \
+    EvaluationResultExportRange, EvaluationResultExportField
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
 from qianfan.utils import log_error
@@ -291,3 +292,52 @@ class Model(object):
         req.json_body = {"id": eval_id}
 
         return req
+
+    @classmethod
+    @console_api_request
+    def create_evaluation_result_export_task(
+        cls,
+        export_destination_type: EvaluationResultExportDestinationType = EvaluationResultExportDestinationType.PublicBos,
+        export_range: EvaluationResultExportRange = EvaluationResultExportRange.Total,
+        export_field: Optional[List[EvaluationResultExportField]] = None,
+        bos_bucket_id: Optional[str] = None,
+        result_ids: Optional[List[str]] = None,
+    ):
+        if not export_field:
+            export_field = [
+                EvaluationResultExportField.Prompt,
+                EvaluationResultExportField.Prediction,
+                EvaluationResultExportField.Completion,
+                EvaluationResultExportField.Metrics
+            ]
+
+        request_json = {
+            "exportType": export_destination_type.value,
+            "exportOpt": export_range.value,
+            "exportContent": [field.value for field in export_field]
+        }
+
+        if export_destination_type == EvaluationResultExportDestinationType.PrivateBos:
+            if not bos_bucket_id:
+                raise ValueError("export to private bos without bos bucket id")
+            request_json["volumeId"] = bos_bucket_id
+
+        if export_range == EvaluationResultExportRange.Part:
+            if not result_ids:
+                raise ValueError("doing export partially without result id list")
+            request_json["resultIds"] = result_ids
+
+        req = QfRequest(method="POST", url=Consts.ModelEvalResultExportAPI)
+        req.json_body = request_json
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_evaluation_result_export_task_status(
+        cls,
+        export_task_id: int,
+    ):
+        return QfRequest(method="POST", url=Consts.ModelEvalResultExportStatusAPI, json_body={
+            "exportID": export_task_id,
+        })

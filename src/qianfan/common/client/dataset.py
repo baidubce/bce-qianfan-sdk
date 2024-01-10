@@ -91,7 +91,7 @@ def save(
         ...,
         help=(
             "The source of the dataset. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     dst: Optional[str] = typer.Argument(
@@ -100,7 +100,7 @@ def save(
             "The destination of the dataset. The dataset will be saved to a file if the"
             " value is a path. Alternatively, the dataset can be appended to an"
             " existing dataset on the platform if an qianfan dataset url is provided"
-            " (qianfan://{model_version_id}). If this value is not provided, a new"
+            " (qianfan://{dataset_version_id}). If this value is not provided, a new"
             " dataset will be created on the platform."
         ),
     ),
@@ -202,7 +202,7 @@ def download(
         ...,
         help=(
             "The version id of the dataset on the qianfan platform. The value can be"
-            " qianfan dataset id or url(qianfan://{model_version_id})."
+            " qianfan dataset id or url(qianfan://{dataset_version_id})."
         ),
     ),
     output: Path = typer.Option(Path(f"{timestamp()}.jsonl"), help="Output file path."),
@@ -227,7 +227,7 @@ def upload(
             "The destination of the dataset. If this value is not provided, a new"
             " dataset will be created on the platform. Alternatively, the dataset can"
             " be appended to an existing dataset on the platform if an qianfan dataset"
-            " id or url(qianfan://{model_version_id}) is provided . "
+            " id or url(qianfan://{dataset_version_id}) is provided . "
         ),
     ),
     dataset_name: Optional[str] = typer.Option(
@@ -274,7 +274,7 @@ def view(
         ...,
         help=(
             "The dataset to view. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     row: Optional[str] = typer.Option(
@@ -390,7 +390,7 @@ def predict(
         ...,
         help=(
             "The dataset to predict. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     model: str = typer.Option(

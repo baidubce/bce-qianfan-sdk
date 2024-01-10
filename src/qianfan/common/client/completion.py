@@ -83,7 +83,7 @@ class CompletionClient(object):
 
 
 def completion_entry(
-    messages: List[str] = typer.Argument(..., help="Messages List"),
+    prompts: List[str] = typer.Argument(..., help="Prompt List"),
     model: str = typer.Option(
         DefaultLLMModel.Completion,
         help="Model name of the completion model.",
@@ -102,12 +102,12 @@ def completion_entry(
     """
     Complete the provided prompt or messages.
     """
-    if len(messages) % 2 != 1:
+    if len(prompts) % 2 != 1:
         print_error_msg("The number of messages must be odd.")
         raise typer.Exit(code=1)
     client = CompletionClient(model, endpoint, plain)
 
-    if len(messages) == 1:
-        client.completion_single(messages[0])
+    if len(prompts) == 1:
+        client.completion_single(prompts[0])
     else:
-        client.completion_multi(messages)
+        client.completion_multi(prompts)

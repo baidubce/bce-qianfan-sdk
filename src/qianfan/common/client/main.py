@@ -19,6 +19,7 @@ from typing import Optional
 
 import typer
 from rich.prompt import Prompt
+from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
 from qianfan.common.client.chat import chat_entry
@@ -32,6 +33,7 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=False,
 )
 app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
@@ -70,6 +72,7 @@ def main() -> None:
     Main function of qianfan client.
     """
     try:
+        completion_init()
         app()
     except Exception as e:
         if _enable_traceback:
@@ -134,6 +137,25 @@ def entry(
     ),
     enable_traceback: bool = typer.Option(
         False, "--enable-traceback", help="Print traceback when exception is thrown."
+    ),
+    install_completion: bool = typer.Option(
+        None,
+        "--install-shell-autocomplete",
+        is_flag=True,
+        callback=install_callback,
+        expose_value=False,
+        help="Install the auto completion script for the specified shell.",
+    ),
+    show_completion: bool = typer.Option(
+        None,
+        "--show-shell-autocomplete",
+        is_flag=True,
+        callback=show_callback,
+        expose_value=False,
+        help=(
+            "Show the auto completion script for the specified shell, to copy it or"
+            " customize the installation."
+        ),
     ),
 ) -> None:
     """

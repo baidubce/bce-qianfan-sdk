@@ -237,7 +237,7 @@ $ qianfan dataset view [OPTIONS] DATASET
 
 **Options 参数**:
 
-* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围。 (e.g. 1,3-5,12)
+* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围 (e.g. 1,3-5,12)。默认情况下仅打印前 5 行，可以通过 `--row all` 来打印所有数据。
 * `--column TEXT`：待预览的数据集的列。用 `,` 分隔每个列名称。 (e.g. prompt,response)
 * `--raw`：展示原始数据。
 * `--help`：展示帮助文档。

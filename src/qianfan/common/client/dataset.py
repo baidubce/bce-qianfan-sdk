@@ -281,7 +281,8 @@ def view(
         None,
         help=(
             "The row to view. Use commas(,) to view multiple rows and dashes(-) to"
-            " denote a range of data. (e.g. 1,3-5,12)"
+            " denote a range of data (e.g. 1,3-5,12). By default, only the top 5 rows"
+            " will be displayed. Alternatively, use '--row all' to view all rows."
         ),
     ),
     column: Optional[str] = typer.Option(
@@ -302,6 +303,12 @@ def view(
     # list of (start_idx, end_idx)
     row_list = []
     if row is None:
+        print_info_msg(
+            "No row index provided, only top 5 rows will be displayed. Or use '--row"
+            " all' to display all rows."
+        )
+        row_list.append((0, min(len(ds), 5)))
+    elif row == "all":
         row_list.append((0, len(ds)))
     else:
         row_l = row.split(",")

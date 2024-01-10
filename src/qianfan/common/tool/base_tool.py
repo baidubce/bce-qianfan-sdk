@@ -18,20 +18,19 @@ import random
 import string
 from typing import Any, Dict, List, Optional, Type
 
-from pydantic import BaseModel
-from pydantic.v1 import (
+from qianfan.pydantic import (
     BaseModel as PydanticV1BaseModel,
 )
-from pydantic.v1 import (
+from qianfan.pydantic import (
     Field as PydanticV1Field,
 )
-from pydantic.v1 import (
+from qianfan.pydantic import (
     create_model as create_pydantic_v1_model,
 )
 from qianfan.utils.utils import assert_package_installed
 
 
-class ToolParameter(BaseModel):
+class ToolParameter(PydanticV1BaseModel):
     """
     Tool parameters, used to define the inputs when calling a tool and
     to describe the parameters needed when calling the tool to the model.

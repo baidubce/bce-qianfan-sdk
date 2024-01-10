@@ -21,6 +21,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `--secret-key TEXT`：百度智能云安全认证 Secret Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--ak TEXT` [过时]：千帆平台应用的 API Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--sk TEXT` [过时]：千帆平台应用的 Secret Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
+* `--enable-traceback`：打印完整的错误堆栈信息，仅在发生异常时有效。
 * `--version -v`：打印版本信息。
 * `--install-shell-autocomplete`：为当前 shell 安装自动补全脚本。
 * `--show-shell-autocomplete`：展示自动补全脚本。
@@ -237,7 +238,7 @@ $ qianfan dataset view [OPTIONS] DATASET
 
 **Options 参数**:
 
-* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围。 (e.g. 1,3-5,12)
+* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围 (e.g. 1,3-5,12)。默认情况下仅打印前 5 行，可以通过 `--row all` 来打印所有数据。
 * `--column TEXT`：待预览的数据集的列。用 `,` 分隔每个列名称。 (e.g. prompt,response)
 * `--raw`：展示原始数据。
 * `--help`：展示帮助文档。

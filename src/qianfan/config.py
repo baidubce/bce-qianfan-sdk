@@ -14,11 +14,10 @@
 import os
 from typing import Optional
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import deprecated
 
 from qianfan.consts import DefaultValue, Env
+from qianfan.pydantic import BaseSettings, Field
 
 
 class GlobalConfig(BaseSettings):
@@ -26,7 +25,10 @@ class GlobalConfig(BaseSettings):
     The global config of whole qianfan sdk
     """
 
-    model_config = SettingsConfigDict(env_prefix="QIANFAN_", case_sensitive=True)
+    class Config:
+        env_file_encoding = "utf-8"
+        env_prefix = "QIANFAN_"
+        case_sensitive = True
 
     AK: Optional[str] = Field(default=None)
     SK: Optional[str] = Field(default=None)
@@ -47,7 +49,6 @@ class GlobalConfig(BaseSettings):
 
     # for private
     ENABLE_PRIVATE: bool = Field(default=DefaultValue.EnablePrivate)
-    # todo 补充 ENABLE_AUTH 的默认值和使用方法
     ENABLE_AUTH: Optional[bool] = Field(default=None)
     ACCESS_CODE: Optional[str] = Field(default=None)
     IMPORT_STATUS_POLLING_INTERVAL: float = Field(

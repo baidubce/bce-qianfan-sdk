@@ -21,6 +21,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `--secret-key TEXT`：百度智能云安全认证 Secret Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--ak TEXT` [过时]：千帆平台应用的 API Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--sk TEXT` [过时]：千帆平台应用的 Secret Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
+* `--enable-traceback`：打印完整的错误堆栈信息，仅在发生异常时有效。
 * `--version -v`：打印版本信息。
 * `--install-completion`：为当前 shell 安装自动补全脚本。
 * `--show-completion`：展示自动补全脚本。

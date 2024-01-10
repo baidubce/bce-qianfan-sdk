@@ -19,8 +19,12 @@ Model API
 from typing import Any, Dict, List, Optional
 
 from qianfan.consts import Consts
-from qianfan.resources.console.consts import DataStorageType, EvaluationResultExportDestinationType, \
-    EvaluationResultExportRange, EvaluationResultExportField
+from qianfan.resources.console.consts import (
+    DataStorageType,
+    EvaluationResultExportDestinationType,
+    EvaluationResultExportField,
+    EvaluationResultExportRange,
+)
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
 from qianfan.utils import log_error
@@ -297,24 +301,55 @@ class Model(object):
     @console_api_request
     def create_evaluation_result_export_task(
         cls,
-        export_destination_type: EvaluationResultExportDestinationType = EvaluationResultExportDestinationType.PublicBos,
+        export_destination_type: Optional[EvaluationResultExportDestinationType] = None,
         export_range: EvaluationResultExportRange = EvaluationResultExportRange.Total,
         export_field: Optional[List[EvaluationResultExportField]] = None,
         bos_bucket_id: Optional[str] = None,
         result_ids: Optional[List[str]] = None,
-    ):
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Create evaluation result export task
+
+        Parameters:
+            export_destination_type (Optional[EvaluationResultExportDestinationType]):
+                where to export evaluation result, default to
+                EvaluationResultExportDestinationType.PublicBos
+            export_range (EvaluationResultExportRange):
+                which part of evaluation result should be exported, default to
+                EvaluationResultExportRange.Total
+            export_field (Optional[List[EvaluationResultExportField]]):
+                which field should be contained in exported data, default to all.
+            bos_bucket_id (Optional[str]):
+                bucket id of your private bos, used when export_destination_type is
+                EvaluationResultExportDestinationType.PrivateBos. Default to None
+            result_ids (Optional[List[str]]):
+                which results you want to export, used when export_range is
+                EvaluationResultExportRange.Part. Default to None
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        Not available currently
+        """
+        if not export_destination_type:
+            export_destination_type = EvaluationResultExportDestinationType.PublicBos
+
         if not export_field:
             export_field = [
                 EvaluationResultExportField.Prompt,
                 EvaluationResultExportField.Prediction,
                 EvaluationResultExportField.Completion,
-                EvaluationResultExportField.Metrics
+                EvaluationResultExportField.Metrics,
             ]
 
         request_json = {
             "exportType": export_destination_type.value,
             "exportOpt": export_range.value,
-            "exportContent": [field.value for field in export_field]
+            "exportContent": [field.value for field in export_field],
         }
 
         if export_destination_type == EvaluationResultExportDestinationType.PrivateBos:
@@ -337,7 +372,27 @@ class Model(object):
     def get_evaluation_result_export_task_status(
         cls,
         export_task_id: int,
-    ):
-        return QfRequest(method="POST", url=Consts.ModelEvalResultExportStatusAPI, json_body={
-            "exportID": export_task_id,
-        })
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get evaluation result export task status
+
+        Parameters:
+            export_task_id (int):
+                export task id
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        Not available currently
+        """
+        return QfRequest(
+            method="POST",
+            url=Consts.ModelEvalResultExportStatusAPI,
+            json_body={
+                "exportID": export_task_id,
+            },
+        )

@@ -124,7 +124,7 @@ def entry(
     ),
     install_completion: bool = typer.Option(
         None,
-        "--install-completion",
+        "--install-shell-autocomplete",
         is_flag=True,
         callback=install_callback,
         expose_value=False,
@@ -132,7 +132,7 @@ def entry(
     ),
     show_completion: bool = typer.Option(
         None,
-        "--show-completion",
+        "--show-shell-autocomplete",
         is_flag=True,
         callback=show_callback,
         expose_value=False,

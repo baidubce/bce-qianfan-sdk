@@ -22,8 +22,8 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `--ak TEXT` [过时]：千帆平台应用的 API Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--sk TEXT` [过时]：千帆平台应用的 Secret Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--version -v`：打印版本信息。
-* `--install-completion`：为当前 shell 安装自动补全脚本。
-* `--show-completion`：展示自动补全脚本。
+* `--install-shell-autocomplete`：为当前 shell 安装自动补全脚本。
+* `--show-shell-autocomplete`：展示自动补全脚本。
 * `--help -h`：打印帮助文档。
 
 **命令**:

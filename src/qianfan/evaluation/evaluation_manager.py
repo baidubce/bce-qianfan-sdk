@@ -41,10 +41,10 @@ from qianfan.evaluation.evaluator import (
     QianfanRuleEvaluator,
 )
 from qianfan.model import Model, Service
-from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.resources import Model as ResourceModel
 from qianfan.resources.console.consts import EvaluationTaskStatus
 from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.pydantic import BaseModel, Field, root_validator
 from qianfan.utils.utils import generate_letter_num_random_id
 
 

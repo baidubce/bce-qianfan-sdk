@@ -13,8 +13,8 @@
 # limitations under the License.
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from qianfan.pydantic import BaseModel
 from qianfan.trainer.consts import PeftType
+from qianfan.utils.pydantic import BaseModel
 
 
 class TrainConfig(BaseModel):

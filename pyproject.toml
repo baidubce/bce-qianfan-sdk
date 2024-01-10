@@ -6,8 +6,8 @@ authors = []
 license = "Apache-2.0"
 readme = "README.pypi.md"
 exclude = [
-    "src/qianfan/tests",
-    "src/qianfan/docs",
+    "python/qianfan/tests",
+    "python/qianfan/docs",
 ]
 homepage = "https://cloud.baidu.com/product/wenxinworkshop"
 repository = "https://github.com/baidubce/bce-qianfan-sdk"

@@ -12,29 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from concurrent.futures import ThreadPoolExecutor, wait
-from typing import Optional, List
-from click import Group
+from typing import Any, List, Optional, Tuple
 
 import typer
+from prompt_toolkit import prompt
 from rich import print as rprint
-from rich.console import Console
+from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.spinner import Spinner
+from rich.table import Table
+from rich.text import Text
 
 import qianfan
-from qianfan import Messages, QfRole
+from qianfan import QfRole
 from qianfan.common.client.utils import (
-    create_client,
     list_model_option,
     print_error_msg,
+    print_warn_msg,
 )
 from qianfan.consts import DefaultLLMModel
-from rich.table import Table
-
 from qianfan.errors import InternalError
-from qianfan.resources.typing import QfMessages
+from qianfan.resources.typing import QfMessages, QfResponse
 
 END_PROMPT = "\exit"
 
@@ -44,21 +45,87 @@ class ChatClient(object):
     Client object for the chat command
     """
 
-    def __init__(self, model: str, endpoint: Optional[str], multi_line: bool) -> None:
+    def __init__(
+        self,
+        model: Optional[str],
+        endpoint: Optional[str],
+        multi_line: bool,
+        **kwargs: Any,
+    ) -> None:
         """
         Init the chat client
         """
         self.clients: List[qianfan.ChatCompletion] = []
-        models = model.split(",")
+        models = model.split(",") if model else []
         endpoints = endpoint.split(",") if endpoint else []
         for m in models:
             self.clients.append(qianfan.ChatCompletion(model=m))
         for e in endpoints:
             self.clients.append(qianfan.ChatCompletion(endpoint=e))
-        self.msg_history = [QfMessages() for _ in range(len(self.clients))]
+        self.msg_history: List[Optional[QfMessages]] = [
+            QfMessages() for _ in range(len(self.clients))
+        ]
         self.multi_line = multi_line
         self.console = Console()
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
+        self.inference_args = kwargs
+        if len(self.clients) != 1 and len(self.inference_args) != 0:
+            print_warn_msg(
+                "Model arguments are not available when there are multiple models."
+            )
+            self.inference_args = {}
+
+    def single_model_response(
+        self, msg: Tuple[str, bool, Optional[QfResponse]]
+    ) -> RenderableType:
+        m, done, resp = msg
+        if m == "" and not done:
+            return Spinner("dots", text="Thinking...")
+        render_list: List[RenderableType] = [Markdown(m)]
+        if not done:
+            render_list.append(Spinner("dots", text="Generating..."))
+        if resp is not None:
+            stat = resp.statistic
+            render_list.append(
+                Text.from_markup(
+                    "\n[dim]First token latentcy:"
+                    f" {stat['first_token_latency']:.2f}s, Total latency:"
+                    f" {stat['total_latency']:.2f}s.[/]"
+                )
+            )
+            if done:
+                token_usage = resp["usage"]
+                render_list.append(
+                    Text.from_markup(
+                        f"[dim]Input token: {token_usage['prompt_tokens']}, Output"
+                        f" token: {token_usage['completion_tokens']}, Total token:"
+                        f" {token_usage['total_tokens']}.[/]"
+                    )
+                )
+        return Group(
+            *render_list,
+        )
+
+    def render_model_response(
+        self, msg_list: List[Tuple[str, bool, Optional[QfResponse]]]
+    ) -> RenderableType:
+        if len(msg_list) == 1:
+            return self.single_model_response(msg_list[0])
+        table = Table(expand=True)
+        live_list = []
+        for client, msg in zip(self.clients, msg_list):
+            title: str
+            if client._model is not None:
+                title = f"Model [green]{client._model}[/green]"
+            elif client._endpoint is not None:
+                title = f"Endpoint [green]{client._endpoint}[/green]"
+            else:
+                raise InternalError("No model or endpoint specified in ChatCompletion.")
+
+            table.add_column(title, overflow="fold", ratio=1)
+            live_list.append(self.single_model_response(msg))
+        table.add_row(*live_list)
+        return table
 
     def chat_in_terminal(self) -> None:
         """
@@ -67,8 +134,8 @@ class ChatClient(object):
 
         if self.multi_line:
             rprint(
-                "[bold]Hint[/bold]: Press enter [bold]twice[/bold] to submit your"
-                f" message, and use '{END_PROMPT}' to end the conversation."
+                "[bold]Hint[/bold]: [green bold]Press Esc before Enter[/] to submit"
+                f" your message, and use '{END_PROMPT}' to end the conversation."
             )
         else:
             rprint(
@@ -83,120 +150,176 @@ class ChatClient(object):
         while True:
             # loop the input and check whether the input is valid
             while True:
-                rprint("[yellow bold]Enter your message[/yellow bold]:")
-                if self.multi_line:
-                    input_list = []
-                    input = None
-                    # loop to get multiple lines input
-                    while input != "":
-                        input = self.console.input()
-                        input_list.append(input)
-                    message = "\n".join(input_list).strip()
-                else:
-                    message = self.console.input().strip()
+                rprint("\n[yellow bold]Enter your message[/yellow bold]:")
+                message = prompt(multiline=self.multi_line).strip()
                 # break the loop if input is valid
                 if len(message) != 0:
                     break
                 # if message is empty, print error message and continue to input
-                print_error_msg("Message cannot be empty!\n")
+                print_error_msg("Message cannot be empty!")
 
             for i in range(len(self.clients)):
-                self.msg_history[i].append(message)
+                msg_history = self.msg_history[i]
+                if msg_history is not None:
+                    msg_history.append(message)
 
-            # print an empty line to separate the input and output
-            # only needed in non multi-line mode
-            if not self.multi_line:
-                rprint()
-            rprint("[blue][bold]Model response:[/bold][/blue]")
+            rprint("\n[blue][bold]Model response:[/bold][/blue]")
 
             if message == END_PROMPT:
                 rprint("Bye!")
                 raise typer.Exit()
 
-            if len(self.clients) == 1:
-                with Live(Markdown("Thinking..."), auto_refresh=False) as live:
-                    response = self.clients[0].do(
-                        messages=self.msg_history[0], stream=True
-                    )
-                    s = ""
-                    for resp in response:
-                        if not resp["is_end"]:
-                            s += resp["result"]
-                            live.update(Markdown(s), refresh=True)
-            else:
-                msg_list = [["", False] for _ in range(len(self.clients))]
+            msg_list: List[Tuple[str, bool, Optional[QfResponse]]] = [
+                ("", False, None) for _ in range(len(self.clients))
+            ]
 
-                def gen_table():
-                    table = Table()
-                    live_list = []
-                    for client, msg in zip(self.clients, msg_list):
-                        title: str
-                        if client._model is not None:
-                            title = f"Model [green]{client._model}[/green]"
-                        elif client._endpoint is not None:
-                            title = f"Endpoint [green]{client._endpoint}[/green]"
-                        else:
-                            raise InternalError(
-                                "No model or endpoint specified in ChatCompletion."
+            with Live(
+                self.render_model_response(msg_list),
+                auto_refresh=True,
+                refresh_per_second=24,
+            ) as live:
+
+                def model_response_worker(
+                    client: qianfan.ChatCompletion, i: int
+                ) -> None:
+                    try:
+                        messages = self.msg_history[i]
+                        if messages is None:
+                            msg_list[i] = (
+                                (
+                                    "An error was encountered before and this session"
+                                    " was terminated."
+                                ),
+                                True,
+                                None,
                             )
-                        if msg[1] is False:
-                            render_title = Spinner("dots", text=title)
-                        else:
-                            render_title = title
-                        table.add_column(render_title, overflow="fold")
-                        live_list.append(
-                            Markdown(msg[0] if len(msg[0]) != 0 else "Thinking...")
+                            return
+                        response = client.do(
+                            messages=messages,
+                            stream=True,
+                            **self.inference_args,
                         )
-                    table.add_row(*live_list)
-                    return table
-
-                with Live(
-                    gen_table(), auto_refresh=True, refresh_per_second=24
-                ) as live:
-
-                    def haha(client: qianfan.ChatCompletion, i: int):
-                        response = client.do(messages=self.msg_history[i], stream=True)
-                        s = ""
                         for resp in response:
-                            if not resp["is_end"]:
-                                msg_list[i][0] += resp["result"]
-                            else:
-                                msg_list[i][1] = True
-                            live.update(gen_table(), refresh=True)
+                            msg_list[i] = (
+                                msg_list[i][0] + resp["result"],
+                                resp["is_end"],
+                                resp,
+                            )
+                            live.update(self.render_model_response(msg_list))
+                    except Exception as e:
+                        msg_list[i] = (
+                            msg_list[i][0] + "\n\n**Got Excetpion**: " + str(e),
+                            True,
+                            None,
+                        )
+                        self.msg_history[i] = None
+                    finally:
+                        live.update(self.render_model_response(msg_list))
 
-                    task_list = []
-                    for i, client in enumerate(self.clients):
-                        task = self.thread_pool.submit(haha, client, i)
-                        task_list.append(task)
-                    wait(task_list)
+                task_list = []
+                for i, client in enumerate(self.clients):
+                    task = self.thread_pool.submit(model_response_worker, client, i)
+                    task_list.append(task)
+                wait(task_list)
 
-                    for i, msg in enumerate(msg_list):
-                        self.msg_history[i].append(msg[0], role=QfRole.Assistant)
-                    live.update(gen_table(), refresh=True)
-            # messages.append(s, role=QfRole.Assistant)
-            rprint()
+                if len(self.clients) == 1 and self.msg_history[0] is None:
+                    raise typer.Exit(1)
+
+                for i, msg in enumerate(msg_list):
+                    msg_history = self.msg_history[i]
+                    if msg_history is not None:
+                        msg_history.append(msg[0], role=QfRole.Assistant)
+
+
+MODEL_ARGUMENTS_PANEL = (
+    "Model Arguments (Some arguments are not supported by every model)"
+)
 
 
 def chat_entry(
-    model: str = typer.Option(
-        DefaultLLMModel.ChatCompletion,
-        help="Model name of the chat model.",
+    model: Optional[str] = typer.Option(
+        None,
+        help=(
+            f"Model name of the chat model. {DefaultLLMModel.ChatCompletion} will be"
+            " used if no model and endpoint are specified. Use comma(,) to split"
+            " multiple models."
+        ),
         autocompletion=qianfan.ChatCompletion.models,
     ),
     endpoint: Optional[str] = typer.Option(
         None,
-        help="Endpoint of the chat model. This option will override `model` option.",
+        help="Endpoint of the chat model. Use comma(,) to split multiple endpoints.",
     ),
     # tui: bool = typer.Option(False, help="Using Terminal UI"),
     multi_line: bool = typer.Option(
-        False, help="Multi-line mode which need to press enter twice to submit message."
+        False,
+        "--multi-line",
+        help="Multi-line mode which needs to press Esc before enter to submit message.",
     ),
     list_model: Optional[bool] = list_model_option,
+    temperature: Optional[float] = typer.Option(
+        None,
+        help=(
+            "Controls the randomness of the generated text. A higher temperature makes"
+            " the model more creative and produces more diverse, but potentially less"
+            " coherent."
+        ),
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    top_p: Optional[float] = typer.Option(
+        None,
+        help=(
+            "Lower top_p value allows the model to focus on a narrowed set of likely"
+            " next tokens, making the response more conherent but less random."
+        ),
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    penalty_score: Optional[float] = typer.Option(
+        None,
+        help="Penalty scores can be applied to discourage repetition.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    system: Optional[str] = typer.Option(
+        None,
+        help="Persona setting for the model.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    stop: Optional[str] = typer.Option(
+        None,
+        help="Stop words. Use comma to split multiple stop words.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    disable_search: Optional[bool] = typer.Option(
+        None, help="Disable search", rich_help_panel=MODEL_ARGUMENTS_PANEL
+    ),
+    enable_citation: Optional[bool] = typer.Option(
+        None, help="Enable citation", rich_help_panel=MODEL_ARGUMENTS_PANEL
+    ),
 ) -> None:
     """
     Chat with the LLM in the terminal.
     """
-    client = ChatClient(model, endpoint, multi_line)
+    qianfan.disable_log()
+    if model is None and endpoint is None:
+        model = DefaultLLMModel.ChatCompletion
+
+    extra_args = {}
+
+    def add_if_not_none(key: str, value: Any) -> None:
+        if value is not None:
+            extra_args[key] = value
+
+    add_if_not_none("temperature", temperature)
+    add_if_not_none("top_p", top_p)
+    add_if_not_none("penalty_score", penalty_score)
+    add_if_not_none("system", system)
+    add_if_not_none("disable_search", disable_search)
+    add_if_not_none("enable_citation", enable_citation)
+
+    if stop is not None:
+        extra_args["stop"] = stop.split(",")
+
+    client = ChatClient(model, endpoint, multi_line, **extra_args)
     client.chat_in_terminal()
 
     # if not tui:

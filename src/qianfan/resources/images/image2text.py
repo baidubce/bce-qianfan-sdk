@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
 import copy
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, Union
 
 import qianfan.errors as errors
-from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResource,
@@ -28,16 +26,16 @@ from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 from qianfan.utils.logging import log_warn
 
 
-class Text2Image(BaseResource):
+class Image2Text(BaseResource):
     """
-    QianFan Text2Image API Resource
+    QianFan Image2Text API Resource
 
     """
 
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
-        models provide for text2image
+        models provide for image2text
 
         Args:
             None
@@ -47,26 +45,11 @@ class Text2Image(BaseResource):
 
         """
         return {
-            "Stable-Diffusion-XL": QfLLMInfo(
-                endpoint="/text2image/sd_xl",
-                required_keys={"prompt"},
-                optional_keys={
-                    "negative_prompt",
-                    "size",
-                    "n",
-                    "steps",
-                    "sampler_index",
-                    "user_id",
-                    "seed",
-                    "cfg_scale",
-                    "style",
-                },
-            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 # the key of api is "query", which is conflict with query in params
                 # use "prompt" to substitute
-                required_keys={"prompt"},
+                required_keys={"prompt", "image"},
                 optional_keys={
                     "user_id",
                 },
@@ -76,22 +59,22 @@ class Text2Image(BaseResource):
     @classmethod
     def _default_model(self) -> str:
         """
-        default model of text2image `Stable-Diffusion-XL`
+        no default model for image2text
 
         Args:
             None
 
         Returns:
-           "Stable-Diffusion-XL"
+           "UNSPECIFIED_MODEL"
 
         """
-        return DefaultLLMModel.Text2Image
+        return UNSPECIFIED_MODEL
 
     def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
-        convert endpoint to text2image API endpoint
+        convert endpoint to image2text API endpoint
         """
-        return f"/text2image/{endpoint}"
+        return f"/image2text/{endpoint}"
 
     def _generate_body(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
@@ -128,14 +111,17 @@ class Text2Image(BaseResource):
                 raise errors.ArgumentNotFoundError(
                     f"The required key `{key}` is not provided."
                 )
+        if stream is True:
+            kwargs["stream"] = True
         return kwargs
 
     def do(
         self,
         prompt: str,
+        image: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        with_decode: Optional[str] = None,
+        stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
         request_id: Optional[str] = None,
@@ -143,20 +129,20 @@ class Text2Image(BaseResource):
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
-        Execute a text2image action on the provided input prompt and generate responses.
+        Execute a image2text action on the provided input prompt and generate responses.
 
         Parameters:
           prompt (str):
             The user input or prompt for which a response is generated.
+          image (str):
+            The user input image for which a response is generated.
           model (Optional[str]):
-            The name or identifier of the language model to use. If not specified, the
-            default model is used(Stable-Diffusion-XL).
+            The name or identifier of the language model to use.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
-          with_decode(Optional[str]):
-            The way to decode data. If not provided, the decode is not used.
-            use "base64" to auto decode from data.
+          stream (bool):
+            Whether to stream responses or not.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):
@@ -176,30 +162,28 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        kwargs["image"] = image
         if request_id is not None:
             kwargs["request_id"] = request_id
 
         resp = self._do(
             model,
             endpoint,
-            False,
+            stream,
             retry_count,
             request_timeout,
             backoff_factor,
             **kwargs,
         )
-        assert isinstance(resp, QfResponse)
-        if with_decode == "base64":
-            for i in resp["body"]["data"]:
-                i["image"] = base64.b64decode(i["b64_image"])
         return resp
 
     async def ado(
         self,
         prompt: str,
+        image: str,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
-        with_decode: Optional[str] = None,
+        stream: bool = False,
         retry_count: int = 1,
         request_timeout: float = 60,
         request_id: Optional[str] = None,
@@ -207,21 +191,21 @@ class Text2Image(BaseResource):
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
-        Async execute a text2image action on the provided input prompt and generate
+        Async execute a image2text action on the provided input prompt and generate
         responses.
 
         Parameters:
           prompt (str):
             The user input or prompt for which a response is generated.
+          image (str):
+            The user input image for which a response is generated.
           model (Optional[str]):
-            The name or identifier of the language model to use. If not specified, the
-            default model is used(Stable-Diffusion-XL).
+            The name or identifier of the language model to use.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
-          with_decode(Optional[str]):
-            The way to decode data. If not provided, the decode is not used.
-            use "base64" to auto decode from data.
+          stream (bool):
+            Whether to stream responses or not.
           retry_count (int):
             The number of times to retry the request in case of failure.
           request_timeout (float):
@@ -241,46 +225,44 @@ class Text2Image(BaseResource):
 
         """
         kwargs["prompt"] = prompt
+        kwargs["image"] = image
         if request_id is not None:
             kwargs["request_id"] = request_id
 
         resp = await self._ado(
             model,
             endpoint,
-            False,
+            stream,
             retry_count,
             request_timeout,
             backoff_factor,
             **kwargs,
         )
-        assert isinstance(resp, QfResponse)
-        if with_decode == "base64":
-            for i in resp["body"]["data"]:
-                i["image"] = base64.b64decode(i["b64_image"])
         return resp
 
     def batch_do(
         self,
-        prompt_list: List[str],
+        input_list: List[Tuple[str, str]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         """
-        Batch generate execute a text2image action on the provided input prompt and
+        Batch generate execute a image2text action on the provided inputs and
         generate responses.
 
         Parameters:
-          prompt_list (List[str]):
-            The list user input or prompt for which a response is generated.
+          input_list (Tuple(str, str)):
+            The list user input prompt and image for which a response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
           kwargs (Any):
-            Please refer to `Text2Image.do` for other parameters such as `model`,
+            Please refer to `Plugin.do` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = Text2Image().batch_do(["...", "..."], worker_num = 10)
+        response_list = Image2Text(endpoint="").batch_do([("...", "..."),
+            ("...", "...")], worker_num = 10)
         for response in response_list:
             # return QfResponse if succeed, or exception will be raised
             print(response.result())
@@ -292,38 +274,42 @@ class Text2Image(BaseResource):
 
         """
         task_list = [
-            partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
+            partial(self.do, prompt=input[0], image=input[1], **kwargs)
+            for input in input_list
         ]
 
         return self._batch_request(task_list, worker_num)
 
     async def abatch_do(
         self,
-        prompt_list: List[str],
+        input_list: List[Tuple[str, str]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         """
-        Async batch execute a text2image action on the provided input prompt and
+        Async batch generate execute a image2text action on the provided inputs and
         generate responses.
 
         Parameters:
-          prompt_list (List[str]):
-            The list user input or prompt for which a response is generated.
+          input_list (Tuple(str, str)):
+            The list user input prompt and image for which a response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
           kwargs (Any):
-            Please refer to `Text2Image.ado` for other parameters such as `model`,
+            Please refer to `Plugin.ado` for other parameters such as `model`,
             `endpoint`, `retry_count`, etc.
 
         ```
-        response_list = await Text2Image().abatch_do([...], worker_num = 10)
+        response_list = await Image2Text(endpoint="").abatch_do([("...", "..."),
+            ("...", "...")], worker_num = 10)
         for response in response_list:
             # response is `QfResponse` if succeed, or response will be exception
             print(response)
         ```
 
         """
-        tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
+        tasks = [
+            self.ado(prompt=input[0], image=input[1], **kwargs) for input in input_list
+        ]
         return await self._abatch_request(tasks, worker_num)

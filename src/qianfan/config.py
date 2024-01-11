@@ -105,6 +105,8 @@ class GlobalConfig(BaseSettings):
     )
     BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
 
+    SSL_VERIFICATION_ENABLED: bool = Field(default=DefaultValue.SSLVerificationEnabled)
+
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None
 

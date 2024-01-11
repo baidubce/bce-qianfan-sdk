@@ -17,6 +17,7 @@ from typing import Any, AsyncIterator, Iterator, Tuple
 import aiohttp
 import requests
 
+from qianfan import get_config
 from qianfan.resources.typing import QfRequest
 
 
@@ -36,7 +37,11 @@ class HTTPClient(object):
             **kwargs (Any):
                 arbitrary arguments
         """
-        self.ssl = ssl
+        cfg = get_config()
+        if not ssl or not cfg.SSL_VERIFICATION_ENABLED:
+            self.ssl = False
+        else:
+            self.ssl = True
         self._session = requests.session()
 
     def request(self, req: QfRequest) -> requests.Response:

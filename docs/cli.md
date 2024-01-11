@@ -36,7 +36,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 
 ### chat 对话
 
-![](./imgs/cli/chat.gif)
+![](./imgs/cli/chat.webp)
 
 **用法**:
 

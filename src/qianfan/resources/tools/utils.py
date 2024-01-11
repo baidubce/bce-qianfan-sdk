@@ -53,7 +53,7 @@ def qianfan_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         )
         req = func(*args, **kwargs)
         req.retry_config = retry_config
-        return QfAPIRequestor()._request_api(req, auth)
+        return QfAPIRequestor(**kwargs)._request_api(req, auth)
 
     return inner
 
@@ -87,6 +87,6 @@ def async_qianfan_api_request(
         )
         req = await func(*args, **kwargs)
         req.retry_config = retry_config
-        return await QfAPIRequestor()._async_request_api(req, auth)
+        return await QfAPIRequestor(**kwargs)._async_request_api(req, auth)
 
     return inner

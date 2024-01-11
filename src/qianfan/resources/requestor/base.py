@@ -228,7 +228,7 @@ class BaseAPIRequestor(object):
         """
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
-        self._client = HTTPClient()
+        self._client = HTTPClient(**kwargs)
         self._rate_limiter = RateLimiter(**kwargs)
 
     @_with_latency

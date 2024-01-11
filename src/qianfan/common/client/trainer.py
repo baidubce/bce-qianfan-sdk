@@ -156,7 +156,6 @@ class MyEventHandler(EventHandler):
                 self.progress.update(self.current_task, total=100, completed=100)
 
     def dispatch(self, event: Event) -> None:
-        # self.progress.log(str(event))
         if event.action_state == ActionState.Stopped:
             print_error_msg(f"{event.action_class.__name__} {event.action_id} stopped.")
             return
@@ -187,7 +186,7 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 @trainer_app.command()
 def run(
-    dataset_id: int = typer.Option(..., help="Dataset name"),
+    dataset_id: int = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),
     train_epoch: Optional[int] = typer.Option(
         None, help="Train epoch", rich_help_panel=TRAIN_CONFIG_PANEL
@@ -199,7 +198,7 @@ def run(
         None, help="Train learning rate", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_max_seq_len: Optional[int] = typer.Option(
-        None, help="Train max seq len", rich_help_panel=TRAIN_CONFIG_PANEL
+        None, help="Max sequence length", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_peft_type: Optional[PeftType] = typer.Option(
         None,
@@ -208,25 +207,29 @@ def run(
         rich_help_panel=TRAIN_CONFIG_PANEL,
     ),
     trainset_rate: int = typer.Option(
-        20, help="Trainset rate", rich_help_panel=TRAIN_CONFIG_PANEL
+        20, help="Trainset ratio", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_logging_steps: Optional[int] = typer.Option(
-        None, help="Train logging steps", rich_help_panel=TRAIN_CONFIG_PANEL
+        None, help="Logging steps", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_warmup_ratio: Optional[float] = typer.Option(
-        None, help="Train warmup ratio", rich_help_panel=TRAIN_CONFIG_PANEL
+        None, help="Warmup ratio", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_weight_decay: Optional[float] = typer.Option(
-        None, help="Train weight decay", rich_help_panel=TRAIN_CONFIG_PANEL
+        None, help="Weight decay", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_lora_rank: Optional[int] = typer.Option(
-        None, help="Train lora rank", rich_help_panel=TRAIN_CONFIG_PANEL
+        None, help="Lora rank", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
     train_lora_all_linear: Optional[str] = typer.Option(
-        None, help="Train lora all linear", rich_help_panel=TRAIN_CONFIG_PANEL
+        None,
+        help="Whether lora is all linear layer",
+        rich_help_panel=TRAIN_CONFIG_PANEL,
     ),
     deploy_name: Optional[str] = typer.Option(
-        None, help="Deploy name", rich_help_panel=DEPLOY_CONFIG_PANEL
+        None,
+        help="Deploy name. Set this value to enable deploy action.",
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
     ),
     deploy_endpoint_prefix: Optional[str] = typer.Option(
         None, help="Deploy endpoint prefix", rich_help_panel=DEPLOY_CONFIG_PANEL
@@ -253,7 +256,6 @@ def run(
     """
     Run a trainer job.
     """
-    # qianfan.enable_log("INFO")
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
     ds = Dataset.load(qianfan_dataset_id=dataset_id)

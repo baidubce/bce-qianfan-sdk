@@ -243,3 +243,58 @@ $ qianfan dataset view [OPTIONS] DATASET
 * `--column TEXT`：待预览的数据集的列。用 `,` 分隔每个列名称。 (e.g. prompt,response)
 * `--raw`：展示原始数据。
 * `--help`：展示帮助文档。
+
+## trainer 训练
+
+**用法**:
+
+```console
+$ qianfan trainer [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options 选项**:
+
+* `--help`：展示帮助文档
+
+**Commands 命令**:
+
+* `run`：运行 trainer 任务
+
+### run 
+
+运行 trainer 任务
+
+**用法**:
+
+```console
+$ qianfan trainer run [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--train-type TEXT`：训练类型  [required]
+* `--dataset-id INTEGER`：数据集 id  [required]
+* `--help`：展示帮助文档
+
+训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
+
+* `--train-epoch INTEGER`：训练轮数
+* `--train-batch-size INTEGER`：训练每轮 batch 的大小
+* `--train-learning-rate FLOAT`：学习率
+* `--train-max-seq-len INTEGER`：最大训练长度
+* `--train-peft-type [all|p_tuning|lo_ra]`：Parameter efficient finetuning 方式
+* `--trainset-rate INTEGER`：数据拆分比例  [default：20]
+* `--train-logging-steps INTEGER`：日志记录间隔
+* `--train-warmup-ratio FLOAT`：预热比例
+* `--train-weight-decay FLOAT`：正则化系数
+* `--train-lora-rank INTEGER`：LoRA 策略中的秩
+* `--train-lora-all-linear TEXT`：LoRA 是否所有均为线性层
+
+部署相关配置，参数含义与 [创建服务 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Plnlmxdgy#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
+
+* `--deploy-name TEXT`：部署服务名称。设置该值后会开始部署 action。
+* `--deploy-endpoint-prefix TEXT`：部署服务的 endpoint 前缀
+* `--deploy-description TEXT`：服务描述
+* `--deploy-replicas INTEGER`：副本数  [default：1]
+* `--deploy-pool-type [public_resource|private_resource]`：资源池类型  [default：private_resource]
+* `--deploy-service-type [chat|completion|embedding|text2_image]`：服务类型  [default：chat]

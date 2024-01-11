@@ -22,6 +22,7 @@ from qianfan import get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
+from qianfan.version import VERSION
 
 P = ParamSpec("P")
 
@@ -56,6 +57,7 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             ),
         )
         req = func(*args, **kwargs)
+        req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
         return ConsoleAPIRequestor(**kwargs)._request_console_api(
             req, ak, sk, retry_config
         )
@@ -95,6 +97,7 @@ def async_console_api_request(
             ),
         )
         req = await func(*args, **kwargs)
+        req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
         return await ConsoleAPIRequestor(**kwargs)._async_request_console_api(
             req, ak, sk, retry_config
         )

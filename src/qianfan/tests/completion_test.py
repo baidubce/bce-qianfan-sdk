@@ -24,6 +24,7 @@ import pytest
 import qianfan
 import qianfan.tests.utils
 from qianfan.tests.utils import EnvHelper, fake_access_token
+from qianfan.version import VERSION
 
 QIANFAN_SUPPORT_COMPLETION_MOCK_MODEL = {
     "ERNIE-Bot",
@@ -421,3 +422,11 @@ async def test_batch_predict_async():
     assert 5 >= time.time() - start_time >= 3
     for input, output in zip(prompt_list, results):
         assert input in output["result"]
+
+
+def test_sdk_indicator():
+    res = qianfan.Completion().do("hi")
+    assert (
+        res["_request"]["extra_parameters"]["user_agent"]
+        == f"qianfan_py_sdk_v{VERSION}"
+    )

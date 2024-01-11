@@ -105,6 +105,9 @@ class GlobalConfig(BaseSettings):
     )
     BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
 
+    # Warning
+    # 这个配置项会关闭 SSL 证书校验功能，可能会导致潜在的不安全访问
+    # 请勿在公共网络上关闭这一配置。由于关闭带来的一切问题，本项目均不负责
     SSL_VERIFICATION_ENABLED: bool = Field(default=DefaultValue.SSLVerificationEnabled)
 
 

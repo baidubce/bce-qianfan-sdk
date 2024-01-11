@@ -191,6 +191,16 @@ img_data = resp["body"]["data"][0]["image"]
 img = Image.open(io.BytesIO(img_data))
 ```
 
+#### **图生文**
+千帆平台也提供了图+文生文功能，千帆SDK支持用户调用SDK来获取结果，以快速集成多模态能力到大模型应用中。
+
+以下是一个使用示例
+```python
+i2t = qianfan.Image2Text(endpoint="....")
+resp = i2t.do(prompt="Rag doll cat", "9j/4AAQSkZJRgABAQAAAQABAAD/xxxxx")
+print(resp["result"])
+```
+
 #### **批量推理**
 
 上述模型均提供了 `batch_do` 和异步的 `abatch_do` 方法，方便用户批量进行推理，并通过 `worker_num` 来控制并发量。

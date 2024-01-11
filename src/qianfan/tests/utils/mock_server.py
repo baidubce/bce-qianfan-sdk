@@ -558,7 +558,7 @@ def embedding(model_name):
 @access_token_checker
 def text2image(model_name):
     """
-    mock /text2image/<model_name> chat completion api
+    mock /text2image/<model_name> text2image api
     """
 
     return json_response(
@@ -575,6 +575,38 @@ def text2image(model_name):
                 }
             ],
             "usage": {"prompt_tokens": 8, "total_tokens": 8},
+        }
+    )
+
+
+@app.route(Consts.ModelAPIPrefix + "/image2text/<model_name>", methods=["POST"])
+@access_token_checker
+def image2text(model_name):
+    """
+    mock /image2text/<model_name> image2text api
+    """
+    r = request.json
+    if "stream" in r and r["stream"]:
+        return flask.Response(
+            completion_stream_response(model_name, r["prompt"]),
+            mimetype="text/event-stream",
+        )
+    return json_response(
+        {
+            "id": "as-th7f8y0ckj",
+            "object": "chat.completion",
+            "created": 1702964273,
+            "result": (
+                "The image depicts a dining table with multiple bowls, containing"
+                " various food items, including  rice and meat. The bowl s are placed"
+                " on different sides of the table, and chopsticks can be seen placed"
+                " near the bowls. In addition to the bowl s, there are two spoons, one"
+                " closer to the  left side of the table and the other towards the"
+                " center. The table is also accompanied by a cup , placed at the top"
+                " left corner."
+            ),
+            "is_safe": 1,
+            "usage": {"prompt_tokens": 3, "completion_tokens": 98, "total_tokens": 101},
         }
     )
 

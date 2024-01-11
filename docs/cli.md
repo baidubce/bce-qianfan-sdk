@@ -48,7 +48,7 @@ $ qianfan chat [OPTIONS]
 
 * `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
 * `--endpoint TEXT`：模型的 endpoint
-* `--multi-line / --no-multi-line`：多行模式，通过两次回车确认提交消息  [default：no-multi-line]
+* `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
 * `--help`：展示帮助文档
 
@@ -59,12 +59,12 @@ $ qianfan chat [OPTIONS]
 **用法**:
 
 ```console
-$ qianfan completion [OPTIONS] MESSAGES...
+$ qianfan completion [OPTIONS] PROMPTS...
 ```
 
 **Arguments 参数**:
 
-* `MESSAGES...`：需要补全的 prompt，支持传递多个 prompt 以表示对话历史，依次表示用户和模型的消息，必须为奇数  [required]
+* `PROMPTS...`：需要补全的 prompt，支持传递多个 prompt 以表示对话历史，依次表示用户和模型的消息，必须为奇数。如不传递则需要在命令行中交互输入。
 
 **Options 选项**:
 
@@ -72,6 +72,7 @@ $ qianfan completion [OPTIONS] MESSAGES...
 * `--endpoint TEXT`：模型的 endpoint
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
+* `--multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突
 * `--help`：展示帮助文档
 
 ### txt2img 文生图

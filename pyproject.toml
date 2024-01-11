@@ -37,6 +37,7 @@ python-dateutil = "^2.8.2"
 rich = ">=13.0.0"
 typer = ">=0.9.0"
 tenacity = "^8.2.3"
+prompt-toolkit = ">=3.0.38"
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"

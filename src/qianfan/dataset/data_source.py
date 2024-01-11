@@ -31,7 +31,6 @@ import requests
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
-from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataExportStatus,
@@ -51,6 +50,7 @@ from qianfan.utils.bos_uploader import (
     upload_file_to_bos,
 )
 from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
+from qianfan.utils.pydantic import BaseModel, Field, root_validator
 
 
 class FormatType(Enum):

@@ -420,9 +420,9 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         common_params_limit=TrainLimit(
             batch_size_limit=(1, 4),
             epoch_limit=(1, 50),
-            learning_rate_limit=(0.0000000001,0.0002),
+            learning_rate_limit=(0.0000000001, 0.0002),
         ),
-    )
+    ),
 }
 
 # model train type -> default train config
@@ -506,5 +506,5 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         learning_rate=0.000001,
         batch_size=1,
         peft_type=PeftType.LoRA,
-    )
+    ),
 }

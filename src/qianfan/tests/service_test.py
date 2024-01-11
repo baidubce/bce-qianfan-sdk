@@ -78,4 +78,4 @@ def test_service_list():
 def test_sdk_console_indicator():
     res = Service.list()
     # header不区分大小写，flask受到后将起转换成大写：
-    assert res["_header"]["Request-Source"] == f"qianfan_py_sdk-{VERSION}"
+    assert res["_header"]["Request-Source"] == f"qianfan_py_sdk_v{VERSION}"

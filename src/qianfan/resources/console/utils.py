@@ -56,7 +56,9 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             ),
         )
         req = func(*args, **kwargs)
-        return ConsoleAPIRequestor(**kwargs)._request_console_api(req, ak, sk, retry_config)
+        return ConsoleAPIRequestor(**kwargs)._request_console_api(
+            req, ak, sk, retry_config
+        )
 
     return inner
 

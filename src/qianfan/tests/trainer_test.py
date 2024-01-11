@@ -31,7 +31,7 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.configs import TrainConfig
+from qianfan.trainer.configs import TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
@@ -310,7 +310,7 @@ max_seq_len: 4096
 """
     # 使用 patch 和 mock_open 来模拟文件
     with patch("builtins.open", mock_open(read_data=yaml_content)):
-        tc = TrainConfig.load("train_config.yaml")
+        tc = TrainConfig.load("train_config2.yaml")
         assert tc.epoch == 1
         assert tc.batch_size == 4
         assert tc.max_seq_len == 4096
@@ -323,7 +323,25 @@ max_seq_len: 4096
 }"""
 
     with patch("io.open", mock_open(read_data=json_content)):
-        tc = TrainConfig.load("train_config.json")
+        tc = TrainConfig.load("train_config1.json")
         assert tc.epoch == 1
         assert tc.batch_size == 4
         assert tc.max_seq_len == 4096
+
+
+def test_train_limit__or__():
+    common = TrainLimit(batch_size_limit=(1, 4), epoch_limit=(1, 2))
+    specific = TrainLimit(epoch_limit=(1, 3))
+    res = specific | common
+    assert res.batch_size_limit == (1, 4)
+    assert res.epoch_limit == (1, 3)
+
+
+def test_train_config_validate():
+    conf = TrainConfig(epoch=4, batch_size=4, max_seq_len=4096, learning_rate=0.0002)
+    res = conf.validate_config(TrainLimit(epoch_limit=(1, 2)))
+    assert not res
+    res = conf.validate_config(TrainLimit(epoch_limit=(1, 10)))
+    assert res
+    res = conf.validate_config(TrainLimit(max_seq_len_options=(1, 4096)))
+    assert res

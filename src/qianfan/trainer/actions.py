@@ -288,7 +288,8 @@ class TrainAction(
                     self._validate_train_config(
                         train_type_model_info.specific_peft_types_params_limit[
                             self.train_config.peft_type
-                        ],
+                        ]
+                        | train_type_model_info.common_params_limit,
                     )
                 else:
                     self._validate_train_config(
@@ -307,59 +308,7 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
-        if (
-            self.train_config.batch_size
-            and train_limit.batch_size_limit
-            and not (
-                train_limit.batch_size_limit[0]
-                <= self.train_config.batch_size
-                <= self.train_config.batch_size
-                > train_limit.batch_size_limit[1]
-            )
-        ):
-            log_warn(
-                f"[train_action] current batch_size: {self.train_config.batch_size},"
-                f" but suggested batch size in [{train_limit.batch_size_limit[0]},"
-                f" {train_limit.batch_size_limit[1]}]"
-            )
-        if (
-            self.train_config.epoch
-            and train_limit.epoch_limit
-            and not (
-                train_limit.epoch_limit[0]
-                <= self.train_config.epoch
-                <= train_limit.epoch_limit[1]
-            )
-        ):
-            log_warn(
-                f"[train_action] current epoch: {self.train_config.epoch}, but"
-                f" suggested epoch in [{train_limit.epoch_limit[0]},"
-                f" {train_limit.epoch_limit[1]}]"
-            )
-        if (
-            self.train_config.max_seq_len
-            and train_limit.max_seq_len_options
-            and self.train_config.max_seq_len not in train_limit.max_seq_len_options
-        ):
-            log_warn(
-                f"[train_action] current max_seq_len: {self.train_config.max_seq_len},"
-                f" but supported max_seq_len may be [{train_limit.max_seq_len_options}]"
-            )
-        if (
-            self.train_config.learning_rate
-            and train_limit.learning_rate_limit
-            and not (
-                train_limit.learning_rate_limit[0]
-                <= self.train_config.learning_rate
-                <= train_limit.learning_rate_limit[1]
-            )
-        ):
-            log_warn(
-                "[train_action] current learning rate:"
-                f" {self.train_config.learning_rate}, but suggested learning rate in"
-                f" [{train_limit.learning_rate_limit[0]},"
-                f" {train_limit.learning_rate_limit[1]}]"
-            )
+        self.train_config.validate_config(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -447,6 +396,9 @@ class TrainAction(
                 "weightDecay": self.train_config.weight_decay,
                 "loraRank": self.train_config.lora_rank,
                 "loraAllLinear": self.train_config.lora_all_linear,
+                "loraAlpha": self.train_config.lora_alpha,
+                "loraDropout": self.train_config.lora_dropout,
+                "schedulerName": self.train_config.scheduler_name,
                 **self.train_config.extras,
             },
             "trainset": train_sets,

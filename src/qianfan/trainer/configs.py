@@ -414,6 +414,15 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             learning_rate_limit=(0.0000002, 0.0002),
         ),
     ),
+    "CodeLlama-7B": ModelInfo(
+        base_model_type="CodeLlama",
+        support_peft_types=[PeftType.ALL, PeftType.LoRA],
+        common_params_limit=TrainLimit(
+            batch_size_limit=(1, 4),
+            epoch_limit=(1, 50),
+            learning_rate_limit=(0.0000000001,0.0002),
+        ),
+    )
 }
 
 # model train type -> default train config
@@ -492,4 +501,10 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         learning_rate=0.00002,
         peft_type=PeftType.LoRA,
     ),
+    "CodeLlama-7B": TrainConfig(
+        epoch=1,
+        learning_rate=0.000001,
+        batch_size=1,
+        peft_type=PeftType.LoRA,
+    )
 }

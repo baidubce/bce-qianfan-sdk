@@ -78,13 +78,22 @@ class ChatClient(object):
     def single_model_response(
         self, msg: Tuple[str, bool, Optional[QfResponse]]
     ) -> RenderableType:
+        """
+        Renders response of one model
+        """
         m, done, resp = msg
+        # have not received first token, return a spinner
         if m == "" and not done:
-            return Spinner("dots", text="Thinking...")
+            return Spinner("dots", text="Thinking...", style="status.spinner")
+        # render the recieved message
         render_list: List[RenderableType] = [Markdown(m)]
+        # if not finished, append a spinner
         if not done:
-            render_list.append(Spinner("dots", text="Generating..."))
+            render_list.append(
+                Spinner("dots", text="Generating...", style="status.spinner")
+            )
         if resp is not None:
+            # add latency info
             stat = resp.statistic
             render_list.append(
                 Text.from_markup(
@@ -93,6 +102,7 @@ class ChatClient(object):
                     f" {stat['total_latency']:.2f}s.[/]"
                 )
             )
+            # add token usage when finished
             if done:
                 token_usage = resp["usage"]
                 render_list.append(
@@ -109,10 +119,13 @@ class ChatClient(object):
     def render_model_response(
         self, msg_list: List[Tuple[str, bool, Optional[QfResponse]]]
     ) -> RenderableType:
+        """
+        Render responses from multiple models
+        """
         if len(msg_list) == 1:
             return self.single_model_response(msg_list[0])
         table = Table(expand=True)
-        live_list = []
+        render_list = []
         for client, msg in zip(self.clients, msg_list):
             title: str
             if client._model is not None:
@@ -123,15 +136,14 @@ class ChatClient(object):
                 raise InternalError("No model or endpoint specified in ChatCompletion.")
 
             table.add_column(title, overflow="fold", ratio=1)
-            live_list.append(self.single_model_response(msg))
-        table.add_row(*live_list)
+            render_list.append(self.single_model_response(msg))
+        table.add_row(*render_list)
         return table
 
-    def chat_in_terminal(self) -> None:
+    def print_hint_msg(self) -> None:
         """
-        Chat in terminal
+        Print hint message when startup
         """
-
         if self.multi_line:
             rprint(
                 "[bold]Hint[/bold]: [green bold]Press Esc before Enter[/] to submit"
@@ -146,6 +158,13 @@ class ChatClient(object):
                 "[bold]Hint[/bold]: If you want to submit multiple lines, use the"
                 " '--multi-line' option."
             )
+
+    def chat_in_terminal(self) -> None:
+        """
+        Chat in terminal
+        """
+
+        self.print_hint_msg()
         # loop the conversation
         while True:
             # loop the input and check whether the input is valid
@@ -169,6 +188,7 @@ class ChatClient(object):
                 rprint("Bye!")
                 raise typer.Exit()
 
+            # List of (received_msg, is_end, response) for each client
             msg_list: List[Tuple[str, bool, Optional[QfResponse]]] = [
                 ("", False, None) for _ in range(len(self.clients))
             ]
@@ -182,6 +202,9 @@ class ChatClient(object):
                 def model_response_worker(
                     client: qianfan.ChatCompletion, i: int
                 ) -> None:
+                    """
+                    Worker for each client to recevie message
+                    """
                     try:
                         messages = self.msg_history[i]
                         if messages is None:
@@ -222,9 +245,11 @@ class ChatClient(object):
                     task_list.append(task)
                 wait(task_list)
 
+                # End the client if there is only one client and got exception
                 if len(self.clients) == 1 and self.msg_history[0] is None:
                     raise typer.Exit(1)
 
+                # append response to each chat history
                 for i, msg in enumerate(msg_list):
                     msg_history = self.msg_history[i]
                     if msg_history is not None:

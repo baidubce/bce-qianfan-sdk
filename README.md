@@ -41,9 +41,6 @@ import qianfan
 
 os.environ["QIANFAN_ACCESS_KEY"]="..."
 os.environ["QIANFAN_SECRET_KEY"]="..."
-# 通过 App Id 选择使用的应用
-# 该参数可选，若不提供 SDK 会自动选择最新创建的应用
-os.environ["QIANFAN_APPID"]="..."
 
 chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
 resp = chat_comp.do(messages=[{

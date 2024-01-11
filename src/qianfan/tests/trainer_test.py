@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import mock_open, patch
-
 import pytest
 
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -303,30 +301,16 @@ def test_trainer_sft_with_eval():
 
 
 def test_train_config_load():
-    yaml_content = """
-epoch: 1
-batch_size: 4
-max_seq_len: 4096
-"""
     # 使用 patch 和 mock_open 来模拟文件
-    with patch("builtins.open", mock_open(read_data=yaml_content)):
-        tc = TrainConfig.load("train_config2.yaml")
-        assert tc.epoch == 1
-        assert tc.batch_size == 4
-        assert tc.max_seq_len == 4096
+    tc = TrainConfig.load("qianfan/tests/assets/train_config.yaml")
+    assert tc.epoch == 1
+    assert tc.batch_size == 4
+    assert tc.max_seq_len == 4096
 
-    json_content = """
-{
-    "epoch": 1,
-    "batch_size": 4,
-    "max_seq_len": 4096
-}"""
-
-    with patch("io.open", mock_open(read_data=json_content)):
-        tc = TrainConfig.load("train_config1.json")
-        assert tc.epoch == 1
-        assert tc.batch_size == 4
-        assert tc.max_seq_len == 4096
+    tc = TrainConfig.load("qianfan/tests/assets/train_config.json")
+    assert tc.epoch == 1
+    assert tc.batch_size == 4
+    assert tc.max_seq_len == 4096
 
 
 def test_train_limit__or__():

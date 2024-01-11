@@ -20,8 +20,8 @@ import qianfan
 from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
-from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.embedding import embedding_entry
+from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
 
 app = typer.Typer(

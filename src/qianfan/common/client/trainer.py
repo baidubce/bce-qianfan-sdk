@@ -13,65 +13,60 @@
 # limitations under the License.
 
 
-import re
-from pathlib import Path
-from typing import Any, Optional
+import time
+from typing import Any, Callable, Dict, Optional
 
 import typer
-from rich.console import Console, Group
-from rich.pretty import Pretty
-from rich.rule import Rule
-from rich.table import Table
-import qianfan
-from qianfan.errors import InternalError
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
-import qianfan.common.client.utils as client_utils
 from qianfan.common.client.utils import (
     enum_typer,
     print_error_msg,
-    print_info_msg,
     replace_logger_handler,
-    timestamp,
 )
-
+from qianfan.dataset import Dataset
+from qianfan.errors import InternalError
+from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console.consts import DeployPoolType
-from qianfan.consts import DefaultLLMModel
-from qianfan.dataset import Dataset, DataStorageType, DataTemplateType
-from qianfan.dataset.data_source import QianfanDataSource
-from qianfan.utils.bos_uploader import parse_bos_path
 from qianfan.trainer import LLMFinetune
-from qianfan.trainer.base import Pipeline
-from qianfan.trainer.configs import TrainConfig
-from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.actions import (
     DeployAction,
     EvaluateAction,
     LoadDataSetAction,
-    TrainAction,
     ModelPublishAction,
+    TrainAction,
 )
-from qianfan.model.configs import DeployConfig
+from qianfan.trainer.base import Pipeline
 from qianfan.trainer.consts import ActionState, PeftType
-from qianfan.common.client.dataset import load_dataset
-from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
-from qianfan.utils.logging import log_info, log_error
+from qianfan.trainer.event import Event, EventHandler
 
 trainer_app = typer.Typer(no_args_is_help=True)
 
 
 class MyEventHandler(EventHandler):
-    def __init__(self, console) -> None:
+    def __init__(self, console: Console) -> None:
         super().__init__()
         self.console = console
         self.progress = Progress(
             SpinnerColumn(finished_text=":white_check_mark:"),
-            *Progress.get_default_columns(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
             TimeElapsedColumn(),
             console=self.console,
             transient=False,
         )
-        self.current_task = None
+        self.current_task: Optional[TaskID] = None
 
     def handle_load_data(self, event: Event) -> None:
         if event.action_state == ActionState.Preceding:
@@ -82,7 +77,8 @@ class MyEventHandler(EventHandler):
         if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            self.progress.update(self.current_task, total=100, completed=100)
+            if self.current_task is not None:
+                self.progress.update(self.current_task, total=100, completed=100)
 
     def handle_pipeline(self, event: Event) -> None:
         self.current_task = None
@@ -95,23 +91,25 @@ class MyEventHandler(EventHandler):
             self.vdl_printed = False
             self.progress.log("Start training...")
         if event.action_state == ActionState.Running:
-            resp = event.data
-            self.progress.update(
-                self.current_task, completed=resp["result"]["progress"]
-            )
-            if not self.vdl_printed:
-                self.progress.log(
-                    f"Training task id: {resp['result']['taskId']}, job id:"
-                    f" {resp['result']['id']}, task name: {resp['result']['taskName']}"
+            if self.current_task is not None:
+                resp = event.data
+                self.progress.update(
+                    self.current_task, completed=resp["result"]["progress"]
                 )
-                self.progress.log(
-                    "Check this vdl link to view training progress: "
-                    + resp["result"]["vdlLink"]
-                )
-                self.vdl_printed = True
+                if not self.vdl_printed:
+                    self.progress.log(
+                        f"Training task id: {resp['result']['taskId']}, job id:"
+                        f" {resp['result']['id']}, task name:"
+                        f" {resp['result']['taskName']}"
+                    )
+                    self.progress.log(
+                        "Check this vdl link to view training progress: "
+                        + resp["result"]["vdlLink"]
+                    )
+                    self.vdl_printed = True
         if event.action_state == ActionState.Done:
-            resp = event.data
-            self.progress.update(self.current_task, completed=100)
+            if self.current_task is not None:
+                self.progress.update(self.current_task, completed=100)
 
     def handle_publish(self, event: Event) -> None:
         if event.action_state == ActionState.Preceding:
@@ -122,12 +120,13 @@ class MyEventHandler(EventHandler):
         if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            data = event.data
-            self.progress.update(self.current_task, total=100, completed=100)
-            self.progress.log(
-                f"Model has been published successfully. Model id: {data['model_id']}."
-                f" Model version id: {data['model_version_id']}"
-            )
+            if self.current_task is not None:
+                data = event.data
+                self.progress.update(self.current_task, total=100, completed=100)
+                self.progress.log(
+                    "Model has been published successfully. Model id:"
+                    f" {data['model_id']}. Model version id: {data['model_version_id']}"
+                )
 
     def handle_deploy(self, event: Event) -> None:
         if event.action_state == ActionState.Preceding:
@@ -136,12 +135,14 @@ class MyEventHandler(EventHandler):
         if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            self.progress.update(self.current_task, total=100, completed=100)
-            data = event.data
-            self.progress.log(
-                "Service has been deployed successfully. Service id:"
-                f" {data['service_id']}. Service endpoint: {data['service_endpoint']}"
-            )
+            if self.current_task is not None:
+                self.progress.update(self.current_task, total=100, completed=100)
+                data = event.data
+                self.progress.log(
+                    "Service has been deployed successfully. Service id:"
+                    f" {data['service_id']}. Service endpoint:"
+                    f" {data['service_endpoint']}"
+                )
 
     def handle_evaluate(self, event: Event) -> None:
         if event.action_state == ActionState.Preceding:
@@ -151,7 +152,8 @@ class MyEventHandler(EventHandler):
         if event.action_state == ActionState.Running:
             pass
         if event.action_state == ActionState.Done:
-            self.progress.update(self.current_task, total=100, completed=100)
+            if self.current_task is not None:
+                self.progress.update(self.current_task, total=100, completed=100)
 
     def dispatch(self, event: Event) -> None:
         # self.progress.log(str(event))
@@ -165,7 +167,7 @@ class MyEventHandler(EventHandler):
                 f" {event.data}."
             )
             return
-        handle_map = {
+        handle_map: Dict[Any, Callable[[Event], None]] = {
             LoadDataSetAction: self.handle_load_data,
             TrainAction: self.handle_train,
             ModelPublishAction: self.handle_publish,
@@ -179,11 +181,75 @@ class MyEventHandler(EventHandler):
         handler(event)
 
 
+TRAIN_CONFIG_PANEL = "Train Config"
+DEPLOY_CONFIG_PANEL = "Deploy Config"
+
+
 @trainer_app.command()
 def run(
     dataset_id: int = typer.Option(..., help="Dataset name"),
     train_type: str = typer.Option(..., help="Train type"),
-):
+    train_epoch: Optional[int] = typer.Option(
+        None, help="Train epoch", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_batch_size: Optional[int] = typer.Option(
+        None, help="Train batch size", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_learning_rate: Optional[float] = typer.Option(
+        None, help="Train learning rate", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_max_seq_len: Optional[int] = typer.Option(
+        None, help="Train max seq len", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_peft_type: Optional[PeftType] = typer.Option(
+        None,
+        help="Train peft type",
+        **enum_typer(PeftType),
+        rich_help_panel=TRAIN_CONFIG_PANEL,
+    ),
+    trainset_rate: int = typer.Option(
+        20, help="Trainset rate", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_logging_steps: Optional[int] = typer.Option(
+        None, help="Train logging steps", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_warmup_ratio: Optional[float] = typer.Option(
+        None, help="Train warmup ratio", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_weight_decay: Optional[float] = typer.Option(
+        None, help="Train weight decay", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_lora_rank: Optional[int] = typer.Option(
+        None, help="Train lora rank", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_lora_all_linear: Optional[str] = typer.Option(
+        None, help="Train lora all linear", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    deploy_name: Optional[str] = typer.Option(
+        None, help="Deploy name", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_endpoint_prefix: Optional[str] = typer.Option(
+        None, help="Deploy endpoint prefix", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_description: str = typer.Option(
+        "", help="Deploy description", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_replicas: int = typer.Option(
+        1, help="Deploy replicas", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_pool_type: str = typer.Option(
+        "private_resource",
+        help="Deploy pool type",
+        **enum_typer(DeployPoolType),
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
+    ),
+    deploy_service_type: str = typer.Option(
+        "chat",
+        help="Service Type",
+        **enum_typer(ServiceType),
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
+    ),
+) -> None:
     """
     Run a trainer job.
     """
@@ -191,23 +257,58 @@ def run(
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
     ds = Dataset.load(qianfan_dataset_id=dataset_id)
+    deploy_config = None
+    if deploy_name is not None:
+        if deploy_endpoint_prefix is None:
+            print_error_msg("Deploy endpoint prefix is required")
+            raise typer.Exit(code=1)
+
+        deploy_config = DeployConfig(
+            name=deploy_name,
+            endpoint_prefix=deploy_endpoint_prefix,
+            description=deploy_description,
+            replicas=deploy_replicas,
+            pool_type=DeployPoolType[deploy_pool_type],
+            service_type=ServiceType[deploy_service_type],
+        )
+
     trainer = LLMFinetune(
         dataset=ds,
         train_type=train_type,
         event_handler=callback,
-        train_config=TrainConfig(
-            batch_size=1, epoch=1, learning_rate=0.00002, peft_type=PeftType.ALL
-        ),
-        deploy_config=DeployConfig(
-            name="sdkcqasvc",
-            endpoint_prefix="sdkcqa1",
-            replicas=1,  # 副本数， 与qps强绑定
-            pool_type=DeployPoolType.PrivateResource,  # 私有资源池
-            service_type=ServiceType.Chat,
-        ),
+        train_config=None,
+        deploy_config=deploy_config,
     )
-    trainer.run()
-    console.log("Trainer finished!")
-    import time
 
+    if trainer.train_action.train_config is None:
+        raise InternalError("Train config not found in trainer.")
+
+    if train_epoch is not None:
+        trainer.train_action.train_config.epoch = train_epoch
+    if train_batch_size is not None:
+        trainer.train_action.train_config.batch_size = train_batch_size
+    if train_learning_rate is not None:
+        trainer.train_action.train_config.learning_rate = train_learning_rate
+    if train_max_seq_len is not None:
+        trainer.train_action.train_config.max_seq_len = train_max_seq_len
+    if train_peft_type is not None:
+        trainer.train_action.train_config.peft_type = train_peft_type
+    if trainset_rate is not None:
+        trainer.train_action.train_config.trainset_rate = trainset_rate
+    if train_logging_steps is not None:
+        trainer.train_action.train_config.logging_steps = train_logging_steps
+    if train_warmup_ratio is not None:
+        trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
+    if train_weight_decay is not None:
+        trainer.train_action.train_config.weight_decay = train_weight_decay
+    if train_lora_rank is not None:
+        trainer.train_action.train_config.lora_rank = train_lora_rank
+    if train_lora_all_linear is not None:
+        trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
+
+    trainer.run()
+
+    console.log("Trainer finished!")
+
+    # wait a second for the log to be flushed
     time.sleep(0.1)

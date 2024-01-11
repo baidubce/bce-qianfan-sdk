@@ -17,17 +17,16 @@ from enum import Enum
 from typing import Any, Dict, Optional, Type, TypeVar
 
 import click
-import rich
 import typer
 from rich import print as rprint
 from rich.console import Console
+from rich.logging import RichHandler
 
 import qianfan
 import qianfan.utils.logging as qianfan_logging
 from qianfan.resources.llm.base import BaseResource
 from qianfan.utils.bos_uploader import get_bos_bucket_location
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
-from rich.logging import RichHandler
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 command_to_resource_type: Dict[str, Type[BaseResource]] = {

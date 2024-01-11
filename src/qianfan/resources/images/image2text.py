@@ -157,7 +157,7 @@ class Image2Text(BaseResource):
         as follows:
 
         ```
-        Text2Image().do(prompt = ..., steps=20)
+        Image2Text(endpoint="").do(prompt="", image="", xxx=vvv)
         ```
 
         """
@@ -220,7 +220,7 @@ class Image2Text(BaseResource):
         as follows:
 
         ```
-        Text2Image().do(prompt = ..., steps=20)
+        Image2Text(endpoint="").ado(prompt="", image="", xx=vv)
         ```
 
         """

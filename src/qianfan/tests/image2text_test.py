@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-    Unit test for Txt2Image
+    Unit test for Image2Text
 """
 
 import time

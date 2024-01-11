@@ -19,7 +19,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import pyarrow
 import pyarrow.compute as pc
 from pyarrow import Table as PyarrowTable
-from pydantic import BaseModel
 from typing_extensions import Self
 
 from qianfan.dataset.consts import (
@@ -32,6 +31,7 @@ from qianfan.dataset.process_interface import (
     Processable,
 )
 from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
+from qianfan.pydantic import BaseModel
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 

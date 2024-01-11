@@ -19,7 +19,6 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from pydantic import BaseModel
 
 from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords
@@ -30,6 +29,7 @@ from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
+from qianfan.pydantic import BaseModel
 from qianfan.resources.console.consts import DataTemplateType
 
 

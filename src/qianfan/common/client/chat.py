@@ -100,9 +100,8 @@ class ChatClient(object):
                 response = self.client.do(messages=messages, stream=True)
                 s = ""
                 for resp in response:
-                    if not resp["is_end"]:
-                        s += resp["result"]
-                        live.update(Markdown(s), refresh=True)
+                    s += resp["result"]
+                    live.update(Markdown(s), refresh=True)
             messages.append(s, role=QfRole.Assistant)
             rprint()
 

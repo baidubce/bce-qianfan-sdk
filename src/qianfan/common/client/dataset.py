@@ -91,7 +91,7 @@ def save(
         ...,
         help=(
             "The source of the dataset. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     dst: Optional[str] = typer.Argument(
@@ -100,7 +100,7 @@ def save(
             "The destination of the dataset. The dataset will be saved to a file if the"
             " value is a path. Alternatively, the dataset can be appended to an"
             " existing dataset on the platform if an qianfan dataset url is provided"
-            " (qianfan://{model_version_id}). If this value is not provided, a new"
+            " (qianfan://{dataset_version_id}). If this value is not provided, a new"
             " dataset will be created on the platform."
         ),
     ),
@@ -202,7 +202,7 @@ def download(
         ...,
         help=(
             "The version id of the dataset on the qianfan platform. The value can be"
-            " qianfan dataset id or url(qianfan://{model_version_id})."
+            " qianfan dataset id or url(qianfan://{dataset_version_id})."
         ),
     ),
     output: Path = typer.Option(Path(f"{timestamp()}.jsonl"), help="Output file path."),
@@ -227,7 +227,7 @@ def upload(
             "The destination of the dataset. If this value is not provided, a new"
             " dataset will be created on the platform. Alternatively, the dataset can"
             " be appended to an existing dataset on the platform if an qianfan dataset"
-            " id or url(qianfan://{model_version_id}) is provided . "
+            " id or url(qianfan://{dataset_version_id}) is provided . "
         ),
     ),
     dataset_name: Optional[str] = typer.Option(
@@ -274,14 +274,15 @@ def view(
         ...,
         help=(
             "The dataset to view. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     row: Optional[str] = typer.Option(
         None,
         help=(
             "The row to view. Use commas(,) to view multiple rows and dashes(-) to"
-            " denote a range of data. (e.g. 1,3-5,12)"
+            " denote a range of data (e.g. 1,3-5,12). By default, only the top 5 rows"
+            " will be displayed. Alternatively, use '--row all' to view all rows."
         ),
     ),
     column: Optional[str] = typer.Option(
@@ -302,6 +303,12 @@ def view(
     # list of (start_idx, end_idx)
     row_list = []
     if row is None:
+        print_info_msg(
+            "No row index provided, only top 5 rows will be displayed. Or use '--row"
+            " all' to display all rows."
+        )
+        row_list.append((0, min(len(ds), 5)))
+    elif row == "all":
         row_list.append((0, len(ds)))
     else:
         row_l = row.split(",")
@@ -383,7 +390,7 @@ def predict(
         ...,
         help=(
             "The dataset to predict. The value can be a file path or qianfan"
-            " dataset url (qianfan://{model_version_id})."
+            " dataset url (qianfan://{dataset_version_id})."
         ),
     ),
     model: str = typer.Option(

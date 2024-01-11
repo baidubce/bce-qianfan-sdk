@@ -33,6 +33,9 @@ def init():
         QIANFAN_SK="test_sk",
         QIANFAN_ACCESS_KEY="test_access_key",
         QIANFAN_SECRET_KEY="test_secret_key",
+        QIANFAN_TRAIN_STATUS_POLLING_INTERVAL="1",
+        QIANFAN_DEPLOY_STATUS_POLLING_INTERVAL="1",
+        QIANFAN_MODEL_PUBLISH_STATUS_POLLING_INTERVAL="1",
     ):
         yield
 

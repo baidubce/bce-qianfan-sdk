@@ -188,6 +188,9 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 def run(
     dataset_id: int = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),
+    train_config_file: Optional[str] = typer.Option(
+        None, help="Train config path, support \[json/yaml] "
+    ),
     train_epoch: Optional[int] = typer.Option(
         None, help="Train epoch", rich_help_panel=TRAIN_CONFIG_PANEL
     ),
@@ -278,7 +281,7 @@ def run(
         dataset=ds,
         train_type=train_type,
         event_handler=callback,
-        train_config=None,
+        train_config=train_config_file,
         deploy_config=deploy_config,
     )
 

@@ -189,7 +189,7 @@ def run(
     dataset_id: int = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),
     train_config_path: Optional[str] = typer.Option(
-        ..., help="Train config path, support [json/yaml] "
+        None, help="Train config path, support [json/yaml] "
     ),
     train_epoch: Optional[int] = typer.Option(
         None, help="Train epoch", rich_help_panel=TRAIN_CONFIG_PANEL

@@ -25,8 +25,8 @@ from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
-from qianfan.pydantic import BaseModel, Field, root_validator
 from qianfan.utils import log_error
+from qianfan.utils.pydantic import BaseModel, Field, root_validator
 
 
 class Evaluator(BaseModel, ABC):

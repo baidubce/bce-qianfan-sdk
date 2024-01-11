@@ -135,7 +135,7 @@ class Image2Text(BaseResource):
           prompt (str):
             The user input or prompt for which a response is generated.
           image (str):
-            The user input image for which a response is generated.
+            The user input base64 encoded image data for which a response is generated.
           model (Optional[str]):
             The name or identifier of the language model to use.
           endpoint (Optional[str]):
@@ -198,7 +198,7 @@ class Image2Text(BaseResource):
           prompt (str):
             The user input or prompt for which a response is generated.
           image (str):
-            The user input image for which a response is generated.
+            The user input base64 encoded image data for which a response is generated.
           model (Optional[str]):
             The name or identifier of the language model to use.
           endpoint (Optional[str]):
@@ -252,7 +252,8 @@ class Image2Text(BaseResource):
 
         Parameters:
           input_list (Tuple(str, str)):
-            The list user input prompt and image for which a response is generated.
+            The list user input prompt and base64 encoded image data for which a
+            response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -292,7 +293,8 @@ class Image2Text(BaseResource):
 
         Parameters:
           input_list (Tuple(str, str)):
-            The list user input prompt and image for which a response is generated.
+            The list user input prompt and base64 encoded image data for which a
+            response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.

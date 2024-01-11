@@ -558,7 +558,7 @@ def embedding(model_name):
 @access_token_checker
 def text2image(model_name):
     """
-    mock /text2image/<model_name> chat completion api
+    mock /text2image/<model_name> text2image api
     """
 
     return json_response(
@@ -575,6 +575,38 @@ def text2image(model_name):
                 }
             ],
             "usage": {"prompt_tokens": 8, "total_tokens": 8},
+        }
+    )
+
+
+@app.route(Consts.ModelAPIPrefix + "/image2text/<model_name>", methods=["POST"])
+@access_token_checker
+def image2text(model_name):
+    """
+    mock /image2text/<model_name> image2text api
+    """
+    r = request.json
+    if "stream" in r and r["stream"]:
+        return flask.Response(
+            completion_stream_response(model_name, r["prompt"]),
+            mimetype="text/event-stream",
+        )
+    return json_response(
+        {
+            "id": "as-th7f8y0ckj",
+            "object": "chat.completion",
+            "created": 1702964273,
+            "result": (
+                "The image depicts a dining table with multiple bowls, containing"
+                " various food items, including  rice and meat. The bowl s are placed"
+                " on different sides of the table, and chopsticks can be seen placed"
+                " near the bowls. In addition to the bowl s, there are two spoons, one"
+                " closer to the  left side of the table and the other towards the"
+                " center. The table is also accompanied by a cup , placed at the top"
+                " left corner."
+            ),
+            "is_safe": 1,
+            "usage": {"prompt_tokens": 3, "completion_tokens": 98, "total_tokens": 101},
         }
     )
 
@@ -659,6 +691,9 @@ def iam_auth_checker(func):
     return wrapper
 
 
+finetune_task_call_times = {}
+
+
 @app.route(Consts.FineTuneCreateTaskAPI, methods=["POST"])
 @iam_auth_checker
 def create_finetune_task():
@@ -685,7 +720,12 @@ def create_finetune_job():
     """
     mock create finetune job api
     """
-    return json_response({"log_id": 123, "result": {"id": random.randint(0, 100000)}})
+    r = request.json
+    task_id = r["taskId"]
+    job_id = random.randint(0, 100000)
+    global finetune_task_call_times
+    finetune_task_call_times[(task_id, job_id)] = 0
+    return json_response({"log_id": 123, "result": {"id": job_id}})
 
 
 @app.route(Consts.FineTuneGetJobAPI, methods=["POST"])
@@ -694,29 +734,63 @@ def get_finetune_job():
     """
     mock get finetune job api
     """
-    return json_response(
-        {
-            "log_id": "2475845384",
-            "result": {
-                "id": 8982,
-                "description": "",
-                "taskId": 17263,
-                "taskName": "0725_cqa_fin",
-                "version": 1,
-                "jobRunType": 0,
-                "trainType": "ernieBotLite-v201-8k",
-                "trainMode": "SFT",
-                "peftType": "LoRA",
-                "trainStatus": "FINISH",
-                "progress": 51,
-                "runTime": 2525,
-                "trainTime": 732,
-                "startTime": "2023-12-07 11:40:00",
-                "finishTime": "2023-12-07 12:22:05",
-                "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1yeTNqeDg0Z3NoaWt4dnA3In0=",
-            },
-        }
-    )
+    r = request.json
+    task_id = r["taskId"]
+    job_id = r["jobId"]
+    global finetune_task_call_times
+    call_times = finetune_task_call_times.get((task_id, job_id))
+    if call_times is None:
+        return json_response(
+            {
+                "log_id": "2475845384",
+                "result": {
+                    "id": 8982,
+                    "description": "",
+                    "taskId": 17263,
+                    "taskName": "0725_cqa_fin",
+                    "version": 1,
+                    "jobRunType": 0,
+                    "trainType": "ernieBotLite-v201-8k",
+                    "trainMode": "SFT",
+                    "peftType": "LoRA",
+                    "trainStatus": "FINISH",
+                    "progress": 51,
+                    "runTime": 2525,
+                    "trainTime": 732,
+                    "startTime": "2023-12-07 11:40:00",
+                    "finishTime": "2023-12-07 12:22:05",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1yeTNqeDg0Z3NoaWt4dnA3In0=",
+                },
+            }
+        )
+    else:
+        MAX_CALL_TIMES = 10
+        finetune_task_call_times[(task_id, job_id)] += 1
+        return json_response(
+            {
+                "log_id": "2475845384",
+                "result": {
+                    "id": job_id,
+                    "description": "",
+                    "taskId": task_id,
+                    "taskName": "0725_cqa_fin",
+                    "version": 1,
+                    "jobRunType": 0,
+                    "trainType": "ernieBotLite-v201-8k",
+                    "trainMode": "SFT",
+                    "peftType": "LoRA",
+                    "trainStatus": (
+                        "FINISH" if call_times >= MAX_CALL_TIMES else "RUNNING"
+                    ),
+                    "progress": int(100 * call_times / MAX_CALL_TIMES),
+                    "runTime": 2525,
+                    "trainTime": 732,
+                    "startTime": "2023-12-07 11:40:00",
+                    "finishTime": "2023-12-07 12:22:05",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1yeTNqeDg0Z3NoaWt4dnA3In0=",
+                },
+            }
+        )
 
 
 @app.route(Consts.FineTuneStopJobAPI, methods=["POST"])

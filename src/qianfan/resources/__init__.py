@@ -16,6 +16,7 @@ from qianfan.resources.console.finetune import FineTune
 from qianfan.resources.console.model import Model
 from qianfan.resources.console.prompt import Prompt
 from qianfan.resources.console.service import Service
+from qianfan.resources.images.image2text import Image2Text
 from qianfan.resources.images.text2image import Text2Image
 from qianfan.resources.llm.chat_completion import ChatCompletion
 from qianfan.resources.llm.completion import Completion
@@ -35,6 +36,7 @@ __all__ = [
     "Completion",
     "Plugin",
     "Text2Image",
+    "Image2Text",
     "Tokenizer",
     "AK",
     "SK",

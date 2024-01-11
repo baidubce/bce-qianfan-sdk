@@ -18,13 +18,13 @@ import random
 import string
 from typing import Any, Dict, List, Optional, Type
 
-from qianfan.pydantic import (
+from qianfan.utils.pydantic import (
     BaseModel as PydanticV1BaseModel,
 )
-from qianfan.pydantic import (
+from qianfan.utils.pydantic import (
     Field as PydanticV1Field,
 )
-from qianfan.pydantic import (
+from qianfan.utils.pydantic import (
     create_model as create_pydantic_v1_model,
 )
 from qianfan.utils.utils import assert_package_installed

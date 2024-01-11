@@ -31,8 +31,8 @@ from qianfan.dataset.process_interface import (
     Processable,
 )
 from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
-from qianfan.pydantic import BaseModel
 from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.pydantic import BaseModel
 
 
 def _create_new_table_for_add(

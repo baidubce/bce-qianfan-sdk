@@ -21,9 +21,10 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `--secret-key TEXT`：百度智能云安全认证 Secret Key，获取方式参考 [文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 * `--ak TEXT` [过时]：千帆平台应用的 API Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
 * `--sk TEXT` [过时]：千帆平台应用的 Secret Key，仅能用于模型推理部分 API，获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)。
+* `--enable-traceback`：打印完整的错误堆栈信息，仅在发生异常时有效。
 * `--version -v`：打印版本信息。
-* `--install-completion`：为当前 shell 安装自动补全脚本。
-* `--show-completion`：展示自动补全脚本。
+* `--install-shell-autocomplete`：为当前 shell 安装自动补全脚本。
+* `--show-shell-autocomplete`：展示自动补全脚本。
 * `--help -h`：打印帮助文档。
 
 **命令**:
@@ -47,7 +48,7 @@ $ qianfan chat [OPTIONS]
 
 * `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
 * `--endpoint TEXT`：模型的 endpoint
-* `--multi-line / --no-multi-line`：多行模式，通过两次回车确认提交消息  [default：no-multi-line]
+* `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
 * `--help`：展示帮助文档
 
@@ -58,12 +59,12 @@ $ qianfan chat [OPTIONS]
 **用法**:
 
 ```console
-$ qianfan completion [OPTIONS] MESSAGES...
+$ qianfan completion [OPTIONS] PROMPTS...
 ```
 
 **Arguments 参数**:
 
-* `MESSAGES...`：需要补全的 prompt，支持传递多个 prompt 以表示对话历史，依次表示用户和模型的消息，必须为奇数  [required]
+* `PROMPTS...`：需要补全的 prompt，支持传递多个 prompt 以表示对话历史，依次表示用户和模型的消息，必须为奇数。如不传递则需要在命令行中交互输入。
 
 **Options 选项**:
 
@@ -71,6 +72,7 @@ $ qianfan completion [OPTIONS] MESSAGES...
 * `--endpoint TEXT`：模型的 endpoint
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
+* `--multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突
 * `--help`：展示帮助文档
 
 ### txt2img 文生图
@@ -123,7 +125,7 @@ $ qianfan dataset [OPTIONS] COMMAND [ARGS]...
 
 > ⚠️ 在下方各个数据集的命令中，涉及数据集 id 均指平台上的数据集版本 id，与 Dataset 模块定义一致，具体获取方式参考 [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Uloic6krs)。
 >
-> 使用时可以直接传数据集的 id，也可以使用链接形式避免与文件名产生歧义，格式为 `qianfan://{model_version_id}`，例如 `qianfan://18562`。
+> 使用时可以直接传数据集的 id，也可以使用链接形式避免与文件名产生歧义，格式为 `qianfan://{dataset_version_id}`，例如 `qianfan://18562`。
 >
 > 如果由于本地文件名为数字，导致和数据集 id 混淆，可以在文件名前增加 `./` 避免歧义，例如 `./18562`。
 
@@ -139,7 +141,7 @@ $ qianfan dataset predict [OPTIONS] DATASET
 
 **Arguments 参数**:
 
-* `DATASET`：待预测的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。  [required]
+* `DATASET`：待预测的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。  [required]
 
 **Options 选项**:
 
@@ -184,7 +186,7 @@ $ qianfan dataset upload [OPTIONS] PATH [DST]
 **Arguments 参数**:
 
 * `SRC`：数据集文件路径。 [required]
-* `[DST]`：目标数据集 id，该参数可选。如果不提供该值，那么将会在平台上创建一个新的数据集，否则数据将被追加至所提供的数据集中。值可以是数据集的 id 或者是千帆数据集链接 (qianfan://{model_version_id})。
+* `[DST]`：目标数据集 id，该参数可选。如果不提供该值，那么将会在平台上创建一个新的数据集，否则数据将被追加至所提供的数据集中。值可以是数据集的 id 或者是千帆数据集链接 (qianfan://{dataset_version_id})。
 
 **Options 选项**:
 
@@ -210,8 +212,8 @@ $ qianfan dataset save [OPTIONS] SRC [DST]
 
 **Arguments 参数**:
 
-* `SRC`：源数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。 [required]
-* `[DST]`：目标数据集。如果值是一个本地文件路径，那么数据将保存至该文件中。或者可以提供一个已有的千帆数据集链接 (qianfan://{model_version_id})，那么数据将被追加至该数据集中。如果不提供该值，那么将会在平台上创建一个新的数据集，此时需要提供创建数据集所需的一些参数，具体见下文。
+* `SRC`：源数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。 [required]
+* `[DST]`：目标数据集。如果值是一个本地文件路径，那么数据将保存至该文件中。或者可以提供一个已有的千帆数据集链接 (qianfan://{dataset_version_id})，那么数据将被追加至该数据集中。如果不提供该值，那么将会在平台上创建一个新的数据集，此时需要提供创建数据集所需的一些参数，具体见下文。
 
 **Options 选项**:
 
@@ -233,11 +235,11 @@ $ qianfan dataset view [OPTIONS] DATASET
 
 **Arguments 参数**:
 
-* `DATASET`：待预览的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{model_version_id}`)。[required]
+* `DATASET`：待预览的数据集。值可以是一个本地文件的路径，也可以是平台上的数据集链接 (格式为 `qianfan://{dataset_version_id}`)。[required]
 
 **Options 参数**:
 
-* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围。 (e.g. 1,3-5,12)
+* `--row TEXT`：待预览的数据集行。用 `,` 分隔数个行，用 `-` 表示一个范围 (e.g. 1,3-5,12)。默认情况下仅打印前 5 行，可以通过 `--row all` 来打印所有数据。
 * `--column TEXT`：待预览的数据集的列。用 `,` 分隔每个列名称。 (e.g. prompt,response)
 * `--raw`：展示原始数据。
 * `--help`：展示帮助文档。

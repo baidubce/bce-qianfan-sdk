@@ -1,8 +1,8 @@
 from typing import Any
 
 from qianfan.model.consts import ServiceType
-from qianfan.pydantic import BaseModel
 from qianfan.resources.console import consts as console_consts
+from qianfan.utils.pydantic import BaseModel
 
 
 class DeployConfig(BaseModel):

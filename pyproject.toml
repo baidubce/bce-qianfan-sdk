@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.2.6"
+version = "0.2.7"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -38,6 +38,7 @@ rich = ">=13.0.0"
 typer = ">=0.9.0"
 tenacity = "^8.2.3"
 pyyaml = "^6.0.1"
+prompt-toolkit = ">=3.0.38"
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -74,7 +75,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests", "qianfan/pydantic"]
+exclude = ["qianfan/tests", "qianfan/utils/pydantic"]
 
 
 [build-system]

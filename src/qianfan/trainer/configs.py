@@ -15,9 +15,9 @@ import copy
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 
 from qianfan.errors import InvalidArgumentError
-from qianfan.pydantic import BaseModel
 from qianfan.trainer.consts import PeftType
 from qianfan.utils import log_error, log_warn
+from qianfan.utils.pydantic import BaseModel
 
 T = TypeVar("T")
 

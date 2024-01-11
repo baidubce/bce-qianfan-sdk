@@ -14,6 +14,7 @@
 
 from typing import List, Optional
 
+import prompt_toolkit
 import typer
 from rich import print as rprint
 from rich.console import Console
@@ -25,6 +26,7 @@ from qianfan.common.client.utils import (
     create_client,
     list_model_option,
     print_error_msg,
+    print_info_msg,
 )
 from qianfan.consts import DefaultLLMModel
 
@@ -83,7 +85,7 @@ class CompletionClient(object):
 
 
 def completion_entry(
-    messages: List[str] = typer.Argument(..., help="Messages List"),
+    prompts: Optional[List[str]] = typer.Argument(None, help="Prompt List"),
     model: str = typer.Option(
         DefaultLLMModel.Completion,
         help="Model name of the completion model.",
@@ -98,16 +100,35 @@ def completion_entry(
     ),
     plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
     list_model: bool = list_model_option,
+    multi_line: bool = typer.Option(
+        False,
+        "--multi-line",
+        help="Multi-line mode which needs to press Esc before enter to submit message.",
+    ),
 ) -> None:
     """
     Complete the provided prompt or messages.
     """
-    if len(messages) % 2 != 1:
+    if prompts is None or len(prompts) == 0:
+        if multi_line:
+            print_info_msg(
+                "Multi-line mode is enabled. [green bold]Press Esc before Enter[/] to"
+                " submit prompt.\n"
+            )
+        while True:
+            print("Please enter your prompt:")
+            prompt = prompt_toolkit.prompt(multiline=multi_line).strip()
+            if len(prompt) != 0:
+                prompts = [prompt]
+                break
+            print_error_msg("Prompt can't be empty.\n")
+
+    if len(prompts) % 2 != 1:
         print_error_msg("The number of messages must be odd.")
         raise typer.Exit(code=1)
     client = CompletionClient(model, endpoint, plain)
 
-    if len(messages) == 1:
-        client.completion_single(messages[0])
+    if len(prompts) == 1:
+        client.completion_single(prompts[0])
     else:
-        client.completion_multi(messages)
+        client.completion_multi(prompts)

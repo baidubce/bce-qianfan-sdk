@@ -17,7 +17,7 @@ from typing import Optional
 from typing_extensions import deprecated
 
 from qianfan.consts import DefaultValue, Env
-from qianfan.pydantic import BaseSettings, Field
+from qianfan.utils.pydantic import BaseSettings, Field
 
 
 class GlobalConfig(BaseSettings):

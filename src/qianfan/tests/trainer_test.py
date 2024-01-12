@@ -203,8 +203,7 @@ def test_batch_run_on_qianfan():
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)
-    assert inner_source.id == 1
-    assert inner_source.group_id == 14510
+    assert inner_source.id == "1"
 
 
 # 测试_parse_from_input方法

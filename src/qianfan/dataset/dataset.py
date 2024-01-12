@@ -334,7 +334,7 @@ class Dataset(Table):
     def _from_args_to_source(
         cls,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -394,7 +394,7 @@ class Dataset(Table):
         cls,
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_dataset: Optional[Any] = None,
         schema: Optional[Schema] = None,
@@ -413,7 +413,7 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[int]):
+            qianfan_dataset_id (Optional[str]):
                 qianfan dataset ID, default to None
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
@@ -496,7 +496,7 @@ class Dataset(Table):
         self,
         destination: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         replace_source: bool = False,
@@ -514,7 +514,7 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[int]):
+            qianfan_dataset_id (Optional[str]):
                 qianfan dataset ID, default to None
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
@@ -659,7 +659,7 @@ class Dataset(Table):
         """
         return self._is_dataset_generic_text()
 
-    def start_online_data_process_task(self, operators: List[QianfanOperator]) -> int:
+    def start_online_data_process_task(self, operators: List[QianfanOperator]) -> str:
         """
         create an online ETL task on qianfan
 
@@ -667,7 +667,7 @@ class Dataset(Table):
             operators (List[QianfanOperator]): operators applied to ETL task
 
         Returns:
-            int: etl task id
+            str: etl task id
         """
 
         if not self.is_dataset_located_in_qianfan():

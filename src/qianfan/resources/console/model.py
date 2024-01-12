@@ -136,7 +136,7 @@ class Model(object):
         cls,
         name: str,
         version_info: List[Dict[str, Any]],
-        dataset_id: int,
+        dataset_id: str,
         eval_config: Dict[str, Any],
         description: Optional[str] = None,
         pending_eval_id: Optional[int] = None,
@@ -153,7 +153,7 @@ class Model(object):
                 the evaluation name you want to use
             version_info (List[Dict[str, Any]]):
                 a list of model info which will be evaluated
-            dataset_id (int):
+            dataset_id (str):
                 dataset's id for evaluation
             eval_config (Dict[str, Any]):
                 the detail info about how to conduct this evaluation
@@ -182,7 +182,7 @@ class Model(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlpbyhl9o
         """
         req = QfRequest(method="POST", url=Consts.ModelEvalCreateAPI)
-        request_json = {
+        request_json: Dict[str, Any] = {
             "name": name,
             "versionEvalInfo": version_info,
             "datasetId": dataset_id,
@@ -215,14 +215,14 @@ class Model(object):
     @console_api_request
     def get_evaluation_info(
         cls,
-        eval_id: int,
+        eval_id: str,
         **kwargs: Any,
     ) -> QfRequest:
         """
         Get an evaluation task info
 
         Parameters:
-            eval_id (int):
+            eval_id (str):
                 the id of evaluation you want to check
             **kwargs (Any):
                 arbitrary arguments
@@ -242,14 +242,14 @@ class Model(object):
     @console_api_request
     def get_evaluation_result(
         cls,
-        eval_id: int,
+        eval_id: str,
         **kwargs: Any,
     ) -> QfRequest:
         """
         Get the result of an evaluation
 
         Parameters:
-            eval_id (int):
+            eval_id (str):
                 the id of evaluation you want to check
             **kwargs (Any):
                 arbitrary arguments
@@ -269,14 +269,14 @@ class Model(object):
     @console_api_request
     def stop_evaluation_task(
         cls,
-        eval_id: int,
+        eval_id: str,
         **kwargs: Any,
     ) -> QfRequest:
         """
         Stop an evaluation task
 
         Parameters:
-            eval_id (int):
+            eval_id (str):
                 the id of evaluation you want to stop
             **kwargs (Any):
                 arbitrary arguments

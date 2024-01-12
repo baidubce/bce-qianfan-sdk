@@ -186,7 +186,7 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 @trainer_app.command()
 def run(
-    dataset_id: int = typer.Option(..., help="Dataset id"),
+    dataset_id: str = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "

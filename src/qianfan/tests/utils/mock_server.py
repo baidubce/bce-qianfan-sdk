@@ -1100,7 +1100,7 @@ def create_evaluation_task():
     """
     mock create evaluation task api
     """
-    return json_response({"result": {"evalId": 585}, "log_id": "2255352990"})
+    return json_response({"result": {"evalId": "585"}, "log_id": "2255352990"})
 
 
 @app.route(Consts.ModelEvalInfoAPI, methods=["POST"])
@@ -1129,7 +1129,7 @@ def get_evaluation_info():
                         "modelTags": None,
                     }
                 ],
-                "datasetId": 1337,
+                "datasetId": "1337",
                 "datasetName": "预置数据集>AGI_EVAL>V1",
                 "computeResourceConf": {
                     "vmType": 1,
@@ -1181,7 +1181,7 @@ def get_evaluation_info():
                         "minScore": 0,
                         "maxScore": 7,
                     },
-                    "resultDatasetId": 1,
+                    "resultDatasetId": "1",
                     "resultDatasetName": "name",
                     "resultDatasetProjectType": 0,
                     "resultDatasetImportStatus": 0,
@@ -1425,8 +1425,8 @@ def create_dataset():
                 "status": 200,
                 "success": True,
                 "result": {
-                    "groupId": 12,
-                    "id": 42,
+                    "groupId": "12",
+                    "datasetId": "42",
                     "versionId": 1,
                     "groupName": args["name"],
                     "displayName": "displayName",
@@ -1465,8 +1465,8 @@ def create_dataset():
                 "status": 200,
                 "success": True,
                 "result": {
-                    "groupId": 12,
-                    "id": 42,
+                    "groupId": "12",
+                    "datasetId": "42",
                     "versionId": 1,
                     "groupName": args["name"],
                     "displayName": "displayName",
@@ -1536,12 +1536,12 @@ def get_dataset_info():
         {
             "log_id": "log_id",
             "result": {
-                "groupId": 14510,
+                "groupPK": "14510",
                 "name": "ChineseMedicalDialogueData中文医疗问答数据集",
                 "dataType": 4,
                 "versionInfo": {
                     "groupId": 14510,
-                    "datasetId": args["datasetId"],
+                    "datasetPK": args["datasetId"],
                     "importRecordCount": 1,
                     "exportRecordCount": 0,
                     "bmlDatasetId": "ds-7pkzh1exthpuy10n",
@@ -1644,7 +1644,7 @@ def get_dataset_status():
                     "characterCount": 0,
                     "modifyTime": "2023-10-26 12:34:08",
                 }
-                for idx in args["datasetIds"].split(",")
+                for idx in args["datasetIds"]
             },
         }
     )
@@ -2004,8 +2004,8 @@ def prompt_label_list():
     )
 
 
-origin_data_source_id = 0
-new_data_source_id = 0
+origin_data_source_id = "0"
+new_data_source_id = "0"
 
 
 @app.route(Consts.DatasetCreateETLTaskAPI, methods=["POST"])
@@ -2257,7 +2257,7 @@ def get_dataset_etl_task_list():
                 "processingCount": 1,
                 "items": [
                     {
-                        "etlId": 275,
+                        "etlStrId": 275,
                         "startTime": "2023-11-06 16:03:23",
                         "sourceDatasetName": "4train_generic_usrBos-V1",
                         "destDatasetName": "4train_generic_sysBos-V1",

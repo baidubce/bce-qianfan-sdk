@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The readline library needs to be imported first to
-# ensure that Chinese input works properly in the client.
-import readline  # noqa
 from typing import Optional
 
 import typer
-from rich.prompt import Prompt
+from prompt_toolkit import prompt
+from rich import print as rprint
 from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
@@ -26,6 +24,7 @@ from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
+from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
 from qianfan.common.client.utils import print_error_msg, print_info_msg
 
@@ -40,6 +39,7 @@ app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
 app.add_typer(dataset_app, name="dataset")
+app.add_typer(trainer_app, name="trainer")
 
 _enable_traceback = False
 
@@ -186,7 +186,8 @@ def entry(
             print()
             if access_key is None:
                 while True:
-                    access_key = Prompt.ask("Please input your [b i]Access Key[/b i]")
+                    rprint("Please input your [b i]Access Key[/b i]: ", end="")
+                    access_key = prompt()
                     if len(access_key) != 0:
                         qianfan.get_config().ACCESS_KEY = access_key
                         break
@@ -194,7 +195,8 @@ def entry(
                         print_error_msg("Access key cannot be empty.")
             if secret_key is None:
                 while True:
-                    secret_key = Prompt.ask("Please input your [b i]Secret Key[/b i]")
+                    rprint("Please input your [b i]Secret Key[/b i]: ", end="")
+                    secret_key = prompt()
                     if len(secret_key) != 0:
                         qianfan.get_config().SECRET_KEY = secret_key
                         break

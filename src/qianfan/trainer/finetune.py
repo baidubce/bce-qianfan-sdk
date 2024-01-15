@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.config import get_config
 from qianfan.dataset import QianfanDataSource
@@ -50,7 +50,7 @@ class LLMFinetune(Trainer):
         self,
         train_type: str,
         dataset: Any,
-        train_config: Optional[TrainConfig] = None,
+        train_config: Optional[Union[TrainConfig, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
         base_model: Optional[str] = None,
@@ -97,6 +97,9 @@ class LLMFinetune(Trainer):
         # 校验train_type
         if train_type is None or train_type == "":
             raise InvalidArgumentError("train_type is empty")
+
+        if isinstance(train_config, str):
+            train_config = TrainConfig.load(train_config)
 
         # 校验dataset
         if dataset is None:

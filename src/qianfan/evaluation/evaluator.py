@@ -25,8 +25,8 @@ from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
-from qianfan.pydantic import BaseModel, Field, root_validator
-from qianfan.utils import log_error, log_warn
+from qianfan.utils import log_error
+from qianfan.utils.pydantic import BaseModel, Field, root_validator
 
 
 class Evaluator(BaseModel, ABC):
@@ -139,7 +139,12 @@ try:
             return self.open_compass_evaluator.score([output], [reference])  # type: ignore
 
 except ModuleNotFoundError:
-    log_warn(
-        "opencompass not found in your packages, OpenCompassLocalEvaluator not"
-        " available now. if you want to use it please execute 'pip install opencompass'"
-    )
+
+    class OpenCompassLocalEvaluator(LocalEvaluator):  # type: ignore
+        def __init__(self, **kwargs: Any) -> None:
+            log_error(
+                "opencompass not found in your packages, OpenCompassLocalEvaluator not"
+                " available now. if you want to use it please execute 'pip install"
+                " opencompass'"
+            )
+            raise ModuleNotFoundError("opencompass not found")

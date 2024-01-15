@@ -17,7 +17,7 @@ not available currently
 """
 
 
-from qianfan.pydantic import BaseModel, Field
+from qianfan.utils.pydantic import BaseModel, Field
 
 
 class QianfanOperator(BaseModel):

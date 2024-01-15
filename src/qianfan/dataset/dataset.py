@@ -1252,8 +1252,8 @@ class Dataset(Table):
 
         if does_show_latency:
             if len(first_token_latency_list) != 0:
-                table_dict[RequestLatencyColumnName] = first_token_latency_list
-            table_dict[FirstTokenLatencyColumnName] = request_latency_list
+                table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
+            table_dict[RequestLatencyColumnName] = request_latency_list
 
         return Dataset.create_from_pyobj(
             table_dict,

@@ -642,3 +642,8 @@ def test_auth_using_iam():
     results = qianfan.ChatCompletion().do(messages=TEST_MESSAGE[:1])
     assert "X-Bce-Date" in results["_header"]
     assert "Authorization" in results["_header"]
+
+
+def test_keyword_arguments_passing():
+    cc = qianfan.ChatCompletion(ssl=False)
+    assert not cc._client._client.ssl

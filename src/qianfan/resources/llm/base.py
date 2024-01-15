@@ -40,6 +40,7 @@ from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn, utils
+from qianfan.version import VERSION
 
 # This is used when user provides `endpoint`
 # In such cases, SDK cannot know which model the user is using
@@ -488,6 +489,7 @@ class BaseResource(object):
                     f"The required key `{key}` is not provided."
                 )
         kwargs["stream"] = stream
+        kwargs["extra_parameters"] = {"user_agent": f"qianfan_py_sdk_v{VERSION}"}
         return kwargs
 
     def _data_postprocess(self, data: QfResponse) -> QfResponse:

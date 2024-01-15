@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
 import pytest
 
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -302,15 +304,27 @@ def test_trainer_sft_with_eval():
 
 def test_train_config_load():
     # 使用 patch 和 mock_open 来模拟文件
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.yaml")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    yaml_file = "train_config.yaml"
+    json_file = "train_config.json"
 
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.json")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    try:
+        with open(yaml_file, mode="w") as f:
+            f.write("epoch: 1\nbatch_size: 4\nmax_seq_len: 4096\n")
+
+        with open(json_file, mode="w") as f:
+            f.write('{\n"epoch": 1,\n"batch_size": 4,\n"max_seq_len": 4096\n}\n')
+        tc = TrainConfig.load(yaml_file)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+
+        tc = TrainConfig.load(json_file)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+    finally:
+        os.remove(yaml_file)
+        os.remove(json_file)
 
 
 def test_train_limit__or__():

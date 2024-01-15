@@ -340,6 +340,57 @@ class Prompt(object):
         return req
 
     @classmethod
+    @console_api_request
+    def create_optimiztion_task(
+        cls,
+        content: str,
+        operations: List[Any],
+        app_id: Optional[int] = None,
+        service_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Create prompt optimization task.
+        """
+        req = QfRequest(method="POST", url=Consts.PromptCreateOptimizeTaskAPI)
+        req.json_body = {"content": content, "operations": operations, **kwargs}
+        if app_id is not None:
+            req.json_body["appID"] = app_id
+        if service_name is not None:
+            req.json_body["serviceName"] = service_name
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_optimization_task(cls, task_id: int, **kwargs: Any) -> QfRequest:
+        """
+        Get prompt optimization task detail.
+        """
+        req = QfRequest(method="POST", url=Consts.PromptGetOptimizeTaskInfoAPI)
+        req.json_body = {"id": task_id, **kwargs}
+        return req
+
+    @classmethod
+    @console_api_request
+    def evaluation_score(cls, type: int, data: List[Any]) -> QfRequest:
+        """
+        Evaluates the performance of a prompt template.
+        """
+        req = QfRequest(method="POST", url=Consts.PromptEvaluationAPI)
+        req.json_body = {"type": type, "data": data}
+        return req
+
+    @classmethod
+    @console_api_request
+    def evaluation_summary(cls, data: List[Any]) -> QfRequest:
+        """
+        Evaluate summary of prompt template.
+        """
+        req = QfRequest(method="POST", url=Consts.PromptEvaluationSummaryAPI)
+        req.json_body = {"data": data}
+        return req
+
+    @classmethod
     def _extract_variables(cls, template: str, identifier: str) -> List[str]:
         """
         extract variables from template

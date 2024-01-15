@@ -203,6 +203,10 @@ class Consts:
     PromptDeleteAPI: str = "/wenxinworkshop/prompt/template/delete"
     PromptListAPI: str = "/wenxinworkshop/prompt/template/list"
     PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/list"
+    PromptCreateOptimizeTaskAPI: str = "/wenxinworkshop/prompt/singleOptimize/create"
+    PromptGetOptimizeTaskInfoAPI: str = "/wenxinworkshop/prompt/singleOptimize/info"
+    PromptEvaluationAPI: str = "/wenxinworkshop/prompt/evaluate/predict"
+    PromptEvaluationSummaryAPI: str = "/wenxinworkshop/prompt/evaluate/summary"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
@@ -245,3 +249,12 @@ class PromptType(int, enum.Enum):
     """预置模版"""
     User = 2
     """用户创建模版"""
+
+
+class PromptScoreStandard(int, enum.Enum):
+    Semantic = 1
+    """语义相似"""
+    Regex = 2
+    """正则匹配"""
+    Exact = 3
+    """精准匹配"""

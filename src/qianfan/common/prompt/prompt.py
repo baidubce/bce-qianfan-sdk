@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from qianfan.common.hub.interface import HubSerializable
-from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
-from qianfan.errors import InvalidArgumentError
+from qianfan.consts import (
+    PromptFrameworkType,
+    PromptSceneType,
+    PromptScoreStandard,
+    PromptType,
+)
+from qianfan.errors import InvalidArgumentError, RequestError
 from qianfan.resources.console.prompt import Prompt as PromptResource
-from qianfan.resources.typing import Literal
+from qianfan.resources.llm.completion import Completion
+from qianfan.resources.typing import Literal, QfResponse
 from qianfan.utils import log_warn
 
 
@@ -460,3 +467,136 @@ class Prompt(HubSerializable):
         if prompt != "":
             output = prompt + "\n\n" + output
         return output
+
+    def optimize(
+        self,
+        optimize_quality: bool = True,
+        simplify_prompt: bool = False,
+        iteration_round: Literal[1, 2] = 1,
+        enable_cot: bool = False,
+        app_id: Optional[int] = None,
+        service_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "Prompt":
+        operations = []
+        operations.append(
+            {
+                "opType": 1,
+                "payload": 1 if optimize_quality else 0,
+            }
+        )
+        operations.append(
+            {
+                "opType": 2,
+                "payload": 1 if simplify_prompt else 0,
+            }
+        )
+        operations.append({"opType": 3, "payload": iteration_round})
+        operations.append(
+            {
+                "opType": 4,
+                "payload": 1 if enable_cot else 0,
+            }
+        )
+        resp = PromptResource.create_optimiztion_task(
+            self.template,
+            operations,
+            app_id=app_id,
+            service_name=service_name,
+            **kwargs,
+        )
+        # print(resp["result"])
+        task_id = resp["result"]["id"]
+        while True:
+            resp = PromptResource.get_optimization_task(task_id, **kwargs)
+            # print(resp["result"])
+            status = resp["result"]["processStatus"]
+            if status == 2:  # fininished
+                break
+            elif status == 3:  # failed
+                raise RequestError("Prompt optimization task failed.")
+            time.sleep(1)
+        optimized_prompt = resp["result"]["optimizeContent"]
+
+        return Prompt(optimized_prompt)
+
+    @dataclass
+    class PromptEvaluateResult(object):
+        """
+        Evaluation result of a prompt
+        """
+
+        prompt: "Prompt"
+        scene: List[Dict[str, Any]]
+        summary: str
+
+    @classmethod
+    def evaluate(
+        cls,
+        prompt_list: List["Prompt"],
+        scenes: List[Dict[str, Any]],
+        client: Completion,
+        standard: PromptScoreStandard = PromptScoreStandard.Semantic,
+    ) -> List[PromptEvaluateResult]:
+        results = [
+            Prompt.PromptEvaluateResult(
+                scene=[
+                    {
+                        "new_prompt": prompt.render(**scene["args"])[0],
+                        "variables": scene["args"],
+                        "expected_target": scene["expected"],
+                    }
+                    for scene in scenes
+                ],
+                prompt=prompt,
+                summary="",
+            )
+            for prompt in prompt_list
+        ]
+
+        for i in range(len(results)):
+            for j in range(len(results[i].scene)):
+                resp = cast(QfResponse, client.do(results[i].scene[j]["new_prompt"]))
+                results[i].scene[j]["response"] = resp["result"]
+
+        eval_summary_req = [
+            {
+                "prompt": prompt.prompt.template,
+                "scenes": [
+                    {
+                        "variables": scene["variables"],
+                        "expected_target": scene["expected_target"],
+                        "response": scene["response"],
+                        "new_prompt": scene["new_prompt"],
+                    }
+                    for scene in prompt.scene
+                ],
+                "response_list": [r["response"] for r in prompt.scene],
+            }
+            for prompt in results
+        ]
+
+        eval_score_req = [
+            {
+                "scene": scenes[j]["expected"],
+                "response_list": [
+                    results[i].scene[j]["response"] for i in range(len(prompt_list))
+                ],
+            }
+            for j in range(len(scenes))
+        ]
+
+        summary_resp = PromptResource.evaluation_summary(eval_summary_req)
+        summary = summary_resp["result"]["responses"]
+
+        for i in range(len(results)):
+            results[i].summary = summary[i]["response"]
+
+        score_resp = PromptResource.evaluation_score(standard.value, eval_score_req)
+        score = score_resp["result"]["scores"]
+
+        for i in range(len(results)):
+            for j in range(len(results[i].scene)):
+                results[i].scene[j]["score"] = score[j][i]
+
+        return results

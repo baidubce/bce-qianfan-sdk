@@ -32,7 +32,7 @@ class Model(object):
 
     @classmethod
     @console_api_request
-    def list(cls, model_id: int, **kwargs: Any) -> QfRequest:
+    def list(cls, model_id: str, **kwargs: Any) -> QfRequest:
         """
         List all versions and source information of a model.
 
@@ -40,7 +40,7 @@ class Model(object):
         specific model, along with their source details.
 
         Parameters:
-          model_id (int):
+          model_id (str):
             The unique identifier of the model for which you want to list versions.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
@@ -57,7 +57,7 @@ class Model(object):
 
     @classmethod
     @console_api_request
-    def detail(cls, model_version_id: int, **kwargs: Any) -> QfRequest:
+    def detail(cls, model_version_id: str, **kwargs: Any) -> QfRequest:
         """
         Retrieve detailed information for a specific model version.
 
@@ -67,7 +67,7 @@ class Model(object):
         model version.
 
         Parameters:
-          model_version_id (int):
+          model_version_id (str):
             The unique identifier for the model version whose details are to be
             retrieved.
           kwargs (Any):
@@ -90,7 +90,7 @@ class Model(object):
         is_new: bool,
         version_meta: Dict[str, Any],
         model_name: Optional[str] = None,
-        model_id: Optional[int] = None,
+        model_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> QfRequest:
@@ -107,7 +107,7 @@ class Model(object):
             Metadata for the model being published.
           model_name (Optional[str]):
             The name of the model to be published (required when `is_new` is True).
-          model_id (Optional[int]):
+          model_id (Optional[str]):
             The ID of the model to be published (required when `is_new` is False).
           tags (Optional[List[str]]):
             A list of tags associated with the model (optional).

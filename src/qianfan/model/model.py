@@ -38,9 +38,9 @@ from qianfan.utils import log_error, log_info, log_warn
 class Model(
     ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]],
 ):
-    id: Optional[int]
+    id: Optional[str]
     """remote model id"""
-    version_id: Optional[int]
+    version_id: Optional[str]
     """remote model version id"""
     name: Optional[str] = None
     """model name"""
@@ -53,8 +53,8 @@ class Model(
 
     def __init__(
         self,
-        id: Optional[int] = None,
-        version_id: Optional[int] = None,
+        id: Optional[str] = None,
+        version_id: Optional[str] = None,
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
         name: Optional[str] = None,
@@ -64,9 +64,9 @@ class Model(
         get a custom model service.
 
         Parameters:
-            id (Optional[int], optional):
+            id (Optional[str], optional):
                 qianfan model remote id. Defaults to None.
-            version_id (Optional[int], optional):
+            version_id (Optional[str], optional):
                 model version id. Defaults to None.
             task_id (Optional[int], optional):
                 model train task id. Defaults to None.

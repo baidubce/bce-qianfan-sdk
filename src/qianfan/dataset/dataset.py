@@ -1072,8 +1072,8 @@ class Dataset(Table):
 
     def test_using_llm(
         self,
-        model_id: Optional[int] = None,
-        model_version_id: Optional[int] = None,
+        model_id: Optional[str] = None,
+        model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1128,8 +1128,8 @@ class Dataset(Table):
 
     async def atest_using_llm(
         self,
-        model_id: Optional[int] = None,
-        model_version_id: Optional[int] = None,
+        model_id: Optional[str] = None,
+        model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1142,9 +1142,9 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_id (Optional[int]):
+            model_id (Optional[str]):
                 id of your own model, default to None
-            model_version_id (Optional[int]):
+            model_version_id (Optional[str]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1183,16 +1183,16 @@ class Dataset(Table):
             raise ValueError(err_msg)
 
     def _batch_inference_on_model(
-        self, model_id: int, model_version_id: int, **kwargs: Any
+        self, model_id: str, model_version_id: str, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
 
         Parameters:
-            model_id (int):
+            model_id (str):
                 id of your own model, default to None
-            model_version_id (int):
+            model_version_id (str):
                 version id of your own model, default to None
             **kwargs (Any):
                 Arbitrary keyword arguments

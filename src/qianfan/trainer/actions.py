@@ -605,9 +605,9 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     deploy_config: Optional[DeployConfig]
     """deploy config include replicas and so on"""
-    model_id: Optional[int]
+    model_id: Optional[str]
     """model id"""
-    model_version_id: Optional[int]
+    model_version_id: Optional[str]
     """model version id"""
     _input: Optional[Dict[str, Any]] = None
     """input of action"""

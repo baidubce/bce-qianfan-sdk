@@ -344,8 +344,8 @@ def _wait_evaluation_finished(eval_id: str) -> str:
 
 def _start_an_evaluation_task_for_model_batch_inference(
     data_source: Optional[DataSource],
-    model_id: int,
-    model_version_id: int,
+    model_id: str,
+    model_version_id: str,
     **kwargs: Any,
 ) -> str:
     assert isinstance(data_source, QianfanDataSource)

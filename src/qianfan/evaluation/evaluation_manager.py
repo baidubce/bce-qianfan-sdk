@@ -53,6 +53,7 @@ class EvaluationManager(BaseModel):
 
     local_evaluators: Optional[List[LocalEvaluator]] = Field(default=None)
     qianfan_evaluators: Optional[List[QianfanEvaluator]] = Field(default=None)
+    task_id: Optional[str] = Field(default=None)
 
     @root_validator
     @classmethod
@@ -402,6 +403,7 @@ class EvaluationManager(BaseModel):
 
             eval_id = resp_body["result"]["evalId"]
             task_url = f"https://console.bce.baidu.com/qianfan/modelcenter/model/eval/detail/task/{eval_id}"
+            self.task_id = eval_id
 
             log_info(f"please check webpage {task_url} to get further information")
 

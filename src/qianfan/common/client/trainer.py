@@ -50,7 +50,11 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
 
-trainer_app = typer.Typer(no_args_is_help=True)
+trainer_app = typer.Typer(
+    no_args_is_help=True,
+    help="Qianfan trainer",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 class MyEventHandler(EventHandler):

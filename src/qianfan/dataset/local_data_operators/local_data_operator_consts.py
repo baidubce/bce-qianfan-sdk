@@ -86,3 +86,53 @@ emoji_en = list(emoji.EMOJI_DATA.keys())
 default_special_characters_set = set(main_special_characters + other_special_characters)
 
 default_special_characters_set.update(emoji_en)
+
+# 敏感词过滤算子使用
+
+_words_augmentation_group_sizes_map = {
+    "AR": [],
+    "BN": [],
+    "CA": [],
+    "EN": [],
+    "ES": [],
+    "EU": [],
+    "FR": [],
+    "HI": [],
+    "ID": [],
+    "PT": [],
+    "UR": [],
+    "VI": [2],
+    "ZH": [2],
+}
+
+_words_augmentation_join_char_map = {
+    "AR": "",
+    "BN": "",
+    "CA": "",
+    "EN": "",
+    "ES": "",
+    "EU": "",
+    "FR": "",
+    "HI": "",
+    "ID": "",
+    "PT": "",
+    "UR": "",
+    "VI": " ",
+    "ZH": "",
+}
+
+_flagged_words_max_cutoff_map = {
+    "AR": 0.03,
+    "BN": 0.001,
+    "CA": 0.1,
+    "EN": 0.01,
+    "ES": 0.01,
+    "EU": 0.1,
+    "FR": 0.008,
+    "HI": 0.005,
+    "ID": 0.01,
+    "PT": 0.007,
+    "UR": 0.025,
+    "VI": 0.005,
+    "ZH": 0.001,
+}

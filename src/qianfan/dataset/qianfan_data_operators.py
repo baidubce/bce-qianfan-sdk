@@ -13,7 +13,6 @@
 # limitations under the License.
 """
 data operator for qianfan online
-not available currently
 """
 
 

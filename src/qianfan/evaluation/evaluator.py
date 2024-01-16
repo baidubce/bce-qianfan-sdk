@@ -120,6 +120,7 @@ try:
         open_compass_evaluator: BaseEvaluator
 
         @root_validator
+        @classmethod
         def _check_open_compass_evaluator(
             cls, values: Dict[str, Any]
         ) -> Dict[str, Any]:

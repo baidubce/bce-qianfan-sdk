@@ -262,6 +262,7 @@ class FileDataSource(DataSource, BaseModel):
         self.file_format = format_type
 
     @root_validator
+    @classmethod
     def _format_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values["file_format"]:
             return values

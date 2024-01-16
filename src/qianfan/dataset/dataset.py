@@ -42,7 +42,7 @@ from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,
     RequestLatencyColumnName,
 )
-from qianfan.dataset.data_operator import QianfanOperator
+from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.data_source import (
     DataSource,
     FileDataSource,

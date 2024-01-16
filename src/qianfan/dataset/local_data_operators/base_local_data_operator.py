@@ -15,10 +15,10 @@
 base local data operator class
 """
 
-from typing import Dict, Any
-
-from qianfan.utils.pydantic import *
 from abc import ABC, abstractmethod
+from typing import Any, Dict
+
+from qianfan.utils.pydantic import BaseModel, Field
 
 
 class BaseLocalFilterOperator(BaseModel, ABC):
@@ -28,7 +28,7 @@ class BaseLocalFilterOperator(BaseModel, ABC):
     text_language: str = Field(default="ZH")
 
     @abstractmethod
-    def __call__(self, entry: Dict[str, Any], *args, **kwargs) -> bool:
+    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
         """filter func"""
 
 
@@ -36,5 +36,7 @@ class BaseLocalMapOperator(BaseModel, ABC):
     """base class for data mapping"""
 
     @abstractmethod
-    def __call__(self, entry: Dict[str, Any], *args, **kwargs) -> Dict[str, Any]:
+    def __call__(
+        self, entry: Dict[str, Any], *args: Any, **kwargs: Any
+    ) -> Dict[str, Any]:
         """mapping func"""

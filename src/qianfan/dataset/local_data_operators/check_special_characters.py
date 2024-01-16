@@ -15,11 +15,15 @@
 data operator for local using
 """
 
-from typing import Dict, Any, Optional, Set
+from typing import Any, Dict, Optional, Set
 
-from qianfan.dataset.local_data_operators.base_local_data_operator import BaseLocalFilterOperator
-from qianfan.dataset.local_data_operators.local_data_operator_consts import default_special_characters_set, \
-    _special_character_map
+from qianfan.dataset.local_data_operators.base_local_data_operator import (
+    BaseLocalFilterOperator,
+)
+from qianfan.dataset.local_data_operators.local_data_operator_consts import (
+    _special_character_map,
+    default_special_characters_set,
+)
 from qianfan.utils.pydantic import Field, root_validator
 
 
@@ -43,22 +47,25 @@ class LocalCheckSpecialCharactersFilter(BaseLocalFilterOperator):
         return input_dicts
 
     def __str__(self) -> str:
-        s = 'pass_name: filter_check_special_characters\n'
+        s = "pass_name: filter_check_special_characters\n"
         kwargs = {
-            'lang_dataset_id': self.lang_dataset_id,
-            'special_characters_max_cutoff': self.special_characters_max_cutoff
+            "text_language": self.text_language,
+            "special_characters_max_cutoff": self.special_characters_max_cutoff,
         }
         for k, v in kwargs.items():
-            s += f'\t\t{k}: {v}\n'
+            s += f"\t\t{k}: {v}\n"
         return s
 
-    def __call__(self, entry: Dict[str, Any], *args, **kwargs) -> bool:
+    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
         document = entry[self.filter_column]
+
+        assert self.special_characters
+        assert self.special_characters_max_cutoff
 
         if len(document) == 0:
             special_characters_ratio = 0.0
         else:
-            special_characters_ratio = len([
-                char for char in document if char in self.special_characters
-            ]) / len(document)
+            special_characters_ratio = len(
+                [char for char in document if char in self.special_characters]
+            ) / len(document)
         return special_characters_ratio <= self.special_characters_max_cutoff

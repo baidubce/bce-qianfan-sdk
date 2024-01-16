@@ -15,12 +15,15 @@
 data operator for local using
 """
 
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
+from qianfan.dataset.local_data_operators.base_local_data_operator import (
+    BaseLocalFilterOperator,
+)
+from qianfan.dataset.local_data_operators.local_operator_utils import (
+    pyltp_split_sentence,
+)
 from qianfan.utils.pydantic import Field, root_validator
-
-from qianfan.dataset.local_data_operators.base_local_data_operator import BaseLocalFilterOperator
-from qianfan.dataset.local_data_operators.local_operator_utils import pyltp_split_sentence
 
 
 class LocalCheckEachSentenceIsLongEnoughFilter(BaseLocalFilterOperator):
@@ -40,23 +43,24 @@ class LocalCheckEachSentenceIsLongEnoughFilter(BaseLocalFilterOperator):
 
         return input_dicts
 
-    def __str__(self):
-        s = 'filter_name: filter_check_each_sentence_is_long_enough\n'
+    def __str__(self) -> str:
+        s = "filter_name: filter_check_each_sentence_is_long_enough\n"
         kwargs = {
-            'lang_dataset_id': self.lang_dataset_id,
-            'short_sentence_ratio_max_cutoff':
-            self.short_sentence_ratio_max_cutoff,
-            'short_sentence_max_cutoff':
-            self.short_sentence_max_cutoff
+            "text_language": self.text_language,
+            "short_sentence_ratio_max_cutoff": self.short_sentence_ratio_max_cutoff,
+            "short_sentence_max_cutoff": self.short_sentence_max_cutoff,
         }
         for k, v in kwargs.items():
-            s += f'\t\t{k}: {v}\n'
+            s += f"\t\t{k}: {v}\n"
         return s
 
-    def __call__(self, entry: Dict[str, Any], *args, **kwargs) -> bool:
+    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
         sentences = pyltp_split_sentence(entry[self.filter_column])
         if len(sentences) == 0:
             return False
+
+        assert self.short_sentence_ratio_max_cutoff
+        assert self.short_sentence_max_cutoff
 
         cond = True
         hit = 0

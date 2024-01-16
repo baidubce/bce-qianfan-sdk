@@ -28,7 +28,10 @@ def pyltp_split_sentence(document: str) -> List[str]:
     try:
         sents = spliter.split(document)  # split sentences
     except Exception as e:
-        err_msg = f"error occurred during split document into sentence: {str(e)}, make sentences list empty"
+        err_msg = (
+            f"error occurred during split document into sentence: {str(e)}, make"
+            " sentences list empty"
+        )
         log_warn(err_msg)
         sents = []
     return sents

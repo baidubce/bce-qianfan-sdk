@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import typer
 from rich.console import Console
@@ -31,6 +31,7 @@ from qianfan.evaluation.consts import (
 )
 from qianfan.evaluation.evaluator import (
     ManualEvaluatorDimension,
+    QianfanEvaluator,
     QianfanManualEvaluator,
     QianfanRefereeEvaluator,
     QianfanRuleEvaluator,
@@ -84,7 +85,7 @@ def run(
         help="Steps",
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
     ),
-    prompt_max_score: str = typer.Option(
+    prompt_max_score: int = typer.Option(
         QianfanRefereeEvaluatorDefaultMaxScore,
         help="Max score",
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
@@ -95,7 +96,7 @@ def run(
     dimensions: Optional[str] = typer.Option(
         None, help="Dimensions.", rich_help_panel=MANUAL_EVALUATOR_PANEL
     ),
-):
+) -> None:
     """
     Run evaluation task.
 
@@ -103,9 +104,9 @@ def run(
     Manual evaluator may not be mixed with other evaluators.
     """
     ds = load_dataset(dataset_id, is_download_to_local=False)
-    model_list: List[Model] = [Model(version_id=m) for m in models]
+    model_list = [Model(version_id=m) for m in models]
     console = Console()
-    evaluators = []
+    evaluators: List[QianfanEvaluator] = []
     if enable_rule_evaluator:
         evaluators.append(
             QianfanRuleEvaluator(
@@ -149,7 +150,7 @@ def run(
     eval_task_id = em.task_id
     if eval_task_id is None:
         raise InternalError("Evaluation task id should not be None")
-    if result is None:
+    if result is None or result.metrics is None:
         print_info_msg(
             "The data has been processed. Since manual evaluator is enabled, please go"
             " to https://console.bce.baidu.com/qianfan/modelcenter/model/manual/detail/task/{task_id}"
@@ -161,7 +162,7 @@ def run(
     table.add_column("")
     for col in cols:
         table.add_column(col)
-    keys = set()
+    keys: Set[str] = set()
     for k, v in result.metrics.items():
         keys = keys.union(set(v.keys()))
     for k in keys:

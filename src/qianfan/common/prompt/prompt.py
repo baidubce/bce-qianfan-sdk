@@ -478,6 +478,33 @@ class Prompt(HubSerializable):
         service_name: Optional[str] = None,
         **kwargs: Any,
     ) -> "Prompt":
+        """
+        Optimize a prompt for better performance and effectiveness.
+
+        Parameters:
+          optimize_quality (bool):
+            Flag indicating whether to optimize for prompt quality.
+          simplify_prompt (bool):
+            Flag indicating whether to simplify the prompt structure.
+          iteration_round (Literal[1, 2]):
+            The number of optimization iterations to perform (1 or 2).
+          enable_cot (bool):
+            Flag indicating whether to enable chain of thought.
+          app_id (Optional[int]):
+            Optional application ID for context-specific optimizations.
+          service_name (Optional[str]):
+            Optional service used for optimizing.
+          **kwargs (Any):
+            Additional keyword arguments for future extensibility.
+
+        Returns:
+          Prompt:
+            The optimized Prompt object.
+
+        Please refer to the following link for more details about prompt optimization.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/olr8svd33
+        """
         operations = []
         operations.append(
             {
@@ -505,11 +532,9 @@ class Prompt(HubSerializable):
             service_name=service_name,
             **kwargs,
         )
-        # print(resp["result"])
         task_id = resp["result"]["id"]
         while True:
             resp = PromptResource.get_optimization_task(task_id, **kwargs)
-            # print(resp["result"])
             status = resp["result"]["processStatus"]
             if status == 2:  # fininished
                 break
@@ -535,9 +560,41 @@ class Prompt(HubSerializable):
         cls,
         prompt_list: List["Prompt"],
         scenes: List[Dict[str, Any]],
-        client: Completion,
+        model: Completion,
         standard: PromptScoreStandard = PromptScoreStandard.Semantic,
     ) -> List[PromptEvaluateResult]:
+        """
+        Evaluate a list of prompts against specified scenes using the given model.
+
+        Parameters:
+          prompt_list (List["Prompt"]):
+            A list of prompt templates to be evaluated.
+          scenes (List[Dict[str, Any]]):
+            List of scenes represented as dictionaries containing relevant information.
+            The dict should contain the following keys:
+              - args: A dict containing the variables to be replaced in the prompt.
+              - expected: The expected output of the prompt.
+          client (Completion):
+            An instance of the Completion client.
+          standard (PromptScoreStandard, optional):
+            The scoring standard to be used for evaluating prompts.
+
+        Returns:
+          List[PromptEvaluateResult]:
+            A list of evaluation results, each containing the original prompt, the
+            result of each scene, and a summary string.
+
+        Example:
+        result_list = PromptEvaluateResult.evaluate(
+            prompt_list=[prompt1, prompt2, prompt3],
+            scenes=[{
+                "args": {"name": "Alice"},
+                "expected": "Hello, Alice!"
+            }],
+            client=Completion(model="ERNIE-Bot-4"),
+            standard=PromptScoreStandard.Semantic
+        )
+        """
         results = [
             Prompt.PromptEvaluateResult(
                 scene=[
@@ -556,7 +613,7 @@ class Prompt(HubSerializable):
 
         for i in range(len(results)):
             for j in range(len(results[i].scene)):
-                resp = cast(QfResponse, client.do(results[i].scene[j]["new_prompt"]))
+                resp = cast(QfResponse, model.do(results[i].scene[j]["new_prompt"]))
                 results[i].scene[j]["response"] = resp["result"]
 
         eval_summary_req = [

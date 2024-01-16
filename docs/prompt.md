@@ -114,6 +114,58 @@ prompt, _ = p.render(usage="测试")
 print(prompt) # => 这是一个用于测试的 Prompt
 ```
 
+### 优化 Prompt
+
+为了提升模型推理的准确率，可以通过 `optimize` 方法对 Prompt 进行优化。
+
+```python
+prompt = Prompt(template="帮我写一份{job}年终总结")
+optimized_prompt = prompt.optimize()
+```
+
+优化可以开启不同选项：
+
+- `optimize_quality`：优化 prompt 质量
+- `simplify_prompt`：简化 prompt，可以省去“的”、“吧”等含义不强的文本实体，精炼语料内容并降低推理成本
+- `iteration_round`：优化迭代轮数，默认为 1
+- `enable_cot`：开启思维链，将指引模型拆解Prompt内容，逐步进行推理。建议仅在数学计算、逻辑推理等场景下开启使用。
+- `app_id`：优化时使用的 App ID，可选参数
+- `service_name`：优化时使用的服务名称，可选参数
+
+### 评估 Prompt
+
+SDK 提供了 `evaluate` 方法，可以评估不同 Prompt 在不同场景下的质量。
+
+```python
+prompts = [old_prompt, new_prompt]
+scenes = [
+    {
+        "args": {"job": "程序员"},
+        "expected": "代码"
+    },
+    {
+        "args": {"job": "产品经理"},
+        "expected": "用户量"
+    }
+]
+model = Completion()
+
+results = Prompt.evaluate(prompts, scenes, model)
+```
+
+其中 `prompts` 是一个 Prompt 列表，`model` 是进行生成的模型对象，`scenes` 是一个场景列表，每个场景包含 `args` 和 `expected` 两个字段，`args` 是 Prompt 变量参数，`expected` 是该 Prompt 期望的输出。
+
+输出是一个列表，列表中每个元素是一个 `PromptEvaluateResult` 对象，对应了每个 Prompt 的评估结果，具有以下字段：
+
+- `prompt`：评估的 Prompt 对象
+- `scene`：不同场景下的表现
+  - `new_prompt`：变量填充后的新 prompt
+  - `variables`：变量列表
+  - `expected_target`：期望的输出
+  - `response`：模型生成的输出
+  - `score`：对模型输出的打分
+- `summary`：对该 Prompt 表现的总结
+
 ### 框架类型
 
 为了能够让模型更好的理解输入，需要提供足够详细的信息，千帆提供了数个 Prompt 框架类型，能够帮助用户编写出足够高质量的 Prompt，目前 SDK 支持如下框架类型：

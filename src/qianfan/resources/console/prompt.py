@@ -350,7 +350,35 @@ class Prompt(object):
         **kwargs: Any,
     ) -> QfRequest:
         """
-        Create prompt optimization task.
+        Creates an optimization task for prompts.
+
+        This method is responsible for creating an optimization task for prompts,
+        where a content string is optimized based on a series of operations. These
+        operations define the transformation steps to enhance or modify the given
+        content.
+
+        Parameters:
+          content (str):
+            The original content of prompt that needs to be optimized.
+          operations (List[Any]):
+            A list of operations specifying the transformations to be applied to the
+            content. The detail can be found in the api document.
+          app_id (Optional[int]):
+            The ID of the application associated with the optimization task.
+          service_name (Optional[str]):
+            The name of the service related to the optimization task.
+          kwargs (Any):
+            Additional keyword arguments that can be passed to customize the request.
+
+        Returns:
+          QfRequest:
+            An instance of the QfRequest class representing the API request.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/olr8svd33
         """
         req = QfRequest(method="POST", url=Consts.PromptCreateOptimizeTaskAPI)
         req.json_body = {"content": content, "operations": operations, **kwargs}
@@ -364,7 +392,26 @@ class Prompt(object):
     @console_api_request
     def get_optimization_task(cls, task_id: int, **kwargs: Any) -> QfRequest:
         """
-        Get prompt optimization task detail.
+        Retrieves details for an optimization prompt task.
+
+        This method is responsible for fetching detailed information about a specific
+        optimization prompt task identified by the provided `task_id`.
+
+        Parameters:
+          task_id (int):
+            The unique identifier for the optimization prompt task.
+          kwargs (Any):
+            Additional keyword arguments that can be passed to customize the request.
+
+        Returns:
+          QfRequest:
+            An instance of the QfRequest class representing the API request.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Clr8svx5q
         """
         req = QfRequest(method="POST", url=Consts.PromptGetOptimizeTaskInfoAPI)
         req.json_body = {"id": task_id, **kwargs}
@@ -375,6 +422,29 @@ class Prompt(object):
     def evaluation_score(cls, type: int, data: List[Any]) -> QfRequest:
         """
         Evaluates the performance of a prompt template.
+
+        This method is responsible for assessing the performance of a given prompt
+        template based on the specified type and data. The type parameter indicates
+        the evaluation criteria or metric to be used, while the data parameter
+        contains the input data required for the evaluation.
+
+        Parameters:
+          type (int):
+            An integer representing the evaluation standard.
+          data (List[Any]):
+            A list of input data necessary for evaluating the prompt template. The
+            detail of the parameter can be found in the API documentation.
+
+        Returns:
+          QfRequest:
+            An instance of the QfRequest class representing the API request for prompt
+            evaluation.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, allowing it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ulr8sx5jk
         """
         req = QfRequest(method="POST", url=Consts.PromptEvaluationAPI)
         req.json_body = {"type": type, "data": data}
@@ -384,7 +454,26 @@ class Prompt(object):
     @console_api_request
     def evaluation_summary(cls, data: List[Any]) -> QfRequest:
         """
-        Evaluate summary of prompt template.
+        Retrieves an evaluation summary for a given set of prompt.
+
+        This method is responsible for evaluating the quality of prompts and generating
+        a summary based on the provided data. The evaluation considers various factors
+        to determine the effectiveness of the prompts in generating desired responses.
+
+        Parameters:
+          data (List[Any]):
+            A list of prompt data to be evaluated. The detail of the parameter can be
+            found in the API documentation.
+
+        Returns:
+          QfRequest:
+            An instance of the QfRequest class representing the API request.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/nlr8tnlm9
         """
         req = QfRequest(method="POST", url=Consts.PromptEvaluationSummaryAPI)
         req.json_body = {"data": data}

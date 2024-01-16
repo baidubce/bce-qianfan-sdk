@@ -67,7 +67,7 @@ from qianfan.dataset.schema import (
 from qianfan.dataset.table import Table
 from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.errors import ValidationError
-from qianfan.resources import Data
+from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import (
     DataTemplateType,
 )
@@ -1072,7 +1072,6 @@ class Dataset(Table):
 
     def test_using_llm(
         self,
-        model_id: Optional[str] = None,
         model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
@@ -1086,8 +1085,6 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_id (Optional[int]):
-                id of your own model, default to None
             model_version_id (Optional[int]):
                 version id of your own model, default to None
             service_model (Optional[str]):
@@ -1111,8 +1108,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_id and model_version_id:
-            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        if model_version_id:
+            return self._batch_inference_on_model(model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return self._batch_inference_on_service(
                 service_model,
@@ -1128,7 +1125,6 @@ class Dataset(Table):
 
     async def atest_using_llm(
         self,
-        model_id: Optional[str] = None,
         model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
@@ -1142,8 +1138,6 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_id (Optional[str]):
-                id of your own model, default to None
             model_version_id (Optional[str]):
                 version id of your own model, default to None
             service_model (Optional[str]):
@@ -1167,8 +1161,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_id and model_version_id:
-            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        if model_version_id:
+            return self._batch_inference_on_model(model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return await self._async_batch_inference_on_service(
                 service_model,
@@ -1183,15 +1177,13 @@ class Dataset(Table):
             raise ValueError(err_msg)
 
     def _batch_inference_on_model(
-        self, model_id: str, model_version_id: str, **kwargs: Any
+        self, model_version_id: str, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
 
         Parameters:
-            model_id (str):
-                id of your own model, default to None
             model_version_id (str):
                 version id of your own model, default to None
             **kwargs (Any):
@@ -1210,6 +1202,8 @@ class Dataset(Table):
             err_msg = "can't start a batch run task on generic text dataset"
             log_error(err_msg)
             raise ValueError(err_msg)
+
+        model_id = Model.detail(model_version_id)["result"]["modelId"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
             self.inner_data_source_cache, model_id, model_version_id

@@ -385,6 +385,9 @@ class EvaluationManager(BaseModel):
             qianfan_data_source = dataset.inner_data_source_cache
             assert isinstance(qianfan_data_source, QianfanDataSource)
 
+            for i in range(len(model_objs)):
+                model_objs[i].auto_complete_info()
+
             # 提交评估任务
             resp_body = ResourceModel.create_evaluation_task(
                 name=f"sdk_eval_{generate_letter_num_random_id(11)}",
@@ -435,7 +438,10 @@ class EvaluationManager(BaseModel):
 
             result_list = ResourceModel.get_evaluation_result(eval_id)["result"]
             metric_list: Dict[str, Dict[str, Any]] = {
-                result["modelName"]: result["effectMetric"] for result in result_list
+                f'{result["modelName"]}_{result["modelVersion"]}': result[
+                    "effectMetric"
+                ]
+                for result in result_list
             }
 
             # 返回指标信息

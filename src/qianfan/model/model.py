@@ -124,13 +124,13 @@ class Model(
         log_info("model service already existed")
         return self.service
 
-    def publish(self, name: str = "", **kwargs: Any) -> "Model":
+    def auto_complete_info(self, **kwargs: Any) -> None:
         """
-        model publish, before deploying a model, it should be published.
+        auto complete Model object's info
 
         Parameters:
-            name str:
-                model name. Defaults to "m_{task_id}{job_id}".
+            **kwargs (Any):
+                arbitrary arguments
         """
         if self.version_id:
             # already released
@@ -171,6 +171,16 @@ class Model(
             ]["runId"]
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
+
+    def publish(self, name: str = "", **kwargs: Any) -> "Model":
+        """
+        model publish, before deploying a model, it should be published.
+
+        Parameters:
+            name str:
+                model name. Defaults to "m_{task_id}{job_id}".
+        """
+        self.auto_complete_info()
 
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"
@@ -298,6 +308,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
     """service endpoint to call"""
     service_type: Optional[ServiceType]
     """service type, for user use service as a execution must specify"""
+
     # service type may get from model ioModel
 
     def __init__(

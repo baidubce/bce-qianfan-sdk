@@ -133,6 +133,33 @@ class Model(
                 arbitrary arguments
         """
         if self.version_id:
+            model_detail_resp = ResourceModel.detail(
+                model_version_id=self.version_id, **kwargs
+            )
+            self.id = model_detail_resp["result"]["modelId"]
+
+        if self.id:
+            list_resp = ResourceModel.list(self.id, **kwargs)
+            if len(list_resp["result"]["modelVersionList"]) == 0:
+                raise InvalidArgumentError(
+                    "not model version matched, please train and publish first"
+                )
+            log_info("model publish get the first version in model list as default")
+            self.version_id = list_resp["result"]["modelVersionList"][0][
+                "modelVersionId"
+            ]
+            if self.version_id is None:
+                raise InvalidArgumentError("model version id not found")
+
+    def publish(self, name: str = "", **kwargs: Any) -> "Model":
+        """
+        model publish, before deploying a model, it should be published.
+
+        Parameters:
+            name str:
+                model name. Defaults to "m_{task_id}{job_id}".
+        """
+        if self.version_id:
             # already released
             model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
@@ -171,16 +198,6 @@ class Model(
             ]["runId"]
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
-
-    def publish(self, name: str = "", **kwargs: Any) -> "Model":
-        """
-        model publish, before deploying a model, it should be published.
-
-        Parameters:
-            name str:
-                model name. Defaults to "m_{task_id}{job_id}".
-        """
-        self.auto_complete_info()
 
         # 发布模型
         self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"

@@ -137,8 +137,7 @@ class Model(
                 model_version_id=self.version_id, **kwargs
             )
             self.id = model_detail_resp["result"]["modelId"]
-
-        if self.id:
+        elif self.id:
             list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(

@@ -21,6 +21,7 @@ import io
 # ruff: noqa: E501
 import json
 import random
+import string
 import threading
 import time
 import zipfile
@@ -36,6 +37,11 @@ from qianfan.consts import APIErrorCode, Consts
 app = Flask(__name__)
 
 STREAM_COUNT = 3
+
+
+def randomword(length=16):
+    letters = string.ascii_lowercase + string.digits
+    return "".join(random.sample(letters, length))
 
 
 def merge_messages(messages):
@@ -2894,6 +2900,123 @@ def plugin(endpoint):
                 "action_output": "",
             },
             "log_id": 1107539952111324513,
+        }
+    )
+
+
+prompt_opti_task_calltimes = {}
+
+
+@app.route(Consts.PromptCreateOptimizeTaskAPI, methods=["POST"])
+@iam_auth_checker
+def create_prompt_optimize_task():
+    """
+    create prompt optimize task
+    """
+    task_id = randomword(16)
+    prompt_opti_task_calltimes[task_id] = 0
+    return json_response(
+        {
+            "log_id": "sfcie8dcxyat7mwy",
+            "result": {"id": f"task-{task_id}"},
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptGetOptimizeTaskInfoAPI, methods=["POST"])
+@iam_auth_checker
+def get_prompt_optimize_task():
+    """
+    get prompt optimize task info
+    """
+    r = request.json
+    task_id = r["id"]
+    status = 2
+    if task_id in prompt_opti_task_calltimes:
+        prompt_opti_task_calltimes[task_id] += 1
+        if prompt_opti_task_calltimes[task_id] < 3:
+            status = 1
+    return json_response(
+        {
+            "log_id": "0qqb0s65kh5d2g9s",
+            "result": {
+                "id": "task-96f3mfrnj5e8qgv3",
+                "content": "原始prompt",
+                "optimizeContent": "optimized prompt",
+                "qingfanResult": "",
+                "operations": [
+                    {"opType": 1, "payload": 1},
+                    {"opType": 2, "payload": 1},
+                    {"opType": 3, "payload": 1},
+                    {"opType": 4, "payload": 0},
+                ],
+                "processStatus": status,
+                "appId": 1483416585,
+                "serviceName": "ERNIE-Bot-turbo",
+                "projectId": "",
+                "creator": "easydata_user",
+                "inference": "",
+                "createTime": "2023-12-29 17:40:33",
+                "modifyTime": "2023-12-29 17:40:48",
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptEvaluationAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_evaluate_score():
+    """
+    Evaluate prompt with score
+    """
+    r = request.json
+    data = r["data"]
+    return json_response(
+        {
+            "log_id": "9ih8evsperpdvkxk",
+            "result": {
+                "logID": 2,
+                "scores": [
+                    [random.random() for _ in range(len(data[0]["response_list"]))]
+                    for _ in range(len(data))
+                ],
+                "errorCode": 0,
+                "errorMsg": "",
+            },
+            "status": 200,
+            "success": True,
+        }
+    )
+
+
+@app.route(Consts.PromptEvaluationSummaryAPI, methods=["POST"])
+@iam_auth_checker
+def prompt_evaluate_summary():
+    """
+    Evaluate prompt with summary
+    """
+    r = request.json
+    data = r["data"]
+    return json_response(
+        {
+            "log_id": "9ih8evsperpdvkxk",
+            "result": {
+                "responses": [
+                    {
+                        "response": f"response_{i}",
+                        "id": "",
+                        "errorCode": 0,
+                        "errorMsg": "",
+                    }
+                    for i in range(len(data))
+                ]
+            },
+            "status": 200,
+            "success": True,
         }
     )
 

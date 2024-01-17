@@ -1203,7 +1203,7 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        model_id = Model.detail(model_version_id)["result"]["modelId"]
+        model_id = Model.detail(model_version_id)["result"]["modelIdStr"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
             self.inner_data_source_cache, model_id, model_version_id

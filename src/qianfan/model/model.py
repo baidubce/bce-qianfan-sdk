@@ -179,7 +179,7 @@ class Model(
             model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
-            self.id = model_detail_resp["result"]["modelId"]
+            self.id = model_detail_resp["result"]["modelIdStr"]
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["taskId"]
@@ -190,7 +190,7 @@ class Model(
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
 
-        if self.id:
+        elif self.id:
             list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(
@@ -198,7 +198,7 @@ class Model(
                 )
             log_info("model publish get the first version in model list as default")
             self.version_id = list_resp["result"]["modelVersionList"][0][
-                "modelVersionId"
+                "modelVersionIdStr"
             ]
             if self.version_id is None:
                 raise InvalidArgumentError("model version id not found")

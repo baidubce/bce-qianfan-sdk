@@ -33,15 +33,11 @@ import requests
 from flask import Flask, request, send_file
 
 from qianfan.consts import APIErrorCode, Consts
+from qianfan.utils.utils import generate_letter_num_random_id
 
 app = Flask(__name__)
 
 STREAM_COUNT = 3
-
-
-def randomword(length=16):
-    letters = string.ascii_lowercase + string.digits
-    return "".join(random.sample(letters, length))
 
 
 def merge_messages(messages):
@@ -2913,7 +2909,7 @@ def create_prompt_optimize_task():
     """
     create prompt optimize task
     """
-    task_id = randomword(16)
+    task_id = generate_letter_num_random_id(16)
     prompt_opti_task_calltimes[task_id] = 0
     return json_response(
         {

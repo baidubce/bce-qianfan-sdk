@@ -175,7 +175,7 @@ trainer.run()
 - [GitHub issues](https://github.com/baidubce/bce-qianfan-sdk/issues)
 - [百度智能云工单](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279) （百度专家即时服务）
 - 千帆SDK官方微信群
-<img src="https://github.com/baidubce/bce-qianfan-sdk/assets/37836090/50f38a78-31cb-4b0d-a03e-0bb1d4f367b3" width="320" height="320">
+<img src="https://github.com/baidubce/bce-qianfan-sdk/assets/37836090/50f38a78-31cb-4b0d-a03e-0bb1d4f367b3" width="240" height="240">
 
 ## License
 

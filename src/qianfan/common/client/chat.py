@@ -29,6 +29,7 @@ from rich.text import Text
 import qianfan
 from qianfan import QfRole
 from qianfan.common.client.utils import (
+    credential_required,
     list_model_option,
     print_error_msg,
     print_warn_msg,
@@ -261,6 +262,7 @@ MODEL_ARGUMENTS_PANEL = (
 )
 
 
+@credential_required
 def chat_entry(
     model: Optional[str] = typer.Option(
         None,

@@ -25,6 +25,8 @@ from rich.table import Table
 
 import qianfan.common.client.utils as client_utils
 from qianfan.common.client.utils import (
+    check_credential,
+    credential_required,
     enum_typer,
     print_error_msg,
     print_info_msg,
@@ -73,6 +75,7 @@ PANEL_FOR_CREATE_DATASET = (
 
 
 @dataset_app.command()
+@credential_required
 def save(
     src: str = typer.Argument(
         ...,
@@ -184,6 +187,7 @@ def save(
 
 
 @dataset_app.command()
+@credential_required
 def download(
     dataset_id: str = typer.Argument(
         ...,
@@ -203,6 +207,7 @@ def download(
 
 
 @dataset_app.command()
+@credential_required
 def upload(
     path: Path = typer.Argument(
         ...,
@@ -285,6 +290,8 @@ def view(
     View the content of the dataset.
     """
     console = Console()
+    if extract_id_from_path(dataset) is not None:
+        check_credential()
     with console.status("Loading dataset..."):
         ds = load_dataset(dataset)
     # list of (start_idx, end_idx)
@@ -372,6 +379,7 @@ def view(
 
 
 @dataset_app.command()
+@credential_required
 def predict(
     dataset: str = typer.Argument(
         ...,

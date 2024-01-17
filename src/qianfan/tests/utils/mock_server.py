@@ -1441,6 +1441,7 @@ def create_dataset():
                 "result": {
                     "id": 46563,
                     "groupId": 12,
+                    "groupPK": "12",
                     "datasetId": "ds-9cetiuhvnbn4mqs3",
                     "versionId": 1,
                     "groupName": args["name"],
@@ -1482,6 +1483,7 @@ def create_dataset():
                 "result": {
                     "id": 46563,
                     "groupId": 12,
+                    "groupPK": "12",
                     "datasetId": "ds-9cetiuhvnbn4mqs3",
                     "versionId": 1,
                     "groupName": args["name"],

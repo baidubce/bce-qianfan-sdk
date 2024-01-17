@@ -14,17 +14,23 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional, Type, TypeVar
+from http import HTTPStatus
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import click
 import typer
 from rich import print as rprint
-from rich.console import Console
+from rich.console import Console, Group, RenderableType
 from rich.logging import RichHandler
+from rich.panel import Panel
+from rich.pretty import Pretty
+from rich.text import Text
 
 import qianfan
 import qianfan.utils.logging as qianfan_logging
+from qianfan import QfResponse
 from qianfan.resources.llm.base import BaseResource
+from qianfan.resources.typing import QfRequest
 from qianfan.utils.bos_uploader import get_bos_bucket_location
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
@@ -168,3 +174,57 @@ list_model_option = typer.Option(
     is_eager=True,
     help="Print supported models.",
 )
+
+
+def _render_request_body(headers: Dict[str, str], body: Any) -> Group:
+    header_list: List[RenderableType] = []
+    for k, v in headers.items():
+        header_list.append(Text.from_markup(f"[blue]{k}[/]: {v}"))
+    header_list.append(Text.from_markup(""))
+    header_list.append(Pretty(body))
+    return Group(*header_list)
+
+
+def _render_request(request: QfRequest) -> Group:
+    render_list: List[RenderableType] = []
+    render_list.append(Text.from_markup(f"[magenta]{request.method}[/] {request.url}"))
+    render_list.append(_render_request_body(request.headers, request.json_body))
+    return Group(*render_list)
+
+
+def _render_response(response: QfResponse) -> Group:
+    render_list: List[RenderableType] = []
+    render_list.append(
+        Text.from_markup(f"{response.code} {HTTPStatus(response.code).phrase}")
+    )
+    render_list.append(_render_request_body(response.headers, response.body))
+    content_type = response.headers.get("Content-Type")
+    if content_type is not None and "event-stream" in content_type:
+        render_list.append(
+            Text.from_markup(
+                "\n[dim](Since streaming output is enabled, only the last response is"
+                " printed.)[/]"
+            )
+        )
+    return Group(*render_list)
+
+
+def render_response_debug_info(response: QfResponse) -> Group:
+    request = response.request
+    render_list: List[RenderableType] = []
+    if request is not None:
+        render_list.append(
+            Panel(
+                _render_request(request),
+                title="[cyan]Request[/] [dim](for debug)[/]",
+                title_align="left",
+            )
+        )
+    render_list.append(
+        Panel(
+            _render_response(response),
+            title="[cyan]Response[/] [dim](for debug)[/]",
+            title_align="left",
+        )
+    )
+    return Group(*render_list)

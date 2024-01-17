@@ -114,6 +114,11 @@ class QfResponse(Mapping):
         and the waiting time if `rate_limit` is set.
     """
 
+    request: Optional[QfRequest] = default_field(None)
+    """
+    Original request
+    """
+
     def __getitem__(self, item: str) -> Any:
         """
         get item by operator[]

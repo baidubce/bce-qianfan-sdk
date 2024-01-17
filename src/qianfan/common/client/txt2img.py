@@ -25,6 +25,7 @@ from qianfan.common.client.utils import (
     create_client,
     list_model_option,
     print_error_msg,
+    render_response_debug_info,
     timestamp,
 )
 from qianfan.consts import DefaultLLMModel
@@ -48,11 +49,18 @@ def txt2img_entry(
             " option."
         ),
     ),
-    output: Optional[Path] = typer.Option(
+    output: Path = typer.Option(
         Path(f"./{timestamp()}.jpg"), help="The output file location"
     ),
     plain: bool = typer.Option(False, help="Plain text mode won't use rich text"),
     list_model: bool = list_model_option,
+    debug: bool = typer.Option(
+        False,
+        help=(
+            "Debug mode. Request information will be printed. Not available in plain"
+            " mode."
+        ),
+    ),
 ) -> None:
     """
     Generate images based on the provided prompt.
@@ -74,9 +82,15 @@ def txt2img_entry(
     else:
         with Console().status("Generating"):
             resp = client.do(prompt=prompt, with_decode="base64", **kwargs)
+
     assert isinstance(resp, QfResponse)
     img_data = resp["body"]["data"][0]["image"]
     img = Image.open(io.BytesIO(img_data))
     # avoid compressing the image
     img.save(output, quality=100, subsampling=0)
     print(f"Image saved to {output}")
+    if debug:
+        for i in range(len(resp["data"])):
+            resp.body["data"][i]["b64_image"] = "omitted due to the length..."
+            resp.body["data"][i]["image"] = "omitted due to length..."
+        Console().print(render_response_debug_info(resp))

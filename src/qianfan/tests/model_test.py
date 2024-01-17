@@ -134,7 +134,7 @@ def test_create_evaluation_result_export_task():
     test Model.create_evaluation_result_export_task
     """
 
-    resp = Model.create_evaluation_result_export_task()
+    resp = Model.create_evaluation_result_export_task("123")
 
     assert (
         resp["_request"]["exportType"]

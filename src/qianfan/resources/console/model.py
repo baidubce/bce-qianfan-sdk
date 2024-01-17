@@ -16,7 +16,7 @@
 Model API
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.consts import Consts
 from qianfan.resources.console.consts import (
@@ -301,6 +301,7 @@ class Model(object):
     @console_api_request
     def create_evaluation_result_export_task(
         cls,
+        eval_id: Union[str, int],
         export_destination_type: Optional[EvaluationResultExportDestinationType] = None,
         export_range: EvaluationResultExportRange = EvaluationResultExportRange.Total,
         export_field: Optional[List[EvaluationResultExportField]] = None,
@@ -312,6 +313,8 @@ class Model(object):
         Create evaluation result export task
 
         Parameters:
+            eval_id (Union[str, int]):
+                the id of evaluation you want to export
             export_destination_type (Optional[EvaluationResultExportDestinationType]):
                 where to export evaluation result, default to
                 EvaluationResultExportDestinationType.PublicBos
@@ -347,6 +350,7 @@ class Model(object):
             ]
 
         request_json = {
+            "id": eval_id,
             "exportType": export_destination_type.value,
             "exportOpt": export_range.value,
             "exportContent": [field.value for field in export_field],
@@ -371,14 +375,14 @@ class Model(object):
     @console_api_request
     def get_evaluation_result_export_task_status(
         cls,
-        export_task_id: int,
+        export_task_id: Union[str, int],
         **kwargs: Any,
     ) -> QfRequest:
         """
         Get evaluation result export task status
 
         Parameters:
-            export_task_id (int):
+            export_task_id (Union[str, int]):
                 export task id
             **kwargs (Any):
                 arbitrary arguments

@@ -239,7 +239,7 @@ from qianfan.resources import Prompt
 
 ### 创建 Prompt
 
-最简单的方式是直接使用 `Prompt.create` 方法，传入 Prompt 名称和模板内容即可创建 Prompt，模版中通过 `{}` 表示待填充的变量名。返回结果可以通过 `['result']['templateId']` 字段获取模板 ID。返回字段详见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlp7waib4)。
+最简单的方式是直接使用 `Prompt.create` 方法，传入 Prompt 名称和模板内容即可创建 Prompt，模版中通过 `{}` 表示待填充的变量名。返回结果可以通过 `['result']['templatePK']` 字段获取模板 ID。返回字段详见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlp7waib4)。
 
 ```python
 resp = Prompt.create(
@@ -247,7 +247,7 @@ resp = Prompt.create(
     # 变量必须字母开头，仅包含字母、数字和下划线，长度 2-30
     template="example template {var1}", 
 )
-print(resp['result']['templateId'])
+print(resp['result']['templatePK'])
 ```
 
 SDK 也提供了其他参数，能够根据需求创建 Prompt，例如通过 `identifier` 字段指定识别变量的符号，示例如下

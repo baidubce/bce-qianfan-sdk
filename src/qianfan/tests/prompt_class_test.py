@@ -116,7 +116,7 @@ def test_upload_prompt():
     assert prompt.id is None
     hub.push(prompt)
     # change to the id in mock response
-    assert prompt.id == 732
+    assert prompt.id.startswith("pt-")
     assert prompt._mode == "remote"
 
     prompt = hub.load("prompt/ut")
@@ -128,7 +128,7 @@ def test_upload_prompt():
     hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 1733
+    assert prompt.id.startswith("pt-")
 
     prompt = hub.load("prompt/txt2img")
     assert isinstance(prompt, Prompt)
@@ -143,7 +143,7 @@ def test_upload_prompt():
     hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 1733
+    assert prompt.id.startswith("pt-")
 
 
 def test_render():

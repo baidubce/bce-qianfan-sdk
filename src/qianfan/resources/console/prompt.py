@@ -137,7 +137,7 @@ class Prompt(object):
 
     @classmethod
     @console_api_request
-    def info(cls, id: int, **kwargs: Any) -> QfRequest:
+    def info(cls, id: str, **kwargs: Any) -> QfRequest:
         """
         Renders a prompt template and retrieves template details.
 
@@ -145,7 +145,7 @@ class Prompt(object):
         details about the template.
 
         Parameters:
-          id (int):
+          id (str):
             The ID of the prompt template to render.
           kwargs (Any):
             The value of the variables to be used for variable replacement in the
@@ -169,7 +169,7 @@ class Prompt(object):
     @console_api_request
     def update(
         cls,
-        id: int,
+        id: str,
         name: Optional[str] = None,
         label_ids: Optional[List[int]] = None,
         template: Optional[str] = None,
@@ -184,7 +184,7 @@ class Prompt(object):
         identified by the provided ID.
 
         Parameters:
-          id (int):
+          id (str):
             The ID of the prompt template to update.
           name (Optional[str]):
             The new name for the prompt template.
@@ -225,7 +225,7 @@ class Prompt(object):
 
     @classmethod
     @console_api_request
-    def delete(cls, id: int, **kwargs: Any) -> QfRequest:
+    def delete(cls, id: str, **kwargs: Any) -> QfRequest:
         """
         Deletes a prompt template.
 
@@ -233,7 +233,7 @@ class Prompt(object):
         specified template ID.
 
         Parameters:
-          id (int):
+          id (str):
             The ID of the prompt template to delete.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
@@ -390,7 +390,7 @@ class Prompt(object):
 
     @classmethod
     @console_api_request
-    def get_optimization_task(cls, task_id: int, **kwargs: Any) -> QfRequest:
+    def get_optimization_task(cls, task_id: str, **kwargs: Any) -> QfRequest:
         """
         Retrieves details for an optimization prompt task.
 

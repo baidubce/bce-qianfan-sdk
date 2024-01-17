@@ -1753,7 +1753,10 @@ def create_prompt():
     return json_response(
         {
             "log_id": "py3yxbi7ffdj7kuc",
-            "result": {"templateId": 732},
+            "result": {
+                "templateId": 732,
+                "templatePK": f"pt-{generate_letter_num_random_id()}",
+            },
             "status": 200,
             "success": True,
         }
@@ -1768,6 +1771,7 @@ def prompt_detail():
             "log_id": "i1sm6juguyzyqrpd",
             "result": {
                 "templateId": 732,
+                "templatePK": f"pt-{generate_letter_num_random_id()}",
                 "templateName": "文生文1号3343",
                 "templateContent": (
                     "请以{number}字数生成{province}省相关简介\naaa(eee) bbbb((xxx))"
@@ -1794,7 +1798,10 @@ def prompt_update():
     return json_response(
         {
             "log_id": "9sh0grwe6ydfi318",
-            "result": {"templateId": 1733},
+            "result": {
+                "templateId": 1733,
+                "templatePK": f"pt-{generate_letter_num_random_id()}",
+            },
             "status": 200,
             "success": True,
         }
@@ -1823,6 +1830,7 @@ def prompt_list():
                         "items": [
                             {
                                 "templateId": 724,
+                                "templatePK": f"pt-{generate_letter_num_random_id()}",
                                 "templateName": name,
                                 "templateContent": "txt2img template {badvar} ((v1))",
                                 "templateVariables": "v1",
@@ -1856,6 +1864,7 @@ def prompt_list():
                         "items": [
                             {
                                 "templateId": 11831,
+                                "templatePK": f"pt-{generate_letter_num_random_id()}",
                                 "templateName": "example_prompt",
                                 "templateContent": "template (v1) {v2} (v3)",
                                 "templateVariables": "v1",
@@ -1874,6 +1883,7 @@ def prompt_list():
                             },
                             {
                                 "templateId": 11827,
+                                "templatePK": f"pt-{generate_letter_num_random_id()}",
                                 "templateName": name,
                                 "templateContent": "example template {var1}",
                                 "templateVariables": "var1",
@@ -1904,6 +1914,7 @@ def prompt_list():
                 "items": [
                     {
                         "templateId": 724,
+                        "templatePK": f"pt-{generate_letter_num_random_id()}",
                         "templateName": "照片写实2",
                         "templateContent": (
                             "Cherry Blossoms in Hokkaido in the wintertime, Canon RF"
@@ -1930,6 +1941,7 @@ def prompt_list():
                     },
                     {
                         "templateId": 723,
+                        "templatePK": f"pt-{generate_letter_num_random_id()}",
                         "templateName": "3D角色",
                         "templateContent": (
                             "snowing winter, super cute baby pixar style white fairy"

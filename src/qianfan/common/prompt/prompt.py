@@ -55,7 +55,7 @@ class Prompt(HubSerializable):
     Prompt
     """
 
-    id: Optional[int] = None
+    id: Optional[str] = None
     name: Optional[str] = None
     template: str
     variables: List[str]
@@ -73,7 +73,7 @@ class Prompt(HubSerializable):
         self,
         template: Optional[str] = None,
         name: Optional[str] = None,
-        id: Optional[int] = None,
+        id: Optional[str] = None,
         identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"] = "{}",
         variables: Optional[List[str]] = None,
         labels: List[PromptLabel] = [],
@@ -167,7 +167,7 @@ class Prompt(HubSerializable):
 
         prompt = cls(
             name=prompt_info["templateName"],
-            id=prompt_info["templateId"],
+            id=prompt_info["templatePK"],
             template=prompt_info["templateContent"],
             variables=(
                 []
@@ -252,7 +252,7 @@ class Prompt(HubSerializable):
                 raise InvalidArgumentError(
                     f"Failed to create prompt: {resp['message']['global']}"
                 )
-            self.id = resp["result"]["templateId"]
+            self.id = resp["result"]["templatePK"]
             self._mode = "remote"
         else:
             if self.name is None:
@@ -271,7 +271,7 @@ class Prompt(HubSerializable):
                 raise InvalidArgumentError(
                     f"Failed to update prompt: {resp['message']['global']}"
                 )
-            self.id = resp["result"]["templateId"]
+            self.id = resp["result"]["templatePK"]
 
     def render(self, **kwargs: str) -> Tuple[str, Optional[str]]:
         """

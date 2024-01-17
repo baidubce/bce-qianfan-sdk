@@ -14,6 +14,7 @@
 """
 data operator for local using
 """
+
 from typing import Any, Dict, List, Optional
 
 from qianfan.dataset.local_data_operators.base_local_data_operator import (

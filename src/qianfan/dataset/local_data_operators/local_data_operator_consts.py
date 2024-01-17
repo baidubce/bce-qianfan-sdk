@@ -191,3 +191,37 @@ _stopwords_min_cutoff_map = {
     "VI": 0.08,
     "ZH": 0.1691,
 }
+
+# 词重复检查算子使用
+
+_word_repetition_length_map = {
+    "AR": 5,
+    "BN": 5,
+    "CA": 5,
+    "EN": 5,
+    "ES": 5,
+    "EU": 5,
+    "FR": 5,
+    "HI": 5,
+    "ID": 5,
+    "PT": 5,
+    "UR": 7,
+    "VI": 5,
+    "ZH": 5,
+}
+
+_word_repetition_max_cutoff = {
+    "AR": 0.34,
+    "BN": 0.21,
+    "CA": 0.40,
+    "EN": 0.19,
+    "ES": 0.25,
+    "EU": 0.40,
+    "FR": 0.13,
+    "HI": 0.47,
+    "ID": 0.20,
+    "PT": 0.98,
+    "UR": 0.50,
+    "VI": 0.20,
+    "ZH": 0.96,
+}

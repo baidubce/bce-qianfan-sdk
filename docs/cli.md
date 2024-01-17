@@ -299,7 +299,7 @@ $ qianfan trainer run [OPTIONS]
 * `--deploy-pool-type [public_resource|private_resource]`：资源池类型  [default：private_resource]
 * `--deploy-service-type [chat|completion|embedding|text2_image]`：服务类型  [default：chat]
 
-## evaluation 评估
+### evaluation 评估
 
 运行评估任务
 
@@ -317,7 +317,7 @@ $ qianfan evaluation [OPTIONS] COMMAND [ARGS]...
 
 * `run`: 运行评估任务
 
-### run 运行评估任务
+#### run 运行评估任务
 
 **用法**:
 

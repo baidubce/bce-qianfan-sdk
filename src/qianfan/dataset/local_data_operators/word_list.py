@@ -15,8 +15,9 @@
 配置 文本处理的变量
 如 特殊字符 / 停用词 / 色情词
 """
+from typing import Dict, List
 
-stopwords = {
+_stopwords: Dict[str, List[str]] = {
     "ar": [
         "آنذاك",
         "أبداً",
@@ -6745,14 +6746,7 @@ stopwords = {
     ],
 }
 
-# Built from native speakers, with inspiration from
-# https://github.com/zacanger/profane-words
-# and
-# https://github.com/thisandagain/washyourmouthoutwithsoap/blob/develop/data/build.json
-# and
-# https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words
-
-english_flagged_words = [
+_english_flagged_words: List[str] = [
     "anal",
     "bareback",
     "bbw",
@@ -6823,8 +6817,8 @@ english_flagged_words = [
     "youporn",
 ]
 
-flagged_words = {
-    "ar": english_flagged_words + [
+_flagged_words: Dict[str, List[str]] = {
+    "ar": _english_flagged_words + [
         "إباحي",
         "احتلام",
         "است",
@@ -6885,7 +6879,7 @@ flagged_words = {
         "نكاح",
         "نيك",
     ],
-    "bn": english_flagged_words + [
+    "bn": _english_flagged_words + [
         "আঙ্গুলি করা",
         "আচোদা",
         "খানকি",
@@ -6925,7 +6919,7 @@ flagged_words = {
         "স্তনবৃন্ত",
         "হস্তমৈথুন",
     ],
-    "ca": english_flagged_words + [
+    "ca": _english_flagged_words + [
         "cagarro",
         "cagarros",
         "cipote",
@@ -6975,8 +6969,8 @@ flagged_words = {
         "vergues",
         "xxx",
     ],
-    "en": english_flagged_words,
-    "es": english_flagged_words + [
+    "en": _english_flagged_words,
+    "es": _english_flagged_words + [
         "chupar el coño",
         "chupar la concha",
         "chupar la polla",
@@ -7013,8 +7007,8 @@ flagged_words = {
         "smegma",
         "x clasificado",
     ],
-    "eu": english_flagged_words + [],
-    "fr": english_flagged_words + [
+    "eu": _english_flagged_words + [],
+    "fr": _english_flagged_words + [
         "baiseurs",
         "baiseur",
         "baiseuse",
@@ -7044,7 +7038,7 @@ flagged_words = {
         "suceuses",
         "xxx",
     ],
-    "hi": english_flagged_words + [
+    "hi": _english_flagged_words + [
         "अंडकोश की थैली",
         "एक्स रेटेड",
         "ओगाज़्म",
@@ -7087,7 +7081,7 @@ flagged_words = {
         "चुदाई",
         "चुदक्कड़",
     ],
-    "id": english_flagged_words + [
+    "id": _english_flagged_words + [
         "bokep",
         "coli",
         "colmek",
@@ -7109,7 +7103,7 @@ flagged_words = {
         "sepong",
         "tusbol",
     ],
-    "pt": english_flagged_words + [
+    "pt": _english_flagged_words + [
         "balalao",
         "bate uma",
         "beijo grego",
@@ -7157,7 +7151,7 @@ flagged_words = {
         "xochota",
         "xoxota",
     ],
-    "ur": english_flagged_words + [
+    "ur": _english_flagged_words + [
         "انگلی کرنا",
         "ایکس ریٹیڈ",
         "بلو جاب",
@@ -7196,7 +7190,7 @@ flagged_words = {
         "گدا",
         "ہینڈ جاب",
     ],
-    "vi": english_flagged_words + [
+    "vi": _english_flagged_words + [
         "cặc",
         "lồn",
         "địt",
@@ -7240,7 +7234,7 @@ flagged_words = {
         "phim xex",
         "phim xxx",
     ],
-    "zh": english_flagged_words + [
+    "zh": _english_flagged_words + [
         "三级片",
         "乳交",
         "卖B",

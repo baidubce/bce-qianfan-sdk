@@ -15,7 +15,7 @@
 utilities for local data operators
 """
 import re
-from typing import List, Optional, Set, Union
+from typing import List, Set, Union
 
 import sentencepiece
 from ltp import StnSplit
@@ -60,13 +60,21 @@ class SentencePieceTokenizer(object):
 
 def get_words_from_document(
     document: str,
-    sentence_piece_tokenizer: Optional[SentencePieceTokenizer] = None,
+    language: str,
+    sentence_piece_tokenizer: SentencePieceTokenizer,
     need_to_lower: bool = True,
     strip_characters: Set[str] = set(),
 ) -> List[str]:
     """split word from document"""
-    if sentence_piece_tokenizer:
-        words = sentence_piece_tokenizer.tokenize(document, join_on_whitespace=False)
+    if language not in ["ZH"]:
+        # 不是中文的话，才用空格\t等标记进行分词
+        tokenizer = None
+    else:
+        # 只有中文才会使用sentence_piece_tokenizer进行分词
+        tokenizer = sentence_piece_tokenizer
+
+    if tokenizer:
+        words = tokenizer.tokenize(document, join_on_whitespace=False)
     else:
         words = split_on_whitespace(document, new_line=True, tab=True)
 
@@ -129,3 +137,13 @@ def words_augmentation(words: List[str], group_size: int, join_char: str) -> Lis
         for i in range(len(words) - group_size + 1)
     ]
     return augmentation
+
+
+def get_augmentation_word_list(
+    words: List[str], group_size_list: List[int], join_char: str
+) -> List[str]:
+    augmentation_list = [
+        words_augmentation(words, group_size, join_char)
+        for group_size in group_size_list
+    ]
+    return [word for augm in augmentation_list for word in augm]

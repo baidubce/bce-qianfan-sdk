@@ -67,7 +67,7 @@ class LocalCheckCharacterRepetitionFilter(BaseLocalFilterOperator):
     def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
         document = entry[self.filter_column]
 
-        def get_freq_character_ngrams(content: str, n: int) -> Dict[str, int]:
+        def _get_freq_character_ngrams(content: str, n: int) -> Dict[str, int]:
             character_ngrams = [content[i : i + n] for i in range(len(content) - n + 1)]
             frequency_ngrams: Dict[str, int] = {}
             for character_ngram in character_ngrams:
@@ -76,9 +76,10 @@ class LocalCheckCharacterRepetitionFilter(BaseLocalFilterOperator):
                 )
             return frequency_ngrams
 
-        freq_character_ngrams = get_freq_character_ngrams(
+        freq_character_ngrams = _get_freq_character_ngrams(
             document, self.character_repetition_length
         )
+
         if len(freq_character_ngrams) == 0:
             character_repetition_ratio = 0.0
         else:
@@ -86,6 +87,7 @@ class LocalCheckCharacterRepetitionFilter(BaseLocalFilterOperator):
             freq_character_ngram_values = sorted(
                 freq_character_ngram_values, reverse=True
             )
+
             val_one = len([el for el in freq_character_ngram_values if el == 1])
             num_rep_character_ngrams = min(
                 int(math.sqrt(len(freq_character_ngram_values))),

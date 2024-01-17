@@ -84,11 +84,11 @@ other_special_characters = (
 # emoji 表情列表
 emoji_en = list(emoji.EMOJI_DATA.keys())
 
-default_special_characters_set: Set[str] = set(
+_default_special_characters_set: Set[str] = set(
     main_special_characters + other_special_characters
 )
 
-default_special_characters_set.update(emoji_en)
+_default_special_characters_set.update(emoji_en)
 
 # 敏感词过滤算子使用
 
@@ -138,4 +138,56 @@ _flagged_words_max_cutoff_map: Dict[str, float] = {
     "UR": 0.025,
     "VI": 0.005,
     "ZH": 0.001,
+}
+
+# 词数检查算子使用
+
+_number_words_min_map: Dict[str, int] = {
+    "AR": 20,
+    "BN": 33,
+    "CA": 15,
+    "EN": 20,
+    "ES": 16,
+    "EU": 8,
+    "FR": 13,
+    "HI": 38,
+    "ID": 15,
+    "PT": 19,
+    "UR": 25,
+    "VI": 30,
+    "ZH": 1,
+}
+
+_number_words_max_map: Dict[str, int] = {
+    "AR": 100000,
+    "BN": 100000,
+    "CA": 100000,
+    "EN": 100000,
+    "ES": 100000,
+    "EU": 100000,
+    "FR": 100000,
+    "HI": 100000,
+    "ID": 100000,
+    "PT": 100000,
+    "UR": 100000,
+    "VI": 100000,
+    "ZH": 1000000,
+}
+
+# 停止词检查算子使用
+
+_stopwords_min_cutoff_map = {
+    "AR": 0.07,
+    "BN": 0.002,
+    "CA": 0.25,
+    "EN": 0.30,
+    "ES": 0.4,
+    "EU": 0.05,
+    "FR": 0.27,
+    "HI": 0.01,
+    "ID": 0.15,
+    "PT": 0.20,
+    "UR": 0.01,
+    "VI": 0.08,
+    "ZH": 0.1691,
 }

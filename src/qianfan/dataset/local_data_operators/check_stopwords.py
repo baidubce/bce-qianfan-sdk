@@ -21,7 +21,7 @@ from qianfan.dataset.local_data_operators.base_local_data_operator import (
 )
 from qianfan.dataset.local_data_operators.local_data_operator_consts import (
     _default_special_characters_set,
-    _flagged_words_max_cutoff_map,
+    _stopwords_min_cutoff_map,
     _words_augmentation_group_sizes_map,
     _words_augmentation_join_char_map,
 )
@@ -30,11 +30,11 @@ from qianfan.dataset.local_data_operators.local_operator_utils import (
     get_augmentation_word_list,
     get_words_from_document,
 )
-from qianfan.dataset.local_data_operators.word_list import _flagged_words
+from qianfan.dataset.local_data_operators.word_list import _stopwords
 
 
-class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
-    """check flagged words"""
+class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
+    """check stopwords"""
 
     def __init__(
         self,
@@ -42,7 +42,7 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
         sentence_piece_model_path: str,
         words_augmentation_group_sizes: Optional[List[int]] = None,
         words_augmentation_join_char: Optional[str] = None,
-        flagged_words_max_cutoff: Optional[float] = None,
+        stopwords_min_cutoff: Optional[float] = None,
         **kwargs: Any,
     ):
         super().__init__(filter_column=filter_column, **kwargs)
@@ -61,26 +61,26 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
         else:
             self.words_augmentation_join_char = words_augmentation_join_char
 
-        if not flagged_words_max_cutoff:
-            self.flagged_words_max_cutoff = _flagged_words_max_cutoff_map.get(
+        if not stopwords_min_cutoff:
+            self.stopwords_min_cutoff = _stopwords_min_cutoff_map.get(
                 self.text_language, 0.1
             )
         else:
-            self.flagged_words_max_cutoff = flagged_words_max_cutoff
-
-        self.flagged_words_set = set(_flagged_words.get(self.text_language.lower(), []))
+            self.stopwords_min_cutoff = stopwords_min_cutoff
 
         self.sentence_piece_model = SentencePieceTokenizer(sentence_piece_model_path)
 
         self.strip_characters = _default_special_characters_set
 
+        self.stopwords_set = _stopwords.get(self.text_language.lower(), [])
+
     def __str__(self) -> str:
-        s = "pass_name: filter_check_flagged_words\n"
+        s = "pass_name: filter_check_stopwords\n"
         kwargs = {
             "text_language": self.text_language,
             "words_augmentation_group_sizes": self.words_augmentation_group_sizes,
             "words_augmentation_join_char": self.words_augmentation_join_char,
-            "flagged_words_max_cutoff": self.flagged_words_max_cutoff,
+            "stopwords_min_cutoff": self.stopwords_min_cutoff,
         }
         for k, v in kwargs.items():
             s += f"\t\t{k}: {v}\n"
@@ -98,7 +98,7 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
         )
 
         if not words:
-            flagged_words_ratio = 0.0
+            stopwords_ratio = 0.0
         else:
             augmentation: List[str] = []
             if len(self.words_augmentation_group_sizes) > 0:
@@ -108,15 +108,11 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
                     self.words_augmentation_join_char,
                 )
 
-            flagged_words_ratio = len(
-                [
-                    word
-                    for word in words + augmentation
-                    if word in self.flagged_words_set
-                ]
+            stopwords_ratio = len(
+                [word for word in words + augmentation if word in self.stopwords_set]
             ) / len(words)
 
-        if flagged_words_ratio > 1.0:
-            flagged_words_ratio = 1.0
+        if stopwords_ratio > 1.0:
+            stopwords_ratio = 1.0
 
-        return flagged_words_ratio <= self.flagged_words_max_cutoff
+        return stopwords_ratio >= self.stopwords_min_cutoff

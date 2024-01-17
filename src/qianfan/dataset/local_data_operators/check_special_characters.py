@@ -21,8 +21,8 @@ from qianfan.dataset.local_data_operators.base_local_data_operator import (
     BaseLocalFilterOperator,
 )
 from qianfan.dataset.local_data_operators.local_data_operator_consts import (
+    _default_special_characters_set,
     _special_character_map,
-    default_special_characters_set,
 )
 
 
@@ -32,7 +32,7 @@ class LocalCheckSpecialCharactersFilter(BaseLocalFilterOperator):
     def __init__(
         self,
         filter_column: str,
-        special_characters: Set = default_special_characters_set,
+        special_characters: Set = _default_special_characters_set,
         special_characters_max_cutoff: Optional[float] = None,
         **kwargs: Any,
     ) -> None:

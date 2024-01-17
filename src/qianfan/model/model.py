@@ -62,6 +62,7 @@ class Model(
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
         name: Optional[str] = None,
+        **kwargs: Any,
     ):
         """
         Class for model in qianfan, which is deployable by using deploy() to
@@ -76,12 +77,16 @@ class Model(
                 model train task id. Defaults to None.
             job_id (Optional[int], optional):
                 model train job id. Defaults to None.
+            auto_complete (Optional[bool], optional):
+                if call auto_complete() to complete model info. Defaults to None.
         """
         self.id = id
         self.version_id = version_id
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
+        if kwargs.get("auto_complete"):
+            self.auto_complete_info()
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -130,7 +135,8 @@ class Model(
 
     def auto_complete_info(self, **kwargs: Any) -> None:
         """
-        auto complete Model object's info
+        auto complete Model object's info.
+        This may override the input model id version id.
 
         Parameters:
             **kwargs (Any):
@@ -142,6 +148,7 @@ class Model(
             )
             self.id = model_detail_resp["result"].get("modelIdStr")
             self.old_id = model_detail_resp["result"].get("modelId")
+            self.old_version_id = model_detail_resp["result"].get("modelVersionId")
         elif self.id:
             list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
@@ -152,6 +159,7 @@ class Model(
             self.version_id = list_resp["result"]["modelVersionList"][0].get(
                 "modelVersionIdStr"
             )
+            self.old_id = list_resp["result"]["modelVersionList"][0].get("modelId")
             self.old_version_id = list_resp["result"]["modelVersionList"][0].get(
                 "modelVersionId"
             )

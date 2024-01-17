@@ -642,15 +642,19 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             if self.model_id is None or self.model_version_id is None:
                 raise InvalidArgumentError("model_id or model_version_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
             if self.model is None:
                 raise InvalidArgumentError(
                     "must input with model or model id and version id"
                 )
+            self.model.auto_complete_info()
             self.model_id = self.model.old_id
             self.model_version_id = self.model.old_version_id
+        # 自动补全
+
         return self._exec(**kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:

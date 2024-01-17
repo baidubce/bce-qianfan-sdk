@@ -25,31 +25,33 @@ from qianfan.dataset.local_data_operators.local_data_operator_consts import (
     _character_repetition_length_map,
     _character_repetition_max_cutoff_map,
 )
-from qianfan.utils.pydantic import Field, root_validator
 
 
 class LocalCheckCharacterRepetitionFilter(BaseLocalFilterOperator):
     """remove entry with high repetition ratio"""
 
-    character_repetition_length: Optional[int] = Field(default=None)
-    character_repetition_max_cutoff: Optional[int] = Field(default=None)
+    def __init__(
+        self,
+        filter_column: str,
+        character_repetition_length: Optional[int] = None,
+        character_repetition_max_cutoff: Optional[float] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(filter_column=filter_column, **kwargs)
 
-    @root_validator()
-    @classmethod
-    def _fill_param(cls, input_dicts: Dict[str, Any]) -> Dict[str, Any]:
-        if not input_dicts["character_repetition_length"]:
-            input_dicts["character_repetition_length"] = (
-                _character_repetition_length_map.get(input_dicts["text_language"], 10)
+        if not character_repetition_length:
+            self.character_repetition_length = _character_repetition_length_map.get(
+                self.text_language, 10
             )
+        else:
+            self.character_repetition_length = character_repetition_length
 
-        if not input_dicts["character_repetition_max_cutoff"]:
-            input_dicts["character_repetition_max_cutoff"] = (
-                _character_repetition_max_cutoff_map.get(
-                    input_dicts["text_language"], 0.2
-                )
+        if not character_repetition_max_cutoff:
+            self.character_repetition_max_cutoff = (
+                _character_repetition_max_cutoff_map.get(self.text_language, 0.2)
             )
-
-        return input_dicts
+        else:
+            self.character_repetition_max_cutoff = character_repetition_max_cutoff
 
     def __str__(self) -> str:
         s = "filter_name: filter_check_character_repetition_removal"
@@ -73,9 +75,6 @@ class LocalCheckCharacterRepetitionFilter(BaseLocalFilterOperator):
                     frequency_ngrams.get(character_ngram, 0) + 1
                 )
             return frequency_ngrams
-
-        assert self.character_repetition_length
-        assert self.character_repetition_max_cutoff
 
         freq_character_ngrams = get_freq_character_ngrams(
             document, self.character_repetition_length

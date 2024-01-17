@@ -18,14 +18,17 @@ base local data operator class
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from qianfan.utils.pydantic import BaseModel, Field
+from qianfan.utils.pydantic import BaseModel
 
 
-class BaseLocalFilterOperator(BaseModel, ABC):
+class BaseLocalFilterOperator(ABC):
     """base class for data filtering"""
 
-    filter_column: str
-    text_language: str = Field(default="ZH")
+    def __init__(
+        self, filter_column: str, text_language: str = "ZH", **kwargs: Any
+    ) -> None:
+        self.filter_column = filter_column
+        self.text_language = text_language
 
     @abstractmethod
     def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:

@@ -14,7 +14,7 @@
 """
 data operator for local using
 """
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from qianfan.dataset.local_data_operators.base_local_data_operator import (
     BaseLocalFilterOperator,
@@ -26,46 +26,53 @@ from qianfan.dataset.local_data_operators.local_data_operator_consts import (
     default_special_characters_set,
 )
 from qianfan.dataset.local_data_operators.local_operator_utils import (
+    SentencePieceTokenizer,
     get_words_from_document,
     words_augmentation,
 )
 from qianfan.dataset.local_data_operators.word_list import flagged_words
-from qianfan.utils.pydantic import Field, root_validator
 
 
 class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
-    strip_characters: Set[str] = default_special_characters_set
-    sentence_piece_model_path: str
-    words_augmentation_group_sizes: Optional[List[int]] = Field(default=None)
-    words_augmentation_join_char: Optional[str] = Field(default=None)
-    flagged_words_max_cutoff: Optional[float] = Field(default=None)
-    flagged_words_set: Optional[Set[str]] = Field(default=None)
+    def __init__(
+        self,
+        filter_column: str,
+        sentence_piece_model_path: str,
+        words_augmentation_group_sizes: Optional[List[int]] = None,
+        words_augmentation_join_char: Optional[str] = None,
+        flagged_words_max_cutoff: Optional[float] = None,
+        **kwargs: Any,
+    ):
+        super().__init__(filter_column=filter_column, **kwargs)
 
-    @root_validator
-    @classmethod
-    def _fill_param(cls, input_dicts: Dict[str, Any]) -> Dict[str, Any]:
-        if not input_dicts["words_augmentation_group_sizes"]:
-            input_dicts["words_augmentation_group_sizes"] = (
-                _words_augmentation_group_sizes_map.get(
-                    input_dicts["text_language"], []
-                )
+        if not words_augmentation_group_sizes:
+            self.words_augmentation_group_sizes = (
+                _words_augmentation_group_sizes_map.get(self.text_language, [])
             )
+        else:
+            self.words_augmentation_group_sizes = words_augmentation_group_sizes
 
-        if not input_dicts["words_augmentation_join_char"]:
-            input_dicts["words_augmentation_join_char"] = (
-                _words_augmentation_join_char_map.get(input_dicts["text_language"], "")
+        if not words_augmentation_join_char:
+            self.words_augmentation_join_char = _words_augmentation_join_char_map.get(
+                self.text_language, ""
             )
+        else:
+            self.words_augmentation_join_char = words_augmentation_join_char
 
-        if not input_dicts["flagged_words_max_cutoff"]:
-            input_dicts["flagged_words_max_cutoff"] = _flagged_words_max_cutoff_map.get(
-                input_dicts["text_language"], 0.1
+        if not flagged_words_max_cutoff:
+            self.flagged_words_max_cutoff = _flagged_words_max_cutoff_map.get(
+                self.text_language, 0.1
             )
+        else:
+            self.flagged_words_max_cutoff = flagged_words_max_cutoff
 
-        input_dicts["flagged_words_set"] = set(
-            flagged_words.get(str.lower(input_dicts["text_language"]), [])
+        self.flagged_words_set = set(
+            flagged_words.get(str.lower(self.text_language), [])
         )
 
-        return input_dicts
+        self.sentence_piece_model = SentencePieceTokenizer(sentence_piece_model_path)
+
+        self.strip_characters = default_special_characters_set
 
     def __str__(self) -> str:
         s = "pass_name: filter_check_flagged_words\n"
@@ -87,7 +94,7 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
             sentence_piece_tokenizer = None
         else:
             # 只有中文才会使用sentence_piece_tokenizer进行分词
-            sentence_piece_tokenizer = self.sentence_piece_tokenizer
+            sentence_piece_tokenizer = self.sentence_piece_model
 
         words = get_words_from_document(
             document,
@@ -99,18 +106,15 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
         if not words:
             flagged_words_ratio = 0.0
         else:
-            augmentation = []
-
-            assert self.words_augmentation_group_sizes
-            assert self.words_augmentation_join_char
+            augmentation: List[str] = []
             if len(self.words_augmentation_group_sizes) > 0:
-                augmentation = [
+                augmentation_list = [
                     words_augmentation(
                         words, group_size, self.words_augmentation_join_char
                     )
                     for group_size in self.words_augmentation_group_sizes
                 ]
-                augmentation = [word for augm in augmentation for word in augm]
+                augmentation = [word for augm in augmentation_list for word in augm]
 
             flagged_words_ratio = len(
                 [

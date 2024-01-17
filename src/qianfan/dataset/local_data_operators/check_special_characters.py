@@ -24,27 +24,27 @@ from qianfan.dataset.local_data_operators.local_data_operator_consts import (
     _special_character_map,
     default_special_characters_set,
 )
-from qianfan.utils.pydantic import Field, root_validator
 
 
 class LocalCheckSpecialCharactersFilter(BaseLocalFilterOperator):
     """check special characters"""
 
-    special_characters: Optional[Set] = Field(default=None)
-    special_characters_max_cutoff: Optional[float] = Field(default=None)
+    def __init__(
+        self,
+        filter_column: str,
+        special_characters: Set = default_special_characters_set,
+        special_characters_max_cutoff: Optional[float] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(filter_column=filter_column, **kwargs)
+        self.special_characters = special_characters
 
-    @root_validator(pre=True)
-    @classmethod
-    def _fill_param(cls, input_dicts: Dict[str, Any]) -> Dict[str, Any]:
-        if not input_dicts["special_characters"]:
-            input_dicts["special_characters"] = default_special_characters_set
-
-        if not input_dicts["special_characters_max_cutoff"]:
-            input_dicts["special_characters_max_cutoff"] = _special_character_map.get(
-                input_dicts["text_language"], 0.40
+        if not special_characters_max_cutoff:
+            self.special_characters_max_cutoff = _special_character_map.get(
+                self.text_language, 0.40
             )
-
-        return input_dicts
+        else:
+            self.special_characters_max_cutoff = special_characters_max_cutoff
 
     def __str__(self) -> str:
         s = "pass_name: filter_check_special_characters\n"
@@ -58,9 +58,6 @@ class LocalCheckSpecialCharactersFilter(BaseLocalFilterOperator):
 
     def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
         document = entry[self.filter_column]
-
-        assert self.special_characters
-        assert self.special_characters_max_cutoff
 
         if len(document) == 0:
             special_characters_ratio = 0.0

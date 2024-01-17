@@ -15,7 +15,7 @@
 data operator for local using
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from qianfan.dataset.local_data_operators.base_local_data_operator import (
     BaseLocalFilterOperator,
@@ -23,25 +23,21 @@ from qianfan.dataset.local_data_operators.base_local_data_operator import (
 from qianfan.dataset.local_data_operators.local_operator_utils import (
     pyltp_split_sentence,
 )
-from qianfan.utils.pydantic import Field, root_validator
 
 
 class LocalCheckEachSentenceIsLongEnoughFilter(BaseLocalFilterOperator):
     """check sentence length"""
 
-    short_sentence_ratio_max_cutoff: Optional[int] = Field(default=None)
-    short_sentence_max_cutoff: Optional[int] = Field(default=None)
-
-    @root_validator
-    @classmethod
-    def _fill_param(cls, input_dicts: Dict[str, Any]) -> Dict[str, Any]:
-        if not input_dicts["short_sentence_ratio_max_cutoff"]:
-            input_dicts["short_sentence_ratio_max_cutoff"] = 0.6
-
-        if not input_dicts["short_sentence_max_cutoff"]:
-            input_dicts["short_sentence_max_cutoff"] = 5
-
-        return input_dicts
+    def __init__(
+        self,
+        filter_column: str,
+        short_sentence_ratio_max_cutoff: float = 0.6,
+        short_sentence_max_cutoff: int = 5,
+        **kwargs: Any,
+    ) -> None:
+        self.short_sentence_ratio_max_cutoff = short_sentence_ratio_max_cutoff
+        self.short_sentence_max_cutoff = short_sentence_max_cutoff
+        super().__init__(filter_column=filter_column, **kwargs)
 
     def __str__(self) -> str:
         s = "filter_name: filter_check_each_sentence_is_long_enough\n"
@@ -58,9 +54,6 @@ class LocalCheckEachSentenceIsLongEnoughFilter(BaseLocalFilterOperator):
         sentences = pyltp_split_sentence(entry[self.filter_column])
         if len(sentences) == 0:
             return False
-
-        assert self.short_sentence_ratio_max_cutoff
-        assert self.short_sentence_max_cutoff
 
         cond = True
         hit = 0

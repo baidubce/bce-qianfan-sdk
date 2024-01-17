@@ -15,12 +15,13 @@
 constants of local data operator
 """
 import string
+from typing import Dict, List, Set
 
 import emoji
 
 # 字符重复率算子使用
 
-_character_repetition_length_map = {
+_character_repetition_length_map: Dict[str, int] = {
     "AR": 10,
     "BN": 10,
     "CA": 10,
@@ -36,7 +37,7 @@ _character_repetition_length_map = {
     "ZH": 3,
 }
 
-_character_repetition_max_cutoff_map = {
+_character_repetition_max_cutoff_map: Dict[str, float] = {
     "AR": 0.20,
     "BN": 0.13,
     "CA": 0.20,
@@ -54,7 +55,7 @@ _character_repetition_max_cutoff_map = {
 
 # 检查特殊词比例算子使用
 
-_special_character_map = {
+_special_character_map: Dict[str, float] = {
     "AR": 0.30,
     "BN": 0.45,
     "CA": 0.25,
@@ -83,13 +84,15 @@ other_special_characters = (
 # emoji 表情列表
 emoji_en = list(emoji.EMOJI_DATA.keys())
 
-default_special_characters_set = set(main_special_characters + other_special_characters)
+default_special_characters_set: Set[str] = set(
+    main_special_characters + other_special_characters
+)
 
 default_special_characters_set.update(emoji_en)
 
 # 敏感词过滤算子使用
 
-_words_augmentation_group_sizes_map = {
+_words_augmentation_group_sizes_map: Dict[str, List[int]] = {
     "AR": [],
     "BN": [],
     "CA": [],
@@ -105,7 +108,7 @@ _words_augmentation_group_sizes_map = {
     "ZH": [2],
 }
 
-_words_augmentation_join_char_map = {
+_words_augmentation_join_char_map: Dict[str, str] = {
     "AR": "",
     "BN": "",
     "CA": "",
@@ -121,7 +124,7 @@ _words_augmentation_join_char_map = {
     "ZH": "",
 }
 
-_flagged_words_max_cutoff_map = {
+_flagged_words_max_cutoff_map: Dict[str, float] = {
     "AR": 0.03,
     "BN": 0.001,
     "CA": 0.1,

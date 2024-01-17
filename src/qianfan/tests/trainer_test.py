@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
 import pytest
 
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -50,6 +52,14 @@ def test_load_data_action():
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     res = LoadDataSetAction(ds).exec()
+    assert isinstance(res, dict)
+    assert "datasets" in res
+
+    preset = Dataset.load(
+        qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
+    )
+
+    res = LoadDataSetAction(preset).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
 
@@ -301,15 +311,39 @@ def test_trainer_sft_with_eval():
 
 def test_train_config_load():
     # 使用 patch 和 mock_open 来模拟文件
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.yaml")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    yaml_config_path = "config.yaml"
+    json_config_path = "config.json"
 
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.json")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    try:
+        with open(yaml_config_path, mode="w") as f:
+            f.write("""
+                    epoch: 1
+                    batch_size: 4
+                    max_seq_len: 4096
+                """)
+
+        with open(json_config_path, mode="w") as f:
+            f.write("""
+                {
+                    "epoch": 1,
+                    "batch_size": 4,
+                    "max_seq_len": 4096
+                }
+                """)
+
+        tc = TrainConfig.load(yaml_config_path)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+
+        tc = TrainConfig.load(json_config_path)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+
+    finally:
+        os.remove(yaml_config_path)
+        os.remove(json_config_path)
 
 
 def test_train_limit__or__():

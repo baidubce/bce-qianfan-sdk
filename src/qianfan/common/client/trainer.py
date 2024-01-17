@@ -261,7 +261,9 @@ def run(
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
-    ds = Dataset.load(qianfan_dataset_id=dataset_id)
+    ds = Dataset.load(
+        qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+    )
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:

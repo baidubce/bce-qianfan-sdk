@@ -53,6 +53,14 @@ def test_load_data_action():
     assert isinstance(res, dict)
     assert "datasets" in res
 
+    preset = Dataset.load(
+        qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
+    )
+
+    res = LoadDataSetAction(preset).exec()
+    assert isinstance(res, dict)
+    assert "datasets" in res
+
 
 def test_train_action():
     ds_id = 111

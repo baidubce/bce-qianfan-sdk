@@ -316,24 +316,20 @@ def test_train_config_load():
 
     try:
         with open(yaml_config_path, mode="w") as f:
-            f.write(
-                """
+            f.write("""
                     epoch: 1
                     batch_size: 4
                     max_seq_len: 4096
-                """
-            )
+                """)
 
         with open(json_config_path, mode="w") as f:
-            f.write(
-                """
+            f.write("""
                 {
                     "epoch": 1,
                     "batch_size": 4,
                     "max_seq_len": 4096
                 }
-                """
-            )
+                """)
 
         tc = TrainConfig.load(yaml_config_path)
         assert tc.epoch == 1

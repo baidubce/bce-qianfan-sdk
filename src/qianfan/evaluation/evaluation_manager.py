@@ -20,7 +20,7 @@ import math
 import multiprocessing
 import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 from qianfan import get_config
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -53,6 +53,7 @@ class EvaluationManager(BaseModel):
 
     local_evaluators: Optional[List[LocalEvaluator]] = Field(default=None)
     qianfan_evaluators: Optional[List[QianfanEvaluator]] = Field(default=None)
+    task_id: Optional[str] = Field(default=None)
 
     @root_validator
     @classmethod
@@ -168,7 +169,7 @@ class EvaluationManager(BaseModel):
         return result_list
 
     def eval(
-        self, llms: List[Union[Model, Service]], dataset: Dataset, **kwargs: Any
+        self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
     ) -> Optional[EvaluationResult]:
         """
         Evaluate the performance of models on the dataset.
@@ -385,6 +386,9 @@ class EvaluationManager(BaseModel):
             qianfan_data_source = dataset.inner_data_source_cache
             assert isinstance(qianfan_data_source, QianfanDataSource)
 
+            for i in range(len(model_objs)):
+                model_objs[i].auto_complete_info()
+
             # 提交评估任务
             resp_body = ResourceModel.create_evaluation_task(
                 name=f"sdk_eval_{generate_letter_num_random_id(11)}",
@@ -399,6 +403,7 @@ class EvaluationManager(BaseModel):
 
             eval_id = resp_body["result"]["evalId"]
             task_url = f"https://console.bce.baidu.com/qianfan/modelcenter/model/eval/detail/task/{eval_id}"
+            self.task_id = eval_id
 
             log_info(f"please check webpage {task_url} to get further information")
 
@@ -435,7 +440,10 @@ class EvaluationManager(BaseModel):
 
             result_list = ResourceModel.get_evaluation_result(eval_id)["result"]
             metric_list: Dict[str, Dict[str, Any]] = {
-                result["modelName"]: result["effectMetric"] for result in result_list
+                f'{result["modelName"]}_{result["modelVersion"]}': result[
+                    "effectMetric"
+                ]
+                for result in result_list
             }
 
             # 返回指标信息

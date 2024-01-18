@@ -29,6 +29,7 @@ from rich.progress import (
 )
 
 from qianfan.common.client.utils import (
+    credential_required,
     enum_typer,
     print_error_msg,
     replace_logger_handler,
@@ -50,7 +51,11 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
 
-trainer_app = typer.Typer(no_args_is_help=True)
+trainer_app = typer.Typer(
+    no_args_is_help=True,
+    help="Qianfan trainer",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 class MyEventHandler(EventHandler):
@@ -185,8 +190,9 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
 @trainer_app.command()
+@credential_required
 def run(
-    dataset_id: int = typer.Option(..., help="Dataset id"),
+    dataset_id: str = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "
@@ -261,7 +267,9 @@ def run(
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
-    ds = Dataset.load(qianfan_dataset_id=dataset_id)
+    ds = Dataset.load(
+        qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+    )
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:

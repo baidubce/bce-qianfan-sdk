@@ -301,7 +301,7 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
 
 
 def _create_import_data_task_and_wait_for_success(
-    dataset_id: int,
+    dataset_id: str,
     is_annotated: bool,
     file_path: str,
     source_type: DataSourceType = DataSourceType.PrivateBos,
@@ -337,8 +337,8 @@ def _create_import_data_task_and_wait_for_success(
 class QianfanDataSource(DataSource, BaseModel):
     """Qianfan data source"""
 
-    id: int
-    group_id: int
+    id: str
+    group_id: str
     name: str
     set_type: DataSetType
     project_type: DataProjectType
@@ -355,6 +355,7 @@ class QianfanDataSource(DataSource, BaseModel):
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
     download_when_init: bool = Field(default=False)
     data_format_type: FormatType
+    old_dataset_id: Optional[int] = None
 
     ak: Optional[str] = None
     sk: Optional[str] = None
@@ -841,11 +842,10 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_debug(f"create qianfan dataset response: {qianfan_resp}")
         log_info("create dataset on qianfan successfully")
-
         # 构造对象
         source = cls(
-            id=qianfan_resp["id"],
-            group_id=qianfan_resp["groupId"],
+            id=qianfan_resp["datasetId"],
+            group_id=qianfan_resp["groupPK"],
             name=name,
             version=qianfan_resp["versionId"],
             set_type=set_type,
@@ -859,6 +859,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp.get("id"),
             ak=ak,
             sk=sk,
         )
@@ -1007,7 +1008,7 @@ class QianfanDataSource(DataSource, BaseModel):
     @classmethod
     def get_existed_dataset(
         cls,
-        dataset_id: int,
+        dataset_id: str,
         is_download_to_local: bool = True,
         ak: Optional[str] = None,
         sk: Optional[str] = None,
@@ -1017,7 +1018,7 @@ class QianfanDataSource(DataSource, BaseModel):
         Load a dataset from qianfan as data source
 
         Args:
-            dataset_id (int): dataset id on Qianfan, show as "数据集版本 ID"
+            dataset_id (str): dataset id on Qianfan, show as "数据集版本 ID"
             is_download_to_local (bool):
                 does dataset download file when initialize object，default to True
             ak (Optional[str]):
@@ -1074,8 +1075,8 @@ class QianfanDataSource(DataSource, BaseModel):
 
         # 创建对象
         dataset = cls(
-            id=qianfan_resp["versionInfo"]["datasetId"],
-            group_id=qianfan_resp["versionInfo"]["groupId"],
+            id=qianfan_resp["versionInfo"]["datasetPK"],
+            group_id=qianfan_resp["groupPK"],
             name=qianfan_resp["name"],
             version=qianfan_resp["versionInfo"]["versionId"],
             set_type=set_type,
@@ -1090,6 +1091,7 @@ class QianfanDataSource(DataSource, BaseModel):
             download_when_init=is_download_to_local,
             info={**qianfan_resp},
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp["versionInfo"].get("datasetId"),
             ak=ak,
             sk=sk,
         )

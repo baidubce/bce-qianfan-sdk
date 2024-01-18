@@ -25,10 +25,10 @@ def test_list_model():
     """
     test Model.list
     """
-    resp = Model.list(model_id=643)
-    assert resp["_request"] == {"modelId": 643}
+    resp = Model.list(model_id="643")
+    assert resp["_request"] == {"modelId": "643"}
     result = resp["result"]
-    assert "modelId" in result
+    assert "modelIdStr" in result
     assert "modelVersionList" in result
 
 
@@ -36,9 +36,9 @@ def test_model_detail():
     """
     test Model.detail
     """
-    resp = Model.detail(model_version_id=851)
-    assert resp["_request"] == {"modelVersionId": 851}
-    assert "modelId" in resp["result"]
+    resp = Model.detail(model_version_id="851")
+    assert resp["_request"] == {"modelVersionId": "851"}
+    assert "modelIdStr" in resp["result"]
     assert "params" in resp["result"]
 
 

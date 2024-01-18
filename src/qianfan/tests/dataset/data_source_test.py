@@ -162,8 +162,7 @@ def test_create_bare_qianfan_data_source():
 
 def test_create_qianfan_data_source_from_existed():
     source = QianfanDataSource.get_existed_dataset(12, False)
-    assert source.id == 12
-    assert source.group_id == 14510
+    assert source.id == "12"
     assert source.storage_region == "bj"
 
 

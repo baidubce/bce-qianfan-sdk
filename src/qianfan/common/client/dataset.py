@@ -25,6 +25,8 @@ from rich.table import Table
 
 import qianfan.common.client.utils as client_utils
 from qianfan.common.client.utils import (
+    check_credential,
+    credential_required,
     enum_typer,
     print_error_msg,
     print_info_msg,
@@ -45,29 +47,16 @@ dataset_app = typer.Typer(
 QIANFAN_PATH_PREFIX = "qianfan://"
 
 
-def extract_id_from_path(path: str) -> Optional[int]:
+def extract_id_from_path(path: str) -> Optional[str]:
     """
     Extract dataset id from path.
     Return 0 if path is not a qianfan dataset.
     """
-    try:
-        # if path is an integer, it is a dataset id
-        return int(path)
-    except ValueError:
-        pass
-
     if path.startswith(QIANFAN_PATH_PREFIX):
         id = path[len(QIANFAN_PATH_PREFIX) :]
-        try:
-            return int(id)
-        except ValueError:
-            print_error_msg(
-                (
-                    "Invalid platform dataset url. Shoule be like"
-                    f" {QIANFAN_PATH_PREFIX}{{dataset_version_id}}"
-                ),
-                exit=True,
-            )
+        return id
+    if path.startswith("ds-"):
+        return path
 
     return None
 
@@ -86,6 +75,7 @@ PANEL_FOR_CREATE_DATASET = (
 
 
 @dataset_app.command()
+@credential_required
 def save(
     src: str = typer.Argument(
         ...,
@@ -197,6 +187,7 @@ def save(
 
 
 @dataset_app.command()
+@credential_required
 def download(
     dataset_id: str = typer.Argument(
         ...,
@@ -216,6 +207,7 @@ def download(
 
 
 @dataset_app.command()
+@credential_required
 def upload(
     path: Path = typer.Argument(
         ...,
@@ -298,6 +290,8 @@ def view(
     View the content of the dataset.
     """
     console = Console()
+    if extract_id_from_path(dataset) is not None:
+        check_credential()
     with console.status("Loading dataset..."):
         ds = load_dataset(dataset)
     # list of (start_idx, end_idx)
@@ -385,6 +379,7 @@ def view(
 
 
 @dataset_app.command()
+@credential_required
 def predict(
     dataset: str = typer.Argument(
         ...,

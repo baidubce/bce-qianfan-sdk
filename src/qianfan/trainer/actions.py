@@ -102,7 +102,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return {
             "datasets": [
                 {
-                    "id": qf_data_src.id,
+                    "id": qf_data_src.old_dataset_id,
                     "type": console_consts.TrainDatasetType.Platform.value,
                 }
             ]
@@ -516,7 +516,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     Output:
     ```
-    {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+    {'task_id': 47923, 'job_id': 33512, 'model_id': "xxx", 'model_version_id': "aaa"}
     ```
     """
 
@@ -595,10 +595,10 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
 
     input:
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx"}
     output:
         ```
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39,
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx",
         'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
         ```
     """
@@ -607,8 +607,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """deploy config include replicas and so on"""
     model_id: Optional[int]
     """model id"""
+    model_id_str: Optional[str]
+    """model str id"""
     model_version_id: Optional[int]
     """model version id"""
+    model_version_id_str: Optional[str]
+    """model version str id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
@@ -634,18 +638,23 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if input.get("model") is None:
             self.model_id = input.get("model_id")
             self.model_version_id = input.get("model_version_id")
+            # TODO 迁移成str id
             if self.model_id is None or self.model_version_id is None:
                 raise InvalidArgumentError("model_id or model_version_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
             if self.model is None:
                 raise InvalidArgumentError(
                     "must input with model or model id and version id"
                 )
-            self.model_id = self.model.id
-            self.model_version_id = self.model.version_id
+            self.model.auto_complete_info()
+            self.model_id = self.model.old_id
+            self.model_version_id = self.model.old_version_id
+        # 自动补全
+
         return self._exec(**kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -691,7 +700,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         """
         if self.model_id is not None and self.model_version_id is not None:
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id_str, self.model_version_id_str)
+            self.model.auto_complete_info()
         elif self.model is None:
             raise InvalidArgumentError(
                 "either (model_id and version_id) or model must be set"

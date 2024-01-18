@@ -466,6 +466,9 @@ class QianfanDataSource(DataSource, BaseModel):
             log_error(err_msg)
             raise ValueError(err_msg)
 
+        if storage_path[-1] != "/":
+            storage_path += "/"
+
         ak = self.ak if self.ak else get_config().ACCESS_KEY
         sk = self.sk if self.sk else get_config().SECRET_KEY
         if not ak:

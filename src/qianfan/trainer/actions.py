@@ -247,13 +247,23 @@ class TrainAction(
         self.validateTrainConfig()
         if train_mode is not None:
             self.train_mode = train_mode
-        self.task_name = (
-            f"task_{utils.generate_letter_num_random_id()}"
-            if task_name is None
-            else task_name
-        )
+        self.task_name = self._generate_task_name(task_name, self.train_type)
         self.task_description = task_description
         self.job_description = job_description
+
+    def _generate_task_name(
+        self, task_name: Optional[str], train_type: Optional[str]
+    ) -> str:
+        if task_name is not None:
+            return task_name
+        model_info = (
+            ModelInfoMapping.get(train_type) if train_type is not None else None
+        )
+        return (
+            f"job_{utils.generate_letter_num_random_id()}"
+            if model_info is None
+            else f"{model_info.short_name}_{utils.generate_letter_num_random_id(5)}"
+        )
 
     def validateTrainConfig(self) -> None:
         """
@@ -357,13 +367,13 @@ class TrainAction(
         # for resume
         if self._input is None:
             self._input = input
-        return self._exec(input, **kwargs)
+        return self._exec(self._input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         # 校验数据集
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
-            raise InvalidArgumentError("train set rate must be set")
+            raise InvalidArgumentError("train set must be set")
 
         # 判断是否增量训练
         if self.is_incr:
@@ -430,10 +440,10 @@ class TrainAction(
             job_status = job_status_resp["result"]["trainStatus"]
             job_progress = job_status_resp["result"]["progress"]
             log_info(
-                f"[train_action] fine-tune running... current status: {job_status},"
-                f" {job_progress}% "
-                "check train log in"
-                f" https://console.bce.baidu.com/qianfan/train/sft/{self.task_id}/{self.job_id}/detail/traininglog"
+                "[train_action] fine-tune running..."
+                f" task_name:{self.task_name} current status: {job_status},"
+                f" {job_progress}% check train task in"
+                " https://console.bce.baidu.com/qianfan/train/sft/list"
             )
             if job_progress >= 50:
                 log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")

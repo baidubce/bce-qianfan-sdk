@@ -27,6 +27,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
+from baidubce.auth.bce_credentials import BceCredentials
+from baidubce.bce_client_configuration import BceClientConfiguration
+from baidubce.services.bos.bos_client import BosClient
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
@@ -1133,3 +1136,211 @@ class QianfanDataSource(DataSource, BaseModel):
             else:
                 log_info("data releasing succeeded")
                 return True
+
+
+class BosDataSource(DataSource, BaseModel):
+    """Bos Data Source"""
+
+    region: str
+    bucket: str
+    bos_file_path: str
+    file_format: Optional[FormatType] = Field(default=None)
+    ak: Optional[str] = Field(default=None)
+    sk: Optional[str] = Field(default=None)
+
+    def save(
+        self,
+        data: Optional[str] = None,
+        zip_file_path: Optional[str] = None,
+        should_overwrite_existed_file: bool = False,
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Export the data to specific bos storage
+        and return
+        whether the import was successful or failed
+
+        Args:
+            data (Optional[str]):
+                data need to be saved, default to None
+            zip_file_path (Optional[str]):
+                path of your zip file, default to None
+            should_overwrite_existed_file (bool):
+                should bos data source overwrite existed file when save data,
+                default to False
+            **kwargs (Any):
+                optional arguments
+
+        Returns:
+            bool: is saving successful
+        """
+        assert self.ak
+        assert self.sk
+        assert self.file_format
+
+        bos_config = BceClientConfiguration(
+            credentials=BceCredentials(self.ak, self.sk),
+            endpoint=f"{self.region}.bcebos.com",
+        )
+        bos_client = BosClient(bos_config)
+
+        if data and zip_file_path:
+            err_msg = "can't set 'data' and 'zip_file_path' simultaneously"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if not data and not zip_file_path:
+            err_msg = "must set either 'data' or 'zip_file_path'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if data:
+            final_bos_file_path = self.bos_file_path
+        else:
+            final_bos_file_path = self.bos_file_path.replace(
+                f".{self.file_format.value}", ".zip"
+            )
+
+        if not should_overwrite_existed_file:
+            file_existed = True
+            try:
+                bos_client.get_object_meta_data(self.bucket, final_bos_file_path)
+            except Exception:
+                file_existed = False
+
+            if file_existed:
+                err_msg = (
+                    f"{final_bos_file_path} existed and argument"
+                    " 'should_overwrite_existed_file' is False"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+        if should_overwrite_existed_file:
+            try:
+                bos_client.delete_object(self.bucket, final_bos_file_path)
+            except Exception:
+                # 防御性删除，不管文件是否是真的存在
+                pass
+
+        try:
+            if data:
+                bos_client.put_object_from_string(
+                    self.bucket, final_bos_file_path, data
+                )
+            elif zip_file_path:
+                bos_client.put_object_from_file(
+                    self.bucket, final_bos_file_path, zip_file_path
+                )
+        except Exception as e:
+            err_msg = (
+                "an error occurred during upload data to bos with path"
+                f" {final_bos_file_path} of bucket {self.bucket} in region"
+                f" {self.region}: {str(e)}"
+            )
+            log_error(err_msg)
+            raise e
+
+        return True
+
+    async def asave(self, data: str, **kwargs: Any) -> bool:
+        """
+        Asynchronously export the data to specific bos storage
+        and return
+        whether the import was successful or failed
+        Not available currently
+
+        Args:
+            data (str): data need to be saved
+            **kwargs (Any): optional arguments
+
+        Returns:
+            bool: is saving successful
+        """
+        raise NotImplementedError()
+
+    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
+        """
+        Read data from bos.
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
+        """
+        assert self.ak
+        assert self.sk
+        bos_config = BceClientConfiguration(
+            credentials=BceCredentials(self.ak, self.sk),
+            endpoint=f"{self.region}.bcebos.com",
+        )
+        bos_client = BosClient(bos_config)
+
+        try:
+            return bos_client.get_object_as_string(self.bucket, self.bos_file_path)
+        except Exception as e:
+            err_msg = (
+                f"fetch file content from bos path {self.bos_file_path} of bucket"
+                f" {self.bucket} in region {self.region} failed: {str(e)}"
+            )
+            log_error(err_msg)
+            raise e
+
+    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
+        """
+        Asynchronously Read data from bos.
+        Not available currently
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
+        """
+        raise NotImplementedError()
+
+    def format_type(self) -> FormatType:
+        assert self.file_format
+        return self.file_format
+
+    def set_format_type(self, format_type: FormatType) -> None:
+        self.file_format = format_type
+
+    @root_validator
+    @classmethod
+    def _param_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        bos_file_path = values["bos_file_path"]
+        if bos_file_path[-1] == "/":
+            err_msg = f"bos file path {bos_file_path} end with '/'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if not values.get("file_format", None):
+            index = bos_file_path.rfind(".")
+            # 读文件夹或查询不到的情况下默认使用纯文本格式
+            if index == -1:
+                log_warn(f"use default format type {FormatType.Text}")
+                values["file_format"] = FormatType.Text
+            else:
+                suffix = bos_file_path[index + 1 :]
+                for t in FormatType:
+                    if t.value == suffix:
+                        values["file_format"] = t
+                        log_info(f"use format type {t}")
+                        break
+                err_msg = f"cannot match proper format type for {suffix}"
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+        ak = values.get("ak", None)
+        if not ak:
+            values["ak"] = get_config().ACCESS_KEY
+
+        sk = values.get("sk", None)
+        if not sk:
+            values["sk"] = get_config().SECRET_KEY
+
+        return values

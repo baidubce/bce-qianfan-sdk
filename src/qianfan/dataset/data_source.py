@@ -18,6 +18,7 @@ data source which is related to download/upload
 import datetime
 import json
 import os.path
+import shutil
 import uuid
 import zipfile
 from abc import ABC, abstractmethod
@@ -142,6 +143,32 @@ class DataSource(ABC):
         """
 
 
+def _read_all_file_content_in_an_folder(path: str, format_type: FormatType) -> List[str]:
+    ret_list: List[str] = []
+
+    # 不保证文件读取的顺序性
+    for root, dirs, files in os.walk(path):
+        for file_name in files:
+            if not file_name.endswith(format_type.value):
+                continue
+
+            file_path = os.path.join(root, file_name)
+            with open(file_path, mode="r") as f:
+                ret_list.append(f.read())
+
+    return ret_list
+
+
+def _read_all_file_from_zip(path: str, format_type: FormatType) -> List[str]:
+    tmp_folder_path = "tmp_folder_path"
+    try:
+        with zipfile.ZipFile(path) as zip_file:
+            zip_file.extractall(tmp_folder_path)
+        return _read_all_file_content_in_an_folder(tmp_folder_path, format_type)
+    finally:
+        shutil.rmtree(tmp_folder_path, ignore_errors=True)
+
+
 # 目前第一期主要支持本地调用
 # 且目前只支持读单个文件，文件夹兼容稍后
 class FileDataSource(DataSource, BaseModel):
@@ -211,22 +238,14 @@ class FileDataSource(DataSource, BaseModel):
                 String or list of string containing the data read from the file.
         """
         # 检查文件是否存在且非目录
+        read_from_zip = zipfile.is_zipfile(self.path)
+
         if not os.path.exists(self.path):
             raise ValueError("file path not found")
         if os.path.isdir(self.path):
-            ret_list: List[str] = []
-
-            # 不保证文件读取的顺序性
-            for root, dirs, files in os.walk(self.path):
-                for file_name in files:
-                    if not file_name.endswith(self.format_type().value):
-                        continue
-
-                    file_path = os.path.join(root, file_name)
-                    with open(file_path, mode="r") as f:
-                        ret_list.append(f.read())
-
-            return ret_list
+            return _read_all_file_content_in_an_folder(self.path, self.file_format)
+        elif read_from_zip:
+            return _read_all_file_from_zip(self.path, self.file_format)
         else:
             with open(self.path, mode="r") as file:
                 return file.read().strip("\n")
@@ -273,12 +292,12 @@ class FileDataSource(DataSource, BaseModel):
 
         try:
             index = path.rfind(".")
-            # 读文件夹或查询不到的情况下默认使用纯文本格式
-            if os.path.isdir(path) or index == -1:
+            # 读文件夹或查询不到或读 zip 包的情况下默认使用纯文本格式
+            if os.path.isdir(path) or index == -1 or path[index + 1:] == "zip":
                 log_warn(f"use default format type {FormatType.Text}")
                 values["file_format"] = FormatType.Text
                 return values
-            suffix = path[index + 1 :]
+            suffix = path[index + 1:]
             for t in FormatType:
                 if t.value == suffix:
                     values["file_format"] = t
@@ -1259,11 +1278,14 @@ class BosDataSource(DataSource, BaseModel):
         """
         raise NotImplementedError()
 
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
+    def fetch(self, read_from_zip: bool = False, **kwargs: Any) -> Union[str, List[str]]:
         """
         Read data from bos.
 
         Args:
+            read_from_zip (bool):
+                does FileDataSource read data from a zip file,
+                default to False
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
@@ -1272,6 +1294,10 @@ class BosDataSource(DataSource, BaseModel):
         """
         assert self.ak
         assert self.sk
+
+        index = self.bos_file_path.rfind(".")
+        read_from_zip = read_from_zip or (index != -1 and self.bos_file_path[index + 1:] == "zip")
+
         bos_config = BceClientConfiguration(
             credentials=BceCredentials(self.ak, self.sk),
             endpoint=f"{self.region}.bcebos.com",
@@ -1279,6 +1305,15 @@ class BosDataSource(DataSource, BaseModel):
         bos_client = BosClient(bos_config)
 
         try:
+            if read_from_zip:
+                tmp_zip_file = "tmp_zip_file.zip"
+                try:
+                    bos_client.get_object_to_file(self.bucket, self.bos_file_path, tmp_zip_file)
+                    return _read_all_file_from_zip(tmp_zip_file, self.file_format)
+                finally:
+                    if os.path.exists(tmp_zip_file):
+                        os.remove(tmp_zip_file)
+
             return bos_client.get_object_as_string(self.bucket, self.bos_file_path)
         except Exception as e:
             err_msg = (
@@ -1312,29 +1347,6 @@ class BosDataSource(DataSource, BaseModel):
     @root_validator
     @classmethod
     def _param_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        bos_file_path = values["bos_file_path"]
-        if bos_file_path[-1] == "/":
-            err_msg = f"bos file path {bos_file_path} end with '/'"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        if not values.get("file_format", None):
-            index = bos_file_path.rfind(".")
-            # 读文件夹或查询不到的情况下默认使用纯文本格式
-            if index == -1:
-                log_warn(f"use default format type {FormatType.Text}")
-                values["file_format"] = FormatType.Text
-            else:
-                suffix = bos_file_path[index + 1 :]
-                for t in FormatType:
-                    if t.value == suffix:
-                        values["file_format"] = t
-                        log_info(f"use format type {t}")
-                        break
-                err_msg = f"cannot match proper format type for {suffix}"
-                log_error(err_msg)
-                raise ValueError(err_msg)
-
         ak = values.get("ak", None)
         if not ak:
             values["ak"] = get_config().ACCESS_KEY
@@ -1342,5 +1354,30 @@ class BosDataSource(DataSource, BaseModel):
         sk = values.get("sk", None)
         if not sk:
             values["sk"] = get_config().SECRET_KEY
+
+        bos_file_path = values["bos_file_path"]
+        if bos_file_path[-1] == "/":
+            err_msg = f"bos file path {bos_file_path} end with '/'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if values.get("file_format", None):
+            return values
+
+        index = bos_file_path.rfind(".")
+        # 查询不到或者是 zip 包的情况下默认使用纯文本格式
+        if index == -1 or bos_file_path[index + 1:] == "zip":
+            log_warn(f"use default format type {FormatType.Text}")
+            values["file_format"] = FormatType.Text
+        else:
+            suffix = bos_file_path[index + 1:]
+            for t in FormatType:
+                if t.value == suffix:
+                    values["file_format"] = t
+                    log_info(f"use format type {t}")
+                    break
+            err_msg = f"cannot match proper format type for {suffix}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         return values

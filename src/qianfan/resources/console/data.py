@@ -134,6 +134,10 @@ class Data:
                 raise ValueError(
                     "storage path is empty while create dataset in private bos"
                 )
+
+            if storage_path[-1] != "/":
+                storage_path += "/"
+
             post_body_dict["storageId"] = storage_id
             post_body_dict["rawStoragePath"] = storage_path
 

@@ -240,7 +240,7 @@ class ModelInfo(BaseModel):
 # model train type -> default train config
 ModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
-        short_name="ERNIE-Speed",
+        short_name="ERNIE_Speed",
         base_model_type="ERNIE-Speed",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -260,7 +260,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
-        short_name="turbo-0922",
+        short_name="turbo_0922",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -280,7 +280,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
-        short_name="turbo-0725",
+        short_name="turbo_0725",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -299,7 +299,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0704": ModelInfo(
-        short_name="turbo-0704",
+        short_name="turbo_0704",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
@@ -321,7 +321,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "Llama-2-7b": ModelInfo(
-        short_name="Llama-2-7b",
+        short_name="Llama2_7b",
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
@@ -348,7 +348,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "Llama-2-13b": ModelInfo(
-        short_name="Llama-2-13b",
+        short_name="Llama2_13b",
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
@@ -375,7 +375,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "SQLCoder-7B": ModelInfo(
-        short_name="SQLCoder-7B",
+        short_name="SQLCoder_7B",
         base_model_type="SQLCoder",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -386,7 +386,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         ),
     ),
     "ChatGLM2-6B": ModelInfo(
-        short_name="ChatGLM2-6B",
+        short_name="ChatGLM2_6B",
         base_model_type="ChatGLM2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -397,7 +397,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         ),
     ),
     "Baichuan2-7B": ModelInfo(
-        short_name="Baichuan2-7B",
+        short_name="Baichuan2_7B",
         base_model_type="Baichuan2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -408,7 +408,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         ),
     ),
     "Baichuan2-13B": ModelInfo(
-        short_name="Baichuan2-13B",
+        short_name="Baichuan2_13B",
         base_model_type="Baichuan2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -419,7 +419,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         ),
     ),
     "BLOOMZ-7B": ModelInfo(
-        short_name="BLOOMZ-7B",
+        short_name="BLOOMZ_7B",
         base_model_type="BLOOMZ",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
@@ -430,7 +430,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         ),
     ),
     "CodeLlama-7B": ModelInfo(
-        short_name="CodeLlama-7B",
+        short_name="CodeLlama_7B",
         base_model_type="CodeLlama",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(

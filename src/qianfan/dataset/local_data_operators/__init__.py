@@ -10,10 +10,19 @@ from qianfan.dataset.local_data_operators.check_sentence_length_filter import (
 from qianfan.dataset.local_data_operators.check_special_characters import (
     LocalCheckSpecialCharactersFilter,
 )
+from qianfan.dataset.local_data_operators.check_stopwords import (
+    LocalCheckStopwordsFilter,
+)
+from qianfan.dataset.local_data_operators.check_word_number import (
+    LocalCheckWordNumberFilter,
+)
 
 __all__ = [
     "LocalCheckSpecialCharactersFilter",
     "LocalCheckCharacterRepetitionFilter",
     "LocalCheckEachSentenceIsLongEnoughFilter",
     "LocalCheckFlaggedWordsFilter",
+    "LocalCheckStopwordsFilter",
+    "LocalCheckWordNumberFilter",
+    "LocalCheckWordNumberFilter",
 ]

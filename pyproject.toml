@@ -69,6 +69,13 @@ select = [
 ]
 typing-modules = ["qianfan.resources.typing"]
 
+[tool.ruff.lint]
+extend-select = ["PLW1514"]
+preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"*test*.py" = ["PLW1514"]
+
 [tool.black]
 preview = true
 

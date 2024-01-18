@@ -50,7 +50,7 @@ $ qianfan chat [OPTIONS]
 * `--endpoint TEXT`：模型的 endpoint
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
-* `--debug`：调试模式，会打印请求相关的原始信息。当 plain 模式启用时该参数无效。
+* `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
 
 ### completion 补全
@@ -74,7 +74,7 @@ $ qianfan completion [OPTIONS] PROMPTS...
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
 * `--multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突
-* `--debug`：调试模式，会打印请求相关的原始信息。当 plain 模式启用时该参数无效。
+* `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
 
 ### txt2img 文生图
@@ -101,7 +101,7 @@ $ qianfan txt2img [OPTIONS] PROMPT
 * `--output PATH`：输出的文件名称  [default：`%Y%m%d_%H%M%S.jpg`]
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
-* `--debug`：调试模式，会打印请求相关的原始信息。当 plain 模式启用时该参数无效。
+* `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
 
 ### dataset 数据集

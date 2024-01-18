@@ -56,10 +56,7 @@ def txt2img_entry(
     list_model: bool = list_model_option,
     debug: bool = typer.Option(
         False,
-        help=(
-            "Debug mode. Request information will be printed. Not available in plain"
-            " mode."
-        ),
+        help="Debug mode. Request information will be printed.",
     ),
 ) -> None:
     """
@@ -73,8 +70,10 @@ def txt2img_entry(
             " Pillow`"
         )
         raise typer.Exit(1)
+
     client = create_client(qianfan.Text2Image, model, endpoint)
     kwargs: Dict[str, Any] = {}
+
     if negative_prompt != "":
         kwargs["negative_prompt"] = negative_prompt
     if plain:
@@ -89,8 +88,9 @@ def txt2img_entry(
     # avoid compressing the image
     img.save(output, quality=100, subsampling=0)
     print(f"Image saved to {output}")
+
     if debug:
         for i in range(len(resp["data"])):
             resp.body["data"][i]["b64_image"] = "omitted due to the length..."
             resp.body["data"][i]["image"] = "omitted due to length..."
-        Console().print(render_response_debug_info(resp))
+        Console(no_color=plain).print(render_response_debug_info(resp))

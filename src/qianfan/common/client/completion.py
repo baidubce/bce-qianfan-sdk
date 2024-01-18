@@ -51,7 +51,7 @@ class CompletionClient(object):
         self.model = model
         self.endpoint = endpoint
         self.plain = plain
-        self.console = Console()
+        self.console = Console(no_color=self.plain)
         self.debug = debug
         self.inference_args = kwargs
 
@@ -69,9 +69,9 @@ class CompletionClient(object):
             with self.console.status("Generating..."):
                 res = client.do(prompt=message, **self.inference_args)
             assert isinstance(res, QfResponse)
-            rprint(Markdown(res["result"]))
-            if self.debug:
-                rprint(render_response_debug_info(res))
+            self.console.print(Markdown(res["result"]))
+        if self.debug:
+            self.console.print(render_response_debug_info(res))
 
     def completion_multi(self, messages: List[str]) -> None:
         """
@@ -93,9 +93,9 @@ class CompletionClient(object):
             with self.console.status("Generating..."):
                 res = client.do(messages=msg_history, **self.inference_args)
             assert isinstance(res, QfResponse)
-            rprint(Markdown(res["result"]))
-            if self.debug:
-                rprint(render_response_debug_info(res))
+            self.console.print(Markdown(res["result"]))
+        if self.debug:
+            self.console.print(render_response_debug_info(res))
 
 
 MODEL_ARGUMENTS_PANEL = (
@@ -126,10 +126,7 @@ def completion_entry(
     ),
     debug: bool = typer.Option(
         False,
-        help=(
-            "Debug mode. Request information will be printed. Not available in plain"
-            " mode."
-        ),
+        help="Debug mode. Request information will be printed.",
     ),
     temperature: Optional[float] = typer.Option(
         None,

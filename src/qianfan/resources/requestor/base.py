@@ -270,9 +270,14 @@ class BaseAPIRequestor(object):
         for body, resp in responses:
             _check_if_status_code_is_200(resp)
             body_str = body.decode("utf-8")
+            event = ""
             if body_str == "":
                 continue
-            if not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
+            if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
+                # event indicator for the type of data
+                event = body_str[len(Consts.STREAM_RESPONSE_EVENT_PREFIX) :]
+                continue
+            elif not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
                 try:
                     # the response might be error message in json format
                     json_body = json.loads(body_str)
@@ -286,6 +291,8 @@ class BaseAPIRequestor(object):
                 )
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
+            if event != "":
+                json_body["event"] = event
             parsed = self._parse_response(json_body, resp)
             parsed.request = QfRequest.from_requests(resp.request)
             parsed.request.json_body = copy.deepcopy(request.json_body)

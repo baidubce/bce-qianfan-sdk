@@ -31,7 +31,9 @@ class Plugin(BaseResource):
 
     """
 
-    def __init__(self, endpoint: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self, model: str = "EBPlugin", endpoint: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """
         Init for Plugins including
         Qianfan plugin: endpoint must be specified.
@@ -39,7 +41,6 @@ class Plugin(BaseResource):
         """
         if endpoint is None:
             # 转换成一言插件
-            model = "EBPlugin"
             super().__init__(model, endpoint, **kwargs)
         else:
             super().__init__(endpoint=endpoint, **kwargs)
@@ -58,6 +59,12 @@ class Plugin(BaseResource):
         """
         return {
             "EBPlugin": QfLLMInfo(
+                # 一言插件
+                endpoint="/erniebot/plugin",
+                required_keys={"messages", "plugins"},
+                optional_keys={"user_id", "extra_data"},
+            ),
+            "EBPluginV1": QfLLMInfo(
                 # 一言插件
                 endpoint="/erniebot/plugins",
                 required_keys={"messages", "plugins"},

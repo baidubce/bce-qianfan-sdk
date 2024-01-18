@@ -29,6 +29,7 @@ from rich.progress import (
 )
 
 from qianfan.common.client.utils import (
+    credential_required,
     enum_typer,
     print_error_msg,
     replace_logger_handler,
@@ -189,6 +190,7 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
 @trainer_app.command()
+@credential_required
 def run(
     dataset_id: str = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),

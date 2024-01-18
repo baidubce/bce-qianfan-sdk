@@ -21,7 +21,12 @@ from rich.pretty import Pretty
 from rich.table import Table
 
 from qianfan.common.client.dataset import load_dataset
-from qianfan.common.client.utils import print_error_msg, print_info_msg, print_warn_msg
+from qianfan.common.client.utils import (
+    credential_required,
+    print_error_msg,
+    print_info_msg,
+    print_warn_msg,
+)
 from qianfan.errors import InternalError
 from qianfan.evaluation import EvaluationManager
 from qianfan.evaluation.consts import (
@@ -50,6 +55,7 @@ MANUAL_EVALUATOR_PANEL = "Manual Evaluator Options"
 
 
 @evaluation_app.command()
+@credential_required
 def run(
     models: List[str] = typer.Argument(
         ..., help="List of model version ids to be evaluated."

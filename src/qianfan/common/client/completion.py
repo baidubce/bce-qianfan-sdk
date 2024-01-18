@@ -24,6 +24,7 @@ import qianfan
 from qianfan import Messages, QfResponse, QfRole
 from qianfan.common.client.utils import (
     create_client,
+    credential_required,
     list_model_option,
     print_error_msg,
     print_info_msg,
@@ -84,6 +85,7 @@ class CompletionClient(object):
             rprint(Markdown(res["result"]))
 
 
+@credential_required
 def completion_entry(
     prompts: Optional[List[str]] = typer.Argument(None, help="Prompt List"),
     model: str = typer.Option(

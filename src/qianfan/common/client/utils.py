@@ -14,10 +14,12 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional, Type, TypeVar
+from functools import wraps
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 import click
 import typer
+from prompt_toolkit import prompt
 from rich import print as rprint
 from rich.console import Console
 from rich.logging import RichHandler
@@ -158,6 +160,61 @@ def replace_logger_handler() -> Console:
         logger.removeHandler(handler)
     logger.addHandler(RichHandler(console=console))
     return console
+
+
+def check_credential() -> None:
+    ak = qianfan.get_config().AK
+    sk = qianfan.get_config().SK
+    access_key = qianfan.get_config().ACCESS_KEY
+    secret_key = qianfan.get_config().SECRET_KEY
+
+    if ak is None or sk is None:
+        if access_key is None or secret_key is None:
+            print_info_msg(
+                'No enough credential found. Please provide your "access key" and'
+                ' "secret key".'
+            )
+            print_info_msg(
+                "You can find your key at"
+                " https://console.bce.baidu.com/iam/#/iam/accesslist"
+            )
+            print_info_msg(
+                "You can also set the credential using environment variable"
+                ' "QIANFAN_ACCESS_KEY" and "QIANFAN_SECRET_KEY".'
+            )
+            print()
+            if access_key is None:
+                while True:
+                    rprint("Please input your [b i]Access Key[/b i]: ", end="")
+                    access_key = prompt()
+                    if len(access_key) != 0:
+                        qianfan.get_config().ACCESS_KEY = access_key
+                        break
+                    else:
+                        print_error_msg("Access key cannot be empty.")
+            if secret_key is None:
+                while True:
+                    rprint("Please input your [b i]Secret Key[/b i]: ", end="")
+                    secret_key = prompt()
+                    if len(secret_key) != 0:
+                        qianfan.get_config().SECRET_KEY = secret_key
+                        break
+                    else:
+                        print_error_msg("Secret key cannot be empty.")
+            print()
+
+
+def credential_required(func: Callable) -> Callable:
+    """
+    Check the credential is provided.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        check_credential()
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 list_model_option = typer.Option(

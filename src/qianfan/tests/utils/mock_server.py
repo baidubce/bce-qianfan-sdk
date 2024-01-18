@@ -811,25 +811,41 @@ def get_model_version_detail():
     return json_response(
         {
             "result": {
-                "modelId": 1,
-                "modelName": "ERNIE-Bot",
-                "modelVersionId": 39,
-                "version": "ERNIE-Bot",
-                "description": "百度⾃⾏研发的⼤语⾔模型，覆盖海量中⽂数据，具有更强的对话问答、内容创作⽣成等能⼒。",
-                "sourceType": "PlatformPreset",
-                "sourceExtra": {},
-                "framework": "paddle",
-                "algorithm": "Ernie_Bot_105B",
-                "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_105B-2.4.0-V1.25.3",
+                "modelId": 12094,
+                "modelIdStr": "am-nvdx92556wpw",
+                "modelName": "m_18423_10840",
+                "modelVersionId": 14997,
+                "modelVersionIdStr": "amv-hcxfe5a8z6nd",
+                "version": "1",
+                "description": "",
+                "sourceType": "Train",
+                "sourceExtra": {
+                    "trainSourceExtra": {
+                        "taskId": 18423,
+                        "taskIdStr": "job-vbt3exahqhrv",
+                        "taskName": "task_EJD7l6v0TH",
+                        "iterationVersion": 1,
+                        "runId": 10840,
+                        "runIdStr": "task-am9st8hyntpm",
+                        "devType": 1,
+                        "modelType": 20,
+                        "templateType": 2000,
+                    },
+                    "sourceType": "Train",
+                },
+                "framework": "paddlepaddle",
+                "algorithm": "ERNIE_EB-ERNIEBOT_PRO",
+                "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_PRO_LORA",
                 "state": "Ready",
                 "ioMode": "chat",
                 "ioLength": "",
                 "copyright": "",
                 "property": {},
-                "createTime": "2023-05-31T21:49:00+08:00",
-                "modifyTime": "2023-08-29T19:28:15+08:00",
+                "createTime": "2024-01-16T18:38:08+08:00",
+                "modifyTime": "2024-01-16T18:42:44+08:00",
                 "deployResource": ["Private"],
                 "supportOptions": ["Deploy"],
+                "trainType": "ernieBotLite-Speed",
                 "params": {
                     "input": {
                         "type": "object",
@@ -870,35 +886,6 @@ def get_model_version_detail():
                                 "type": "string",
                                 "description": "表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用。",
                             },
-                            "temperature": {
-                                "name": "temperature",
-                                "type": "number",
-                                "format": "float",
-                                "description": (
-                                    "较高的数值会使输出更加随机，"
-                                    "而较低的数值会使其更加集中和确定。 默认0.95，范围"
-                                    " (0, 1.0]，不能为0 建议该参数和top_p只设置1个"
-                                ),
-                            },
-                            "top_p": {
-                                "name": "top_p",
-                                "type": "number",
-                                "format": "float",
-                                "description": (
-                                    "影响输出文本的多样性，取值越大，"
-                                    "生成文本的多样性越强。 默认0.8，取值范围 [0, 1.0]"
-                                    " 建议该参数和temperature只设置1个"
-                                ),
-                            },
-                            "penalty_score": {
-                                "name": "penalty_score",
-                                "type": "number",
-                                "format": "float",
-                                "description": (
-                                    "通过对已生成的token增加惩罚，减少重复生成的现象。"
-                                    "值越大表示惩罚越大。 默认1.0，取值范围：[1.0, 2.0]"
-                                ),
-                            },
                         },
                     },
                     "output": {
@@ -914,7 +901,7 @@ def get_model_version_detail():
                                 "name": "object",
                                 "type": "string",
                                 "description": (
-                                    "回包类型，“chat.completion”：多轮对话返回"
+                                    "回包类型 “chat.completion”：多轮对话返回"
                                 ),
                             },
                             "created": {
@@ -939,7 +926,7 @@ def get_model_version_detail():
                                 ),
                             },
                             "is_truncated": {
-                                "name": "is_end",
+                                "name": "is_truncated",
                                 "type": "boolean",
                                 "description": "标识当前生成的结果是否被截断",
                             },
@@ -961,7 +948,7 @@ def get_model_version_detail():
                                 "format": "int32",
                                 "description": (
                                     "当need_clear_history为true时，"
-                                    "次字段会告知第几轮对话有敏感信息，如果是当前问题，"
+                                    "此字段会告知第几轮对话有敏感信息，如果是当前问题，"
                                     "ban_round = -1"
                                 ),
                             },
@@ -976,7 +963,7 @@ def get_model_version_detail():
                                         "name": "prompt_tokens",
                                         "type": "integer",
                                         "format": "int32",
-                                        "description": "问题tokens数",
+                                        "description": "问题tokens数（包含历史QA）",
                                     },
                                     "completion_tokens": {
                                         "name": "completion_tokens",
@@ -1045,36 +1032,54 @@ def get_model_detail():
     return json_response(
         {
             "result": {
-                "modelId": 1,
-                "modelName": "ERNIE-Bot",
-                "source": "PlatformPreset",
+                "modelId": 12094,
+                "modelIdStr": "am-nvdx92556wpw",
+                "modelName": "m_18423_10840",
+                "source": "UserCreate",
                 "modelType": 0,
-                "createUserId": -1,
-                "createUser": "",
-                "createTime": "2023-05-31T21:48:59+08:00",
-                "modifyTime": "2023-07-20T15:08:40+08:00",
-                "description": "百度⾃⾏研发的⼤语⾔模型，覆盖海量中⽂数据，具有更强的对话问答、内容创作⽣成等能⼒。",
+                "createUserId": 20,
+                "createUser": "baidu_aipd",
+                "createTime": "2024-01-16T18:38:08+08:00",
+                "modifyTime": "2024-01-16T18:38:08+08:00",
+                "description": "",
+                "trainType": "ernieBotLite-Speed",
                 "modelVersionList": [
                     {
-                        "modelId": 1,
-                        "modelName": "ERNIE-Bot",
-                        "modelVersionId": 39,
-                        "version": "ERNIE-Bot",
-                        "description": "百度⾃⾏研发的⼤语⾔模型，覆盖海量中⽂数据，具有更强的对话问答、内容创作⽣成等能⼒。",
-                        "sourceType": "PlatformPreset",
-                        "sourceExtra": {},
-                        "framework": "paddle",
-                        "algorithm": "Ernie_Bot_105B",
-                        "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_105B-2.4.0-V1.25.3",
+                        "modelId": 12094,
+                        "modelIdStr": "am-nvdx92556wpw",
+                        "modelName": "m_18423_10840",
+                        "modelVersionId": 14997,
+                        "modelVersionIdStr": "amv-hcxfe5a8z6nd",
+                        "version": "1",
+                        "description": "",
+                        "sourceType": "Train",
+                        "sourceExtra": {
+                            "trainSourceExtra": {
+                                "taskId": 18423,
+                                "taskIdStr": "job-vbt3exahqhrv",
+                                "taskName": "task_EJD7l6v0TH",
+                                "iterationVersion": 1,
+                                "runId": 10840,
+                                "runIdStr": "task-am9st8hyntpm",
+                                "devType": 1,
+                                "modelType": 20,
+                                "templateType": 2000,
+                            },
+                            "sourceType": "Train",
+                        },
+                        "framework": "paddlepaddle",
+                        "algorithm": "ERNIE_EB-ERNIEBOT_PRO",
+                        "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_PRO_LORA",
                         "state": "Ready",
                         "ioMode": "chat",
                         "ioLength": "",
                         "copyright": "",
                         "property": {},
-                        "createTime": "2023-05-31T21:49:00+08:00",
-                        "modifyTime": "2023-08-29T19:28:15+08:00",
+                        "createTime": "2024-01-16T18:38:08+08:00",
+                        "modifyTime": "2024-01-16T18:38:09+08:00",
                         "deployResource": ["Private"],
                         "supportOptions": ["Deploy"],
+                        "trainType": "ernieBotLite-Speed",
                     }
                 ],
             },
@@ -1090,7 +1095,16 @@ def publish_model():
     mock publish model api
     """
     return json_response(
-        {"log_id": 1212121, "result": {"modelId": 1, "versionId": 2, "version": "1"}}
+        {
+            "log_id": 1212121,
+            "result": {
+                "modelIDStr": "am-nvdx92556wpw",
+                "modelId": 12094,
+                "version": "1",
+                "versionId": 14997,
+                "versionIdStr": "amv-hcxfe5a8z6nd",
+            },
+        }
     )
 
 
@@ -1425,8 +1439,9 @@ def create_dataset():
                 "status": 200,
                 "success": True,
                 "result": {
-                    "groupId": "12",
-                    "datasetId": "42",
+                    "id": 46563,
+                    "groupId": 12,
+                    "datasetId": "ds-9cetiuhvnbn4mqs3",
                     "versionId": 1,
                     "groupName": args["name"],
                     "displayName": "displayName",
@@ -1465,8 +1480,9 @@ def create_dataset():
                 "status": 200,
                 "success": True,
                 "result": {
-                    "groupId": "12",
-                    "datasetId": "42",
+                    "id": 46563,
+                    "groupId": 12,
+                    "datasetId": "ds-9cetiuhvnbn4mqs3",
                     "versionId": 1,
                     "groupName": args["name"],
                     "displayName": "displayName",
@@ -1540,7 +1556,9 @@ def get_dataset_info():
                 "name": "ChineseMedicalDialogueData中文医疗问答数据集",
                 "dataType": 4,
                 "versionInfo": {
+                    "id": 123,
                     "groupId": 14510,
+                    "datasetId": 12444,
                     "datasetPK": args["datasetId"],
                     "importRecordCount": 1,
                     "exportRecordCount": 0,

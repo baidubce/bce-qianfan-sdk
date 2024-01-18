@@ -355,6 +355,7 @@ class QianfanDataSource(DataSource, BaseModel):
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
     download_when_init: bool = Field(default=False)
     data_format_type: FormatType
+    old_dataset_id: Optional[int] = None
 
     ak: Optional[str] = None
     sk: Optional[str] = None
@@ -841,7 +842,6 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_debug(f"create qianfan dataset response: {qianfan_resp}")
         log_info("create dataset on qianfan successfully")
-
         # 构造对象
         source = cls(
             id=qianfan_resp["datasetId"],
@@ -859,6 +859,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp.get("id"),
             ak=ak,
             sk=sk,
         )
@@ -1090,6 +1091,7 @@ class QianfanDataSource(DataSource, BaseModel):
             download_when_init=is_download_to_local,
             info={**qianfan_resp},
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp["versionInfo"].get("datasetId"),
             ak=ak,
             sk=sk,
         )

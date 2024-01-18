@@ -1303,21 +1303,26 @@ class BosDataSource(DataSource, BaseModel):
             endpoint=f"{self.region}.bcebos.com",
         )
         bos_client = BosClient(bos_config)
+        actual_bos_file_path = self.bos_file_path if self.bos_file_path[0] != "/" else self.bos_file_path[1:]
 
         try:
             if read_from_zip:
                 tmp_zip_file = "tmp_zip_file.zip"
                 try:
-                    bos_client.get_object_to_file(self.bucket, self.bos_file_path, tmp_zip_file)
+                    bos_client.get_object_to_file(self.bucket, actual_bos_file_path, tmp_zip_file)
                     return _read_all_file_from_zip(tmp_zip_file, self.file_format)
                 finally:
                     if os.path.exists(tmp_zip_file):
                         os.remove(tmp_zip_file)
 
-            return bos_client.get_object_as_string(self.bucket, self.bos_file_path)
+            result = bos_client.get_object_as_string(self.bucket, actual_bos_file_path)
+            if isinstance(result, bytes):
+                return result.decode(encoding="utf8")
+            else:
+                return result
         except Exception as e:
             err_msg = (
-                f"fetch file content from bos path {self.bos_file_path} of bucket"
+                f"fetch file content from bos path {actual_bos_file_path} of bucket"
                 f" {self.bucket} in region {self.region} failed: {str(e)}"
             )
             log_error(err_msg)
@@ -1375,7 +1380,7 @@ class BosDataSource(DataSource, BaseModel):
                 if t.value == suffix:
                     values["file_format"] = t
                     log_info(f"use format type {t}")
-                    break
+                    return values
             err_msg = f"cannot match proper format type for {suffix}"
             log_error(err_msg)
             raise ValueError(err_msg)

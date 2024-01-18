@@ -303,7 +303,7 @@ class Dataset(Table):
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
 
-            if isinstance(source, QianfanDataSource):
+            if isinstance(source, (QianfanDataSource, BosDataSource)):
                 tmp_zip_file_name = (
                     f"tmp_zip_file_{generate_letter_num_random_id()}.zip"
                 )

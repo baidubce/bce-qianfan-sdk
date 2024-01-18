@@ -284,4 +284,5 @@ def render_response_debug_info(response: QfResponse) -> Group:
             title_align="left",
         )
     )
+
     return Group(*render_list)

@@ -70,7 +70,7 @@ class ChatClient(object):
             QfMessages() for _ in range(len(self.clients))
         ]
         self.multi_line = multi_line
-        self.console = Console(soft_wrap=True)
+        self.console = Console()
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
         if len(self.clients) != 1 and len(self.inference_args) != 0:

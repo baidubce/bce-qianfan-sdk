@@ -143,7 +143,9 @@ class DataSource(ABC):
         """
 
 
-def _read_all_file_content_in_an_folder(path: str, format_type: FormatType) -> List[str]:
+def _read_all_file_content_in_an_folder(
+    path: str, format_type: FormatType
+) -> List[str]:
     ret_list: List[str] = []
 
     # 不保证文件读取的顺序性
@@ -238,6 +240,7 @@ class FileDataSource(DataSource, BaseModel):
                 String or list of string containing the data read from the file.
         """
         # 检查文件是否存在且非目录
+        assert self.file_format
         read_from_zip = zipfile.is_zipfile(self.path)
 
         if not os.path.exists(self.path):
@@ -293,11 +296,11 @@ class FileDataSource(DataSource, BaseModel):
         try:
             index = path.rfind(".")
             # 读文件夹或查询不到或读 zip 包的情况下默认使用纯文本格式
-            if os.path.isdir(path) or index == -1 or path[index + 1:] == "zip":
+            if os.path.isdir(path) or index == -1 or path[index + 1 :] == "zip":
                 log_warn(f"use default format type {FormatType.Text}")
                 values["file_format"] = FormatType.Text
                 return values
-            suffix = path[index + 1:]
+            suffix = path[index + 1 :]
             for t in FormatType:
                 if t.value == suffix:
                     values["file_format"] = t
@@ -1278,7 +1281,9 @@ class BosDataSource(DataSource, BaseModel):
         """
         raise NotImplementedError()
 
-    def fetch(self, read_from_zip: bool = False, **kwargs: Any) -> Union[str, List[str]]:
+    def fetch(
+        self, read_from_zip: bool = False, **kwargs: Any
+    ) -> Union[str, List[str]]:
         """
         Read data from bos.
 
@@ -1294,22 +1299,31 @@ class BosDataSource(DataSource, BaseModel):
         """
         assert self.ak
         assert self.sk
+        assert self.file_format
 
         index = self.bos_file_path.rfind(".")
-        read_from_zip = read_from_zip or (index != -1 and self.bos_file_path[index + 1:] == "zip")
+        read_from_zip = read_from_zip or (
+            index != -1 and self.bos_file_path[index + 1 :] == "zip"
+        )
 
         bos_config = BceClientConfiguration(
             credentials=BceCredentials(self.ak, self.sk),
             endpoint=f"{self.region}.bcebos.com",
         )
         bos_client = BosClient(bos_config)
-        actual_bos_file_path = self.bos_file_path if self.bos_file_path[0] != "/" else self.bos_file_path[1:]
+        actual_bos_file_path = (
+            self.bos_file_path
+            if self.bos_file_path[0] != "/"
+            else self.bos_file_path[1:]
+        )
 
         try:
             if read_from_zip:
                 tmp_zip_file = "tmp_zip_file.zip"
                 try:
-                    bos_client.get_object_to_file(self.bucket, actual_bos_file_path, tmp_zip_file)
+                    bos_client.get_object_to_file(
+                        self.bucket, actual_bos_file_path, tmp_zip_file
+                    )
                     return _read_all_file_from_zip(tmp_zip_file, self.file_format)
                 finally:
                     if os.path.exists(tmp_zip_file):
@@ -1371,11 +1385,11 @@ class BosDataSource(DataSource, BaseModel):
 
         index = bos_file_path.rfind(".")
         # 查询不到或者是 zip 包的情况下默认使用纯文本格式
-        if index == -1 or bos_file_path[index + 1:] == "zip":
+        if index == -1 or bos_file_path[index + 1 :] == "zip":
             log_warn(f"use default format type {FormatType.Text}")
             values["file_format"] = FormatType.Text
         else:
-            suffix = bos_file_path[index + 1:]
+            suffix = bos_file_path[index + 1 :]
             for t in FormatType:
                 if t.value == suffix:
                     values["file_format"] = t

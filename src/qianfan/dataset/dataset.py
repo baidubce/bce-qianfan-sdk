@@ -44,10 +44,11 @@ from qianfan.dataset.consts import (
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
+    BosDataSource,
     DataSource,
     FileDataSource,
     FormatType,
-    QianfanDataSource, BosDataSource,
+    QianfanDataSource,
 )
 from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
@@ -360,7 +361,9 @@ class Dataset(Table):
                 "construct a new qianfan data source from args:"
                 f" {qianfan_dataset_create_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_bare_dataset(**qianfan_dataset_create_args, **kwargs)
+            return QianfanDataSource.create_bare_dataset(
+                **qianfan_dataset_create_args, **kwargs
+            )
 
         if bos_load_args:
             log_info(

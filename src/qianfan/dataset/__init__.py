@@ -16,7 +16,12 @@
 Library aimed to helping developer to interactive with Dataset
 """
 
-from qianfan.dataset.data_source import DataSource, FileDataSource, QianfanDataSource, BosDataSource
+from qianfan.dataset.data_source import (
+    BosDataSource,
+    DataSource,
+    FileDataSource,
+    QianfanDataSource,
+)
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import (

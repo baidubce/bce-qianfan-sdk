@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
 import pytest
 
 from qianfan.dataset import Dataset, QianfanDataSource
@@ -50,6 +52,14 @@ def test_load_data_action():
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     res = LoadDataSetAction(ds).exec()
+    assert isinstance(res, dict)
+    assert "datasets" in res
+
+    preset = Dataset.load(
+        qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
+    )
+
+    res = LoadDataSetAction(preset).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
 
@@ -151,7 +161,7 @@ def test_trainer_sft_with_deploy():
 
 
 def test_model_deploy():
-    svc = Model(id=1, version_id=1).deploy(
+    svc = Model(id="1", version_id="1").deploy(
         DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     )
 
@@ -195,16 +205,15 @@ def test_trainer_resume():
 
 
 def test_batch_run_on_qianfan():
-    source = QianfanDataSource.get_existed_dataset(12, False)
+    source = QianfanDataSource.get_existed_dataset("12", False)
     origin_dataset = Dataset.load(source)
 
-    model = Model(1, 2)
+    model = Model("1", "2")
     result_dataset = model.batch_inference(origin_dataset, is_download_to_local=False)
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)
-    assert inner_source.id == 1
-    assert inner_source.group_id == 14510
+    assert inner_source.id == "1"
 
 
 # 测试_parse_from_input方法
@@ -215,21 +224,21 @@ def test__parse_from_input():
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_accuracy=True)]  # 创建一些评估器
     action = EvaluateAction(test_dataset, test_evaluators)
-    input = {"model": Model(17000, 12333)}
+    input = {"model": Model("17000", "12333")}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == 17000
-    assert result.version_id == 12333
+    assert result.id == "17000"
+    assert result.version_id == "12333"
     input = {"service": Service(model="ERNIE-Bot")}
     result = action._parse_from_input(input)
     assert isinstance(
         result, Service
     )  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
-    input = {"model_id": 17001, "model_version_id": 12666}
+    input = {"model_id": "17001", "model_version_id": "12666"}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == 17001
-    assert result.version_id == 12666
+    assert result.id == "17001"
+    assert result.version_id == "12666"
     input = {}
     with pytest.raises(InvalidArgumentError):
         action._parse_from_input(input)
@@ -243,7 +252,7 @@ def test_eval_action_exec():
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
     action = EvaluateAction(test_dataset, test_evaluators)
-    input = {"model": Model(17002, 12444)}
+    input = {"model": Model("17002", "12444")}
     result = action.exec(input=input)
     assert (
         result["eval_res"] is not None
@@ -260,7 +269,7 @@ def test_eval_action_resume():
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
     action = EvaluateAction(test_dataset, test_evaluators)
-    action._input = {"model": Model(17002, 12444)}
+    action._input = {"model": Model("17002", "12444")}
     result = action.resume()
     assert (
         result["eval_res"] is not None
@@ -302,15 +311,39 @@ def test_trainer_sft_with_eval():
 
 def test_train_config_load():
     # 使用 patch 和 mock_open 来模拟文件
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.yaml")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    yaml_config_path = "config.yaml"
+    json_config_path = "config.json"
 
-    tc = TrainConfig.load("qianfan/tests/assets/train_config.json")
-    assert tc.epoch == 1
-    assert tc.batch_size == 4
-    assert tc.max_seq_len == 4096
+    try:
+        with open(yaml_config_path, mode="w") as f:
+            f.write("""
+                    epoch: 1
+                    batch_size: 4
+                    max_seq_len: 4096
+                """)
+
+        with open(json_config_path, mode="w") as f:
+            f.write("""
+                {
+                    "epoch": 1,
+                    "batch_size": 4,
+                    "max_seq_len": 4096
+                }
+                """)
+
+        tc = TrainConfig.load(yaml_config_path)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+
+        tc = TrainConfig.load(json_config_path)
+        assert tc.epoch == 1
+        assert tc.batch_size == 4
+        assert tc.max_seq_len == 4096
+
+    finally:
+        os.remove(yaml_config_path)
+        os.remove(json_config_path)
 
 
 def test_train_limit__or__():

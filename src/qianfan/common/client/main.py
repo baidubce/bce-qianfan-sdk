@@ -15,8 +15,6 @@
 from typing import Optional
 
 import typer
-from prompt_toolkit import prompt
-from rich import print as rprint
 from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
@@ -24,9 +22,10 @@ from qianfan.common.client.chat import chat_entry
 from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
+from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import print_error_msg, print_info_msg
+from qianfan.common.client.utils import print_error_msg
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -40,6 +39,7 @@ app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
 app.add_typer(dataset_app, name="dataset")
 app.add_typer(trainer_app, name="trainer")
+app.add_typer(evaluation_app, name="evaluation")
 
 _enable_traceback = False
 
@@ -163,46 +163,6 @@ def entry(
     """
     global _enable_traceback
     _enable_traceback = enable_traceback
-
-    ak = qianfan.get_config().AK
-    sk = qianfan.get_config().SK
-    access_key = qianfan.get_config().ACCESS_KEY
-    secret_key = qianfan.get_config().SECRET_KEY
-
-    if ak is None or sk is None:
-        if access_key is None or secret_key is None:
-            print_info_msg(
-                'No enough credential found. Please provide your "access key" and'
-                ' "secret key".'
-            )
-            print_info_msg(
-                "You can find your key at"
-                " https://console.bce.baidu.com/iam/#/iam/accesslist"
-            )
-            print_info_msg(
-                "You can also set the credential using environment variable"
-                ' "QIANFAN_ACCESS_KEY" and "QIANFAN_SECRET_KEY".'
-            )
-            print()
-            if access_key is None:
-                while True:
-                    rprint("Please input your [b i]Access Key[/b i]: ", end="")
-                    access_key = prompt()
-                    if len(access_key) != 0:
-                        qianfan.get_config().ACCESS_KEY = access_key
-                        break
-                    else:
-                        print_error_msg("Access key cannot be empty.")
-            if secret_key is None:
-                while True:
-                    rprint("Please input your [b i]Secret Key[/b i]: ", end="")
-                    secret_key = prompt()
-                    if len(secret_key) != 0:
-                        qianfan.get_config().SECRET_KEY = secret_key
-                        break
-                    else:
-                        print_error_msg("Secret key cannot be empty.")
-            print()
 
 
 if __name__ == "__main__":

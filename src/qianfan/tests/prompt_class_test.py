@@ -19,6 +19,7 @@
 import os
 import tempfile
 
+from qianfan import Completion
 from qianfan.common import Prompt
 from qianfan.common.hub import hub
 from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
@@ -115,7 +116,7 @@ def test_upload_prompt():
     assert prompt.id is None
     hub.push(prompt)
     # change to the id in mock response
-    assert prompt.id == 732
+    assert prompt.id.startswith("pt-")
     assert prompt._mode == "remote"
 
     prompt = hub.load("prompt/ut")
@@ -127,7 +128,7 @@ def test_upload_prompt():
     hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 1733
+    assert prompt.id.startswith("pt-")
 
     prompt = hub.load("prompt/txt2img")
     assert isinstance(prompt, Prompt)
@@ -142,7 +143,7 @@ def test_upload_prompt():
     hub.push(prompt)
     # should upload and refresh the prompt
     # due to the mock server, prompt should be refreshed by the mock response
-    assert prompt.id == 1733
+    assert prompt.id.startswith("pt-")
 
 
 def test_render():
@@ -254,3 +255,26 @@ def test_framework():
         examples=[("1 2", "3"), ("2 3", "5"), ("3 4", "")],
     )
     assert fewshot_prompt == "输入:1 2\n输出:3\n\n输入:2 3\n输出:5\n\n输入:3 4\n输出:"
+
+
+def test_optimize():
+    prompt = Prompt(template="test template {var1}")
+    optimized = prompt.optimize()
+    assert optimized.template == "optimized prompt"
+
+
+def test_evaluate():
+    prompts = [Prompt(f"test{i} {{arg}}") for i in range(2)]
+    scenes = [
+        {"args": {"arg": f"arg{i}"}, "expected": f"expected{i}"} for i in range(3)
+    ]
+    client = Completion()
+    eval_res = Prompt.evaluate(prompts, scenes, client)
+    for i, res in enumerate(eval_res):
+        assert res.prompt.template == f"test{i} {{arg}}"
+        for j, scene in enumerate(res.scene):
+            assert scene["expected_target"] == f"expected{j}"
+            assert scene["new_prompt"] == f"test{i} arg{j}"
+            assert scene["variables"] == {"arg": f"arg{j}"}
+            assert scene["new_prompt"] in scene["response"]
+        assert res.summary == f"response_{i}"

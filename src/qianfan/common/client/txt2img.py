@@ -23,6 +23,7 @@ import qianfan
 from qianfan import QfResponse
 from qianfan.common.client.utils import (
     create_client,
+    credential_required,
     list_model_option,
     print_error_msg,
     render_response_debug_info,
@@ -32,6 +33,7 @@ from qianfan.consts import DefaultLLMModel
 from qianfan.utils.utils import check_package_installed
 
 
+@credential_required
 def txt2img_entry(
     prompt: str = typer.Argument(..., help="The prompt to generate image"),
     negative_prompt: str = typer.Option(

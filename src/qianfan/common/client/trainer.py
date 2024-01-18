@@ -186,7 +186,11 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 @trainer_app.command()
 def run(
-    dataset_id: str = typer.Option(..., help="Dataset id"),
+    dataset_id: Optional[str] = typer.Option(None, help="Dataset id"),
+    dataset_bos_path: Optional[str] = typer.Option(
+        None,
+        help="Dataset BOS path",
+    ),
     train_type: str = typer.Option(..., help="Train type"),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "
@@ -261,9 +265,11 @@ def run(
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
-    ds = Dataset.load(
-        qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
-    )
+    ds = None
+    if dataset_id is not None:
+        ds = Dataset.load(
+            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+        )
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:
@@ -285,6 +291,7 @@ def run(
         event_handler=callback,
         train_config=train_config_file,
         deploy_config=deploy_config,
+        dataset_bos_path=dataset_bos_path,
     )
 
     if trainer.train_action.train_config is None:

@@ -129,6 +129,24 @@ def test_trainer_sft_run():
     assert len(eh.events) > 0
 
 
+def test_trainer_sft_run_from_bos():
+    with pytest.raises(InvalidArgumentError):
+        sft_task = LLMFinetune(
+            train_type="ERNIE-Bot-turbo-0725",
+        )
+        sft_task.run()
+    sft_task = LLMFinetune(
+        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/ds.jsonl"
+    )
+    sft_task.run()
+    res = sft_task.result
+    assert res is not None
+    assert isinstance(res, list)
+    assert len(res) > 0
+    assert isinstance(res[0], dict)
+    assert "model_version_id" in res[0]
+
+
 def test_trainer_sft_with_deploy():
     train_config = TrainConfig(
         epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
@@ -306,7 +324,6 @@ def test_trainer_sft_with_eval():
     assert "model_version_id" in res[0]
     assert len(eh.events) > 0
     assert res[0].get("eval_res") is not None
-    print("res", res[0].get("eval_res"))
 
 
 def test_train_config_load():

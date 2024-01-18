@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -23,9 +24,9 @@ import typer
 from prompt_toolkit import prompt
 from rich import print as rprint
 from rich.console import Console, Group, RenderableType
+from rich.highlighter import JSONHighlighter
 from rich.logging import RichHandler
 from rich.panel import Panel
-from rich.pretty import Pretty
 from rich.text import Text
 
 import qianfan
@@ -236,9 +237,11 @@ list_model_option = typer.Option(
 def _render_request_body(headers: Dict[str, str], body: Any) -> Group:
     header_list: List[RenderableType] = []
     for k, v in headers.items():
-        header_list.append(Text.from_markup(f"[blue]{k}[/]: {v}"))
+        header_list.append(Text.from_markup(f"[red]{k}[/]: {v}"))
     header_list.append(Text.from_markup(""))
-    header_list.append(Pretty(body))
+    body_obj = Text.from_markup(json.dumps(body, indent=4, ensure_ascii=False))
+    JSONHighlighter().highlight(body_obj)
+    header_list.append(body_obj)
     return Group(*header_list)
 
 
@@ -252,7 +255,9 @@ def _render_request(request: QfRequest) -> Group:
 def _render_response(response: QfResponse) -> Group:
     render_list: List[RenderableType] = []
     render_list.append(
-        Text.from_markup(f"{response.code} {HTTPStatus(response.code).phrase}")
+        Text.from_markup(
+            f"[yellow]{response.code}[/] {HTTPStatus(response.code).phrase}"
+        )
     )
     render_list.append(_render_request_body(response.headers, response.body))
     content_type = response.headers.get("Content-Type")

@@ -135,6 +135,7 @@ class Data:
                     "storage path is empty while create dataset in private bos"
                 )
 
+            # 此 path 必须以 / 结尾，为了防止用户没有加上，这里特判
             if storage_path[-1] != "/":
                 storage_path += "/"
 

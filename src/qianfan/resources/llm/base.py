@@ -505,7 +505,7 @@ class BaseResource(object):
                     f"The required key `{key}` is not provided."
                 )
         kwargs["stream"] = stream
-        kwargs["extra_parameters"] = {"user_agent": f"qianfan_py_sdk_v{VERSION}"}
+        kwargs["extra_parameters"] = {"request_source": f"qianfan_py_sdk_v{VERSION}"}
         return kwargs
 
     def _data_postprocess(self, data: QfResponse) -> QfResponse:

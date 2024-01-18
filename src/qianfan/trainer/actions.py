@@ -251,10 +251,14 @@ class TrainAction(
         self.task_description = task_description
         self.job_description = job_description
 
-    def _generate_task_name(self, task_name: Optional[str], train_type: str) -> str:
+    def _generate_task_name(
+        self, task_name: Optional[str], train_type: Optional[str]
+    ) -> str:
         if task_name is not None:
             return task_name
-        model_info = ModelInfoMapping.get(train_type)
+        model_info = (
+            ModelInfoMapping.get(train_type) if train_type is not None else None
+        )
         return (
             f"job_{utils.generate_letter_num_random_id()}"
             if model_info is None

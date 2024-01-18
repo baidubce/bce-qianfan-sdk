@@ -27,6 +27,7 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.base import (
+    BaseAction,
     EventHandler,
     Pipeline,
     Trainer,
@@ -109,7 +110,7 @@ class LLMFinetune(Trainer):
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
 
-        actions = []
+        actions: List[BaseAction] = []
         # 校验dataset
         if dataset is not None:
             if dataset.inner_data_source_cache is None:

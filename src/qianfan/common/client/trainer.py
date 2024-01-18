@@ -29,6 +29,7 @@ from rich.progress import (
 )
 
 from qianfan.common.client.utils import (
+    credential_required,
     enum_typer,
     print_error_msg,
     replace_logger_handler,
@@ -50,7 +51,11 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
 
-trainer_app = typer.Typer(no_args_is_help=True)
+trainer_app = typer.Typer(
+    no_args_is_help=True,
+    help="Qianfan trainer",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 class MyEventHandler(EventHandler):
@@ -185,6 +190,7 @@ DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
 @trainer_app.command()
+@credential_required
 def run(
     dataset_id: str = typer.Option(..., help="Dataset id"),
     train_type: str = typer.Option(..., help="Train type"),

@@ -19,6 +19,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
+import aiohttp
+import requests
+
 from qianfan.errors import InvalidArgumentError
 
 if sys.version_info < (3, 10):
@@ -50,10 +53,31 @@ class RetryConfig:
     """
 
     retry_count: int = 1
+    """
+    retry count
+    """
     timeout: float = 10
+    """
+    requests timeout in seconds
+    """
+    max_wait_interval: float = 120
+    """
+    the max wait interval in seconds
+    Because exponential backoff retry policy is used, the actual wait 
+    interval will be changed, this is limit the max wait interval.
+    """
     backoff_factor: float = 1
+    """
+    backoff factor in exponential backoff retry policy
+    """
     jitter: float = 1
+    """
+    jitter in exponential backoff jitter retry policy
+    """
     retry_err_codes: Set[int] = default_field({})
+    """
+    API error codes used to catch for retrying
+    """
 
 
 @dataclass
@@ -80,6 +104,26 @@ class QfRequest:
             "headers": self.headers,
             "json": self.json_body,
         }
+
+    @classmethod
+    def from_requests(cls, req: requests.PreparedRequest) -> "QfRequest":
+        """
+        convert requests.PreparedRequest to QfRequest object
+        """
+        return cls(
+            req.method if req.method else "",
+            req.url if req.url else "",
+            {},
+            dict(req.headers),
+            {},
+        )
+
+    @classmethod
+    def from_aiohttp(cls, req: aiohttp.RequestInfo) -> "QfRequest":
+        """
+        convert aiohttp.RequestInfo to QfRequest object
+        """
+        return cls(req.method, str(req.url), {}, dict(req.headers), {})
 
 
 @dataclass
@@ -112,6 +156,11 @@ class QfResponse(Mapping):
         only existed in streaming calling
     `total_latency`: resource elapsed time int seconds, include request, serialization
         and the waiting time if `rate_limit` is set.
+    """
+
+    request: Optional[QfRequest] = default_field(None)
+    """
+    Original request
     """
 
     def __getitem__(self, item: str) -> Any:

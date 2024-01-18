@@ -55,6 +55,9 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             retry_err_codes=kwargs.get(
                 "retry_err_codes", config.CONSOLE_API_RETRY_ERR_CODES
             ),
+            max_wait_interval=kwargs.get(
+                "max_wait_interval", config.CONSOLE_API_RETRY_MAX_WAIT_INTERVAL
+            ),
         )
         req = func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
@@ -114,7 +117,7 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
     ak = kwargs.get("ak", None) or get_config().ACCESS_KEY
     sk = kwargs.get("sk", None) or get_config().SECRET_KEY
     if ak is None or sk is None:
-        raise InvalidArgumentError("ak and sk cannot be empty")
+        raise InvalidArgumentError("access_key and secret_key must be provided")
     if pop:
         # remove ak and sk from kwargs
         for key in ("ak", "sk"):

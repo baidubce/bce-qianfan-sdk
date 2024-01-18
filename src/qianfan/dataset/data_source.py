@@ -845,7 +845,7 @@ class QianfanDataSource(DataSource, BaseModel):
         # 构造对象
         source = cls(
             id=qianfan_resp["datasetId"],
-            group_id=qianfan_resp["groupId"],
+            group_id=qianfan_resp["groupPK"],
             name=name,
             version=qianfan_resp["versionId"],
             set_type=set_type,

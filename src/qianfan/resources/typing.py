@@ -50,10 +50,31 @@ class RetryConfig:
     """
 
     retry_count: int = 1
+    """
+    retry count
+    """
     timeout: float = 10
+    """
+    requests timeout in seconds
+    """
+    max_wait_interval: float = 120
+    """
+    the max wait interval in seconds
+    Because exponential backoff retry policy is used, the actual wait 
+    interval will be changed, this is limit the max wait interval.
+    """
     backoff_factor: float = 1
+    """
+    backoff factor in exponential backoff retry policy
+    """
     jitter: float = 1
+    """
+    jitter in exponential backoff jitter retry policy
+    """
     retry_err_codes: Set[int] = default_field({})
+    """
+    API error codes used to catch for retrying
+    """
 
 
 @dataclass

@@ -192,6 +192,7 @@ class BaseResource(object):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         retry_jitter: float = DefaultValue.RetryJitter,
         retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
+        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -227,6 +228,12 @@ class BaseResource(object):
             and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
         ):
             retry_err_codes = config.LLM_API_RETRY_ERR_CODES
+        if (
+            retry_max_wait_interval == DefaultValue.RetryMaxWaitInterval
+            and config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+            != DefaultValue.RetryMaxWaitInterval
+        ):
+            retry_max_wait_interval = config.LLM_API_RETRY_MAX_WAIT_INTERVAL
 
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
@@ -244,6 +251,7 @@ class BaseResource(object):
             backoff_factor=backoff_factor,
             jitter=retry_jitter,
             retry_err_codes=retry_err_codes,
+            max_wait_interval=retry_max_wait_interval,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
         resp = self._client.llm(
@@ -267,6 +275,7 @@ class BaseResource(object):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         retry_jitter: float = DefaultValue.RetryJitter,
         retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
+        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -305,7 +314,12 @@ class BaseResource(object):
             and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
         ):
             retry_err_codes = config.LLM_API_RETRY_ERR_CODES
-
+        if (
+            retry_max_wait_interval == DefaultValue.RetryMaxWaitInterval
+            and config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+            != DefaultValue.RetryMaxWaitInterval
+        ):
+            retry_max_wait_interval = config.LLM_API_RETRY_MAX_WAIT_INTERVAL
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
         self._check_params(
             model,
@@ -316,12 +330,14 @@ class BaseResource(object):
             backoff_factor,
             **kwargs,
         )
+
         retry_config = RetryConfig(
             retry_count=retry_count,
             timeout=request_timeout,
             backoff_factor=backoff_factor,
             jitter=retry_jitter,
             retry_err_codes=retry_err_codes,
+            max_wait_interval=retry_max_wait_interval,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
         resp = await self._client.async_llm(

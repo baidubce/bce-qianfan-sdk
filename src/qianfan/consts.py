@@ -175,6 +175,12 @@ class Consts:
     ModelEvalInfoAPI: str = "/wenxinworkshop/modelrepo/eval/detail"
     ModelEvalResultAPI: str = "/wenxinworkshop/modelrepo/eval/report"
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
+    ModelPresetListAPI: str = "/wenxinworkshop/modelrepo/model/preset/list"
+    ModelBatchDeleteAPI: str = "/wenxinworkshop/modelrepo/model/batchDelete"
+    ModelVersionBatchDeleteAPI: str = (
+        "/wenxinworkshop/modelrepo/model/version/batchDelete"
+    )
+    ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     ServiceListAPI: str = "/wenxinworkshop/service/list"

@@ -210,3 +210,96 @@ def test_list_prompt_labels():
         "offset": 10,
         "pageSize": 20,
     }
+
+
+def test_create_prompt_optimize_task():
+    """
+    Test create prompt optimize task
+    """
+    operations = [
+        {"opType": 1, "payload": 1},
+        {"opType": 2, "payload": 1},
+        {"opType": 3, "payload": 1},
+        {"opType": 4, "payload": 0},
+    ]
+    resp = Prompt.create_optimiztion_task("prompt", operations=operations)
+    assert "id" in resp["result"]
+    request = resp["_request"]
+    assert request["content"] == "prompt"
+    assert request["operations"] == operations
+
+    resp = Prompt.create_optimiztion_task(
+        "prompt2", operations=operations, app_id=555, service_name="service_name"
+    )
+    assert "id" in resp["result"]
+    request = resp["_request"]
+    assert request["content"] == "prompt2"
+    assert request["operations"] == operations
+    assert request["appID"] == 555
+    assert request["serviceName"] == "service_name"
+
+
+def test_get_prompt_optimize_task():
+    """
+    Test create prompt optimize task
+    """
+
+    resp = Prompt.get_optimization_task("task-51801xxxx6656")
+    assert "id" in resp["result"]
+    assert resp["result"]["content"] == "原始prompt"
+    assert resp["result"]["optimizeContent"] == "optimized prompt"
+
+    request = resp["_request"]
+    assert request["id"] == "task-51801xxxx6656"
+
+
+def test_evaluate_score():
+    """
+    Test evaluate score
+    """
+    resp = Prompt.evaluation_score(
+        1,
+        [
+            {
+                "scene": "scene1",
+                "response_list": ["output11", "output12", "output13"],
+            },
+            {
+                "scene": "scene2",
+                "response_list": ["output21", "output22", "output23"],
+            },
+        ],
+    )
+
+    scores = resp["result"]["scores"]
+    assert len(scores) == 2
+    for score in scores:
+        assert len(score) == 3
+
+
+def test_evaluate_summary():
+    """
+    Test evaluate score
+    """
+    data = [
+        {
+            "prompt": "请帮我计算一下{formula}等于多少？只返回计算结果",
+            "scene": [
+                {
+                    "variables": {"formula": "45+43"},
+                    "expected_target": "88",
+                    "response": "计算结果为： 45+43=88",
+                    "new_prompt": "请帮我计算一下45+43等于多少？只返回计算结果",
+                }
+            ],
+            "response_list": ["response1", "response2"],
+        }
+    ]
+    resp = Prompt.evaluation_summary(data + data + data)
+
+    response = resp["result"]["responses"]
+    assert len(response) == 3
+
+    request = resp["_request"]
+    assert request["data"][0] == data[0]
+    assert len(request["data"]) == 3

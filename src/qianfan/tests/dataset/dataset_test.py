@@ -21,9 +21,9 @@ from unittest.mock import patch
 import pytest
 
 from qianfan.dataset.consts import QianfanDataGroupColumnName
-from qianfan.dataset.qianfan_data_operators import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
 from qianfan.dataset.dataset import Dataset
+from qianfan.dataset.qianfan_data_operators import FilterCheckNumberWords
 from qianfan.dataset.schema import (
     QianfanGenericText,
     QianfanNonSortedConversation,

@@ -39,6 +39,10 @@ typer = ">=0.9.0"
 tenacity = "^8.2.3"
 pyyaml = "^6.0.1"
 prompt-toolkit = ">=3.0.38"
+torch = [
+    { version = "<=1.13.1", python = "<3.8", optional = true},
+    { version = "*", python = ">=3.8", optional = true }
+]
 ltp = { version = "*", optional = true}
 emoji = { version = "*", optional = true}
 sentencepiece = { version = "*", optional = true}
@@ -62,8 +66,8 @@ types-protobuf = "4.24.0.4"
 
 [tool.poetry.extras]
 langchain = ["langchain"]
-data_clean = ["ltp", "emoji", "sentencepiece"]
-all = ["langchain", "ltp", "emoji", "sentencepiece"]
+data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
 
 [tool.ruff]
 select = [

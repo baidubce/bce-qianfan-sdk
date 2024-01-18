@@ -18,6 +18,7 @@ data source which is related to download/upload
 import datetime
 import json
 import os.path
+import shutil
 import uuid
 import zipfile
 from abc import ABC, abstractmethod
@@ -27,6 +28,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
+from baidubce.auth.bce_credentials import BceCredentials
+from baidubce.bce_client_configuration import BceClientConfiguration
+from baidubce.services.bos.bos_client import BosClient
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
@@ -139,6 +143,34 @@ class DataSource(ABC):
         """
 
 
+def _read_all_file_content_in_an_folder(
+    path: str, format_type: FormatType
+) -> List[str]:
+    ret_list: List[str] = []
+
+    # 不保证文件读取的顺序性
+    for root, dirs, files in os.walk(path):
+        for file_name in files:
+            if not file_name.endswith(format_type.value):
+                continue
+
+            file_path = os.path.join(root, file_name)
+            with open(file_path, mode="r") as f:
+                ret_list.append(f.read())
+
+    return ret_list
+
+
+def _read_all_file_from_zip(path: str, format_type: FormatType) -> List[str]:
+    tmp_folder_path = "tmp_folder_path"
+    try:
+        with zipfile.ZipFile(path) as zip_file:
+            zip_file.extractall(tmp_folder_path)
+        return _read_all_file_content_in_an_folder(tmp_folder_path, format_type)
+    finally:
+        shutil.rmtree(tmp_folder_path, ignore_errors=True)
+
+
 # 目前第一期主要支持本地调用
 # 且目前只支持读单个文件，文件夹兼容稍后
 class FileDataSource(DataSource, BaseModel):
@@ -208,22 +240,15 @@ class FileDataSource(DataSource, BaseModel):
                 String or list of string containing the data read from the file.
         """
         # 检查文件是否存在且非目录
+        assert self.file_format
+        read_from_zip = zipfile.is_zipfile(self.path)
+
         if not os.path.exists(self.path):
             raise ValueError("file path not found")
         if os.path.isdir(self.path):
-            ret_list: List[str] = []
-
-            # 不保证文件读取的顺序性
-            for root, dirs, files in os.walk(self.path):
-                for file_name in files:
-                    if not file_name.endswith(self.format_type().value):
-                        continue
-
-                    file_path = os.path.join(root, file_name)
-                    with open(file_path, mode="r") as f:
-                        ret_list.append(f.read())
-
-            return ret_list
+            return _read_all_file_content_in_an_folder(self.path, self.file_format)
+        elif read_from_zip:
+            return _read_all_file_from_zip(self.path, self.file_format)
         else:
             with open(self.path, mode="r") as file:
                 return file.read().strip("\n")
@@ -270,8 +295,8 @@ class FileDataSource(DataSource, BaseModel):
 
         try:
             index = path.rfind(".")
-            # 读文件夹或查询不到的情况下默认使用纯文本格式
-            if os.path.isdir(path) or index == -1:
+            # 读文件夹或查询不到或读 zip 包的情况下默认使用纯文本格式
+            if os.path.isdir(path) or index == -1 or path[index + 1 :] == "zip":
                 log_warn(f"use default format type {FormatType.Text}")
                 values["file_format"] = FormatType.Text
                 return values
@@ -465,6 +490,10 @@ class QianfanDataSource(DataSource, BaseModel):
             err_msg = "can't get storage info for uploading to qianfan"
             log_error(err_msg)
             raise ValueError(err_msg)
+
+        # 此 path 必须以 / 结尾，为了防止用户没有加上，这里特判
+        if storage_path[-1] != "/":
+            storage_path += "/"
 
         ak = self.ak if self.ak else get_config().ACCESS_KEY
         sk = self.sk if self.sk else get_config().SECRET_KEY
@@ -1130,3 +1159,245 @@ class QianfanDataSource(DataSource, BaseModel):
             else:
                 log_info("data releasing succeeded")
                 return True
+
+
+class BosDataSource(DataSource, BaseModel):
+    """Bos Data Source"""
+
+    region: str
+    bucket: str
+    bos_file_path: str
+    file_format: Optional[FormatType] = Field(default=None)
+    ak: Optional[str] = Field(default=None)
+    sk: Optional[str] = Field(default=None)
+
+    def save(
+        self,
+        data: Optional[str] = None,
+        zip_file_path: Optional[str] = None,
+        should_overwrite_existed_file: bool = False,
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Export the data to specific bos storage
+        and return
+        whether the import was successful or failed
+
+        Args:
+            data (Optional[str]):
+                data need to be saved, default to None
+            zip_file_path (Optional[str]):
+                path of your zip file, default to None
+            should_overwrite_existed_file (bool):
+                should bos data source overwrite existed file when save data,
+                default to False
+            **kwargs (Any):
+                optional arguments
+
+        Returns:
+            bool: is saving successful
+        """
+        assert self.ak
+        assert self.sk
+        assert self.file_format
+
+        bos_config = BceClientConfiguration(
+            credentials=BceCredentials(self.ak, self.sk),
+            endpoint=f"{self.region}.bcebos.com",
+        )
+        bos_client = BosClient(bos_config)
+
+        if data and zip_file_path:
+            err_msg = "can't set 'data' and 'zip_file_path' simultaneously"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if not data and not zip_file_path:
+            err_msg = "must set either 'data' or 'zip_file_path'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if data:
+            final_bos_file_path = self.bos_file_path
+        else:
+            final_bos_file_path = self.bos_file_path.replace(
+                f".{self.file_format.value}", ".zip"
+            )
+
+        if not should_overwrite_existed_file:
+            file_existed = True
+            try:
+                bos_client.get_object_meta_data(self.bucket, final_bos_file_path)
+            except Exception:
+                file_existed = False
+
+            if file_existed:
+                err_msg = (
+                    f"{final_bos_file_path} existed and argument"
+                    " 'should_overwrite_existed_file' is False"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+        if should_overwrite_existed_file:
+            try:
+                bos_client.delete_object(self.bucket, final_bos_file_path)
+            except Exception:
+                # 防御性删除，不管文件是否是真的存在
+                pass
+
+        try:
+            if data:
+                bos_client.put_object_from_string(
+                    self.bucket, final_bos_file_path, data
+                )
+            elif zip_file_path:
+                bos_client.put_object_from_file(
+                    self.bucket, final_bos_file_path, zip_file_path
+                )
+        except Exception as e:
+            err_msg = (
+                "an error occurred during upload data to bos with path"
+                f" {final_bos_file_path} of bucket {self.bucket} in region"
+                f" {self.region}: {str(e)}"
+            )
+            log_error(err_msg)
+            raise e
+
+        return True
+
+    async def asave(self, data: str, **kwargs: Any) -> bool:
+        """
+        Asynchronously export the data to specific bos storage
+        and return
+        whether the import was successful or failed
+        Not available currently
+
+        Args:
+            data (str): data need to be saved
+            **kwargs (Any): optional arguments
+
+        Returns:
+            bool: is saving successful
+        """
+        raise NotImplementedError()
+
+    def fetch(
+        self, read_from_zip: bool = False, **kwargs: Any
+    ) -> Union[str, List[str]]:
+        """
+        Read data from bos.
+
+        Args:
+            read_from_zip (bool):
+                does FileDataSource read data from a zip file,
+                default to False
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
+        """
+        assert self.ak
+        assert self.sk
+        assert self.file_format
+
+        index = self.bos_file_path.rfind(".")
+        read_from_zip = read_from_zip or (
+            index != -1 and self.bos_file_path[index + 1 :] == "zip"
+        )
+
+        bos_config = BceClientConfiguration(
+            credentials=BceCredentials(self.ak, self.sk),
+            endpoint=f"{self.region}.bcebos.com",
+        )
+        bos_client = BosClient(bos_config)
+        actual_bos_file_path = (
+            self.bos_file_path
+            if self.bos_file_path[0] != "/"
+            else self.bos_file_path[1:]
+        )
+
+        try:
+            if read_from_zip:
+                tmp_zip_file = "tmp_zip_file.zip"
+                try:
+                    bos_client.get_object_to_file(
+                        self.bucket, actual_bos_file_path, tmp_zip_file
+                    )
+                    return _read_all_file_from_zip(tmp_zip_file, self.file_format)
+                finally:
+                    if os.path.exists(tmp_zip_file):
+                        os.remove(tmp_zip_file)
+
+            result = bos_client.get_object_as_string(self.bucket, actual_bos_file_path)
+            if isinstance(result, bytes):
+                return result.decode(encoding="utf8")
+            else:
+                return result
+        except Exception as e:
+            err_msg = (
+                f"fetch file content from bos path {actual_bos_file_path} of bucket"
+                f" {self.bucket} in region {self.region} failed: {str(e)}"
+            )
+            log_error(err_msg)
+            raise e
+
+    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
+        """
+        Asynchronously Read data from bos.
+        Not available currently
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            Union[str, List[str]]:
+                String or list of string containing the data read from the file.
+        """
+        raise NotImplementedError()
+
+    def format_type(self) -> FormatType:
+        assert self.file_format
+        return self.file_format
+
+    def set_format_type(self, format_type: FormatType) -> None:
+        self.file_format = format_type
+
+    @root_validator
+    @classmethod
+    def _param_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        ak = values.get("ak", None)
+        if not ak:
+            values["ak"] = get_config().ACCESS_KEY
+
+        sk = values.get("sk", None)
+        if not sk:
+            values["sk"] = get_config().SECRET_KEY
+
+        bos_file_path = values["bos_file_path"]
+        if bos_file_path[-1] == "/":
+            err_msg = f"bos file path {bos_file_path} end with '/'"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if values.get("file_format", None):
+            return values
+
+        index = bos_file_path.rfind(".")
+        # 查询不到或者是 zip 包的情况下默认使用纯文本格式
+        if index == -1 or bos_file_path[index + 1 :] == "zip":
+            log_warn(f"use default format type {FormatType.Text}")
+            values["file_format"] = FormatType.Text
+        else:
+            suffix = bos_file_path[index + 1 :]
+            for t in FormatType:
+                if t.value == suffix:
+                    values["file_format"] = t
+                    log_info(f"use format type {t}")
+                    return values
+            err_msg = f"cannot match proper format type for {suffix}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        return values

@@ -75,7 +75,7 @@ class TrainConfig(BaseModel):
 
             path_obj = Path(path)
             if path_obj.suffix == ".yaml":
-                with open(path_obj, "r") as file:
+                with open(path_obj, "r", encoding="utf-8") as file:
                     data = yaml.safe_load(file)
                     return TrainConfig.parse_obj(data)
             elif path_obj.suffix == ".json":

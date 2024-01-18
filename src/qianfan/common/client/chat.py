@@ -69,7 +69,7 @@ class ChatClient(object):
             QfMessages() for _ in range(len(self.clients))
         ]
         self.multi_line = multi_line
-        self.console = Console()
+        self.console = Console(soft_wrap=True)
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
         if len(self.clients) != 1 and len(self.inference_args) != 0:
@@ -224,6 +224,7 @@ class ChatClient(object):
                 self.render_model_response(msg_list),
                 auto_refresh=True,
                 refresh_per_second=24,
+                console=self.console,
             ) as live:
 
                 def model_response_worker(

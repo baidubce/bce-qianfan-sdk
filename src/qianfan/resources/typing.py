@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import copy
+import json
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
+import aiohttp
+
+import requests
 
 from qianfan.errors import InvalidArgumentError
 
@@ -80,6 +84,20 @@ class QfRequest:
             "headers": self.headers,
             "json": self.json_body,
         }
+
+    @classmethod
+    def from_requests(cls, req: requests.PreparedRequest) -> "QfRequest":
+        """
+        convert requests.PreparedRequest to QfRequest object
+        """
+        return cls(req.method, req.url, {}, req.headers, {})
+
+    @classmethod
+    def from_aiohttp(cls, req: aiohttp.RequestInfo) -> "QfRequest":
+        """
+        convert aiohttp.RequestInfo to QfRequest object
+        """
+        return cls(req.method, str(req.url), {}, req.headers, {})
 
 
 @dataclass

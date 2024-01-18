@@ -16,7 +16,6 @@ from typing import Any, List, Optional
 
 import prompt_toolkit
 import typer
-from rich import print as rprint
 from rich.console import Console
 from rich.markdown import Markdown
 

@@ -53,6 +53,8 @@ def extract_id_from_path(path: str) -> Optional[str]:
     if path.startswith(QIANFAN_PATH_PREFIX):
         id = path[len(QIANFAN_PATH_PREFIX) :]
         return id
+    if path.startswith("ds-"):
+        return path
 
     return None
 

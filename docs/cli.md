@@ -298,3 +298,54 @@ $ qianfan trainer run [OPTIONS]
 * `--deploy-replicas INTEGER`：副本数  [default：1]
 * `--deploy-pool-type [public_resource|private_resource]`：资源池类型  [default：private_resource]
 * `--deploy-service-type [chat|completion|embedding|text2_image]`：服务类型  [default：chat]
+
+### evaluation 评估
+
+运行评估任务
+
+**用法**:
+
+```console
+$ qianfan evaluation [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options 选项**:
+
+* `--help`: 展示帮助信息
+
+**Commands 命令**:
+
+* `run`: 运行评估任务
+
+#### run 运行评估任务
+
+**用法**:
+
+```console
+$ qianfan evaluation run [OPTIONS] MODELS...
+```
+
+**Arguments 参数**:
+
+* `MODELS...`: 待评估的模型版本 id 列表，可以传递多个 id 以同时评估多个模型  [required]
+
+**Options 选项**:
+
+* `--dataset-id TEXT`: 待评估的数据集 id  [required]
+* `--enable-rule-evaluator / --no-enable-rule-evaluator`: 启用 RuleEvaluator，使用一定的评估规则来对推理结果进行评估，该评估器支持如下参数 [default: no-enable-rule-evaluator]
+  * `--using-similarity / --no-using-similarity`: 使用相似度评估结果  [default: no-using-similarity]
+  * `--using-accuracy / --no-using-accuracy`: 使用准确率评估结果  [default: no-using-accuracy]
+  * `--stop-words TEXT`: 停用词，通过 `,` 分隔数个停用词
+* `--enable-referee-evaluator / --no-enable-referee-evaluator`: 使用千帆提供的大模型对推理结果进行自动评估，该评估器支持如下参数  [default: no-enable-referee-evaluator]
+  * `--app-id INTEGER`: 评估使用的千帆应用 id 
+  * `--prompt-metrics TEXT`: 评估指标  [default: 综合得分]
+  * `--prompt-steps TEXT`: 评估的 prompt  [default: 
+1.仔细阅读所提供的问题，确保你理解问题的要求和背景。
+2.仔细阅读所提供的标准答案，确保你理解问题的标准答案
+3.阅读答案，并检查是否用词不当
+4.检查答案是否严格遵照了题目的要求，包括答题方式、答题长度、答题格式等等。
+]
+  * `--prompt-max-score INTEGER`: 评估的最大分数  [default: 5]
+* `--enable-manual-evaluator / --no-enable-manual-evaluator`: 使用手动评估器，完成推理后由用户在平台上手动对推理结果进行打分评估  [default: no-enable-manual-evaluator]
+  * `--dimensions TEXT`: 评估的维度，通过 `,` 分隔不同的维度
+* `--help`: 展示帮助信息

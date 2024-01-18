@@ -181,6 +181,10 @@ class Consts:
         "/wenxinworkshop/modelrepo/model/version/batchDelete"
     )
     ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
+    ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
+    ModelEvalResultExportStatusAPI: str = (
+        "/wenxinworkshop/modelrepo/eval/result/export/info"
+    )
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     ServiceListAPI: str = "/wenxinworkshop/service/list"

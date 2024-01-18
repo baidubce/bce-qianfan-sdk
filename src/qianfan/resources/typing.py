@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import copy
-import json
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
-import aiohttp
 
+import aiohttp
 import requests
 
 from qianfan.errors import InvalidArgumentError
@@ -90,14 +89,20 @@ class QfRequest:
         """
         convert requests.PreparedRequest to QfRequest object
         """
-        return cls(req.method, req.url, {}, req.headers, {})
+        return cls(
+            req.method if req.method else "",
+            req.url if req.url else "",
+            {},
+            dict(req.headers),
+            {},
+        )
 
     @classmethod
     def from_aiohttp(cls, req: aiohttp.RequestInfo) -> "QfRequest":
         """
         convert aiohttp.RequestInfo to QfRequest object
         """
-        return cls(req.method, str(req.url), {}, req.headers, {})
+        return cls(req.method, str(req.url), {}, dict(req.headers), {})
 
 
 @dataclass

@@ -175,6 +175,12 @@ class Consts:
     ModelEvalInfoAPI: str = "/wenxinworkshop/modelrepo/eval/detail"
     ModelEvalResultAPI: str = "/wenxinworkshop/modelrepo/eval/report"
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
+    ModelPresetListAPI: str = "/wenxinworkshop/modelrepo/model/preset/list"
+    ModelBatchDeleteAPI: str = "/wenxinworkshop/modelrepo/model/batchDelete"
+    ModelVersionBatchDeleteAPI: str = (
+        "/wenxinworkshop/modelrepo/model/version/batchDelete"
+    )
+    ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
     ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
     ModelEvalResultExportStatusAPI: str = (
         "/wenxinworkshop/modelrepo/eval/result/export/info"
@@ -216,6 +222,7 @@ class Consts:
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
+    STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
     QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"

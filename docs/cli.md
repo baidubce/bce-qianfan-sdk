@@ -244,7 +244,7 @@ $ qianfan dataset view [OPTIONS] DATASET
 * `--raw`：展示原始数据。
 * `--help`：展示帮助文档。
 
-## trainer 训练
+### trainer 训练
 
 **用法**:
 
@@ -260,7 +260,7 @@ $ qianfan trainer [OPTIONS] COMMAND [ARGS]...
 
 * `run`：运行 trainer 任务
 
-### run 
+#### run 发起训练任务
 
 运行 trainer 任务
 

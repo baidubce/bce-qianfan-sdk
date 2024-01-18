@@ -113,10 +113,12 @@ class DefaultValue:
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1
+    RetryMaxWaitInterval: float = 120
     ConsoleRetryCount: int = 1
     ConsoleRetryTimeout: float = 60
     ConsoleRetryBackoffFactor: float = 0
     ConsoleRetryJitter: int = 1
+    ConsoleRetryMaxWaitInterval: float = 120
     ConsoleRetryErrCodes: Set = {
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,

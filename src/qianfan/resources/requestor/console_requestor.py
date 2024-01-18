@@ -52,6 +52,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         """
         request console api with sign and retry
         """
+        # pass request timeout
         req.retry_config = retry_config
 
         def _helper() -> QfResponse:
@@ -67,6 +68,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         """
         request console api with sign and retry
         """
+        # pass request timeout
         req.retry_config = retry_config
 
         async def _helper() -> QfResponse:

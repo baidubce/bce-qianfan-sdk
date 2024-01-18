@@ -51,50 +51,59 @@ MANUAL_EVALUATOR_PANEL = "Manual Evaluator Options"
 
 @evaluation_app.command()
 def run(
-    models: List[str] = typer.Argument(..., help="Models."),
+    models: List[str] = typer.Argument(
+        ..., help="List of model version ids to be evaluated."
+    ),
     dataset_id: str = typer.Option(..., help="Dataset id."),
     enable_rule_evaluator: bool = typer.Option(False, help="Enable rule evaluator."),
     using_similarity: bool = typer.Option(
         QianfanRuleEvaluator().using_similarity,
-        help="Enable using similarity.",
+        help="Using similarity to evaluate the results.",
         rich_help_panel=RULE_EVALUATOR_PANEL,
     ),
     using_accuracy: bool = typer.Option(
         QianfanRuleEvaluator().using_accuracy,
-        help="Enable using accuracy.",
+        help="Using accuracy to evaluate the results.",
         rich_help_panel=RULE_EVALUATOR_PANEL,
     ),
     stop_words: Optional[str] = typer.Option(
         QianfanRuleEvaluator().stop_words,
-        help="Stopwords.",
+        help="Stop words.",
         rich_help_panel=RULE_EVALUATOR_PANEL,
     ),
     enable_referee_evaluator: bool = typer.Option(
         False, help="Enable referee evaluator."
     ),
     app_id: Optional[int] = typer.Option(
-        None, help="App id.", rich_help_panel=REFEREE_EVALUATOR_PANEL
+        None,
+        help=(
+            "The appid to which the model belongs to. The model will be used to"
+            " evaluate the results."
+        ),
+        rich_help_panel=REFEREE_EVALUATOR_PANEL,
     ),
     prompt_metrics: str = typer.Option(
         QianfanRefereeEvaluatorDefaultMetrics,
-        help="Metrics",
+        help="Metrics for the model to evaluate the results.",
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
     ),
     prompt_steps: str = typer.Option(
         QianfanRefereeEvaluatorDefaultSteps,
-        help="Steps",
+        help="Steps for the model to evaluate the results.",
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
     ),
     prompt_max_score: int = typer.Option(
         QianfanRefereeEvaluatorDefaultMaxScore,
-        help="Max score",
+        help="Max score of the evaluation result.",
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
     ),
     enable_manual_evaluator: bool = typer.Option(
         False, help="Enable manual evaluator."
     ),
     dimensions: Optional[str] = typer.Option(
-        None, help="Dimensions.", rich_help_panel=MANUAL_EVALUATOR_PANEL
+        None,
+        help="Dimensions for evaluation. Use ',' to split multiple dimensions.",
+        rich_help_panel=MANUAL_EVALUATOR_PANEL,
     ),
 ) -> None:
     """

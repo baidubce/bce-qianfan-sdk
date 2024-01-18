@@ -624,7 +624,14 @@ def eb_tokenizer():
             "id": "as-biv9bzt19n",
             "object": "tokenizer.erniebot",
             "created": 1698655037,
-            "amount": 97575 + len(prompt),  # magic number for eb tokenizer api
+            "usage": {
+                "prompt_tokens": 97575 + len(
+                    prompt
+                ),  # magic number for eb tokenizer api,
+                "total_tokens": 97575 + len(
+                    prompt
+                ),  # magic number for eb tokenizer api
+            },
         }
     )
 

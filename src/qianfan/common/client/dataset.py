@@ -45,29 +45,14 @@ dataset_app = typer.Typer(
 QIANFAN_PATH_PREFIX = "qianfan://"
 
 
-def extract_id_from_path(path: str) -> Optional[int]:
+def extract_id_from_path(path: str) -> Optional[str]:
     """
     Extract dataset id from path.
     Return 0 if path is not a qianfan dataset.
     """
-    try:
-        # if path is an integer, it is a dataset id
-        return int(path)
-    except ValueError:
-        pass
-
     if path.startswith(QIANFAN_PATH_PREFIX):
         id = path[len(QIANFAN_PATH_PREFIX) :]
-        try:
-            return int(id)
-        except ValueError:
-            print_error_msg(
-                (
-                    "Invalid platform dataset url. Shoule be like"
-                    f" {QIANFAN_PATH_PREFIX}{{dataset_version_id}}"
-                ),
-                exit=True,
-            )
+        return id
 
     return None
 

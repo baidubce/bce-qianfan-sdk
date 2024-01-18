@@ -41,12 +41,12 @@ from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
 
-def _check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]:
+def _check_online_data_process_result(etl_id: str) -> Optional[Union[bool, int]]:
     """
     check etl task result using etl task id
 
     Args:
-        etl_id (int):
+        etl_id (str):
             etl task id
     Returns:
         Optional[Union[bool, int]]: return None when task is still on processing.
@@ -78,7 +78,7 @@ def _check_online_data_process_result(etl_id: int) -> Optional[Union[bool, int]]
 def _create_a_dataset_etl_task(
     origin_data_source: Optional[DataSource],
     operator_dict: Dict[str, List[Dict[str, Any]]],
-) -> Tuple[int, int]:
+) -> Tuple[str, str]:
     assert isinstance(origin_data_source, QianfanDataSource)
 
     log_info("create a new dataset group and dataset")
@@ -110,13 +110,13 @@ def _create_a_dataset_etl_task(
         raise ValueError(message)
 
     etl_list = etl_result.get("items", [])
-    etl_id: Optional[int] = None
+    etl_id: Optional[str] = None
     for task in etl_list:
         if (
             task["sourceDatasetId"] == origin_data_source.id
             and task["destDatasetId"] == new_data_source.id
         ):
-            etl_id = task["etlId"]
+            etl_id = task["etlStrId"]
             break
 
     if etl_id is None:
@@ -268,7 +268,7 @@ def _list_cloud_data(
         log_error(message)
         raise ValueError(message)
 
-    args = {"dataset_id": data_source.id}
+    args: Dict[str, Any] = {"dataset_id": data_source.id}
 
     if isinstance(by, int):
         args["offset"] = by
@@ -311,7 +311,7 @@ def _list_cloud_data(
     return result
 
 
-def _wait_evaluation_finished(eval_id: int) -> int:
+def _wait_evaluation_finished(eval_id: str) -> str:
     log_info(f"start to polling status of evaluation task {eval_id}")
 
     while True:
@@ -344,10 +344,10 @@ def _wait_evaluation_finished(eval_id: int) -> int:
 
 def _start_an_evaluation_task_for_model_batch_inference(
     data_source: Optional[DataSource],
-    model_id: int,
-    model_version_id: int,
+    model_id: str,
+    model_version_id: str,
     **kwargs: Any,
-) -> int:
+) -> str:
     assert isinstance(data_source, QianfanDataSource)
 
     log_info("start to create evaluation task in model")

@@ -16,6 +16,7 @@
 API Requestor for SDK
 """
 
+import copy
 import inspect
 import json
 import time
@@ -251,6 +252,8 @@ class BaseAPIRequestor(object):
             )
         resp = self._parse_response(body, response)
         resp.statistic["request_latency"] = response.elapsed.total_seconds()
+        resp.request = QfRequest.from_requests(response.request)
+        resp.request.json_body = copy.deepcopy(request.json_body)
         return data_postprocess(resp)
 
     @_with_latency
@@ -284,6 +287,8 @@ class BaseAPIRequestor(object):
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
             parsed = self._parse_response(json_body, resp)
+            parsed.request = QfRequest.from_requests(resp.request)
+            parsed.request.json_body = copy.deepcopy(request.json_body)
             yield data_postprocess(parsed)
 
     @_with_latency
@@ -310,6 +315,8 @@ class BaseAPIRequestor(object):
                     )
                 resp = self._parse_async_response(body, response)
                 resp.statistic["request_latency"] = time.perf_counter() - start
+                resp.request = QfRequest.from_aiohttp(response.request_info)
+                resp.request.json_body = copy.deepcopy(request.json_body)
                 return data_postprocess(resp)
 
     @_with_latency
@@ -342,6 +349,8 @@ class BaseAPIRequestor(object):
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
             parsed = self._parse_async_response(json_body, resp)
+            parsed.request = QfRequest.from_aiohttp(resp.request_info)
+            parsed.request.json_body = copy.deepcopy(request.json_body)
             yield data_postprocess(parsed)
 
     def _parse_response(

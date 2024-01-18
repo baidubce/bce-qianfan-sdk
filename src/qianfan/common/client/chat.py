@@ -33,9 +33,11 @@ from qianfan.common.client.utils import (
     list_model_option,
     print_error_msg,
     print_warn_msg,
+    render_response_debug_info,
 )
 from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
+from qianfan.resources.llm.chat_completion import ChatCompletion
 from qianfan.resources.typing import QfMessages, QfResponse
 
 END_PROMPT = "\exit"
@@ -51,6 +53,7 @@ class ChatClient(object):
         model: Optional[str],
         endpoint: Optional[str],
         multi_line: bool,
+        debug: bool,
         **kwargs: Any,
     ) -> None:
         """
@@ -75,6 +78,7 @@ class ChatClient(object):
                 "Model arguments are not available when there are multiple models."
             )
             self.inference_args = {}
+        self.debug = debug
 
     def single_model_response(
         self, msg: Tuple[str, bool, Optional[QfResponse]]
@@ -113,9 +117,32 @@ class ChatClient(object):
                         f" {token_usage['total_tokens']}.[/]"
                     )
                 )
+                if self.debug:
+                    render_list.append(render_response_debug_info(resp))
+
         return Group(
             *render_list,
         )
+
+    def _client_name(self, client: ChatCompletion, markup: Optional[str] = None) -> str:
+        """
+        Generate client name
+        """
+
+        def _markup(s: str) -> str:
+            if markup is not None:
+                return f"[{markup}]{s}[/{markup}]"
+            else:
+                return s
+
+        name: str
+        if client._model is not None:
+            name = f"Model {_markup(client._model)}"
+        elif client._endpoint is not None:
+            name = f"Endpoint {_markup(client._endpoint)}"
+        else:
+            raise InternalError("No model or endpoint specified in ChatCompletion.")
+        return name
 
     def render_model_response(
         self, msg_list: List[Tuple[str, bool, Optional[QfResponse]]]
@@ -128,14 +155,7 @@ class ChatClient(object):
         table = Table(expand=True)
         render_list = []
         for client, msg in zip(self.clients, msg_list):
-            title: str
-            if client._model is not None:
-                title = f"Model [green]{client._model}[/green]"
-            elif client._endpoint is not None:
-                title = f"Endpoint [green]{client._endpoint}[/green]"
-            else:
-                raise InternalError("No model or endpoint specified in ChatCompletion.")
-
+            title = self._client_name(client, "green")
             table.add_column(title, overflow="fold", ratio=1)
             render_list.append(self.single_model_response(msg))
         table.add_row(*render_list)
@@ -183,7 +203,14 @@ class ChatClient(object):
                 if msg_history is not None:
                     msg_history.append(message)
 
-            rprint("\n[blue][bold]Model response:[/bold][/blue]")
+            extra_info = (
+                ""
+                if len(self.clients) != 1
+                else f"({ self._client_name(self.clients[0])})"
+            )
+            rprint(
+                f"\n[blue][bold]Model response[/bold][/blue][dim] {extra_info}[/dim]:"
+            )
 
             if message == END_PROMPT:
                 rprint("Bye!")
@@ -198,6 +225,7 @@ class ChatClient(object):
                 self.render_model_response(msg_list),
                 auto_refresh=True,
                 refresh_per_second=24,
+                console=self.console,
             ) as live:
 
                 def model_response_worker(
@@ -283,6 +311,11 @@ def chat_entry(
         "--multi-line",
         help="Multi-line mode which needs to press Esc before enter to submit message.",
     ),
+    debug: bool = typer.Option(
+        False,
+        "--debug",
+        help="Enable debug mode. The request infomation will be printed.",
+    ),
     list_model: Optional[bool] = list_model_option,
     temperature: Optional[float] = typer.Option(
         None,
@@ -346,7 +379,7 @@ def chat_entry(
     if stop is not None:
         extra_args["stop"] = stop.split(",")
 
-    client = ChatClient(model, endpoint, multi_line, **extra_args)
+    client = ChatClient(model, endpoint, multi_line, debug=debug, **extra_args)
     client.chat_in_terminal()
 
     # if not tui:

@@ -15,11 +15,16 @@
 """
     Unit test for ChatCompletion
 """
+import logging
+
 import pytest
 
 import qianfan
 import qianfan.tests.utils
 from qianfan.resources import QfMessages
+from qianfan.utils import enable_log
+
+enable_log(logging.DEBUG)
 
 TEST_MESSAGE = [
     {

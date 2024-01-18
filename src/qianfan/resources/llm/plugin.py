@@ -41,7 +41,7 @@ class Plugin(BaseResource):
         """
         if endpoint is None:
             # 转换成一言插件
-            super().__init__(model, endpoint, **kwargs)
+            super().__init__(model, **kwargs)
         else:
             super().__init__(endpoint=endpoint, **kwargs)
 
@@ -59,14 +59,14 @@ class Plugin(BaseResource):
         """
         return {
             "EBPlugin": QfLLMInfo(
-                # 一言插件
-                endpoint="/erniebot/plugin",
+                # 一言插件 v1
+                endpoint="/erniebot/plugins",
                 required_keys={"messages", "plugins"},
                 optional_keys={"user_id", "extra_data"},
             ),
-            "EBPluginV1": QfLLMInfo(
-                # 一言插件
-                endpoint="/erniebot/plugins",
+            "EBPluginV2": QfLLMInfo(
+                # 一言插件 v2
+                endpoint="/erniebot/plugin",
                 required_keys={"messages", "plugins"},
                 optional_keys={"user_id", "extra_data"},
             ),
@@ -104,7 +104,11 @@ class Plugin(BaseResource):
             return f"/plugin/{endpoint}/"
         else:
             # 一言插件
-            return "/erniebot/plugins"
+            if model not in self._supported_models():
+                model = self._default_model()
+            model_info = self._supported_models().get(model)
+            assert model_info is not None
+            return model_info.endpoint
 
     def _check_params(
         self,

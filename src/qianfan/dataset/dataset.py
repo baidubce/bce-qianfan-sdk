@@ -44,6 +44,7 @@ from qianfan.dataset.consts import (
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
+    BosDataSource,
     DataSource,
     FileDataSource,
     FormatType,
@@ -302,7 +303,7 @@ class Dataset(Table):
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
 
-            if isinstance(source, QianfanDataSource):
+            if isinstance(source, (QianfanDataSource, BosDataSource)):
                 tmp_zip_file_name = (
                     f"tmp_zip_file_{generate_letter_num_random_id()}.zip"
                 )
@@ -337,6 +338,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
         """从参数来构建数据源"""
@@ -359,7 +361,9 @@ class Dataset(Table):
                 "construct a new qianfan data source from args:"
                 f" {qianfan_dataset_create_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_bare_dataset(**qianfan_dataset_create_args)
+            return QianfanDataSource.create_bare_dataset(
+                **qianfan_dataset_create_args, **kwargs
+            )
 
         if bos_load_args:
             log_info(
@@ -367,6 +371,9 @@ class Dataset(Table):
                 f" {bos_load_args}, with args: {kwargs}"
             )
             return QianfanDataSource.create_from_bos_file(**bos_load_args)
+
+        if bos_source_args:
+            return BosDataSource(**bos_source_args, **kwargs)
 
         log_info("no datasource was constructed")
         return None
@@ -397,6 +404,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_dataset: Optional[Any] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         organize_data_as_group: bool = False,
         **kwargs: Any,
@@ -421,6 +429,9 @@ class Dataset(Table):
             huggingface_dataset (Optional[Dict[str, Any], Any]):
                 Huggingface dataset object, only support
                 DatasetDict and Dataset of Huggingface datasets.
+            bos_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific bos
+                default to None
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
             organize_data_as_group (bool):
@@ -468,6 +479,7 @@ class Dataset(Table):
                 data_file=data_file,
                 qianfan_dataset_id=qianfan_dataset_id,
                 bos_load_args=bos_load_args,
+                bos_source_args=bos_source_args,
                 **kwargs,
             )
 
@@ -498,6 +510,7 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         replace_source: bool = False,
         **kwargs: Any,
@@ -519,6 +532,9 @@ class Dataset(Table):
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
                 default to None
+            bos_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific bos
+                default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
             replace_source: (bool):
@@ -531,9 +547,10 @@ class Dataset(Table):
         if not destination:
             log_info("no destination data source was provided, construct")
             destination = self._from_args_to_source(
-                data_file,
-                qianfan_dataset_id,
-                qianfan_dataset_create_args,
+                data_file=data_file,
+                qianfan_dataset_id=qianfan_dataset_id,
+                qianfan_dataset_create_args=qianfan_dataset_create_args,
+                bos_source_args=bos_source_args,
                 is_download_to_local=False,
                 **kwargs,
             )

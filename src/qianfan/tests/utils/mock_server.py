@@ -624,7 +624,14 @@ def eb_tokenizer():
             "id": "as-biv9bzt19n",
             "object": "tokenizer.erniebot",
             "created": 1698655037,
-            "amount": 97575 + len(prompt),  # magic number for eb tokenizer api
+            "usage": {
+                "prompt_tokens": 97575 + len(
+                    prompt
+                ),  # magic number for eb tokenizer api,
+                "total_tokens": 97575 + len(
+                    prompt
+                ),  # magic number for eb tokenizer api
+            },
         }
     )
 
@@ -1286,6 +1293,45 @@ def stop_evaluation_task():
     """
     return json_response(
         {"result": {"result": True, "errorMessage": ""}, "log_id": "2398985472"}
+    )
+
+
+@app.route(Consts.ModelEvalResultExportAPI, methods=["POST"])
+@iam_auth_checker
+def create_evaluation_result_export_task():
+    """
+    mock create evaluation result export task api
+    """
+
+    return json_response(
+        {
+            "log_id": "4159183555",
+            "result": {"exportID": 105, "exportIDStr": "amemt-hkkf5y9e64j8"},
+        }
+    )
+
+
+@app.route(Consts.ModelEvalResultExportStatusAPI, methods=["POST"])
+@iam_auth_checker
+def get_evaluation_result_export_task_status():
+    """
+    mock get evaluation result export task status
+    """
+
+    return json_response(
+        {
+            "log_id": "2340692759",
+            "result": {
+                "id": 305,
+                "exportID": request.json["exportID"],
+                "exportIDStr": "amemt-hkkf5y9e64j8",
+                "state": "Done",
+                "exportType": "storage",
+                "volumeId": "modelrepo-test",
+                "exportPath": "qianfan_modelrepo_offline/workspace/model_eval_result_export/cl_test23_305_1704338430470.csv",
+                "downloadUrl": "",
+            },
+        }
     )
 
 

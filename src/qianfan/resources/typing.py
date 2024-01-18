@@ -19,6 +19,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
+import aiohttp
+import requests
+
 from qianfan.errors import InvalidArgumentError
 
 if sys.version_info < (3, 10):
@@ -102,6 +105,26 @@ class QfRequest:
             "json": self.json_body,
         }
 
+    @classmethod
+    def from_requests(cls, req: requests.PreparedRequest) -> "QfRequest":
+        """
+        convert requests.PreparedRequest to QfRequest object
+        """
+        return cls(
+            req.method if req.method else "",
+            req.url if req.url else "",
+            {},
+            dict(req.headers),
+            {},
+        )
+
+    @classmethod
+    def from_aiohttp(cls, req: aiohttp.RequestInfo) -> "QfRequest":
+        """
+        convert aiohttp.RequestInfo to QfRequest object
+        """
+        return cls(req.method, str(req.url), {}, dict(req.headers), {})
+
 
 @dataclass
 class QfResponse(Mapping):
@@ -133,6 +156,11 @@ class QfResponse(Mapping):
         only existed in streaming calling
     `total_latency`: resource elapsed time int seconds, include request, serialization
         and the waiting time if `rate_limit` is set.
+    """
+
+    request: Optional[QfRequest] = default_field(None)
+    """
+    Original request
     """
 
     def __getitem__(self, item: str) -> Any:

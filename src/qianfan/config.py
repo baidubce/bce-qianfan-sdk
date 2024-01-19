@@ -240,4 +240,7 @@ def SecretKey(secret_key: str) -> None:
 
 
 def encoding() -> str:
+    """
+    Get the file encoding used in the SDK.
+    """
     return get_config().FILE_ENCODING

@@ -212,7 +212,7 @@ class Prompt(HubSerializable):
           identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):
             The identifier of the prompt.
         """
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
         return cls(template=content, identifier=identifier)
 
@@ -224,7 +224,7 @@ class Prompt(HubSerializable):
           path (str):
             The path of the prompt file.
         """
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(self.template)
 
     def _hub_push(self) -> None:

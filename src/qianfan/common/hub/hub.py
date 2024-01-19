@@ -96,7 +96,7 @@ def load(
     # get `cls_desc` from different sources
     s = json_str
     if path is not None:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             s = f.read()
     if url is not None:
         try:
@@ -161,7 +161,7 @@ def save(
     except json.JSONDecodeError:
         raise ValidationError("Hub can not serialize the provided object.")
     if path is not None:
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(json_str)
     if to_platform is True:
         obj._hub_push()

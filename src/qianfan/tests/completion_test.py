@@ -427,6 +427,6 @@ async def test_batch_predict_async():
 def test_sdk_indicator():
     res = qianfan.Completion().do("hi")
     assert (
-        res["_request"]["extra_parameters"]["user_agent"]
+        res["_request"]["extra_parameters"]["request_source"]
         == f"qianfan_py_sdk_v{VERSION}"
     )

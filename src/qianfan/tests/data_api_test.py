@@ -88,7 +88,7 @@ def test_create_task():
     assert resp.get("groupName", "") == "test_dataset_name"
     assert resp.get("projectType", 12) == DataProjectType.Conversation
     assert resp.get("storageInfo", {}).get("storageId", "") == "bos_bucket_name"
-    assert resp.get("storageInfo", {}).get("rawStoragePath", "") == "bos_path"
+    assert resp.get("storageInfo", {}).get("rawStoragePath", "") == "bos_path/"
 
 
 def test_create_import_task():

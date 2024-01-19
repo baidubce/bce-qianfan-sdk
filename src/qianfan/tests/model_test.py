@@ -18,6 +18,7 @@
 
 
 from qianfan.resources import Model
+from qianfan.resources.console.consts import EvaluationResultExportDestinationType
 
 
 def test_list_model():
@@ -126,3 +127,26 @@ def test_stop_evaluation_task():
     )
 
     assert resp["_request"]["id"] == 123
+
+
+def test_create_evaluation_result_export_task():
+    """
+    test Model.create_evaluation_result_export_task
+    """
+
+    resp = Model.create_evaluation_result_export_task("123")
+
+    assert (
+        resp["_request"]["exportType"]
+        == EvaluationResultExportDestinationType.PublicBos.value
+    )
+
+
+def test_get_evaluation_result_export_task_status():
+    """
+    test Model.get_evaluation_result_export_task_status
+    """
+
+    resp = Model.get_evaluation_result_export_task_status(12)
+
+    assert resp["_request"]["exportID"] == 12

@@ -47,9 +47,11 @@ from qianfan.dataset.data_source import (
     BosDataSource,
     DataSource,
     FileDataSource,
-    FormatType,
     QianfanDataSource,
 )
+
+from qianfan.dataset.data_source_utils import FormatType
+
 from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
     _batch_do_on_service,

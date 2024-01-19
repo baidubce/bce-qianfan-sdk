@@ -33,6 +33,8 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 
+from qianfan.dataset.data_source_utils import FormatType
+
 __all__ = [
     "DataSource",
     "FileDataSource",
@@ -46,4 +48,5 @@ __all__ = [
     "DataStorageType",
     "DataProjectType",
     "DataExportDestinationType",
+    "FormatType",
 ]

@@ -140,11 +140,11 @@ SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，�
 
 ```python
 from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source_utils import FormatType
 
 ds = Dataset.load(
-  data_file="path/to/dataset_file_without_suffix",
-  file_format=FormatType.Json
+    data_file="path/to/dataset_file_without_suffix",
+    file_format=FormatType.Json
 )
 
 print(ds.list())
@@ -156,7 +156,7 @@ print(ds.list())
 
 ```python
 from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source_utils import FormatType
 
 ds = Dataset.load(
   data_file="path/to/folder",

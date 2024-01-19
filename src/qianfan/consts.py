@@ -155,6 +155,7 @@ class DefaultValue:
         APIErrorCode.QPSLimitReached.value,
     }
     SSLVerificationEnabled: bool = True
+    FileEncoding: str = "utf-8"
 
 
 class Consts:

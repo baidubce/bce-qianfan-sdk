@@ -20,26 +20,33 @@ import os.path
 import uuid
 import zipfile
 from abc import ABC, abstractmethod
-from time import sleep
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
-import requests
 from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.bce_client_configuration import BceClientConfiguration
 from baidubce.services.bos.bos_client import BosClient
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
-from qianfan.dataset.data_source_utils import _read_all_file_content_in_an_folder, _read_all_file_from_zip, FormatType, \
-    _get_data_format_from_template_type, _create_import_data_task_and_wait_for_success, _get_qianfan_dataset_type_tuple, \
-    _get_latest_export_record, _datetime_parse_hook, _check_data_and_zip_file_valid, \
-    _create_export_data_task_and_wait_for_success, _download_file_from_url_streamly, \
-    _create_release_data_task_and_wait_for_success
+from qianfan.dataset.data_source_utils import (
+    FormatType,
+    _check_data_and_zip_file_valid,
+    _check_is_any_data_existed_in_dataset,
+    _create_export_data_task_and_wait_for_success,
+    _create_import_data_task_and_wait_for_success,
+    _create_release_data_task_and_wait_for_success,
+    _datetime_parse_hook,
+    _download_file_from_url_streamly,
+    _get_data_format_from_template_type,
+    _get_latest_export_record,
+    _get_qianfan_dataset_type_tuple,
+    _read_all_file_content_in_an_folder,
+    _read_all_file_from_zip,
+)
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
 from qianfan.resources.console.consts import (
     DataProjectType,
-    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataStorageType,
@@ -256,11 +263,11 @@ class FileDataSource(DataSource, BaseModel):
         try:
             index = path.rfind(".")
             # 读文件夹或查询不到或读 zip 包的情况下默认使用纯文本格式
-            if os.path.isdir(path) or index == -1 or path[index + 1:] == "zip":
+            if os.path.isdir(path) or index == -1 or path[index + 1 :] == "zip":
                 log_warn(f"use default format type {FormatType.Text}")
                 values["file_format"] = FormatType.Text
                 return values
-            suffix = path[index + 1:]
+            suffix = path[index + 1 :]
             for t in FormatType:
                 if t.value == suffix:
                     values["file_format"] = t
@@ -396,7 +403,9 @@ class QianfanDataSource(DataSource, BaseModel):
         """
         _check_data_and_zip_file_valid(data, zip_file_path)
 
-        storage_id, storage_path, storage_region = self._get_transmission_bos_info(sup_storage_id, sup_storage_path, sup_storage_region)
+        storage_id, storage_path, storage_region = self._get_transmission_bos_info(
+            sup_storage_id, sup_storage_path, sup_storage_region
+        )
         ak, sk = self._get_console_ak_and_sk()
 
         if not zip_file_path:
@@ -515,12 +524,9 @@ class QianfanDataSource(DataSource, BaseModel):
 
             # 检查下载下来的文件大小
             # 如果超过限制，则报错
-            if (
-                og_file_size >= get_config().EXPORT_FILE_SIZE_LIMIT
-            ):
+            if og_file_size >= get_config().EXPORT_FILE_SIZE_LIMIT:
                 error = FileSizeOverflow(
-                    "dataset file size is too big to unzip:"
-                    f" {og_file_size}"
+                    f"dataset file size is too big to unzip: {og_file_size}"
                 )
                 log_error(str(error))
                 raise error
@@ -601,7 +607,7 @@ class QianfanDataSource(DataSource, BaseModel):
         if self.ak and self.sk:
             kwargs["ak"] = self.ak
             kwargs["sk"] = self.sk
-        if not self._check_is_any_data_existed_in_dataset(**kwargs):
+        if not _check_is_any_data_existed_in_dataset(self.id, **kwargs):
             error = LookupError("no data exists in dataset")
             log_error(str(error))
             raise error
@@ -996,12 +1002,21 @@ class BosDataSource(DataSource, BaseModel):
 
         if data:
             final_bos_file_path = self.bos_file_path
+            log_info(
+                f"ready to fetch a file from bos path: {final_bos_file_path} in bucket"
+                f" {self.bucket}"
+            )
         else:
             final_bos_file_path = self.bos_file_path.replace(
                 f".{self.file_format.value}", ".zip"
             )
+            log_info(
+                f"ready to fetch a zip file from bos path: {final_bos_file_path} in"
+                f" bucket {self.bucket}"
+            )
 
         if not should_overwrite_existed_file:
+            log_info(f"check if bos file {final_bos_file_path} existed")
             file_existed = True
             try:
                 bos_client.get_object_meta_data(self.bucket, final_bos_file_path)
@@ -1017,6 +1032,9 @@ class BosDataSource(DataSource, BaseModel):
                 raise ValueError(err_msg)
 
         if should_overwrite_existed_file:
+            log_info(
+                f"try to delete original bos file {final_bos_file_path} for overwrite"
+            )
             try:
                 bos_client.delete_object(self.bucket, final_bos_file_path)
             except Exception:
@@ -1025,10 +1043,12 @@ class BosDataSource(DataSource, BaseModel):
 
         try:
             if data:
+                log_info("fetch file content directly from bos file")
                 bos_client.put_object_from_string(
                     self.bucket, final_bos_file_path, data
                 )
             elif zip_file_path:
+                log_info("start to fetch zip file from bos")
                 bos_client.put_object_from_file(
                     self.bucket, final_bos_file_path, zip_file_path
                 )
@@ -1095,18 +1115,32 @@ class BosDataSource(DataSource, BaseModel):
             else self.bos_file_path[1:]
         )
 
+        if read_from_zip:
+            log_info(
+                f"ready to fetch a zip file from bos path: {actual_bos_file_path} in"
+                f" bucket {self.bucket}"
+            )
+        else:
+            log_info(
+                f"ready to fetch a file from bos path: {actual_bos_file_path} in bucket"
+                f" {self.bucket}"
+            )
+
         try:
             if read_from_zip:
                 tmp_zip_file = "tmp_zip_file.zip"
                 try:
+                    log_info("start to fetch zip file from bos")
                     bos_client.get_object_to_file(
                         self.bucket, actual_bos_file_path, tmp_zip_file
                     )
+                    log_info("fetch zip file from bos successfully, start to read")
                     return _read_all_file_from_zip(tmp_zip_file, self.file_format)
                 finally:
                     if os.path.exists(tmp_zip_file):
                         os.remove(tmp_zip_file)
 
+            log_info("fetch file content directly from bos file")
             result = bos_client.get_object_as_string(self.bucket, actual_bos_file_path)
             if isinstance(result, bytes):
                 return result.decode(encoding="utf8")

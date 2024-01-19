@@ -20,7 +20,7 @@ import shutil
 import zipfile
 from enum import Enum
 from time import sleep
-from typing import List, Tuple, Any, Dict, Union, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
@@ -28,10 +28,17 @@ import requests
 from qianfan import get_config
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
-
-from qianfan.resources.console.consts import DataTemplateType, DataSourceType, DataImportStatus, DataProjectType, \
-    DataSetType, DataExportDestinationType, DataExportStatus, DataReleaseStatus
-from qianfan.utils import log_info, log_error, log_debug, log_warn
+from qianfan.resources.console.consts import (
+    DataExportDestinationType,
+    DataExportStatus,
+    DataImportStatus,
+    DataProjectType,
+    DataReleaseStatus,
+    DataSetType,
+    DataSourceType,
+    DataTemplateType,
+)
+from qianfan.utils import log_debug, log_error, log_info, log_warn
 
 
 class FormatType(Enum):
@@ -124,7 +131,7 @@ def _create_import_data_task_and_wait_for_success(
 
 
 def _get_qianfan_dataset_type_tuple(
-        template_type: DataTemplateType
+    template_type: DataTemplateType,
 ) -> Tuple[DataProjectType, DataSetType]:
     for t in DataProjectType:
         # DataProjectType 是匹配的 DataTemplateType 的前缀
@@ -134,8 +141,7 @@ def _get_qianfan_dataset_type_tuple(
         if template_type.value // t.value == 100:
             if template_type == DataTemplateType.Text2Image:
                 log_debug(
-                    f"inferred project type: {t}, set type:"
-                    f" {DataSetType.MultiModel}"
+                    f"inferred project type: {t}, set type: {DataSetType.MultiModel}"
                 )
                 return t, DataSetType.MultiModel
             else:
@@ -167,9 +173,7 @@ def _get_latest_export_record(
                 newest_record_index = index
                 latest_record_time = date
         except Exception as e:
-            log_warn(
-                f"an exception occurred when fetch export records info: {str(e)}"
-            )
+            log_warn(f"an exception occurred when fetch export records info: {str(e)}")
             continue
 
     log_info(f"latest dataset with time{latest_record_time} for dataset {dataset_id}")
@@ -193,7 +197,9 @@ def _check_is_any_data_existed_in_dataset(dataset_id: str, **kwargs: Any) -> boo
     return qianfan_resp["entityCount"] != 0
 
 
-def _check_data_and_zip_file_valid(data: Optional[str], zip_file_path: Optional[str]) -> None:
+def _check_data_and_zip_file_valid(
+    data: Optional[str], zip_file_path: Optional[str]
+) -> None:
     if data and zip_file_path:
         err_msg = "can't set 'data' and 'zip_file_path' simultaneously"
         log_error(err_msg)
@@ -205,7 +211,9 @@ def _check_data_and_zip_file_valid(data: Optional[str], zip_file_path: Optional[
         raise ValueError(err_msg)
 
 
-def _create_export_data_task_and_wait_for_success(dataset_id: str, **kwargs: Any) -> None:
+def _create_export_data_task_and_wait_for_success(
+    dataset_id: str, **kwargs: Any
+) -> None:
     log_info("start to export dataset")
     Data.create_dataset_export_task(
         dataset_id, DataExportDestinationType.PlatformBos, **kwargs
@@ -226,14 +234,14 @@ def _create_export_data_task_and_wait_for_success(dataset_id: str, **kwargs: Any
             log_info(f"export status: {status}, keep polling")
             continue
         elif status == DataExportStatus.Failed.value:
-            error = QianfanRequestError(
-                f"export dataset failed with status {status}"
-            )
+            error = QianfanRequestError(f"export dataset failed with status {status}")
             log_error(str(error))
             raise error
 
 
-def _download_file_from_url_streamly(download_url: str, destination_file_path: str):
+def _download_file_from_url_streamly(
+    download_url: str, destination_file_path: str
+) -> None:
     log_info(f"start to download file from url {download_url}")
     try:
         resp = requests.get(download_url, stream=True)
@@ -254,7 +262,9 @@ def _download_file_from_url_streamly(download_url: str, destination_file_path: s
         raise http_error
 
 
-def _create_release_data_task_and_wait_for_success(dataset_id: str, **kwargs: Any) -> bool:
+def _create_release_data_task_and_wait_for_success(
+    dataset_id: str, **kwargs: Any
+) -> bool:
     info = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
 
     status = info["releaseStatus"]
@@ -272,9 +282,7 @@ def _create_release_data_task_and_wait_for_success(dataset_id: str, **kwargs: An
             log_info("data releasing, keep polling")
             continue
         elif status == DataReleaseStatus.Failed:
-            message = (
-                f"data releasing failed with error code {info['releaseErrCode']}"
-            )
+            message = f"data releasing failed with error code {info['releaseErrCode']}"
             log_error(message)
             return False
         else:

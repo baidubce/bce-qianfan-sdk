@@ -22,6 +22,7 @@ from qianfan.dataset.data_source import (
     FileDataSource,
     QianfanDataSource,
 )
+from qianfan.dataset.data_source_utils import FormatType
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import (
@@ -32,8 +33,6 @@ from qianfan.resources.console.consts import (
     DataStorageType,
     DataTemplateType,
 )
-
-from qianfan.dataset.data_source_utils import FormatType
 
 __all__ = [
     "DataSource",

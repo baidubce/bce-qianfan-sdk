@@ -29,8 +29,8 @@ from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
-from qianfan.pydantic import BaseModel
 from qianfan.resources.console.consts import DataTemplateType
+from qianfan.utils.pydantic import BaseModel
 
 
 class FakeDataSource(DataSource, BaseModel):

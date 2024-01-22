@@ -17,7 +17,7 @@ from typing import Optional
 from typing_extensions import deprecated
 
 from qianfan.consts import DefaultValue, Env
-from qianfan.pydantic import BaseSettings, Field
+from qianfan.utils.pydantic import BaseSettings, Field
 
 
 class GlobalConfig(BaseSettings):
@@ -92,10 +92,16 @@ class GlobalConfig(BaseSettings):
     LLM_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.RetryTimeout)
     LLM_API_RETRY_BACKOFF_FACTOR: float = Field(default=DefaultValue.RetryBackoffFactor)
     LLM_API_RETRY_JITTER: float = Field(default=DefaultValue.RetryJitter)
+    LLM_API_RETRY_MAX_WAIT_INTERVAL: float = Field(
+        default=DefaultValue.RetryMaxWaitInterval
+    )
     LLM_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.RetryErrCodes)
     CONSOLE_API_RETRY_COUNT: int = Field(default=DefaultValue.ConsoleRetryCount)
     CONSOLE_API_RETRY_TIMEOUT: int = Field(default=DefaultValue.ConsoleRetryTimeout)
     CONSOLE_API_RETRY_JITTER: float = Field(default=DefaultValue.ConsoleRetryJitter)
+    CONSOLE_API_RETRY_MAX_WAIT_INTERVAL: float = Field(
+        default=DefaultValue.ConsoleRetryMaxWaitInterval
+    )
     CONSOLE_API_RETRY_ERR_CODES: set = Field(default=DefaultValue.ConsoleRetryErrCodes)
     CONSOLE_API_RETRY_BACKOFF_FACTOR: int = Field(
         default=DefaultValue.ConsoleRetryBackoffFactor
@@ -104,6 +110,11 @@ class GlobalConfig(BaseSettings):
         default=DefaultValue.EvaluationOnlinePollingInterval
     )
     BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
+
+    # Warning
+    # 这个配置项会关闭 SSL 证书校验功能，可能会导致潜在的不安全访问
+    # 请勿在公共网络上关闭这一配置。由于关闭带来的一切问题，本项目均不负责
+    SSL_VERIFICATION_ENABLED: bool = Field(default=DefaultValue.SSLVerificationEnabled)
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

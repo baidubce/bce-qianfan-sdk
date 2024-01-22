@@ -50,10 +50,14 @@ def qianfan_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             backoff_factor=kwargs.get(
                 "backoff_factor", config.LLM_API_RETRY_BACKOFF_FACTOR
             ),
+            jitter=kwargs.get("jitter", config.LLM_API_RETRY_JITTER),
+            max_wait_interval=kwargs.get(
+                "max_wait_interval", config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+            ),
         )
         req = func(*args, **kwargs)
         req.retry_config = retry_config
-        return QfAPIRequestor()._request_api(req, auth)
+        return QfAPIRequestor(**kwargs)._request_api(req, auth)
 
     return inner
 
@@ -84,9 +88,13 @@ def async_qianfan_api_request(
             backoff_factor=kwargs.get(
                 "backoff_factor", config.LLM_API_RETRY_BACKOFF_FACTOR
             ),
+            jitter=kwargs.get("jitter", config.LLM_API_RETRY_JITTER),
+            max_wait_interval=kwargs.get(
+                "max_wait_interval", config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+            ),
         )
         req = await func(*args, **kwargs)
         req.retry_config = retry_config
-        return await QfAPIRequestor()._async_request_api(req, auth)
+        return await QfAPIRequestor(**kwargs)._async_request_api(req, auth)
 
     return inner

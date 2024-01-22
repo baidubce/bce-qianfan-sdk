@@ -102,7 +102,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return {
             "datasets": [
                 {
-                    "id": qf_data_src.id,
+                    "id": qf_data_src.old_dataset_id,
                     "type": console_consts.TrainDatasetType.Platform.value,
                 }
             ]
@@ -247,13 +247,23 @@ class TrainAction(
         self.validateTrainConfig()
         if train_mode is not None:
             self.train_mode = train_mode
-        self.task_name = (
-            f"task_{utils.generate_letter_num_random_id()}"
-            if task_name is None
-            else task_name
-        )
+        self.task_name = self._generate_task_name(task_name, self.train_type)
         self.task_description = task_description
         self.job_description = job_description
+
+    def _generate_task_name(
+        self, task_name: Optional[str], train_type: Optional[str]
+    ) -> str:
+        if task_name is not None:
+            return task_name
+        model_info = (
+            ModelInfoMapping.get(train_type) if train_type is not None else None
+        )
+        return (
+            f"job_{utils.generate_letter_num_random_id()}"
+            if model_info is None
+            else f"{model_info.short_name}_{utils.generate_letter_num_random_id(5)}"
+        )
 
     def validateTrainConfig(self) -> None:
         """
@@ -288,7 +298,8 @@ class TrainAction(
                     self._validate_train_config(
                         train_type_model_info.specific_peft_types_params_limit[
                             self.train_config.peft_type
-                        ],
+                        ]
+                        | train_type_model_info.common_params_limit,
                     )
                 else:
                     self._validate_train_config(
@@ -307,59 +318,7 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
-        if (
-            self.train_config.batch_size
-            and train_limit.batch_size_limit
-            and not (
-                train_limit.batch_size_limit[0]
-                <= self.train_config.batch_size
-                <= self.train_config.batch_size
-                > train_limit.batch_size_limit[1]
-            )
-        ):
-            log_warn(
-                f"[train_action] current batch_size: {self.train_config.batch_size},"
-                f" but suggested batch size in [{train_limit.batch_size_limit[0]},"
-                f" {train_limit.batch_size_limit[1]}]"
-            )
-        if (
-            self.train_config.epoch
-            and train_limit.epoch_limit
-            and not (
-                train_limit.epoch_limit[0]
-                <= self.train_config.epoch
-                <= train_limit.epoch_limit[1]
-            )
-        ):
-            log_warn(
-                f"[train_action] current epoch: {self.train_config.epoch}, but"
-                f" suggested epoch in [{train_limit.epoch_limit[0]},"
-                f" {train_limit.epoch_limit[1]}]"
-            )
-        if (
-            self.train_config.max_seq_len
-            and train_limit.max_seq_len_options
-            and self.train_config.max_seq_len not in train_limit.max_seq_len_options
-        ):
-            log_warn(
-                f"[train_action] current max_seq_len: {self.train_config.max_seq_len},"
-                f" but supported max_seq_len may be [{train_limit.max_seq_len_options}]"
-            )
-        if (
-            self.train_config.learning_rate
-            and train_limit.learning_rate_limit
-            and not (
-                train_limit.learning_rate_limit[0]
-                <= self.train_config.learning_rate
-                <= train_limit.learning_rate_limit[1]
-            )
-        ):
-            log_warn(
-                "[train_action] current learning rate:"
-                f" {self.train_config.learning_rate}, but suggested learning rate in"
-                f" [{train_limit.learning_rate_limit[0]},"
-                f" {train_limit.learning_rate_limit[1]}]"
-            )
+        self.train_config.validate_config(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -408,13 +367,13 @@ class TrainAction(
         # for resume
         if self._input is None:
             self._input = input
-        return self._exec(input, **kwargs)
+        return self._exec(self._input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         # 校验数据集
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
-            raise InvalidArgumentError("train set rate must be set")
+            raise InvalidArgumentError("train set must be set")
 
         # 判断是否增量训练
         if self.is_incr:
@@ -447,6 +406,9 @@ class TrainAction(
                 "weightDecay": self.train_config.weight_decay,
                 "loraRank": self.train_config.lora_rank,
                 "loraAllLinear": self.train_config.lora_all_linear,
+                "loraAlpha": self.train_config.lora_alpha,
+                "loraDropout": self.train_config.lora_dropout,
+                "schedulerName": self.train_config.scheduler_name,
                 **self.train_config.extras,
             },
             "trainset": train_sets,
@@ -478,10 +440,10 @@ class TrainAction(
             job_status = job_status_resp["result"]["trainStatus"]
             job_progress = job_status_resp["result"]["progress"]
             log_info(
-                f"[train_action] fine-tune running... current status: {job_status},"
-                f" {job_progress}% "
-                "check train log in"
-                f" https://console.bce.baidu.com/qianfan/train/sft/{self.task_id}/{self.job_id}/detail/traininglog"
+                "[train_action] fine-tune running..."
+                f" task_name:{self.task_name} current status: {job_status},"
+                f" {job_progress}% check train task in"
+                " https://console.bce.baidu.com/qianfan/train/sft/list"
             )
             if job_progress >= 50:
                 log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")
@@ -564,7 +526,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     Output:
     ```
-    {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+    {'task_id': 47923, 'job_id': 33512, 'model_id': "xxx", 'model_version_id': "aaa"}
     ```
     """
 
@@ -643,10 +605,10 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
 
     input:
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx"}
     output:
         ```
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39,
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx",
         'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
         ```
     """
@@ -655,8 +617,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """deploy config include replicas and so on"""
     model_id: Optional[int]
     """model id"""
+    model_id_str: Optional[str]
+    """model str id"""
     model_version_id: Optional[int]
     """model version id"""
+    model_version_id_str: Optional[str]
+    """model version str id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
@@ -682,18 +648,23 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if input.get("model") is None:
             self.model_id = input.get("model_id")
             self.model_version_id = input.get("model_version_id")
+            # TODO 迁移成str id
             if self.model_id is None or self.model_version_id is None:
                 raise InvalidArgumentError("model_id or model_version_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
             if self.model is None:
                 raise InvalidArgumentError(
                     "must input with model or model id and version id"
                 )
-            self.model_id = self.model.id
-            self.model_version_id = self.model.version_id
+            self.model.auto_complete_info()
+            self.model_id = self.model.old_id
+            self.model_version_id = self.model.old_version_id
+        # 自动补全
+
         return self._exec(**kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -739,7 +710,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         """
         if self.model_id is not None and self.model_version_id is not None:
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id_str, self.model_version_id_str)
+            self.model.auto_complete_info()
         elif self.model is None:
             raise InvalidArgumentError(
                 "either (model_id and version_id) or model must be set"

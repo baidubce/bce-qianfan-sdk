@@ -19,6 +19,7 @@
 
 from qianfan.resources import Service
 from qianfan.resources.console.consts import DeployPoolType, ServiceType
+from qianfan.version import VERSION
 
 
 def test_create_service():
@@ -72,3 +73,9 @@ def test_service_list():
         resp = Service.list(api_type_filter=[item])
         for common_service in resp["result"]["common"]:
             assert common_service["apiType"] == item.value
+
+
+def test_sdk_console_indicator():
+    res = Service.list()
+    # header不区分大小写，flask受到后将起转换成大写：
+    assert res["_header"]["Request-Source"] == f"qianfan_py_sdk_v{VERSION}"

@@ -18,16 +18,17 @@
 
 
 from qianfan.resources import Model
+from qianfan.resources.console.consts import EvaluationResultExportDestinationType
 
 
 def test_list_model():
     """
     test Model.list
     """
-    resp = Model.list(model_id=643)
-    assert resp["_request"] == {"modelId": 643}
+    resp = Model.list(model_id="643")
+    assert resp["_request"] == {"modelId": "643"}
     result = resp["result"]
-    assert "modelId" in result
+    assert "modelIdStr" in result
     assert "modelVersionList" in result
 
 
@@ -35,9 +36,9 @@ def test_model_detail():
     """
     test Model.detail
     """
-    resp = Model.detail(model_version_id=851)
-    assert resp["_request"] == {"modelVersionId": 851}
-    assert "modelId" in resp["result"]
+    resp = Model.detail(model_version_id="851")
+    assert resp["_request"] == {"modelVersionId": "851"}
+    assert "modelIdStr" in resp["result"]
     assert "params" in resp["result"]
 
 
@@ -126,3 +127,26 @@ def test_stop_evaluation_task():
     )
 
     assert resp["_request"]["id"] == 123
+
+
+def test_create_evaluation_result_export_task():
+    """
+    test Model.create_evaluation_result_export_task
+    """
+
+    resp = Model.create_evaluation_result_export_task("123")
+
+    assert (
+        resp["_request"]["exportType"]
+        == EvaluationResultExportDestinationType.PublicBos.value
+    )
+
+
+def test_get_evaluation_result_export_task_status():
+    """
+    test Model.get_evaluation_result_export_task_status
+    """
+
+    resp = Model.get_evaluation_result_export_task_status(12)
+
+    assert resp["_request"]["exportID"] == 12

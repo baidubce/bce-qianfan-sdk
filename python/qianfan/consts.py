@@ -90,6 +90,8 @@ class Env:
     ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
 
+    SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
+
 
 class DefaultValue:
     """
@@ -111,10 +113,12 @@ class DefaultValue:
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1
+    RetryMaxWaitInterval: float = 120
     ConsoleRetryCount: int = 1
     ConsoleRetryTimeout: float = 60
     ConsoleRetryBackoffFactor: float = 0
     ConsoleRetryJitter: int = 1
+    ConsoleRetryMaxWaitInterval: float = 120
     ConsoleRetryErrCodes: Set = {
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,
@@ -150,6 +154,7 @@ class DefaultValue:
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,
     }
+    SSLVerificationEnabled: bool = True
 
 
 class Consts:
@@ -170,6 +175,16 @@ class Consts:
     ModelEvalInfoAPI: str = "/wenxinworkshop/modelrepo/eval/detail"
     ModelEvalResultAPI: str = "/wenxinworkshop/modelrepo/eval/report"
     ModelEvalStopAPI: str = "/wenxinworkshop/modelrepo/eval/cancel"
+    ModelPresetListAPI: str = "/wenxinworkshop/modelrepo/model/preset/list"
+    ModelBatchDeleteAPI: str = "/wenxinworkshop/modelrepo/model/batchDelete"
+    ModelVersionBatchDeleteAPI: str = (
+        "/wenxinworkshop/modelrepo/model/version/batchDelete"
+    )
+    ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
+    ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
+    ModelEvalResultExportStatusAPI: str = (
+        "/wenxinworkshop/modelrepo/eval/result/export/info"
+    )
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     ServiceListAPI: str = "/wenxinworkshop/service/list"
@@ -200,9 +215,14 @@ class Consts:
     PromptDeleteAPI: str = "/wenxinworkshop/prompt/template/delete"
     PromptListAPI: str = "/wenxinworkshop/prompt/template/list"
     PromptLabelListAPI: str = "/wenxinworkshop/prompt/label/list"
+    PromptCreateOptimizeTaskAPI: str = "/wenxinworkshop/prompt/singleOptimize/create"
+    PromptGetOptimizeTaskInfoAPI: str = "/wenxinworkshop/prompt/singleOptimize/info"
+    PromptEvaluationAPI: str = "/wenxinworkshop/prompt/evaluate/predict"
+    PromptEvaluationSummaryAPI: str = "/wenxinworkshop/prompt/evaluate/summary"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
     STREAM_RESPONSE_PREFIX: str = "data: "
+    STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
     QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"
@@ -242,3 +262,12 @@ class PromptType(int, enum.Enum):
     """预置模版"""
     User = 2
     """用户创建模版"""
+
+
+class PromptScoreStandard(int, enum.Enum):
+    Semantic = 1
+    """语义相似"""
+    Regex = 2
+    """正则匹配"""
+    Exact = 3
+    """精准匹配"""

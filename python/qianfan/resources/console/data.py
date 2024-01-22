@@ -134,6 +134,11 @@ class Data:
                 raise ValueError(
                     "storage path is empty while create dataset in private bos"
                 )
+
+            # 此 path 必须以 / 结尾，为了防止用户没有加上，这里特判
+            if storage_path[-1] != "/":
+                storage_path += "/"
+
             post_body_dict["storageId"] = storage_id
             post_body_dict["rawStoragePath"] = storage_path
 
@@ -143,12 +148,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def release_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+    def release_dataset(cls, dataset_id: str, **kwargs: Any) -> QfRequest:
         """
         release dataset
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id.
             **kwargs:
                 any other parameters.
@@ -172,7 +177,7 @@ class Data:
     @console_api_request
     def create_data_import_task(
         cls,
-        dataset_id: int,
+        dataset_id: str,
         is_annotated: bool,
         import_source: DataSourceType,
         file_url: str,
@@ -182,7 +187,7 @@ class Data:
         create data import task
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id
             is_annotated (bool):
                 has dataset been annotated
@@ -217,12 +222,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def get_dataset_info(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+    def get_dataset_info(cls, dataset_id: str, **kwargs: Any) -> QfRequest:
         """
         get dataset info
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id.
             **kwargs:
                 any other parameters.
@@ -245,13 +250,13 @@ class Data:
     @_data_api_exception_handler
     @console_api_request
     def get_dataset_status_in_batch(
-        cls, dataset_id_list: List[int], **kwargs: Any
+        cls, dataset_id_list: List[str], **kwargs: Any
     ) -> QfRequest:
         """
         get dataset status in dataset id list
 
         Parameters:
-            dataset_id_list (List[int]):
+            dataset_id_list (List[str]):
                 dataset id list.
             **kwargs:
                 any other parameters.
@@ -263,12 +268,10 @@ class Data:
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sloicm9qz
         """
-        int_dataset_id_list: List[str] = [str(id) for id in dataset_id_list]
-        ids = ",".join(int_dataset_id_list)
 
         req = QfRequest(method="POST", url=Consts.DatasetStatusFetchInBatchAPI)
         req.json_body = {
-            "datasetIds": ids,
+            "datasetIds": dataset_id_list,
         }
 
         return req
@@ -278,7 +281,7 @@ class Data:
     @console_api_request
     def create_dataset_export_task(
         cls,
-        dataset_id: int,
+        dataset_id: str,
         export_destination_type: DataExportDestinationType,
         storage_id: Optional[str] = None,
         is_export_with_annotation: bool = True,
@@ -288,7 +291,7 @@ class Data:
         create dataset export task
 
         Args:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id
             export_destination_type (DataExportDestinationType):
                 export destination type
@@ -326,12 +329,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def delete_dataset(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+    def delete_dataset(cls, dataset_id: str, **kwargs: Any) -> QfRequest:
         """
         delete dataset
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id.
             **kwargs:
                 any other parameters.
@@ -353,12 +356,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def get_dataset_export_records(cls, dataset_id: int, **kwargs: Any) -> QfRequest:
+    def get_dataset_export_records(cls, dataset_id: str, **kwargs: Any) -> QfRequest:
         """
         get dataset export records
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id.
             **kwargs:
                 any other parameters.
@@ -381,13 +384,13 @@ class Data:
     @_data_api_exception_handler
     @console_api_request
     def get_dataset_import_error_detail(
-        cls, dataset_id: int, error_code: int, **kwargs: Any
+        cls, dataset_id: str, error_code: int, **kwargs: Any
     ) -> QfRequest:
         """
         get dataset status in dataset id list
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id.
             error_code (int):
                 error code used to query
@@ -414,8 +417,8 @@ class Data:
     @console_api_request
     def create_dataset_etl_task(
         cls,
-        source_dataset_id: int,
-        destination_dataset_id: int,
+        source_dataset_id: str,
+        destination_dataset_id: str,
         operations: Dict[str, List[Dict[str, Any]]],
         **kwargs: Any,
     ) -> QfRequest:
@@ -423,9 +426,9 @@ class Data:
         create a post-pretrain dataset etl task
 
         Parameters:
-            source_dataset_id (int):
+            source_dataset_id (str):
                 dataset id need to be processed.
-            destination_dataset_id (int):
+            destination_dataset_id (str):
                 where dataset should be stored after etl
             operations (Dict[str, List[Dict[str, Any]]]),
                 etl operator settings.
@@ -452,12 +455,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def get_dataset_etl_task_info(cls, etl_id: int, **kwargs: Any) -> QfRequest:
+    def get_dataset_etl_task_info(cls, etl_id: str, **kwargs: Any) -> QfRequest:
         """
         get a post-pretrain dataset etl task info
 
         Parameters:
-            etl_id (int):
+            etl_id (str):
                 dataset etl task id.
             **kwargs (Any):
                 any other parameters.
@@ -511,12 +514,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def delete_dataset_etl_task(cls, etl_ids: List[int], **kwargs: Any) -> QfRequest:
+    def delete_dataset_etl_task(cls, etl_ids: List[str], **kwargs: Any) -> QfRequest:
         """
         delete post-pretrain dataset etl task
 
         Parameters:
-            etl_ids (List[int]):
+            etl_ids (List[str]):
                 dataset etl task id list.
             **kwargs (Any):
                 any other parameters.
@@ -541,8 +544,8 @@ class Data:
     def create_dataset_augmenting_task(
         cls,
         name: str,
-        source_dataset_id: int,
-        destination_dataset_id: int,
+        source_dataset_id: str,
+        destination_dataset_id: str,
         service_name: str,
         service_url: str,
         app_id: int,
@@ -557,9 +560,9 @@ class Data:
         Parameters:
             name (str):
                 name of augment task
-            source_dataset_id (int):
+            source_dataset_id (str):
                 dataset id need to be augmented.
-            destination_dataset_id (int):
+            destination_dataset_id (str):
                 where dataset should be stored after augmentation
             service_name (str):
                 which LLM should be used for augmenting task
@@ -661,12 +664,12 @@ class Data:
     @classmethod
     @_data_api_exception_handler
     @console_api_request
-    def get_dataset_augmenting_task_info(cls, task_id: int, **kwargs: Any) -> QfRequest:
+    def get_dataset_augmenting_task_info(cls, task_id: str, **kwargs: Any) -> QfRequest:
         """
         get a data augmenting task info
 
         Parameters:
-            task_id (int):
+            task_id (str):
                 dataset augmenting task id.
             **kwargs (Any):
                 any other parameters.
@@ -689,13 +692,13 @@ class Data:
     @_data_api_exception_handler
     @console_api_request
     def delete_dataset_augmenting_task(
-        cls, task_ids: List[int], **kwargs: Any
+        cls, task_ids: List[str], **kwargs: Any
     ) -> QfRequest:
         """
         delete dataset augmenting task
 
         Parameters:
-            task_ids (List[int]):
+            task_ids (List[str]):
                 dataset augmenting task id list.
             **kwargs (Any):
                 any other parameters.
@@ -720,7 +723,7 @@ class Data:
     def annotate_an_entity(
         cls,
         entity_id: str,
-        dataset_id: int,
+        dataset_id: str,
         content: Optional[List[Dict[str, Any]]] = None,
         labels: Optional[List[Dict[str, Any]]] = None,
         **kwargs: Any,
@@ -731,7 +734,7 @@ class Data:
         Parameters:
             entity_id (str):
                 entity id to be annotating
-            dataset_id (int):
+            dataset_id (str):
                 dataset id to do annotate
             content (Optional[Dict[str, Any]]):
                 the prompt and LLM responses on a conversation
@@ -748,7 +751,7 @@ class Data:
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlp6izcqr
         """
         req = QfRequest(method="POST", url=Consts.DatasetAnnotateAPI)
-        request_json = {
+        request_json: Dict[str, Any] = {
             "id": entity_id,
             "datasetId": dataset_id,
         }
@@ -765,7 +768,7 @@ class Data:
     @_data_api_exception_handler
     @console_api_request
     def delete_an_entity(
-        cls, entity_ids: List[str], dataset_id: int, **kwargs: Any
+        cls, entity_ids: List[str], dataset_id: str, **kwargs: Any
     ) -> QfRequest:
         """
         delete an entity from dataset
@@ -773,7 +776,7 @@ class Data:
         Parameters:
             entity_ids (List[str]):
                 entity id list
-            dataset_id (int):
+            dataset_id (str):
                 dataset id to do delete
 
         Note:
@@ -793,7 +796,7 @@ class Data:
     @console_api_request
     def list_all_entity_in_dataset(
         cls,
-        dataset_id: int,
+        dataset_id: str,
         offset: int = 0,
         page_size: int = 20,
         import_time_closure: Optional[List[int]] = None,
@@ -806,7 +809,7 @@ class Data:
         delete an entity from dataset
 
         Parameters:
-            dataset_id (int):
+            dataset_id (str):
                 dataset id
             offset (int):
                 offset of dataset where the list start, default to 0

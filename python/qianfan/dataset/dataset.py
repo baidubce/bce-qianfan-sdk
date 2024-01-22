@@ -44,6 +44,7 @@ from qianfan.dataset.consts import (
 )
 from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
+    BosDataSource,
     DataSource,
     FileDataSource,
     FormatType,
@@ -67,7 +68,7 @@ from qianfan.dataset.schema import (
 from qianfan.dataset.table import Table
 from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.errors import ValidationError
-from qianfan.resources import Data
+from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import (
     DataTemplateType,
 )
@@ -302,7 +303,7 @@ class Dataset(Table):
                 raise error
             result_list = list(self.inner_table.to_pydict().values())[0]
 
-            if isinstance(source, QianfanDataSource):
+            if isinstance(source, (QianfanDataSource, BosDataSource)):
                 tmp_zip_file_name = (
                     f"tmp_zip_file_{generate_letter_num_random_id()}.zip"
                 )
@@ -334,9 +335,10 @@ class Dataset(Table):
     def _from_args_to_source(
         cls,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
         """从参数来构建数据源"""
@@ -359,7 +361,9 @@ class Dataset(Table):
                 "construct a new qianfan data source from args:"
                 f" {qianfan_dataset_create_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_bare_dataset(**qianfan_dataset_create_args)
+            return QianfanDataSource.create_bare_dataset(
+                **qianfan_dataset_create_args, **kwargs
+            )
 
         if bos_load_args:
             log_info(
@@ -367,6 +371,9 @@ class Dataset(Table):
                 f" {bos_load_args}, with args: {kwargs}"
             )
             return QianfanDataSource.create_from_bos_file(**bos_load_args)
+
+        if bos_source_args:
+            return BosDataSource(**bos_source_args, **kwargs)
 
         log_info("no datasource was constructed")
         return None
@@ -394,9 +401,10 @@ class Dataset(Table):
         cls,
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         huggingface_dataset: Optional[Any] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         organize_data_as_group: bool = False,
         **kwargs: Any,
@@ -413,7 +421,7 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[int]):
+            qianfan_dataset_id (Optional[str]):
                 qianfan dataset ID, default to None
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
@@ -421,6 +429,9 @@ class Dataset(Table):
             huggingface_dataset (Optional[Dict[str, Any], Any]):
                 Huggingface dataset object, only support
                 DatasetDict and Dataset of Huggingface datasets.
+            bos_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific bos
+                default to None
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
             organize_data_as_group (bool):
@@ -468,6 +479,7 @@ class Dataset(Table):
                 data_file=data_file,
                 qianfan_dataset_id=qianfan_dataset_id,
                 bos_load_args=bos_load_args,
+                bos_source_args=bos_source_args,
                 **kwargs,
             )
 
@@ -496,8 +508,9 @@ class Dataset(Table):
         self,
         destination: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[int] = None,
+        qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
+        bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         replace_source: bool = False,
         **kwargs: Any,
@@ -514,10 +527,13 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[int]):
+            qianfan_dataset_id (Optional[str]):
                 qianfan dataset ID, default to None
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
+                default to None
+            bos_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific bos
                 default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
@@ -531,9 +547,10 @@ class Dataset(Table):
         if not destination:
             log_info("no destination data source was provided, construct")
             destination = self._from_args_to_source(
-                data_file,
-                qianfan_dataset_id,
-                qianfan_dataset_create_args,
+                data_file=data_file,
+                qianfan_dataset_id=qianfan_dataset_id,
+                qianfan_dataset_create_args=qianfan_dataset_create_args,
+                bos_source_args=bos_source_args,
                 is_download_to_local=False,
                 **kwargs,
             )
@@ -659,7 +676,7 @@ class Dataset(Table):
         """
         return self._is_dataset_generic_text()
 
-    def start_online_data_process_task(self, operators: List[QianfanOperator]) -> int:
+    def start_online_data_process_task(self, operators: List[QianfanOperator]) -> str:
         """
         create an online ETL task on qianfan
 
@@ -667,7 +684,7 @@ class Dataset(Table):
             operators (List[QianfanOperator]): operators applied to ETL task
 
         Returns:
-            int: etl task id
+            str: etl task id
         """
 
         if not self.is_dataset_located_in_qianfan():
@@ -1072,8 +1089,7 @@ class Dataset(Table):
 
     def test_using_llm(
         self,
-        model_id: Optional[int] = None,
-        model_version_id: Optional[int] = None,
+        model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1086,8 +1102,6 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_id (Optional[int]):
-                id of your own model, default to None
             model_version_id (Optional[int]):
                 version id of your own model, default to None
             service_model (Optional[str]):
@@ -1111,8 +1125,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_id and model_version_id:
-            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        if model_version_id:
+            return self._batch_inference_on_model(model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return self._batch_inference_on_service(
                 service_model,
@@ -1128,8 +1142,7 @@ class Dataset(Table):
 
     async def atest_using_llm(
         self,
-        model_id: Optional[int] = None,
-        model_version_id: Optional[int] = None,
+        model_version_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1142,9 +1155,7 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_id (Optional[int]):
-                id of your own model, default to None
-            model_version_id (Optional[int]):
+            model_version_id (Optional[str]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1167,8 +1178,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_id and model_version_id:
-            return self._batch_inference_on_model(model_id, model_version_id, **kwargs)
+        if model_version_id:
+            return self._batch_inference_on_model(model_version_id, **kwargs)
         elif service_model or service_endpoint:
             return await self._async_batch_inference_on_service(
                 service_model,
@@ -1183,16 +1194,14 @@ class Dataset(Table):
             raise ValueError(err_msg)
 
     def _batch_inference_on_model(
-        self, model_id: int, model_version_id: int, **kwargs: Any
+        self, model_version_id: str, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
 
         Parameters:
-            model_id (int):
-                id of your own model, default to None
-            model_version_id (int):
+            model_version_id (str):
                 version id of your own model, default to None
             **kwargs (Any):
                 Arbitrary keyword arguments
@@ -1210,6 +1219,8 @@ class Dataset(Table):
             err_msg = "can't start a batch run task on generic text dataset"
             log_error(err_msg)
             raise ValueError(err_msg)
+
+        model_id = Model.detail(model_version_id)["result"]["modelIdStr"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
             self.inner_data_source_cache, model_id, model_version_id
@@ -1252,8 +1263,8 @@ class Dataset(Table):
 
         if does_show_latency:
             if len(first_token_latency_list) != 0:
-                table_dict[RequestLatencyColumnName] = first_token_latency_list
-            table_dict[FirstTokenLatencyColumnName] = request_latency_list
+                table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
+            table_dict[RequestLatencyColumnName] = request_latency_list
 
         return Dataset.create_from_pyobj(
             table_dict,

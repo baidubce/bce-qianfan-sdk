@@ -1,18 +1,14 @@
 import logging
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Optional, Union
 
 from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
-    QianfanChatRequestSettings,
     QianfanRequestSettings,
     QianfanTextRequestSettings,
 )
-from qianfan.resources import ChatCompletion
+from qianfan.resources import Completion
 from semantic_kernel.connectors.ai.ai_exception import AIException
 from semantic_kernel.connectors.ai.ai_request_settings import AIRequestSettings
 from semantic_kernel.connectors.ai.ai_service_client_base import AIServiceClientBase
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
 from semantic_kernel.connectors.ai.text_completion_client_base import (
     TextCompletionClientBase,
 )
@@ -20,9 +16,7 @@ from semantic_kernel.connectors.ai.text_completion_client_base import (
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-class QianfanChatCompletion(
-    ChatCompletionClientBase, TextCompletionClientBase, AIServiceClientBase
-):
+class QianfanCompletion(TextCompletionClientBase, AIServiceClientBase):
     client: Any
     """
     qianfan sdk client
@@ -35,7 +29,7 @@ class QianfanChatCompletion(
         **kwargs: Any,
     ):
         """
-        Initializes a new instance of the QianfanChatCompletion class.
+        Initializes a new instance of the QianfanCompletion class.
 
         Arguments:
             model Optional[str]
@@ -49,35 +43,12 @@ class QianfanChatCompletion(
         """
         super().__init__(
             ai_model_id=model,
-            client=ChatCompletion(
+            client=Completion(
                 model=model,
                 endpoint=endpoint,
                 **kwargs,
             ),
         )
-
-    async def complete_chat_async(
-        self,
-        messages: List[Dict[str, str]],
-        settings: QianfanRequestSettings,
-        **kwargs: Any,
-    ) -> Optional[str]:
-        assert isinstance(settings, QianfanChatRequestSettings)
-        settings.messages = messages
-        response = await self._send_chat_request(settings)
-        return response["result"]["messages"][-1]["content"]
-
-    async def complete_chat_stream_async(
-        self,
-        messages: List[Tuple[str, str]],
-        settings: QianfanRequestSettings,
-    ):
-        assert isinstance(settings, QianfanChatRequestSettings)
-        settings.messages = messages
-        settings.stream = True
-        response = await self._send_chat_request(settings)
-        async for r in response:
-            yield r["result"]
 
     async def complete_async(
         self,
@@ -85,14 +56,15 @@ class QianfanChatCompletion(
         settings: QianfanRequestSettings,
         **kwargs,
     ) -> Union[str, None]:
-        if isinstance(settings, QianfanChatRequestSettings):
-            settings.messages.extend({"role": "user", "content": prompt})
-        elif isinstance(settings, QianfanTextRequestSettings):
-            settings.messages = [{"role": "user", "content": prompt}]
+        if isinstance(settings, QianfanTextRequestSettings):
+            settings.prompt = prompt
+        else:
+            raise ValueError("The request settings must be QianfanTextRequestSettings")
+        if not settings.ai_model_id:
+            settings.ai_model_id = self.ai_model_id
+        response = await self._send_completion_request(settings)
 
-        response = await self._send_chat_request(settings)
-
-        return response["result"]["messages"][-1]["content"]
+        return response["result"]
 
     async def complete_stream_async(
         self,
@@ -100,13 +72,20 @@ class QianfanChatCompletion(
         settings: QianfanRequestSettings,
         **kwargs,
     ) -> AsyncIterator[Union[str, None]]:
-        res = await self._send_chat_request(settings)
-        for r in res:
-            yield r
+        if isinstance(settings, QianfanTextRequestSettings):
+            settings.prompt = prompt
+        else:
+            settings.messages = [{"role": "user", "content": prompt}]
+        if not settings.ai_model_id:
+            settings.ai_model_id = self.ai_model_id
+        settings.stream = True
+        response = await self._send_completion_request(settings)
 
-    async def _send_chat_request(
+        return response
+
+    async def _send_completion_request(
         self, settings: QianfanRequestSettings, **kwargs: Any
-    ) -> Union[Union[str, None], AsyncIterator[Union[Dict, None]]]:
+    ) -> Union[Union[str, None], AsyncIterator[Union[str, None]]]:
         if settings is None:
             raise ValueError("The request settings cannot be `None`")
         try:
@@ -122,4 +101,4 @@ class QianfanChatCompletion(
 
     def get_request_settings_class(self) -> "AIRequestSettings":
         """Create a request settings object."""
-        return QianfanChatRequestSettings
+        return QianfanTextRequestSettings

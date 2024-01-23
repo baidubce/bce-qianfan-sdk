@@ -92,6 +92,7 @@ class Env:
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
     Proxy: str = "QIANFAN_PROXY"
+    FileEncoding: str = "QIANFAN_FILE_ENCODING"
 
 
 class DefaultValue:
@@ -157,6 +158,7 @@ class DefaultValue:
     }
     SSLVerificationEnabled: bool = True
     Proxy: str = ""
+    FileEncoding: str = "utf-8"
 
 
 class Consts:

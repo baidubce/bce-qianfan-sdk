@@ -117,6 +117,8 @@ class GlobalConfig(BaseSettings):
     SSL_VERIFICATION_ENABLED: bool = Field(default=DefaultValue.SSLVerificationEnabled)
     PROXY: str = Field(default=DefaultValue.Proxy)
 
+    FILE_ENCODING: str = Field(default=DefaultValue.FileEncoding)
+
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None
 
@@ -236,3 +238,10 @@ def SecretKey(secret_key: str) -> None:
         The Secret Key to be set for console API authentication.
     """
     get_config().SECRET_KEY = secret_key
+
+
+def encoding() -> str:
+    """
+    Get the file encoding used in the SDK.
+    """
+    return get_config().FILE_ENCODING

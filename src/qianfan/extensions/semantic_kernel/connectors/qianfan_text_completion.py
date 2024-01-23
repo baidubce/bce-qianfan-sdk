@@ -16,7 +16,7 @@ from semantic_kernel.connectors.ai.text_completion_client_base import (
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-class QianfanCompletion(TextCompletionClientBase, AIServiceClientBase):
+class QianfanTextCompletion(TextCompletionClientBase, AIServiceClientBase):
     client: Any
     """
     qianfan sdk client
@@ -90,6 +90,7 @@ class QianfanCompletion(TextCompletionClientBase, AIServiceClientBase):
             raise ValueError("The request settings cannot be `None`")
         try:
             data = {**settings.prepare_settings_dict(), **kwargs}
+            print("data: ", data)
             response = await self.client.ado(**data)
         except Exception as ex:
             raise AIException(

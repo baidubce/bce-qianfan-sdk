@@ -106,7 +106,7 @@ async def test_async_eb_plugin_generate():
     """
     Test eb plugin
     """
-    qfg = qianfan.Plugin(model="EBPluginV2")
+    qfg = qianfan.Plugin()
     resp = await qfg.ado(
         TEST_MESSAGE,
         plugins=["eChart"],

@@ -136,7 +136,6 @@ class LLMFinetune(Trainer):
                 self.load_data_action = LoadDataSetAction(
                     dataset=dataset, event_handler=event_handler, **kwargs
                 )
-                pass
             else:
                 raise InvalidArgumentError(
                     "dataset must be either implemented with QianfanDataSource or"

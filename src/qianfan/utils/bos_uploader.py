@@ -15,6 +15,7 @@
 utility for
 uploading content to bos
 """
+from pathlib import Path
 from typing import Tuple
 
 from baidubce.auth.bce_credentials import BceCredentials
@@ -77,11 +78,8 @@ def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
 
 
 def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
-    file_bos_path = generate_bos_file_path(bucket_name, absolute_path)
-    path_components = file_bos_path.split("/")
-
-    # 获取文件夹目录
-    return "/".join(path_components[:-1]) + "/"
+    p = Path(f"/{bucket_name}{absolute_path}")
+    return f"bos:{p.parent}"
 
 
 def get_bos_bucket_location(

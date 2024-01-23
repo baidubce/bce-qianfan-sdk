@@ -92,7 +92,6 @@ def get_bos_bucket_location(
 
 def parse_bos_path(bos_path: str) -> Tuple[str, str]:
     """解析 bos 路径，返回 bucket 和 path"""
-    path = ""
     if bos_path.startswith("bos://"):
         path = bos_path[6:]
     elif bos_path.startswith("bos:/"):

@@ -14,7 +14,6 @@
 """
 data source which is related to download/upload
 """
-
 import json
 import os.path
 import uuid
@@ -1079,6 +1078,65 @@ class BosDataSource(DataSource, BaseModel):
         """
         raise NotImplementedError()
 
+    def _get_specific_cache_path(self) -> str:
+        cache_path = os.path.join(
+            QianfanDatasetLocalCacheDir, self.region, self.bucket, self.bos_file_path
+        )
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
+
+        return cache_path
+
+    def _check_bos_file_cache(self, bos_client: BosClient) -> bool:
+        cache_path = self._get_specific_cache_path()
+
+        meta_info_path = os.path.join(cache_path, "info.json")
+        if not os.path.exists(meta_info_path):
+            return False
+
+        with open(meta_info_path, mode="r", encoding="utf-8") as f:
+            cache_meta_info = json.loads(f.read())
+
+        if "last_modified" not in cache_meta_info:
+            return False
+
+        parser = dateutil.parser.parser()
+        cache_last_modified_time = parser.parse(cache_meta_info["last_modified"])
+
+        new_meta_info = bos_client.get_object_meta_data(
+            self.bucket, self.bos_file_path
+        ).metadata.__dict__
+        new_last_modified_time = parser.parse(new_meta_info["last_modified"])
+
+        return cache_last_modified_time >= new_last_modified_time
+
+    def _update_file_cache(self, bos_client: BosClient) -> None:
+        cache_path = self._get_specific_cache_path()
+        cache_content_path = os.path.join(cache_path, "content")
+        cache_meta_info_path = os.path.join(cache_path, "info.json")
+
+        bos_client.get_object_to_file(
+            self.bucket, self.bos_file_path, cache_content_path
+        )
+
+        meta_info_obj = bos_client.get_object_meta_data(
+            self.bucket, self.bos_file_path
+        ).metadata.__dict__
+        with open(cache_meta_info_path, mode="w", encoding="utf-8") as f:
+            f.write(json.dumps(meta_info_obj, ensure_ascii=False))
+
+        return
+
+    def _read_from_cache(self, is_read_from_zip: bool) -> Union[List[str], str]:
+        cache_path = self._get_specific_cache_path()
+        cache_content_path = os.path.join(cache_path, "content")
+
+        if is_read_from_zip:
+            return _read_all_file_from_zip(cache_content_path, self.format_type())
+
+        with open(cache_content_path, mode="r", encoding="utf-8") as f:
+            return f.read()
+
     def fetch(
         self, read_from_zip: bool = False, **kwargs: Any
     ) -> Union[str, List[str]]:
@@ -1099,11 +1157,6 @@ class BosDataSource(DataSource, BaseModel):
         assert self.sk
         assert self.file_format
 
-        index = self.bos_file_path.rfind(".")
-        read_from_zip = read_from_zip or (
-            index != -1 and self.bos_file_path[index + 1 :] == "zip"
-        )
-
         bos_config = BceClientConfiguration(
             credentials=BceCredentials(self.ak, self.sk),
             endpoint=f"{self.region}.bcebos.com",
@@ -1113,6 +1166,14 @@ class BosDataSource(DataSource, BaseModel):
             self.bos_file_path
             if self.bos_file_path[0] != "/"
             else self.bos_file_path[1:]
+        )
+
+        if not self._check_bos_file_cache(bos_client):
+            self._update_file_cache(bos_client)
+
+        index = self.bos_file_path.rfind(".")
+        read_from_zip = read_from_zip or (
+            index != -1 and self.bos_file_path[index + 1 :] == "zip"
         )
 
         if read_from_zip:
@@ -1127,25 +1188,7 @@ class BosDataSource(DataSource, BaseModel):
             )
 
         try:
-            if read_from_zip:
-                tmp_zip_file = "tmp_zip_file.zip"
-                try:
-                    log_info("start to fetch zip file from bos")
-                    bos_client.get_object_to_file(
-                        self.bucket, actual_bos_file_path, tmp_zip_file
-                    )
-                    log_info("fetch zip file from bos successfully, start to read")
-                    return _read_all_file_from_zip(tmp_zip_file, self.file_format)
-                finally:
-                    if os.path.exists(tmp_zip_file):
-                        os.remove(tmp_zip_file)
-
-            log_info("fetch file content directly from bos file")
-            result = bos_client.get_object_as_string(self.bucket, actual_bos_file_path)
-            if isinstance(result, bytes):
-                return result.decode(encoding="utf8")
-            else:
-                return result
+            return self._read_from_cache(read_from_zip)
         except Exception as e:
             err_msg = (
                 f"fetch file content from bos path {actual_bos_file_path} of bucket"

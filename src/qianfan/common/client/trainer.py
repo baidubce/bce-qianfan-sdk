@@ -17,6 +17,7 @@ import time
 from typing import Any, Callable, Dict, Optional
 
 import typer
+from rich import print as rprint
 from rich.console import Console
 from rich.progress import (
     BarColumn,
@@ -189,14 +190,32 @@ TRAIN_CONFIG_PANEL = "Train Config"
 DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
-def list_train_type() -> None:
+def list_train_type(
+    ctx: typer.Context, param: typer.CallbackParam, value: bool
+) -> None:
     """
     list all the supported train types
     """
-    model_list = LLMFinetune.train_type_list()
-    for m in model_list:
-        print(m)
-    raise typer.Exit()
+    if value:
+        model_list = LLMFinetune.train_type_list()
+        for m in model_list:
+            print(m)
+        raise typer.Exit()
+
+
+def show_default_config(
+    ctx: typer.Context, param: typer.CallbackParam, value: str
+) -> None:
+    """
+    show default config for specified train type
+    """
+    if value:
+        model_list = LLMFinetune.train_type_list()
+        if value not in model_list:
+            print_error_msg(f"Train type {value} is not supported.")
+            raise typer.Exit(1)
+        rprint(model_list[value])
+        raise typer.Exit()
 
 
 list_train_type_option = typer.Option(
@@ -219,6 +238,12 @@ def run(
     ),
     train_type: str = typer.Option(..., help="Train type"),
     list_train_type: Optional[bool] = list_train_type_option,
+    show_default_config: Optional[str] = typer.Option(
+        None,
+        callback=show_default_config,
+        is_eager=True,
+        help="Show default config for specified train type.",
+    ),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "
     ),

@@ -91,6 +91,7 @@ class Env:
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
+    Proxy: str = "QIANFAN_PROXY"
     FileEncoding: str = "QIANFAN_FILE_ENCODING"
 
 
@@ -156,6 +157,7 @@ class DefaultValue:
         APIErrorCode.QPSLimitReached.value,
     }
     SSLVerificationEnabled: bool = True
+    Proxy: str = ""
     FileEncoding: str = "utf-8"
 
 

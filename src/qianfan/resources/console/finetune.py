@@ -58,7 +58,12 @@ class FineTune(object):
     @classmethod
     @console_api_request
     def create_task(
-        cls, name: str, description: Optional[str] = None, **kwargs: Any
+        cls,
+        name: str,
+        base_train_type: str,
+        train_type: str,
+        description: Optional[str] = None,
+        **kwargs: Any
     ) -> QfRequest:
         """
         Create a model fine-tuning task.
@@ -81,7 +86,12 @@ class FineTune(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/almrgn397
         """
         req = QfRequest(method="POST", url=Consts.FineTuneCreateTaskAPI)
-        req.json_body = {"name": name, **kwargs}
+        req.json_body = {
+            "name": name,
+            "baseTrainType": base_train_type,
+            "trainType": train_type,
+            **kwargs,
+        }
         if description is not None:
             req.json_body["description"] = description
         return req

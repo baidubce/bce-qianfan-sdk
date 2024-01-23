@@ -18,7 +18,12 @@ from qianfan.resources import FineTune
 
 ```python
 # 创建任务
-resp = FineTune.create_task(name="task_name", description="task_desc")
+resp = FineTune.create_task(
+    name="task_name", 
+    description="task_desc",
+    base_train_type="ERNIE-Bot-turbo",
+    train_type="ERNIE-Bot-turbo-0725",
+)
 # 获取返回结果
 task_id = resp['result']['id']
 print(task_id)

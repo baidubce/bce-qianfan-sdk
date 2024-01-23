@@ -22,9 +22,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
-from baidubce.auth.bce_credentials import BceCredentials
-from baidubce.bce_client_configuration import BceClientConfiguration
-from baidubce.services.bos.bos_client import BosClient
 
 from qianfan.config import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
@@ -53,10 +50,8 @@ from qianfan.resources.console.consts import (
 )
 from qianfan.resources.console.data import Data
 from qianfan.utils.bos_uploader import (
+    BosHelper,
     generate_bos_file_path,
-    get_bos_file_shared_url,
-    upload_content_to_bos,
-    upload_file_to_bos,
 )
 from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
@@ -419,26 +414,14 @@ class QianfanDataSource(DataSource, BaseModel):
             f" {storage_region}"
         )
 
+        bos_helper = BosHelper(storage_region, ak, sk)
+
         if data:
             log_info("upload dataset as string")
-            upload_content_to_bos(
-                data,
-                file_path,
-                storage_id,
-                storage_region,
-                ak,
-                sk,
-            )
+            bos_helper.upload_content_to_bos(data, file_path, storage_id)
         elif zip_file_path:
             log_info("upload dataset as zip")
-            upload_file_to_bos(
-                zip_file_path,
-                file_path,
-                storage_id,
-                storage_region,
-                ak,
-                sk,
-            )
+            bos_helper.upload_file_to_bos(zip_file_path, file_path, storage_id)
         else:
             err_msg = "unexpected conditional branch error when upload dataset to bos"
             log_error(err_msg)
@@ -454,9 +437,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 log_warn("import data from bos file failed")
                 return False
         else:
-            shared_str = get_bos_file_shared_url(
-                file_path, storage_id, storage_region, ak, sk
-            )
+            shared_str = bos_helper.get_bos_file_shared_url(file_path, storage_id)
             log_info(f"get shared file url: {shared_str}")
             if not _create_import_data_task_and_wait_for_success(
                 self.id, is_annotated, shared_str, DataSourceType.SharedZipUrl
@@ -991,11 +972,7 @@ class BosDataSource(DataSource, BaseModel):
         assert self.sk
         assert self.file_format
 
-        bos_config = BceClientConfiguration(
-            credentials=BceCredentials(self.ak, self.sk),
-            endpoint=f"{self.region}.bcebos.com",
-        )
-        bos_client = BosClient(bos_config)
+        bos_helper = BosHelper(self.region, self.ak, self.sk)
 
         _check_data_and_zip_file_valid(data, zip_file_path)
 
@@ -1015,12 +992,9 @@ class BosDataSource(DataSource, BaseModel):
             )
 
         if not should_overwrite_existed_file:
-            log_info(f"check if bos file {final_bos_file_path} existed")
-            file_existed = True
-            try:
-                bos_client.get_object_meta_data(self.bucket, final_bos_file_path)
-            except Exception:
-                file_existed = False
+            file_existed = bos_helper.check_if_file_existed_on_bos(
+                self.bucket, final_bos_file_path
+            )
 
             if file_existed:
                 err_msg = (
@@ -1034,22 +1008,16 @@ class BosDataSource(DataSource, BaseModel):
             log_info(
                 f"try to delete original bos file {final_bos_file_path} for overwrite"
             )
-            try:
-                bos_client.delete_object(self.bucket, final_bos_file_path)
-            except Exception:
-                # 防御性删除，不管文件是否是真的存在
-                pass
+            bos_helper.delete_bos_file_anyway(self.bucket, final_bos_file_path)
 
         try:
             if data:
                 log_info("fetch file content directly from bos file")
-                bos_client.put_object_from_string(
-                    self.bucket, final_bos_file_path, data
-                )
+                bos_helper.upload_content_to_bos(data, final_bos_file_path, self.bucket)
             elif zip_file_path:
                 log_info("start to fetch zip file from bos")
-                bos_client.put_object_from_file(
-                    self.bucket, final_bos_file_path, zip_file_path
+                bos_helper.upload_file_to_bos(
+                    zip_file_path, final_bos_file_path, self.bucket
                 )
         except Exception as e:
             err_msg = (
@@ -1087,7 +1055,7 @@ class BosDataSource(DataSource, BaseModel):
 
         return cache_path
 
-    def _check_bos_file_cache(self, bos_client: BosClient) -> bool:
+    def _check_bos_file_cache(self, bos_helper: BosHelper) -> bool:
         cache_path = self._get_specific_cache_path()
 
         meta_info_path = os.path.join(cache_path, "info.json")
@@ -1103,25 +1071,21 @@ class BosDataSource(DataSource, BaseModel):
         parser = dateutil.parser.parser()
         cache_last_modified_time = parser.parse(cache_meta_info["last_modified"])
 
-        new_meta_info = bos_client.get_object_meta_data(
-            self.bucket, self.bos_file_path
-        ).metadata.__dict__
+        new_meta_info = bos_helper.get_metadata(self.bucket, self.bos_file_path)
         new_last_modified_time = parser.parse(new_meta_info["last_modified"])
 
         return cache_last_modified_time >= new_last_modified_time
 
-    def _update_file_cache(self, bos_client: BosClient) -> None:
+    def _update_file_cache(self, bos_helper: BosHelper) -> None:
         cache_path = self._get_specific_cache_path()
         cache_content_path = os.path.join(cache_path, "content")
         cache_meta_info_path = os.path.join(cache_path, "info.json")
 
-        bos_client.get_object_to_file(
+        bos_helper.get_object_as_file(
             self.bucket, self.bos_file_path, cache_content_path
         )
 
-        meta_info_obj = bos_client.get_object_meta_data(
-            self.bucket, self.bos_file_path
-        ).metadata.__dict__
+        meta_info_obj = bos_helper.get_metadata(self.bucket, self.bos_file_path)
         with open(cache_meta_info_path, mode="w", encoding="utf-8") as f:
             f.write(json.dumps(meta_info_obj, ensure_ascii=False))
 
@@ -1157,19 +1121,15 @@ class BosDataSource(DataSource, BaseModel):
         assert self.sk
         assert self.file_format
 
-        bos_config = BceClientConfiguration(
-            credentials=BceCredentials(self.ak, self.sk),
-            endpoint=f"{self.region}.bcebos.com",
-        )
-        bos_client = BosClient(bos_config)
+        bos_helper = BosHelper(self.region, self.ak, self.sk)
         actual_bos_file_path = (
             self.bos_file_path
             if self.bos_file_path[0] != "/"
             else self.bos_file_path[1:]
         )
 
-        if not self._check_bos_file_cache(bos_client):
-            self._update_file_cache(bos_client)
+        if not self._check_bos_file_cache(bos_helper):
+            self._update_file_cache(bos_helper)
 
         index = self.bos_file_path.rfind(".")
         read_from_zip = read_from_zip or (

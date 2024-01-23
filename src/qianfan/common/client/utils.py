@@ -34,7 +34,7 @@ import qianfan.utils.logging as qianfan_logging
 from qianfan import QfResponse
 from qianfan.resources.llm.base import BaseResource
 from qianfan.resources.typing import QfRequest
-from qianfan.utils.bos_uploader import get_bos_bucket_location
+from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
@@ -132,12 +132,8 @@ def bos_bucket_region(bucket: str) -> str:
     if global_config.ACCESS_KEY is None or global_config.SECRET_KEY is None:
         print_error_msg("ACCESS_KEY and SECRET_KEY are required.")
         raise typer.Exit(1)
-    region = get_bos_bucket_location(
-        bucket,
-        global_config.BOS_HOST_REGION,
-        global_config.ACCESS_KEY,
-        global_config.SECRET_KEY,
-    )
+    bos_helper = BosHelper()
+    region = bos_helper.get_bos_bucket_location(bucket)
     return region
 
 

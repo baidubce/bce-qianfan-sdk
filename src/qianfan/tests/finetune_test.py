@@ -24,16 +24,29 @@ def test_create_finetune_task():
     """
     test FineTune.create_task
     """
-    resp = FineTune.create_task(name="test_name_1")
-    assert resp["_request"] == {"name": "test_name_1"}
+    resp = FineTune.create_task(
+        name="test_name_1", base_train_type="base_train_type", train_type="train_type"
+    )
+    assert resp["_request"] == {
+        "name": "test_name_1",
+        "baseTrainType": "base_train_type",
+        "trainType": "train_type",
+    }
     result = resp["result"]
     assert result["name"] == "test_name_1"
     assert result["description"] == ""
 
-    resp = FineTune.create_task(name="test_name_2", description="test_description")
+    resp = FineTune.create_task(
+        name="test_name_2",
+        base_train_type="base_train_type",
+        train_type="train_type",
+        description="test_description",
+    )
     assert resp["_request"] == {
         "name": "test_name_2",
         "description": "test_description",
+        "baseTrainType": "base_train_type",
+        "trainType": "train_type",
     }
     result = resp["result"]
     assert result["name"] == "test_name_2"

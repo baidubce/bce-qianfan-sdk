@@ -380,9 +380,13 @@ class TrainAction(
             return self._exec_incremental(input, **kwargs)
 
         # request for create model train task
+        assert self.train_type is not None
+        assert self.base_model is not None
         resp = api.FineTune.create_task(
             name=self.task_name,
             description=self.task_description,
+            train_type=self.train_type,
+            base_train_type=self.base_model,
             **kwargs,
         )
         self.task_id = cast(int, resp["result"]["id"])

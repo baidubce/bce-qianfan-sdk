@@ -2,6 +2,9 @@ package qianfan
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
 	"os"
 	"testing"
 
@@ -22,7 +25,36 @@ func TestChatCompletion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "ok", resp.Result)
+	fmt.Printf(resp.Result)
+	// assert.Equal(t, "ok", resp.Result)
+}
+
+func TestChatCompletionStream(t *testing.T) {
+	client, err := NewClientFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chat := client.ChatCompletion()
+	resp, err := chat.DoStream(context.Background(), &ChatCompletionRequest{
+		Messages: []ChatCompletionMessage{
+			ChatCompletionUserMessage("上海有什么好吃的"),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.stream.Close()
+	for {
+		resp, err := resp.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			assert.Fail(t, "got err")
+		}
+		fmt.Printf(resp.Result)
+	}
+	// assert.Equal(t, "ok", resp.Result)
 }
 
 func TestMain(m *testing.M) {

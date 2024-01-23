@@ -1,6 +1,7 @@
 package qianfan
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,55 @@ import (
 type Requestor struct {
 	Config *Config
 	client *http.Client
+}
+
+type Stream struct {
+	httpResponse *http.Response
+	scanner      *bufio.Scanner
+}
+
+func makeStream(httpResponse *http.Response) (*Stream, error) {
+	return &Stream{
+		httpResponse: httpResponse,
+		scanner:      bufio.NewScanner(httpResponse.Body),
+	}, nil
+}
+
+func (s *Stream) Close() {
+	s.httpResponse.Body.Close()
+}
+
+func (s *Stream) Recv() (*QfResponse, error) {
+	var eventData []byte
+	for len(eventData) == 0 {
+		for {
+			if !s.scanner.Scan() {
+				return nil, s.scanner.Err()
+			}
+
+			line := s.scanner.Bytes()
+			if len(line) == 0 {
+				break
+			}
+			var (
+				// field []byte = line
+				value []byte
+			)
+			if i := bytes.IndexRune(line, ':'); i != -1 {
+				// field = line[:i]
+				value = line[i+1:]
+				if len(value) != 0 && value[0] == ' ' {
+					value = value[1:]
+				}
+			}
+			eventData = append(eventData, value...)
+		}
+	}
+	response := QfResponse{
+		Body:        eventData,
+		RawResponse: s.httpResponse,
+	}
+	return &response, nil
 }
 
 func newRequestor(config *Config) *Requestor {
@@ -113,7 +163,10 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 func (r *Requestor) ModelRequest(request *QfRequest) (*QfResponse, error) {
 	request.URL = r.modelFullURL(request)
 	return r.request(request)
-
+}
+func (r *Requestor) ModelRequestStream(request *QfRequest) (*Stream, error) {
+	request.URL = r.modelFullURL(request)
+	return r.requestStream(request)
 }
 
 func (r *Requestor) request(request *QfRequest) (*QfResponse, error) {
@@ -137,4 +190,20 @@ func (r *Requestor) request(request *QfRequest) (*QfResponse, error) {
 	}
 
 	return &response, nil
+}
+
+func (r *Requestor) requestStream(request *QfRequest) (*Stream, error) {
+	req, err := r.prepareRequest(request)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	stream, err := makeStream(resp)
+	if err != nil {
+		return nil, err
+	}
+	return stream, nil
 }

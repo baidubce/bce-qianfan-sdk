@@ -39,3 +39,15 @@ func (c *Client) CompletionFromModel(model string) *Completion {
 func (c *Client) CompletionFromEndpoint(endpoint string) *Completion {
 	return newCompletion("", endpoint, c.config)
 }
+
+func (c *Client) Embedding() *Embedding {
+	return newEmbedding(DefaultEmbeddingModel, "", c.config)
+}
+
+func (c *Client) EmbeddingFromModel(model string) *Embedding {
+	return newEmbedding(model, "", c.config)
+}
+
+func (c *Client) EmbeddingFromEndpoint(endpoint string) *Embedding {
+	return newEmbedding("", endpoint, c.config)
+}

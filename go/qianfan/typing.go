@@ -36,10 +36,15 @@ func makeRequest(method string, url string, body Mappable) (*QfRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	return makeRequestFromMap(method, url, b)
+}
+
+func makeRequestFromMap(method string, url string, body map[string]interface{}) (*QfRequest, error) {
+
 	return &QfRequest{
 		Method:  method,
 		URL:     url,
-		Body:    b,
+		Body:    body,
 		Params:  map[string]string{},
 		Headers: map[string]string{},
 	}, nil

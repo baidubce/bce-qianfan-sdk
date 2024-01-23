@@ -68,3 +68,20 @@ func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*Model
 	}
 	return c.BaseModel.do(ctx, req)
 }
+
+func (c *Completion) DoStream(ctx context.Context, request *CompletionRequest) (*ModelResponseStream, error) {
+	url, err := c.realEndpoint()
+	if err != nil {
+		return nil, err
+	}
+	m, err := request.toMap()
+	if err != nil {
+		return nil, err
+	}
+	m["stream"] = true
+	req, err := makeRequestFromMap("POST", url, m)
+	if err != nil {
+		return nil, err
+	}
+	return c.BaseModel.doStream(ctx, req)
+}

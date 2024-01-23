@@ -91,3 +91,20 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 	}
 	return c.BaseModel.do(ctx, req)
 }
+
+func (c *ChatCompletion) DoStream(ctx context.Context, request *ChatCompletionRequest) (*ModelResponseStream, error) {
+	url, err := c.realEndpoint()
+	if err != nil {
+		return nil, err
+	}
+	m, err := request.toMap()
+	if err != nil {
+		return nil, err
+	}
+	m["stream"] = true
+	req, err := makeRequestFromMap("POST", url, m)
+	if err != nil {
+		return nil, err
+	}
+	return c.BaseModel.doStream(ctx, req)
+}

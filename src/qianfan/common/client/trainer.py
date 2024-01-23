@@ -189,6 +189,26 @@ TRAIN_CONFIG_PANEL = "Train Config"
 DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
+def list_train_type() -> None:
+    """
+    list all the supported train types
+    """
+    model_list = LLMFinetune.train_type_list()
+    for m in model_list:
+        print(m)
+    raise typer.Exit()
+
+
+list_train_type_option = typer.Option(
+    None,
+    "--list-train-type",
+    "-l",
+    callback=list_train_type,
+    is_eager=True,
+    help="Print supported train types.",
+)
+
+
 @trainer_app.command()
 @credential_required
 def run(
@@ -198,6 +218,7 @@ def run(
         help="Dataset BOS path",
     ),
     train_type: str = typer.Option(..., help="Train type"),
+    list_train_type: Optional[bool] = list_train_type_option,
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "
     ),

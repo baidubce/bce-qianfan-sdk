@@ -32,7 +32,11 @@ from qianfan.trainer.base import (
     Pipeline,
     Trainer,
 )
-from qianfan.trainer.configs import TrainConfig
+from qianfan.trainer.configs import (
+    ModelInfo,
+    ModelInfoMapping,
+    TrainConfig,
+)
 from qianfan.trainer.consts import (
     ActionState,
     FinetuneStatus,
@@ -244,6 +248,10 @@ class LLMFinetune(Trainer):
     @property
     def output(self) -> Any:
         return self.result[0]
+
+    @classmethod
+    def train_type_list(cls) -> Dict[str, ModelInfo]:
+        return ModelInfoMapping
 
 
 # mapping for action state -> fine-tune status

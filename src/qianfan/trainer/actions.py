@@ -35,6 +35,7 @@ from qianfan.trainer.configs import (
     TrainLimit,
 )
 from qianfan.utils import (
+    bos_uploader,
     log_debug,
     log_error,
     log_info,
@@ -78,7 +79,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        from qianfan.dataset.dataset import QianfanDataSource
+        from qianfan.dataset.dataset import BosDataSource, QianfanDataSource
 
         """
         Load dataset implementation, may called by exec and resume.
@@ -87,26 +88,38 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("dataset must be set")
         if self.dataset.inner_data_source_cache is None:
             raise InvalidArgumentError("invalid dataset")
-        if not isinstance(self.dataset.inner_data_source_cache, QianfanDataSource):
-            raise InvalidArgumentError(
-                "dataset must be saved to qianfan before training"
-            )
-        log_debug("[load_dataset_action] prepare train-set")
-        qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
-        is_released = qf_data_src.release_dataset(**kwargs)
-        if not is_released:
-            log_error("[load_dataset_action] dataset not released")
-            raise InvalidArgumentError("dataset must be released")
-        log_debug("[load_dataset_action] dataset loaded successfully")
-        self.qf_dataset_id = qf_data_src.id
-        return {
-            "datasets": [
-                {
-                    "id": qf_data_src.old_dataset_id,
-                    "type": console_consts.TrainDatasetType.Platform.value,
-                }
-            ]
-        }
+        if isinstance(self.dataset.inner_data_source_cache, QianfanDataSource):
+            log_debug("[load_dataset_action] prepare train-set")
+            qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
+            is_released = qf_data_src.release_dataset(**kwargs)
+            if not is_released:
+                log_error("[load_dataset_action] dataset not released")
+                raise InvalidArgumentError("dataset must be released")
+            log_debug("[load_dataset_action] dataset loaded successfully")
+            self.qf_dataset_id = qf_data_src.id
+            return {
+                "datasets": [
+                    {
+                        "id": qf_data_src.old_dataset_id,
+                        "type": console_consts.TrainDatasetType.Platform.value,
+                    }
+                ]
+            }
+        elif isinstance(self.dataset.inner_data_source_cache, BosDataSource):
+            log_debug("[load_dataset_action] prepare train-set in BOS")
+            bos_data_src = cast(BosDataSource, self.dataset.inner_data_source_cache)
+            return {
+                "datasets": [
+                    {
+                        "id": console_consts.TrainDatasetType.PrivateBos.value,
+                        "bosPath": bos_uploader.generate_bos_file_path(
+                            bos_data_src.bucket, bos_data_src.bos_file_path
+                        ),
+                    }
+                ]
+            }
+        else:
+            raise InvalidArgumentError("dataset must be set")
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
@@ -160,6 +173,12 @@ class TrainAction(
     """train task id"""
     job_id: Optional[int] = None
     """train job id"""
+    # 这里的id新API的原因task/job和调换了，现在具体
+    # task_id对应job_str_id，job_id对应task_str_id
+    task_str_id: Optional[str] = None
+    """train task str id"""
+    job_str_id: Optional[str] = None
+    """job task str id"""
     train_type: Optional[str] = ""
     """train_type"""
     base_model: Optional[str] = None
@@ -319,6 +338,7 @@ class TrainAction(
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
         self.train_config.validate_config(train_limit)
+        self.train_config._validate_valid_fields(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -446,8 +466,8 @@ class TrainAction(
             log_info(
                 "[train_action] fine-tune running..."
                 f" task_name:{self.task_name} current status: {job_status},"
-                f" {job_progress}% check train task in"
-                " https://console.bce.baidu.com/qianfan/train/sft/list"
+                f" {job_progress}% check train task log in"
+                f"https://console.bce.baidu.com/qianfan/train/sft/{self.job_str_id}/{self.task_str_id}/detail/traininglog"
             )
             if job_progress >= 50:
                 log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")
@@ -459,15 +479,16 @@ class TrainAction(
                 console_consts.TrainStatus.Stop,
             ]:
                 log_error(
-                    f"[train_action] fine-tune job {self.task_id}/{self.job_id} has"
-                    f" ended, {job_status_resp}"
+                    "[train_action] fine-tune job"
+                    f" {self.job_str_id}/{self.task_str_id} has ended,"
+                    f" {job_status_resp}"
                 )
                 break
             else:
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
         log_info(
-            f"[train_action] fine-tune job has ended: {self.job_id} with status:"
-            f" {job_status}"
+            "[train_action] fine-tune job has ended:"
+            f" {self.job_str_id}/{self.task_str_id} with status: {job_status}"
         )
 
     @with_event

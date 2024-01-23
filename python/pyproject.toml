@@ -61,6 +61,11 @@ types-protobuf = "4.24.0.4"
 langchain = ["langchain"]
 all = ["langchain"]
 
+[[tool.poetry.source]]
+name = "mirrors"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
+priority = "default"
+
 [tool.ruff]
 select = [
   "E",  # pycodestyle

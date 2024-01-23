@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-from pydantic import Field, model_validator
+from pydantic import Field
 from semantic_kernel.connectors.ai.ai_request_settings import AIRequestSettings
 
 

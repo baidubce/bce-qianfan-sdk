@@ -6,4 +6,4 @@ if [[ ! ${TAG_NAME} =~ ^[a-zA-Z0-9.]+$ ]]; then
 fi
 
 # upload to pypi
-poetry publish --build -u __token__ -p ${TOKEN}
+poetry publish --build -u __token__ -p ${TOKEN} 

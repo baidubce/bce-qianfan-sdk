@@ -14,6 +14,7 @@
 import copy
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 
+from qianfan.config import encoding
 from qianfan.errors import InvalidArgumentError
 from qianfan.trainer.consts import PeftType
 from qianfan.utils import log_error, log_warn
@@ -75,7 +76,7 @@ class TrainConfig(BaseModel):
 
             path_obj = Path(path)
             if path_obj.suffix == ".yaml":
-                with open(path_obj, "r", encoding="utf-8") as file:
+                with open(path_obj, "r", encoding=encoding()) as file:
                     data = yaml.safe_load(file)
                     return TrainConfig.parse_obj(data)
             elif path_obj.suffix == ".json":

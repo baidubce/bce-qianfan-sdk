@@ -116,6 +116,8 @@ class GlobalConfig(BaseSettings):
     # 请勿在公共网络上关闭这一配置。由于关闭带来的一切问题，本项目均不负责
     SSL_VERIFICATION_ENABLED: bool = Field(default=DefaultValue.SSLVerificationEnabled)
 
+    FILE_ENCODING: str = Field(default=DefaultValue.FileEncoding)
+
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None
 
@@ -235,3 +237,10 @@ def SecretKey(secret_key: str) -> None:
         The Secret Key to be set for console API authentication.
     """
     get_config().SECRET_KEY = secret_key
+
+
+def encoding() -> str:
+    """
+    Get the file encoding used in the SDK.
+    """
+    return get_config().FILE_ENCODING

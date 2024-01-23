@@ -14,7 +14,7 @@
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.config import get_config
-from qianfan.dataset import QianfanDataSource
+from qianfan.dataset import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -119,19 +119,29 @@ class LLMFinetune(Trainer):
         if dataset is not None:
             if dataset.inner_data_source_cache is None:
                 raise InvalidArgumentError("invalid dataset")
-
-            qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
-            if (
-                qf_data_src.template_type
-                != console_consts.DataTemplateType.NonSortedConversation
-            ):
-                raise InvalidArgumentError(
-                    "dataset must be `non-sorted conversation` template in"
-                    " llm-fine-tune"
+            if isinstance(dataset.inner_data_source_cache, QianfanDataSource):
+                qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
+                if (
+                    qf_data_src.template_type
+                    != console_consts.DataTemplateType.NonSortedConversation
+                ):
+                    raise InvalidArgumentError(
+                        "dataset must be `non-sorted conversation` template in"
+                        " llm-fine-tune"
+                    )
+                self.load_data_action = LoadDataSetAction(
+                    dataset=dataset, event_handler=event_handler, **kwargs
                 )
-            self.load_data_action = LoadDataSetAction(
-                dataset=dataset, event_handler=event_handler, **kwargs
-            )
+            elif isinstance(dataset.inner_data_source_cache, BosDataSource):
+                self.load_data_action = LoadDataSetAction(
+                    dataset=dataset, event_handler=event_handler, **kwargs
+                )
+                pass
+            else:
+                raise InvalidArgumentError(
+                    "dataset must be either implemented with QianfanDataSource or"
+                    " BosDataSource"
+                )
             actions.append(self.load_data_action)
         elif dataset_bos_path:
             self.dataset_bos_path = dataset_bos_path

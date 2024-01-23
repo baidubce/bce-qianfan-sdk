@@ -183,6 +183,8 @@ class TrainConfig(BaseModel):
         """
         supported_fields = limit.supported_hyper_params
         for field in self.dict(exclude=None):
+            if field in ["peft_type", "extras", "trainset_rate"]:
+                continue
             if field not in supported_fields:
                 log_warn(
                     f"train_config hyper params '{field}' is not in supported_params:"

@@ -111,8 +111,8 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             return {
                 "datasets": [
                     {
-                        "id": console_consts.TrainDatasetType.PrivateBos.value,
-                        "bosPath": bos_uploader.generate_bos_file_path(
+                        "type": console_consts.TrainDatasetType.PrivateBos.value,
+                        "bosPath": bos_uploader.generate_bos_file_parent_path(
                             bos_data_src.bucket, bos_data_src.bos_file_path
                         ),
                     }
@@ -410,6 +410,7 @@ class TrainAction(
             **kwargs,
         )
         self.task_id = cast(int, resp["result"]["id"])
+        self.job_str_id = resp["result"]["uuid"]
         log_debug(f"[train_action] create fine-tune task: {self.task_id}")
 
         assert self.train_config is not None
@@ -444,6 +445,7 @@ class TrainAction(
         }
         create_job_resp = api.FineTune.create_job(req_job, **kwargs)
         self.job_id = cast(int, create_job_resp["result"]["id"])
+        self.task_str_id = create_job_resp["result"]["uuid"]
         log_debug(f"[train_action] create fine-tune job_id: {self.job_id}")
 
         # 获取job状态，是否训练完成
@@ -467,7 +469,7 @@ class TrainAction(
                 "[train_action] fine-tune running..."
                 f" task_name:{self.task_name} current status: {job_status},"
                 f" {job_progress}% check train task log in"
-                f"https://console.bce.baidu.com/qianfan/train/sft/{self.job_str_id}/{self.task_str_id}/detail/traininglog"
+                f" https://console.bce.baidu.com/qianfan/train/sft/{self.job_str_id}/{self.task_str_id}/detail/traininglog"
             )
             if job_progress >= 50:
                 log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")

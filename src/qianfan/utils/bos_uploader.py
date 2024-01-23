@@ -76,6 +76,14 @@ def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
     return f"bos:/{bucket_name}{absolute_path}"
 
 
+def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
+    file_bos_path = generate_bos_file_path(bucket_name, absolute_path)
+    path_components = file_bos_path.split("/")
+
+    # 获取文件夹目录
+    return "/".join(path_components[:-1]) + "/"
+
+
 def get_bos_bucket_location(
     bucket_name: str,
     region: str,

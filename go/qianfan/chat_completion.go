@@ -15,19 +15,28 @@ type ChatCompletion struct {
 }
 
 type ChatCompletionRequest struct {
-	Messages []ChatCompletionMessage `json:"messages"`
+	BaseRequestBody
+	Messages []ChatCompletionMessage `mapstructure:"messages"`
 	//Functions []string `json:"functions"`
-	Temperature     float64  `json:"temperature,omitempty"`
-	TopP            float64  `json:"top_p,omitempty"`
-	PenaltyScore    float64  `json:"penalty_score,omitempty"`
-	System          string   `json:"system,omitempty"`
-	Stop            []string `json:"stop,omitempty"`
-	DisableSearch   bool     `json:"disable_search,omitempty"`
-	EnableCitation  bool     `json:"enable_citation,omitempty"`
-	MaxOutputTokens int      `json:"max_output_tokens,omitempty"`
-	ResponseFormat  string   `json:"response_format,omitempty"`
-	UserID          string   `json:"user_id,omitempty"`
+	Temperature     float64  `mapstructure:"temperature,omitempty"`
+	TopP            float64  `mapstructure:"top_p,omitempty"`
+	PenaltyScore    float64  `mapstructure:"penalty_score,omitempty"`
+	System          string   `mapstructure:"system,omitempty"`
+	Stop            []string `mapstructure:"stop,omitempty"`
+	DisableSearch   bool     `mapstructure:"disable_search,omitempty"`
+	EnableCitation  bool     `mapstructure:"enable_citation,omitempty"`
+	MaxOutputTokens int      `mapstructure:"max_output_tokens,omitempty"`
+	ResponseFormat  string   `mapstructure:"response_format,omitempty"`
+	UserID          string   `mapstructure:"user_id,omitempty"`
 	//ToolChoice string `json:"tool_choice,omitempty"`
+}
+
+func (r *ChatCompletionRequest) toMap() (map[string]interface{}, error) {
+	m, err := dumpToMap(r)
+	if err != nil {
+		return nil, err
+	}
+	return r.BaseRequestBody.union(m)
 }
 
 var ChatModelEndpoint = map[string]string{
@@ -76,12 +85,9 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 	if err != nil {
 		return nil, err
 	}
-	req := QfRequest{
-		Method:  "POST",
-		URL:     url,
-		Body:    request,
-		Headers: make(map[string]string),
-		Params:  make(map[string]string),
+	req, err := makeRequest("POST", url, request)
+	if err != nil {
+		return nil, err
 	}
-	return c.BaseModel.do(ctx, &req)
+	return c.BaseModel.do(ctx, req)
 }

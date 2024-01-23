@@ -1,6 +1,8 @@
 package qianfan
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Client struct {
 	config *Config
@@ -24,4 +26,16 @@ func (c *Client) ChatCompletionFromModel(model string) *ChatCompletion {
 
 func (c *Client) ChatCompletionFromEndpoint(endpoint string) *ChatCompletion {
 	return newChatCompletion("", endpoint, c.config)
+}
+
+func (c *Client) Completion() *Completion {
+	return newCompletion(DefaultCompletionModel, "", c.config)
+}
+
+func (c *Client) CompletionFromModel(model string) *Completion {
+	return newCompletion(model, "", c.config)
+}
+
+func (c *Client) CompletionFromEndpoint(endpoint string) *Completion {
+	return newCompletion("", endpoint, c.config)
 }

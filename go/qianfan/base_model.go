@@ -18,6 +18,11 @@ type ModelUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
+type ModelAPIError struct {
+	ErrorCode int    `json:"error_code"`
+	ErrorMsg  string `json:"error_msg"`
+}
+
 type ModelResponse struct {
 	Id               string     `json:"id"`
 	Object           string     `json:"object"`
@@ -31,6 +36,7 @@ type ModelResponse struct {
 	// FunctionCall     FunctionCall `json:"function_call"`
 	BanRound int `json:"ban_round"`
 	// SearchInfo      SearchInfo   `json:"search_info"`
+	ModelAPIError
 	QfResponse
 }
 

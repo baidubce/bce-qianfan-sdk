@@ -114,7 +114,7 @@ class Completion(BaseResource):
                 },
             ),
             "ERNIE-Speed": QfLLMInfo(
-                endpoint="/chat/eb_turbo_pro",
+                endpoint="/chat/ernie_speed",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

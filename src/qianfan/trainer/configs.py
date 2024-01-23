@@ -178,6 +178,22 @@ class TrainConfig(BaseModel):
             return False
         return True
 
+    def _validate_valid_fields(self, limit: "TrainLimit") -> bool:
+        """
+        return False if value is not in limit.supported_hyper_params
+        """
+        supported_fields = limit.supported_hyper_params
+        for field in self.dict(exclude=None):
+            if field in ["peft_type", "extras", "trainset_rate"]:
+                continue
+            if field not in supported_fields:
+                log_warn(
+                    f"train_config hyper params '{field}' is not in supported_params:"
+                    f" {supported_fields}"
+                )
+                return False
+        return True
+
 
 class TrainLimit(BaseModel):
     batch_size_limit: Optional[Tuple[int, int]] = None
@@ -202,6 +218,9 @@ class TrainLimit(BaseModel):
     """loRA dropout limit"""
     scheduler_name_options: Optional[List[str]] = None
     """scheduler name options"""
+
+    supported_hyper_params: List[str] = []
+    """supported hyper params"""
 
     def __or__(self, other: Any) -> "TrainLimit":
         assert isinstance(other, TrainLimit)
@@ -256,8 +275,28 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         specific_peft_types_params_limit={
             PeftType.ALL: TrainLimit(
                 learning_rate_limit=(0.00001, 0.00004),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "log_steps",
+                    "warmup_ratio",
+                    "weight_decay",
+                ],
             ),
-            PeftType.LoRA: TrainLimit(learning_rate_limit=(0.00003, 0.001)),
+            PeftType.LoRA: TrainLimit(
+                learning_rate_limit=(0.00003, 0.001),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "log_steps",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_all_linear",
+                ],
+            ),
         },
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
@@ -276,8 +315,28 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         specific_peft_types_params_limit={
             PeftType.ALL: TrainLimit(
                 learning_rate_limit=(0.00001, 0.00004),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "log_steps",
+                    "warmup_ratio",
+                    "weight_decay",
+                ],
             ),
-            PeftType.LoRA: TrainLimit(learning_rate_limit=(0.00003, 0.001)),
+            PeftType.LoRA: TrainLimit(
+                learning_rate_limit=(0.00003, 0.001),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "log_steps",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_all_linear",
+                ],
+            ),
         },
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
@@ -285,17 +344,17 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
-            batch_size_limit=(1, 4),
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
-            learning_rate_limit=(0.0000002, 0.0002),
         ),
         specific_peft_types_params_limit={
             PeftType.ALL: TrainLimit(
                 learning_rate_limit=(0.00001, 0.00004),
+                supported_hyper_params=["epoch", "learning_rate", "max_seq_len"],
             ),
             PeftType.LoRA: TrainLimit(
                 learning_rate_limit=(0.00003, 0.001),
+                supported_hyper_params=["epoch", "learning_rate", "max_seq_len"],
             ),
         },
     ),
@@ -304,20 +363,20 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
-            batch_size_limit=(1, 4),
-            max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
-            learning_rate_limit=(0.0000002, 0.0002),
         ),
         specific_peft_types_params_limit={
             PeftType.PTuning: TrainLimit(
                 learning_rate_limit=(0.003, 0.1),
+                supported_hyper_params=["epoch", "learning_rate"],
             ),
             PeftType.ALL: TrainLimit(
                 learning_rate_limit=(0.00001, 0.00004),
+                supported_hyper_params=["epoch", "learning_rate"],
             ),
             PeftType.LoRA: TrainLimit(
                 learning_rate_limit=(0.00003, 0.001),
+                supported_hyper_params=["epoch", "learning_rate"],
             ),
         },
     ),
@@ -339,12 +398,33 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             ],
             weight_decay_limit=(0.001, 1),
             warmup_ratio_limit=(0.01, 0.1),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
                 lora_rank_options=[8, 16, 32, 64],
                 lora_alpha_options=[8, 16, 32, 64],
                 lora_dropout_limit=(0.1, 0.5),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
             ),
         },
     ),
@@ -366,12 +446,33 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             ],
             weight_decay_limit=(0.001, 1),
             warmup_ratio_limit=(0.01, 0.1),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
                 lora_rank_options=[8, 16, 32, 64],
                 lora_alpha_options=[8, 16, 32, 64],
                 lora_dropout_limit=(0.1, 0.5),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
             ),
         },
     ),
@@ -384,10 +485,38 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000002, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                lora_rank_options=[8, 16, 32, 64],
+                lora_alpha_options=[8, 16, 32, 64],
+                lora_dropout_limit=(0.1, 0.5),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
+            ),
+        },
     ),
     "ChatGLM2-6B": ModelInfo(
-        short_name="ChatGLM2_6B",
+        short_name="GLM2_6B",
         base_model_type="ChatGLM2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
@@ -395,6 +524,52 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000002, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
+        ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                lora_rank_options=[8, 16, 32, 64],
+                lora_alpha_options=[8, 16, 32, 64],
+                lora_dropout_limit=(0.1, 0.5),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
+            ),
+        },
+    ),
+    "ChatGLM2-6B-32K": ModelInfo(
+        short_name="GLM2_6B_32K",
+        base_model_type="ChatGLM2",
+        support_peft_types=[PeftType.ALL],
+        common_params_limit=TrainLimit(
+            batch_size_limit=(1, 4),
+            max_seq_len_options=[4096, 8192],
+            epoch_limit=(1, 50),
+            learning_rate_limit=(0.0000002, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
     ),
     "Baichuan2-7B": ModelInfo(
@@ -406,7 +581,36 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000000001, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                batch_size_limit=(1, 4),
+                max_seq_len_options=[4096, 8192],
+                epoch_limit=(1, 50),
+                learning_rate_limit=(0.0000000001, 0.0002),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
+            )
+        },
     ),
     "Baichuan2-13B": ModelInfo(
         short_name="Baichuan2_13B",
@@ -417,7 +621,35 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000000001, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                batch_size_limit=(1, 4),
+                max_seq_len_options=[4096, 8192],
+                epoch_limit=(1, 50),
+                learning_rate_limit=(0.0000000001, 0.0002),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
+            )
+        },
     ),
     "BLOOMZ-7B": ModelInfo(
         short_name="BLOOMZ_7B",
@@ -428,7 +660,39 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             max_seq_len_options=[4096, 8192],
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000002, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+                "lora_rank",
+                "lora_alpha",
+                "lora_dropout",
+            ],
         ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                batch_size_limit=(1, 4),
+                max_seq_len_options=[4096, 8192],
+                epoch_limit=(1, 50),
+                learning_rate_limit=(0.0000000001, 0.0002),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                ],
+            )
+        },
     ),
     "CodeLlama-7B": ModelInfo(
         short_name="CodeLlama_7B",
@@ -438,7 +702,37 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             batch_size_limit=(1, 4),
             epoch_limit=(1, 50),
             learning_rate_limit=(0.0000000001, 0.0002),
+            supported_hyper_params=[
+                "epoch",
+                "learning_rate",
+                "max_seq_len",
+                "batch_size",
+                "scheduler_name",
+                "warmup_ratio",
+                "weight_decay",
+            ],
         ),
+        specific_peft_types_params_limit={
+            PeftType.LoRA: TrainLimit(
+                batch_size_limit=(1, 4),
+                max_seq_len_options=[4096, 8192],
+                epoch_limit=(1, 50),
+                learning_rate_limit=(0.0000000001, 0.0002),
+                supported_hyper_params=[
+                    "epoch",
+                    "learning_rate",
+                    "max_seq_len",
+                    "batch_size",
+                    "scheduler_name",
+                    "warmup_ratio",
+                    "weight_decay",
+                    "lora_rank",
+                    "lora_alpha",
+                    "lora_dropout",
+                    "lora_target_modules",
+                ],
+            )
+        },
     ),
 }
 
@@ -500,6 +794,11 @@ DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
         batch_size=1,
         learning_rate=0.00002,
         peft_type=PeftType.LoRA,
+    ),
+    "ChatGLM2-6B-32K": TrainConfig(
+        epoch=1,
+        learning_rate=0.00002,
+        peft_type=PeftType.ALL,
     ),
     "Baichuan2-7B": TrainConfig(
         epoch=1,

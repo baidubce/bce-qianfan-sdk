@@ -203,11 +203,11 @@ def list_train_type(
         raise typer.Exit()
 
 
-def show_default_config(
+def show_config_limit(
     ctx: typer.Context, param: typer.CallbackParam, value: str
 ) -> None:
     """
-    show default config for specified train type
+    show config limit for specified train type
     """
     if value:
         model_list = LLMFinetune.train_type_list()
@@ -238,11 +238,11 @@ def run(
     ),
     train_type: str = typer.Option(..., help="Train type"),
     list_train_type: Optional[bool] = list_train_type_option,
-    show_default_config: Optional[str] = typer.Option(
+    show_config_limit: Optional[str] = typer.Option(
         None,
-        callback=show_default_config,
+        callback=show_config_limit,
         is_eager=True,
-        help="Show default config for specified train type.",
+        help="Show config limit for specified train type.",
     ),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "

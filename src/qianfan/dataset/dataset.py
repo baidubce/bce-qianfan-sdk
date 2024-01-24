@@ -922,7 +922,7 @@ class Dataset(Table):
             log_info(f"list local dataset data by {by}")
             return super().list(by)
         else:
-            _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
+            return _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
 
     def row_number(self) -> int:
         if (

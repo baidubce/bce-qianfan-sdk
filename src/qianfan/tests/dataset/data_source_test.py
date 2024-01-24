@@ -22,7 +22,6 @@ from unittest.mock import patch
 import pytest
 from pytest_mock import MockerFixture
 
-import qianfan.utils.bos_uploader
 from qianfan import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
@@ -187,7 +186,9 @@ def create_an_empty_qianfan_datasource() -> QianfanDataSource:
     )
 
 
-@patch("qianfan.utils.bos_uploader.BosHelper.get_bos_file_shared_url", return_value="url")
+@patch(
+    "qianfan.utils.bos_uploader.BosHelper.get_bos_file_shared_url", return_value="url"
+)
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_file_to_bos", return_value=None)
 def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):

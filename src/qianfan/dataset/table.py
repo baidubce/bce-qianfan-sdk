@@ -136,6 +136,9 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
     def _inner_table_is_packed(self) -> bool:
         return _whether_dataset_is_packed(self.table.column_names)
 
+    def _inner_table_is_grouped(self) -> bool:
+        return _whether_dataset_is_grouped(self.table.column_names)
+
     def append(
         self,
         elem: Union[List[Dict], Tuple[Dict], Dict],
@@ -303,16 +306,24 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: new_list})
         else:
             new_table: List[Dict[str, Any]] = []
+            is_grouped = self._inner_table_is_grouped()
+
             for row_index in range(self.table.num_rows):
                 origin_data = self.table.take([row_index]).to_pylist()[0]
-
                 input_dict = {key: val for key, val in origin_data.items()}
+                group_number = (
+                    None if not is_grouped else input_dict[QianfanDataGroupColumnName]
+                )
+
                 returned_data = op(input_dict)
                 if not returned_data:
                     log_warn("a row has been deleted from table")
                     continue
                 if not isinstance(returned_data, dict):
                     raise ValueError("returned value isn't dict")
+
+                if QianfanDataGroupColumnName not in returned_data:
+                    returned_data[QianfanDataGroupColumnName] = group_number
 
                 new_table.append(returned_data)
 

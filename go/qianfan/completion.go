@@ -7,8 +7,7 @@ import (
 
 type CompletionRequest struct {
 	BaseRequestBody
-	Prompt string `mapstructure:"prompt"`
-	//Functions []string `json:"functions"`
+	Prompt          string   `mapstructure:"prompt"`
 	Temperature     float64  `mapstructure:"temperature,omitempty"`
 	TopP            float64  `mapstructure:"top_p,omitempty"`
 	PenaltyScore    float64  `mapstructure:"penalty_score,omitempty"`
@@ -19,7 +18,6 @@ type CompletionRequest struct {
 	MaxOutputTokens int      `mapstructure:"max_output_tokens,omitempty"`
 	ResponseFormat  string   `mapstructure:"response_format,omitempty"`
 	UserID          string   `mapstructure:"user_id,omitempty"`
-	//ToolChoice string `json:"tool_choice,omitempty"`
 }
 
 func (r *CompletionRequest) toMap() (map[string]interface{}, error) {
@@ -32,15 +30,30 @@ func (r *CompletionRequest) toMap() (map[string]interface{}, error) {
 
 type Completion struct {
 	BaseModel
+	chatWrapper *ChatCompletion
 }
 
 var CompletionModelEndpoint = map[string]string{
-	"SQLCoder-7B": "/completions/sqlcoder_7b",
+	"SQLCoder-7B":           "/completions/sqlcoder_7b",
+	"CodeLlama-7b-Instruct": "/completions/codellama_7b_instruct",
 }
 
-func newCompletion(model string, endpoint string, config *Config) *Completion {
-	requetor := newRequestor(config)
-	return &Completion{BaseModel{Model: model, Endpoint: endpoint, config: config, requestor: requetor}}
+func newCompletion(model string, endpoint string, client *Client) *Completion {
+	comp := Completion{
+		BaseModel: BaseModel{
+			Model:    model,
+			Endpoint: endpoint,
+			Client:   client,
+		},
+		chatWrapper: nil,
+	}
+	if model != "" {
+		_, ok := ChatModelEndpoint[model]
+		if ok {
+			comp.chatWrapper = newChatCompletion(model, endpoint, client)
+		}
+	}
+	return &comp
 }
 
 func (c *Completion) realEndpoint() (string, error) {
@@ -57,19 +70,46 @@ func (c *Completion) realEndpoint() (string, error) {
 	return url, nil
 }
 
+func convertCompletionReqToChatReq(request *CompletionRequest) *ChatCompletionRequest {
+	chatReq := ChatCompletionRequest{
+		BaseRequestBody: request.BaseRequestBody,
+		Messages: []ChatCompletionMessage{
+			ChatCompletionUserMessage(request.Prompt),
+		},
+		Temperature:     request.Temperature,
+		TopP:            request.TopP,
+		PenaltyScore:    request.PenaltyScore,
+		System:          request.System,
+		Stop:            request.Stop,
+		DisableSearch:   request.DisableSearch,
+		EnableCitation:  request.EnableCitation,
+		MaxOutputTokens: request.MaxOutputTokens,
+		ResponseFormat:  request.ResponseFormat,
+		UserID:          request.UserID,
+	}
+	return &chatReq
+}
+
 func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*ModelResponse, error) {
+	if c.chatWrapper != nil {
+		return c.chatWrapper.Do(ctx, convertCompletionReqToChatReq(request))
+	}
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
 	}
-	req, err := makeRequest("POST", url, request)
+	req, err := newRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
-	return c.BaseModel.do(ctx, req)
+
+	return sendRequest[ModelResponse](c.requestor, req)
 }
 
-func (c *Completion) DoStream(ctx context.Context, request *CompletionRequest) (*ModelResponseStream, error) {
+func (c *Completion) DoStream(ctx context.Context, request *CompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
+	if c.chatWrapper != nil {
+		return c.chatWrapper.DoStream(ctx, convertCompletionReqToChatReq(request))
+	}
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
@@ -79,9 +119,9 @@ func (c *Completion) DoStream(ctx context.Context, request *CompletionRequest) (
 		return nil, err
 	}
 	m["stream"] = true
-	req, err := makeRequestFromMap("POST", url, m)
+	req, err := newRequestFromMap("POST", url, m)
 	if err != nil {
 		return nil, err
 	}
-	return c.BaseModel.doStream(ctx, req)
+	return sendStreamRequest[ModelResponse, *ModelResponse](c.requestor, req)
 }

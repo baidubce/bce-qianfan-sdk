@@ -9,5 +9,4 @@ func dumpToMap(input interface{}) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return target, nil
-
 }

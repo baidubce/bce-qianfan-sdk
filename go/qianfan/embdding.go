@@ -2,7 +2,6 @@ package qianfan
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -29,7 +28,7 @@ type EmbeddingResponse struct {
 	Usage   ModelUsage      `json:"usage"`
 	Data    []EmbeddingData `json:"data"`
 	ModelAPIError
-	QfResponse
+	baseResponse
 }
 
 func (r *EmbeddingRequest) toMap() (map[string]interface{}, error) {
@@ -47,9 +46,14 @@ var EmbeddingEndpoint = map[string]string{
 	"tao-8k":       "/embeddings/tao_8k",
 }
 
-func newEmbedding(model string, endpoint string, config *Config) *Embedding {
-	requestor := newRequestor(config)
-	return &Embedding{BaseModel{Model: model, Endpoint: endpoint, config: config, requestor: requestor}}
+func newEmbedding(model string, endpoint string, client *Client) *Embedding {
+	return &Embedding{
+		BaseModel{
+			Model:    model,
+			Endpoint: endpoint,
+			Client:   client,
+		},
+	}
 }
 
 func (c *Embedding) realEndpoint() (string, error) {
@@ -71,21 +75,10 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 	if err != nil {
 		return nil, err
 	}
-	req, err := makeRequest("POST", url, request)
+	req, err := newRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.BaseModel.do(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	embeddingResp := EmbeddingResponse{
-		QfResponse:    resp.QfResponse,
-		ModelAPIError: resp.ModelAPIError,
-	}
-	err = json.Unmarshal(resp.Body, &embeddingResp)
-	if err != nil {
-		return nil, err
-	}
-	return &embeddingResp, nil
+
+	return sendRequest[EmbeddingResponse, *EmbeddingResponse](c.requestor, req)
 }

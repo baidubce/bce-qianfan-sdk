@@ -21,23 +21,41 @@ type Requestor struct {
 	client *http.Client
 }
 
-type Stream struct {
+type Stream[T any, Ptr QfResponsePtr[T]] struct {
+	*streamInternal
+}
+
+func (s *Stream[T, Ptr]) Recv() (*T, error) {
+	response, err := s.streamInternal.Recv()
+	var responseBody Ptr = new(T)
+	if err != nil {
+		return responseBody, err
+	}
+	responseBody.SetResponse(response.Body, s.streamInternal.httpResponse)
+	err = json.Unmarshal(response.Body, &responseBody)
+	if err != nil {
+		return responseBody, err
+	}
+	return responseBody, nil
+}
+
+type streamInternal struct {
 	httpResponse *http.Response
 	scanner      *bufio.Scanner
 }
 
-func makeStream(httpResponse *http.Response) (*Stream, error) {
-	return &Stream{
+func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
+	return &streamInternal{
 		httpResponse: httpResponse,
 		scanner:      bufio.NewScanner(httpResponse.Body),
 	}, nil
 }
 
-func (s *Stream) Close() {
+func (s *streamInternal) Close() {
 	s.httpResponse.Body.Close()
 }
 
-func (s *Stream) Recv() (*QfResponse, error) {
+func (s *streamInternal) Recv() (*baseResponse, error) {
 	var eventData []byte
 	for len(eventData) == 0 {
 		for {
@@ -63,7 +81,7 @@ func (s *Stream) Recv() (*QfResponse, error) {
 			eventData = append(eventData, value...)
 		}
 	}
-	response := QfResponse{
+	response := baseResponse{
 		Body:        eventData,
 		RawResponse: s.httpResponse,
 	}
@@ -160,16 +178,31 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	return req, nil
 }
 
-func (r *Requestor) ModelRequest(request *QfRequest) (*QfResponse, error) {
+func (r *Requestor) ModelRequest(request *QfRequest) (*baseResponse, error) {
 	request.URL = r.modelFullURL(request)
 	return r.request(request)
 }
-func (r *Requestor) ModelRequestStream(request *QfRequest) (*Stream, error) {
+func (r *Requestor) ModelRequestStream(request *QfRequest) (*streamInternal, error) {
 	request.URL = r.modelFullURL(request)
 	return r.requestStream(request)
 }
 
-func (r *Requestor) request(request *QfRequest) (*QfResponse, error) {
+func sendRequest[T any, Ptr QfResponsePtr[T]](requestor *Requestor, request *QfRequest) (*T, error) {
+	response, err := requestor.request(request)
+	if err != nil {
+		return nil, err
+	}
+	var resp Ptr = new(T)
+	// T.SetResponse(&model, response.Body, response.RawResponse)
+	resp.SetResponse(response.Body, response.RawResponse)
+	err = json.Unmarshal(response.Body, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
 	req, err := r.prepareRequest(request)
 	if err != nil {
 		return nil, err
@@ -184,7 +217,7 @@ func (r *Requestor) request(request *QfRequest) (*QfResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	response := QfResponse{
+	response := baseResponse{
 		Body:        body,
 		RawResponse: resp,
 	}
@@ -192,7 +225,18 @@ func (r *Requestor) request(request *QfRequest) (*QfResponse, error) {
 	return &response, nil
 }
 
-func (r *Requestor) requestStream(request *QfRequest) (*Stream, error) {
+func sendStreamRequest[T any, Ptr QfResponsePtr[T]](requestor *Requestor, request *QfRequest) (*Stream[T, Ptr], error) {
+	stream, err := requestor.requestStream(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Stream[T, Ptr]{
+		streamInternal: stream,
+	}, nil
+}
+
+func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 	req, err := r.prepareRequest(request)
 	if err != nil {
 		return nil, err
@@ -201,7 +245,7 @@ func (r *Requestor) requestStream(request *QfRequest) (*Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	stream, err := makeStream(resp)
+	stream, err := newStreamInternal(resp)
 	if err != nil {
 		return nil, err
 	}

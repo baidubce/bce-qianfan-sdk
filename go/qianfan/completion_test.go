@@ -23,6 +23,7 @@ func TestCompletion(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Printf(resp.Result)
+
 	// assert.Equal(t, "ok", resp.Result)
 }
 func TestCompletionStream(t *testing.T) {
@@ -30,14 +31,15 @@ func TestCompletionStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	chat := client.Completion()
+	chat := client.CompletionFromModel("ERNIE-Bot-turbo")
 	resp, err := chat.DoStream(context.Background(), &CompletionRequest{
-		Prompt: "hello",
+		Prompt:      "上海有什么好吃的",
+		Temperature: 0.5,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.stream.Close()
+	defer resp.Close()
 	for {
 		resp, err := resp.Recv()
 		if errors.Is(err, io.EOF) {

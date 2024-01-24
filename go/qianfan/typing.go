@@ -12,6 +12,10 @@ type BaseRequestBody struct {
 	Extra map[string]interface{} `mapstructure:"-"`
 }
 
+func (r *BaseRequestBody) SetExtra(m map[string]interface{}) {
+	r.Extra = m
+}
+
 func (r *BaseRequestBody) toMap() (map[string]interface{}, error) {
 	return r.Extra, nil
 }
@@ -31,16 +35,15 @@ type QfRequest struct {
 	Body    map[string]interface{}
 }
 
-func makeRequest(method string, url string, body Mappable) (*QfRequest, error) {
+func newRequest(method string, url string, body Mappable) (*QfRequest, error) {
 	b, err := body.toMap()
 	if err != nil {
 		return nil, err
 	}
-	return makeRequestFromMap(method, url, b)
+	return newRequestFromMap(method, url, b)
 }
 
-func makeRequestFromMap(method string, url string, body map[string]interface{}) (*QfRequest, error) {
-
+func newRequestFromMap(method string, url string, body map[string]interface{}) (*QfRequest, error) {
 	return &QfRequest{
 		Method:  method,
 		URL:     url,
@@ -50,7 +53,21 @@ func makeRequestFromMap(method string, url string, body map[string]interface{}) 
 	}, nil
 }
 
-type QfResponse struct {
+type baseResponse struct {
 	Body        []byte
 	RawResponse *http.Response
+}
+
+type QfResponse interface {
+	SetResponse(Body []byte, RawResponse *http.Response)
+}
+
+type QfResponsePtr[T any] interface {
+	*T
+	QfResponse
+}
+
+func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {
+	r.Body = Body
+	r.RawResponse = RawResponse
 }

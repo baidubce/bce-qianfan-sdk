@@ -2,9 +2,7 @@ package qianfan
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 
@@ -19,7 +17,7 @@ func TestChatCompletion(t *testing.T) {
 	chat := client.ChatCompletion()
 	resp, err := chat.Do(context.Background(), &ChatCompletionRequest{
 		Messages: []ChatCompletionMessage{
-			ChatCompletionUserMessage("上海有什么好吃的"),
+			ChatCompletionUserMessage("你好"),
 		},
 	})
 	if err != nil {
@@ -43,14 +41,14 @@ func TestChatCompletionStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.stream.Close()
+	defer resp.Close()
 	for {
 		resp, err := resp.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
 		if err != nil {
 			assert.Fail(t, "got err")
+		}
+		if resp.IsEnd {
+			break
 		}
 		fmt.Printf(resp.Result)
 	}

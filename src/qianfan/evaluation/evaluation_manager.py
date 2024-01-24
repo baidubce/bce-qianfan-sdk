@@ -23,13 +23,14 @@ from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 from qianfan import get_config
-from qianfan.dataset import Dataset, QianfanDataSource
+from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
     NewInputChatColumnName,
     NewInputPromptColumnName,
     OldReferenceColumnName,
 )
+from qianfan.dataset.data_source import QianfanDataSource
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult

@@ -79,7 +79,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        from qianfan.dataset.dataset import BosDataSource, QianfanDataSource
+        from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 
         """
         Load dataset implementation, may called by exec and resume.

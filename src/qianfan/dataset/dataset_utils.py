@@ -22,7 +22,7 @@ import requests
 
 from qianfan import ChatCompletion, Completion, QfResponse, get_config
 from qianfan.common import Prompt
-from qianfan.dataset import DataSource, QianfanDataSource
+from qianfan.dataset.data_source import DataSource, QianfanDataSource
 from qianfan.dataset.schema import (
     QianfanGenericText,
     QianfanQuerySet,

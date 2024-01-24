@@ -20,10 +20,10 @@ from unittest.mock import patch
 
 import pytest
 
+from qianfan.dataset.data_source import DataSource, QianfanDataSource
 from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords
-from qianfan.dataset.data_source import DataSource, QianfanDataSource
-from qianfan.dataset.data_source_utils import FormatType
+from qianfan.dataset.data_source.data_source_utils import FormatType
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
     QianfanGenericText,
@@ -163,8 +163,8 @@ def test_branch_load():
     Dataset.load(fds)
 
 
-@patch("qianfan.dataset.data_source.upload_content_to_bos", return_value=None)
-@patch("qianfan.dataset.data_source.upload_file_to_bos", return_value=None)
+@patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
+@patch("qianfan.utils.bos_uploader.BosHelper.upload_file_to_bos", return_value=None)
 def test_branch_save(*args, **kwargs):
     fake_data_source = FakeDataSource(
         origin_data=(

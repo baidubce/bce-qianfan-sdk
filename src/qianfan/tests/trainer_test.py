@@ -15,7 +15,8 @@ import os
 
 import pytest
 
-from qianfan.dataset import Dataset, QianfanDataSource
+from qianfan.dataset import Dataset
+from qianfan.dataset.data_source import QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import (
     QianfanRefereeEvaluator,

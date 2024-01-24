@@ -18,6 +18,7 @@ manager which manage whole procedure of evaluation
 """
 import math
 import multiprocessing
+import os.path
 import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
@@ -515,12 +516,19 @@ class EvaluationManager(BaseModel):
                 raise Exception(err_msg)
 
             download_url = result["downloadUrl"]
-            _download_file_from_url_streamly(download_url, "tmp.csv")
+            log_info(f"start to download evaluation result file from {download_url}")
 
-            # 返回指标信息
-            return EvaluationResult(
-                result_dataset=Dataset.load(FileDataSource(path="tmp.csv")),
-                metrics=metric_list,
-            )
+            try:
+                local_cache_file_path = "tmp.csv"
+                _download_file_from_url_streamly(download_url, local_cache_file_path)
+
+                # 返回指标信息
+                return EvaluationResult(
+                    result_dataset=Dataset.load(FileDataSource(path=local_cache_file_path)),
+                    metrics=metric_list,
+                )
+            finally:
+                if os.path.exists(local_cache_file_path):
+                    os.remove(local_cache_file_path)
 
         return None

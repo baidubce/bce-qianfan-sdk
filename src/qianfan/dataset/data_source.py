@@ -1047,8 +1047,9 @@ class BosDataSource(DataSource, BaseModel):
         raise NotImplementedError()
 
     def _get_specific_cache_path(self) -> str:
+        bos_file_path = self.bos_file_path[1:]
         cache_path = os.path.join(
-            QianfanDatasetLocalCacheDir, self.region, self.bucket, self.bos_file_path
+            QianfanDatasetLocalCacheDir, self.region, self.bucket, bos_file_path
         )
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
@@ -1062,7 +1063,7 @@ class BosDataSource(DataSource, BaseModel):
         if not os.path.exists(meta_info_path):
             return False
 
-        with open(meta_info_path, mode="r", encoding="utf-8") as f:
+        with open(meta_info_path, mode="r", encoding=encoding()) as f:
             cache_meta_info = json.loads(f.read())
 
         if "last_modified" not in cache_meta_info:
@@ -1086,7 +1087,7 @@ class BosDataSource(DataSource, BaseModel):
         )
 
         meta_info_obj = bos_helper.get_metadata(self.bucket, self.bos_file_path)
-        with open(cache_meta_info_path, mode="w", encoding="utf-8") as f:
+        with open(cache_meta_info_path, mode="w", encoding=encoding()) as f:
             f.write(json.dumps(meta_info_obj, ensure_ascii=False))
 
         return
@@ -1098,7 +1099,7 @@ class BosDataSource(DataSource, BaseModel):
         if is_read_from_zip:
             return _read_all_file_from_zip(cache_content_path, self.format_type())
 
-        with open(cache_content_path, mode="r", encoding="utf-8") as f:
+        with open(cache_content_path, mode="r", encoding=encoding()) as f:
             return f.read()
 
     def fetch(
@@ -1122,13 +1123,8 @@ class BosDataSource(DataSource, BaseModel):
         assert self.file_format
 
         bos_helper = BosHelper(self.region, self.ak, self.sk)
-        actual_bos_file_path = (
-            self.bos_file_path
-            if self.bos_file_path[0] != "/"
-            else self.bos_file_path[1:]
-        )
-
         if not self._check_bos_file_cache(bos_helper):
+            log_info("cache was outdated, start to update bos cache")
             self._update_file_cache(bos_helper)
 
         index = self.bos_file_path.rfind(".")
@@ -1138,12 +1134,12 @@ class BosDataSource(DataSource, BaseModel):
 
         if read_from_zip:
             log_info(
-                f"ready to fetch a zip file from bos path: {actual_bos_file_path} in"
+                f"ready to fetch a zip file from bos path: {self.bos_file_path} in"
                 f" bucket {self.bucket}"
             )
         else:
             log_info(
-                f"ready to fetch a file from bos path: {actual_bos_file_path} in bucket"
+                f"ready to fetch a file from bos path: {self.bos_file_path} in bucket"
                 f" {self.bucket}"
             )
 
@@ -1151,7 +1147,7 @@ class BosDataSource(DataSource, BaseModel):
             return self._read_from_cache(read_from_zip)
         except Exception as e:
             err_msg = (
-                f"fetch file content from bos path {actual_bos_file_path} of bucket"
+                f"fetch file content from bos path {self.bos_file_path} of bucket"
                 f" {self.bucket} in region {self.region} failed: {str(e)}"
             )
             log_error(err_msg)

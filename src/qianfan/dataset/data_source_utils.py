@@ -26,6 +26,7 @@ import dateutil.parser
 import requests
 
 from qianfan import get_config
+from qianfan.config import encoding
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -64,7 +65,7 @@ def _read_all_file_content_in_an_folder(
                 continue
 
             file_path = os.path.join(root, file_name)
-            with open(file_path, mode="r", encoding="utf-8") as f:
+            with open(file_path, mode="r", encoding=encoding()) as f:
                 ret_list.append(f.read())
 
     return ret_list

@@ -15,9 +15,8 @@
 utility for
 uploading content to bos
 """
-from typing import Any, Dict, Optional, Tuple
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.bce_client_configuration import BceClientConfiguration
@@ -105,10 +104,16 @@ class BosHelper:
             pass
 
     def get_metadata(self, bucket: str, file_path: str) -> Dict[str, Any]:
-        return self.bos_client.get_object_meta_data(bucket, file_path).metadata.__dict__
+        actual_bos_file_path = file_path if file_path[0] != "/" else file_path[1:]
+        return self.bos_client.get_object_meta_data(
+            bucket, actual_bos_file_path
+        ).metadata.__dict__
 
     def get_object_as_file(self, bucket: str, bos_path: str, local_path: str) -> None:
-        return self.bos_client.get_object_to_file(bucket, bos_path, local_path)
+        actual_bos_file_path = bos_path if bos_path[0] != "/" else bos_path[1:]
+        return self.bos_client.get_object_to_file(
+            bucket, actual_bos_file_path, local_path
+        )
 
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:

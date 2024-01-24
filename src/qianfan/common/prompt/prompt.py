@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from qianfan.common.hub.interface import HubSerializable
+from qianfan.config import encoding
 from qianfan.consts import (
     PromptFrameworkType,
     PromptSceneType,
@@ -212,7 +213,7 @@ class Prompt(HubSerializable):
           identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):
             The identifier of the prompt.
         """
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding=encoding()) as f:
             content = f.read()
         return cls(template=content, identifier=identifier)
 
@@ -224,7 +225,7 @@ class Prompt(HubSerializable):
           path (str):
             The path of the prompt file.
         """
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding=encoding()) as f:
             f.write(self.template)
 
     def _hub_push(self) -> None:

@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 
-from qianfan.config import get_config
+from qianfan.config import encoding, get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.dataset.data_source_utils import (
     FormatType,
@@ -158,7 +158,7 @@ class FileDataSource(DataSource, BaseModel):
                 )
             else:
                 file_path = self.path
-            with open(file_path, mode="w", encoding="utf-8") as file:
+            with open(file_path, mode="w", encoding=encoding()) as file:
                 file.write(data)
             return True
         else:
@@ -170,7 +170,7 @@ class FileDataSource(DataSource, BaseModel):
                         self.path, f"entry_{index}.{self.format_type().value}"
                     ),
                     mode="w",
-                    encoding="utf-8",
+                    encoding=encoding(),
                 ) as file:
                     file.write(entry)
             return True
@@ -211,7 +211,7 @@ class FileDataSource(DataSource, BaseModel):
         elif read_from_zip:
             return _read_all_file_from_zip(self.path, self.file_format)
         else:
-            with open(self.path, mode="r", encoding="utf-8") as file:
+            with open(self.path, mode="r", encoding=encoding()) as file:
                 return file.read().strip("\n")
 
     async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
@@ -515,7 +515,7 @@ class QianfanDataSource(DataSource, BaseModel):
             zip_f.extractall(content_path)
 
         log_info(f"unzip dataset to path {content_path} successfully")
-        with open(info_path, mode="w", encoding="utf-8") as f:
+        with open(info_path, mode="w", encoding=encoding()) as f:
             f.write(json.dumps(info))
 
         log_info(f"write dataset info to path {info_path} successfully")
@@ -544,7 +544,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         # 尝试从本地缓存中读取数据
         try:
-            with open(info_path, mode="r", encoding="utf-8") as f:
+            with open(info_path, mode="r", encoding=encoding()) as f:
                 dataset_info = json.load(f, object_hook=_datetime_parse_hook)
 
             # 获取最新的数据集信息
@@ -566,7 +566,7 @@ class QianfanDataSource(DataSource, BaseModel):
             raise
 
         if os.path.isfile(content_path):
-            with open(content_path, mode="r", encoding="utf-8") as f:
+            with open(content_path, mode="r", encoding=encoding()) as f:
                 self.download_when_init = True
                 return f.read()
 

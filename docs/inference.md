@@ -159,24 +159,61 @@ resp = emb.do(endpoint="your_custom_endpoint", texts=[
 #### **Plugin 插件**
 
 千帆大模型平台支持使用平台插件并进行编排，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。在使用这一功能前需要先[创建应用](https://console.bce.baidu.com/qianfan/plugin/service/list)、设定服务地址、将服务地址作为参数传入千帆 SDK
+##### 千帆插件
 
+千帆插件需要用户在千帆控制台-插件编排中配置并上线插件应用服务，获得endpoint后才能使用
 ```python
-# Plugin 基础功能展示
-plugin = qianfan.Plugin()
-resp = plugin.do(endpoint="your_custom_endpoint", prompt="你好")
+# Plugin 千帆基础功能展示
+plugin = qianfan.Plugin(endpoint="your_custom_endpoint")
+resp = plugin.do(query="你好")
 print(resp['result'])
 
 # 流式调用
-resp = plugin.do(endpoint="your_custom_endpoint", prompt="你好", stream=True)
+resp = plugin.do(query="你好", stream=True)
 
 # 异步调用
-resp = await plugin.ado(endpoint="your_custom_endpoint", prompt="你好")
+resp = await plugin.ado(query="你好")
 print(resp['result'])
 
 # 异步流式调用
-resp = await plugin.ado(endpoint="your_custom_endpoint", prompt="你好", stream=True)
+resp = await plugin.ado(query="你好", stream=True)
 async for r in resp:
     print(r)
+```
+
+##### 一言插件
+
+当前一言插件存在两个版本，分别对应model="EBPlugin"和model="EBPluginV2"，默认不传使用前者
+```python
+# v1
+TEST_MESSAGE = [
+    {
+        "role": "user",
+        "content": (
+            "请按照下面要求给我生成雷达图：学校教育质量: 维度：师资力量、设施、"
+            "课程内容、学生满意度。对象：A,B,C三所学校。学校A的师资力量得分为10分，"
+            "设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\n*"
+            " 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            "学生满意度的得分为7分。\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            "课程内容的得分为9分，学生满意度的得分为8分。"
+        ),
+    }
+]
+
+plugin = qianfan.Plugin()
+resp = plugin.do(
+    TEST_MESSAGE,
+    plugins=["eChart"],
+    stream=True
+)
+
+# v2
+plugin = qianfan.Plugin(model="EBPluginV2")
+resp = plugin.do(
+    TEST_MESSAGE,
+    plugins=["eChart"],
+    stream=True
+)
 ```
 
 #### **文生图**

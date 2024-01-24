@@ -16,6 +16,8 @@ utility for
 uploading content to bos
 """
 from typing import Any, Dict, Optional, Tuple
+from pathlib import Path
+from typing import Tuple
 
 from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.bce_client_configuration import BceClientConfiguration
@@ -111,6 +113,11 @@ class BosHelper:
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
     return f"bos:/{bucket_name}{absolute_path}"
+
+
+def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
+    p = Path(f"/{bucket_name}{absolute_path}")
+    return f"bos:{p.parent}"
 
 
 def parse_bos_path(bos_path: str) -> Tuple[str, str]:

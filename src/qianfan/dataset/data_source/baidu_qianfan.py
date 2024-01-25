@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 
-from qianfan.config import get_config, encoding
+from qianfan.config import encoding, get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.dataset.data_source import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (

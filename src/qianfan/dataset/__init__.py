@@ -37,4 +37,5 @@ __all__ = [
     "DataStorageType",
     "DataProjectType",
     "DataExportDestinationType",
+    "FormatType",
 ]

@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import dateutil.parser
 import requests
 
-from qianfan.config import get_config, encoding
+from qianfan.config import encoding, get_config
 from qianfan.dataset.data_source import FormatType
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data

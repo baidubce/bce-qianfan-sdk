@@ -24,7 +24,7 @@ from pytest_mock import MockerFixture
 
 from qianfan import get_config
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
-from qianfan.dataset.data_source import FileDataSource, QianfanDataSource, FormatType
+from qianfan.dataset.data_source import FileDataSource, FormatType, QianfanDataSource
 from qianfan.resources.console.consts import (
     DataProjectType,
     DataSetType,

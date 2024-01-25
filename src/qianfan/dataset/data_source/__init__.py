@@ -15,10 +15,10 @@
 data source including file
 """
 
+from qianfan.dataset.data_source.baidu_qianfan import QianfanDataSource
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.bos import BosDataSource
 from qianfan.dataset.data_source.file import FileDataSource
-from qianfan.dataset.data_source.baidu_qianfan import QianfanDataSource
 
 __all__ = [
     "DataSource",

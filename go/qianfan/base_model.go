@@ -1,10 +1,5 @@
 package qianfan
 
-import (
-	"encoding/json"
-	"io"
-)
-
 type BaseModel struct {
 	Model    string
 	Endpoint string
@@ -46,24 +41,4 @@ type ModelResponse struct {
 	SearchInfo       SearchInfo   `json:"search_info"`
 	ModelAPIError
 	baseResponse
-}
-
-type ModelResponseStream[T QfResponse] struct {
-	stream *streamInternal
-}
-
-func (s *ModelResponseStream[T]) Recv() (*ModelResponse, error) {
-	resp, err := s.stream.Recv()
-	if err != nil {
-		return nil, err
-	}
-	if resp == nil {
-		return nil, io.EOF
-	}
-	response := &ModelResponse{baseResponse: *resp}
-	err = json.Unmarshal(resp.Body, response)
-	if err != nil {
-		return nil, err
-	}
-	return response, nil
 }

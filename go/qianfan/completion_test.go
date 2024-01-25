@@ -2,9 +2,7 @@ package qianfan
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,11 +40,12 @@ func TestCompletionStream(t *testing.T) {
 	defer resp.Close()
 	for {
 		resp, err := resp.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
+
 		if err != nil {
 			assert.Fail(t, "got err")
+		}
+		if resp.IsEnd {
+			break
 		}
 		fmt.Printf(resp.Result)
 	}

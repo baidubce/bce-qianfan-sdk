@@ -58,13 +58,9 @@ type baseResponse struct {
 	RawResponse *http.Response
 }
 
-type QfResponse interface {
-	SetResponse(Body []byte, RawResponse *http.Response)
-}
-
-type QfResponsePtr[T any] interface {
+type QfResponse[T any] interface {
 	*T
-	QfResponse
+	SetResponse(Body []byte, RawResponse *http.Response)
 }
 
 func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {

@@ -21,7 +21,7 @@ type Requestor struct {
 	client *http.Client
 }
 
-type Stream[T any, Ptr QfResponsePtr[T]] struct {
+type Stream[T any, Ptr QfResponse[T]] struct {
 	*streamInternal
 }
 
@@ -187,7 +187,7 @@ func (r *Requestor) ModelRequestStream(request *QfRequest) (*streamInternal, err
 	return r.requestStream(request)
 }
 
-func sendRequest[T any, Ptr QfResponsePtr[T]](requestor *Requestor, request *QfRequest) (*T, error) {
+func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (*T, error) {
 	response, err := requestor.request(request)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
 	return &response, nil
 }
 
-func sendStreamRequest[T any, Ptr QfResponsePtr[T]](requestor *Requestor, request *QfRequest) (*Stream[T, Ptr], error) {
+func sendStreamRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (*Stream[T, Ptr], error) {
 	stream, err := requestor.requestStream(request)
 	if err != nil {
 		return nil, err

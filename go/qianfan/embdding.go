@@ -57,7 +57,7 @@ func newEmbedding(model string, endpoint string, client *Client) *Embedding {
 }
 
 func (c *Embedding) realEndpoint() (string, error) {
-	url := ModelAPIPrefix
+	url := c.config.BaseURL + ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := EmbeddingEndpoint[c.Model]
 		if !ok {

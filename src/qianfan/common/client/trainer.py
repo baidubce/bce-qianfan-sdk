@@ -14,7 +14,7 @@
 
 
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Optional
 
 import typer
 from rich.console import Console
@@ -53,6 +53,7 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.configs import ModelInfo, TrainLimit
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
+from qianfan.utils.utils import remove_suffix_list
 
 trainer_app = typer.Typer(
     no_args_is_help=True,
@@ -211,35 +212,29 @@ def print_trainer_config(config: ModelInfo) -> None:
     """
     table = Table()
     table.add_column("")
-    peft_list: List[Union[str, PeftType]] = []
-    if config.specific_peft_types_params_limit is not None:
-        for k in config.specific_peft_types_params_limit:
-            peft_list.append(k)
-            table.add_column(Pretty(k, overflow="fold"))
+    for p in config.support_peft_types:
+        table.add_column(Pretty(p.value, overflow="fold"))
     example = TrainLimit()
-    for k in [
-        a
-        for a in dir(example)
-        if not a.startswith("_") and not callable(getattr(example, a))
-    ]:
+    limit_fields = [
+        attr
+        for attr in dir(example)
+        if not attr.startswith("_") and not callable(getattr(example, attr))
+    ]
+    for k in limit_fields:
         if k in ["supported_hyper_params"]:
             continue
         row_objs = []
-        row_objs.append(k.removesuffix("_options").removesuffix("_limit"))
-        for peft in peft_list:
-            specific_train_limit: Optional[TrainLimit]
+        row_objs.append(remove_suffix_list(k, ["_options", "_limit"]))
+        for peft in config.support_peft_types:
+            peft_limit: Optional[TrainLimit] = config.common_params_limit
             if config.specific_peft_types_params_limit:
                 specific_train_limit = config.specific_peft_types_params_limit.get(peft)
-                if specific_train_limit:
-                    limit = (
-                        specific_train_limit | config.common_params_limit
-                        if not specific_train_limit
-                        else config.common_params_limit
-                    )
-                    if limit.__getattribute__(k):
-                        row_objs.append(limit.__getattribute__(k))
-                    else:
-                        row_objs.append("---")
+                if specific_train_limit is not None:
+                    peft_limit = specific_train_limit | config.common_params_limit
+            if peft_limit.__getattribute__(k):
+                row_objs.append(peft_limit.__getattribute__(k))
+            else:
+                row_objs.append("---")
         table.add_row(*[Pretty(a, overflow="fold") for a in row_objs])
     Console().print(table)
 

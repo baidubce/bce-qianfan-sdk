@@ -338,7 +338,7 @@ class TrainAction(
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
         self.train_config.validate_config(train_limit)
-        self.train_config._validate_valid_fields(train_limit)
+        self.train_config.validate_valid_fields(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict

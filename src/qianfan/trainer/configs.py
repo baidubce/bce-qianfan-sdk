@@ -178,12 +178,13 @@ class TrainConfig(BaseModel):
             return False
         return True
 
-    def _validate_valid_fields(self, limit: "TrainLimit") -> bool:
+    def validate_valid_fields(self, limit: "TrainLimit") -> str:
         """
-        return False if value is not in limit.supported_hyper_params
+        return invalid field name if value is not in limit.supported_hyper_params
+        return "" if all fields are valid.
         """
         supported_fields = limit.supported_hyper_params
-        for field in self.dict(exclude=None):
+        for field in self.dict(exclude_none=True):
             if field in ["peft_type", "extras", "trainset_rate"]:
                 continue
             if field not in supported_fields:
@@ -191,8 +192,8 @@ class TrainConfig(BaseModel):
                     f"train_config hyper params '{field}' is not in supported_params:"
                     f" {supported_fields}"
                 )
-                return False
-        return True
+                return field
+        return ""
 
 
 class TrainLimit(BaseModel):

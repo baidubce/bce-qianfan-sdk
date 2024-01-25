@@ -379,3 +379,19 @@ def test_train_config_validate():
     assert res
     res = conf.validate_config(TrainLimit(max_seq_len_options=(1, 4096)))
     assert res
+
+    res = conf.validate_valid_fields(
+        TrainLimit(supported_hyper_params=["epoch", "batch_size"])
+    )
+    assert res != ""
+    res = conf.validate_valid_fields(
+        TrainLimit(
+            supported_hyper_params=[
+                "epoch",
+                "batch_size",
+                "max_seq_len",
+                "learning_rate",
+            ]
+        )
+    )
+    assert res == ""

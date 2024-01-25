@@ -141,8 +141,7 @@ SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，�
 用户也可以传入 `FormatType` 对象来手动指定数据集的文件类型
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source.data_source_utils import FormatType
+from qianfan.dataset import Dataset, FormatType
 
 ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
@@ -157,8 +156,7 @@ print(ds.list())
 文件夹导入会遍历目标文件夹下的所有文件和子文件夹
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source.data_source_utils import FormatType
+from qianfan.dataset import Dataset, FormatType
 
 ds = Dataset.load(
   data_file="path/to/folder",
@@ -176,14 +174,12 @@ print(ds.list())
 用户可以传递 `data_file` 参数来指定导出到的文件路径，同时可以传递 `file_format` 参数来指定导出的格式
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset import Dataset, FormatType
 
 ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
   file_format=FormatType.Json
 )
-
 
 ds.save(
   data_file="another/path/to/local_file",
@@ -194,8 +190,7 @@ ds.save(
 `save` 方法同样支持用户传递文件夹路径，SDK 会自动为导出的文件进行命名，并且按照指定的格式导出（默认为 txt）
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset import Dataset, FormatType
 
 ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
@@ -234,8 +229,8 @@ file_source = FileDataSource(
 文件数据源同样可以作为 `save` 的参数，来指定导出的文件路径
 
 ```python
-from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FileDataSource, FormatType
+from qianfan.dataset import Dataset, FormatType
+from qianfan.dataset.data_source import FileDataSource
 
 file_source = FileDataSource(
   path="local_file",

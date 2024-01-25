@@ -32,6 +32,7 @@ from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
+from qianfan.dataset import FormatType
 from qianfan.dataset.consts import (
     FirstTokenLatencyColumnName,
     LLMOutputColumnName,
@@ -48,7 +49,6 @@ from qianfan.dataset.data_source import (
     FileDataSource,
     QianfanDataSource,
 )
-from qianfan.dataset.data_source.data_source_utils import FormatType
 from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
     _batch_do_on_service,

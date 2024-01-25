@@ -16,9 +16,18 @@ base data source definition
 """
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, List, Union
 
-from qianfan.dataset.data_source.data_source_utils import FormatType
+
+class FormatType(Enum):
+    """Enum for data source format type"""
+
+    Json = "json"
+    Jsonl = "jsonl"
+    Csv = "csv"
+    # 无格式导出，一行就是一条数据，类似 Jsonl，但是非格式化
+    Text = "txt"
 
 
 class DataSource(ABC):

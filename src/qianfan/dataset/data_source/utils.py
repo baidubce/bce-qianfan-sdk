@@ -18,15 +18,14 @@ import datetime
 import os
 import shutil
 import zipfile
-from enum import Enum
 from time import sleep
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 import requests
 
-from qianfan import get_config
-from qianfan.config import encoding
+from qianfan.config import encoding, get_config
+from qianfan.dataset.data_source import FormatType
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -40,16 +39,6 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
-
-
-class FormatType(Enum):
-    """Enum for data source format type"""
-
-    Json = "json"
-    Jsonl = "jsonl"
-    Csv = "csv"
-    # 无格式导出，一行就是一条数据，类似 Jsonl，但是非格式化
-    Text = "txt"
 
 
 def _read_all_file_content_in_an_folder(

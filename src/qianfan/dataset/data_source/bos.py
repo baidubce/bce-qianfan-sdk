@@ -24,9 +24,8 @@ import dateutil.parser
 from qianfan import get_config
 from qianfan.config import encoding
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
-from qianfan.dataset.data_source.base_data_source import DataSource
-from qianfan.dataset.data_source.data_source_utils import (
-    FormatType,
+from qianfan.dataset.data_source.base import DataSource, FormatType
+from qianfan.dataset.data_source.utils import (
     _check_data_and_zip_file_valid,
     _read_all_file_from_zip,
 )

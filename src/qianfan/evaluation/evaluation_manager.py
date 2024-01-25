@@ -32,7 +32,7 @@ from qianfan.dataset.consts import (
     OldReferenceColumnName,
 )
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
-from qianfan.dataset.data_source.data_source_utils import (
+from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
 from qianfan.errors import QianfanError

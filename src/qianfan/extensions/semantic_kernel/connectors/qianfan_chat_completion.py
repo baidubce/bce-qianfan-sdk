@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from semantic_kernel.connectors.ai.ai_exception import AIException
@@ -31,8 +30,6 @@ from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
     QianfanTextRequestSettings,
 )
 from qianfan.resources import ChatCompletion
-
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 class QianfanChatCompletion(

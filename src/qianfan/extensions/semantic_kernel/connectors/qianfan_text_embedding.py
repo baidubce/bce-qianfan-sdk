@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 from typing import Any, Dict, List, Optional
 
 from numpy import array, ndarray
@@ -27,8 +26,6 @@ from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
     QianfanRequestSettings,
 )
 from qianfan.resources import Embedding
-
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 class QianfanTextEmbedding(EmbeddingGeneratorBase, AIServiceClientBase):

@@ -2,7 +2,6 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -12,9 +11,7 @@ import (
 
 func TestChatCompletion(t *testing.T) {
 	client, err := NewClientFromEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	for model, endpoint := range ChatModelEndpoint {
 		chat := client.ChatCompletionFromModel(model)
 		resp, err := chat.Do(context.Background(), &ChatCompletionRequest{
@@ -33,30 +30,31 @@ func TestChatCompletion(t *testing.T) {
 
 func TestChatCompletionStream(t *testing.T) {
 	client, err := NewClientFromEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
-	chat := client.ChatCompletion()
-	resp, err := chat.DoStream(context.Background(), &ChatCompletionRequest{
-		Messages: []ChatCompletionMessage{
-			ChatCompletionUserMessage("上海有什么好吃的"),
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Close()
-	for {
-		resp, err := resp.Recv()
-		if err != nil {
-			assert.Fail(t, "got err")
+	assert.NoError(t, err)
+	for model, endpoint := range ChatModelEndpoint {
+		chat := client.ChatCompletionFromModel(model)
+		resp, err := chat.DoStream(context.Background(), &ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		})
+		assert.NoError(t, err)
+		turn_count := 0
+		for {
+			resp, err := resp.Recv()
+			assert.NoError(t, err)
+			if resp.IsEnd {
+				break
+			}
+			turn_count++
+			assert.Equal(t, resp.RawResponse.StatusCode, 200)
+			assert.NotEqual(t, resp.Id, nil)
+			assert.Equal(t, resp.Object, "chat.completion")
+			assert.True(t, strings.Contains(resp.RawResponse.Request.URL.Path, endpoint))
+			assert.True(t, strings.Contains(resp.Result, "你好"))
 		}
-		if resp.IsEnd {
-			break
-		}
-		fmt.Printf(resp.Result)
+		assert.True(t, turn_count > 1)
 	}
-	// assert.Equal(t, "ok", resp.Result)
 }
 
 func TestMain(m *testing.M) {

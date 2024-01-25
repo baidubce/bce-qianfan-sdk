@@ -140,7 +140,7 @@ SDK 在读取数据集时，依赖文件后缀对文件类型做自动解析，�
 
 ```python
 from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source.data_source_utils import FormatType
 
 ds = Dataset.load(
   data_file="path/to/dataset_file_without_suffix",
@@ -156,7 +156,7 @@ print(ds.list())
 
 ```python
 from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source.data_source_utils import FormatType
 
 ds = Dataset.load(
   data_file="path/to/folder",
@@ -309,15 +309,14 @@ ds_qianfan.save()
 和从文件系统导入一致，千帆 Python SDK 也同样内置了千帆数据源，用作数据集 `load` 或者 `save` 操作的入参。目前 SDK 支持用户在本地全新创建一个千帆数据源，代表在千帆平台上创建一个新的数据集组，默认包含一个数据集；或者在本地创建一个千帆数据源以代表平台上已经存在的数据集。
 
 ```python
-from qianfan.dataset import DataTemplateType
-from qianfan.dataset.data_source import QianfanDataSource
+from qianfan.dataset import DataTemplateType, QianfanDataSource
 
 # 创建一个映射到已存在的数据集的千帆数据源
 data_source = QianfanDataSource.get_existed_dataset(32591)
 
 # 创建一个全新的数据源，同时在平台创建一个新的数据集组
 data_source = QianfanDataSource.create_bare_dataset(
-  "data_group_name", 
+  "data_group_name",
   DataTemplateType.NonSortedConversation
 )
 ```

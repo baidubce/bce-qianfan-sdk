@@ -17,6 +17,7 @@ import time
 from typing import Any, Callable, Dict, Optional
 
 import typer
+from rich import print as rprint
 from rich.console import Console
 from rich.progress import (
     BarColumn,
@@ -29,6 +30,7 @@ from rich.progress import (
 )
 
 from qianfan.common.client.utils import (
+    credential_required,
     enum_typer,
     print_error_msg,
     replace_logger_handler,
@@ -50,7 +52,11 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
 
-trainer_app = typer.Typer(no_args_is_help=True)
+trainer_app = typer.Typer(
+    no_args_is_help=True,
+    help="Qianfan trainer",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 class MyEventHandler(EventHandler):
@@ -184,10 +190,60 @@ TRAIN_CONFIG_PANEL = "Train Config"
 DEPLOY_CONFIG_PANEL = "Deploy Config"
 
 
+def list_train_type(
+    ctx: typer.Context, param: typer.CallbackParam, value: bool
+) -> None:
+    """
+    list all the supported train types
+    """
+    if value:
+        model_list = LLMFinetune.train_type_list()
+        for m in model_list:
+            print(m)
+        raise typer.Exit()
+
+
+def show_config_limit(
+    ctx: typer.Context, param: typer.CallbackParam, value: str
+) -> None:
+    """
+    show config limit for specified train type
+    """
+    if value:
+        model_list = LLMFinetune.train_type_list()
+        if value not in model_list:
+            print_error_msg(f"Train type {value} is not supported.")
+            raise typer.Exit(1)
+        rprint(model_list[value])
+        raise typer.Exit()
+
+
+list_train_type_option = typer.Option(
+    None,
+    "--list-train-type",
+    "-l",
+    callback=list_train_type,
+    is_eager=True,
+    help="Print supported train types.",
+)
+
+
 @trainer_app.command()
+@credential_required
 def run(
-    dataset_id: int = typer.Option(..., help="Dataset id"),
+    dataset_id: Optional[str] = typer.Option(None, help="Dataset id"),
+    dataset_bos_path: Optional[str] = typer.Option(
+        None,
+        help="Dataset BOS path",
+    ),
     train_type: str = typer.Option(..., help="Train type"),
+    list_train_type: Optional[bool] = list_train_type_option,
+    show_config_limit: Optional[str] = typer.Option(
+        None,
+        callback=show_config_limit,
+        is_eager=True,
+        help="Show config limit for specified train type.",
+    ),
     train_config_file: Optional[str] = typer.Option(
         None, help="Train config path, support \[json/yaml] "
     ),
@@ -261,7 +317,11 @@ def run(
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
-    ds = Dataset.load(qianfan_dataset_id=dataset_id)
+    ds = None
+    if dataset_id is not None:
+        ds = Dataset.load(
+            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+        )
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:
@@ -283,6 +343,7 @@ def run(
         event_handler=callback,
         train_config=train_config_file,
         deploy_config=deploy_config,
+        dataset_bos_path=dataset_bos_path,
     )
 
     if trainer.train_action.train_config is None:

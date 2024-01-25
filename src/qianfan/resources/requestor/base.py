@@ -16,6 +16,7 @@
 API Requestor for SDK
 """
 
+import copy
 import inspect
 import json
 import time
@@ -251,6 +252,8 @@ class BaseAPIRequestor(object):
             )
         resp = self._parse_response(body, response)
         resp.statistic["request_latency"] = response.elapsed.total_seconds()
+        resp.request = QfRequest.from_requests(response.request)
+        resp.request.json_body = copy.deepcopy(request.json_body)
         return data_postprocess(resp)
 
     @_with_latency
@@ -267,9 +270,14 @@ class BaseAPIRequestor(object):
         for body, resp in responses:
             _check_if_status_code_is_200(resp)
             body_str = body.decode("utf-8")
+            event = ""
             if body_str == "":
                 continue
-            if not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
+            if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
+                # event indicator for the type of data
+                event = body_str[len(Consts.STREAM_RESPONSE_EVENT_PREFIX) :]
+                continue
+            elif not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
                 try:
                     # the response might be error message in json format
                     json_body = json.loads(body_str)
@@ -283,7 +291,11 @@ class BaseAPIRequestor(object):
                 )
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
+            if event != "":
+                json_body["event"] = event
             parsed = self._parse_response(json_body, resp)
+            parsed.request = QfRequest.from_requests(resp.request)
+            parsed.request.json_body = copy.deepcopy(request.json_body)
             yield data_postprocess(parsed)
 
     @_with_latency
@@ -310,6 +322,8 @@ class BaseAPIRequestor(object):
                     )
                 resp = self._parse_async_response(body, response)
                 resp.statistic["request_latency"] = time.perf_counter() - start
+                resp.request = QfRequest.from_aiohttp(response.request_info)
+                resp.request.json_body = copy.deepcopy(request.json_body)
                 return data_postprocess(resp)
 
     @_with_latency
@@ -342,6 +356,8 @@ class BaseAPIRequestor(object):
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
             parsed = self._parse_async_response(json_body, resp)
+            parsed.request = QfRequest.from_aiohttp(resp.request_info)
+            parsed.request.json_body = copy.deepcopy(request.json_body)
             yield data_postprocess(parsed)
 
     def _parse_response(
@@ -395,7 +411,9 @@ class BaseAPIRequestor(object):
             return False
 
         @retry(
-            wait=wait_exponential_jitter(jitter=config.jitter, max=config.timeout),
+            wait=wait_exponential_jitter(
+                jitter=config.jitter, max=config.max_wait_interval
+            ),
             retry=retry_if_exception(predicate_api_err_code),
             stop=stop_after_attempt(config.retry_count),
             reraise=True,
@@ -425,7 +443,9 @@ class BaseAPIRequestor(object):
             return False
 
         @retry(
-            wait=wait_exponential_jitter(jitter=config.jitter, max=config.timeout),
+            wait=wait_exponential_jitter(
+                jitter=config.jitter, max=config.max_wait_interval
+            ),
             retry=retry_if_exception(predicate_api_err_code),
             stop=stop_after_attempt(config.retry_count),
             reraise=True,

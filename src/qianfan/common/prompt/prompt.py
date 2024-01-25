@@ -12,14 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from qianfan.common.hub.interface import HubSerializable
-from qianfan.consts import PromptFrameworkType, PromptSceneType, PromptType
-from qianfan.errors import InvalidArgumentError
+from qianfan.config import encoding
+from qianfan.consts import (
+    PromptFrameworkType,
+    PromptSceneType,
+    PromptScoreStandard,
+    PromptType,
+)
+from qianfan.errors import InvalidArgumentError, RequestError
 from qianfan.resources.console.prompt import Prompt as PromptResource
-from qianfan.resources.typing import Literal
+from qianfan.resources.llm.completion import Completion
+from qianfan.resources.typing import Literal, QfResponse
 from qianfan.utils import log_warn
 
 
@@ -48,7 +56,7 @@ class Prompt(HubSerializable):
     Prompt
     """
 
-    id: Optional[int] = None
+    id: Optional[str] = None
     name: Optional[str] = None
     template: str
     variables: List[str]
@@ -66,7 +74,7 @@ class Prompt(HubSerializable):
         self,
         template: Optional[str] = None,
         name: Optional[str] = None,
-        id: Optional[int] = None,
+        id: Optional[str] = None,
         identifier: Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"] = "{}",
         variables: Optional[List[str]] = None,
         labels: List[PromptLabel] = [],
@@ -160,7 +168,7 @@ class Prompt(HubSerializable):
 
         prompt = cls(
             name=prompt_info["templateName"],
-            id=prompt_info["templateId"],
+            id=prompt_info["templatePK"],
             template=prompt_info["templateContent"],
             variables=(
                 []
@@ -205,7 +213,7 @@ class Prompt(HubSerializable):
           identifier (Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]):
             The identifier of the prompt.
         """
-        with open(path, "r") as f:
+        with open(path, "r", encoding=encoding()) as f:
             content = f.read()
         return cls(template=content, identifier=identifier)
 
@@ -217,7 +225,7 @@ class Prompt(HubSerializable):
           path (str):
             The path of the prompt file.
         """
-        with open(path, "w") as f:
+        with open(path, "w", encoding=encoding()) as f:
             f.write(self.template)
 
     def _hub_push(self) -> None:
@@ -245,7 +253,7 @@ class Prompt(HubSerializable):
                 raise InvalidArgumentError(
                     f"Failed to create prompt: {resp['message']['global']}"
                 )
-            self.id = resp["result"]["templateId"]
+            self.id = resp["result"]["templatePK"]
             self._mode = "remote"
         else:
             if self.name is None:
@@ -264,7 +272,7 @@ class Prompt(HubSerializable):
                 raise InvalidArgumentError(
                     f"Failed to update prompt: {resp['message']['global']}"
                 )
-            self.id = resp["result"]["templateId"]
+            self.id = resp["result"]["templatePK"]
 
     def render(self, **kwargs: str) -> Tuple[str, Optional[str]]:
         """
@@ -460,3 +468,193 @@ class Prompt(HubSerializable):
         if prompt != "":
             output = prompt + "\n\n" + output
         return output
+
+    def optimize(
+        self,
+        optimize_quality: bool = True,
+        simplify_prompt: bool = False,
+        iteration_round: Literal[1, 2] = 1,
+        enable_cot: bool = False,
+        app_id: Optional[int] = None,
+        service_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "Prompt":
+        """
+        Optimize a prompt for better performance and effectiveness.
+
+        Parameters:
+          optimize_quality (bool):
+            Flag indicating whether to optimize for prompt quality.
+          simplify_prompt (bool):
+            Flag indicating whether to simplify the prompt structure.
+          iteration_round (Literal[1, 2]):
+            The number of optimization iterations to perform (1 or 2).
+          enable_cot (bool):
+            Flag indicating whether to enable chain of thought.
+          app_id (Optional[int]):
+            Optional application ID for context-specific optimizations.
+          service_name (Optional[str]):
+            Optional service used for optimizing.
+          **kwargs (Any):
+            Additional keyword arguments for future extensibility.
+
+        Returns:
+          Prompt:
+            The optimized Prompt object.
+
+        Please refer to the following link for more details about prompt optimization.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/olr8svd33
+        """
+        operations = []
+        operations.append(
+            {
+                "opType": 1,
+                "payload": 1 if optimize_quality else 0,
+            }
+        )
+        operations.append(
+            {
+                "opType": 2,
+                "payload": 1 if simplify_prompt else 0,
+            }
+        )
+        operations.append({"opType": 3, "payload": iteration_round})
+        operations.append(
+            {
+                "opType": 4,
+                "payload": 1 if enable_cot else 0,
+            }
+        )
+        resp = PromptResource.create_optimiztion_task(
+            self.template,
+            operations,
+            app_id=app_id,
+            service_name=service_name,
+            **kwargs,
+        )
+        task_id = resp["result"]["id"]
+        while True:
+            resp = PromptResource.get_optimization_task(task_id, **kwargs)
+            status = resp["result"]["processStatus"]
+            if status == 2:  # fininished
+                break
+            elif status == 3:  # failed
+                raise RequestError("Prompt optimization task failed.")
+            time.sleep(1)
+        optimized_prompt = resp["result"]["optimizeContent"]
+
+        return Prompt(optimized_prompt)
+
+    @dataclass
+    class PromptEvaluateResult(object):
+        """
+        Evaluation result of a prompt
+        """
+
+        prompt: "Prompt"
+        scene: List[Dict[str, Any]]
+        summary: str
+
+    @classmethod
+    def evaluate(
+        cls,
+        prompt_list: List["Prompt"],
+        scenes: List[Dict[str, Any]],
+        model: Completion,
+        standard: PromptScoreStandard = PromptScoreStandard.Semantic,
+    ) -> List[PromptEvaluateResult]:
+        """
+        Evaluate a list of prompts against specified scenes using the given model.
+
+        Parameters:
+          prompt_list (List["Prompt"]):
+            A list of prompt templates to be evaluated.
+          scenes (List[Dict[str, Any]]):
+            List of scenes represented as dictionaries containing relevant information.
+            The dict should contain the following keys:
+              - args: A dict containing the variables to be replaced in the prompt.
+              - expected: The expected output of the prompt.
+          client (Completion):
+            An instance of the Completion client.
+          standard (PromptScoreStandard, optional):
+            The scoring standard to be used for evaluating prompts.
+
+        Returns:
+          List[PromptEvaluateResult]:
+            A list of evaluation results, each containing the original prompt, the
+            result of each scene, and a summary string.
+
+        Example:
+        result_list = PromptEvaluateResult.evaluate(
+            prompt_list=[prompt1, prompt2, prompt3],
+            scenes=[{
+                "args": {"name": "Alice"},
+                "expected": "Hello, Alice!"
+            }],
+            client=Completion(model="ERNIE-Bot-4"),
+            standard=PromptScoreStandard.Semantic
+        )
+        """
+        results = [
+            Prompt.PromptEvaluateResult(
+                scene=[
+                    {
+                        "new_prompt": prompt.render(**scene["args"])[0],
+                        "variables": scene["args"],
+                        "expected_target": scene["expected"],
+                    }
+                    for scene in scenes
+                ],
+                prompt=prompt,
+                summary="",
+            )
+            for prompt in prompt_list
+        ]
+
+        for i in range(len(results)):
+            for j in range(len(results[i].scene)):
+                resp = cast(QfResponse, model.do(results[i].scene[j]["new_prompt"]))
+                results[i].scene[j]["response"] = resp["result"]
+
+        eval_summary_req = [
+            {
+                "prompt": prompt.prompt.template,
+                "scenes": [
+                    {
+                        "variables": scene["variables"],
+                        "expected_target": scene["expected_target"],
+                        "response": scene["response"],
+                        "new_prompt": scene["new_prompt"],
+                    }
+                    for scene in prompt.scene
+                ],
+                "response_list": [r["response"] for r in prompt.scene],
+            }
+            for prompt in results
+        ]
+
+        eval_score_req = [
+            {
+                "scene": scenes[j]["expected"],
+                "response_list": [
+                    results[i].scene[j]["response"] for i in range(len(prompt_list))
+                ],
+            }
+            for j in range(len(scenes))
+        ]
+
+        summary_resp = PromptResource.evaluation_summary(eval_summary_req)
+        summary = summary_resp["result"]["responses"]
+
+        for i in range(len(results)):
+            results[i].summary = summary[i]["response"]
+
+        score_resp = PromptResource.evaluation_score(standard.value, eval_score_req)
+        score = score_resp["result"]["scores"]
+
+        for i in range(len(results)):
+            for j in range(len(results[i].scene)):
+                results[i].scene[j]["score"] = score[j][i]
+
+        return results

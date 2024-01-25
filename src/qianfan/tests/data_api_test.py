@@ -88,7 +88,7 @@ def test_create_task():
     assert resp.get("groupName", "") == "test_dataset_name"
     assert resp.get("projectType", 12) == DataProjectType.Conversation
     assert resp.get("storageInfo", {}).get("storageId", "") == "bos_bucket_name"
-    assert resp.get("storageInfo", {}).get("rawStoragePath", "") == "bos_path"
+    assert resp.get("storageInfo", {}).get("rawStoragePath", "") == "bos_path/"
 
 
 def test_create_import_task():
@@ -141,17 +141,17 @@ def test_get_dataset_info():
     assert resp.get("result", {})
 
     resp = resp.get("result")
-    assert resp.get("versionInfo").get("datasetId") == 12
+    assert resp.get("versionInfo").get("datasetPK") == 12
 
 
 def test_get_dataset_status():
     """
     test Data.get_dataset_status_in_batch
     """
-    resp = Data.get_dataset_status_in_batch([12, 48])
+    resp = Data.get_dataset_status_in_batch(["12", "48"])
     reqs = resp.get("_request")
 
-    assert reqs["datasetIds"] == "12,48"
+    assert reqs["datasetIds"] == ["12", "48"]
     assert "12" in resp.get("result", {})
     assert "48" in resp.get("result", {})
 

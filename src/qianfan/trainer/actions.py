@@ -35,6 +35,7 @@ from qianfan.trainer.configs import (
     TrainLimit,
 )
 from qianfan.utils import (
+    bos_uploader,
     log_debug,
     log_error,
     log_info,
@@ -78,7 +79,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        from qianfan.dataset.dataset import QianfanDataSource
+        from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 
         """
         Load dataset implementation, may called by exec and resume.
@@ -87,26 +88,38 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("dataset must be set")
         if self.dataset.inner_data_source_cache is None:
             raise InvalidArgumentError("invalid dataset")
-        if not isinstance(self.dataset.inner_data_source_cache, QianfanDataSource):
-            raise InvalidArgumentError(
-                "dataset must be saved to qianfan before training"
-            )
-        log_debug("[load_dataset_action] prepare train-set")
-        qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
-        is_released = qf_data_src.release_dataset(**kwargs)
-        if not is_released:
-            log_error("[load_dataset_action] dataset not released")
-            raise InvalidArgumentError("dataset must be released")
-        log_debug("[load_dataset_action] dataset loaded successfully")
-        self.qf_dataset_id = qf_data_src.id
-        return {
-            "datasets": [
-                {
-                    "id": qf_data_src.id,
-                    "type": console_consts.TrainDatasetType.Platform.value,
-                }
-            ]
-        }
+        if isinstance(self.dataset.inner_data_source_cache, QianfanDataSource):
+            log_debug("[load_dataset_action] prepare train-set")
+            qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
+            is_released = qf_data_src.release_dataset(**kwargs)
+            if not is_released:
+                log_error("[load_dataset_action] dataset not released")
+                raise InvalidArgumentError("dataset must be released")
+            log_debug("[load_dataset_action] dataset loaded successfully")
+            self.qf_dataset_id = qf_data_src.id
+            return {
+                "datasets": [
+                    {
+                        "id": qf_data_src.old_dataset_id,
+                        "type": console_consts.TrainDatasetType.Platform.value,
+                    }
+                ]
+            }
+        elif isinstance(self.dataset.inner_data_source_cache, BosDataSource):
+            log_debug("[load_dataset_action] prepare train-set in BOS")
+            bos_data_src = cast(BosDataSource, self.dataset.inner_data_source_cache)
+            return {
+                "datasets": [
+                    {
+                        "type": console_consts.TrainDatasetType.PrivateBos.value,
+                        "bosPath": bos_uploader.generate_bos_file_parent_path(
+                            bos_data_src.bucket, bos_data_src.bos_file_path
+                        ),
+                    }
+                ]
+            }
+        else:
+            raise InvalidArgumentError("dataset must be set")
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
@@ -160,6 +173,12 @@ class TrainAction(
     """train task id"""
     job_id: Optional[int] = None
     """train job id"""
+    # 这里的id新API的原因task/job和调换了，现在具体
+    # task_id对应job_str_id，job_id对应task_str_id
+    task_str_id: Optional[str] = None
+    """train task str id"""
+    job_str_id: Optional[str] = None
+    """job task str id"""
     train_type: Optional[str] = ""
     """train_type"""
     base_model: Optional[str] = None
@@ -247,13 +266,23 @@ class TrainAction(
         self.validateTrainConfig()
         if train_mode is not None:
             self.train_mode = train_mode
-        self.task_name = (
-            f"task_{utils.generate_letter_num_random_id()}"
-            if task_name is None
-            else task_name
-        )
+        self.task_name = self._generate_task_name(task_name, self.train_type)
         self.task_description = task_description
         self.job_description = job_description
+
+    def _generate_task_name(
+        self, task_name: Optional[str], train_type: Optional[str]
+    ) -> str:
+        if task_name is not None:
+            return task_name
+        model_info = (
+            ModelInfoMapping.get(train_type) if train_type is not None else None
+        )
+        return (
+            f"job_{utils.generate_letter_num_random_id()}"
+            if model_info is None
+            else f"{model_info.short_name}_{utils.generate_letter_num_random_id(5)}"
+        )
 
     def validateTrainConfig(self) -> None:
         """
@@ -309,6 +338,7 @@ class TrainAction(
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
         self.train_config.validate_config(train_limit)
+        self.train_config._validate_valid_fields(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -357,25 +387,30 @@ class TrainAction(
         # for resume
         if self._input is None:
             self._input = input
-        return self._exec(input, **kwargs)
+        return self._exec(self._input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         # 校验数据集
         train_sets = input.get("datasets")
         if train_sets is None or len(train_sets) == 0:
-            raise InvalidArgumentError("train set rate must be set")
+            raise InvalidArgumentError("train set must be set")
 
         # 判断是否增量训练
         if self.is_incr:
             return self._exec_incremental(input, **kwargs)
 
         # request for create model train task
+        assert self.train_type is not None
+        assert self.base_model is not None
         resp = api.FineTune.create_task(
             name=self.task_name,
             description=self.task_description,
+            train_type=self.train_type,
+            base_train_type=self.base_model,
             **kwargs,
         )
         self.task_id = cast(int, resp["result"]["id"])
+        self.job_str_id = resp["result"]["uuid"]
         log_debug(f"[train_action] create fine-tune task: {self.task_id}")
 
         assert self.train_config is not None
@@ -410,6 +445,7 @@ class TrainAction(
         }
         create_job_resp = api.FineTune.create_job(req_job, **kwargs)
         self.job_id = cast(int, create_job_resp["result"]["id"])
+        self.task_str_id = create_job_resp["result"]["uuid"]
         log_debug(f"[train_action] create fine-tune job_id: {self.job_id}")
 
         # 获取job状态，是否训练完成
@@ -430,10 +466,10 @@ class TrainAction(
             job_status = job_status_resp["result"]["trainStatus"]
             job_progress = job_status_resp["result"]["progress"]
             log_info(
-                f"[train_action] fine-tune running... current status: {job_status},"
-                f" {job_progress}% "
-                "check train log in"
-                f" https://console.bce.baidu.com/qianfan/train/sft/{self.task_id}/{self.job_id}/detail/traininglog"
+                "[train_action] fine-tune running..."
+                f" task_name:{self.task_name} current status: {job_status},"
+                f" {job_progress}% check train task log in"
+                f" https://console.bce.baidu.com/qianfan/train/sft/{self.job_str_id}/{self.task_str_id}/detail/traininglog"
             )
             if job_progress >= 50:
                 log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")
@@ -445,15 +481,16 @@ class TrainAction(
                 console_consts.TrainStatus.Stop,
             ]:
                 log_error(
-                    f"[train_action] fine-tune job {self.task_id}/{self.job_id} has"
-                    f" ended, {job_status_resp}"
+                    "[train_action] fine-tune job"
+                    f" {self.job_str_id}/{self.task_str_id} has ended,"
+                    f" {job_status_resp}"
                 )
                 break
             else:
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
         log_info(
-            f"[train_action] fine-tune job has ended: {self.job_id} with status:"
-            f" {job_status}"
+            "[train_action] fine-tune job has ended:"
+            f" {self.job_str_id}/{self.task_str_id} with status: {job_status}"
         )
 
     @with_event
@@ -516,7 +553,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     Output:
     ```
-    {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+    {'task_id': 47923, 'job_id': 33512, 'model_id': "xxx", 'model_version_id': "aaa"}
     ```
     """
 
@@ -595,10 +632,10 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
 
     input:
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39}
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx"}
     output:
         ```
-        {'task_id': 47923, 'job_id': 33512, 'model_id': 1, 'model_version_id': 39,
+        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx",
         'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
         ```
     """
@@ -607,8 +644,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """deploy config include replicas and so on"""
     model_id: Optional[int]
     """model id"""
+    model_id_str: Optional[str]
+    """model str id"""
     model_version_id: Optional[int]
     """model version id"""
+    model_version_id_str: Optional[str]
+    """model version str id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
@@ -634,18 +675,23 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if input.get("model") is None:
             self.model_id = input.get("model_id")
             self.model_version_id = input.get("model_version_id")
+            # TODO 迁移成str id
             if self.model_id is None or self.model_version_id is None:
                 raise InvalidArgumentError("model_id or model_version_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
             if self.model is None:
                 raise InvalidArgumentError(
                     "must input with model or model id and version id"
                 )
-            self.model_id = self.model.id
-            self.model_version_id = self.model.version_id
+            self.model.auto_complete_info()
+            self.model_id = self.model.old_id
+            self.model_version_id = self.model.old_version_id
+        # 自动补全
+
         return self._exec(**kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -691,7 +737,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         """
         if self.model_id is not None and self.model_version_id is not None:
-            self.model = Model(self.model_id, self.model_version_id)
+            self.model = Model(self.model_id_str, self.model_version_id_str)
+            self.model.auto_complete_info()
         elif self.model is None:
             raise InvalidArgumentError(
                 "either (model_id and version_id) or model must be set"

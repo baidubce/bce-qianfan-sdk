@@ -34,8 +34,8 @@ class Service(object):
     @console_api_request
     def create(
         cls,
-        model_id: int,
-        model_version_id: int,
+        model_id: str,
+        model_version_id: str,
         name: str,
         uri: str,
         replicas: int,

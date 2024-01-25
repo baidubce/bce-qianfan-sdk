@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.2.7"
+version = "0.2.9rc0"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -76,6 +76,13 @@ select = [
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
+
+[tool.ruff.lint]
+extend-select = ["PLW1514"]
+preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"*test*.py" = ["PLW1514"]
 
 [tool.black]
 preview = true

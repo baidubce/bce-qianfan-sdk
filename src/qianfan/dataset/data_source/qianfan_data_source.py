@@ -12,334 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-data source which is related to download/upload
+qianfan data source implementation including uploading / downloading
 """
 
-import datetime
 import json
-import os.path
+import os
 import uuid
 import zipfile
-from abc import ABC, abstractmethod
-from enum import Enum
-from time import sleep
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
-import requests
 
-from qianfan.config import get_config
+from qianfan import get_config
+from qianfan.config import encoding
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset.data_source import DataSource, FormatType
+from qianfan.dataset.data_source.data_source_utils import (
+    _check_data_and_zip_file_valid,
+    _check_is_any_data_existed_in_dataset,
+    _create_export_data_task_and_wait_for_success,
+    _create_import_data_task_and_wait_for_success,
+    _create_release_data_task_and_wait_for_success,
+    _datetime_parse_hook,
+    _download_file_from_url_streamly,
+    _get_data_format_from_template_type,
+    _get_latest_export_record,
+    _get_qianfan_dataset_type_tuple,
+    _read_all_file_content_in_an_folder,
+)
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
+from qianfan.resources import Data
 from qianfan.resources.console.consts import (
-    DataExportDestinationType,
-    DataExportStatus,
-    DataImportStatus,
     DataProjectType,
-    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataStorageType,
     DataTemplateType,
 )
-from qianfan.resources.console.data import Data
-from qianfan.utils.bos_uploader import (
-    generate_bos_file_path,
-    get_bos_file_shared_url,
-    upload_content_to_bos,
-    upload_file_to_bos,
-)
-from qianfan.utils.logging import log_debug, log_error, log_info, log_warn
-from qianfan.utils.pydantic import BaseModel, Field, root_validator
+from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
+from qianfan.utils.pydantic import BaseModel, Field
 
 
-class FormatType(Enum):
-    """Enum for data source format type"""
-
-    Json = "json"
-    Jsonl = "jsonl"
-    Csv = "csv"
-    # 无格式导出，一行就是一条数据，类似 Jsonl，但是非格式化
-    Text = "txt"
-
-
-class DataSource(ABC):
-    """basic data source class"""
-
-    @abstractmethod
-    def save(self, data: str, **kwargs: Any) -> bool:
-        """
-        Export the data to the data source
-        and return
-        whether the import was successful or failed
-
-        Args:
-            data (str): data need to be saved
-            **kwargs (Any): optional arguments
-
-        Returns:
-            bool: is saving successful
-        """
-
-    @abstractmethod
-    async def asave(self, data: str, **kwargs: Any) -> bool:
-        """
-        Asynchronously export the data to the data source
-        and return
-        whether the import was successful or failed
-
-        Args:
-            data (str): data need to be saved
-            **kwargs (Any): optional arguments
-
-        Returns:
-            bool: is saving successful
-        """
-
-    @abstractmethod
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Fetch data from source
-
-        Args:
-            **kwargs (Any): optional arguments
-
-        Returns:
-            Union[str, List[str]]: content retrieved from data source
-        """
-
-    @abstractmethod
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Asynchronously fetch data from source
-
-        Args:
-            **kwargs (Any): optional arguments
-
-        Returns:
-            Union[str, List[str]]: content retrieved from data source
-        """
-
-    @abstractmethod
-    def format_type(self) -> FormatType:
-        """
-        Get format type binding to source
-
-        Returns:
-            FormatType: format type binding to source
-        """
-
-    @abstractmethod
-    def set_format_type(self, format_type: FormatType) -> None:
-        """
-        Set format type binding to source
-
-        Args:
-            format_type (FormatType): format type binding to source
-        """
-
-
-# 目前第一期主要支持本地调用
-# 且目前只支持读单个文件，文件夹兼容稍后
-class FileDataSource(DataSource, BaseModel):
-    """file data source"""
-
-    path: str
-    file_format: Optional[FormatType] = Field(default=None)
-    save_as_folder: bool = Field(default=False)
-
-    def save(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
-        """
-        Write data to file。
-
-        Args:
-            data (Union[str, List[str]]): data waiting to be written。
-            **kwargs (Any): optional arguments。
-
-        Returns:
-            bool: has data been written successfully
-        """
-        if isinstance(data, str):
-            if os.path.isdir(self.path):
-                file_path = os.path.join(
-                    self.path, f"data_{uuid.uuid4()}.{self.format_type().value}"
-                )
-            else:
-                file_path = self.path
-            with open(file_path, mode="w") as file:
-                file.write(data)
-            return True
-        else:
-            os.makedirs(self.path)
-            for index in range(len(data)):
-                entry = data[index]
-                with open(
-                    os.path.join(
-                        self.path, f"entry_{index}.{self.format_type().value}"
-                    ),
-                    mode="w",
-                ) as file:
-                    file.write(entry)
-            return True
-
-    async def asave(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
-        """
-        Asynchronously Write data to file。
-        Not available currently
-
-        Args:
-            data (Union[str, List[str]]): data waiting to be written。
-            **kwargs (Any): optional arguments。
-
-        Returns:
-            bool: has data been written successfully
-        """
-        raise NotImplementedError()
-
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Read data from file.
-
-        Args:
-            **kwargs (Any): Arbitrary keyword arguments.
-
-        Returns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
-        """
-        # 检查文件是否存在且非目录
-        if not os.path.exists(self.path):
-            raise ValueError("file path not found")
-        if os.path.isdir(self.path):
-            ret_list: List[str] = []
-
-            # 不保证文件读取的顺序性
-            for root, dirs, files in os.walk(self.path):
-                for file_name in files:
-                    if not file_name.endswith(self.format_type().value):
-                        continue
-
-                    file_path = os.path.join(root, file_name)
-                    with open(file_path, mode="r") as f:
-                        ret_list.append(f.read())
-
-            return ret_list
-        else:
-            with open(self.path, mode="r") as file:
-                return file.read().strip("\n")
-
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Asynchronously Read data from file.
-        Not available currently
-
-        Args:
-            **kwargs (Any): Arbitrary keyword arguments.
-
-        Returns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
-        """
-        raise NotImplementedError()
-
-    def format_type(self) -> FormatType:
-        """
-        Get format type binding to source
-
-        Returns:
-            FormatType: format type binding to source
-        """
-        assert self.file_format
-        return self.file_format
-
-    def set_format_type(self, format_type: FormatType) -> None:
-        """
-        Set format type binding to source
-
-        Args:
-            format_type (FormatType): format type binding to source
-        """
-        self.file_format = format_type
-
-    @root_validator
-    @classmethod
-    def _format_check(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values["file_format"]:
-            return values
-
-        path = values["path"]
-
-        try:
-            index = path.rfind(".")
-            # 读文件夹或查询不到的情况下默认使用纯文本格式
-            if os.path.isdir(path) or index == -1:
-                log_warn(f"use default format type {FormatType.Text}")
-                values["file_format"] = FormatType.Text
-                return values
-            suffix = path[index + 1 :]
-            for t in FormatType:
-                if t.value == suffix:
-                    values["file_format"] = t
-                    log_info(f"use format type {t}")
-                    return values
-            raise ValueError(f"cannot match proper format type for {suffix}")
-        except Exception as e:
-            log_error(str(e))
-            raise e
-
-
-# 使用 DataTemplateType 来推断配对的 FormatType
-def _get_data_format_from_template_type(template_type: DataTemplateType) -> FormatType:
-    if template_type in [
-        DataTemplateType.NonSortedConversation,
-        DataTemplateType.SortedConversation,
-        DataTemplateType.QuerySet,
-    ]:
-        return FormatType.Jsonl
-    elif template_type == DataTemplateType.GenericText:
-        return FormatType.Text
-    return FormatType.Json
-
-
-def _create_import_data_task_and_wait_for_success(
-    dataset_id: int,
-    is_annotated: bool,
-    file_path: str,
-    source_type: DataSourceType = DataSourceType.PrivateBos,
-) -> bool:
-    Data.create_data_import_task(
-        dataset_id,
-        is_annotated,
-        source_type,
-        file_path,
-    )
-
-    log_info("successfully create importing task")
-    while True:
-        sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
-        log_info("polling import task status")
-        qianfan_resp = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
-        status = qianfan_resp["importStatus"]
-        if status in [
-            DataImportStatus.NotStarted.value,
-            DataImportStatus.Running.value,
-        ]:
-            log_info(f"import status: {status}, keep polling")
-            continue
-        elif status == DataImportStatus.Finished.value:
-            log_info("import succeed")
-            return True
-        else:
-            log_error(f"import failed with status {status}")
-            return False
-
-
-# 千帆平台的数据源
 class QianfanDataSource(DataSource, BaseModel):
     """Qianfan data source"""
 
-    id: int
-    group_id: int
+    id: str
+    group_id: str
     name: str
     set_type: DataSetType
     project_type: DataProjectType
@@ -356,36 +75,57 @@ class QianfanDataSource(DataSource, BaseModel):
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
     download_when_init: bool = Field(default=False)
     data_format_type: FormatType
+    old_dataset_id: Optional[int] = None
 
     ak: Optional[str] = None
     sk: Optional[str] = None
 
-    @classmethod
-    def _get_qianfan_dataset_type_tuple(
-        cls, template_type: DataTemplateType
-    ) -> Tuple[DataProjectType, DataSetType]:
-        for t in DataProjectType:
-            # DataProjectType 是匹配的 DataTemplateType 的前缀
-            # 具体来说，DataTemplateType 在整除 100 后得到的整数
-            # 即是 DataProjectType
-            # 此处通过整数除法计算前缀
-            if template_type.value // t.value == 100:
-                if template_type == DataTemplateType.Text2Image:
-                    log_debug(
-                        f"inferred project type: {t}, set type:"
-                        f" {DataSetType.MultiModel}"
-                    )
-                    return t, DataSetType.MultiModel
-                else:
-                    log_debug(
-                        f"inferred project type: {t}, set type: {DataSetType.TextOnly}"
-                    )
-                    return t, DataSetType.TextOnly
-        error = ValueError(
-            f"no project type and set type found matching with {template_type}"
-        )
-        log_error(error)
-        raise error
+    def _get_transmission_bos_info(
+        self,
+        sup_storage_id: str = "",
+        sup_storage_path: str = "",
+        sup_storage_region: str = "",
+    ) -> Tuple[str, str, str]:
+        if sup_storage_id and sup_storage_path and sup_storage_region:
+            storage_id = sup_storage_id
+            storage_path = sup_storage_path
+            storage_region = sup_storage_region
+        elif self.storage_type == DataStorageType.PrivateBos:
+            storage_id = self.storage_id
+
+            assert self.storage_raw_path
+            storage_path = self.storage_raw_path
+
+            assert self.storage_region
+            storage_region = self.storage_region
+        elif self.storage_type == DataStorageType.PublicBos:
+            err_msg = "don't support upload dataset to dataset which use platform bos"
+            log_error(err_msg)
+            raise NotImplementedError()
+        else:
+            err_msg = "can't get storage info for uploading to qianfan"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        # 此 path 必须以 / 结尾，为了防止用户没有加上，这里特判
+        if storage_path[-1] != "/":
+            storage_path += "/"
+
+        return storage_id, storage_path, storage_region
+
+    def _get_console_ak_and_sk(self) -> Tuple[str, str]:
+        ak = self.ak if self.ak else get_config().ACCESS_KEY
+        sk = self.sk if self.sk else get_config().SECRET_KEY
+        if not ak:
+            err_msg = "no ak was provided"
+            log_error(err_msg)
+            raise ValueError(log_error)
+        if not sk:
+            err_msg = "no sk was provided"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        return ak, sk
 
     def save(
         self,
@@ -435,49 +175,12 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been uploaded successfully
         """
-        if data and zip_file_path:
-            err_msg = "can't set 'data' and 'zip_file_path' simultaneously"
-            log_error(err_msg)
-            raise ValueError(err_msg)
+        _check_data_and_zip_file_valid(data, zip_file_path)
 
-        if not data and not zip_file_path:
-            err_msg = "must set either 'data' or 'zip_file_path'"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        if sup_storage_id and sup_storage_path and sup_storage_region:
-            storage_id = sup_storage_id
-            storage_path = sup_storage_path
-            storage_region = sup_storage_region
-        elif self.storage_type == DataStorageType.PrivateBos:
-            storage_id = self.storage_id
-
-            assert self.storage_raw_path
-            storage_path = self.storage_raw_path
-
-            assert self.storage_region
-            storage_region = self.storage_region
-        elif self.storage_type == DataStorageType.PublicBos:
-            err_msg = "don't support upload dataset to dataset which use platform bos"
-            log_error(err_msg)
-            raise NotImplementedError()
-        else:
-            err_msg = "can't get storage info for uploading to qianfan"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        ak = self.ak if self.ak else get_config().ACCESS_KEY
-        sk = self.sk if self.sk else get_config().SECRET_KEY
-        if not ak:
-            log_warn("no ak was provided when upload data to user BOS")
-            return False
-        if not sk:
-            log_warn("no sk was provided when upload data to user BOS")
-            return False
-
-        if not storage_region:
-            log_warn("no region was provided when upload data to user BOS")
-            return False
+        storage_id, storage_path, storage_region = self._get_transmission_bos_info(
+            sup_storage_id, sup_storage_path, sup_storage_region
+        )
+        ak, sk = self._get_console_ak_and_sk()
 
         if not zip_file_path:
             suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
@@ -491,26 +194,14 @@ class QianfanDataSource(DataSource, BaseModel):
             f" {storage_region}"
         )
 
+        bos_helper = BosHelper(storage_region, ak, sk)
+
         if data:
             log_info("upload dataset as string")
-            upload_content_to_bos(
-                data,
-                file_path,
-                storage_id,
-                storage_region,
-                ak,
-                sk,
-            )
+            bos_helper.upload_content_to_bos(data, file_path, storage_id)
         elif zip_file_path:
             log_info("upload dataset as zip")
-            upload_file_to_bos(
-                zip_file_path,
-                file_path,
-                storage_id,
-                storage_region,
-                ak,
-                sk,
-            )
+            bos_helper.upload_file_to_bos(zip_file_path, file_path, storage_id)
         else:
             err_msg = "unexpected conditional branch error when upload dataset to bos"
             log_error(err_msg)
@@ -526,9 +217,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 log_warn("import data from bos file failed")
                 return False
         else:
-            shared_str = get_bos_file_shared_url(
-                file_path, storage_id, storage_region, ak, sk
-            )
+            shared_str = bos_helper.get_bos_file_shared_url(file_path, storage_id)
             log_info(f"get shared file url: {shared_str}")
             if not _create_import_data_task_and_wait_for_success(
                 self.id, is_annotated, shared_str, DataSourceType.SharedZipUrl
@@ -539,6 +228,7 @@ class QianfanDataSource(DataSource, BaseModel):
         if does_release:
             log_info("release after saving starts")
             return self.release_dataset(**kwargs)
+
         return True
 
     async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
@@ -559,31 +249,6 @@ class QianfanDataSource(DataSource, BaseModel):
         """
         raise NotImplementedError()
 
-    def _get_latest_export_record(
-        self, **kwargs: Any
-    ) -> Tuple[Dict, datetime.datetime]:
-        """从平台获取最新的数据集导出记录信息，以及它的导出时间"""
-        parser = dateutil.parser.parser()
-        export_records = Data.get_dataset_export_records(self.id, **kwargs)["result"]
-        log_info(f"get export records succeeded for dataset id {self.id}")
-        newest_record_index, latest_record_time = 0, datetime.datetime(1970, 1, 1)
-
-        for index in range(len(export_records)):
-            record = export_records[index]
-            try:
-                date = parser.parse(record["finishTime"])
-                if date > latest_record_time:
-                    newest_record_index = index
-                    latest_record_time = date
-            except Exception as e:
-                log_warn(
-                    f"an exception occurred when fetch export records info: {str(e)}"
-                )
-                continue
-
-        log_info(f"latest dataset with time{latest_record_time} for dataset {self.id}")
-        return export_records[newest_record_index], latest_record_time
-
     def _fetch_data_from_remote(self, zip_file_path: str, **kwargs: Any) -> Dict:
         """从远端发起数据导出任务，并且将导出的数据集保存在本地缓存文件中"""
         parser = dateutil.parser.parser()
@@ -594,56 +259,15 @@ class QianfanDataSource(DataSource, BaseModel):
         if (
             info["exportRecordCount"] == 0
             or parser.parse(info["modifyTime"])
-            > self._get_latest_export_record(**kwargs)[1]
+            > _get_latest_export_record(self.id, **kwargs)[1]
         ):
-            log_info("start to export dataset")
-            Data.create_dataset_export_task(
-                self.id, DataExportDestinationType.PlatformBos, **kwargs
-            )
-            log_info("create dataset export task successfully")
+            _create_export_data_task_and_wait_for_success(self.id, **kwargs)
 
-            # 轮巡导出状态
-            while True:
-                sleep(get_config().EXPORT_STATUS_POLLING_INTERVAL)
-                log_info("polling export task status")
-                info = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
-                status = info["exportStatus"]
-
-                if status == DataExportStatus.Finished.value:
-                    log_info("export succeed")
-                    break
-                elif status == DataExportStatus.Running.value:
-                    log_info(f"export status: {status}, keep polling")
-                    continue
-                elif status == DataExportStatus.Failed.value:
-                    error = QianfanRequestError(
-                        f"export dataset failed with status {status}"
-                    )
-                    log_error(str(error))
-                    raise error
-
-        newest_record = self._get_latest_export_record(**kwargs)[0]
+        newest_record = _get_latest_export_record(self.id, **kwargs)[0]
         download_url = newest_record["downloadUrl"]
 
         # 流式下载到本地文件中
-        log_info(f"start to download dataset zip from url {download_url}")
-        try:
-            resp = requests.get(download_url, stream=True)
-            with open(zip_file_path, "wb") as f:
-                for chuck in resp.iter_content(10240):
-                    f.write(chuck)
-            resp.close()
-        except Exception as e:
-            log_error(f"exception occurred during download {str(e)}")
-            raise e
-
-        if resp.status_code != 200:
-            http_error = Exception(
-                "download dataset zip from remote failed with http status code"
-                f" {resp.status_code}"
-            )
-            log_error(str(http_error))
-            raise http_error
+        _download_file_from_url_streamly(download_url, zip_file_path)
 
         log_info(f"download dataset zip to {zip_file_path} succeeded")
         return newest_record
@@ -654,17 +278,15 @@ class QianfanDataSource(DataSource, BaseModel):
         """将数据集从远端保存到本地"""
         info = self._fetch_data_from_remote(bin_path, **kwargs)
         with zipfile.ZipFile(bin_path) as zip_f:
-            json_file_name = zip_f.namelist()[0]
+            og_file_size: int = 0
+            for file_info in zip_f.infolist():
+                og_file_size += file_info.file_size
 
             # 检查下载下来的文件大小
             # 如果超过限制，则报错
-            if (
-                zip_f.getinfo(json_file_name).file_size
-                >= get_config().EXPORT_FILE_SIZE_LIMIT
-            ):
+            if og_file_size >= get_config().EXPORT_FILE_SIZE_LIMIT:
                 error = FileSizeOverflow(
-                    "dataset file size is too big to unzip:"
-                    f" {zip_f.getinfo(json_file_name).file_size}"
+                    f"dataset file size is too big to unzip: {og_file_size}"
                 )
                 log_error(str(error))
                 raise error
@@ -673,7 +295,7 @@ class QianfanDataSource(DataSource, BaseModel):
             zip_f.extractall(content_path)
 
         log_info(f"unzip dataset to path {content_path} successfully")
-        with open(info_path, mode="w") as f:
+        with open(info_path, mode="w", encoding=encoding()) as f:
             f.write(json.dumps(info))
 
         log_info(f"write dataset info to path {info_path} successfully")
@@ -700,18 +322,9 @@ class QianfanDataSource(DataSource, BaseModel):
             log_info("no cache was found, download cache")
             self._save_remote_into_file(content_path, bin_path, info_path, **kwargs)
 
-        # json 解析钩子，将值中的时间戳字符串解析为 datetime 对象
-        def _datetime_parse_hook(obj: Any) -> Union[datetime.datetime, str]:
-            if isinstance(obj, str):
-                try:
-                    return dateutil.parser.parser().parse(timestr=obj)
-                except Exception:
-                    return obj
-            return obj
-
         # 尝试从本地缓存中读取数据
         try:
-            with open(info_path, mode="r") as f:
+            with open(info_path, mode="r", encoding=encoding()) as f:
                 dataset_info = json.load(f, object_hook=_datetime_parse_hook)
 
             # 获取最新的数据集信息
@@ -733,26 +346,13 @@ class QianfanDataSource(DataSource, BaseModel):
             raise
 
         if os.path.isfile(content_path):
-            with open(content_path, mode="r") as f:
+            with open(content_path, mode="r", encoding=encoding()) as f:
                 self.download_when_init = True
                 return f.read()
 
         else:
-            ret_list: List[str] = []
-            for root, dirs, files in os.walk(content_path):
-                for file_name in files:
-                    file_path = os.path.join(root, file_name)
-                    with open(file_path, mode="r") as f:
-                        ret_list.append(f.read())
-
             self.download_when_init = True
-            return ret_list
-
-    def _check_is_any_data_existed_in_dataset(self, **kwargs: Any) -> bool:
-        """检查远端数据集是否为空"""
-
-        qianfan_resp = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
-        return qianfan_resp["entityCount"] != 0
+            return _read_all_file_content_in_an_folder(content_path, self.format_type())
 
     def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
         """
@@ -767,7 +367,7 @@ class QianfanDataSource(DataSource, BaseModel):
         if self.ak and self.sk:
             kwargs["ak"] = self.ak
             kwargs["sk"] = self.sk
-        if not self._check_is_any_data_existed_in_dataset(**kwargs):
+        if not _check_is_any_data_existed_in_dataset(self.id, **kwargs):
             error = LookupError("no data exists in dataset")
             log_error(str(error))
             raise error
@@ -824,7 +424,7 @@ class QianfanDataSource(DataSource, BaseModel):
         **kwargs: Any,
     ) -> "QianfanDataSource":
         log_info("start to create dataset on qianfan")
-        project_type, set_type = cls._get_qianfan_dataset_type_tuple(template_type)
+        project_type, set_type = _get_qianfan_dataset_type_tuple(template_type)
 
         # 发起创建数据集的请求
         qianfan_resp = Data.create_bare_dataset(
@@ -842,11 +442,10 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_debug(f"create qianfan dataset response: {qianfan_resp}")
         log_info("create dataset on qianfan successfully")
-
         # 构造对象
         source = cls(
-            id=qianfan_resp["id"],
-            group_id=qianfan_resp["groupId"],
+            id=qianfan_resp["datasetId"],
+            group_id=qianfan_resp["groupPK"],
             name=name,
             version=qianfan_resp["versionId"],
             set_type=set_type,
@@ -860,6 +459,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp.get("id"),
             ak=ak,
             sk=sk,
         )
@@ -1008,7 +608,7 @@ class QianfanDataSource(DataSource, BaseModel):
     @classmethod
     def get_existed_dataset(
         cls,
-        dataset_id: int,
+        dataset_id: str,
         is_download_to_local: bool = True,
         ak: Optional[str] = None,
         sk: Optional[str] = None,
@@ -1018,7 +618,7 @@ class QianfanDataSource(DataSource, BaseModel):
         Load a dataset from qianfan as data source
 
         Args:
-            dataset_id (int): dataset id on Qianfan, show as "数据集版本 ID"
+            dataset_id (str): dataset id on Qianfan, show as "数据集版本 ID"
             is_download_to_local (bool):
                 does dataset download file when initialize object，default to True
             ak (Optional[str]):
@@ -1075,8 +675,8 @@ class QianfanDataSource(DataSource, BaseModel):
 
         # 创建对象
         dataset = cls(
-            id=qianfan_resp["versionInfo"]["datasetId"],
-            group_id=qianfan_resp["versionInfo"]["groupId"],
+            id=qianfan_resp["versionInfo"]["datasetPK"],
+            group_id=qianfan_resp["groupPK"],
             name=qianfan_resp["name"],
             version=qianfan_resp["versionInfo"]["versionId"],
             set_type=set_type,
@@ -1091,6 +691,7 @@ class QianfanDataSource(DataSource, BaseModel):
             download_when_init=is_download_to_local,
             info={**qianfan_resp},
             data_format_type=_get_data_format_from_template_type(template_type),
+            old_dataset_id=qianfan_resp["versionInfo"].get("datasetId"),
             ak=ak,
             sk=sk,
         )
@@ -1108,24 +709,4 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: Whether releasing succeeded
         """
-        info = Data.get_dataset_info(self.id, **kwargs)["result"]["versionInfo"]
-        status = info["releaseStatus"]
-        if status == DataReleaseStatus.Finished:
-            return True
-        Data.release_dataset(self.id, **kwargs)
-        while True:
-            sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
-            info = Data.get_dataset_info(self.id)["result"]["versionInfo"]
-            status = info["releaseStatus"]
-            if status == DataReleaseStatus.Running:
-                log_info("data releasing, keep rolling")
-                continue
-            elif status == DataReleaseStatus.Failed:
-                message = (
-                    f"data releasing failed with error code {info['releaseErrCode']}"
-                )
-                log_error(message)
-                return False
-            else:
-                log_info("data releasing succeeded")
-                return True
+        return _create_release_data_task_and_wait_for_success(self.id, **kwargs)

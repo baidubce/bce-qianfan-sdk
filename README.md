@@ -157,7 +157,13 @@ trainer.run()
 
 #### Prompt
 
-千帆平台支持对文生文、文生图任务的 Prompt 进行管理，详见[Prompt 管理](./docs/prompt.md)
+SDK 支持对文生文、文生图等任务的 Prompt 进行管理、优化、评估等操作，详见[Prompt 管理](./docs/prompt.md)
+
+#### Client
+
+SDK 内置了一个命令行工具，能够在终端直接与千帆平台进行交互，例如与大模型对话、发起训练任务、预览数据集等等，详见 [命令行工具](./docs/cli.md)
+
+![](./docs/imgs/cli/chat.webp)
 
 ### API Resources
 
@@ -174,6 +180,8 @@ trainer.run()
 如使用过程中遇到什么问题，或对SDK功能有建议，可通过如下方式联系我们
 - [GitHub issues](https://github.com/baidubce/bce-qianfan-sdk/issues)
 - [百度智能云工单](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279) （百度专家即时服务）
+- 千帆SDK官方微信群
+<img src="https://github.com/baidubce/bce-qianfan-sdk/assets/37836090/50f38a78-31cb-4b0d-a03e-0bb1d4f367b3" width="240" height="240">
 
 ## License
 

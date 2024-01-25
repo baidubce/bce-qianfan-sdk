@@ -38,10 +38,14 @@ from qianfan.utils import log_error, log_info, log_warn
 class Model(
     ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]],
 ):
-    id: Optional[int]
+    id: Optional[str]
     """remote model id"""
-    version_id: Optional[int]
+    version_id: Optional[str]
     """remote model version id"""
+    old_id: Optional[int]
+    """deprecated old model id"""
+    old_version_id: Optional[int]
+    """deprecated old model version id"""
     name: Optional[str] = None
     """model name"""
     service: Optional["Service"] = None
@@ -53,31 +57,36 @@ class Model(
 
     def __init__(
         self,
-        id: Optional[int] = None,
-        version_id: Optional[int] = None,
+        id: Optional[str] = None,
+        version_id: Optional[str] = None,
         task_id: Optional[int] = None,
         job_id: Optional[int] = None,
         name: Optional[str] = None,
+        **kwargs: Any,
     ):
         """
         Class for model in qianfan, which is deployable by using deploy() to
         get a custom model service.
 
         Parameters:
-            id (Optional[int], optional):
+            id (Optional[str], optional):
                 qianfan model remote id. Defaults to None.
-            version_id (Optional[int], optional):
+            version_id (Optional[str], optional):
                 model version id. Defaults to None.
             task_id (Optional[int], optional):
                 model train task id. Defaults to None.
             job_id (Optional[int], optional):
                 model train job id. Defaults to None.
+            auto_complete (Optional[bool], optional):
+                if call auto_complete() to complete model info. Defaults to None.
         """
         self.id = id
         self.version_id = version_id
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
+        if kwargs.get("auto_complete"):
+            self.auto_complete_info()
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -124,6 +133,39 @@ class Model(
         log_info("model service already existed")
         return self.service
 
+    def auto_complete_info(self, **kwargs: Any) -> None:
+        """
+        auto complete Model object's info.
+        This may override the input model id version id.
+
+        Parameters:
+            **kwargs (Any):
+                arbitrary arguments
+        """
+        if self.version_id:
+            model_detail_resp = ResourceModel.detail(
+                model_version_id=self.version_id, **kwargs
+            )
+            self.id = model_detail_resp["result"].get("modelIdStr")
+            self.old_id = model_detail_resp["result"].get("modelId")
+            self.old_version_id = model_detail_resp["result"].get("modelVersionId")
+        elif self.id:
+            list_resp = ResourceModel.list(self.id, **kwargs)
+            if len(list_resp["result"]["modelVersionList"]) == 0:
+                raise InvalidArgumentError(
+                    "not model version matched, please train and publish first"
+                )
+            log_info("model publish get the first version in model list as default")
+            self.version_id = list_resp["result"]["modelVersionList"][0].get(
+                "modelVersionIdStr"
+            )
+            self.old_id = list_resp["result"]["modelVersionList"][0].get("modelId")
+            self.old_version_id = list_resp["result"]["modelVersionList"][0].get(
+                "modelVersionId"
+            )
+            if self.version_id is None:
+                raise InvalidArgumentError("model version id not found")
+
     def publish(self, name: str = "", **kwargs: Any) -> "Model":
         """
         model publish, before deploying a model, it should be published.
@@ -137,7 +179,7 @@ class Model(
             model_detail_resp = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
-            self.id = model_detail_resp["result"]["modelId"]
+            self.id = model_detail_resp["result"]["modelIdStr"]
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["taskId"]
@@ -148,7 +190,7 @@ class Model(
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
 
-        if self.id:
+        elif self.id:
             list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
                 raise InvalidArgumentError(
@@ -156,7 +198,7 @@ class Model(
                 )
             log_info("model publish get the first version in model list as default")
             self.version_id = list_resp["result"]["modelVersionList"][0][
-                "modelVersionId"
+                "modelVersionIdStr"
             ]
             if self.version_id is None:
                 raise InvalidArgumentError("model version id not found")
@@ -184,7 +226,8 @@ class Model(
             f"check train job: {self.task_id}/{self.job_id} status before publishing"
             " model"
         )
-        self.id = model_publish_resp["result"]["modelId"]
+        self.id = model_publish_resp["result"]["modelIDStr"]
+        self.old_id = model_publish_resp["result"]["modelId"]
         if self.task_id is None or self.job_id is None:
             raise InvalidArgumentError("task id or job id not found")
         # 判断训练任务已经训练完成
@@ -211,7 +254,7 @@ class Model(
         model_version_list = model_list_resp["result"]["modelVersionList"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")
-        self.version_id = model_version_list[0]["modelVersionId"]
+        self.version_id = model_version_list[0]["modelVersionIdStr"]
 
         if self.version_id is None:
             raise InvalidArgumentError("model version id not found")
@@ -284,7 +327,7 @@ class Model(
             Dataset: batch result contained in dataset
         """
 
-        return dataset.test_using_llm(self.id, self.version_id, **kwargs)
+        return dataset.test_using_llm(self.version_id, **kwargs)
 
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):
@@ -298,6 +341,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
     """service endpoint to call"""
     service_type: Optional[ServiceType]
     """service type, for user use service as a execution must specify"""
+
     # service type may get from model ioModel
 
     def __init__(

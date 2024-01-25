@@ -14,7 +14,7 @@
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.config import get_config
-from qianfan.dataset import QianfanDataSource
+from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -27,11 +27,16 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.base import (
+    BaseAction,
     EventHandler,
     Pipeline,
     Trainer,
 )
-from qianfan.trainer.configs import TrainConfig
+from qianfan.trainer.configs import (
+    ModelInfo,
+    ModelInfoMapping,
+    TrainConfig,
+)
 from qianfan.trainer.consts import (
     ActionState,
     FinetuneStatus,
@@ -49,13 +54,14 @@ class LLMFinetune(Trainer):
     def __init__(
         self,
         train_type: str,
-        dataset: Any,
+        dataset: Optional[Any] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
         base_model: Optional[str] = None,
         eval_dataset: Optional[Any] = None,
         evaluators: Optional[List[Evaluator]] = None,
+        dataset_bos_path: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -82,6 +88,13 @@ class LLMFinetune(Trainer):
                 'ERNIE-Bot-turbo', 'ChatGLM2'
                 which will be mapped from the model version type if
                 not set.
+            eval_dataset: Dataset
+                An optional dataset instance for evaluation.
+            evaluators: List[Evaluator]
+                An list of evaluators for evaluation.
+            bos_path: Optional[str]:
+                An bos path for training, this will be ignored
+                if dataset is provided.
             **kwargs: Any additional keyword arguments.
 
         for calling example:
@@ -101,23 +114,38 @@ class LLMFinetune(Trainer):
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
 
+        actions: List[BaseAction] = []
         # 校验dataset
-        if dataset is None:
-            raise InvalidArgumentError("dataset must be set")
-        if dataset.inner_data_source_cache is None:
-            raise InvalidArgumentError("invalid dataset")
-
-        qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
-        if (
-            qf_data_src.template_type
-            != console_consts.DataTemplateType.NonSortedConversation
-        ):
-            raise InvalidArgumentError(
-                "dataset must be `non-sorted conversation` template in llm-fine-tune"
-            )
-        self.load_data_action = LoadDataSetAction(
-            dataset=dataset, event_handler=event_handler, **kwargs
-        )
+        if dataset is not None:
+            if dataset.inner_data_source_cache is None:
+                raise InvalidArgumentError("invalid dataset")
+            if isinstance(dataset.inner_data_source_cache, QianfanDataSource):
+                qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
+                if (
+                    qf_data_src.template_type
+                    != console_consts.DataTemplateType.NonSortedConversation
+                ):
+                    raise InvalidArgumentError(
+                        "dataset must be `non-sorted conversation` template in"
+                        " llm-fine-tune"
+                    )
+                self.load_data_action = LoadDataSetAction(
+                    dataset=dataset, event_handler=event_handler, **kwargs
+                )
+            elif isinstance(dataset.inner_data_source_cache, BosDataSource):
+                self.load_data_action = LoadDataSetAction(
+                    dataset=dataset, event_handler=event_handler, **kwargs
+                )
+            else:
+                raise InvalidArgumentError(
+                    "dataset must be either implemented with QianfanDataSource or"
+                    " BosDataSource"
+                )
+            actions.append(self.load_data_action)
+        elif dataset_bos_path:
+            self.dataset_bos_path = dataset_bos_path
+        else:
+            raise InvalidArgumentError("either dataset or bos_path is required")
         self.train_action = TrainAction(
             train_config=train_config,
             base_model=base_model,
@@ -126,15 +154,13 @@ class LLMFinetune(Trainer):
             event_handler=event_handler,
             **kwargs,
         )
-        self.model_publish = ModelPublishAction(
-            event_handler=event_handler,
-            **kwargs,
-        )
-        actions = [
-            self.load_data_action,
-            self.train_action,
-            self.model_publish,
-        ]
+        actions.append(self.train_action)
+        if not kwargs.get("model_not_publish"):
+            self.model_publish = ModelPublishAction(
+                event_handler=event_handler,
+                **kwargs,
+            )
+            actions.append(self.model_publish)
         if deploy_config is not None:
             self.deploy_action = DeployAction(
                 deploy_config=deploy_config,
@@ -179,6 +205,10 @@ class LLMFinetune(Trainer):
         kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
+        if not hasattr(self, "load_data_action") and self.dataset_bos_path is not None:
+            kwargs["input"] = {
+                "datasets": [{"id": 2, "bosPath": self.dataset_bos_path}]
+            }
         self.result[0] = self.ppls[0].exec(**kwargs)
         return self
 
@@ -227,6 +257,10 @@ class LLMFinetune(Trainer):
     @property
     def output(self) -> Any:
         return self.result[0]
+
+    @classmethod
+    def train_type_list(cls) -> Dict[str, ModelInfo]:
+        return ModelInfoMapping
 
 
 # mapping for action state -> fine-tune status

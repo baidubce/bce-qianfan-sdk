@@ -71,30 +71,30 @@ class Tokenizer(object):
                     f"Model `{model} is not supported to calculate token count from"
                     " server.`"
                 )
-            return cls._remote_count_tokens_eb(text, **kwargs)
+            return cls._remote_count_tokens_eb(text, model, **kwargs)
 
         # unreachable
         raise InternalError
 
     @staticmethod
     @qianfan_api_request
-    def _eb_tokenizer(text: str, **kwargs: Any) -> QfRequest:
+    def _eb_tokenizer(text: str, model: str = "ERNIE-Bot", **kwargs: Any) -> QfRequest:
         """
         create the request and use `qianfan_api_request` to get the response
         """
         request = QfRequest(
             method="POST", url=get_config().BASE_URL + Consts.EBTokenizerAPI
         )
-        request.json_body = {"prompt": text}
+        request.json_body = {"prompt": text, "model": model, **kwargs}
         return request
 
     @classmethod
-    def _remote_count_tokens_eb(cls, text: str, **kwargs: Any) -> int:
+    def _remote_count_tokens_eb(cls, text: str, model: str, **kwargs: Any) -> int:
         """
         call the api to get the token count
         """
-        resp = cls._eb_tokenizer(text, **kwargs)
-        return resp["amount"]
+        resp = cls._eb_tokenizer(text, model, **kwargs)
+        return resp["usage"]["total_tokens"]
 
     @classmethod
     def _local_count_tokens(cls, text: str, model: str = "ERNIE-Bot") -> int:

@@ -11,7 +11,6 @@ name: Build
 defaults:
   run:
     shell: bash
-    working-directory: ./go
 
 jobs:
   build:
@@ -50,5 +49,5 @@ jobs:
           make install
       - name: Run test
         run: |
-          make -C .. mock
-          make test
+          make mock
+          make gotest

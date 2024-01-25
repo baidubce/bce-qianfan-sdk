@@ -26,4 +26,7 @@ mock:
 	pip install flask
 	bash ./python/scripts/run_mock_server.sh
 
+gotest:
+    $(MAKE) -C go test
+
 .PHONY: build install uninstall clean 

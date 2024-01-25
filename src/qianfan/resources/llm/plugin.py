@@ -294,7 +294,7 @@ class Plugin(BaseResource):
 
     def batch_do(
         self,
-        query_list: List[Union[str, QfResponse, List[Dict]]],
+        query_list: List[Union[str, QfMessages, List[Dict]]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -330,7 +330,7 @@ class Plugin(BaseResource):
 
     async def abatch_do(
         self,
-        query_list: List[Union[str, QfResponse, List[Dict]]],
+        query_list: List[Union[str, QfMessages, List[Dict]]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:

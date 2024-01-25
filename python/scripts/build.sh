@@ -9,6 +9,7 @@ mv dist/* output
 rm -rf dist
 
 # build docs
+cd ..
 make doc
 mv build/docs/_build/ ./output/docs
 rm -rf build

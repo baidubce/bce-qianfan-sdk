@@ -25,5 +25,8 @@ lint: install
 test: clean install 
 	cd python && bash scripts/run_test.sh
 
+mock: 
+	pip install flask
+	bash ./python/scripts/run_mock_server.sh
 
 .PHONY: build install uninstall clean 

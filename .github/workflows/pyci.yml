@@ -2,6 +2,8 @@ on:
   push:
     branches: ['main']
   pull_request:
+    path:
+      - "python/**"
   workflow_dispatch:
 
 name: Build
@@ -9,6 +11,7 @@ name: Build
 defaults:
   run:
     shell: bash
+    working-directory: ./python
 
 jobs:
   build:

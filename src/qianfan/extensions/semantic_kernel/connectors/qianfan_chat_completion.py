@@ -1,12 +1,19 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Dict, List, Optional
 
-from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
-    QianfanChatRequestSettings,
-    QianfanRequestSettings,
-    QianfanTextRequestSettings,
-)
-from qianfan.resources import ChatCompletion
 from semantic_kernel.connectors.ai.ai_exception import AIException
 from semantic_kernel.connectors.ai.ai_request_settings import AIRequestSettings
 from semantic_kernel.connectors.ai.ai_service_client_base import AIServiceClientBase
@@ -16,6 +23,14 @@ from semantic_kernel.connectors.ai.chat_completion_client_base import (
 from semantic_kernel.connectors.ai.text_completion_client_base import (
     TextCompletionClientBase,
 )
+
+from qianfan import QfResponse
+from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
+    QianfanChatRequestSettings,
+    QianfanRequestSettings,
+    QianfanTextRequestSettings,
+)
+from qianfan.resources import ChatCompletion
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -42,10 +57,8 @@ class QianfanChatCompletion(
                 model name for qianfan.
             endpoint Optional[str]
                 model endpoint for qianfan.
-            app_ak_sk: Optional[Tuple[str, str]], see
-                https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlkm79mnx#access_token%E9%80%82%E7%94%A8%E7%9A%84api
-            iam_ak_sk: Optional[Tuple[str, str]], see
-                https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlkm79mnx#%E5%AE%89%E5%85%A8%E8%AE%A4%E8%AF%81aksk%E7%AD%BE%E5%90%8D%E8%AE%A1%E7%AE%97%E9%80%82%E7%94%A8%E7%9A%84api
+            **kwargs: Any
+                additional arguments to pass to the init qianfan client
         """
         super().__init__(
             ai_model_id=model,
@@ -62,20 +75,52 @@ class QianfanChatCompletion(
         settings: QianfanRequestSettings,
         **kwargs: Any,
     ) -> Optional[str]:
+        """
+        Complete a chat with the given messages.
+
+        Args:
+            messages (List[Dict[str, str]]):
+                chat messages history and query
+            settings (QianfanRequestSettings):
+                chat query settings, including hype parameters,
+                configurations for client
+            kwargs: Any
+                additional arguments to pass to the qianfan client
+        Returns:
+            Optional[str]: response message content
+        """
         assert isinstance(settings, QianfanChatRequestSettings)
         settings.messages = messages
-        response = await self._send_chat_request(settings)
-        return response["result"]["messages"][-1]["content"]
+        response = await self._send_chat_request(settings, **kwargs)
+        assert isinstance(response, QfResponse)
+        return response["result"]
 
     async def complete_chat_stream_async(
         self,
-        messages: List[Tuple[str, str]],
+        messages: List[Dict[str, str]],
         settings: QianfanRequestSettings,
-    ):
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        """
+        Stream chat completion with the given messages.
+
+        Args:
+            messages (List[Dict[str, str]]):
+                chat messages history and query
+            settings (QianfanRequestSettings):
+                chat query settings, including hype parameters,
+                configurations for client
+            kwargs: Any
+                additional arguments to pass to the qianfan client
+
+        Yields:
+            str: streaming response message content
+        """
         assert isinstance(settings, QianfanChatRequestSettings)
         settings.messages = messages
         settings.stream = True
-        response = await self._send_chat_request(settings)
+        response = await self._send_chat_request(settings, **kwargs)
+        assert isinstance(response, AsyncIterator)
         async for r in response:
             yield r["result"]
 
@@ -83,32 +128,96 @@ class QianfanChatCompletion(
         self,
         prompt: str,
         settings: QianfanRequestSettings,
-        **kwargs,
-    ) -> Union[str, None]:
-        if isinstance(settings, QianfanChatRequestSettings):
-            settings.messages.extend({"role": "user", "content": prompt})
-        elif isinstance(settings, QianfanTextRequestSettings):
-            settings.messages = [{"role": "user", "content": prompt}]
+        **kwargs: Any,
+    ) -> Optional[str]:
+        """
+        Complete a chat with a given prompt.
 
-        response = await self._send_chat_request(settings)
+        Args:
+            prompt (str):
+                prompt to completion
+            settings (QianfanRequestSettings):
+                chat query settings, including hype parameters,
+                configurations for client
 
-        return response["result"]["messages"][-1]["content"]
+        Raises:
+            ValueError: invalid input or settings
+
+        Returns:
+            Optional[str]:
+                completion response message content
+        """
+        if not isinstance(settings, QianfanChatRequestSettings) and not isinstance(
+            settings, QianfanTextRequestSettings
+        ):
+            raise ValueError(
+                "settings must be QianfanChatRequestSettings or"
+                " QianfanTextRequestSettings"
+            )
+        settings = QianfanChatRequestSettings(
+            **settings.model_dump(),
+        )
+        if not settings.messages:
+            settings.messages = []
+        settings.messages.append({"role": "user", "content": prompt})
+        response = await self._send_chat_request(settings, **kwargs)
+        assert isinstance(response, QfResponse)
+        return response["result"]
 
     async def complete_stream_async(
         self,
         prompt: str,
         settings: QianfanRequestSettings,
-        **kwargs,
-    ) -> AsyncIterator[Union[str, None]]:
-        res = await self._send_chat_request(settings)
-        for r in res:
-            yield r
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        """
+        Stream completion with the given prompt.
+
+        Args:
+            prompt (str):
+                prompt to completion
+            settings (QianfanRequestSettings):
+                completion query settings, including hype parameters,
+                configurations for client
+            kwargs: Any
+                additional arguments to pass to the qianfan client
+
+        Yields:
+            str: streaming response message content
+        """
+        if not isinstance(settings, QianfanChatRequestSettings) and not isinstance(
+            settings, QianfanTextRequestSettings
+        ):
+            raise ValueError(
+                "settings must be QianfanChatRequestSettings or"
+                " QianfanTextRequestSettings"
+            )
+        settings = QianfanChatRequestSettings(
+            **settings.model_dump(),
+        )
+        if not settings.messages:
+            settings.messages = []
+        settings.messages.append({"role": "user", "content": prompt})
+        settings.stream = True
+        res = await self._send_chat_request(settings, **kwargs)
+        assert isinstance(res, AsyncIterator)
+        async for r in res:
+            yield r["result"]
 
     async def _send_chat_request(
-        self, settings: QianfanRequestSettings, **kwargs: Any
-    ) -> Union[Union[str, None], AsyncIterator[Union[Dict, None]]]:
-        if settings is None:
-            raise ValueError("The request settings cannot be `None`")
+        self, settings: QianfanChatRequestSettings, **kwargs: Any
+    ) -> Optional[QfResponse]:
+        """
+        Send chat request to the qianfan client.
+
+        Args:
+            settings (QianfanChatRequestSettings):
+                settings object for chat/completion request
+
+        Returns:
+            Optional[QfResponse]:
+                response object from the qianfan client
+        """
         try:
             data = {**settings.prepare_settings_dict(), **kwargs}
             response = await self.client.ado(**data)
@@ -118,6 +227,7 @@ class QianfanChatCompletion(
                 "qianfan chat service failed to response the messages",
                 ex,
             )
+
         return response
 
     def get_request_settings_class(self) -> "AIRequestSettings":

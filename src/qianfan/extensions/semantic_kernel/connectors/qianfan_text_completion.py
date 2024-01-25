@@ -1,11 +1,19 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 from typing import Any, AsyncIterator, Optional, Union
 
-from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
-    QianfanRequestSettings,
-    QianfanTextRequestSettings,
-)
-from qianfan.resources import Completion
 from semantic_kernel.connectors.ai.ai_exception import AIException
 from semantic_kernel.connectors.ai.ai_request_settings import AIRequestSettings
 from semantic_kernel.connectors.ai.ai_service_client_base import AIServiceClientBase
@@ -13,11 +21,18 @@ from semantic_kernel.connectors.ai.text_completion_client_base import (
     TextCompletionClientBase,
 )
 
+from qianfan import QfResponse
+from qianfan.extensions.semantic_kernel.connectors.qianfan_settings import (
+    QianfanRequestSettings,
+    QianfanTextRequestSettings,
+)
+from qianfan.resources import Completion
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
 class QianfanTextCompletion(TextCompletionClientBase, AIServiceClientBase):
-    client: Any
+    client: Completion
     """
     qianfan sdk client
     """
@@ -29,17 +44,15 @@ class QianfanTextCompletion(TextCompletionClientBase, AIServiceClientBase):
         **kwargs: Any,
     ):
         """
-        Initializes a new instance of the QianfanCompletion class.
+        Initializes a new instance of the QianfanTextCompletion class.
 
         Arguments:
             model Optional[str]
                 model name for qianfan.
             endpoint Optional[str]
                 model endpoint for qianfan.
-            app_ak_sk: Optional[Tuple[str, str]], see
-                https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlkm79mnx#access_token%E9%80%82%E7%94%A8%E7%9A%84api
-            iam_ak_sk: Optional[Tuple[str, str]], see
-                https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlkm79mnx#%E5%AE%89%E5%85%A8%E8%AE%A4%E8%AF%81aksk%E7%AD%BE%E5%90%8D%E8%AE%A1%E7%AE%97%E9%80%82%E7%94%A8%E7%9A%84api
+            **kwargs: Any
+                additional arguments to pass to the init qianfan client
         """
         super().__init__(
             ai_model_id=model,
@@ -54,43 +67,86 @@ class QianfanTextCompletion(TextCompletionClientBase, AIServiceClientBase):
         self,
         prompt: str,
         settings: QianfanRequestSettings,
-        **kwargs,
-    ) -> Union[str, None]:
+        **kwargs: Any,
+    ) -> Optional[str]:
+        """
+        Complete a chat with a given prompt.
+
+        Args:
+            prompt (str):
+                prompt to completion
+            settings (QianfanRequestSettings):
+                chat query settings, including hype parameters,
+                configurations for client
+
+        Raises:
+            ValueError: invalid input or settings
+
+        Returns:
+            Optional[str]:
+                completion response message content
+        """
         if isinstance(settings, QianfanTextRequestSettings):
             settings.prompt = prompt
         else:
             raise ValueError("The request settings must be QianfanTextRequestSettings")
         if not settings.ai_model_id:
             settings.ai_model_id = self.ai_model_id
-        response = await self._send_completion_request(settings)
-
+        response = await self._send_completion_request(settings, **kwargs)
+        assert isinstance(response, QfResponse)
         return response["result"]
 
     async def complete_stream_async(
         self,
         prompt: str,
         settings: QianfanRequestSettings,
-        **kwargs,
-    ) -> AsyncIterator[Union[str, None]]:
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        """
+        Stream completion with the given prompt.
+
+        Args:
+            prompt (str):
+                prompt to completion
+            settings (QianfanRequestSettings):
+                completion query settings, including hype parameters,
+                configurations for client
+            kwargs: Any
+                additional arguments to pass to the qianfan client
+
+        Yields:
+            str: streaming response message content
+        """
         if isinstance(settings, QianfanTextRequestSettings):
             settings.prompt = prompt
         else:
-            settings.messages = [{"role": "user", "content": prompt}]
+            raise ValueError("The request settings must be QianfanTextRequestSettings")
         if not settings.ai_model_id:
             settings.ai_model_id = self.ai_model_id
         settings.stream = True
-        response = await self._send_completion_request(settings)
-
-        return response
+        response = await self._send_completion_request(settings, **kwargs)
+        assert isinstance(response, AsyncIterator)
+        async for r in response:
+            yield r["result"]
 
     async def _send_completion_request(
         self, settings: QianfanRequestSettings, **kwargs: Any
-    ) -> Union[Union[str, None], AsyncIterator[Union[str, None]]]:
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        """
+        Send completion request to the qianfan client.
+
+        Args:
+            settings (QianfanRequestSettings):
+                settings object for chat/completion request
+
+        Returns:
+            Optional[QfResponse]:
+                response object from the qianfan client
+        """
         if settings is None:
             raise ValueError("The request settings cannot be `None`")
         try:
             data = {**settings.prepare_settings_dict(), **kwargs}
-            print("data: ", data)
             response = await self.client.ado(**data)
         except Exception as ex:
             raise AIException(

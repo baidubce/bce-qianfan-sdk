@@ -20,11 +20,10 @@ from unittest.mock import patch
 
 import pytest
 
-from qianfan.dataset import FormatType
 from qianfan.dataset.consts import QianfanDataGroupColumnName
-from qianfan.dataset.data_operator import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, QianfanDataSource
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset.dataset import Dataset, FormatType
+from qianfan.dataset.qianfan_data_operators import FilterCheckNumberWords
 from qianfan.dataset.schema import (
     QianfanGenericText,
     QianfanNonSortedConversation,

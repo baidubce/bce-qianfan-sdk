@@ -26,7 +26,7 @@ from qianfan.evaluation.evaluator import QianfanRuleEvaluator, QianfanRefereeEva
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorDefaultMetrics, QianfanRefereeEvaluatorDefaultSteps, QianfanRefereeEvaluatorDefaultMaxScore
 from qianfan.model import Model
 
-your_qianfan_dataset_id = 123
+your_qianfan_dataset_id = "your_dataset_id"
 ds = Dataset.load(qianfan_dataset_id=your_qianfan_dataset_id, is_download_to_local=False)
 
 user_app_id = 123
@@ -42,13 +42,16 @@ qianfan_evaluators = [
 ]
 
 em = EvaluationManager(qianfan_evaluators=qianfan_evaluators)
-result = em.eval([Model(id=2, version_id=7170)], ds)
+result = em.eval([Model(version_id="amv-qb8ijukaish3")], ds)
 ```
 
-由于现阶段无法从平台导出详细的评估报告，用户只能通过 `EvaluationResult` 对象的 `metrics` 成员查询整体的评估结果
+在评估完成后，`eval` 函数会返回一个 `EvaluationResult` 对象，其中 `metrics` 成员包含了整体的评估结果，`result_dataset` 成员包含了以 `Dataset` 形式展示的、详细的评估结果，包括大模型的输出和各项指标数据，用户可以自由处理，如数据分析或保存。
 
 ```python
 print(result.metrics)
+
+result_dataset = result.result_dataset
+result_dataset.save(data_file="your/path")
 ```
 
 ### 千帆评估器
@@ -113,16 +116,16 @@ result = em.eval([your_service], ds)
 与在线评估一致，对 `Model` 进行离线评估需要数据集已经被上传到千帆平台成为云端数据集
 
 ```python
-your_qianfan_dataset_id = 123
+your_qianfan_dataset_id = "your_dataset_id"
 ds = Dataset.load(qianfan_dataset_id=your_qianfan_dataset_id, is_download_to_local=False)
 
 em = EvaluationManager(local_evaluators=local_evaluators)
-result = em.eval([Model(id=2, version_id=7170)], ds)
+result = em.eval([Model(version_id="amv-qb8ijukaish3")], ds)
 ```
 
 ### 获取评估结果
 
-在完成离线评估后，评估得到的数据集会被保存在返回的 `EvaluationResult` 对象的 `result_dataset` 成员中。`result_dataset` 是一个 `Dataset` 对象，用户可以自行对其进行预览、修改、导出等操作。
+和在线评估一样，完成离线评估后，评估得到的数据集会被保存在返回的 `EvaluationResult` 对象的 `result_dataset` 成员中。
 
 ```python
 result_ds = result.result_dataset

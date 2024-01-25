@@ -292,14 +292,17 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
 
         # 构建出的新 table 会按照首行的 key 作为 columns
         if self._inner_table_is_packed():
-            new_list: List[List[Any]] = []
+            new_list: List[Union[List[Dict[str, Any]], str]] = []
             for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
                 returned_data = op(row)
                 if not returned_data:
                     log_warn("a row has been deleted from table")
                     continue
-                if not isinstance(returned_data, list):
-                    raise ValueError("returned value isn't list")
+                if not isinstance(returned_data, (list, str)):
+                    raise ValueError(
+                        "returned value isn't list or str, rather"
+                        f" {type(returned_data)}"
+                    )
 
                 new_list.append(returned_data)
 

@@ -43,7 +43,6 @@ from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,
     RequestLatencyColumnName,
 )
-from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
     BosDataSource,
     DataSource,
@@ -61,6 +60,7 @@ from qianfan.dataset.dataset_utils import (
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
 )
+from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
     QianfanSchema,
     Schema,

@@ -40,7 +40,19 @@ class Evaluator(BaseModel, ABC):
 
 
 class LocalEvaluator(Evaluator, ABC):
-    """bass class for evaluator running locally"""
+    """
+    Bass class for evaluator running locally
+
+    For user who want to implement their own LocalEvaluator,
+    they should overwrite function `evaluate`,
+    in which input represents input string or chat history,
+    reference as standard answer of input, and
+    output for llm output string.
+
+    And the return value should be a Dict
+    containing evaluation metrics and
+    metric values for single llm output.
+    """
 
 
 class QianfanEvaluator(Evaluator):

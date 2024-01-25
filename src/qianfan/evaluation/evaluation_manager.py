@@ -518,13 +518,15 @@ class EvaluationManager(BaseModel):
             download_url = result["downloadUrl"]
             log_info(f"start to download evaluation result file from {download_url}")
 
+            local_cache_file_path = "tmp.csv"
             try:
-                local_cache_file_path = "tmp.csv"
                 _download_file_from_url_streamly(download_url, local_cache_file_path)
 
                 # 返回指标信息
                 return EvaluationResult(
-                    result_dataset=Dataset.load(FileDataSource(path=local_cache_file_path)),
+                    result_dataset=Dataset.load(
+                        FileDataSource(path=local_cache_file_path)
+                    ),
                     metrics=metric_list,
                 )
             finally:

@@ -322,7 +322,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 if not isinstance(returned_data, dict):
                     raise ValueError("returned value isn't dict")
 
-                if QianfanDataGroupColumnName not in returned_data:
+                if is_grouped and QianfanDataGroupColumnName not in returned_data:
                     returned_data[QianfanDataGroupColumnName] = group_number
 
                 new_table.append(returned_data)

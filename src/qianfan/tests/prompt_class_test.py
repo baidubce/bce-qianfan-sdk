@@ -166,6 +166,10 @@ def test_render():
     assert p.variables == ["v2", "v3"]
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}3x 4", None)
 
+    p = Prompt(template="{v1} {v2}")
+    assert p.variables == ["v1", "v2"]
+    assert p.render(v1=1, v2={}) == ("1 {}", None)
+
 
 def test_delete():
     """

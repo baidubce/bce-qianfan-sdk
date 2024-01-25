@@ -56,7 +56,7 @@ def _check_online_data_process_result(etl_id: str) -> Optional[Union[bool, int]]
     result = Data.get_dataset_etl_task_info(etl_id)["result"]
     if result["processStatus"] == ETLTaskStatus.Finished.value:
         log_info(f"data etl task {etl_id} succeeded")
-        return result["destDatasetId"]
+        return result["destDatasetStrId"]
     if result["processStatus"] == ETLTaskStatus.Running.value:
         log_info(f"data etl task {etl_id} running")
         return None
@@ -113,8 +113,8 @@ def _create_a_dataset_etl_task(
     etl_id: Optional[str] = None
     for task in etl_list:
         if (
-            task["sourceDatasetId"] == origin_data_source.id
-            and task["destDatasetId"] == new_data_source.id
+            task["sourceDatasetStrId"] == origin_data_source.id
+            and task["destDatasetStrId"] == new_data_source.id
         ):
             etl_id = task["etlStrId"]
             break

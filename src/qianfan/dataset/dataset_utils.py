@@ -56,7 +56,7 @@ def _check_online_data_process_result(etl_id: str) -> Optional[Union[bool, int]]
     result = Data.get_dataset_etl_task_info(etl_id)["result"]
     if result["processStatus"] == ETLTaskStatus.Finished.value:
         log_info(f"data etl task {etl_id} succeeded")
-        return result["destDatasetId"]
+        return result["destDatasetStrId"]
     if result["processStatus"] == ETLTaskStatus.Running.value:
         log_info(f"data etl task {etl_id} running")
         return None
@@ -97,32 +97,11 @@ def _create_a_dataset_etl_task(
     )
     log_info("new dataset group and dataset created, start creating etl task")
 
-    Data.create_dataset_etl_task(
+    etl_id: str = Data.create_dataset_etl_task(
         source_dataset_id=origin_data_source.id,
         destination_dataset_id=new_data_source.id,
         operations=operator_dict,
-    )
-
-    etl_result = Data.get_dataset_etl_task_list()["result"]
-    if etl_result.get("processingCount", 0) == 0:
-        message = "get empty etl task list after creating an etl task"
-        log_error(message)
-        raise ValueError(message)
-
-    etl_list = etl_result.get("items", [])
-    etl_id: Optional[str] = None
-    for task in etl_list:
-        if (
-            task["sourceDatasetId"] == origin_data_source.id
-            and task["destDatasetId"] == new_data_source.id
-        ):
-            etl_id = task["etlStrId"]
-            break
-
-    if etl_id is None:
-        message = "can't find matched processing etl task"
-        log_error(message)
-        raise ValueError(message)
+    ).body["result"]
 
     log_info(f"created etl task id: {etl_id}")
     return etl_id, new_data_source.id

@@ -210,7 +210,7 @@ class Dataset(Table):
 
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
-            # 如果是纯文本，则放置在 prompt 一列下
+            # 如果是纯文本，则放置在 _pack 一列下
             line_data: List[str] = []
             for str_content in content:
                 # 如果指定了按照文件为粒度进行读取，

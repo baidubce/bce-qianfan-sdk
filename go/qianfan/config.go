@@ -1,8 +1,18 @@
 package qianfan
 
 import (
+	"fmt"
+
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
+
+var defaultConfig = map[string]string{
+	"QIANFAN_ACCESS_KEY":              "",
+	"QIANFAN_SECRET_KEY":              "",
+	"QIANFAN_BASE_URL":                "https://aip.baidubce.com",
+	"QIANFAN_IAM_SIGN_EXPIRATION_SEC": "300",
+}
 
 type Config struct {
 	AccessKey                string `mapstructure:"QIANFAN_ACCESS_KEY"`
@@ -12,15 +22,19 @@ type Config struct {
 }
 
 func setConfigDeafultValue(vConfig *viper.Viper) {
-	defConfig := map[string]string{
-		"QIANFAN_ACCESS_KEY":              "",
-		"QIANFAN_SECRET_KEY":              "",
-		"QIANFAN_BASE_URL":                "https://aip.baidubce.com",
-		"QIANFAN_IAM_SIGN_EXPIRATION_SEC": "300",
-	}
-	for k, v := range defConfig {
+	for k, v := range defaultConfig {
 		vConfig.SetDefault(k, v)
 	}
+}
+
+func DefConfig() *Config {
+	var config Config
+	err := mapstructure.Decode(defaultConfig, &config)
+	if err != nil {
+		e := fmt.Sprintf("decode default config failed with error `%v`, this maybe a bug in qianfan sdk. please report.", err)
+		panic(e)
+	}
+	return &config
 }
 
 func loadConfigFromEnv() (*Config, error) {

@@ -5,8 +5,18 @@ import (
 )
 
 type Client struct {
-	config    *Config
+	Config    *Config
 	requestor *Requestor
+}
+
+func NewClient(accessKey string, secretKey string) (*Client, error) {
+	config, err := loadConfigFromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config from env: %v", err)
+	}
+	config.AccessKey = accessKey
+	config.SecretKey = secretKey
+	return NewClientFromConfig(config)
 }
 
 func NewClientFromEnv() (*Client, error) {
@@ -19,7 +29,7 @@ func NewClientFromEnv() (*Client, error) {
 
 func NewClientFromConfig(config *Config) (*Client, error) {
 	return &Client{
-		config:    config,
+		Config:    config,
 		requestor: newRequestor(config),
 	}, nil
 }

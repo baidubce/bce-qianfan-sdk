@@ -115,7 +115,7 @@ func newChatCompletion(model string, endpoint string, client *Client) *ChatCompl
 }
 
 func (c *ChatCompletion) realEndpoint() (string, error) {
-	url := c.config.BaseURL + ModelAPIPrefix
+	url := c.Config.BaseURL + ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := ChatModelEndpoint[c.Model]
 		if !ok {

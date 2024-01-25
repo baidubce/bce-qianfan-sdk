@@ -84,6 +84,13 @@ def test_eb_plugin_generate():
     assert "plugin_info" in resp
 
 
+def test_eb_plugin_generate_with_params():
+    plugin = qianfan.Plugin("EBPluginV2")
+    for r in plugin.do(TEST_MESSAGE, plugins=["eChart"], stream=True):
+        assert r is not None
+        assert r["body"].get("_event")
+
+
 @pytest.mark.asyncio
 async def test_async_qianfan_plugin_generate():
     """

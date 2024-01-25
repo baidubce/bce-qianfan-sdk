@@ -225,6 +225,7 @@ def print_trainer_config(config: ModelInfo) -> None:
             continue
         row_objs = []
         row_objs.append(remove_suffix_list(k, ["_options", "_limit"]))
+        has_not_none_limit = False
         for peft in config.support_peft_types:
             peft_limit: Optional[TrainLimit] = config.common_params_limit
             if config.specific_peft_types_params_limit:
@@ -233,9 +234,11 @@ def print_trainer_config(config: ModelInfo) -> None:
                     peft_limit = specific_train_limit | config.common_params_limit
             if peft_limit.__getattribute__(k):
                 row_objs.append(peft_limit.__getattribute__(k))
+                has_not_none_limit = True
             else:
                 row_objs.append("---")
-        table.add_row(*[Pretty(a, overflow="fold") for a in row_objs])
+        if has_not_none_limit:
+            table.add_row(*[Pretty(a, overflow="fold") for a in row_objs])
     Console().print(table)
 
 

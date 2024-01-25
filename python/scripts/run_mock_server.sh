@@ -5,6 +5,8 @@ set -x
 SCRIPT=$(realpath "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 
+cd "${SCRIPTPATH}/../"
+export PYTHONPATH="${SCRIPTPATH}/../"
 nohup python "${SCRIPTPATH}/../qianfan/tests/utils/mock_server.py" > /dev/null 2>&1 & 
 
 for i in {1..20}; do 

@@ -19,4 +19,7 @@ try:
 except ImportError:  # for Python<3.8
     import importlib_metadata as metadata  # type: ignore
 
-VERSION = metadata.version("qianfan")
+try:
+    VERSION = metadata.version("qianfan")
+except:
+    VERSION = "0.0.0"  # means not installed from pip

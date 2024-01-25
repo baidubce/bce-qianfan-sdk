@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-    Unit test for ChatCompletion
+    Unit test for Plugin
 """
 import pytest
 

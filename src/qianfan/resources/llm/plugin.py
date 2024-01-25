@@ -152,7 +152,7 @@ class Plugin(BaseResource):
 
     def do(
         self,
-        query: Union[str, QfResponse, List[Dict]],
+        query: Union[str, QfMessages, List[Dict]],
         plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -222,7 +222,7 @@ class Plugin(BaseResource):
 
     async def ado(
         self,
-        query: Union[str, QfResponse, List[Dict]],
+        query: Union[str, QfMessages, List[Dict]],
         plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,

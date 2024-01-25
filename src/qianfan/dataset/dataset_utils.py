@@ -275,7 +275,7 @@ def _list_cloud_data(
         args["page_size"] = 1
     elif isinstance(by, slice):
         args["offset"] = by.start
-        args["page_size"] = by.stop - by.start
+        args["page_size"] = by.stop - by.start + 1
 
     log_debug(f"request qianfan dataset list args: {args}")
     resp = Data.list_all_entity_in_dataset(**{**kwargs, **args})["result"]["items"]

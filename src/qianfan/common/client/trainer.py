@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, Optional
 import typer
 from rich.console import Console
 from rich.pretty import Pretty
+from rich.table import Table
 from rich.progress import (
     BarColumn,
     Progress,
@@ -28,7 +29,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from rich.table import Table
+
 
 from qianfan.common.client.utils import (
     credential_required,

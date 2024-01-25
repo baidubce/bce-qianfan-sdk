@@ -10,6 +10,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  RUFF_OUTPUT_FORMAT: github
+
 jobs:
   build:
     name: Build tool

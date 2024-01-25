@@ -260,7 +260,7 @@ class ChatClient(object):
                             live.update(self.render_model_response(msg_list))
                     except Exception as e:
                         msg_list[i] = (
-                            msg_list[i][0] + "\n\n**Got Excetpion**: " + str(e),
+                            msg_list[i][0] + "\n\n**Got Exception**: " + str(e),
                             True,
                             None,
                         )

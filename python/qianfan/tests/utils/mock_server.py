@@ -714,6 +714,7 @@ def create_finetune_task():
             "log_id": "123456789",
             "result": {
                 "id": random.randint(0, 100000),
+                "uuid": "job-xxxx",
                 "name": r["name"],
                 "description": "" if "description" not in r else r["description"],
                 "createTime": "2023-09-07 11:11:11",
@@ -733,7 +734,7 @@ def create_finetune_job():
     job_id = random.randint(0, 100000)
     global finetune_task_call_times
     finetune_task_call_times[(task_id, job_id)] = 0
-    return json_response({"log_id": 123, "result": {"id": job_id}})
+    return json_response({"log_id": 123, "result": {"id": job_id, "uuid": "task-xxxx"}})
 
 
 @app.route(Consts.FineTuneGetJobAPI, methods=["POST"])

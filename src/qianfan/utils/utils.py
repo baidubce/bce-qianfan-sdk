@@ -22,7 +22,7 @@ import threading
 import uuid as uuid_lib
 from threading import current_thread
 from types import TracebackType
-from typing import Dict, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import log_info
@@ -181,3 +181,16 @@ def camel_to_snake(name: str) -> str:
 
 def snake_to_camel(name: str) -> str:
     return "".join([x.capitalize() for x in name.split("_")])
+
+
+def remove_suffix(name: str, suffix: str) -> str:
+    if name.endswith(suffix):
+        return name[: -len(suffix)]
+    return name
+
+
+def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
+    for suffix in suffix_list:
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name

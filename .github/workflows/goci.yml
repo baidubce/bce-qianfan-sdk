@@ -33,6 +33,21 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Display Go version
         run: go version
+      - name: Install latest version of Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: |
+          pip install poetry
+      # Poetry still needs to be re-prepended to the PATH on each run, since
+      # PATH does not persist between runs.
+      - name: Add Poetry to $PATH
+        run: |
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      - name: Get Poetry version
+        run: poetry --version
+      - name: Install deps
+        if: steps.cache-deps.cache-hit != 'true'
+        run: |
+          make install
       - name: Run test
         run: |
           make -C .. mock

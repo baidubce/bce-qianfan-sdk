@@ -1,9 +1,13 @@
 #!/bin/bash
 
-set -e
+set -ex
 
-sphinx-apidoc -f -F -M -o build/docs -t python/qianfan/docs python/qianfan "*test*"
-cp README.md build/docs
-cp -r docs build/docs
-cd build/docs
-make html
+SCRIPT=$(realpath "$0")
+SCRIPTPATH=$(dirname "$SCRIPT")
+ROOTPATH="${SCRIPTPATH}/../../"
+OUTPUT_PATH="${PWD}/output"
+
+sphinx-apidoc -f -F -M -o "${OUTPUT_PATH}" -t "${SCRIPTPATH}/../qianfan/docs" "${SCRIPTPATH}/../qianfan" "*test*"
+cp "${ROOTPATH}/README.md" "${OUTPUT_PATH}"
+cp -r "${ROOTPATH}/docs" "${OUTPUT_PATH}"
+make -C "${OUTPUT_PATH}" html

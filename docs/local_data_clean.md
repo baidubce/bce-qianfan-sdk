@@ -73,3 +73,7 @@ ds = ds.filter(filter_operator)
   + words_augmentation_group_sizes（可选）：文档词汇拓展的扫描窗口大小
   + words_augmentation_join_char（可选）：拓展词汇的连接字符串
   + stopwords_max_cutoff（可选）：停用词占比上限阈值
+
+## Acknowledgement
+
+我们借鉴了[BigScience-Workshop / Data prepation](https://github.com/bigscience-workshop/data-preparation/tree/main/preprocessing/training/01b_oscar_cleaning_and_filtering)的部分算子设计，在此对 BigScience-Workshop / Data prepation 作者及开源社区表示感谢。

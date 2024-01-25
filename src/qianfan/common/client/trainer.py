@@ -19,6 +19,8 @@ from typing import Any, Callable, Dict, Optional
 import typer
 from rich import print as rprint
 from rich.console import Console
+from rich.table import Table
+from rich.pretty import Pretty
 from rich.progress import (
     BarColumn,
     Progress,
@@ -49,8 +51,10 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.base import Pipeline
+from qianfan.trainer.configs import ModelInfo, TrainLimit
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
+from qianfan.utils.utils import snake_to_camel
 
 trainer_app = typer.Typer(
     no_args_is_help=True,
@@ -203,6 +207,35 @@ def list_train_type(
         raise typer.Exit()
 
 
+def print_trainer_config(config: ModelInfo) -> None:
+    """
+    Print trainer config
+    """
+    table = Table()
+    table.add_column("")
+    peft_list = []
+    if config.specific_peft_types_params_limit is not None:
+        for k in config.specific_peft_types_params_limit:
+            peft_list.append(k)
+            table.add_column(Pretty(k, overflow="fold"))
+    example = TrainLimit()
+    for k in [
+        a
+        for a in dir(example)
+        if not a.startswith("_") and not callable(getattr(example, a))
+    ]:
+        l = []
+        l.append(snake_to_camel(k))
+        for peft in peft_list:
+            c = (
+                config.specific_peft_types_params_limit[peft]
+                | config.common_params_limit
+            )
+            l.append(c.__getattribute__(k))
+        table.add_row(*[Pretty(a, overflow="fold") for a in l])
+    Console().print(table)
+
+
 def show_config_limit(
     ctx: typer.Context, param: typer.CallbackParam, value: str
 ) -> None:
@@ -214,7 +247,7 @@ def show_config_limit(
         if value not in model_list:
             print_error_msg(f"Train type {value} is not supported.")
             raise typer.Exit(1)
-        rprint(model_list[value])
+        print_trainer_config(model_list[value])
         raise typer.Exit()
 
 

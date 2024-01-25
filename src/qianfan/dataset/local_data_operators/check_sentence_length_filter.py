@@ -17,10 +17,10 @@ data operator for local using
 
 from typing import Any, Dict, List, Union
 
-from qianfan.dataset.local_data_operators.base_local_data_operator import (
+from qianfan.dataset.local_data_operators.base import (
     BaseLocalFilterOperator,
 )
-from qianfan.dataset.local_data_operators.local_operator_utils import (
+from qianfan.dataset.local_data_operators.utils import (
     pyltp_split_sentence,
 )
 

@@ -17,15 +17,15 @@ data operator for local using
 
 from typing import Any, Dict, List, Optional, Union
 
-from qianfan.dataset.local_data_operators.base_local_data_operator import (
+from qianfan.dataset.local_data_operators.base import (
     BaseLocalFilterOperator,
 )
-from qianfan.dataset.local_data_operators.local_data_operator_consts import (
+from qianfan.dataset.local_data_operators.consts import (
     _default_special_characters_set,
     _word_repetition_length_map,
     _word_repetition_max_cutoff,
 )
-from qianfan.dataset.local_data_operators.local_operator_utils import (
+from qianfan.dataset.local_data_operators.utils import (
     SentencePieceTokenizer,
     get_words_from_document,
 )

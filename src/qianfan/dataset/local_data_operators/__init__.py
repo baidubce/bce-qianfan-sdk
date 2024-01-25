@@ -1,3 +1,7 @@
+from qianfan.dataset.local_data_operators.base import (
+    BaseLocalFilterOperator,
+    BaseLocalMapOperator,
+)
 from qianfan.dataset.local_data_operators.check_character_repetition_filter import (
     LocalCheckCharacterRepetitionFilter,
 )
@@ -18,6 +22,8 @@ from qianfan.dataset.local_data_operators.check_word_number import (
 )
 
 __all__ = [
+    "BaseLocalMapOperator",
+    "BaseLocalFilterOperator",
     "LocalCheckSpecialCharactersFilter",
     "LocalCheckCharacterRepetitionFilter",
     "LocalCheckEachSentenceIsLongEnoughFilter",

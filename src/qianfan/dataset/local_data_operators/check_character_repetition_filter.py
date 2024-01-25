@@ -18,10 +18,10 @@ data operator for local using
 import math
 from typing import Any, Dict, List, Optional, Union
 
-from qianfan.dataset.local_data_operators.base_local_data_operator import (
+from qianfan.dataset.local_data_operators.base import (
     BaseLocalFilterOperator,
 )
-from qianfan.dataset.local_data_operators.local_data_operator_consts import (
+from qianfan.dataset.local_data_operators.consts import (
     _character_repetition_length_map,
     _character_repetition_max_cutoff_map,
 )

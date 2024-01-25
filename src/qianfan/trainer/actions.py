@@ -79,7 +79,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        from qianfan.dataset.dataset import BosDataSource, QianfanDataSource
+        from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 
         """
         Load dataset implementation, may called by exec and resume.
@@ -338,7 +338,7 @@ class TrainAction(
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
         self.train_config.validate_config(train_limit)
-        self.train_config._validate_valid_fields(train_limit)
+        self.train_config.validate_valid_fields(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict

@@ -185,9 +185,11 @@ def create_an_empty_qianfan_datasource() -> QianfanDataSource:
     )
 
 
-@patch("qianfan.dataset.data_source.get_bos_file_shared_url", return_value="url")
-@patch("qianfan.dataset.data_source.upload_content_to_bos", return_value=None)
-@patch("qianfan.dataset.data_source.upload_file_to_bos", return_value=None)
+@patch(
+    "qianfan.utils.bos_uploader.BosHelper.get_bos_file_shared_url", return_value="url"
+)
+@patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
+@patch("qianfan.utils.bos_uploader.BosHelper.upload_file_to_bos", return_value=None)
 def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     ds = create_an_empty_qianfan_datasource()
     with pytest.raises(
@@ -208,11 +210,16 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     config.ACCESS_KEY = ""
     config.SECRET_KEY = ""
 
-    assert not ds.save(
-        "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
-    )
+    with pytest.raises(ValueError):
+        ds.save(
+            "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
+        )
+
     ds.ak = "1"
-    assert not ds.save("1")
+
+    with pytest.raises(ValueError):
+        ds.save("1")
+
     ds.sk = "2"
     assert ds.save("1")
 

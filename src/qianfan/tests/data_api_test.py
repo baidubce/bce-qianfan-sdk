@@ -226,12 +226,14 @@ def test_create_etl_task():
     test Data.create_dataset_etl_task
     """
     resp = Data.create_dataset_etl_task(
-        1, 2, {"clean": [], "filter": [], "deduplication": [], "desensitization": []}
+        "1",
+        "2",
+        {"clean": [], "filter": [], "deduplication": [], "desensitization": []},
     )
     reqs = resp.get("_request")
 
-    assert reqs["sourceDatasetId"] == 1
-    assert reqs["destDatasetId"] == 2
+    assert reqs["sourceDatasetId"] == "1"
+    assert reqs["destDatasetId"] == "2"
     assert reqs["entityType"] == 2
     assert isinstance(reqs["operationsV2"], dict)
 
@@ -241,13 +243,13 @@ def test_get_dataset_etl_task_info():
     test Data.get_dataset_etl_task_info
     """
 
-    resp = Data.get_dataset_etl_task_info(1)
+    resp = Data.get_dataset_etl_task_info("1")
     reqs = resp.get("_request")
 
-    assert reqs["etlId"] == 1
-    assert resp.body.get("result").get("id") == 1
-    assert resp.body.get("result").get("sourceDatasetId") == 1
-    assert resp.body.get("result").get("destDatasetId") == 2
+    assert reqs["etlId"] == "1"
+    assert resp.body.get("result").get("id") == "1"
+    assert resp.body.get("result").get("sourceDatasetStrId") == "1"
+    assert resp.body.get("result").get("destDatasetStrId") == "2"
 
 
 def test_delete_dataset_etl_task():
@@ -255,10 +257,10 @@ def test_delete_dataset_etl_task():
     test Data.delete_dataset_etl_task
     """
 
-    resp = Data.delete_dataset_etl_task([12, 34])
+    resp = Data.delete_dataset_etl_task(["12", "34"])
     reqs = resp.get("_request")
 
-    assert reqs["etlIds"] == [12, 34]
+    assert reqs["etlIds"] == ["12", "34"]
 
 
 def test_create_dataset_augmenting_task():
@@ -266,22 +268,22 @@ def test_create_dataset_augmenting_task():
     test Data.create_dataset_augmenting_task
     """
     with pytest.raises(ValueError, match="num_seed_fewshot should be between 1 to 10"):
-        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 90, 1, 1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "", "", 1, 90, 1, 1)
 
     with pytest.raises(
         ValueError, match="num_instances_to_generate should be between 1 to 5000"
     ):
-        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 1, 5001, 1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "", "", 1, 1, 5001, 1)
 
     with pytest.raises(
         ValueError, match="similarity_threshold should be between 0 to 1"
     ):
-        Data.create_dataset_augmenting_task("1", 1, 2, "", "", 1, 1, 1, -1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "", "", 1, 1, 1, -1)
 
     resp = Data.create_dataset_augmenting_task(
         "test",
-        12,
-        34,
+        "12",
+        "34",
         "ERNIE-Bot-turbo",
         "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant",
         12,
@@ -292,8 +294,8 @@ def test_create_dataset_augmenting_task():
     reqs = resp.get("_request")
 
     assert reqs["name"] == "test"
-    assert reqs["sourceDatasetId"] == 12
-    assert reqs["destDatasetId"] == 34
+    assert reqs["sourceDatasetId"] == "12"
+    assert reqs["destDatasetId"] == "34"
     assert reqs["serviceName"] == "ERNIE-Bot-turbo"
     assert (
         reqs["serviceUrl"]

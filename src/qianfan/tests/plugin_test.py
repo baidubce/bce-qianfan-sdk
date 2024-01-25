@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-    Unit test for ChatCompletion
+    Unit test for Plugin
 """
 import pytest
 
@@ -82,6 +82,13 @@ def test_eb_plugin_generate():
     assert resp["object"] == "chat.completion"
     assert len(resp["result"]) != 0
     assert "plugin_info" in resp
+
+
+def test_eb_plugin_generate_with_params():
+    plugin = qianfan.Plugin("EBPluginV2")
+    for r in plugin.do(TEST_MESSAGE, plugins=["eChart"], stream=True):
+        assert r is not None
+        assert r["body"].get("_event")
 
 
 @pytest.mark.asyncio

@@ -11,31 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Library aimed to helping developer to interactive with Dataset
+data source including file
 """
 
-from qianfan.dataset.data_source import FormatType
-from qianfan.dataset.dataset import Dataset
-from qianfan.dataset.table import Table
-from qianfan.resources.console.consts import (
-    DataExportDestinationType,
-    DataProjectType,
-    DataSetType,
-    DataSourceType,
-    DataStorageType,
-    DataTemplateType,
-)
+from qianfan.dataset.data_source.baidu_qianfan import QianfanDataSource
+from qianfan.dataset.data_source.base import DataSource, FormatType
+from qianfan.dataset.data_source.bos import BosDataSource
+from qianfan.dataset.data_source.file import FileDataSource
 
 __all__ = [
-    "Dataset",
-    "Table",
-    "DataTemplateType",
-    "DataSetType",
-    "DataSourceType",
-    "DataStorageType",
-    "DataProjectType",
-    "DataExportDestinationType",
+    "DataSource",
+    "FileDataSource",
+    "QianfanDataSource",
+    "BosDataSource",
     "FormatType",
 ]

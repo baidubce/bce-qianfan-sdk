@@ -236,6 +236,15 @@ class EvaluationResultExportField(str, Enum):
     """评估指标"""
 
 
+class EvaluationResultExportTaskStatus(str, Enum):
+    Doing: str = "Doing"
+    """正在导出"""
+    Fail: str = "Fail"
+    """导出失败"""
+    Done: str = "Done"
+    """导出成功"""
+
+
 class ServiceType(str, Enum):
     Chat: str = "chat"
     """ChatCompletion Service"""

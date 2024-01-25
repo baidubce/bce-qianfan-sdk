@@ -34,7 +34,11 @@ from qianfan.common.client.utils import (
     timestamp,
 )
 from qianfan.consts import DefaultLLMModel
-from qianfan.dataset import Dataset, DataStorageType, DataTemplateType
+from qianfan.dataset import (
+    Dataset,
+    DataStorageType,
+    DataTemplateType,
+)
 from qianfan.dataset.data_source import QianfanDataSource
 from qianfan.utils.bos_uploader import parse_bos_path
 

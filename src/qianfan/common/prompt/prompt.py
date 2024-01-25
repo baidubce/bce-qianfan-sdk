@@ -288,7 +288,7 @@ class Prompt(HubSerializable):
         for v in self.variables:
             if v not in kwargs:
                 raise InvalidArgumentError(f"variable `{v}` is not provided")
-            prompt = prompt.replace(f"{left_id}{v}{right_id}", kwargs[v])
+            prompt = prompt.replace(f"{left_id}{v}{right_id}", str(kwargs[v]))
         neg_prompt = None
         if (
             self.scene_type == PromptSceneType.Text2Image

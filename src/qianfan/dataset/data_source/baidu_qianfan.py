@@ -85,6 +85,7 @@ class QianfanDataSource(DataSource, BaseModel):
         sup_storage_path: str = "",
         sup_storage_region: str = "",
     ) -> Tuple[str, str, str]:
+        """get bos info from arguments, attribute or global config"""
         if sup_storage_id and sup_storage_path and sup_storage_region:
             storage_id = sup_storage_id
             storage_path = sup_storage_path
@@ -113,6 +114,7 @@ class QianfanDataSource(DataSource, BaseModel):
         return storage_id, storage_path, storage_region
 
     def _get_console_ak_and_sk(self) -> Tuple[str, str]:
+        """get ak and sk from attribute or global config"""
         ak = self.ak if self.ak else get_config().ACCESS_KEY
         sk = self.sk if self.sk else get_config().SECRET_KEY
         if not ak:

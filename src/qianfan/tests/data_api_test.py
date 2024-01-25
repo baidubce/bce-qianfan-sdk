@@ -226,7 +226,9 @@ def test_create_etl_task():
     test Data.create_dataset_etl_task
     """
     resp = Data.create_dataset_etl_task(
-        "1", "2", {"clean": [], "filter": [], "deduplication": [], "desensitization": []}
+        "1",
+        "2",
+        {"clean": [], "filter": [], "deduplication": [], "desensitization": []},
     )
     reqs = resp.get("_request")
 

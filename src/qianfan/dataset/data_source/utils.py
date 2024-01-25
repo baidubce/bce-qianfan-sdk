@@ -25,7 +25,7 @@ import dateutil.parser
 import requests
 
 from qianfan.config import encoding, get_config
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source.base import FormatType
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (

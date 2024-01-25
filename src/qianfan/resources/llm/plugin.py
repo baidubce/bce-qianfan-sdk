@@ -152,7 +152,7 @@ class Plugin(BaseResource):
 
     def do(
         self,
-        query: Union[str, QfResponse, List[Dict]],
+        query: Union[str, QfMessages, List[Dict]],
         plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -167,8 +167,11 @@ class Plugin(BaseResource):
         Execute a plugin action on the provided input prompt and generate responses.
 
         Parameters:
-          query Union[str, QfResponse, List[Dict]]:
+          query Union[str, QfMessages, List[Dict]]:
             The user input for which a response is generated.
+            Concretely, the following types are supported:
+              query should be str for qianfan plugin, while
+              query should be either QfMessages or list for EBPlugin
           plugins (Optional[List[str]]):
             A list of plugins to be used.
           model (Optional[str]):
@@ -222,7 +225,7 @@ class Plugin(BaseResource):
 
     async def ado(
         self,
-        query: Union[str, QfResponse, List[Dict]],
+        query: Union[str, QfMessages, List[Dict]],
         plugins: Optional[List[str]] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -238,8 +241,11 @@ class Plugin(BaseResource):
         responses.
 
         Parameters:
-          query Union[str, QfResponse, List[Dict]]:
+          query Union[str, QfMessages, List[Dict]]:
             The user input for which a response is generated.
+            Concretely, the following types are supported:
+              query should be str for qianfan plugin, while
+              query should be either QfMessages or list for EBPlugin
           plugins (Optional[List[str]]):
             A list of plugins to be used.
           model (Optional[str]):
@@ -294,7 +300,7 @@ class Plugin(BaseResource):
 
     def batch_do(
         self,
-        query_list: List[Union[str, QfResponse, List[Dict]]],
+        query_list: List[Union[str, QfMessages, List[Dict]]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -303,8 +309,8 @@ class Plugin(BaseResource):
         generate responses.
 
         Parameters:
-          query_list List[Union[str, QfResponse, List[Dict]]]:
-            The list user input or prompt for which a response is generated.
+          query_list List[Union[str, QfMessages, List[Dict]]]:
+            The list user input messages or prompt for which a response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -330,7 +336,7 @@ class Plugin(BaseResource):
 
     async def abatch_do(
         self,
-        query_list: List[Union[str, QfResponse, List[Dict]]],
+        query_list: List[Union[str, QfMessages, List[Dict]]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -339,8 +345,8 @@ class Plugin(BaseResource):
         responses.
 
         Parameters:
-          query_list List[Union[str, QfResponse, List[Dict]]]:
-            The list user input or prompt for which a response is generated.
+          query_list List[Union[str, QfMessages, List[Dict]]]:
+            The list user input messages or prompt for which a response is generated.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.

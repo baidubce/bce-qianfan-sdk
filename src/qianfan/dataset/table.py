@@ -298,8 +298,8 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 if not returned_data:
                     log_warn("a row has been deleted from table")
                     continue
-                if not isinstance(returned_data, list):
-                    raise ValueError("returned value isn't list")
+                if not isinstance(returned_data, (list, str)):
+                    raise ValueError(f"returned value isn't list or str, rather {type(returned_data)}")
 
                 new_list.append(returned_data)
 

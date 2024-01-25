@@ -43,7 +43,7 @@ class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
         sentence_piece_model_path: str,
         words_augmentation_group_sizes: Optional[List[int]] = None,
         words_augmentation_join_char: Optional[str] = None,
-        stopwords_min_cutoff: Optional[float] = None,
+        stopwords_max_cutoff: Optional[float] = None,
         **kwargs: Any,
     ):
         super().__init__(filter_column=filter_column, **kwargs)
@@ -62,12 +62,12 @@ class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
         else:
             self.words_augmentation_join_char = words_augmentation_join_char
 
-        if not stopwords_min_cutoff:
-            self.stopwords_min_cutoff = _stopwords_min_cutoff_map.get(
+        if not stopwords_max_cutoff:
+            self.stopwords_max_cutoff = _stopwords_min_cutoff_map.get(
                 self.text_language, 0.1
             )
         else:
-            self.stopwords_min_cutoff = stopwords_min_cutoff
+            self.stopwords_max_cutoff = stopwords_max_cutoff
 
         self.sentence_piece_model = SentencePieceTokenizer(sentence_piece_model_path)
 
@@ -81,7 +81,7 @@ class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
             "text_language": self.text_language,
             "words_augmentation_group_sizes": self.words_augmentation_group_sizes,
             "words_augmentation_join_char": self.words_augmentation_join_char,
-            "stopwords_min_cutoff": self.stopwords_min_cutoff,
+            "stopwords_max_cutoff": self.stopwords_max_cutoff,
         }
         for k, v in kwargs.items():
             s += f"\t\t{k}: {v}\n"
@@ -121,4 +121,4 @@ class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
         if stopwords_ratio > 1.0:
             stopwords_ratio = 1.0
 
-        return stopwords_ratio >= self.stopwords_min_cutoff
+        return stopwords_ratio >= self.stopwords_max_cutoff

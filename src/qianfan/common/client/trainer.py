@@ -17,9 +17,7 @@ import time
 from typing import Any, Callable, Dict, Optional
 
 import typer
-from rich import print as rprint
 from rich.console import Console
-from rich.table import Table
 from rich.pretty import Pretty
 from rich.progress import (
     BarColumn,
@@ -30,6 +28,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
+from rich.table import Table
 
 from qianfan.common.client.utils import (
     credential_required,
@@ -224,15 +223,15 @@ def print_trainer_config(config: ModelInfo) -> None:
         for a in dir(example)
         if not a.startswith("_") and not callable(getattr(example, a))
     ]:
-        l = []
-        l.append(snake_to_camel(k))
+        row_objs = []
+        row_objs.append(snake_to_camel(k))
         for peft in peft_list:
             c = (
                 config.specific_peft_types_params_limit[peft]
                 | config.common_params_limit
             )
-            l.append(c.__getattribute__(k))
-        table.add_row(*[Pretty(a, overflow="fold") for a in l])
+            row_objs.append(c.__getattribute__(k))
+        table.add_row(*[Pretty(a, overflow="fold") for a in row_objs])
     Console().print(table)
 
 

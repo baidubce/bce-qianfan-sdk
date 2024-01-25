@@ -16,7 +16,7 @@
 Library aimed to helping developer to interactive with Dataset
 """
 
-from qianfan.dataset.data_source.data_source_utils import FormatType
+from qianfan.dataset.data_source import FormatType
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import (
@@ -37,5 +37,4 @@ __all__ = [
     "DataStorageType",
     "DataProjectType",
     "DataExportDestinationType",
-    "FormatType",
 ]

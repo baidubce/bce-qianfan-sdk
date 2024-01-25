@@ -23,11 +23,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
 
-from qianfan import get_config
-from qianfan.config import encoding
+from qianfan.config import get_config, encoding
 from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
 from qianfan.dataset.data_source import DataSource, FormatType
-from qianfan.dataset.data_source.data_source_utils import (
+from qianfan.dataset.data_source.utils import (
     _check_data_and_zip_file_valid,
     _check_is_any_data_existed_in_dataset,
     _create_export_data_task_and_wait_for_success,

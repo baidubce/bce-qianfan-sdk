@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from qianfan.config import encoding
 from qianfan.dataset.data_source import DataSource, FormatType
-from qianfan.dataset.data_source.data_source_utils import (
+from qianfan.dataset.data_source.utils import (
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
 )

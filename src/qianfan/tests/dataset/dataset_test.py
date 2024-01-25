@@ -23,7 +23,7 @@ import pytest
 from qianfan.dataset.consts import QianfanDataGroupColumnName
 from qianfan.dataset.data_operator import FilterCheckNumberWords
 from qianfan.dataset.data_source import DataSource, QianfanDataSource
-from qianfan.dataset.data_source.data_source_utils import FormatType
+from qianfan.dataset import FormatType
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.schema import (
     QianfanGenericText,

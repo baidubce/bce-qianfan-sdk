@@ -15,7 +15,7 @@
 data operator for local using
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.dataset.local_data_operators.base_local_data_operator import (
     BaseLocalFilterOperator,
@@ -73,8 +73,13 @@ class LocalCheckWordRepetitionFilter(BaseLocalFilterOperator):
             s += f"\t\t{k}: {v}\n"
         return s
 
-    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
-        document = entry[self.filter_column]
+    def __call__(
+        self,
+        entry: Union[Dict[str, Any], List[Dict[str, Any]], str],
+        *args: Any,
+        **kwargs: Any,
+    ) -> bool:
+        document = self._get_real_document_from_entry(entry)
 
         def _get_freq_word_ngrams(content: str, n: int) -> Dict[str, int]:
             words = get_words_from_document(

@@ -16,8 +16,9 @@ base local data operator class
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
+from qianfan.utils import log_error
 from qianfan.utils.pydantic import BaseModel
 
 
@@ -31,8 +32,34 @@ class BaseLocalFilterOperator(ABC):
         self.text_language = text_language
 
     @abstractmethod
-    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
+    def __call__(
+        self,
+        entry: Union[Dict[str, Any], List[Dict[str, Any]], str],
+        *args: Any,
+        **kwargs: Any,
+    ) -> bool:
         """filter func"""
+
+    def _get_real_document_from_entry(
+        self, entry: Union[Dict[str, Any], List[Dict[str, Any]], str]
+    ) -> str:
+        if isinstance(entry, dict):
+            return entry[self.filter_column]
+
+        if isinstance(entry, str):
+            return entry
+
+        if isinstance(entry, list):
+            err_msg = (
+                "can't filter a list, please call unpack() of dataset object firstly"
+                " before filtering"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        err_msg = f"unexpected entry type {type(entry)} for filtering"
+        log_error(err_msg)
+        raise ValueError(err_msg)
 
 
 class BaseLocalMapOperator(BaseModel, ABC):
@@ -40,6 +67,9 @@ class BaseLocalMapOperator(BaseModel, ABC):
 
     @abstractmethod
     def __call__(
-        self, entry: Dict[str, Any], *args: Any, **kwargs: Any
+        self,
+        entry: Union[Dict[str, Any], List[Dict[str, Any]], str],
+        *args: Any,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """mapping func"""

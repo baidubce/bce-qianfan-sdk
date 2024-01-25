@@ -15,7 +15,7 @@
 data operator for local using
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from qianfan.dataset.local_data_operators.base_local_data_operator import (
     BaseLocalFilterOperator,
@@ -50,8 +50,14 @@ class LocalCheckEachSentenceIsLongEnoughFilter(BaseLocalFilterOperator):
             s += f"\t\t{k}: {v}\n"
         return s
 
-    def __call__(self, entry: Dict[str, Any], *args: Any, **kwargs: Any) -> bool:
-        sentences = pyltp_split_sentence(entry[self.filter_column])
+    def __call__(
+        self,
+        entry: Union[Dict[str, Any], List[Dict[str, Any]], str],
+        *args: Any,
+        **kwargs: Any,
+    ) -> bool:
+        document = self._get_real_document_from_entry(entry)
+        sentences = pyltp_split_sentence(document)
         if len(sentences) == 0:
             return False
 

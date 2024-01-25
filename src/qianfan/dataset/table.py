@@ -292,7 +292,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
 
         # 构建出的新 table 会按照首行的 key 作为 columns
         if self._inner_table_is_packed():
-            new_list: List[List[Any]] = []
+            new_list: List[Union[List[Dict[str, Any]], str]] = []
             for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
                 returned_data = op(row)
                 if not returned_data:

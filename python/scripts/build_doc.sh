@@ -2,7 +2,7 @@
 
 set -ex
 
-SCRIPT=$(realpath "$0")
+SCRIPT=$(readlink -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 ROOTPATH="${SCRIPTPATH}/../../"
 OUTPUT_PATH="${PWD}/output"

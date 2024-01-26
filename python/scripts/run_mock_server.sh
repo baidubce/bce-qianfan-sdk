@@ -2,7 +2,7 @@
 
 set -x
 
-SCRIPT=$(realpath "$0")
+SCRIPT=$(readlink -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 
 cd "${SCRIPTPATH}/../"

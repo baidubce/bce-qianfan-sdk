@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SCRIPT=$(realpath "$0")
+SCRIPT=$(readlink -f -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 ROOTPATH="${SCRIPTPATH}/../../"
 OUTPUT_PATH="${PWD}/output"

@@ -70,11 +70,6 @@ data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
 semantic_kernel = ["semantic_kernel"]
 all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
 
-[[tool.poetry.source]]
-name = "mirrors"
-url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
-priority = "default"
-
 [tool.ruff]
 select = [
   "E",  # pycodestyle

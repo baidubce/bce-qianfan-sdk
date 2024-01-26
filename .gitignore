@@ -59,3 +59,7 @@ poetry.lock
 .env*
 .ipynb_checkpoints
 .DS_Store
+
+# JS Dependencies
+node_modules
+dist

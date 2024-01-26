@@ -53,7 +53,7 @@ jobs:
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
           generateReleaseNotes: true
-          tag: ${{ steps.check-version.outputs.version }}
+          tag: ${{ format('v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main
       - name: release to pypi

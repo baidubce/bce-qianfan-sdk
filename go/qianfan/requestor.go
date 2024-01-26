@@ -25,7 +25,7 @@ type Stream[T any, Ptr QfResponse[T]] struct {
 	*streamInternal
 }
 
-func (s *Stream[T, Ptr]) Recv() (*T, error) {
+func (s *Stream[T, Ptr]) Recv() (Ptr, error) {
 	response, err := s.streamInternal.Recv()
 	var responseBody Ptr = new(T)
 	if err != nil {
@@ -187,7 +187,7 @@ func (r *Requestor) ModelRequestStream(request *QfRequest) (*streamInternal, err
 	return r.requestStream(request)
 }
 
-func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (*T, error) {
+func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (Ptr, error) {
 	response, err := requestor.request(request)
 	if err != nil {
 		return nil, err

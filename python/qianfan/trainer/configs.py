@@ -178,12 +178,13 @@ class TrainConfig(BaseModel):
             return False
         return True
 
-    def _validate_valid_fields(self, limit: "TrainLimit") -> bool:
+    def validate_valid_fields(self, limit: "TrainLimit") -> str:
         """
-        return False if value is not in limit.supported_hyper_params
+        return invalid field name if value is not in limit.supported_hyper_params
+        return "" if all fields are valid.
         """
         supported_fields = limit.supported_hyper_params
-        for field in self.dict(exclude=None):
+        for field in self.dict(exclude_none=True):
             if field in ["peft_type", "extras", "trainset_rate"]:
                 continue
             if field not in supported_fields:
@@ -191,8 +192,8 @@ class TrainConfig(BaseModel):
                     f"train_config hyper params '{field}' is not in supported_params:"
                     f" {supported_fields}"
                 )
-                return False
-        return True
+                return field
+        return ""
 
 
 class TrainLimit(BaseModel):
@@ -270,7 +271,6 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             log_steps_limit=(1, 100),
             warmup_ratio_limit=(0.01, 0.5),
             weight_decay_limit=(0.0001, 0.1),
-            lora_rank_options=[2, 4, 8],
         ),
         specific_peft_types_params_limit={
             PeftType.ALL: TrainLimit(
@@ -286,6 +286,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             ),
             PeftType.LoRA: TrainLimit(
                 learning_rate_limit=(0.00003, 0.001),
+                lora_rank_options=[2, 4, 8],
                 supported_hyper_params=[
                     "epoch",
                     "learning_rate",
@@ -310,7 +311,6 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             log_steps_limit=(1, 100),
             warmup_ratio_limit=(0.01, 0.5),
             weight_decay_limit=(0.0001, 0.1),
-            lora_rank_options=[2, 4, 8],
         ),
         specific_peft_types_params_limit={
             PeftType.ALL: TrainLimit(
@@ -326,6 +326,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             ),
             PeftType.LoRA: TrainLimit(
                 learning_rate_limit=(0.00003, 0.001),
+                lora_rank_options=[2, 4, 8],
                 supported_hyper_params=[
                     "epoch",
                     "learning_rate",

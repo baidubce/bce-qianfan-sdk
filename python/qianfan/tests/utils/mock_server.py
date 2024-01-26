@@ -1330,10 +1330,52 @@ def get_evaluation_result_export_task_status():
                 "exportType": "storage",
                 "volumeId": "modelrepo-test",
                 "exportPath": "qianfan_modelrepo_offline/workspace/model_eval_result_export/cl_test23_305_1704338430470.csv",
-                "downloadUrl": "",
+                "downloadUrl": "http://127.0.0.1:8866/eval_result_mock",
             },
         }
     )
+
+
+@app.route("/eval_result_mock", methods=["GET"])
+def get_mock_eval_resul():
+    sio = io.StringIO()
+    sio.writelines(
+        [
+            "模型名称,模型版本,Prompt问题,模型结果,预期回答,BLEU-4,ROUGE-1,ROUGE-2,ROUGE-L,裁判员模型打分,裁判员模型打分理由",
+            (
+                'ERNIE-Bot-turbo,ERNIE-Bot-turbo-0922,"请根据下面的新闻生成摘要,'
+                " 内容如下：周末采摘杨桃助农，游玩澄迈养生农庄自驾活动，"
+                "快来报名~1月31日早上8点半出发哦，前往澄迈杨桃园采摘，入园免费，"
+                "漫山遍野的杨桃和你亲密接触（带走的按2.5元/斤）。"
+                "报名方式：拨136-3755-3497报名，"
+                '或戳链接生成摘要如下：",周末采摘杨桃助农活动将于1月31日早上8点半出发，'
+                "前往澄迈杨桃园采摘，报名方式为拨打电话或点击链接。"
+                "活动还包含游玩澄迈养生农庄，可自驾前往。报名免费，采摘带走按2.5元/斤。"
+                ",这个周末自驾游去摘杨桃啦！,0.80%,7.84%,0.00%,6.45%,5,该答案对题目所提问题的理解完全正确，"
+                "答案详细清晰，用词恰当，符合题目的要求，"
+                "同时也准确地概括了新闻的主要内容。答案中包含了活动的所有关键信息，"
+                "如时间、地点、活动内容和报名方式等，且格式规范，易于理解。因此，"
+                "我认为这个答案应该得到满分。"
+            ),
+            (
+                'Llama-2-7B,Qianfan-Chinese-Llama-2-7B,"请根据下面的新闻生成摘要,'
+                " 内容如下：周末采摘杨桃助农，游玩澄迈养生农庄自驾活动，"
+                "快来报名~1月31日早上8点半出发哦，前往澄迈杨桃园采摘，入园免费，"
+                "漫山遍野的杨桃和你亲密接触（带走的按2.5元/斤）。"
+                "报名方式：拨136-3755-3497报名，"
+                '或戳链接生成摘要如下：",周末去澄迈采摘杨桃，入园免费，带走按2.5元/斤，'
+                "快来报名！,这个周末自驾游去摘杨桃啦！,2.71%,30.77%,0.00%,28.57%,5,该答案准确地概括了原文的主要信息，"
+                "即周末前往澄迈杨桃园采摘杨桃的活动，并提到了入园免费和带走的杨桃价格。"
+                "同时，该答案简洁明了，没有使用不当的词汇或语法错误。因此，"
+                '该答案符合题目的要求，可以得到5分的高分。"'
+            ),
+        ]
+    )
+
+    def gen() -> str:
+        yield sio.getvalue()
+
+    return flask.Response(gen())
 
 
 @app.route(Consts.ServiceCreateAPI, methods=["POST"])
@@ -2109,8 +2151,8 @@ def get_dataset_etl_task_info():
             "result": {
                 "id": request.json["etlId"],
                 "userId": 113,
-                "sourceDatasetId": origin_data_source_id,
-                "destDatasetId": new_data_source_id,
+                "sourceDatasetStrId": origin_data_source_id,
+                "destDatasetStrId": new_data_source_id,
                 "taskId": 5331,
                 "entityCount": 1,
                 "entityType": 2,
@@ -2360,8 +2402,8 @@ def get_dataset_etl_task_list():
                             "filter_check_lang_id",
                             "filter_check_perplexity",
                         ],
-                        "sourceDatasetId": origin_data_source_id,
-                        "destDatasetId": new_data_source_id,
+                        "sourceDatasetStrId": origin_data_source_id,
+                        "destDatasetStrId": new_data_source_id,
                         "entityCount": 1,
                         "entityType": 2,
                         "result": {
@@ -2428,9 +2470,9 @@ def get_dataset_aug_task_list():
                     {
                         "id": 241,
                         "projectType": 20,
-                        "sourceDatasetId": 2343,
+                        "sourceDatasetStrId": "2343",
                         "sourceDatasetName": "sys_bos数据集1106-V1",
-                        "destDatasetId": 2431,
+                        "destDatasetStrId": "2431",
                         "destDatasetName": "werwrewrwe-V2",
                         "area": 0,
                         "status": 4,
@@ -2446,9 +2488,9 @@ def get_dataset_aug_task_list():
                     {
                         "id": 240,
                         "projectType": 20,
-                        "sourceDatasetId": 2324,
+                        "sourceDatasetStrId": "2324",
                         "sourceDatasetName": "3-V2",
-                        "destDatasetId": 2343,
+                        "destDatasetStrId": "2343",
                         "destDatasetName": "sys_bos数据集1106-V1",
                         "area": 0,
                         "status": 3,
@@ -2477,8 +2519,8 @@ def get_dataset_augmenting_task_info():
             "log_id": "cg7tfntkmkwevpgs",
             "result": {
                 "id": request.json["taskId"],
-                "sourceDatasetId": 1902,
-                "destDatasetId": 2325,
+                "sourceDatasetStrId": "1902",
+                "destDatasetStrId": "2325",
                 "sourceDatasetName": "augment_0922_1-V1",
                 "destDatasetName": "54-V5",
                 "labelIds": "",
@@ -2745,6 +2787,308 @@ def eb_plugin():
             },
         }
     )
+
+
+@app.route(Consts.ModelAPIPrefix + "/erniebot/plugin", methods=["POST"])
+def eb_plugin_v2():
+    if request.json.get("stream"):
+        return flask.Response(
+            eb_plugin_stream(),
+            mimetype="text/event-stream",
+        )
+
+    return json_response(
+        {
+            "id": "as-sky7jr2cay",
+            "object": "chat.completion",
+            "created": 1703036786,
+            "result": (
+                "以下是我对图片的理解：\n图中是一条笔直的公路，路旁有黄色的交通柱，"
+                "天空上有白云，太阳已经落下，天空呈现出蓝色。"
+                "\n可以参考下面的提问方式:\n示例1) 请根据图片描述，"
+                "写一篇500字以上的文章，描述这幅图片带来的情感和感受。\n示例2)"
+                " 请根据图片描述，创作一篇500字以上的短篇小说，描述图中场景，人物心情，"
+                "以及可能发生的故事。\n示例3) 请根据图片内容，创作一首5句以上的现代诗，"
+                "表达对这幅图片的感受和情感。\n"
+            ),
+            "is_truncated": False,
+            "need_clear_history": False,
+            "plugin_info": [
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": "",
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}',
+                    "status": "1",
+                    "api_id": "ImageAI.QA",
+                },
+                {
+                    "plugin_id": "1069:1.0.0",
+                    "plugin_name": "",
+                    "plugin_req": '{"query":"","history":"[]","url":"https://ebui-cdn.bj.bcebos.com/showcase/pluginDemo/imageTalk2.jpg"}',
+                    "plugin_resp": '{"errCode":0,"errMsg":"success","status":"StartFileparser","rawText":"","actionName":"解析图片","actionContent":"开始图片解析","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"","actionName":"解析图片","actionContent":"图片解析完成","usage":null,"eventName":"event"}\n{"errCode":0,"errMsg":"success","status":"","rawText":"REMOVED","actionName":"","actionContent":"","usage":{"total_tokens":174},"eventName":"message"}\n{"errCode":0,"errMsg":"","status":"","rawText":"","actionName":"","actionContent":"","usage":{"total_tokens":174},"eventName":"lastMessage"}',
+                    "status": "2",
+                    "api_id": "ImageAI.QA",
+                },
+            ],
+            "plugin_metas": [
+                {
+                    "pluginMameForModel": "",
+                    "pluginNameForHuman": "说图解画",
+                    "operationId": "QA",
+                    "pluginVersion": "1.0.0",
+                    "pluginId": "1069:1.0.0",
+                    "apiId": "ImageAI.QA",
+                    "logoUrl": "https://imagetalks.bj.bcebos.com/ImageTalks.png",
+                    "uiMeta": "",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 42,
+                "completion_tokens": 124,
+                "total_tokens": 166,
+                "plugins": [
+                    {
+                        "name": "ImageAI",
+                        "parse_tokens": 0,
+                        "abstract_tokens": 0,
+                        "search_tokens": 0,
+                        "total_tokens": 174,
+                    }
+                ],
+            },
+        }
+    )
+
+
+def eb_plugin_stream():
+    """
+    mock stream response
+    """
+    mock_plugin_stream_result = [
+        r"event: pluginMeta",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585098,"sentence_id":0,"plugin_metas":[{"apiId":"eChart.plot","logoUrl":"https://echarts.bj.bcebos.com/prod/echarts-logo.png","operationId":"plot","pluginId":"1066:1.0.1","pluginNameForHuman":"E言易图","pluginNameForModel":"eChart","pluginVersion":"1.0.1","runtimeMetaInfo":{"function_call":{"arguments":"{\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:'
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r"\",\"title\":\"学校教育质量\",\"chartType\":\"radar\",\"data\":\"学校A的师资力量得分为10分，"
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r'\"}","name":"eChart.plot","thoughts":"这是一个图表绘制需求"},"returnRawFieldName":"option","thoughts":"这是一个图表绘制需求"},"uiMeta":null}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585098,"sentence_id":0,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585098,"sentence_id":1,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585103,"sentence_id":2,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":3,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":4,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析成功\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":5,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析成功\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制中\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":6,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析成功\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制成功\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: chat",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":0,"is_end":false,"is_truncated":false,"result":"\n\n```echarts-option\n[{\"radar\":{\"indicator\":[{\"name\":\"师资力量（分）\",\"max\":10},{\"name\":\"设施（分）\",\"max\":10},{\"name\":\"课程内容（分）\",\"max\":10},{\"name\":\"学生满意度（分）\",\"max\":10}]},\"series\":[{\"type\":\"radar\",\"data\":[{\"name\":\"学校A\",\"value\":[10,8,7,9]},{\"name\":\"学校B\",\"value\":[8,9,8,7]},{\"name\":\"学校C\",\"value\":[7,7,9,8]}]}],\"title\":{\"text\":\"学校教育质量\"},\"tooltip\":{\"show\":true},\"legend\":{\"show\":true,\"bottom\":15}}]\n```\n\n","need_clear_history":false,"finish_reason":"normal","usage":{"prompt_tokens":135,"completion_tokens":0,"total_tokens":135}}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":7,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析成功\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制成功\"}\n{\"errCode\":0,\"option\":\"REMOVED\",\"usage\":null}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表解释\",\"actionContent\":\"图表解释成功\"}","status":"1","api_id":"eChart.plot"}]}'
+        ),
+        r"event: chat",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585108,"sentence_id":1,"is_end":false,"is_truncated":false,"result":"\n\n**图表数据:**\n\n|'
+            r" 维度 | 学校A | 学校B | 学校C |\n| :--: |  :--: | :--: | :--: | |\n|"
+            r" 师资力量 | 10 | 8 | 7 |\n| 设施 | 8 | 9 | 7 |\n| 课程内容 | 7 | 8 | 9"
+            r" |\n| 学生满意度 | 9 | 7 | 8"
+            r" |\n\n我（文心一言）是百度开发的人工智能模型，"
+            r"通过分析大量公开文本信息进行学习。然而，我所提供的信息可能存在误差。"
+            r"因此上文内容仅供参考，并不应被视为专业建议。"
+            r'","need_clear_history":false,"finish_reason":"normal","usage":{"prompt_tokens":135,"completion_tokens":0,"total_tokens":135}}'
+        ),
+        r"event: plugin",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585109,"sentence_id":8,"plugin_info":[{"plugin_id":"1066:1.0.1","plugin_name":"","plugin_req":"{\"data\":\"学校A的师资力量得分为10分，'
+            r"设施得分为8分，课程内容的得分为7分，学生满意度的得分为9分。\\n*"
+            r" 学校B的师资力量得分为8分，设施得分为9分，课程内容的得分为8分，"
+            r"学生满意度的得分为7分。\\n* 学校C的师资力量得分为7分，设施得分为7分，"
+            r"课程内容的得分为9分，学生满意度的得分为8分。"
+            r"\",\"query\":\"请按照下面要求给我生成雷达图：学校教育质量:"
+            r" 维度：师资力量、设施、课程内容、学生满意度。对象：A,B,C三所学校。"
+            r"学校A的师资力量得分为10分，设施得分为8分，课程内容的得分为7分，"
+            r"学生满意度的得分为9分。\\n* 学校B的师资力量得分为8分，设施得分为9分，"
+            r"课程内容的得分为8分，学生满意度的得分为7分。\\n*"
+            r" 学校C的师资力量得分为7分，设施得分为7分，课程内容的得分为9分，"
+            r"学生满意度的得分为8分。"
+            r'\",\"chartType\":\"radar\",\"title\":\"学校教育质量\",\"last_bot_message\":\"\"}","plugin_resp":"{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"数据分析\",\"actionContent\":\"数据分析成功\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制中\"}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表绘制\",\"actionContent\":\"图表绘制成功\"}\n{\"errCode\":0,\"option\":\"REMOVED\",\"usage\":null}\n{\"errCode\":0,\"errMsg\":\"success\",\"status\":\"\",\"actionName\":\"图表解释\",\"actionContent\":\"图表解释成功\"}\n{\"errCode\":0,\"option\":\"REMOVED\",\"usage\":{\"len_answer\":0,\"len_chart_interpret\":230,\"len_echarts_dict_str\":308,\"total_tokens\":591}}","status":"2","api_id":"eChart.plot"}]}'
+        ),
+        r"event: chat",
+        (
+            r"data:"
+            r' {"id":"as-hdpadsaghd","object":"chat.completion","created":1705585109,"sentence_id":2,"is_end":true,"is_truncated":false,"result":"","need_clear_history":false,"finish_reason":"normal","usage":{"prompt_tokens":135,"completion_tokens":308,"total_tokens":443,"plugins":[{"name":"eChart","parse_tokens":0,"abstract_tokens":0,"search_tokens":0,"total_tokens":591}]}}'
+        ),
+    ]
+
+    for i, d in enumerate(mock_plugin_stream_result):
+        if i % 2 == 0:
+            yield d + "\n"
+        else:
+            yield d + "\n\n"
 
 
 @app.route(Consts.ModelAPIPrefix + "/plugin/<endpoint>/", methods=["POST"])

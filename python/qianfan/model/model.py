@@ -327,7 +327,7 @@ class Model(
             Dataset: batch result contained in dataset
         """
 
-        return dataset.test_using_llm(self.id, self.version_id, **kwargs)
+        return dataset.test_using_llm(self.version_id, **kwargs)
 
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):

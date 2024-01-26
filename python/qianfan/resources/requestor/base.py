@@ -267,10 +267,10 @@ class BaseAPIRequestor(object):
         """
         with self._rate_limiter:
             responses = self._client.request_stream(request)
+        event = ""
         for body, resp in responses:
             _check_if_status_code_is_200(resp)
             body_str = body.decode("utf-8")
-            event = ""
             if body_str == "":
                 continue
             if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
@@ -292,7 +292,8 @@ class BaseAPIRequestor(object):
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
             if event != "":
-                json_body["event"] = event
+                json_body["_event"] = event
+                event = ""
             parsed = self._parse_response(json_body, resp)
             parsed.request = QfRequest.from_requests(resp.request)
             parsed.request.json_body = copy.deepcopy(request.json_body)

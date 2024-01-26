@@ -16,7 +16,6 @@
 """
 collection of evaluator
 """
-import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
@@ -40,7 +39,19 @@ class Evaluator(BaseModel, ABC):
 
 
 class LocalEvaluator(Evaluator, ABC):
-    """bass class for evaluator running locally"""
+    """
+    Bass class for evaluator running locally
+
+    For user who want to implement their own LocalEvaluator,
+    they should overwrite function `evaluate`,
+    in which input represents input string or chat history,
+    reference as standard answer of input, and
+    output for llm output string.
+
+    And the return value should be a Dict
+    containing evaluation metrics and
+    metric values for single llm output.
+    """
 
 
 class QianfanEvaluator(Evaluator):
@@ -108,43 +119,3 @@ class QianfanManualEvaluator(QianfanEvaluator):
             ManualEvaluatorDimension(dimension="满意度")
         ] + dimensions
         return input_dict
-
-
-try:
-    from opencompass.openicl.icl_evaluator import BaseEvaluator
-
-    class OpenCompassLocalEvaluator(LocalEvaluator):
-        class Config:
-            arbitrary_types_allowed = True
-
-        open_compass_evaluator: BaseEvaluator
-
-        @root_validator
-        def _check_open_compass_evaluator(
-            cls, values: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            open_compass_evaluator = values["open_compass_evaluator"]
-            signature = inspect.signature(open_compass_evaluator.score)
-            params = list(signature.parameters.keys())
-            params.sort()
-            if params != ["predictions", "references"]:
-                raise ValueError(
-                    f"unsupported opencompass evaluator {type(open_compass_evaluator)}"
-                )
-            return values
-
-        def evaluate(
-            self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
-        ) -> Dict[str, Any]:
-            return self.open_compass_evaluator.score([output], [reference])  # type: ignore
-
-except ModuleNotFoundError:
-
-    class OpenCompassLocalEvaluator(LocalEvaluator):  # type: ignore
-        def __init__(self, **kwargs: Any) -> None:
-            log_error(
-                "opencompass not found in your packages, OpenCompassLocalEvaluator not"
-                " available now. if you want to use it please execute 'pip install"
-                " opencompass'"
-            )
-            raise ModuleNotFoundError("opencompass not found")

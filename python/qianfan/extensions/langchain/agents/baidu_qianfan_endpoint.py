@@ -126,6 +126,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         return _agent_input_keys()
 
     @root_validator
+    @classmethod
     def validate_llm(cls, values: dict) -> dict:
         """check if llm is valid"""
         return _agent_validate_logical_core(values)
@@ -235,6 +236,7 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         return _agent_input_keys()
 
     @root_validator
+    @classmethod
     def validate_llm(cls, values: dict) -> dict:
         return _agent_validate_logical_core(values)
 

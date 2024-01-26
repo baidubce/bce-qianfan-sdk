@@ -14,7 +14,7 @@
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.config import get_config
-from qianfan.dataset import BosDataSource, QianfanDataSource
+from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig

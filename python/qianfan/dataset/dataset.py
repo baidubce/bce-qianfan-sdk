@@ -32,6 +32,7 @@ from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
+from qianfan.dataset import FormatType
 from qianfan.dataset.consts import (
     FirstTokenLatencyColumnName,
     LLMOutputColumnName,
@@ -42,12 +43,10 @@ from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,
     RequestLatencyColumnName,
 )
-from qianfan.dataset.data_operator import QianfanOperator
 from qianfan.dataset.data_source import (
     BosDataSource,
     DataSource,
     FileDataSource,
-    FormatType,
     QianfanDataSource,
 )
 from qianfan.dataset.dataset_utils import (
@@ -61,6 +60,7 @@ from qianfan.dataset.dataset_utils import (
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
 )
+from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
     QianfanSchema,
     Schema,
@@ -210,7 +210,7 @@ class Dataset(Table):
 
             pyarrow_table = pyarrow.Table.from_pylist(csv_data)
         elif format_type == FormatType.Text:
-            # 如果是纯文本，则放置在 prompt 一列下
+            # 如果是纯文本，则放置在 _pack 一列下
             line_data: List[str] = []
             for str_content in content:
                 # 如果指定了按照文件为粒度进行读取，
@@ -922,7 +922,7 @@ class Dataset(Table):
             log_info(f"list local dataset data by {by}")
             return super().list(by)
         else:
-            _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
+            return _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
 
     def row_number(self) -> int:
         if (

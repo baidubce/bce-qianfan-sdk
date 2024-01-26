@@ -21,5 +21,5 @@ except ImportError:  # for Python<3.8
 
 try:
     VERSION = metadata.version("qianfan")
-except:
-    VERSION = "0.0.0"  # means not installed from pip
+except Exception:
+    VERSION = "0.0.0"  # means not installed by any package manager

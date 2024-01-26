@@ -57,7 +57,7 @@ func newCompletion(model string, endpoint string, client *Client) *Completion {
 }
 
 func (c *Completion) realEndpoint() (string, error) {
-	url := ModelAPIPrefix
+	url := c.Config.BaseURL + ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := CompletionModelEndpoint[c.Model]
 		if !ok {

@@ -2,22 +2,25 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEmbedding(t *testing.T) {
 	client, err := NewClientFromEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	embed := client.Embedding()
 	resp, err := embed.Do(context.Background(), &EmbeddingRequest{
-		Input: []string{"hello"},
+		Input: []string{"hello1", "hello2"},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Printf(resp.Object)
-	// assert.Equal(t, "ok", resp.Result)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.RawResponse.StatusCode, 200)
+	assert.Equal(t, len(resp.Data), 2)
+	assert.NotEqual(t, len(resp.Data), 0)
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, EmbeddingEndpoint[DefaultEmbeddingModel])
+	req, err := getRequestBody[EmbeddingRequest](resp.RawResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, req.Input[0], "hello1")
+	assert.Equal(t, req.Input[1], "hello2")
 }

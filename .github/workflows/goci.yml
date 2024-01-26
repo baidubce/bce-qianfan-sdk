@@ -6,7 +6,7 @@ on:
       - "go/**"
   workflow_dispatch:
 
-name: Build
+name: Go CI
 
 defaults:
   run:
@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   build:
-    name: Build tool
+    name: Unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

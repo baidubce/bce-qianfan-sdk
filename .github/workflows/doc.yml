@@ -4,9 +4,11 @@ on:
   pull_request:
     path:
       - "python/**"
+      - "docs/**"
+      - "README.md"
   workflow_dispatch:
 
-name: Python CI
+name: Docs
 
 defaults:
   run:
@@ -18,19 +20,13 @@ env:
 
 jobs:
   build:
-    name: Unit tests
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - 'ubuntu-latest'
-          - 'macos-latest'
-          - 'windows-latest'
         python-version:
-          - '3.7'
-          - '3.8'
-          - '3.9'
-          - '3.10'
           - '3.11'
     steps:
       - name: Checkout code
@@ -55,13 +51,11 @@ jobs:
         if: steps.cache-deps.cache-hit != 'true'
         run: |
           make install
-      - name: run lint
-        run: make lint
-      - name: Run tests
-        run: make test
-      - name: Build artifacts
-        run: make build
+      - name: Build docs
+        run: make doc
+      - name: Prepare artifact
+        run: tar czvf docs.tar.gz ./output/docs
       - uses: actions/upload-artifact@v4
         with:
-          name: python wheel
-          path: output/**
+          name: docs
+          path: docs.tar.gz

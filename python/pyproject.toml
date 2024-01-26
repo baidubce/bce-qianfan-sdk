@@ -68,6 +68,7 @@ types-protobuf = "4.24.0.4"
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
 semantic_kernel = ["semantic_kernel"]
+dev = ["langchain", "semantic_kernel"]
 all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
 
 [tool.ruff]

@@ -18,6 +18,7 @@ clean:
 
 doc: install prepare_output
 	$(MAKE) -C python doc
+	rm -rf output/docs
 	mv python/output/* ./output
 	rm -rf python/output
 

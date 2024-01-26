@@ -36,6 +36,8 @@ jobs:
         run: make test
       - name: Build artifacts
         run: make build
+      - name: Build docs
+        run: make doc
       - name: Check Version
         id: check-version
         run: |

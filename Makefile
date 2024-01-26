@@ -29,12 +29,10 @@ lint: install
 	$(MAKE) -C python lint
 
 test: clean install 
-	cd python && bash scripts/run_test.sh
+	$(MAKE) -C python test
+	$(MAKE) -C go test
 
 mock: 
 	bash ./python/scripts/run_mock_server.sh
-
-gotest:
-	$(MAKE) -C go test
 
 .PHONY: build install uninstall clean 

@@ -62,6 +62,6 @@ jobs:
       - name: Build artifacts
         run: make build
       - uses: actions/upload-artifact@v4
+        if: ${{ matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest' }}
         with:
-          name: python wheel
           path: ${{ github.workspace }}/python/output/**

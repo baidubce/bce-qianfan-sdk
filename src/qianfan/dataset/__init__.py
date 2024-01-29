@@ -16,7 +16,13 @@
 Library aimed to helping developer to interactive with Dataset
 """
 
-from qianfan.dataset.data_source import FormatType
+from qianfan.dataset.data_source import (
+    BosDataSource,
+    DataSource,
+    FileDataSource,
+    FormatType,
+    QianfanDataSource,
+)
 from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import (
@@ -38,4 +44,8 @@ __all__ = [
     "DataProjectType",
     "DataExportDestinationType",
     "FormatType",
+    "DataSource",
+    "QianfanDataSource",
+    "BosDataSource",
+    "FileDataSource",
 ]

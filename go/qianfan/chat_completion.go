@@ -101,7 +101,7 @@ func ChatCompletionAssistantMessage(message string) ChatCompletionMessage {
 	}
 }
 
-func newChatCompletion(options *Options) *ChatCompletion {
+func newChatCompletion(options *RequestorOptions) *ChatCompletion {
 	chat := &ChatCompletion{
 		BaseModel{
 			Model:     DefaultChatCompletionModel,
@@ -109,13 +109,11 @@ func newChatCompletion(options *Options) *ChatCompletion {
 			Requestor: newRequestor(options),
 		},
 	}
-	val, err := getOptionsVal[string](options, modelOptionKey)
-	if err == nil {
-		chat.Model = *val
+	if options.Model != nil {
+		chat.Model = *options.Model
 	}
-	val, err = getOptionsVal[string](options, endpointOptionKey)
-	if err == nil {
-		chat.Endpoint = *val
+	if options.Endpoint != nil {
+		chat.Endpoint = *options.Endpoint
 	}
 	return chat
 }
@@ -160,6 +158,6 @@ func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionReque
 }
 
 func NewChatCompletion(optionList ...Option) *ChatCompletion {
-	options := toOptions(optionList...)
+	options := makeOptions(optionList...)
 	return newChatCompletion(options)
 }

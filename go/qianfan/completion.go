@@ -35,11 +35,9 @@ var CompletionModelEndpoint = map[string]string{
 	"CodeLlama-7b-Instruct": "/completions/codellama_7b_instruct",
 }
 
-func newCompletion(options *Options) *Completion {
-	model, err := getOptionsVal[string](options, modelOptionKey)
-	hasModel := err == nil
-	endpoint, err := getOptionsVal[string](options, endpointOptionKey)
-	hasEndpoint := err == nil
+func newCompletion(options *RequestorOptions) *Completion {
+	hasModel := options.Model != nil
+	hasEndpoint := options.Endpoint != nil
 	comp := Completion{
 		BaseModel: BaseModel{
 			Model:     DefaultCompletionModel,
@@ -55,15 +53,15 @@ func newCompletion(options *Options) *Completion {
 	// 如果提供了 model
 	if hasModel {
 		// 那就看模型是否是 chat 模型，如果是，就使用 chatWrapper
-		_, ok := ChatModelEndpoint[*model]
+		_, ok := ChatModelEndpoint[*options.Model]
 		if ok {
 			comp.chatWrapper = newChatCompletion(options)
 		} else {
-			comp.Model = *model
+			comp.Model = *options.Model
 		}
 	}
 	if hasEndpoint {
-		comp.Endpoint = *endpoint
+		comp.Endpoint = *options.Endpoint
 	}
 	return &comp
 }
@@ -135,6 +133,6 @@ func (c *Completion) Stream(ctx context.Context, request CompletionRequest) (*St
 }
 
 func NewCompletion(optionList ...Option) *Completion {
-	options := toOptions(optionList...)
+	options := makeOptions(optionList...)
 	return newCompletion(options)
 }

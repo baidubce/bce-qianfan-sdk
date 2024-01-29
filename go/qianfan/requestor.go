@@ -16,9 +16,106 @@ import (
 	"github.com/baidubce/bce-sdk-go/util"
 )
 
+// 所有请求的基类
+type RequestBody[T any] interface {
+	WithExtra(m map[string]interface{}) T
+	GetExtra() map[string]interface{}
+}
+
+type BaseRequestBody struct {
+	Extra map[string]interface{} `mapstructure:"-"`
+}
+
+func (r BaseRequestBody) WithExtra(m map[string]interface{}) BaseRequestBody {
+	r.Extra = m
+	return r
+}
+
+func (r BaseRequestBody) GetExtra() map[string]interface{} {
+	return r.Extra
+}
+
+func (r *BaseRequestBody) SetStream() {
+	if r.Extra == nil {
+		r.Extra = map[string]interface{}{}
+	}
+	r.Extra["stream"] = true
+}
+
+func convertToMap[T RequestBody[T]](body T) (map[string]interface{}, error) {
+	m, err := dumpToMap(body)
+	if err != nil {
+		return nil, err
+	}
+	extra := body.GetExtra()
+	for k, v := range extra {
+		m[k] = v
+	}
+	return m, nil
+}
+
+// 请求类型，用于区分是模型的请求还是管控类请求
+// 用在 QfRequest.Type
+const (
+	ModelRequest   = "model"
+	ConsoleRequest = "console"
+)
+
+type QfRequest struct {
+	Type    string
+	Method  string
+	URL     string
+	Headers map[string]string
+	Params  map[string]string
+	Body    map[string]interface{}
+}
+
+func newModelRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
+	return newRequest(ModelRequest, method, url, body)
+}
+
+func newConsoleRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
+	return newRequest(ConsoleRequest, method, url, body)
+}
+
+func newRequest[T RequestBody[T]](requestType string, method string, url string, body T) (*QfRequest, error) {
+	b, err := convertToMap(body)
+	if err != nil {
+		return nil, err
+	}
+	return newRequestFromMap(requestType, method, url, b)
+}
+
+func newRequestFromMap(requestType string, method string, url string, body map[string]interface{}) (*QfRequest, error) {
+	return &QfRequest{
+		Type:    requestType,
+		Method:  method,
+		URL:     url,
+		Body:    body,
+		Params:  map[string]string{},
+		Headers: map[string]string{},
+	}, nil
+}
+
+// 所有回复类型的基类
+type baseResponse struct {
+	Body        []byte
+	RawResponse *http.Response
+}
+
+type QfResponse[T any] interface {
+	*T
+	SetResponse(Body []byte, RawResponse *http.Response)
+}
+
+func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {
+	r.Body = Body
+	r.RawResponse = RawResponse
+}
+
 type Requestor struct {
 	client  *http.Client
-	Options *Options
+	Options *RequestorOptions
 }
 
 type Stream[T any, Ptr QfResponse[T]] struct {
@@ -31,7 +128,7 @@ func (s *Stream[T, Ptr]) Recv() (Ptr, error) {
 	if err != nil {
 		return responseBody, err
 	}
-	responseBody.SetResponse(response.Body, s.streamInternal.httpResponse)
+	responseBody.SetResponse(response.Body, response.RawResponse)
 	err = json.Unmarshal(response.Body, &responseBody)
 	if err != nil {
 		return responseBody, err
@@ -51,19 +148,19 @@ func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
 	}, nil
 }
 
-func (s *streamInternal) Close() {
-	s.httpResponse.Body.Close()
+func (si *streamInternal) Close() {
+	si.httpResponse.Body.Close()
 }
 
-func (s *streamInternal) Recv() (*baseResponse, error) {
+func (si *streamInternal) Recv() (*baseResponse, error) {
 	var eventData []byte
 	for len(eventData) == 0 {
 		for {
-			if !s.scanner.Scan() {
-				return nil, s.scanner.Err()
+			if !si.scanner.Scan() {
+				return nil, si.scanner.Err()
 			}
 
-			line := s.scanner.Bytes()
+			line := si.scanner.Bytes()
 			if len(line) == 0 {
 				break
 			}
@@ -83,20 +180,16 @@ func (s *streamInternal) Recv() (*baseResponse, error) {
 	}
 	response := baseResponse{
 		Body:        eventData,
-		RawResponse: s.httpResponse,
+		RawResponse: si.httpResponse,
 	}
 	return &response, nil
 }
 
-func newRequestor(options *Options) *Requestor {
+func newRequestor(options *RequestorOptions) *Requestor {
 	return &Requestor{
 		client:  &http.Client{},
 		Options: options,
 	}
-}
-
-func (r *Requestor) modelFullURL(request *QfRequest) string {
-	return GetConfig().BaseURL + request.URL
 }
 
 func (r *Requestor) sign(request *QfRequest) error {
@@ -185,15 +278,6 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	req.URL.RawQuery = q.Encode()
 
 	return req, nil
-}
-
-func (r *Requestor) ModelRequest(request *QfRequest) (*baseResponse, error) {
-	request.URL = r.modelFullURL(request)
-	return r.request(request)
-}
-func (r *Requestor) ModelRequestStream(request *QfRequest) (*streamInternal, error) {
-	request.URL = r.modelFullURL(request)
-	return r.requestStream(request)
 }
 
 func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (Ptr, error) {

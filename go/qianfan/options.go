@@ -1,48 +1,27 @@
 package qianfan
 
-import "fmt"
-
-type Options map[string]interface{}
-type Option func(*Options)
-
-const (
-	modelOptionKey    = "model"
-	endpointOptionKey = "endpoint"
-)
+type Option func(*RequestorOptions)
+type RequestorOptions struct {
+	Model    *string
+	Endpoint *string
+}
 
 func WithModel(model string) Option {
-	return func(options *Options) {
-		(*options)[modelOptionKey] = model
+	return func(options *RequestorOptions) {
+		options.Model = &model
 	}
 }
 
 func WithEndpoint(endpoint string) Option {
-	return func(options *Options) {
-		(*options)[endpointOptionKey] = endpoint
+	return func(options *RequestorOptions) {
+		options.Endpoint = &endpoint
 	}
 }
 
-func toOptions(options ...Option) *Options {
-	var result = make(Options)
-	for _, option := range options {
-		option(&result)
+func makeOptions(options ...Option) *RequestorOptions {
+	option := RequestorOptions{}
+	for _, opt := range options {
+		opt(&option)
 	}
-	return &result
-}
-
-func getOptionsVal[T any](options *Options, key string) (*T, error) {
-	if options == nil || len(*options) <= 0 {
-		return nil, fmt.Errorf("options is nil")
-	}
-
-	val, ok := (*options)[key]
-	if !ok {
-		return nil, fmt.Errorf("options key %s not found", key)
-	}
-	switch t := val.(type) {
-	case T:
-		return &t, nil
-	default:
-		return nil, fmt.Errorf("options key %s type is not %T", key, t)
-	}
+	return &option
 }

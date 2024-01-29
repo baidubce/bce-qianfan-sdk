@@ -1,7 +1,6 @@
 package qianfan
 
 import (
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
@@ -27,20 +26,11 @@ func setConfigDeafultValue(vConfig *viper.Viper) {
 	}
 }
 
-func DefConfig() *Config {
-	var config Config
-	err := mapstructure.Decode(defaultConfig, &config)
-	if err != nil {
-		logger.Panicf("decode default config failed with error `%v`, this maybe a bug in qianfan sdk. please report.", err)
-	}
-	return &config
-}
-
 func loadConfigFromEnv() *Config {
 	vConfig := viper.New()
 
 	vConfig.SetConfigFile(".env")
-	vConfig.SetConfigType("env")
+	vConfig.SetConfigType("dotenv")
 	vConfig.AutomaticEnv()
 	setConfigDeafultValue(vConfig)
 

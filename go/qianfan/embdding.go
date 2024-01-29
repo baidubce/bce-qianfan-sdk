@@ -43,7 +43,7 @@ var EmbeddingEndpoint = map[string]string{
 	"tao-8k":       "/embeddings/tao_8k",
 }
 
-func newEmbedding(options *Options) *Embedding {
+func newEmbedding(options *RequestorOptions) *Embedding {
 	embedding := &Embedding{
 		BaseModel{
 			Model:     DefaultEmbeddingModel,
@@ -51,13 +51,11 @@ func newEmbedding(options *Options) *Embedding {
 			Requestor: newRequestor(options),
 		},
 	}
-	model, err := getOptionsVal[string](options, modelOptionKey)
-	if err == nil {
-		embedding.Model = *model
+	if options.Model != nil {
+		embedding.Model = *options.Model
 	}
-	endpoint, err := getOptionsVal[string](options, endpointOptionKey)
-	if err == nil {
-		embedding.Endpoint = *endpoint
+	if options.Endpoint != nil {
+		embedding.Endpoint = *options.Endpoint
 	}
 	return embedding
 }
@@ -86,10 +84,10 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 		return nil, err
 	}
 
-	return sendRequest[EmbeddingResponse, *EmbeddingResponse](c.Requestor, req)
+	return sendRequest[EmbeddingResponse](c.Requestor, req)
 }
 
 func NewEmbedding(optionList ...Option) *Embedding {
-	options := toOptions(optionList...)
+	options := makeOptions(optionList...)
 	return newEmbedding(options)
 }

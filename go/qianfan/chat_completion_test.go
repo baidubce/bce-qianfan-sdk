@@ -14,14 +14,15 @@ import (
 )
 
 func TestChatCompletion(t *testing.T) {
-
 	for model, endpoint := range ChatModelEndpoint {
 		chat := NewChatCompletion(WithModel(model))
-		resp, err := chat.Do(context.Background(), ChatCompletionRequest{
-			Messages: []ChatCompletionMessage{
-				ChatCompletionUserMessage("你好"),
-			},
-		}.WithExtra(map[string]interface{}{}),
+		resp, err := chat.Do(
+			context.Background(),
+			ChatCompletionRequest{
+				Messages: []ChatCompletionMessage{
+					ChatCompletionUserMessage("你好"),
+				},
+			}.WithExtra(map[string]interface{}{}),
 		)
 		assert.NoError(t, err)
 		assert.Equal(t, resp.RawResponse.StatusCode, 200)
@@ -39,11 +40,14 @@ func TestChatCompletion(t *testing.T) {
 func TestChatCompletionStream(t *testing.T) {
 	for model, endpoint := range ChatModelEndpoint {
 		chat := NewChatCompletion(WithModel(model))
-		resp, err := chat.Stream(context.Background(), ChatCompletionRequest{
-			Messages: []ChatCompletionMessage{
-				ChatCompletionUserMessage("你好"),
+		resp, err := chat.Stream(
+			context.Background(),
+			ChatCompletionRequest{
+				Messages: []ChatCompletionMessage{
+					ChatCompletionUserMessage("你好"),
+				},
 			},
-		})
+		)
 		assert.NoError(t, err)
 		turn_count := 0
 		for {

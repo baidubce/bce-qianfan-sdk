@@ -64,3 +64,70 @@ for {
     fmt.Printf(resp.Result)
 }
 ```
+
+### Completion 续写
+
+对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `Completion` 来完成这一任务。
+
+```go
+completion := client.Completion()  // 使用默认模型 ERNIE-Bot-turbo
+// completion := client.CompletionFromModel("ERNIE-Bot-4")  // 可以指定模型
+// completion := client.CompletionFromEndpoint("your_custom_endpoint")  // 或者指定 endpoint
+
+completion := client.Completion()
+resp, err := completion.Do(
+    context.Background(), 
+    &CompletionRequest{
+        Prompt: prompt,
+    }
+)
+if err != nil {
+    t.Fatal(err)
+}
+fmt.Printf(resp.Result)   // 模型返回的结果
+```
+
+也可以调用 `DoStream` 方法实现流式返回
+
+```go
+completion := client.Completion()
+
+resp, err := completion.DoStream(  // DoStream 启用流式返回，参数与 Do 相同
+    context.Background(), 
+    &CompletionRequest{
+        Prompt: prompt,
+    }
+)
+if err != nil {
+    t.Fatal(err)
+}
+defer resp.Close()  // 关闭流
+for {
+    resp, err := resp.Recv()  // 每次循环可以拿到流式返回的结果
+    if err != nil {
+        assert.Fail(t, "got err")
+    }
+    if resp.IsEnd {  // 判断是否是流式返回的结束标志
+        break
+    }
+    fmt.Printf(resp.Result)
+}
+```
+
+### Embedding 向量化
+
+千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
+
+```go
+embed := client.Embedding()
+resp, err := embed.Do(
+    context.Background(), 
+    &EmbeddingRequest{
+        Input: []string{"hello1", "hello2"},
+    }
+)
+if err != nil {
+    t.Fatal(err)
+}
+embed := resp.Data[0].Embedding  // 获取第一个输入的向量
+```

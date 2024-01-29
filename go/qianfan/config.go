@@ -39,7 +39,7 @@ func loadConfigFromEnv() *Config {
 
 	config := &Config{}
 	if err := vConfig.Unmarshal(&config); err != nil {
-		// logger.Panicf("load config file failed with error `%v`, please check your config.", err)
+		logger.Panicf("load config file failed with error `%v`, please check your config.", err)
 	}
 	return config
 }

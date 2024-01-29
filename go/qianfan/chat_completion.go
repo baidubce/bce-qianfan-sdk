@@ -60,12 +60,9 @@ type ChatCompletionRequest struct {
 	ToolChoice      ToolChoice              `mapstructure:"tool_choice,omitempty"`
 }
 
-func (r *ChatCompletionRequest) toMap() (map[string]interface{}, error) {
-	m, err := dumpToMap(r)
-	if err != nil {
-		return nil, err
-	}
-	return r.BaseRequestBody.union(m)
+func (r ChatCompletionRequest) WithExtra(extra map[string]interface{}) ChatCompletionRequest {
+	r.Extra = extra
+	return r
 }
 
 var ChatModelEndpoint = map[string]string{
@@ -104,18 +101,27 @@ func ChatCompletionAssistantMessage(message string) ChatCompletionMessage {
 	}
 }
 
-func newChatCompletion(model string, endpoint string, client *Client) *ChatCompletion {
-	return &ChatCompletion{
+func newChatCompletion(options *Options) *ChatCompletion {
+	chat := &ChatCompletion{
 		BaseModel{
-			Model:    model,
-			Endpoint: endpoint,
-			Client:   client,
+			Model:     DefaultChatCompletionModel,
+			Endpoint:  "",
+			Requestor: newRequestor(options),
 		},
 	}
+	val, err := getOptionsVal[string](options, modelOptionKey)
+	if err == nil {
+		chat.Model = *val
+	}
+	val, err = getOptionsVal[string](options, endpointOptionKey)
+	if err == nil {
+		chat.Endpoint = *val
+	}
+	return chat
 }
 
 func (c *ChatCompletion) realEndpoint() (string, error) {
-	url := c.Config.BaseURL + ModelAPIPrefix
+	url := ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := ChatModelEndpoint[c.Model]
 		if !ok {
@@ -128,31 +134,32 @@ func (c *ChatCompletion) realEndpoint() (string, error) {
 	return url, nil
 }
 
-func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest) (*ModelResponse, error) {
+func (c *ChatCompletion) Do(ctx context.Context, request ChatCompletionRequest) (*ModelResponse, error) {
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
 	}
-	req, err := newRequest("POST", url, request)
+	req, err := newModelRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
-	return sendRequest[ModelResponse, *ModelResponse](c.requestor, req)
+	return sendRequest[ModelResponse](c.Requestor, req)
 }
 
-func (c *ChatCompletion) DoStream(ctx context.Context, request *ChatCompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
+func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
 	}
-	m, err := request.toMap()
+	request.SetStream()
+	req, err := newModelRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
-	m["stream"] = true
-	req, err := newRequestFromMap("POST", url, m)
-	if err != nil {
-		return nil, err
-	}
-	return sendStreamRequest[ModelResponse, *ModelResponse](c.requestor, req)
+	return sendStreamRequest[ModelResponse](c.Requestor, req)
+}
+
+func NewChatCompletion(optionList ...Option) *ChatCompletion {
+	options := toOptions(optionList...)
+	return newChatCompletion(options)
 }

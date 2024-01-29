@@ -31,12 +31,9 @@ type EmbeddingResponse struct {
 	baseResponse
 }
 
-func (r *EmbeddingRequest) toMap() (map[string]interface{}, error) {
-	m, err := dumpToMap(r)
-	if err != nil {
-		return nil, err
-	}
-	return r.BaseRequestBody.union(m)
+func (r *EmbeddingRequest) WithExtra(extra map[string]interface{}) *EmbeddingRequest {
+	r.Extra = extra
+	return r
 }
 
 var EmbeddingEndpoint = map[string]string{
@@ -46,18 +43,27 @@ var EmbeddingEndpoint = map[string]string{
 	"tao-8k":       "/embeddings/tao_8k",
 }
 
-func newEmbedding(model string, endpoint string, client *Client) *Embedding {
-	return &Embedding{
+func newEmbedding(options *Options) *Embedding {
+	embedding := &Embedding{
 		BaseModel{
-			Model:    model,
-			Endpoint: endpoint,
-			Client:   client,
+			Model:     DefaultEmbeddingModel,
+			Endpoint:  "",
+			Requestor: newRequestor(options),
 		},
 	}
+	model, err := getOptionsVal[string](options, modelOptionKey)
+	if err == nil {
+		embedding.Model = *model
+	}
+	endpoint, err := getOptionsVal[string](options, endpointOptionKey)
+	if err == nil {
+		embedding.Endpoint = *endpoint
+	}
+	return embedding
 }
 
 func (c *Embedding) realEndpoint() (string, error) {
-	url := c.Config.BaseURL + ModelAPIPrefix
+	url := ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := EmbeddingEndpoint[c.Model]
 		if !ok {
@@ -75,10 +81,15 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 	if err != nil {
 		return nil, err
 	}
-	req, err := newRequest("POST", url, request)
+	req, err := newModelRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
 
-	return sendRequest[EmbeddingResponse, *EmbeddingResponse](c.requestor, req)
+	return sendRequest[EmbeddingResponse, *EmbeddingResponse](c.Requestor, req)
+}
+
+func NewEmbedding(optionList ...Option) *Embedding {
+	options := toOptions(optionList...)
+	return newEmbedding(options)
 }

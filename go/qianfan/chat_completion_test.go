@@ -14,15 +14,15 @@ import (
 )
 
 func TestChatCompletion(t *testing.T) {
-	client, err := NewClientFromEnv()
-	assert.NoError(t, err)
+
 	for model, endpoint := range ChatModelEndpoint {
-		chat := client.ChatCompletionFromModel(model)
-		resp, err := chat.Do(context.Background(), &ChatCompletionRequest{
+		chat := NewChatCompletion(WithModel(model))
+		resp, err := chat.Do(context.Background(), ChatCompletionRequest{
 			Messages: []ChatCompletionMessage{
 				ChatCompletionUserMessage("你好"),
 			},
-		})
+		}.WithExtra(map[string]interface{}{}),
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, resp.RawResponse.StatusCode, 200)
 		assert.NotEqual(t, resp.Id, nil)
@@ -37,11 +37,9 @@ func TestChatCompletion(t *testing.T) {
 }
 
 func TestChatCompletionStream(t *testing.T) {
-	client, err := NewClientFromEnv()
-	assert.NoError(t, err)
 	for model, endpoint := range ChatModelEndpoint {
-		chat := client.ChatCompletionFromModel(model)
-		resp, err := chat.DoStream(context.Background(), &ChatCompletionRequest{
+		chat := NewChatCompletion(WithModel(model))
+		resp, err := chat.Stream(context.Background(), ChatCompletionRequest{
 			Messages: []ChatCompletionMessage{
 				ChatCompletionUserMessage("你好"),
 			},

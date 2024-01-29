@@ -17,8 +17,8 @@ import (
 )
 
 type Requestor struct {
-	Config *Config
-	client *http.Client
+	client  *http.Client
+	Options *Options
 }
 
 type Stream[T any, Ptr QfResponse[T]] struct {
@@ -88,15 +88,15 @@ func (s *streamInternal) Recv() (*baseResponse, error) {
 	return &response, nil
 }
 
-func newRequestor(config *Config) *Requestor {
+func newRequestor(options *Options) *Requestor {
 	return &Requestor{
-		Config: config,
-		client: &http.Client{},
+		client:  &http.Client{},
+		Options: options,
 	}
 }
 
 func (r *Requestor) modelFullURL(request *QfRequest) string {
-	return r.Config.BaseURL + request.URL
+	return GetConfig().BaseURL + request.URL
 }
 
 func (r *Requestor) sign(request *QfRequest) error {
@@ -129,8 +129,8 @@ func (r *Requestor) sign(request *QfRequest) error {
 	bceRequest.SetUri(u.RequestURI())
 
 	credentials := &auth.BceCredentials{
-		AccessKeyId:     r.Config.AccessKey,
-		SecretAccessKey: r.Config.SecretKey,
+		AccessKeyId:     GetConfig().AccessKey,
+		SecretAccessKey: GetConfig().SecretKey,
 	}
 	now := util.NowUTCSeconds()
 	bceRequest.SetHeader("Host", u.Hostname())
@@ -143,7 +143,7 @@ func (r *Requestor) sign(request *QfRequest) error {
 	signOptions := &auth.SignOptions{
 		HeadersToSign: headersToSign,
 		Timestamp:     now,
-		ExpireSeconds: r.Config.IAMSignExpirationSeconds,
+		ExpireSeconds: GetConfig().IAMSignExpirationSeconds,
 	}
 	signer.Sign(bceRequest, credentials, signOptions)
 
@@ -152,6 +152,15 @@ func (r *Requestor) sign(request *QfRequest) error {
 }
 
 func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
+	if request.Type == ModelRequest {
+		request.URL = GetConfig().BaseURL + request.URL
+		request.Body["extra_parameters"] = map[string]string{
+			"request_source": VERSION_INDICATOR,
+		}
+	} else if request.Type == ConsoleRequest {
+		request.URL = GetConfig().ConsoleBaseURL + request.URL
+		request.Headers["request-source"] = VERSION_INDICATOR
+	}
 	bodyBytes, err := json.Marshal(request.Body)
 	if err != nil {
 		return nil, err
@@ -193,7 +202,6 @@ func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequ
 		return nil, err
 	}
 	var resp Ptr = new(T)
-	// T.SetResponse(&model, response.Body, response.RawResponse)
 	resp.SetResponse(response.Body, response.RawResponse)
 	err = json.Unmarshal(response.Body, resp)
 	if err != nil {

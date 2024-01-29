@@ -8,15 +8,15 @@ import (
 )
 
 func TestCompletion(t *testing.T) {
-	client, err := NewClientFromEnv()
-	assert.NoError(t, err)
-
 	prompt := "hello"
 
-	completion := client.Completion()
-	resp, err := completion.Do(context.Background(), &CompletionRequest{
-		Prompt: prompt,
-	})
+	completion := NewCompletion()
+	resp, err := completion.Do(
+		context.Background(),
+		CompletionRequest{
+			Prompt: prompt,
+		}.WithExtra(map[string]interface{}{}),
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, resp.RawResponse.StatusCode, 200)
 	assert.NotEqual(t, resp.Id, nil)
@@ -30,8 +30,8 @@ func TestCompletion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, request.Messages[0].Content, prompt)
 
-	completion = client.CompletionFromModel("SQLCoder-7B")
-	resp, err = completion.Do(context.Background(), &CompletionRequest{
+	completion = NewCompletion(WithModel("SQLCoder-7B"))
+	resp, err = completion.Do(context.Background(), CompletionRequest{
 		Prompt:      prompt,
 		Temperature: 0.5,
 	})
@@ -46,13 +46,13 @@ func TestCompletion(t *testing.T) {
 }
 
 func TestCompletionStream(t *testing.T) {
-	client, err := NewClientFromEnv()
-	assert.NoError(t, err)
 
 	modelList := []string{"ERNIE-Bot-turbo", "SQLCoder-7B"}
 	for _, m := range modelList {
-		chat := client.CompletionFromModel(m)
-		resp, err := chat.DoStream(context.Background(), &CompletionRequest{
+		chat := NewCompletion(
+			WithModel(m),
+		)
+		resp, err := chat.Stream(context.Background(), CompletionRequest{
 			Prompt:      "hello",
 			Temperature: 0.5,
 		})

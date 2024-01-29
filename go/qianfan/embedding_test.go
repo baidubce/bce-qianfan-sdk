@@ -8,9 +8,7 @@ import (
 )
 
 func TestEmbedding(t *testing.T) {
-	client, err := NewClientFromEnv()
-	assert.NoError(t, err)
-	embed := client.Embedding()
+	embed := NewEmbedding()
 	resp, err := embed.Do(context.Background(), &EmbeddingRequest{
 		Input: []string{"hello1", "hello2"},
 	})

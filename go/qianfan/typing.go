@@ -4,30 +4,50 @@ import (
 	"net/http"
 )
 
-type Mappable interface {
-	toMap() (map[string]interface{}, error)
+type RequestBody[T any] interface {
+	WithExtra(m map[string]interface{}) T
+	GetExtra() map[string]interface{}
 }
 
 type BaseRequestBody struct {
 	Extra map[string]interface{} `mapstructure:"-"`
 }
 
-func (r *BaseRequestBody) SetExtra(m map[string]interface{}) {
+func (r BaseRequestBody) WithExtra(m map[string]interface{}) BaseRequestBody {
 	r.Extra = m
+	return r
 }
 
-func (r *BaseRequestBody) toMap() (map[string]interface{}, error) {
-	return r.Extra, nil
+func (r BaseRequestBody) GetExtra() map[string]interface{} {
+	return r.Extra
 }
 
-func (r *BaseRequestBody) union(m map[string]interface{}) (map[string]interface{}, error) {
-	for k, v := range r.Extra {
+func (r *BaseRequestBody) SetStream() {
+	if r.Extra == nil {
+		r.Extra = map[string]interface{}{}
+	}
+	r.Extra["stream"] = true
+}
+
+func convertToMap[T RequestBody[T]](body T) (map[string]interface{}, error) {
+	m, err := dumpToMap(body)
+	if err != nil {
+		return nil, err
+	}
+	extra := body.GetExtra()
+	for k, v := range extra {
 		m[k] = v
 	}
 	return m, nil
 }
 
+const (
+	ModelRequest   = "model"
+	ConsoleRequest = "console"
+)
+
 type QfRequest struct {
+	Type    string
 	Method  string
 	URL     string
 	Headers map[string]string
@@ -35,16 +55,25 @@ type QfRequest struct {
 	Body    map[string]interface{}
 }
 
-func newRequest(method string, url string, body Mappable) (*QfRequest, error) {
-	b, err := body.toMap()
+func newModelRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
+	return newRequest(ModelRequest, method, url, body)
+}
+
+func newConsoleRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
+	return newRequest(ConsoleRequest, method, url, body)
+}
+
+func newRequest[T RequestBody[T]](requestType string, method string, url string, body T) (*QfRequest, error) {
+	b, err := convertToMap(body)
 	if err != nil {
 		return nil, err
 	}
-	return newRequestFromMap(method, url, b)
+	return newRequestFromMap(requestType, method, url, b)
 }
 
-func newRequestFromMap(method string, url string, body map[string]interface{}) (*QfRequest, error) {
+func newRequestFromMap(requestType string, method string, url string, body map[string]interface{}) (*QfRequest, error) {
 	return &QfRequest{
+		Type:    requestType,
 		Method:  method,
 		URL:     url,
 		Body:    body,
@@ -56,6 +85,10 @@ func newRequestFromMap(method string, url string, body map[string]interface{}) (
 type baseResponse struct {
 	Body        []byte
 	RawResponse *http.Response
+}
+
+type Ptr[T any] interface {
+	*T
 }
 
 type QfResponse[T any] interface {

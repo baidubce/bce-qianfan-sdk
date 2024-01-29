@@ -20,12 +20,9 @@ type CompletionRequest struct {
 	UserID          string   `mapstructure:"user_id,omitempty"`
 }
 
-func (r *CompletionRequest) toMap() (map[string]interface{}, error) {
-	m, err := dumpToMap(r)
-	if err != nil {
-		return nil, err
-	}
-	return r.BaseRequestBody.union(m)
+func (r CompletionRequest) WithExtra(extra map[string]interface{}) CompletionRequest {
+	r.Extra = extra
+	return r
 }
 
 type Completion struct {
@@ -38,26 +35,41 @@ var CompletionModelEndpoint = map[string]string{
 	"CodeLlama-7b-Instruct": "/completions/codellama_7b_instruct",
 }
 
-func newCompletion(model string, endpoint string, client *Client) *Completion {
+func newCompletion(options *Options) *Completion {
+	model, err := getOptionsVal[string](options, modelOptionKey)
+	hasModel := err == nil
+	endpoint, err := getOptionsVal[string](options, endpointOptionKey)
+	hasEndpoint := err == nil
 	comp := Completion{
 		BaseModel: BaseModel{
-			Model:    model,
-			Endpoint: endpoint,
-			Client:   client,
+			Model:     DefaultCompletionModel,
+			Endpoint:  "",
+			Requestor: newRequestor(options),
 		},
 		chatWrapper: nil,
 	}
-	if model != "" {
-		_, ok := ChatModelEndpoint[model]
+	// 如果 model 和 endpoint 都没提供，那就用 chatWrapper 默认值
+	if !hasModel && !hasEndpoint {
+		comp.chatWrapper = newChatCompletion(options)
+	}
+	// 如果提供了 model
+	if hasModel {
+		// 那就看模型是否是 chat 模型，如果是，就使用 chatWrapper
+		_, ok := ChatModelEndpoint[*model]
 		if ok {
-			comp.chatWrapper = newChatCompletion(model, endpoint, client)
+			comp.chatWrapper = newChatCompletion(options)
+		} else {
+			comp.Model = *model
 		}
+	}
+	if hasEndpoint {
+		comp.Endpoint = *endpoint
 	}
 	return &comp
 }
 
 func (c *Completion) realEndpoint() (string, error) {
-	url := c.Config.BaseURL + ModelAPIPrefix
+	url := ModelAPIPrefix
 	if c.Model != "" {
 		endpoint, ok := CompletionModelEndpoint[c.Model]
 		if !ok {
@@ -90,38 +102,39 @@ func convertCompletionReqToChatReq(request *CompletionRequest) *ChatCompletionRe
 	return &chatReq
 }
 
-func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*ModelResponse, error) {
+func (c *Completion) Do(ctx context.Context, request CompletionRequest) (*ModelResponse, error) {
 	if c.chatWrapper != nil {
-		return c.chatWrapper.Do(ctx, convertCompletionReqToChatReq(request))
+		return c.chatWrapper.Do(ctx, *convertCompletionReqToChatReq(&request))
 	}
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
 	}
-	req, err := newRequest("POST", url, request)
+	req, err := newModelRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
 
-	return sendRequest[ModelResponse](c.requestor, req)
+	return sendRequest[ModelResponse](c.Requestor, req)
 }
 
-func (c *Completion) DoStream(ctx context.Context, request *CompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
+func (c *Completion) Stream(ctx context.Context, request CompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
 	if c.chatWrapper != nil {
-		return c.chatWrapper.DoStream(ctx, convertCompletionReqToChatReq(request))
+		return c.chatWrapper.Stream(ctx, *convertCompletionReqToChatReq(&request))
 	}
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
 	}
-	m, err := request.toMap()
+	request.SetStream()
+	req, err := newModelRequest("POST", url, request)
 	if err != nil {
 		return nil, err
 	}
-	m["stream"] = true
-	req, err := newRequestFromMap("POST", url, m)
-	if err != nil {
-		return nil, err
-	}
-	return sendStreamRequest[ModelResponse, *ModelResponse](c.requestor, req)
+	return sendStreamRequest[ModelResponse](c.Requestor, req)
+}
+
+func NewCompletion(optionList ...Option) *Completion {
+	options := toOptions(optionList...)
+	return newCompletion(options)
 }

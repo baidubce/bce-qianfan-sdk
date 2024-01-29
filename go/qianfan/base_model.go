@@ -3,7 +3,7 @@ package qianfan
 type BaseModel struct {
 	Model    string
 	Endpoint string
-	*Client
+	*Requestor
 }
 
 type ModelUsage struct {

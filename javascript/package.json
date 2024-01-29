@@ -1,7 +1,7 @@
 {
     "name": "qianfan-sdk",
     "version": "0.0.2",
-    "type": "module",
+    "type": "commonjs",
     "main": "dist/qianfan-sdk.umd.js",
     "module": "dist/qianfan-sdk.es.js",
     "files": [

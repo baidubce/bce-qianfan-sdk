@@ -43,7 +43,7 @@ var EmbeddingEndpoint = map[string]string{
 	"tao-8k":       "/embeddings/tao_8k",
 }
 
-func newEmbedding(options *RequestorOptions) *Embedding {
+func newEmbedding(options *Options) *Embedding {
 	embedding := &Embedding{
 		BaseModel{
 			Model:     DefaultEmbeddingModel,

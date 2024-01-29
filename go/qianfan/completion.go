@@ -35,7 +35,7 @@ var CompletionModelEndpoint = map[string]string{
 	"CodeLlama-7b-Instruct": "/completions/codellama_7b_instruct",
 }
 
-func newCompletion(options *RequestorOptions) *Completion {
+func newCompletion(options *Options) *Completion {
 	hasModel := options.Model != nil
 	hasEndpoint := options.Endpoint != nil
 	comp := Completion{

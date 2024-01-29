@@ -117,77 +117,10 @@ func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {
 
 type Requestor struct {
 	client  *http.Client
-	Options *RequestorOptions
+	Options *Options
 }
 
-type Stream[T any, Ptr QfResponse[T]] struct {
-	*streamInternal
-}
-
-func (s *Stream[T, Ptr]) Recv() (Ptr, error) {
-	response, err := s.streamInternal.Recv()
-	var responseBody Ptr = new(T)
-	if err != nil {
-		return responseBody, err
-	}
-	responseBody.SetResponse(response.Body, response.RawResponse)
-	err = json.Unmarshal(response.Body, &responseBody)
-	if err != nil {
-		return responseBody, err
-	}
-	return responseBody, nil
-}
-
-type streamInternal struct {
-	httpResponse *http.Response
-	scanner      *bufio.Scanner
-}
-
-func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
-	return &streamInternal{
-		httpResponse: httpResponse,
-		scanner:      bufio.NewScanner(httpResponse.Body),
-	}, nil
-}
-
-func (si *streamInternal) Close() {
-	si.httpResponse.Body.Close()
-}
-
-func (si *streamInternal) Recv() (*baseResponse, error) {
-	var eventData []byte
-	for len(eventData) == 0 {
-		for {
-			if !si.scanner.Scan() {
-				return nil, si.scanner.Err()
-			}
-
-			line := si.scanner.Bytes()
-			if len(line) == 0 {
-				break
-			}
-			var (
-				// field []byte = line
-				value []byte
-			)
-			if i := bytes.IndexRune(line, ':'); i != -1 {
-				// field = line[:i]
-				value = line[i+1:]
-				if len(value) != 0 && value[0] == ' ' {
-					value = value[1:]
-				}
-			}
-			eventData = append(eventData, value...)
-		}
-	}
-	response := baseResponse{
-		Body:        eventData,
-		RawResponse: si.httpResponse,
-	}
-	return &response, nil
-}
-
-func newRequestor(options *RequestorOptions) *Requestor {
+func newRequestor(options *Options) *Requestor {
 	return &Requestor{
 		client:  &http.Client{},
 		Options: options,
@@ -282,6 +215,7 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	return req, nil
 }
 
+// 使用 requestor 发送 request，返回值类型为 T*
 func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (Ptr, error) {
 	response, err := requestor.request(request)
 	if err != nil {
@@ -316,6 +250,76 @@ func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
 		RawResponse: resp,
 	}
 
+	return &response, nil
+}
+
+// 返回值类型为 T 的 Stream
+type Stream[T any, Ptr QfResponse[T]] struct {
+	*streamInternal
+}
+
+// 接收流的每次响应，返回值类型为 T*
+func (s *Stream[T, Ptr]) Recv() (Ptr, error) {
+	response, err := s.streamInternal.Recv()
+	var responseBody Ptr = new(T)
+	if err != nil {
+		return responseBody, err
+	}
+	responseBody.SetResponse(response.Body, response.RawResponse)
+	err = json.Unmarshal(response.Body, &responseBody)
+	if err != nil {
+		return responseBody, err
+	}
+	return responseBody, nil
+}
+
+// 流的内部实现，用于接收流中的响应
+type streamInternal struct {
+	httpResponse *http.Response
+	scanner      *bufio.Scanner
+}
+
+func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
+	return &streamInternal{
+		httpResponse: httpResponse,
+		scanner:      bufio.NewScanner(httpResponse.Body),
+	}, nil
+}
+
+func (si *streamInternal) Close() {
+	si.httpResponse.Body.Close()
+}
+
+func (si *streamInternal) Recv() (*baseResponse, error) {
+	var eventData []byte
+	for len(eventData) == 0 {
+		for {
+			if !si.scanner.Scan() {
+				return nil, si.scanner.Err()
+			}
+
+			line := si.scanner.Bytes()
+			if len(line) == 0 {
+				break
+			}
+			var (
+				// field []byte = line
+				value []byte
+			)
+			if i := bytes.IndexRune(line, ':'); i != -1 {
+				// field = line[:i]
+				value = line[i+1:]
+				if len(value) != 0 && value[0] == ' ' {
+					value = value[1:]
+				}
+			}
+			eventData = append(eventData, value...)
+		}
+	}
+	response := baseResponse{
+		Body:        eventData,
+		RawResponse: si.httpResponse,
+	}
 	return &response, nil
 }
 

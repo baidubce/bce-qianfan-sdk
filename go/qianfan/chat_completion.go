@@ -101,7 +101,7 @@ func ChatCompletionAssistantMessage(message string) ChatCompletionMessage {
 	}
 }
 
-func newChatCompletion(options *RequestorOptions) *ChatCompletion {
+func newChatCompletion(options *Options) *ChatCompletion {
 	chat := &ChatCompletion{
 		BaseModel{
 			Model:     DefaultChatCompletionModel,

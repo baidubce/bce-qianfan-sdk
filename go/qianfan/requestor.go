@@ -74,9 +74,11 @@ func newModelRequest[T RequestBody[T]](method string, url string, body T) (*QfRe
 	return newRequest(ModelRequest, method, url, body)
 }
 
-func newConsoleRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
-	return newRequest(ConsoleRequest, method, url, body)
-}
+// 准备用于管控类请求
+// 暂时注释避免 lint 报错
+// func newConsoleRequest[T RequestBody[T]](method string, url string, body T) (*QfRequest, error) {
+// 	return newRequest(ConsoleRequest, method, url, body)
+// }
 
 func newRequest[T RequestBody[T]](requestType string, method string, url string, body T) (*QfRequest, error) {
 	b, err := convertToMap(body)

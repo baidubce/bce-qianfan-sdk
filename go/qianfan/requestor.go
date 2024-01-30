@@ -105,8 +105,7 @@ type baseResponse struct {
 	RawResponse *http.Response
 }
 
-type QfResponse[T any] interface {
-	*T
+type QfResponse interface {
 	SetResponse(Body []byte, RawResponse *http.Response)
 }
 
@@ -216,18 +215,17 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 }
 
 // 使用 requestor 发送 request，返回值类型为 T*
-func sendRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (Ptr, error) {
+func sendRequest(requestor *Requestor, request *QfRequest, resp QfResponse) error {
 	response, err := requestor.request(request)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var resp Ptr = new(T)
 	resp.SetResponse(response.Body, response.RawResponse)
 	err = json.Unmarshal(response.Body, resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return resp, nil
+	return nil
 }
 
 func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
@@ -253,26 +251,6 @@ func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
 	return &response, nil
 }
 
-// 返回值类型为 T 的 Stream
-type Stream[T any, Ptr QfResponse[T]] struct {
-	*streamInternal
-}
-
-// 接收流的每次响应，返回值类型为 T*
-func (s *Stream[T, Ptr]) Recv() (Ptr, error) {
-	response, err := s.streamInternal.Recv()
-	var responseBody Ptr = new(T)
-	if err != nil {
-		return responseBody, err
-	}
-	responseBody.SetResponse(response.Body, response.RawResponse)
-	err = json.Unmarshal(response.Body, &responseBody)
-	if err != nil {
-		return responseBody, err
-	}
-	return responseBody, nil
-}
-
 // 流的内部实现，用于接收流中的响应
 type streamInternal struct {
 	httpResponse *http.Response
@@ -290,12 +268,12 @@ func (si *streamInternal) Close() {
 	si.httpResponse.Body.Close()
 }
 
-func (si *streamInternal) Recv() (*baseResponse, error) {
+func (si *streamInternal) Recv(resp QfResponse) error {
 	var eventData []byte
 	for len(eventData) == 0 {
 		for {
 			if !si.scanner.Scan() {
-				return nil, si.scanner.Err()
+				return si.scanner.Err()
 			}
 
 			line := si.scanner.Bytes()
@@ -320,18 +298,21 @@ func (si *streamInternal) Recv() (*baseResponse, error) {
 		Body:        eventData,
 		RawResponse: si.httpResponse,
 	}
-	return &response, nil
+
+	resp.SetResponse(response.Body, response.RawResponse)
+	err := json.Unmarshal(response.Body, resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func sendStreamRequest[T any, Ptr QfResponse[T]](requestor *Requestor, request *QfRequest) (*Stream[T, Ptr], error) {
+func sendStreamRequest(requestor *Requestor, request *QfRequest) (*streamInternal, error) {
 	stream, err := requestor.requestStream(request)
 	if err != nil {
 		return nil, err
 	}
-
-	return &Stream[T, Ptr]{
-		streamInternal: stream,
-	}, nil
+	return stream, nil
 }
 
 func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {

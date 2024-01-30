@@ -42,3 +42,16 @@ type ModelResponse struct {
 	ModelAPIError
 	baseResponse
 }
+
+type ModelResponseStream struct {
+	*streamInternal
+}
+
+func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
+	var resp ModelResponse
+	err := s.streamInternal.Recv(&resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

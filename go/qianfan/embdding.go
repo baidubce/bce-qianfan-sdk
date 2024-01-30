@@ -83,8 +83,13 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 	if err != nil {
 		return nil, err
 	}
+	resp := &EmbeddingResponse{}
 
-	return sendRequest[EmbeddingResponse](c.Requestor, req)
+	err = sendRequest(c.Requestor, req, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func NewEmbedding(optionList ...Option) *Embedding {

@@ -141,10 +141,15 @@ func (c *ChatCompletion) Do(ctx context.Context, request ChatCompletionRequest) 
 	if err != nil {
 		return nil, err
 	}
-	return sendRequest[ModelResponse](c.Requestor, req)
+	var resp ModelResponse
+	err = sendRequest(c.Requestor, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
-func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
+func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionRequest) (*ModelResponseStream, error) {
 	url, err := c.realEndpoint()
 	if err != nil {
 		return nil, err
@@ -154,7 +159,13 @@ func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionReque
 	if err != nil {
 		return nil, err
 	}
-	return sendStreamRequest[ModelResponse](c.Requestor, req)
+	stream, err := sendStreamRequest(c.Requestor, req)
+	if err != nil {
+		return nil, err
+	}
+	return &ModelResponseStream{
+		streamInternal: stream,
+	}, nil
 }
 
 func NewChatCompletion(optionList ...Option) *ChatCompletion {

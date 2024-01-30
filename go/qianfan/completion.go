@@ -112,11 +112,15 @@ func (c *Completion) Do(ctx context.Context, request CompletionRequest) (*ModelR
 	if err != nil {
 		return nil, err
 	}
-
-	return sendRequest[ModelResponse](c.Requestor, req)
+	var resp ModelResponse
+	err = sendRequest(c.Requestor, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
-func (c *Completion) Stream(ctx context.Context, request CompletionRequest) (*Stream[ModelResponse, *ModelResponse], error) {
+func (c *Completion) Stream(ctx context.Context, request CompletionRequest) (*ModelResponseStream, error) {
 	if c.chatWrapper != nil {
 		return c.chatWrapper.Stream(ctx, *convertCompletionReqToChatReq(&request))
 	}
@@ -129,7 +133,13 @@ func (c *Completion) Stream(ctx context.Context, request CompletionRequest) (*St
 	if err != nil {
 		return nil, err
 	}
-	return sendStreamRequest[ModelResponse](c.Requestor, req)
+	stream, err := sendStreamRequest(c.Requestor, req)
+	if err != nil {
+		return nil, err
+	}
+	return &ModelResponseStream{
+		streamInternal: stream,
+	}, nil
 }
 
 func NewCompletion(optionList ...Option) *Completion {

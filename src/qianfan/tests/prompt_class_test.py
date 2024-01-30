@@ -162,8 +162,7 @@ def test_render():
     assert p.variables == []
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}{v2}x {v3}", None)
 
-    p = Prompt(template="{v1}{v2}x {v3}",
-               identifier="{}", variables=["v2", "v3"])
+    p = Prompt(template="{v1}{v2}x {v3}", identifier="{}", variables=["v2", "v3"])
     assert p.variables == ["v2", "v3"]
     assert p.render(v1="a", v2="3", v3="4") == ("{v1}3x 4", None)
 

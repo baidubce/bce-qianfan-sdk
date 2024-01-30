@@ -119,8 +119,7 @@ class Prompt(HubSerializable):
         self.id = id
         self.name = name
         if template is None:
-            raise InvalidArgumentError(
-                "template is required if using local prompt")
+            raise InvalidArgumentError("template is required if using local prompt")
         self.template = template
         self.identifier = identifier
         self.labels = labels
@@ -130,8 +129,7 @@ class Prompt(HubSerializable):
         if variables is not None:
             self.variables = variables
         else:
-            self.variables = PromptResource._extract_variables(
-                template, identifier)
+            self.variables = PromptResource._extract_variables(template, identifier)
         self.negative_template = negative_template
         if self.negative_template is not None:
             # if user does not provide negative varibles
@@ -178,8 +176,7 @@ class Prompt(HubSerializable):
                 else prompt_info["templateVariables"].split(",")
             ),
             labels=[
-                PromptLabel(label["labelId"],
-                            label["labelName"], label["color"])
+                PromptLabel(label["labelId"], label["labelName"], label["color"])
                 for label in prompt_info["labels"]
             ],
             identifier=prompt_info["variableIdentifier"],
@@ -302,10 +299,10 @@ class Prompt(HubSerializable):
             neg_prompt = self.negative_template
             for v in self.negative_variables:
                 if v not in kwargs:
-                    raise InvalidArgumentError(
-                        f"variable `{v}` is not provided")
+                    raise InvalidArgumentError(f"variable `{v}` is not provided")
                 neg_prompt = neg_prompt.replace(
-                    f"{left_id}{v}{right_id}", str(kwargs[v]))
+                    f"{left_id}{v}{right_id}", str(kwargs[v])
+                )
         return prompt, neg_prompt
 
     def delete(self) -> None:
@@ -335,8 +332,7 @@ class Prompt(HubSerializable):
             The new template.
         """
         self.template = template
-        self.variables = PromptResource._extract_variables(
-            template, self.identifier)
+        self.variables = PromptResource._extract_variables(template, self.identifier)
 
     def set_negative_template(self, template: str) -> None:
         """
@@ -620,8 +616,7 @@ class Prompt(HubSerializable):
 
         for i in range(len(results)):
             for j in range(len(results[i].scene)):
-                resp = cast(QfResponse, model.do(
-                    results[i].scene[j]["new_prompt"]))
+                resp = cast(QfResponse, model.do(results[i].scene[j]["new_prompt"]))
                 results[i].scene[j]["response"] = resp["result"]
 
         eval_summary_req = [
@@ -657,8 +652,7 @@ class Prompt(HubSerializable):
         for i in range(len(results)):
             results[i].summary = summary[i]["response"]
 
-        score_resp = PromptResource.evaluation_score(
-            standard.value, eval_score_req)
+        score_resp = PromptResource.evaluation_score(standard.value, eval_score_req)
         score = score_resp["result"]["scores"]
 
         for i in range(len(results)):

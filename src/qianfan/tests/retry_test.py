@@ -37,6 +37,16 @@ def test_retry_accesstoken_expired():
         assert "id" in resp["body"]
         assert resp["object"] == "completion"
         assert comp.access_token() != access_token
+    with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
+        comp = qianfan.Completion()
+        assert comp.access_token() == access_token
+        resp = comp.do(prompt="test", stream=True)
+        for r in resp:
+            assert resp is not None
+            assert resp["code"] == 200
+            assert "id" in resp["body"]
+            assert resp["object"] == "completion"
+            assert comp.access_token() != access_token
 
 
 def test_retry_retry_cnt():

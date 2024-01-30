@@ -257,49 +257,6 @@ class BaseAPIRequestor(object):
         return data_postprocess(resp)
 
     @_with_latency
-    def _request_stream(
-        self,
-        request: QfRequest,
-        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
-    ) -> Iterator[QfResponse]:
-        """
-        stream sync request
-        """
-        with self._rate_limiter:
-            responses = self._client.request_stream(request)
-        event = ""
-        for body, resp in responses:
-            _check_if_status_code_is_200(resp)
-            body_str = body.decode("utf-8")
-            if body_str == "":
-                continue
-            if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
-                # event indicator for the type of data
-                event = body_str[len(Consts.STREAM_RESPONSE_EVENT_PREFIX) :]
-                continue
-            elif not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
-                try:
-                    # the response might be error message in json format
-                    json_body = json.loads(body_str)
-                    self._check_error(json_body)
-                except json.JSONDecodeError:
-                    # the response is not json format, ignore and raise InternalError
-                    pass
-
-                raise errors.RequestError(
-                    f"got unexpected stream response from server: {body_str}"
-                )
-            body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-            json_body = json.loads(body_str)
-            if event != "":
-                json_body["_event"] = event
-                event = ""
-            parsed = self._parse_response(json_body, resp)
-            parsed.request = QfRequest.from_requests(resp.request)
-            parsed.request.json_body = copy.deepcopy(request.json_body)
-            yield data_postprocess(parsed)
-
-    @_with_latency
     async def _async_request(
         self,
         request: QfRequest,

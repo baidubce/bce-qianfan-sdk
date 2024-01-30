@@ -16,6 +16,8 @@
 Qianfan API Requestor
 """
 
+import copy
+import json
 from typing import (
     Any,
     AsyncIterator,
@@ -34,7 +36,11 @@ from qianfan.config import get_config
 from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
-from qianfan.resources.requestor.base import BaseAPIRequestor
+from qianfan.resources.requestor.base import (
+    BaseAPIRequestor,
+    _check_if_status_code_is_200,
+    _with_latency,
+)
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_error, log_info
 
@@ -73,6 +79,63 @@ class QfAPIRequestor(BaseAPIRequestor):
             return func(*args, **kwargs)
 
         return retry_wrapper
+
+    @_with_latency
+    def _request_stream(
+        self,
+        request: QfRequest,
+        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
+    ) -> Iterator[QfResponse]:
+        """
+        stream sync request
+        """
+        with self._rate_limiter:
+            responses = self._client.request_stream(request)
+        event = ""
+        token_refreshed = False
+        while True:
+            try:
+                body, resp = next(responses)
+            except StopIteration:
+                break
+            _check_if_status_code_is_200(resp)
+            body_str = body.decode("utf-8")
+            if body_str == "":
+                continue
+            if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
+                # event indicator for the type of data
+                event = body_str[len(Consts.STREAM_RESPONSE_EVENT_PREFIX) :]
+                continue
+            elif not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
+                try:
+                    # the response might be error message in json format
+                    json_body = json.loads(body_str)
+                    self._check_error(json_body)
+                except errors.AccessTokenExpiredError:
+                    if not token_refreshed:
+                        token_refreshed = True
+                        self._auth.refresh_access_token()
+                        self._add_access_token(request)
+                        responses = self._client.request_stream(request)
+                        continue
+                    raise
+
+                except json.JSONDecodeError:
+                    # the response is not json format, ignore and raise InternalError
+                    pass
+
+                raise errors.RequestError(
+                    f"got unexpected stream response from server: {body_str}"
+                )
+            body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
+            json_body = json.loads(body_str)
+            if event != "":
+                json_body["_event"] = event
+                event = ""
+            parsed = self._parse_response(json_body, resp)
+            parsed.request = QfRequest.from_requests(resp.request)
+            parsed.request.json_body = copy.deepcopy(request.json_body)
+            yield data_postprocess(parsed)
 
     def _async_retry_if_token_expired(
         self, func: Callable[..., Awaitable[_T]]

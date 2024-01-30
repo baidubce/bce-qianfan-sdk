@@ -56,7 +56,7 @@ chat := qianfan.NewChatCompletion(
 ```
 resp, err := chat.Do(
     context.TODO(),
-    qianfan.ChatCompletionRequest{
+    &qianfan.ChatCompletionRequest{
         Messages: []qianfan.ChatCompletionMessage{
             qianfan.ChatCompletionUserMessage("你好"),
         },
@@ -75,7 +75,7 @@ chat := client.ChatCompletion()
 
 resp, err := chat.Stream(  // Stream 启用流式返回，参数与 Do 相同
     context.TODO(),
-    qianfan.ChatCompletionRequest{
+    &qianfan.ChatCompletionRequest{
         Messages: []qianfan.ChatCompletionMessage{
             qianfan.ChatCompletionUserMessage("你好"),
         },

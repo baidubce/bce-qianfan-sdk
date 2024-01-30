@@ -13,9 +13,9 @@ func TestCompletion(t *testing.T) {
 	completion := NewCompletion()
 	resp, err := completion.Do(
 		context.Background(),
-		CompletionRequest{
+		&CompletionRequest{
 			Prompt: prompt,
-		}.WithExtra(map[string]interface{}{}),
+		},
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, resp.RawResponse.StatusCode, 200)
@@ -31,10 +31,13 @@ func TestCompletion(t *testing.T) {
 	assert.Equal(t, request.Messages[0].Content, prompt)
 
 	completion = NewCompletion(WithModel("SQLCoder-7B"))
-	resp, err = completion.Do(context.Background(), CompletionRequest{
-		Prompt:      prompt,
-		Temperature: 0.5,
-	})
+	resp, err = completion.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt:      prompt,
+			Temperature: 0.5,
+		},
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Object, "completion")
 	assert.Contains(t, resp.RawResponse.Request.URL.Path, CompletionModelEndpoint["SQLCoder-7B"])
@@ -52,10 +55,13 @@ func TestCompletionStream(t *testing.T) {
 		chat := NewCompletion(
 			WithModel(m),
 		)
-		resp, err := chat.Stream(context.Background(), CompletionRequest{
-			Prompt:      "hello",
-			Temperature: 0.5,
-		})
+		resp, err := chat.Stream(
+			context.Background(),
+			&CompletionRequest{
+				Prompt:      "hello",
+				Temperature: 0.5,
+			},
+		)
 		assert.NoError(t, err)
 		defer resp.Close()
 		turnCount := 0

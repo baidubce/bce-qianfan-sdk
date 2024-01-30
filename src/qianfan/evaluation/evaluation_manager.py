@@ -359,6 +359,18 @@ class EvaluationManager(BaseModel):
         dataset: Dataset,
         **kwargs: Any,
     ) -> EvaluationResult:
+        """
+        running evaluation only on specific dataset
+
+        Args:
+            dataset (Dataset):
+                dataset which comes from batch inference or be batch-inference like
+            **kwargs (Any):
+                other keyword arguments.
+
+        Returns:
+            EvaluationResult: Evaluation result of models on the dataset.
+        """
         if not EvaluationSchema().validate(dataset):
             raise ValueError("validate failed before evaluation")
 
@@ -366,7 +378,9 @@ class EvaluationManager(BaseModel):
             self._run_evaluator_locally(dataset, **kwargs)
         )
         result_dataset = copy(dataset)
-        return result_dataset.col_append(tmp_ds.col_list())
+        return EvaluationResult(
+            result_dataset=result_dataset.col_append(tmp_ds.col_list())
+        )
 
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any

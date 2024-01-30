@@ -607,7 +607,7 @@ class Table(Addable, Listable, Processable):
             new_group_column_list.append(current_group_number)
 
         self.col_delete(QianfanDataGroupColumnName)
-        self.col_append({QianfanDataGroupColumnName, new_group_column_list})
+        self.col_append({QianfanDataGroupColumnName: new_group_column_list})
 
         return
 

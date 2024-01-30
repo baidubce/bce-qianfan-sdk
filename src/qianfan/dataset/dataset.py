@@ -777,7 +777,7 @@ class Dataset(Table):
             return self
 
         return self.col_append(
-            {QianfanDataGroupColumnName, list(range(self.row_number()))}
+            {QianfanDataGroupColumnName: list(range(self.row_number()))}
         )
 
     @_online_except_decorator

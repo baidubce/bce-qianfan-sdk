@@ -143,8 +143,8 @@ class EvaluationManager(BaseModel):
                         i * sector_length,
                         min((i + 1) * sector_length, len(dataset)),
                         ds_dict[NewInputPromptColumnName],
-                        ds_dict[LLMOutputColumnName],
                         ds_dict[OldReferenceColumnName],
+                        ds_dict[LLMOutputColumnName],
                     )
                 )
             else:
@@ -154,8 +154,8 @@ class EvaluationManager(BaseModel):
                         i * sector_length,
                         min((i + 1) * sector_length, len(dataset)),
                         ds_dict[NewInputChatColumnName],
-                        ds_dict[LLMOutputColumnName],
                         ds_dict[OldReferenceColumnName],
+                        ds_dict[LLMOutputColumnName],
                     )
                 )
 
@@ -494,7 +494,10 @@ class EvaluationManager(BaseModel):
                     export_task_id
                 )["result"]
                 task_status = EvaluationResultExportTaskStatus(result["state"])
-                if task_status == EvaluationResultExportTaskStatus.Doing:
+                if task_status in [
+                    EvaluationResultExportTaskStatus.Uploading,
+                    EvaluationResultExportTaskStatus.Pending,
+                ]:
                     log_info(
                         f"wait evaluation result export task {export_task_id} to be"
                         " completed"

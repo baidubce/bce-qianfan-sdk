@@ -237,8 +237,10 @@ class EvaluationResultExportField(str, Enum):
 
 
 class EvaluationResultExportTaskStatus(str, Enum):
-    Doing: str = "Doing"
-    """正在导出"""
+    Pending: str = "Pending"
+    """任务待执行"""
+    Uploading: str = "Uploading"
+    """进行中"""
     Fail: str = "Fail"
     """导出失败"""
     Done: str = "Done"

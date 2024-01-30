@@ -777,7 +777,7 @@ class Dataset(Table):
             return self
 
         return self.col_append(
-            {"name": QianfanDataGroupColumnName, "data": list(range(self.row_number()))}
+            {QianfanDataGroupColumnName, list(range(self.row_number()))}
         )
 
     @_online_except_decorator
@@ -1002,7 +1002,7 @@ class Dataset(Table):
 
         Args:
             elem (Dict[str, List]): a dict containing element added to dataset, which
-                must has column name "name" and column data list "data"
+                key as column name, value as column data
         Returns:
             Self: Dataset itself
         """

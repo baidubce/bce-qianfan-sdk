@@ -23,6 +23,8 @@ import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
+import pyarrow
+
 from qianfan import get_config
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
@@ -350,6 +352,10 @@ class EvaluationManager(BaseModel):
 
         return eval_state
 
+    # def eval_only(self, dataset: Dataset, input_column: str, reference_column: str, output_column: str, **kwargs: Any) -> EvaluationResult:
+    #
+
+
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
     ) -> Optional[EvaluationResult]:
@@ -373,13 +379,23 @@ class EvaluationManager(BaseModel):
             raise ValueError(err_msg)
 
         if self.local_evaluators:
+            # 大模型的标签列表
             llm_tags = self._get_llm_tags(llms)
+
+            # 首先获取批量评估的结果
+            log_info("start to inference in batch during evaluation")
             future_dict = self._get_batch_inference_task_future(llms, dataset, **kwargs)
             wait(list(future_dict.values()), return_when=ALL_COMPLETED)
 
+            # 然后再等待批量推理的结果，并且送去评估
+
+            # 针对单个模型的，每条数据的评估结果字典
             llm_evaluation_result_dict: Dict[int, List[Dict[str, Any]]] = {}
+            # 针对单个模型的，每条数据的实际返回列表
             llm_response_list: Dict[int, List[str]] = {}
+            # 统一的输入数据列表
             llm_input_list: List[Any] = []
+            # 统一的输出数据列表
             expected_output_list: List[str] = []
 
             input_column_name: str = ""
@@ -390,10 +406,12 @@ class EvaluationManager(BaseModel):
                     llm_response_list[index] = result[LLMOutputColumnName][
                         LLMOutputColumnName
                     ]
+                    # 实际评估的地方
                     llm_evaluation_result_dict[index] = self._run_evaluator_locally(
                         result
                     )
 
+                    # 做一些字段填充，只在这两个列表为空的时候进入
                     if not llm_input_list:
                         if NewInputPromptColumnName in result.col_names():
                             llm_input_list = result[NewInputPromptColumnName][
@@ -418,28 +436,25 @@ class EvaluationManager(BaseModel):
                     )
                     log_warn(err_msg)
 
-            new_response_list: List[List[Dict[str, Any]]] = []
+            # 整合数据，将得到的数据集整合成网页人工评估的数据集格式
+            table_list: List[pyarrow.Table] = []
             for index, response_list in llm_response_list.items():
-                for inner_index in range(len(response_list)):
-                    while len(new_response_list) <= inner_index:
-                        new_response_list.append([])
-                    eval_result = llm_evaluation_result_dict[index][inner_index]
-                    new_response_list[inner_index].append(
-                        {
-                            "content": response_list[inner_index],
-                            "llm_tag": llm_tags[index],
-                            **eval_result,
-                        }
-                    )
+                index_tag_column = [llm_tags[index] * len(response_list)]
+                ds = dataset.create_from_pyobj(
+                    {
+                        "llm_tag": index_tag_column,
+                        input_column_name: llm_input_list,
+                        OldReferenceColumnName: expected_output_list,
+                        LLMOutputColumnName: response_list,
+                    }
+                )
 
-            dataset_data = {
-                input_column_name: llm_input_list,
-                OldReferenceColumnName: expected_output_list,
-                "model_content": new_response_list,
-            }
+                metrics_ds = dataset.create_from_pyobj(llm_evaluation_result_dict[index])
+                ds.col_append(metrics_ds.col_list())
+                table_list.append(ds.inner_table)
 
             return EvaluationResult(
-                result_dataset=Dataset.create_from_pyobj(dataset_data)
+                result_dataset=Dataset.create_from_pyarrow_table(pyarrow.concat_tables(table_list))
             )
 
         if self.qianfan_evaluators:

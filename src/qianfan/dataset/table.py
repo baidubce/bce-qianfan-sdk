@@ -406,33 +406,32 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
         Args:
             elem (Dict[str, List]): dict containing element added to pyarrow table
-                must has column name "name" and column data list "data"
+                key as column name, value as column data
         Returns:
             Self: a new pyarrow table
         """
 
         if not isinstance(elem, dict):
             raise ValueError(f"element appended must be dict, not {type(elem)}")
-        if "name" not in elem:
-            raise ValueError("no name has been provided")
-        if "data" not in elem:
-            raise ValueError("no data has been provided")
-        if not isinstance(elem["name"], str):
-            raise TypeError(f"name isn't str, rather than {type(elem['name'])}")
-        if elem["name"] in self.table.column_names:
-            raise ValueError(
-                f"column name {elem['name']} has been in dataset column list"
-            )
-        if not isinstance(elem["data"], list):
-            raise TypeError(f"data isn't list, rather than {type(elem['data'])}")
-        if not elem["data"]:
-            raise ValueError("data can't be empty")
-        if len(elem["data"]) != self.table.num_rows:
-            raise ValueError(
-                f"the length of data need to be {self.table.num_rows}, rather than"
-                f" {len(elem['data'])}"
-            )
-        return self.table.append_column(elem["name"], [elem["data"]])
+
+        for name, data in elem.items():
+            if name in self.table.column_names:
+                raise ValueError(
+                    f"column name {name} has been in dataset column list"
+                )
+
+            if not isinstance(data, list):
+                raise TypeError(f"data isn't list, rather than {type(data)}")
+
+            if len(data) != self.table.num_rows:
+                raise ValueError(
+                    f"the length of data need to be {self.table.num_rows}, rather than"
+                    f" {len(data)}"
+                )
+
+            self.table = self.table.append_column(name, [data])
+
+        return self.table
 
     def insert(self, elem: Dict[str, List], index: int) -> Self:
         """
@@ -611,7 +610,7 @@ class Table(Addable, Listable, Processable):
 
         self.col_delete(QianfanDataGroupColumnName)
         self.col_append(
-            {"name": QianfanDataGroupColumnName, "data": new_group_column_list}
+            {QianfanDataGroupColumnName, new_group_column_list}
         )
 
         return
@@ -906,7 +905,7 @@ class Table(Addable, Listable, Processable):
 
         Args:
             elem (Dict[str, List]): dict containing element added to pyarrow table
-                must has column name "name" and column data list "data"
+                key as column name, value as column data
         Returns:
             Self: Table itself
         """

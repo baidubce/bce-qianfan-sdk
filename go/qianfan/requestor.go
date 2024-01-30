@@ -255,6 +255,7 @@ func (r *Requestor) request(request *QfRequest) (*baseResponse, error) {
 type streamInternal struct {
 	httpResponse *http.Response
 	scanner      *bufio.Scanner
+	IsEnd        bool
 }
 
 func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
@@ -273,6 +274,7 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 	for len(eventData) == 0 {
 		for {
 			if !si.scanner.Scan() {
+				si.IsEnd = true
 				return si.scanner.Err()
 			}
 
@@ -302,6 +304,7 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 	resp.SetResponse(response.Body, response.RawResponse)
 	err := json.Unmarshal(response.Body, resp)
 	if err != nil {
+		si.IsEnd = true
 		return err
 	}
 	return nil

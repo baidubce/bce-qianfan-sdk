@@ -6,10 +6,10 @@ import (
 )
 
 type ChatCompletionMessage struct {
-	Role         string       `json:"role"`
-	Content      string       `json:"content"`
-	Name         string       `json:"name,omitempty"`
-	FunctionCall FunctionCall `json:"function_call,omitempty"`
+	Role         string        `json:"role"`
+	Content      string        `json:"content"`
+	Name         string        `json:"name,omitempty"`
+	FunctionCall *FunctionCall `json:"function_call,omitempty"`
 }
 
 type ChatCompletion struct {
@@ -23,10 +23,10 @@ type FunctionCall struct {
 }
 
 type FunctionExample struct {
-	Role         string       `json:"role"`
-	Content      string       `json:"content"`
-	Name         string       `json:"name,omitempty"`
-	FunctionCall FunctionCall `json:"function_call,omitempty"`
+	Role         string        `json:"role"`
+	Content      string        `json:"content"`
+	Name         string        `json:"name,omitempty"`
+	FunctionCall *FunctionCall `json:"function_call,omitempty"`
 }
 
 type Function struct {
@@ -38,13 +38,13 @@ type Function struct {
 }
 
 type ToolChoice struct {
-	Type     string   `json:"type"`
-	Function Function `json:"function"`
-	Name     string   `json:"name"`
+	Type     string    `json:"type"`
+	Function *Function `json:"function"`
+	Name     string    `json:"name"`
 }
 
 type ChatCompletionRequest struct {
-	BaseRequestBody
+	BaseRequestBody `mapstructure:"-"`
 	Messages        []ChatCompletionMessage `mapstructure:"messages"`
 	Temperature     float64                 `mapstructure:"temperature,omitempty"`
 	TopP            float64                 `mapstructure:"top_p,omitempty"`
@@ -57,7 +57,7 @@ type ChatCompletionRequest struct {
 	ResponseFormat  string                  `mapstructure:"response_format,omitempty"`
 	UserID          string                  `mapstructure:"user_id,omitempty"`
 	Functions       []Function              `mapstructure:"functions,omitempty"`
-	ToolChoice      ToolChoice              `mapstructure:"tool_choice,omitempty"`
+	ToolChoice      *ToolChoice             `mapstructure:"tool_choice,omitempty"`
 }
 
 func (r ChatCompletionRequest) WithExtra(extra map[string]interface{}) ChatCompletionRequest {
@@ -70,7 +70,7 @@ var ChatModelEndpoint = map[string]string{
 	"ERNIE-Bot":                    "/chat/completions",
 	"ERNIE-Bot-4":                  "/chat/completions_pro",
 	"ERNIE-Bot-8k":                 "/chat/ernie_bot_8k",
-	"ERNIE-Speed":                  "/chat/eb_turbo_pro",
+	"ERNIE-Speed":                  "/chat/eb_speed",
 	"ERNIE-Bot-turbo-AI":           "/chat/ai_apaas",
 	"EB-turbo-AppBuilder":          "/chat/ai_apaas",
 	"BLOOMZ-7B":                    "/chat/bloomz_7b1",
@@ -166,6 +166,16 @@ func (c *ChatCompletion) Stream(ctx context.Context, request ChatCompletionReque
 	return &ModelResponseStream{
 		streamInternal: stream,
 	}, nil
+}
+
+func (c *ChatCompletion) ModelList() []string {
+	i := 0
+	list := make([]string, len(ChatModelEndpoint))
+	for k := range ChatModelEndpoint {
+		list[i] = k
+		i++
+	}
+	return list
 }
 
 func NewChatCompletion(optionList ...Option) *ChatCompletion {

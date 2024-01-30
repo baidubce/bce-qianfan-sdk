@@ -2,66 +2,98 @@
 
 ## 如何使用
 
-### 初始化
+首先可以通过如下命令安装 SDK：
 
-在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
+```
+go get github.com/baidubce/bce-qianfan-sdk/go/qianfan
+```
+
+之后就可以在代码中通过如下方式引入 SDK：
+
+```
+import (
+	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
+)
+```
+
+### 鉴权
+
+在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
+
+SDK 支持从当前目录的 `.env` 中读取配置，也可以通过环境变量 `QIANFAN_ACCESS_KEY` 和 `QIANFAN_SECRET_KEY` 获取配置，这一步骤会在使用 SDK 时自动完成。
+
+```bash
+export QIANFAN_ACCESS_KEY=your_access_key
+export QIANFAN_SECRET_KEY=your_secret_key
+```
+
+同时，也可以在代码中手动设置 `AccessKey` 和 `SecretKey`，具体如下：
 
 ```go
-client, err := NewClient("access_key", "secret_key")
-client, err := NewClientFromEnv()   // 或者从环境变量中读取
-
-client.Config.AccessKey = "access_key"  // 或者创建变量后再调整设置
+qianfan.GetConfig().AccessKey = "your_access_key"
+qianfan.GetConfig().SecretKey = "your_secret_key"
 ```
 
 ### Chat 对话
 
-可以调用 `ChatCompletion` 方法进行对话
+可以使用 `ChatCompletion` 对象完成对话相关操作，可以通过如下方法获取一个 `ChatCompletion` 对象：
 
 ```go
-chat := client.ChatCompletion()  // 使用默认模型 ERNIE-Bot-turbo
-// chat := client.ChatCompletionFromModel("ERNIE-Bot-4")  // 可以指定模型
-// chat := client.ChatCompletionFromEndpoint("your_custom_endpoint")  // 或者指定 endpoint
+chat := qianfan.NewChatCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
 
-resp, err := chat.Do(
-    context.Background(), 
-    &ChatCompletionRequest{
-        Messages: []ChatCompletionMessage{
-            ChatCompletionUserMessage("你好"),
-        },
-    }
+// 可以通过 WithModel 指定模型
+chat := qianfan.NewChatCompletion(
+    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
 )
-if err != nil {
-    t.Fatal(err)
-}
-fmt.Printf(resp.Result)   // 模型返回的结果
+// 或者通过 WithEndpoint 指定 endpoint
+chat := qianfan.NewChatCompletion(
+    qianfan.WithEndpoint("your_custom_endpoint"),
+)
 ```
 
-也可以调用 `DoStream` 方法实现流式返回
+之后就可以通过 `Do` 方法进行对话：
+
+```
+resp, err := chat.Do(
+    context.TODO(),
+    qianfan.ChatCompletionRequest{
+        Messages: []qianfan.ChatCompletionMessage{
+            qianfan.ChatCompletionUserMessage("你好"),
+        },
+    },
+)
+if err != nil {
+    fmt.Print(err)
+}
+fmt.Print(resp.Result)
+```
+
+也可以调用 `Stream` 方法实现流式返回
 
 ```go
 chat := client.ChatCompletion()
 
-resp, err := chat.DoStream(  // DoStream 启用流式返回，参数与 Do 相同
-    context.Background(), 
-    &ChatCompletionRequest{
-        Messages: []ChatCompletionMessage{
-            ChatCompletionUserMessage("你好"),
+resp, err := chat.Stream(  // Stream 启用流式返回，参数与 Do 相同
+    context.TODO(),
+    qianfan.ChatCompletionRequest{
+        Messages: []qianfan.ChatCompletionMessage{
+            qianfan.ChatCompletionUserMessage("你好"),
         },
-    }
+    },
 )
 if err != nil {
-    t.Fatal(err)
+    return err
 }
 defer resp.Close()  // 关闭流
 for {
-    resp, err := resp.Recv()  // 每次循环可以拿到流式返回的结果
+    r, err := resp.Recv()
     if err != nil {
-        assert.Fail(t, "got err")
+        return err
     }
-    if resp.IsEnd {  // 判断是否是流式返回的结束标志
+    if resp.IsEnd { // 判断是否结束
         break
     }
-    fmt.Printf(resp.Result)
+    fmt.Print(r.Result)
 }
 ```
 
@@ -70,11 +102,22 @@ for {
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `Completion` 来完成这一任务。
 
 ```go
-completion := client.Completion()  // 使用默认模型 ERNIE-Bot-turbo
-// completion := client.CompletionFromModel("ERNIE-Bot-4")  // 可以指定模型
-// completion := client.CompletionFromEndpoint("your_custom_endpoint")  // 或者指定 endpoint
+completion := qianfan.NewCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
 
-completion := client.Completion()
+// 可以通过 WithModel 指定模型
+completion := qianfan.NewCompletion(
+    qianfan.WithModel("ERNIE-Bot-4"),  
+    // 支持的模型可以通过 completion.ModelList() 获取
+)
+// 或者通过 WithEndpoint 指定 endpoint
+completion := qianfan.NewCompletion(
+    qianfan.WithEndpoint("your_custom_endpoint"),
+)
+```
+
+与对话相同，可以调用 `Do` 方法实现续写
+
+```go
 resp, err := completion.Do(
     context.Background(), 
     &CompletionRequest{
@@ -82,35 +125,33 @@ resp, err := completion.Do(
     }
 )
 if err != nil {
-    t.Fatal(err)
+    return err
 }
 fmt.Printf(resp.Result)   // 模型返回的结果
 ```
 
-也可以调用 `DoStream` 方法实现流式返回
+也可以调用 `Stream` 方法实现流式返回
 
 ```go
-completion := client.Completion()
-
-resp, err := completion.DoStream(  // DoStream 启用流式返回，参数与 Do 相同
+resp, err := completion.Stream(  // Stream 启用流式返回，参数与 Do 相同
     context.Background(), 
     &CompletionRequest{
         Prompt: prompt,
     }
 )
 if err != nil {
-    t.Fatal(err)
+    return err
 }
 defer resp.Close()  // 关闭流
 for {
-    resp, err := resp.Recv()  // 每次循环可以拿到流式返回的结果
+    r, err := resp.Recv()
     if err != nil {
-        assert.Fail(t, "got err")
+        return err
     }
-    if resp.IsEnd {  // 判断是否是流式返回的结束标志
+    if resp.IsEnd { // 判断是否结束
         break
     }
-    fmt.Printf(resp.Result)
+    fmt.Print(r.Result)
 }
 ```
 
@@ -119,7 +160,21 @@ for {
 千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
 
 ```go
-embed := client.Embedding()
+embed := qianfan.NewEmbedding()  // 默认使用 Embedding-V1 模型
+
+// 可以通过 WithModel 指定模型
+embed := qianfan.NewEmbedding(
+    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 embed.ModelList() 获取
+)
+// 或者通过 WithEndpoint 指定 endpoint
+embed := qianfan.NewEmbedding(
+    qianfan.WithEndpoint("your_custom_endpoint"),
+)
+```
+
+之后使用 `Do` 方法进行调用
+
+```go
 resp, err := embed.Do(
     context.Background(), 
     &EmbeddingRequest{
@@ -127,7 +182,7 @@ resp, err := embed.Do(
     }
 )
 if err != nil {
-    t.Fatal(err)
+    return err
 }
 embed := resp.Data[0].Embedding  // 获取第一个输入的向量
 ```

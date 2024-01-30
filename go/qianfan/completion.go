@@ -146,3 +146,14 @@ func NewCompletion(optionList ...Option) *Completion {
 	options := makeOptions(optionList...)
 	return newCompletion(options)
 }
+
+func (c *Completion) ModelList() []string {
+	i := 0
+	list := make([]string, len(CompletionModelEndpoint))
+	for k := range CompletionModelEndpoint {
+		list[i] = k
+		i++
+	}
+	list = append(list, (&ChatCompletion{}).ModelList()...)
+	return list
+}

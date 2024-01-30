@@ -96,3 +96,13 @@ func NewEmbedding(optionList ...Option) *Embedding {
 	options := makeOptions(optionList...)
 	return newEmbedding(options)
 }
+
+func (c *Embedding) ModelList() []string {
+	list := make([]string, len(EmbeddingEndpoint))
+	i := 0
+	for k := range EmbeddingEndpoint {
+		list[i] = k
+		i++
+	}
+	return list
+}

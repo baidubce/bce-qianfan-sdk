@@ -27,18 +27,18 @@ type SearchInfo struct {
 }
 
 type ModelResponse struct {
-	Id               string       `json:"id"`
-	Object           string       `json:"object"`
-	Created          int          `json:"created"`
-	SentenceId       int          `json:"sentence_id"`
-	IsEnd            bool         `json:"is_end"`
-	IsTruncated      bool         `json:"is_truncated"`
-	Result           string       `json:"result"`
-	NeedClearHistory bool         `json:"need_clear_history"`
-	Usage            ModelUsage   `json:"usage"`
-	FunctionCall     FunctionCall `json:"function_call"`
-	BanRound         int          `json:"ban_round"`
-	SearchInfo       SearchInfo   `json:"search_info"`
+	Id               string        `json:"id"`
+	Object           string        `json:"object"`
+	Created          int           `json:"created"`
+	SentenceId       int           `json:"sentence_id"`
+	IsEnd            bool          `json:"is_end"`
+	IsTruncated      bool          `json:"is_truncated"`
+	Result           string        `json:"result"`
+	NeedClearHistory bool          `json:"need_clear_history"`
+	Usage            ModelUsage    `json:"usage"`
+	FunctionCall     *FunctionCall `json:"function_call"`
+	BanRound         int           `json:"ban_round"`
+	SearchInfo       *SearchInfo   `json:"search_info"`
 	ModelAPIError
 	baseResponse
 }

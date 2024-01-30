@@ -352,9 +352,9 @@ class EvaluationManager(BaseModel):
 
         return eval_state
 
-    # def eval_only(self, dataset: Dataset, input_column: str, reference_column: str, output_column: str, **kwargs: Any) -> EvaluationResult:
+    # def eval_only(self, dataset: Dataset, input_column: str,
+    # reference_column: str, output_column: str, **kwargs: Any) -> EvaluationResult:
     #
-
 
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
@@ -449,12 +449,16 @@ class EvaluationManager(BaseModel):
                     }
                 )
 
-                metrics_ds = dataset.create_from_pyobj(llm_evaluation_result_dict[index])
+                metrics_ds = dataset.create_from_pyobj(
+                    llm_evaluation_result_dict[index]
+                )
                 ds.col_append(metrics_ds.col_list())
                 table_list.append(ds.inner_table)
 
             return EvaluationResult(
-                result_dataset=Dataset.create_from_pyarrow_table(pyarrow.concat_tables(table_list))
+                result_dataset=Dataset.create_from_pyarrow_table(
+                    pyarrow.concat_tables(table_list)
+                )
             )
 
         if self.qianfan_evaluators:

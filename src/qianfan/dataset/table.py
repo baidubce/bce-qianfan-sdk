@@ -416,9 +416,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
         for name, data in elem.items():
             if name in self.table.column_names:
-                raise ValueError(
-                    f"column name {name} has been in dataset column list"
-                )
+                raise ValueError(f"column name {name} has been in dataset column list")
 
             if not isinstance(data, list):
                 raise TypeError(f"data isn't list, rather than {type(data)}")
@@ -609,9 +607,7 @@ class Table(Addable, Listable, Processable):
             new_group_column_list.append(current_group_number)
 
         self.col_delete(QianfanDataGroupColumnName)
-        self.col_append(
-            {QianfanDataGroupColumnName, new_group_column_list}
-        )
+        self.col_append({QianfanDataGroupColumnName, new_group_column_list})
 
         return
 

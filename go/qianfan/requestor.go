@@ -266,7 +266,7 @@ func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
 }
 
 func (si *streamInternal) Close() {
-	si.httpResponse.Body.Close()
+	_ = si.httpResponse.Body.Close()
 }
 
 func (si *streamInternal) Recv(resp QfResponse) error {

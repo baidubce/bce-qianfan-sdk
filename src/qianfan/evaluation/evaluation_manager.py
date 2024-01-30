@@ -21,6 +21,7 @@ import multiprocessing
 import os.path
 import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
+from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import pyarrow
@@ -37,6 +38,7 @@ from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
+from qianfan.dataset.schema import EvaluationSchema
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -352,9 +354,19 @@ class EvaluationManager(BaseModel):
 
         return eval_state
 
-    # def eval_only(self, dataset: Dataset, input_column: str,
-    # reference_column: str, output_column: str, **kwargs: Any) -> EvaluationResult:
-    #
+    def eval_only(
+        self,
+        dataset: Dataset,
+        **kwargs: Any,
+    ) -> EvaluationResult:
+        if not EvaluationSchema().validate(dataset):
+            raise ValueError("validate failed before evaluation")
+
+        tmp_ds = Dataset.create_from_pyobj(
+            self._run_evaluator_locally(dataset, **kwargs)
+        )
+        result_dataset = copy(dataset)
+        return result_dataset.col_append(tmp_ds.col_list())
 
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
@@ -407,8 +419,9 @@ class EvaluationManager(BaseModel):
                         LLMOutputColumnName
                     ]
                     # 实际评估的地方
+                    log_info(f"start to evaluate llm {index}")
                     llm_evaluation_result_dict[index] = self._run_evaluator_locally(
-                        result
+                        result, **kwargs
                     )
 
                     # 做一些字段填充，只在这两个列表为空的时候进入
@@ -437,9 +450,10 @@ class EvaluationManager(BaseModel):
                     log_warn(err_msg)
 
             # 整合数据，将得到的数据集整合成网页人工评估的数据集格式
+            log_info("start to merge evaluation result dataset")
             table_list: List[pyarrow.Table] = []
             for index, response_list in llm_response_list.items():
-                index_tag_column = [llm_tags[index] * len(response_list)]
+                index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
                 ds = dataset.create_from_pyobj(
                     {
                         "llm_tag": index_tag_column,

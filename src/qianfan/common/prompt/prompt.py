@@ -290,10 +290,7 @@ class Prompt(HubSerializable):
                 raise InvalidArgumentError(f"variable `{v}` is not provided")
             prompt = prompt.replace(f"{left_id}{v}{right_id}", str(kwargs[v]))
         neg_prompt = None
-        if (
-            self.scene_type == PromptSceneType.Text2Image
-            and self.negative_template is not None
-        ):
+        if self.negative_template is not None:
             if self.negative_variables is None:
                 self.negative_variables = []
             neg_prompt = self.negative_template

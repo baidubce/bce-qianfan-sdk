@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 import click
 import typer
 from prompt_toolkit import prompt
+from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError, Validator
 from rich import print as rprint
 from rich.console import Console, Group, RenderableType
@@ -291,14 +292,14 @@ def render_response_debug_info(response: QfResponse) -> Group:
 
 
 class InputEmptyValidator(Validator):
-    def validate(self, document):
+    def validate(self, document: Document) -> None:
         text = document.text
         if len(text.strip()) == 0:
             raise ValidationError(message="Input cannot be empty")
 
 
 class BosPathValidator(Validator):
-    def validate(self, document):
+    def validate(self, document: Document) -> None:
         text = document.text.strip()
         if len(text) == 0:
             raise ValidationError(message="Input cannot be empty")

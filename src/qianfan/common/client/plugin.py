@@ -14,7 +14,7 @@
 
 
 import os
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import typer
 from prompt_toolkit import prompt
@@ -22,7 +22,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
 from rich import print as rprint
-from rich.console import Console, Group
+from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.spinner import Spinner
@@ -47,7 +47,7 @@ class PluginInputValidator(InputEmptyValidator):
     Validator for input in plugin
     """
 
-    def validate(self, document: Document):
+    def validate(self, document: Document) -> None:
         """
         validate input:
         - input must not be empty
@@ -136,7 +136,7 @@ class PluginClient(object):
             self.bos_path = self.bos_path + "/"
         return self.bos_path
 
-    def upload_file_to_bos(self, filepath) -> str:
+    def upload_file_to_bos(self, filepath: str) -> Tuple[str, str]:
         """
         Upload file to bos and get bos_url and http_url
         """
@@ -169,7 +169,7 @@ class PluginClient(object):
 
         self.print_hint_msg()
         # loop the conversation
-        extra_field = {}
+        extra_field: Dict[str, Any] = {}
         while True:
             rprint("\n[yellow bold]Enter your message[/yellow bold]:")
             while True:
@@ -227,7 +227,7 @@ class PluginClient(object):
 
                 m = ""
                 for r in response:
-                    render_list = []
+                    render_list: List[RenderableType] = []
                     m += r["result"]
                     render_list.append(Markdown(m))
                     if not r["is_end"]:

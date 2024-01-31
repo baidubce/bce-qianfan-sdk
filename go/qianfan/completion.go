@@ -120,6 +120,9 @@ func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*Model
 	if err != nil {
 		return nil, err
 	}
+	if err = checkResponseError(&resp); err != nil {
+		return &resp, err
+	}
 	return &resp, nil
 }
 

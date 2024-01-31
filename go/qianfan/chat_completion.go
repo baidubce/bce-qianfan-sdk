@@ -154,6 +154,9 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 	if err != nil {
 		return nil, err
 	}
+	if err = checkResponseError(&resp); err != nil {
+		return &resp, err
+	}
 	return &resp, nil
 }
 

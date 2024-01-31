@@ -1,5 +1,7 @@
 package qianfan
 
+import "fmt"
+
 // 模型相关的结构体基类
 type BaseModel struct {
 	Model      string // 使用的模型名称
@@ -14,10 +16,18 @@ type ModelUsage struct {
 	TotalTokens      int `json:"total_tokens"`      // tokens总数
 }
 
+type ModelAPIResponse interface {
+	GetError() (int, string)
+}
+
 // API 错误信息
 type ModelAPIError struct {
 	ErrorCode int    `json:"error_code"` // 错误码
 	ErrorMsg  string `json:"error_msg"`  // 错误消息
+}
+
+func (e *ModelAPIError) GetError() (int, string) {
+	return e.ErrorCode, e.ErrorMsg
 }
 
 // 搜索结果
@@ -62,5 +72,16 @@ func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = checkResponseError(&resp); err != nil {
+		return &resp, err
+	}
 	return &resp, nil
+}
+
+func checkResponseError(resp ModelAPIResponse) error {
+	errCode, errMsg := resp.GetError()
+	if errCode != 0 {
+		return fmt.Errorf("API return error. code: %d, msg: %s", errCode, errMsg)
+	}
+	return nil
 }

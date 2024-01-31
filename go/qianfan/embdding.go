@@ -98,6 +98,9 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 	if err != nil {
 		return nil, err
 	}
+	if err = checkResponseError(resp); err != nil {
+		return resp, err
+	}
 	return resp, nil
 }
 

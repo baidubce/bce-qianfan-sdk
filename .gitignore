@@ -13,7 +13,6 @@ __pycache__/
 /bin/
 /build/
 /develop-eggs/
-/dist/
 /eggs/
 /lib/
 /lib64/
@@ -62,4 +61,3 @@ poetry.lock
 
 # JS Dependencies
 node_modules
-dist

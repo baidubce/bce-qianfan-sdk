@@ -42,7 +42,6 @@ from tenacity import (
 )
 
 import qianfan.errors as errors
-from qianfan.consts import Consts
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
@@ -283,40 +282,6 @@ class BaseAPIRequestor(object):
                 resp.request = QfRequest.from_aiohttp(response.request_info)
                 resp.request.json_body = copy.deepcopy(request.json_body)
                 return data_postprocess(resp)
-
-    @_with_latency
-    async def _async_request_stream(
-        self,
-        request: QfRequest,
-        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
-    ) -> AsyncIterator[QfResponse]:
-        """
-        async stream request
-        """
-        async with self._rate_limiter:
-            responses = self._client.arequest_stream(request)
-        async for body, resp in responses:
-            _async_check_if_status_code_is_200(resp)
-            body_str = body.decode("utf-8")
-            if body_str.strip() == "":
-                continue
-            if not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
-                try:
-                    # the response might be error message in json format
-                    json_body: Dict[str, Any] = json.loads(body_str)
-                    self._check_error(json_body)
-                except json.JSONDecodeError:
-                    # the response is not json format, ignore and raise RequestError
-                    pass
-                raise errors.RequestError(
-                    f"got unexpected stream response from server: {body_str}"
-                )
-            body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-            json_body = json.loads(body_str)
-            parsed = self._parse_async_response(json_body, resp)
-            parsed.request = QfRequest.from_aiohttp(resp.request_info)
-            parsed.request.json_body = copy.deepcopy(request.json_body)
-            yield data_postprocess(parsed)
 
     def _parse_response(
         self, body: Dict[str, Any], resp: requests.Response

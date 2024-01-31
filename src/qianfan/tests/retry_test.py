@@ -42,10 +42,37 @@ def test_retry_accesstoken_expired():
         assert comp.access_token() == access_token
         resp = comp.do(prompt="test", stream=True)
         for r in resp:
-            assert resp is not None
-            assert resp["code"] == 200
-            assert "id" in resp["body"]
-            assert resp["object"] == "completion"
+            assert r is not None
+            assert r["code"] == 200
+            assert "id" in r["body"]
+            assert r["object"] == "completion"
+            assert comp.access_token() != access_token
+
+
+@pytest.mark.asyncio
+async def test_async_retry_accesstoken_expired():
+    """
+    Test retry access token expired
+    """
+    access_token = "expired"
+    with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
+        comp = qianfan.Completion()
+        assert comp.access_token() == access_token
+        resp = await comp.ado(prompt="test")
+        assert resp is not None
+        assert resp["code"] == 200
+        assert "id" in resp["body"]
+        assert resp["object"] == "completion"
+        assert comp.access_token() != access_token
+    with EnvHelper(QIANFAN_ACCESS_TOKEN=access_token):
+        comp = qianfan.Completion()
+        assert comp.access_token() == access_token
+        resp = await comp.ado(prompt="test", stream=True)
+        async for r in resp:
+            assert r is not None
+            assert r["code"] == 200
+            assert "id" in r["body"]
+            assert r["object"] == "completion"
             assert comp.access_token() != access_token
 
 

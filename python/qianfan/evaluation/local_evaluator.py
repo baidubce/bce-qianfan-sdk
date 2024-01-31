@@ -15,7 +15,7 @@ from qianfan.utils.pydantic import Field
 class JudgeLocalEvaluator(LocalEvaluator):
     """local referee evaluator config class"""
 
-    model: Any = Field(None, description="model for evaluation")
+    model: Any
     metric_name: str = Field(default="", description="metric name for evaluation")
     # prompt_template: Optional[Prompt] = None
     evaluation_prompt: str = Field(default=QianfanNoRefereeEvaluatorPromptTemplate)

@@ -17,9 +17,10 @@ export async function getAccessToken(API_KEY, SECRET_KEY) {
         const response = await axios.post(
             `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${encodedAPIKey}&client_secret=${encodedSecretKey}`
         );
-        return response.data.access_token;
+
+        const { access_token } = response.data;
+        return access_token;
     } catch (error) {
-        // 包装错误消息并提供更多上下文
         throw new Error(`Failed to get access token: ${error.message}`);
     }
 }

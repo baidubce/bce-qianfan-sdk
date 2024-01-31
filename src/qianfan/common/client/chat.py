@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import json
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, List, Optional, Tuple
 
@@ -361,6 +362,11 @@ def chat_entry(
     enable_citation: Optional[bool] = typer.Option(
         None, help="Enable citation", rich_help_panel=MODEL_ARGUMENTS_PANEL
     ),
+    extra_parameters: Optional[str] = typer.Option(
+        None,
+        help="Extra parameters for the model. This should be a json string.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
 ) -> None:
     """
     Chat with the LLM in the terminal.
@@ -384,6 +390,8 @@ def chat_entry(
 
     if stop is not None:
         extra_args["stop"] = stop.split(",")
+    if extra_parameters is not None:
+        extra_args["extra_parameters"] = json.loads(extra_parameters)
 
     client = ChatClient(model, endpoint, multi_line, debug=debug, **extra_args)
     client.chat_in_terminal()

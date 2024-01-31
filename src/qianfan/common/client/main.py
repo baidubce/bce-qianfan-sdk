@@ -23,6 +23,7 @@ from qianfan.common.client.completion import completion_entry
 from qianfan.common.client.dataset import dataset_app
 from qianfan.common.client.embedding import embedding_entry
 from qianfan.common.client.evaluation import evaluation_app
+from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
 from qianfan.common.client.utils import print_error_msg
@@ -37,6 +38,7 @@ app.command(name="chat")(chat_entry)
 app.command(name="completion")(completion_entry)
 app.command(name="txt2img")(txt2img_entry)
 app.command(name="embedding", no_args_is_help=True)(embedding_entry)
+app.command(name="plugin")(plugin_entry)
 app.add_typer(dataset_app, name="dataset")
 app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")

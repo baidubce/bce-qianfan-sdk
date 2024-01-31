@@ -18,6 +18,7 @@ from typing import Any, List, Optional, Tuple
 
 import typer
 from prompt_toolkit import prompt
+from prompt_toolkit.completion import WordCompleter
 from rich import print as rprint
 from rich.console import Console, Group, RenderableType
 from rich.live import Live
@@ -29,9 +30,9 @@ from rich.text import Text
 import qianfan
 from qianfan import QfRole
 from qianfan.common.client.utils import (
+    InputEmptyValidator,
     credential_required,
     list_model_option,
-    print_error_msg,
     print_warn_msg,
     render_response_debug_info,
 )
@@ -40,13 +41,17 @@ from qianfan.errors import InternalError
 from qianfan.resources.llm.chat_completion import ChatCompletion
 from qianfan.resources.typing import QfMessages, QfResponse
 
-END_PROMPT = "\exit"
-
 
 class ChatClient(object):
     """
     Client object for the chat command
     """
+
+    END_PROMPT = "/exit"
+    RESET_PROMPT = "/reset"
+    HELP_PROMPT = "/help"
+    command_list = [END_PROMPT, RESET_PROMPT]
+    input_completer = WordCompleter(command_list, sentence=True)
 
     def __init__(
         self,
@@ -168,12 +173,12 @@ class ChatClient(object):
         if self.multi_line:
             rprint(
                 "[bold]Hint[/bold]: [green bold]Press Esc before Enter[/] to submit"
-                f" your message, and use '{END_PROMPT}' to end the conversation."
+                f" your message, and use '{self.END_PROMPT}' to end the conversation."
             )
         else:
             rprint(
                 "[bold]Hint[/bold]: Press enter to submit your message, and use"
-                f" '{END_PROMPT}' to end the conversation."
+                f" '{self.END_PROMPT}' to end the conversation."
             )
             rprint(
                 "[bold]Hint[/bold]: If you want to submit multiple lines, use the"
@@ -188,20 +193,12 @@ class ChatClient(object):
         self.print_hint_msg()
         # loop the conversation
         while True:
-            # loop the input and check whether the input is valid
-            while True:
-                rprint("\n[yellow bold]Enter your message[/yellow bold]:")
-                message = prompt(multiline=self.multi_line).strip()
-                # break the loop if input is valid
-                if len(message) != 0:
-                    break
-                # if message is empty, print error message and continue to input
-                print_error_msg("Message cannot be empty!")
-
-            for i in range(len(self.clients)):
-                msg_history = self.msg_history[i]
-                if msg_history is not None:
-                    msg_history.append(message)
+            rprint("\n[yellow bold]Enter your message[/yellow bold]:")
+            message = prompt(
+                multiline=self.multi_line,
+                validator=InputEmptyValidator(),
+                completer=self.input_completer,
+            ).strip()
 
             extra_info = (
                 ""
@@ -212,9 +209,18 @@ class ChatClient(object):
                 f"\n[blue][bold]Model response[/bold][/blue][dim] {extra_info}[/dim]:"
             )
 
-            if message == END_PROMPT:
+            if message == self.END_PROMPT:
                 rprint("Bye!")
                 raise typer.Exit()
+            if message == self.RESET_PROMPT:
+                self.msg_history = [QfMessages() for _ in range(len(self.clients))]
+                rprint("Chat history has been cleared.")
+                continue
+
+            for i in range(len(self.clients)):
+                msg_history = self.msg_history[i]
+                if msg_history is not None:
+                    msg_history.append(message)
 
             # List of (received_msg, is_end, response) for each client
             msg_list: List[Tuple[str, bool, Optional[QfResponse]]] = [
@@ -260,7 +266,7 @@ class ChatClient(object):
                             live.update(self.render_model_response(msg_list))
                     except Exception as e:
                         msg_list[i] = (
-                            msg_list[i][0] + "\n\n**Got Exception**: " + str(e),
+                            msg_list[i][0] + "\n\n**Got Exception**: " + repr(e),
                             True,
                             None,
                         )

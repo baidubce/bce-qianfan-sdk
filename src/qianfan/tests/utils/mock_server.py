@@ -723,6 +723,146 @@ def create_finetune_task():
     )
 
 
+@app.route(Consts.FineTuneV2BaseRouteAPI, methods=["POST"])
+def finetune_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.FineTuneCreateJobAction: finetune_v2_create_job,
+        Consts.FineTuneCreateTaskAction: finetune_v2_create_task,
+        Consts.FineTuneJobListAction: finetune_v2_job_list,
+        Consts.FineTuneTaskListAction: finetune_v2_task_list,
+        Consts.FineTuneTaskDetailAction: finetune_v2_task_detail,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+def finetune_v2_create_job(body):
+    return json_response(
+        {
+            "requestId": "98d2e3d7-a689-4255-91f1-da514a3a5777",
+            "result": {"jobId": "job-2qm2a9s9rj22"},
+        }
+    )
+
+
+def finetune_v2_create_task(body):
+    return json_response(
+        {
+            "requestId": "aac33135-aed1-416a-8070-c6ecde325df5",
+            "result": {"jobId": body["jobId"], "taskId": "task-92zjbyinxruq"},
+        }
+    )
+
+
+def finetune_v2_job_list(body):
+    return json_response(
+        {
+            "requestId": "f17326a0-91fd-404c-a9bc-db586166893e",
+            "result": {
+                "jobList": [
+                    {
+                        "jobId": "job-b7hmiwmptntt",
+                        "name": "ebspda2",
+                        "description": "",
+                        "model": "ERNIE-Speed",
+                        "trainMode": "PostPretrain",
+                        "createDate": "2024-01-29T16:24:32Z",
+                    },
+                    {
+                        "jobId": "job-yhddtcbesggz",
+                        "name": "0129_yige",
+                        "description": "",
+                        "model": "WENXIN-YIGE",
+                        "trainMode": "SFT",
+                        "createDate": "2024-01-29T14:39:04Z",
+                    },
+                ],
+                "pageInfo": {
+                    "marker": "",
+                    "maxKeys": 20,
+                    "isTruncated": True,
+                    "nextMarker": "job-afik6nqipgnq",
+                },
+            },
+        }
+    )
+
+
+def finetune_v2_task_list(body):
+    return json_response(
+        {
+            "requestId": "eb3de810-3b21-4737-957f-ffd971a5610f",
+            "result": {
+                "pageInfo": {"marker": "", "maxKeys": 100, "isTruncated": False},
+                "taskList": [
+                    {
+                        "taskId": "task-92zjbyinxruq",
+                        "jobId": body["jobId"],
+                        "jobName": "hj_pptr",
+                        "jobDescription": "",
+                        "model": "ERNIE-Speed",
+                        "trainMode": "PostPretrain",
+                        "parameterScale": "FullFineTuning",
+                        "runStatus": "Running",
+                        "createDate": "2024-01-30T09:41:54Z",
+                        "finishDate": "0000-00-00T00:00:00Z",
+                    }
+                ],
+            },
+        }
+    )
+
+
+def finetune_v2_task_detail(body):
+    r = request.json
+    task_id = r["taskId"]
+    global finetune_task_call_times
+    call_times = finetune_task_call_times.get((task_id, ""))
+    if call_times is None:
+        return json_response(
+            {
+                "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
+                "result": {
+                    "taskId": task_id,
+                    "jobId": "job-s66h7p9gqqu1",
+                    "jobName": "hj_pptr",
+                    "jobDescription": "",
+                    "model": "ERNIE-Speed",
+                    "trainMode": "PostPretrain",
+                    "parameterScale": "FullFineTuning",
+                    "runStatus": "Running",
+                    "runProgress": "51%",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+                    "createDate": "2024-01-30T09:41:54Z",
+                    "finishDate": "0000-00-00T00:00:00Z",
+                },
+            }
+        )
+    else:
+        MAX_CALL_TIMES = 10
+        finetune_task_call_times[(task_id, "")] += 1
+        return json_response(
+            {
+                "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
+                "result": {
+                    "taskId": task_id,
+                    "jobId": "job-s66h7p9gqqu1",
+                    "jobName": "hj_pptr",
+                    "jobDescription": "",
+                    "model": "ERNIE-Speed",
+                    "trainMode": "PostPretrain",
+                    "parameterScale": "FullFineTuning",
+                    "runStatus": "Done" if call_times >= MAX_CALL_TIMES else "Running",
+                    "runProgress": f"{int(100 * call_times / MAX_CALL_TIMES)}%",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+                    "createDate": "2024-01-30T09:41:54Z",
+                    "finishDate": "0000-00-00T00:00:00Z",
+                },
+            }
+        )
+
+
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])
 @iam_auth_checker
 def create_finetune_job():

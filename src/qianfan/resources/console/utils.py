@@ -15,10 +15,12 @@
 """
 Utils for console api
 """
+import copy
 import functools
-from typing import Any, Awaitable, Callable, Tuple
+from typing import Any, Awaitable, Callable, Optional, Tuple
 
 from qianfan import get_config
+from qianfan.consts import Consts
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
@@ -106,6 +108,15 @@ def async_console_api_request(
         )
 
     return inner
+
+
+def _get_console_v2_query(
+    action: Optional[str] = None, query: dict[str, Any] = {}
+) -> dict[str, Any]:
+    res = copy.deepcopy(query)
+    if action is not None:
+        res[Consts.ConsoleAPIQueryAction] = action
+    return res
 
 
 def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:

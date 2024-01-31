@@ -161,6 +161,14 @@ class TrainDatasetType(int, Enum):
 class TrainMode(str, Enum):
     SFT = "SFT"
     """对应 LLMFinetune"""
+    PostPretrain = "PostPretrain"
+    """PostPretrain """
+
+
+class TrainParameterScale(str, Enum):
+    FullFineTuning = "FullFineTuning"
+    PromptTuning = "PromptTuning"
+    LoRA = "LoRA"
 
 
 class DeployPoolType(int, Enum):

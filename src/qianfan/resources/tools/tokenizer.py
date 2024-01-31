@@ -66,11 +66,6 @@ class Tokenizer(object):
         if mode == "local":
             return cls._local_count_tokens(text)
         if mode == "remote":
-            if model not in ["ERNIE-Bot", "ERNIE-Bot-turbo", "ERNIE-Bot-4"]:
-                raise InvalidArgumentError(
-                    f"Model `{model} is not supported to calculate token count from"
-                    " server.`"
-                )
             return cls._remote_count_tokens_eb(text, model, **kwargs)
 
         # unreachable

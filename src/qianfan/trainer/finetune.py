@@ -207,7 +207,7 @@ class LLMFinetune(Trainer):
         )
         if not hasattr(self, "load_data_action") and self.dataset_bos_path is not None:
             kwargs["input"] = {
-                "datasets": [{"id": 2, "bosPath": self.dataset_bos_path}]
+                "datasets": [{"type": 2, "bosPath": self.dataset_bos_path}]
             }
         self.result[0] = self.ppls[0].exec(**kwargs)
         return self

@@ -1,13 +1,13 @@
-import qianfan
-
-from evaluator import LocalEvaluator
 from typing import Any, Dict, List, Union
 
+from evaluator import LocalEvaluator
+
+import qianfan
 from qianfan.evaluation.consts import (
+    QianfanNoRefereeEvaluatorPromptTemplate,
     QianfanRefereeEvaluatorDefaultMaxScore,
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
-    QianfanNoRefereeEvaluatorPromptTemplate,
 )
 from qianfan.utils.pydantic import Field
 
@@ -24,8 +24,8 @@ class JudgeLocalEvaluator(LocalEvaluator):
     prompt_max_score: int = Field(default=QianfanRefereeEvaluatorDefaultMaxScore)
 
     def evaluate(
-            self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
-        ) -> Dict[str, Any]:
+        self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
+    ) -> Dict[str, Any]:
         """
         use model to evaluate in local
         :param input: given prompts.
@@ -37,7 +37,7 @@ class JudgeLocalEvaluator(LocalEvaluator):
         :return: evaluate result in json schema
         """
         if isinstance(input, list):
-            input_content = input[0].get("content", '')
+            input_content = input[0].get("content", "")
             # 生成评价模板
             prompt = self.evaluation_prompt.format(
                 criteria=self.prompt_metrics,
@@ -56,7 +56,7 @@ class JudgeLocalEvaluator(LocalEvaluator):
                 top_p=1,
             )
             # print(f'{self.metric_name}|{input[0]}|{output}|{resp["result"].strip()}')
-            return {self.metric_name: resp['result'].strip()}
+            return {self.metric_name: resp["result"].strip()}
         elif isinstance(input, str):
             raise ValueError(f"input in {type(input)} not supported yet")
         else:

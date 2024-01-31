@@ -30,8 +30,6 @@ from qianfan import get_config
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
-    NewInputChatColumnName,
-    NewInputPromptColumnName,
     OldReferenceColumnName,
 )
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
@@ -127,41 +125,28 @@ class EvaluationManager(BaseModel):
         return result_list
 
     def _get_eval_task_future(self, dataset: Dataset, **kwargs: Any) -> List[Future]:
-        if NewInputPromptColumnName in dataset.col_names():
-            ds_dict = dataset.col_list(
-                [NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName]
-            )
-        else:
-            ds_dict = dataset.col_list(
-                [NewInputChatColumnName, LLMOutputColumnName, OldReferenceColumnName]
-            )
+        input_column_name = dataset.eval_input_column
+        reference_column_name = dataset.reference_column
+        output_column_name = dataset.eval_llm_output_column
+
+        ds_dict = dataset.col_list(
+            [input_column_name, reference_column_name, output_column_name]
+        )
 
         sector_length = math.ceil(len(dataset) / multiprocessing.cpu_count())
         pool = ThreadPoolExecutor()
         future_list: List[Future] = []
         for i in range(multiprocessing.cpu_count()):
-            if NewInputPromptColumnName in dataset.col_names():
-                future_list.append(
-                    pool.submit(
-                        self._eval_worker,
-                        i * sector_length,
-                        min((i + 1) * sector_length, len(dataset)),
-                        ds_dict[NewInputPromptColumnName],
-                        ds_dict[OldReferenceColumnName],
-                        ds_dict[LLMOutputColumnName],
-                    )
+            future_list.append(
+                pool.submit(
+                    self._eval_worker,
+                    i * sector_length,
+                    min((i + 1) * sector_length, len(dataset)),
+                    ds_dict[input_column_name],
+                    ds_dict[reference_column_name],
+                    ds_dict[output_column_name],
                 )
-            else:
-                future_list.append(
-                    pool.submit(
-                        self._eval_worker,
-                        i * sector_length,
-                        min((i + 1) * sector_length, len(dataset)),
-                        ds_dict[NewInputChatColumnName],
-                        ds_dict[OldReferenceColumnName],
-                        ds_dict[LLMOutputColumnName],
-                    )
-                )
+            )
 
         return future_list
 
@@ -371,16 +356,27 @@ class EvaluationManager(BaseModel):
         Returns:
             EvaluationResult: Evaluation result of models on the dataset.
         """
+        if not dataset.eval_input_column or not dataset.eval_llm_output_column:
+            err_msg = (
+                "either eval_input_column or eval_llm_output_column didn't been set"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        dataset = copy(dataset)
+        if not dataset.reference_column:
+            dataset.reference_column = OldReferenceColumnName
+            dataset.col_append(
+                {OldReferenceColumnName: [None for _ in range(len(dataset))]}
+            )
+
         if not EvaluationSchema().validate(dataset):
             raise ValueError("validate failed before evaluation")
 
         tmp_ds = Dataset.create_from_pyobj(
             self._run_evaluator_locally(dataset, **kwargs)
         )
-        result_dataset = copy(dataset)
-        return EvaluationResult(
-            result_dataset=result_dataset.col_append(tmp_ds.col_list())
-        )
+        return EvaluationResult(result_dataset=dataset.col_append(tmp_ds.col_list()))
 
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
@@ -407,6 +403,17 @@ class EvaluationManager(BaseModel):
         if self.local_evaluators:
             # 大模型的标签列表
             llm_tags = self._get_llm_tags(llms)
+
+            # 检查是否有评估的标准答案列
+            # 如果没有，需要复制数据集并且在副本中添加空参考数据列
+            # 当且仅当使用的是 Service 对 Completion 补全数据集进行批量推理
+            # 且用户没有指定 reference_column 时使用这个逻辑
+            if not dataset.reference_column:
+                dataset = copy(dataset)
+                dataset.reference_column = OldReferenceColumnName
+                dataset.col_append(
+                    {OldReferenceColumnName: [None for _ in range(len(dataset))]}
+                )
 
             # 首先获取批量评估的结果
             log_info("start to inference in batch during evaluation")
@@ -438,22 +445,19 @@ class EvaluationManager(BaseModel):
                         result, **kwargs
                     )
 
+                    assert isinstance(result, Dataset)
+
                     # 做一些字段填充，只在这两个列表为空的时候进入
                     if not llm_input_list:
-                        if NewInputPromptColumnName in result.col_names():
-                            llm_input_list = result[NewInputPromptColumnName][
-                                NewInputPromptColumnName
-                            ]
-                            input_column_name = NewInputPromptColumnName
-                        else:
-                            llm_input_list = result[NewInputChatColumnName][
-                                NewInputChatColumnName
-                            ]
-                            input_column_name = NewInputChatColumnName
+                        llm_input_list = result[result.eval_input_column][
+                            result.eval_input_column
+                        ]
+                        assert result.eval_input_column
+                        input_column_name = result.eval_input_column
 
                     if not expected_output_list:
-                        expected_output_list = result[OldReferenceColumnName][
-                            OldReferenceColumnName
+                        expected_output_list = result[result.reference_column][
+                            result.reference_column
                         ]
 
                 except Exception as e:

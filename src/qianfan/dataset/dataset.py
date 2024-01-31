@@ -97,6 +97,8 @@ class Dataset(Table):
         inner_schema_cache: Optional[Schema] = None,
         input_columns: Optional[List[str]] = None,
         reference_column: Optional[str] = None,
+        eval_input_column: Optional[str] = None,
+        eval_llm_output_column: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -113,6 +115,10 @@ class Dataset(Table):
                 which columns should be extracted as inputs
             reference_column (Optional[str]):
                 which column should be extracted as reference
+            eval_input_column (Optional[str]):
+                evaluation input column name in dataset
+            eval_llm_output_column (Optional[str]):
+                llm output column name in dataset for evaluating
             **kwargs (Any):
                 optional arguments
         """
@@ -124,11 +130,17 @@ class Dataset(Table):
         # schema 对象的缓存，在 load 时被指定
         self.inner_schema_cache: Optional[Schema] = inner_schema_cache
 
-        # 输入列的列名列表
+        # 批量推理输入列的列名列表
         self.input_columns = input_columns
 
-        # 预期结果列的列名
+        # 批量推理以及评估时的预期结果列的列名
         self.reference_column = reference_column
+
+        # 只运行评估时，评估的输入列的列名
+        self.eval_input_column = eval_input_column
+
+        # 只运行评估时，评估的大模型回答列列名
+        self.eval_llm_output_column = eval_llm_output_column
 
     @classmethod
     def _from_source(
@@ -1258,8 +1270,11 @@ class Dataset(Table):
             NewInputPromptColumnName: input_str_list,
             LLMOutputColumnName: output_list,
         }
+
+        reference_column: Optional[str] = None
         if self.reference_column:
             table_dict[OldReferenceColumnName] = self.get_reference_data
+            reference_column = OldReferenceColumnName
 
         if does_show_latency:
             if len(first_token_latency_list) != 0:
@@ -1269,7 +1284,9 @@ class Dataset(Table):
         return Dataset.create_from_pyobj(
             table_dict,
             input_columns=self.input_columns,
-            reference_column=OldReferenceColumnName,
+            reference_column=reference_column,
+            eval_input_column=NewInputPromptColumnName,
+            eval_llm_output_column=LLMOutputColumnName,
         )
 
     def _get_chat_return_dataset(
@@ -1305,7 +1322,9 @@ class Dataset(Table):
         return Dataset.create_from_pyobj(
             table_dict,
             input_columns=[NewInputChatColumnName],
-            reference_column=LLMOutputColumnName,
+            reference_column=OldReferenceColumnName,
+            eval_input_column=NewInputChatColumnName,
+            eval_llm_output_column=LLMOutputColumnName,
         )
 
     def _batch_inference_on_service(

@@ -35,20 +35,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
-      # Only runs when key from caching step changes
-      - name: Install latest version of Poetry
-        if: steps.cache-poetry.outputs.cache-hit != 'true'
+      - name: Install Poetry
         run: |
           pip install poetry
-      # Poetry still needs to be re-prepended to the PATH on each run, since
-      # PATH does not persist between runs.
-      - name: Add Poetry to $PATH
-        run: |
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry lock
       - name: Get Poetry version
         run: poetry --version
+      - name: Setup Python Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+          cache: "poetry"
       - name: Install deps
-        if: steps.cache-deps.cache-hit != 'true'
         run: |
           make install
       - name: Build docs

@@ -62,5 +62,5 @@ jobs:
         run: |
           export TAG_NAME=${{ steps.check-version.outputs.version }}
           echo "Triggered by tag: $TAG_NAME"
-          bash ./python/scripts/release_github.sh
+          bash ./scripts/release_github.sh
 

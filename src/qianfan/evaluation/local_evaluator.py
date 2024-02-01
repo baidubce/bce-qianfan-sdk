@@ -22,8 +22,7 @@ class LocalJudgeEvaluator(LocalEvaluator):
         default=None, description="model object"
     )
 
-    temperature: float = Field(default=0.1, description="temperature")
-    top_p: float = Field(default=1, description="temperature")
+    model_kwargs: Dict[str, Any] = Field(default={}, description="parameters for model")
     evaluation_prompt: Prompt = Field(
         default=Prompt(LocalJudgeEvaluatorPromptTemplate),
         description="concrete evaluation prompt string",
@@ -83,8 +82,7 @@ class LocalJudgeEvaluator(LocalEvaluator):
 
             resp = self.model.do(
                 messages=msg,
-                temperature=self.temperature,
-                top_p=self.top_p,
+                **self.model_kwargs,
             )
             assert isinstance(resp, QfResponse)
             result = resp["result"].strip()
@@ -102,16 +100,14 @@ class LocalJudgeEvaluator(LocalEvaluator):
             if isinstance(self.model, Completion):
                 resp = self.model.do(
                     prompt=prompt,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
+                    **self.model_kwargs,
                 )
             elif isinstance(self.model, ChatCompletion):
                 msg = qianfan.Messages()
                 msg.append(prompt)
                 resp = self.model.do(
                     messages=msg,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
+                    **self.model_kwargs,
                 )
             else:
                 raise ValueError("Unsupported model type")

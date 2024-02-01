@@ -14,7 +14,7 @@ build:
       - pip install poetry
       - poetry config virtualenvs.create false
     post_install:
-      - poetry install --no-interaction
+      - make install
     pre_build:
       - make doc
 

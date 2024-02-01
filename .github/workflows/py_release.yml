@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Release docs & dist
+name: Python Release
 
 on:
   # Allows you to run this workflow manually from the Actions tab
@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install
@@ -36,22 +36,26 @@ jobs:
         run: make test
       - name: Build artifacts
         run: make build
+      - name: Build docs
+        run: make doc
       - name: Check Version
         id: check-version
         run: |
           echo version=$(poetry version --short) >> $GITHUB_OUTPUT
       - name: cleanup before release
         run: |
-          zip -r ./output/docs.zip ./output/docs/html
+          zip -r ./output/docs.zip ./output/docs/_build/html
           rm -rf ./output/docs
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
+          name: ${{ format('Python v{0}', steps.check-version.outputs.version) }}
           artifacts: "output/*"
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
           generateReleaseNotes: true
-          tag: ${{ steps.check-version.outputs.version }}
+          tag: ${{ format('py/{0}', steps.check-version.outputs.version) }}
+          prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main
       - name: release to pypi
         env: 
@@ -59,33 +63,5 @@ jobs:
         run: |
           export TAG_NAME=${{ steps.check-version.outputs.version }}
           echo "Triggered by tag: $TAG_NAME"
-          bash ./src/scripts/release_github.sh
-  # Single deploy job since we're just deploying
-  docs:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - name: Install
-        run: |
-          pip3 install poetry
-          poetry install
-      - name: Build docs
-        run: |
-          make doc
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: './build/docs/_build/html'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+          bash ./python/scripts/release_github.sh
+

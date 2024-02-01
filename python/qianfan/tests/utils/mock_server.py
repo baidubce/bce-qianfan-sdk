@@ -258,7 +258,7 @@ def chat(model_name):
     """
     r = request.json
     request_header = request.headers
-    request_id = request_header[Consts.XRequestID]
+    request_id = request_header.get(Consts.XRequestID)
     if request_id == "custom_req":
         return json_response(
             {

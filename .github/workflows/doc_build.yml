@@ -2,38 +2,37 @@ on:
   push:
     branches: ['main']
   pull_request:
+    path:
+      - "python/**"
+      - "docs/**"
+      - "README.md"
   workflow_dispatch:
 
-name: Build
+name: Docs
 
 defaults:
   run:
     shell: bash
+    working-directory: ./python
 
 env:
   RUFF_OUTPUT_FORMAT: github
 
 jobs:
   build:
-    name: Build tool
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - 'ubuntu-latest'
-          - 'macos-latest'
-          - 'windows-latest'
         python-version:
-          - '3.7'
-          - '3.8'
-          - '3.9'
-          - '3.10'
           - '3.11'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
       # Only runs when key from caching step changes
@@ -52,9 +51,11 @@ jobs:
         if: steps.cache-deps.cache-hit != 'true'
         run: |
           make install
-      - name: run lint
-        run: make lint
-      - name: Run tests
-        run: make test
-      - name: Build artifacts
-        run: make build
+      - name: Build docs
+        run: make doc
+      - name: Prepare artifact
+        run: tar czvf /tmp/docs.tar.gz ./output/docs/_build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: /tmp/docs.tar.gz

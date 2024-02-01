@@ -35,18 +35,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
       - name: Install Poetry
         run: |
           pipx install poetry
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
           poetry lock
-      - name: Setup Python
+      - name: Get Poetry version
+        run: poetry --version
+      - name: Setup Python Cache
         uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
           cache: "poetry"
-      - name: Get Poetry version
-        run: poetry --version
       - name: Install deps
         run: |
           make install

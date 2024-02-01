@@ -37,7 +37,6 @@ from qianfan.common.client.utils import (
     print_error_msg,
     render_response_debug_info,
 )
-from qianfan.consts import DefaultLLMModel
 from qianfan.resources.typing import QfMessages
 from qianfan.utils.bos_uploader import BosHelper, parse_bos_path
 

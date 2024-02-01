@@ -21,6 +21,10 @@ class LocalJudgeEvaluator(LocalEvaluator):
     model: Union[ChatCompletion, Completion] = Field(
         default=None, description="model object"
     )
+
+    temperature: float = 0.1,
+    top_p: float = 1,
+
     evaluation_prompt: Prompt = Field(
         default=Prompt(LocalJudgeEvaluatorPromptTemplate),
         description="concrete evaluation prompt string",
@@ -80,15 +84,13 @@ class LocalJudgeEvaluator(LocalEvaluator):
 
             resp = self.model.do(
                 messages=msg,
-                temperature=0.1,
-                top_p=1,
+                temperature=self.temperature,
+                top_p=self.top_p,
             )
             assert isinstance(resp, QfResponse)
             result = resp["result"].strip()
             return {self.metric_name: result}
         elif isinstance(input, str):
-            if not isinstance(self.model, Completion):
-                raise ValueError("model is not an instance of Completion")
             # 生成评价模板
             prompt, _ = self.evaluation_prompt.render(
                 criteria=self.criteria,
@@ -100,8 +102,8 @@ class LocalJudgeEvaluator(LocalEvaluator):
             )
             resp = self.model.do(
                 prompt=prompt,
-                temperature=0.1,
-                top_p=1,
+                temperature=self.temperature,
+                top_p=self.top_p,
             )
             assert isinstance(resp, QfResponse)
             result = resp["result"].strip()

@@ -5,17 +5,16 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./python
 
 jobs:
   release:
@@ -54,7 +53,7 @@ jobs:
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
           generateReleaseNotes: true
-          tag: ${{ format('py/{0}', steps.check-version.outputs.version) }}
+          tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main
       - name: release to pypi

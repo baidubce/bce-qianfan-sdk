@@ -481,7 +481,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
         if isinstance(indices[0], str) and not set(indices).issubset(
             set(self.table.column_names)
         ):
-            raise ValueError("contain not existed column name")
+            raise ValueError(f"contain not existed column name: {indices}")
         return self.table.select(list(indices)).to_pydict()
 
     def map(self, op: Callable[[Any], Any]) -> Self:

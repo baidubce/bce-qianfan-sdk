@@ -132,13 +132,13 @@ class ServiceStatus(str, Enum):
 
 
 class TrainStatus(str, Enum):
-    Finish = "FINISH"
+    Finish = "Done"
     """训练完成"""
-    Running = "RUNNING"
+    Running = "Running"
     """训练进行中"""
-    Fail = "FAIL"
+    Fail = "Fail"
     """训练失败"""
-    Stop = "STOP"
+    Stop = "Stopped"
     """训练停止"""
 
 

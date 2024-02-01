@@ -14,6 +14,7 @@
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.config import get_config
+from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
@@ -44,24 +45,19 @@ from qianfan.trainer.consts import (
 )
 
 
-class LLMFinetune(Trainer):
+class PostPreTrain(Trainer):
     """
-    Class implements the SFT training pipeline with several actions.
+    Class implements the PostPreTrain training pipeline with several actions.
     Use `run()` to synchronously run the training pipeline until the
-    model training is finished.
+    model training pipeline is finished.
     """
 
     def __init__(
         self,
         train_type: str,
-        dataset: Optional[Any] = None,
+        dataset: Optional[Union[Dataset, str]] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
-        deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
-        base_model: Optional[str] = None,
-        eval_dataset: Optional[Any] = None,
-        evaluators: Optional[List[Evaluator]] = None,
-        dataset_bos_path: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -71,37 +67,24 @@ class LLMFinetune(Trainer):
             train_type: str
                 A string representing the model version type.
                 like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
-            dataset: Dataset
-                A dataset instance.
+            dataset: Optional[Union[Dataset, str]] = None,
+                A post_pretrain dataset instance and an bos path.
+                or an bos path for post pretrain
             train_config: TrainConfig
-                An TrainConfig for fine-tuning training parameters.
+                An TrainConfig for post pretrain training parameters.
                 If not provided, default parameters of diverse
                 models will be used.
-            deploy_config: DeployConfig
-                An DeployConfig for model service deployment parameters.
-                Required if deployment is needed.
             event_handler:  EventHandler
                 An EventHandler instance for receive events during
                 the training process
-            base_model:
-                An optional string representing the base model like
-                'ERNIE-Bot-turbo', 'ChatGLM2'
-                which will be mapped from the model version type if
-                not set.
-            eval_dataset: Dataset
-                An optional dataset instance for evaluation.
-            evaluators: List[Evaluator]
-                An list of evaluators for evaluation.
-            bos_path: Optional[str]:
-                An bos path for training, this will be ignored
-                if dataset is provided.
             **kwargs: Any additional keyword arguments.
 
         for calling example:
         ```
-        sft_task = LLMFinetune(
+        ds = Dataset.load(qianfan_dataset_id="", ...)
+        sft_task = PostPreTrain(
             train_type="ERNIE-Bot-turbo-0725",
-            dataset={"datasets": [{"type": 1, "id": ds_id}]},
+            dataset=ds,
             train_config=TrainConfig(...),
             event_handler=eh,
         )
@@ -123,37 +106,35 @@ class LLMFinetune(Trainer):
                 qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
                 if (
                     qf_data_src.template_type
-                    != console_consts.DataTemplateType.NonSortedConversation
+                    != console_consts.DataTemplateType.GenericText
                 ):
                     raise InvalidArgumentError(
-                        "dataset must be `non-sorted conversation` template in"
-                        " llm-fine-tune"
+                        "dataset must be `generic_text` template in"
+                        " post_pretrain "
                     )
                 self.load_data_action = LoadDataSetAction(
                     dataset=dataset, event_handler=event_handler, **kwargs
                 )
             elif isinstance(dataset.inner_data_source_cache, BosDataSource):
                 self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs,
+                    dataset=dataset, event_handler=event_handler, **kwargs
+                )
+            elif dataset is str:
+                self.load_data_action = LoadDataSetAction(
+                   bos_path=dataset, event_handler=event_handler, **kwargs
                 )
             else:
                 raise InvalidArgumentError(
                     "dataset must be either implemented with QianfanDataSource or"
                     " BosDataSource"
                 )
-        elif dataset_bos_path:
-            self.load_data_action = LoadDataSetAction(
-                dataset=dataset, event_handler=event_handler, **kwargs,
-            )
+            actions.append(self.load_data_action)
         else:
             raise InvalidArgumentError("either dataset or bos_path is required")
-        actions.append(self.load_data_action)
-        # init train action
         self.train_action = TrainAction(
             train_config=train_config,
-            base_model=base_model,
             train_type=train_type,
-            train_mode=console_consts.TrainMode.SFT,
+            train_mode=console_consts.TrainMode.PostPretrain,
             event_handler=event_handler,
             **kwargs,
         )
@@ -164,18 +145,6 @@ class LLMFinetune(Trainer):
                 **kwargs,
             )
             actions.append(self.model_publish)
-        if deploy_config is not None:
-            self.deploy_action = DeployAction(
-                deploy_config=deploy_config,
-                event_handler=event_handler,
-            )
-            actions.append(self.deploy_action)
-        if eval_dataset is not None and evaluators is not None:
-            self.eval_action = EvaluateAction(
-                eval_dataset=eval_dataset,
-                evaluators=evaluators,
-            )
-            actions.append(self.eval_action)
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
@@ -207,17 +176,17 @@ class LLMFinetune(Trainer):
         )
         kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
-        )
+        )   
         self.result[0] = self.ppls[0].exec(**kwargs)
         return self
 
     @property
     def status(self) -> str:
         """
-        LLMFinetune status getter.
+        PostPreTrain status getter.
 
         Returns:
-            str: status for LLMFinetune, mapping from state of actions in pipeline.
+            str: status for PostPreTrain, mapping from state of actions in pipeline.
         """
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to get status")
@@ -231,8 +200,8 @@ class LLMFinetune(Trainer):
 
     def stop(self, **kwargs: Dict) -> Trainer:
         """
-        stop method of LLMFinetune. LLMFinetune will stop
-        all actions in pipeline. In fact, LLMFinetune only take one
+        stop method of PostPreTrain. PostPreTrain will stop
+        all actions in pipeline. In fact, PostPreTrain only take one
         pipeline, so it will be equal to stop first of `ppls`.
 
         Returns:
@@ -243,12 +212,12 @@ class LLMFinetune(Trainer):
             ppl.stop()
         return self
 
-    def resume(self, **kwargs: Dict) -> "LLMFinetune":
+    def resume(self, **kwargs: Dict) -> "PostPreTrain":
         """
-        LLMFinetune resume method.
+        PostPreTrain resume method.
 
         Returns:
-            LLMFinetune: _description_
+            PostPreTrain: _description_
         """
         self.result[0] = self.ppls[0].resume(**kwargs)
         return self

@@ -18,28 +18,55 @@ from qianfan.config import encoding
 from qianfan.errors import InvalidArgumentError
 from qianfan.trainer.consts import PeftType
 from qianfan.utils import log_error, log_warn
-from qianfan.utils.pydantic import BaseModel
+from qianfan.utils.pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
+from enum import Enum
+
+class LimitType(int, Enum):
+    SingleChoice = 1
+    MultipleChoice = 2
+    Range = 3
+    
 
 class TrainConfig(BaseModel):
-    epoch: Optional[int] = None
+    epoch: Optional[int] = Field(None, limit_type=LimitType.Range)
     """
     epoch number: differ from models
     """
-    batch_size: Optional[int] = None
+    batch_size: Optional[int] = Field(None, limit_type=LimitType.Range)
     """
     batch size: differ from models
     """
-    learning_rate: Optional[float] = None
+    learning_rate: Optional[float] = Field(None, limit_type=LimitType.Range)
     """
     learning rate: differ from models
     """
-    max_seq_len: Optional[int] = None
+    max_seq_len: Optional[int] = Field(None, limit_type=LimitType.SingleChoice)
     """
     max_seq_len: differ from models
     """
+    logging_steps: Optional[int] = Field(None, limit_type=LimitType.Range)
+    """log saving interval steps"""
+    warmup_ratio: Optional[float] = Field(None, limit_type=LimitType.Range)
+    """warmup ratio"""
+    weight_decay: Optional[float] = Field(None, limit_type=LimitType.Range)
+    """normalization params"""
+    lora_rank: Optional[int] = Field(None, limit_type=LimitType.SingleChoice)
+    """loRA rank"""
+    lora_all_linear: Optional[str] = Field(None, limit_type=LimitType.SingleChoice)
+    """loRA all linear layer"""
+    scheduler_name: Optional[str] = Field(None, limit_type=LimitType.SingleChoice)
+    """for learning rate schedule"""
+    lora_alpha: Optional[int] = Field(None, limit_type=LimitType.Range)
+    """LoRA scaling params"""
+    lora_dropout: Optional[float] = Field(None, limit_type=LimitType.Range)
+    """loRA dropout"""
+    lora_target_modules: Optional[List[str]] = Field(None, limit_type=LimitType.MultipleChoice)
+    """LoRA参数层列表"""
+
+    
     peft_type: Optional[Union[str, PeftType]] = None
     """
     parameter efficient FineTuning method, like `LoRA`, `P-tuning`, `ALL`
@@ -48,22 +75,6 @@ class TrainConfig(BaseModel):
     """
     rate for dataset to spilt 
     """
-    logging_steps: Optional[int] = None
-    """log saving interval steps"""
-    warmup_ratio: Optional[float] = None
-    """warmup ratio"""
-    weight_decay: Optional[float] = None
-    """normalization params"""
-    lora_rank: Optional[int] = None
-    """loRA rank"""
-    lora_all_linear: Optional[str] = None
-    """loRA all linear layer"""
-    scheduler_name: Optional[str] = None
-    """for learning rate schedule"""
-    lora_alpha: Optional[int] = None
-    """LoRA scaling params"""
-    lora_dropout: Optional[float] = None
-    """loRA dropout"""
 
     extras: Dict[str, Any] = {}
 
@@ -196,33 +207,10 @@ class TrainConfig(BaseModel):
         return ""
 
 
-class TrainLimit(BaseModel):
-    batch_size_limit: Optional[Tuple[int, int]] = None
-    """batch size limit"""
-    max_seq_len_options: Optional[List[int]] = None
-    """max seq len options"""
-    epoch_limit: Optional[Tuple[int, int]] = None
-    """epoch limit"""
-    learning_rate_limit: Optional[Tuple[float, float]] = None
-    """learning rate limit"""
-    log_steps_limit: Optional[Tuple[int, int]] = None
-    """log steps limit"""
-    warmup_ratio_limit: Optional[Tuple[float, float]] = None
-    """warmup_ratio limit"""
-    weight_decay_limit: Optional[Tuple[float, float]] = None
-    """weight_decay limit"""
-    lora_rank_options: Optional[List[int]] = None
-    """loRA rank options"""
-    lora_alpha_options: Optional[List[int]] = None
-    """loRA alpha limit"""
-    lora_dropout_limit: Optional[Tuple[float, float]] = None
-    """loRA dropout limit"""
-    scheduler_name_options: Optional[List[str]] = None
-    """scheduler name options"""
-
-    supported_hyper_params: List[str] = []
-    """supported hyper params"""
-
+class TrainLimit(Dict):
+    def __init__(self, *, **kwargs):
+        
+        
     def __or__(self, other: Any) -> "TrainLimit":
         assert isinstance(other, TrainLimit)
         # 使用copy模块深拷贝a的数据，避免修改原始数据
@@ -737,91 +725,316 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
     ),
 }
 
-# model train type -> default train config
-DefaultTrainConfigMapping: Dict[str, TrainConfig] = {
-    "ERNIE-Speed": TrainConfig(
-        epoch=1,
-        learning_rate=0.0003,
-        max_seq_len=4096,
-        peft_type=PeftType.LoRA,
-        logging_steps=1,
-        warmup_ratio=0.10,
-        weight_decay=0.0100,
-        lora_rank=8,
-        lora_all_linear="True",
-    ),
-    "ERNIE-Bot-turbo-0922": TrainConfig(
-        epoch=1,
-        learning_rate=0.0003,
-        max_seq_len=4096,
-        peft_type=PeftType.LoRA,
-        logging_steps=1,
-        warmup_ratio=0.10,
-        weight_decay=0.0100,
-        lora_rank=8,
-        lora_all_linear="True",
-    ),
-    "ERNIE-Bot-turbo-0725": TrainConfig(
-        epoch=1,
-        learning_rate=0.00003,
-        max_seq_len=4096,
-        peft_type=PeftType.LoRA,
-    ),
-    "ERNIE-Bot-turbo-0704": TrainConfig(
-        epoch=1,
-        learning_rate=0.00003,
-        peft_type=PeftType.LoRA,
-    ),
-    "Llama-2-7b": TrainConfig(
-        epoch=1,
-        batch_size=4,
-        learning_rate=0.00002,
-        peft_type=PeftType.LoRA,
-    ),
-    "Llama-2-13b": TrainConfig(
-        epoch=1,
-        batch_size=1,
-        learning_rate=0.00002,
-        peft_type=PeftType.LoRA,
-    ),
-    "SQLCoder-7B": TrainConfig(
-        epoch=1,
-        batch_size=1,
-        learning_rate=0.00002,
-        peft_type=PeftType.LoRA,
-    ),
-    "ChatGLM2-6B": TrainConfig(
-        epoch=1,
-        batch_size=1,
-        learning_rate=0.00002,
-        peft_type=PeftType.LoRA,
-    ),
-    "ChatGLM2-6B-32K": TrainConfig(
-        epoch=1,
-        learning_rate=0.00002,
-        peft_type=PeftType.ALL,
-    ),
-    "Baichuan2-7B": TrainConfig(
-        epoch=1,
-        batch_size=1,
-        learning_rate=0.000001,
-        peft_type=PeftType.LoRA,
-    ),
-    "Baichuan2-13B": TrainConfig(
-        epoch=1,
-        learning_rate=0.000001,
-        peft_type=PeftType.LoRA,
-    ),
-    "BLOOMZ-7B": TrainConfig(
-        epoch=1,
-        batch_size=1,
-        learning_rate=0.00002,
-        peft_type=PeftType.LoRA,
-    ),
-    "CodeLlama-7B": TrainConfig(
-        epoch=1,
-        learning_rate=0.000001,
-        batch_size=1,
-        peft_type=PeftType.LoRA,
-    ),
+DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType,TrainConfig]] = {
+    "ERNIE-Speed": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+        )
+    },
+    "ERNIE-Bot-turbo-0922": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+        )
+    },
+    "Qianfan-Chinese-Llama-2-13B": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            batch_size=192,
+            learning_rate=0.000020,
+            weight_decay=0.01,
+        )
+    },
+}
+
+# finetune model train type -> default finetune train config
+DefaultTrainConfigMapping: Dict[str, Dict[PeftType,TrainConfig]] = {
+    "ERNIE-Speed": {
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.0003,
+            max_seq_len=4096,
+            logging_steps=1,
+            warmup_ratio=0.10,
+            weight_decay=0.0100,
+            lora_rank=8,
+            lora_all_linear="True",
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+            logging_steps=1,
+            warmup_ratio=0.1,
+            weight_decay=0.01,
+        ),
+    },
+    "ERNIE-Bot-turbo-0922":  {
+        PeftType.LoRA:TrainConfig(
+            epoch=1,
+            learning_rate=0.0003,
+            max_seq_len=4096,
+            logging_steps=1,
+            warmup_ratio=0.10,
+            weight_decay=0.0100,
+            lora_rank=8,
+            lora_all_linear="True",
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+            logging_steps=1,
+            warmup_ratio=0.1,
+            weight_decay=0.01
+        ),
+    },
+    "ERNIE-Bot-turbo-0725": {
+        PeftType.LoRA:TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.0003,
+            max_seq_len=4096,
+        )  
+    },
+    "ERNIE-Bot-turbo-0704": {
+        PeftType.LoRA:TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.03,
+        ),
+        PeftType.PTuning: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+        )
+    },
+    "Qianfan-Chinese-Llama-2-7B": {
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.PTuning: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        )
+    },
+    "Qianfan-Chinese-Llama-2-13B": {
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.PTuning: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        )
+    },
+    "Qianfan-Chinese-Llama-2-7B-32K": {
+        PeftType.LoRA: TrainConfig(
+            epoch=3,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=32768,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=3,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=32768,
+        ),
+    },
+    "ChatGLM2-6B": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        )
+    },
+    "ChatGLM2-6B-32K": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+        ),
+    },
+    "Baichuan2-7B": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+    },
+    "Baichuan2-13B": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+    },
+    "BLOOMZ-7B": {
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+        PeftType.PTuning: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        )
+    },
+    "CodeLlama-7B": {
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_target_modules=["self_attn.q_proj","self_attn.v_proj"],
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
+        ),
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+        ),
+    }
 }

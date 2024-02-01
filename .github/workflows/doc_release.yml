@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Release docs & dist
+name: Release docs
 
 on:
   # Allows you to run this workflow manually from the Actions tab

@@ -41,8 +41,8 @@ QianfanRefereeEvaluatorPromptTemplate: str = """你是一个好助手。请你�
 评分: 此处只能回答整数评分
 原因: 此处只能回答评分原因"""
 
-QianfanNoRefereeEvaluatorPromptTemplate: str = """
-你是一名裁判员，负责为给定文档的生成结果进行评分。
+LocalJudgeEvaluatorPromptTemplate: str = """
+你是一名裁判员，负责为给定prompt的生成结果进行评分。
 
 评价标准：
 
@@ -62,7 +62,11 @@ QianfanNoRefereeEvaluatorPromptTemplate: str = """
 
 {response}
 
+标准答案：（没有标准答案时，该项为空）
 
+{reference}
+
+评分要求：
 根据生成内容的综合水平给出0到{max_score}之间的整数评分。
 如果生成内容存在明显的不合理之处，则应给出一个较低的评分。
 如果生成内容符合以上要求并且与参考答案含义相似，则应给出一个较高的评分

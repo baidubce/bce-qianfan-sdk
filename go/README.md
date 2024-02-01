@@ -84,7 +84,6 @@ resp, err := chat.Stream(  // Stream 启用流式返回，参数与 Do 相同
 if err != nil {
     return err
 }
-defer resp.Close()  // 关闭流
 for {
     r, err := resp.Recv()
     if err != nil {
@@ -119,7 +118,7 @@ completion := qianfan.NewCompletion(
 
 ```go
 resp, err := completion.Do(
-    context.Background(), 
+    context.TODO(), 
     &CompletionRequest{
         Prompt: prompt,
     }
@@ -134,7 +133,7 @@ fmt.Printf(resp.Result)   // 模型返回的结果
 
 ```go
 resp, err := completion.Stream(  // Stream 启用流式返回，参数与 Do 相同
-    context.Background(), 
+    context.TODO(), 
     &CompletionRequest{
         Prompt: prompt,
     }
@@ -142,7 +141,6 @@ resp, err := completion.Stream(  // Stream 启用流式返回，参数与 Do 相
 if err != nil {
     return err
 }
-defer resp.Close()  // 关闭流
 for {
     r, err := resp.Recv()
     if err != nil {
@@ -176,7 +174,7 @@ embed := qianfan.NewEmbedding(
 
 ```go
 resp, err := embed.Do(
-    context.Background(), 
+    context.TODO(), 
     &EmbeddingRequest{
         Input: []string{"hello1", "hello2"},
     }

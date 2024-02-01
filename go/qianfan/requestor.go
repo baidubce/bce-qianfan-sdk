@@ -286,6 +286,7 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 		for {
 			if !si.scanner.Scan() {
 				si.IsEnd = true
+				si.Close()
 				return si.scanner.Err()
 			}
 

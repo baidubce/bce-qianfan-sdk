@@ -51,8 +51,15 @@ class ChatClient(object):
     END_PROMPT = "/exit"
     RESET_PROMPT = "/reset"
     HELP_PROMPT = "/help"
-    command_list = [END_PROMPT, RESET_PROMPT, HELP_PROMPT]
-    input_completer = WordCompleter(command_list, sentence=True)
+
+    HELP_MESSAGES = {
+        END_PROMPT: "End the conversation",
+        RESET_PROMPT: "Reset the conversation",
+        HELP_PROMPT: "Print help message",
+    }
+    input_completer = WordCompleter(
+        list(HELP_MESSAGES.keys()), sentence=True, meta_dict=HELP_MESSAGES
+    )
 
     def __init__(
         self,
@@ -190,9 +197,8 @@ class ChatClient(object):
         """
         Print command introduction
         """
-        rprint(f"[bold green]{self.END_PROMPT}[/]: End the conversation")
-        rprint(f"[bold green]{self.RESET_PROMPT}[/]: Reset the conversation")
-        rprint(f"[bold green]{self.HELP_PROMPT}[/]: Print this message")
+        for k, v in self.HELP_MESSAGES.items():
+            rprint(f"[bold green]{k}[/]: {v}")
 
     def chat_in_terminal(self) -> None:
         """

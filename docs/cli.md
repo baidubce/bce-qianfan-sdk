@@ -32,7 +32,9 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `chat` 对话
 * `completion` 补全
 * `txt2img` 文生图
+* `plugin` 插件
 * `dataset` 数据集
+* `evalutaion` 评估
 
 ### chat 对话
 
@@ -52,6 +54,12 @@ $ qianfan chat [OPTIONS]
 * `--list-model -l`：打印支持的模型名称列表
 * `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
+
+在对话进行过程中，可以通过输入命令实现如下功能：
+
+* `/reset`：重置对话，清空对话历史
+* `/exit`：结束对话
+* `/help`：展示帮助信息
 
 ### completion 补全
 
@@ -103,6 +111,30 @@ $ qianfan txt2img [OPTIONS] PROMPT
 * `--list-model -l`：打印支持的模型名称列表
 * `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
+
+### plugin 插件
+
+**用法**:
+
+```console
+$ qianfan plugin [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--endpoint TEXT`：千帆插件的 endpoint [required]
+* `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
+* `--plugins`：启用的插件列表，通过 `,` 分隔不同的插件，例如 `uuid-zhishiku,uuid-chatocr,uuid-weatherforecast`
+* `--debug`：调试模式，会打印请求相关的原始信息
+* `--bos-path`：BOS 路径，用于上传文件
+* `--help`：展示帮助文档
+
+在对话进行过程中，可以通过输入命令实现如下功能：
+
+* `/image [file_path]`：上传图片并附加至对话中，`file_path` 可以是网络上的链接，也可以是本地文件路径。其中，本地文件会被上传至 BOS 路径，因此需要提供 `bos-path` 参数。
+* `/reset`：重置对话，清空对话历史
+* `/exit`：结束对话
+* `/help`：展示帮助信息
 
 ### dataset 数据集
 

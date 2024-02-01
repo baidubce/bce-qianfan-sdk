@@ -51,7 +51,7 @@ class ChatClient(object):
     END_PROMPT = "/exit"
     RESET_PROMPT = "/reset"
     HELP_PROMPT = "/help"
-    command_list = [END_PROMPT, RESET_PROMPT]
+    command_list = [END_PROMPT, RESET_PROMPT, HELP_PROMPT]
     input_completer = WordCompleter(command_list, sentence=True)
 
     def __init__(
@@ -186,6 +186,14 @@ class ChatClient(object):
                 " '--multi-line' option."
             )
 
+    def print_help_message(self) -> None:
+        """
+        Print command introduction
+        """
+        rprint(f"[bold green]{self.END_PROMPT}[/]: End the conversation")
+        rprint(f"[bold green]{self.RESET_PROMPT}[/]: Reset the conversation")
+        rprint(f"[bold green]{self.HELP_PROMPT}[/]: Print this message")
+
     def chat_in_terminal(self) -> None:
         """
         Chat in terminal
@@ -213,9 +221,12 @@ class ChatClient(object):
             if message == self.END_PROMPT:
                 rprint("Bye!")
                 raise typer.Exit()
-            if message == self.RESET_PROMPT:
+            elif message == self.RESET_PROMPT:
                 self.msg_history = [QfMessages() for _ in range(len(self.clients))]
                 rprint("Chat history has been cleared.")
+                continue
+            elif message == self.HELP_PROMPT:
+                self.print_help_message()
                 continue
 
             for i in range(len(self.clients)):

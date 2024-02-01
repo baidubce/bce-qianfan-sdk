@@ -157,8 +157,8 @@ class PluginClient(object):
         rprint(f"[bold green]{self.END_PROMPT}[/]: End the conversation")
         rprint(f"[bold green]{self.RESET_PROMPT}[/]: Reset the conversation")
         rprint(
-            f"[bold green]{self.IMAGE_PROMPT}[/]: Attach a local image to the"
-            " conversation [dim](e.g. /image car.jpg)[/]"
+            f"[bold green]{self.IMAGE_PROMPT} <file_path>[/]: Attach a local image to"
+            " the conversation [dim](e.g. /image car.jpg)[/]"
         )
         rprint(f"[bold green]{self.HELP_PROMPT}[/]: Print this message")
 
@@ -270,13 +270,6 @@ MODEL_ARGUMENTS_PANEL = (
 
 @credential_required
 def plugin_entry(
-    model: Optional[str] = typer.Option(
-        None,
-        help=(
-            "Model name of plugin. EBPluginV2 will be used if not specified. Currently"
-            " not available but will be supported in the future."
-        ),
-    ),
     endpoint: Optional[str] = typer.Option(
         ...,
         help="Endpoint of the plugin.",
@@ -332,19 +325,12 @@ def plugin_entry(
         help="Stop words. Use comma to split multiple stop words.",
         rich_help_panel=MODEL_ARGUMENTS_PANEL,
     ),
-    disable_search: Optional[bool] = typer.Option(
-        None, help="Disable search", rich_help_panel=MODEL_ARGUMENTS_PANEL
-    ),
-    enable_citation: Optional[bool] = typer.Option(
-        None, help="Enable citation", rich_help_panel=MODEL_ARGUMENTS_PANEL
-    ),
 ) -> None:
     """
     Chat with the LLM with plugins in the terminal.
     """
     qianfan.disable_log()
-    if model is None and endpoint is None:
-        model = DefaultLLMModel.ChatCompletion
+    model = None
 
     extra_args = {}
 
@@ -356,8 +342,6 @@ def plugin_entry(
     add_if_not_none("top_p", top_p)
     add_if_not_none("penalty_score", penalty_score)
     add_if_not_none("system", system)
-    add_if_not_none("disable_search", disable_search)
-    add_if_not_none("enable_citation", enable_citation)
 
     if stop is not None:
         extra_args["stop"] = stop.split(",")

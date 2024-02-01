@@ -67,6 +67,6 @@ jobs:
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
           generateReleaseNotes: true
-          tag: ${{ format('go/qianfan/{0}', steps.check-version.outputs.version) }}
+          tag: ${{ format('go/qianfan/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main

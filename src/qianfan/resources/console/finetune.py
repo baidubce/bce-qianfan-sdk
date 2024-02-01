@@ -229,8 +229,8 @@ class FineTune(object):
             cls,
             job_id: str,
             params_scale: Union[str, console_consts.TrainParameterScale],
-            hyper_params=Dict[str, Any],
-            dataset_config=Dict[str, Any],
+            hyper_params: Dict[str, Any],
+            dataset_config: Dict[str, Any],
             incrementTaskId: Optional[str] = None,
             **kwargs: Any,
         ) -> QfRequest:

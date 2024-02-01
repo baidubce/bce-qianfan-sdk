@@ -137,7 +137,7 @@ def test_trainer_sft_run_from_bos():
         )
         sft_task.run()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/ds.jsonl"
+        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/"
     )
     sft_task.run()
     res = sft_task.result

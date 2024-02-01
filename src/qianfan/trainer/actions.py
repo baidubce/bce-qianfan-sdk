@@ -485,7 +485,10 @@ class TrainAction(
                     f" {self.job_str_id}/{self.task_str_id} has ended,"
                     f" {job_status_resp}"
                 )
-                break
+                raise InternalError(
+                    f"fine-tune job {self.job_str_id}/{self.task_str_id} has ended with"
+                    f" status: {job_status}"
+                )
             else:
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
         log_info(
@@ -578,7 +581,10 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         if self.model is None:
             raise InvalidArgumentError("model must be set when in model publish._exec")
-        log_debug("[model_publish_action] start model publish")
+        log_debug(
+            f"[model_publish_action] start model publish task:, {self.task_id},"
+            f" {self.job_id}"
+        )
         try:
             self.action_event(
                 ActionState.Running,

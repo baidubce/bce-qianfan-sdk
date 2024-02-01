@@ -12,5 +12,5 @@ sphinx-apidoc -f -F -M -o "${DOCS_PATH}" -t "${ROOTPATH}/docs/template" "${SCRIP
 cp "${ROOTPATH}/README.md" "${DOCS_PATH}"
 cp -r "${ROOTPATH}/docs" "${DOCS_PATH}"
 make -C "${DOCS_PATH}" html
-mv "${DOCS_PATH}/_build" "${OUTPUT_PATH}/docs"
+mv "${DOCS_PATH}" "${OUTPUT_PATH}/docs"
 rm -rf "${DOCS_PATH}"

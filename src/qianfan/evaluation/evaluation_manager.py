@@ -21,20 +21,22 @@ import multiprocessing
 import os.path
 import time
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
+from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
+
+import pyarrow
 
 from qianfan import get_config
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
-    NewInputChatColumnName,
-    NewInputPromptColumnName,
     OldReferenceColumnName,
 )
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
+from qianfan.dataset.schema import EvaluationSchema
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -123,41 +125,28 @@ class EvaluationManager(BaseModel):
         return result_list
 
     def _get_eval_task_future(self, dataset: Dataset, **kwargs: Any) -> List[Future]:
-        if NewInputPromptColumnName in dataset.col_names():
-            ds_dict = dataset.col_list(
-                [NewInputPromptColumnName, LLMOutputColumnName, OldReferenceColumnName]
-            )
-        else:
-            ds_dict = dataset.col_list(
-                [NewInputChatColumnName, LLMOutputColumnName, OldReferenceColumnName]
-            )
+        input_column_name = dataset.eval_input_column
+        reference_column_name = dataset.reference_column
+        output_column_name = dataset.eval_llm_output_column
+
+        ds_dict = dataset.col_list(
+            [input_column_name, reference_column_name, output_column_name]
+        )
 
         sector_length = math.ceil(len(dataset) / multiprocessing.cpu_count())
         pool = ThreadPoolExecutor()
         future_list: List[Future] = []
         for i in range(multiprocessing.cpu_count()):
-            if NewInputPromptColumnName in dataset.col_names():
-                future_list.append(
-                    pool.submit(
-                        self._eval_worker,
-                        i * sector_length,
-                        min((i + 1) * sector_length, len(dataset)),
-                        ds_dict[NewInputPromptColumnName],
-                        ds_dict[LLMOutputColumnName],
-                        ds_dict[OldReferenceColumnName],
-                    )
+            future_list.append(
+                pool.submit(
+                    self._eval_worker,
+                    i * sector_length,
+                    min((i + 1) * sector_length, len(dataset)),
+                    ds_dict[input_column_name],
+                    ds_dict[reference_column_name],
+                    ds_dict[output_column_name],
                 )
-            else:
-                future_list.append(
-                    pool.submit(
-                        self._eval_worker,
-                        i * sector_length,
-                        min((i + 1) * sector_length, len(dataset)),
-                        ds_dict[NewInputChatColumnName],
-                        ds_dict[LLMOutputColumnName],
-                        ds_dict[OldReferenceColumnName],
-                    )
-                )
+            )
 
         return future_list
 
@@ -350,6 +339,45 @@ class EvaluationManager(BaseModel):
 
         return eval_state
 
+    def eval_only(
+        self,
+        dataset: Dataset,
+        **kwargs: Any,
+    ) -> EvaluationResult:
+        """
+        running evaluation only on specific dataset
+
+        Args:
+            dataset (Dataset):
+                dataset which comes from batch inference or be batch-inference like
+            **kwargs (Any):
+                other keyword arguments.
+
+        Returns:
+            EvaluationResult: Evaluation result of models on the dataset.
+        """
+        if not dataset.eval_input_column or not dataset.eval_llm_output_column:
+            err_msg = (
+                "either eval_input_column or eval_llm_output_column didn't been set"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        dataset = copy(dataset)
+        if not dataset.reference_column:
+            dataset.reference_column = OldReferenceColumnName
+            dataset.col_append(
+                {OldReferenceColumnName: [None for _ in range(len(dataset))]}
+            )
+
+        if not EvaluationSchema().validate(dataset):
+            raise ValueError("validate failed before evaluation")
+
+        tmp_ds = Dataset.create_from_pyobj(
+            self._run_evaluator_locally(dataset, **kwargs)
+        )
+        return EvaluationResult(result_dataset=dataset.col_append(tmp_ds.col_list()))
+
     def eval(
         self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
     ) -> Optional[EvaluationResult]:
@@ -373,13 +401,34 @@ class EvaluationManager(BaseModel):
             raise ValueError(err_msg)
 
         if self.local_evaluators:
+            # 大模型的标签列表
             llm_tags = self._get_llm_tags(llms)
+
+            # 检查是否有评估的标准答案列
+            # 如果没有，需要复制数据集并且在副本中添加空参考数据列
+            # 当且仅当使用的是 Service 对 Completion 补全数据集进行批量推理
+            # 且用户没有指定 reference_column 时使用这个逻辑
+            if not dataset.reference_column:
+                dataset = copy(dataset)
+                dataset.reference_column = OldReferenceColumnName
+                dataset.col_append(
+                    {OldReferenceColumnName: [None for _ in range(len(dataset))]}
+                )
+
+            # 首先获取批量评估的结果
+            log_info("start to inference in batch during evaluation")
             future_dict = self._get_batch_inference_task_future(llms, dataset, **kwargs)
             wait(list(future_dict.values()), return_when=ALL_COMPLETED)
 
+            # 然后再等待批量推理的结果，并且送去评估
+
+            # 针对单个模型的，每条数据的评估结果字典
             llm_evaluation_result_dict: Dict[int, List[Dict[str, Any]]] = {}
+            # 针对单个模型的，每条数据的实际返回列表
             llm_response_list: Dict[int, List[str]] = {}
+            # 统一的输入数据列表
             llm_input_list: List[Any] = []
+            # 统一的输出数据列表
             expected_output_list: List[str] = []
 
             input_column_name: str = ""
@@ -390,25 +439,25 @@ class EvaluationManager(BaseModel):
                     llm_response_list[index] = result[LLMOutputColumnName][
                         LLMOutputColumnName
                     ]
+                    # 实际评估的地方
+                    log_info(f"start to evaluate llm {index}")
                     llm_evaluation_result_dict[index] = self._run_evaluator_locally(
-                        result
+                        result, **kwargs
                     )
 
+                    assert isinstance(result, Dataset)
+
+                    # 做一些字段填充，只在这两个列表为空的时候进入
                     if not llm_input_list:
-                        if NewInputPromptColumnName in result.col_names():
-                            llm_input_list = result[NewInputPromptColumnName][
-                                NewInputPromptColumnName
-                            ]
-                            input_column_name = NewInputPromptColumnName
-                        else:
-                            llm_input_list = result[NewInputChatColumnName][
-                                NewInputChatColumnName
-                            ]
-                            input_column_name = NewInputChatColumnName
+                        llm_input_list = result[result.eval_input_column][
+                            result.eval_input_column
+                        ]
+                        assert result.eval_input_column
+                        input_column_name = result.eval_input_column
 
                     if not expected_output_list:
-                        expected_output_list = result[OldReferenceColumnName][
-                            OldReferenceColumnName
+                        expected_output_list = result[result.reference_column][
+                            result.reference_column
                         ]
 
                 except Exception as e:
@@ -418,28 +467,30 @@ class EvaluationManager(BaseModel):
                     )
                     log_warn(err_msg)
 
-            new_response_list: List[List[Dict[str, Any]]] = []
+            # 整合数据，将得到的数据集整合成网页人工评估的数据集格式
+            log_info("start to merge evaluation result dataset")
+            table_list: List[pyarrow.Table] = []
             for index, response_list in llm_response_list.items():
-                for inner_index in range(len(response_list)):
-                    while len(new_response_list) <= inner_index:
-                        new_response_list.append([])
-                    eval_result = llm_evaluation_result_dict[index][inner_index]
-                    new_response_list[inner_index].append(
-                        {
-                            "content": response_list[inner_index],
-                            "llm_tag": llm_tags[index],
-                            **eval_result,
-                        }
-                    )
+                index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
+                ds = dataset.create_from_pyobj(
+                    {
+                        "llm_tag": index_tag_column,
+                        input_column_name: llm_input_list,
+                        OldReferenceColumnName: expected_output_list,
+                        LLMOutputColumnName: response_list,
+                    }
+                )
 
-            dataset_data = {
-                input_column_name: llm_input_list,
-                OldReferenceColumnName: expected_output_list,
-                "model_content": new_response_list,
-            }
+                metrics_ds = dataset.create_from_pyobj(
+                    llm_evaluation_result_dict[index]
+                )
+                ds.col_append(metrics_ds.col_list())
+                table_list.append(ds.inner_table)
 
             return EvaluationResult(
-                result_dataset=Dataset.create_from_pyobj(dataset_data)
+                result_dataset=Dataset.create_from_pyarrow_table(
+                    pyarrow.concat_tables(table_list)
+                )
             )
 
         if self.qianfan_evaluators:
@@ -494,7 +545,10 @@ class EvaluationManager(BaseModel):
                     export_task_id
                 )["result"]
                 task_status = EvaluationResultExportTaskStatus(result["state"])
-                if task_status == EvaluationResultExportTaskStatus.Doing:
+                if task_status in [
+                    EvaluationResultExportTaskStatus.Uploading,
+                    EvaluationResultExportTaskStatus.Pending,
+                ]:
                     log_info(
                         f"wait evaluation result export task {export_task_id} to be"
                         " completed"

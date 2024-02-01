@@ -277,6 +277,7 @@ $ qianfan trainer run [OPTIONS]
 
 * `--train-type TEXT`：训练类型  [required]
 * `--dataset-id INTEGER`：数据集 id  [required]
+* `--list-evaluable-models`: 打印支持进行评估的模型列表
 * `--help`：展示帮助文档
 
 训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：

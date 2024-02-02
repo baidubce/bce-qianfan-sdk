@@ -30,6 +30,7 @@ from qianfan import get_config
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
+    LLMTagColumnName,
     OldReferenceColumnName,
 )
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
@@ -308,7 +309,7 @@ class EvaluationManager(BaseModel):
             **kwargs,
         ).body
 
-        eval_id = resp_body["result"]["evalId"]
+        eval_id = resp_body["result"]["evalIdStr"]
         task_url = f"https://console.bce.baidu.com/qianfan/modelcenter/model/eval/detail/task/{eval_id}"
         self.task_id = eval_id
 
@@ -474,7 +475,7 @@ class EvaluationManager(BaseModel):
                 index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
                 ds = dataset.create_from_pyobj(
                     {
-                        "llm_tag": index_tag_column,
+                        LLMTagColumnName: index_tag_column,
                         input_column_name: llm_input_list,
                         OldReferenceColumnName: expected_output_list,
                         LLMOutputColumnName: response_list,

@@ -1123,7 +1123,9 @@ def create_evaluation_task():
     """
     mock create evaluation task api
     """
-    return json_response({"result": {"evalId": "585"}, "log_id": "2255352990"})
+    return json_response(
+        {"result": {"evalId": 585, "evalIdStr": "thisisid"}, "log_id": "2255352990"}
+    )
 
 
 @app.route(Consts.ModelEvalInfoAPI, methods=["POST"])
@@ -1204,7 +1206,7 @@ def get_evaluation_info():
                         "minScore": 0,
                         "maxScore": 7,
                     },
-                    "resultDatasetId": "1",
+                    "resultDatasetId": 1,
                     "resultDatasetName": "name",
                     "resultDatasetProjectType": 0,
                     "resultDatasetImportStatus": 0,

@@ -350,7 +350,7 @@ def _start_an_evaluation_task_for_model_batch_inference(
         **kwargs,
     ).body
 
-    eval_id = resp["result"]["evalId"]
+    eval_id = resp["result"]["evalIdStr"]
 
     log_debug(f"create evaluation task in model response: {resp}")
     result_dataset_id = _wait_evaluation_finished(eval_id)

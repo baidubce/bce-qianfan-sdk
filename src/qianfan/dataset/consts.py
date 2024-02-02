@@ -41,3 +41,6 @@ RequestLatencyColumnName = "request_complete_latency"
 
 # 批量推理结果中，首 token 耗时的列名
 FirstTokenLatencyColumnName = "first_token_latency"
+
+# 批量推理结果中，用于标注不同模型结果的列名
+LLMTagColumnName = "llm_tag"

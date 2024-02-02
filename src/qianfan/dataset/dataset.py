@@ -1255,7 +1255,13 @@ class Dataset(Table):
                 }
             )
 
-        return Dataset.create_from_pyobj(new_list)
+        return Dataset.create_from_pyobj(
+            new_list,
+            input_columns=["prompt"],
+            reference_column=OldReferenceColumnName,
+            eval_input_column=NewInputPromptColumnName,
+            eval_llm_output_column=LLMOutputColumnName,
+        )
 
     def _get_completion_return_dataset(
         self,

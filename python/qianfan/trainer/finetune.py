@@ -52,7 +52,7 @@ class LLMFinetune(Trainer):
 
     def __init__(
         self,
-        train_type: str,
+        train_type: Optional[str] = None,
         dataset: Optional[Any] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
@@ -62,6 +62,7 @@ class LLMFinetune(Trainer):
         dataset_bos_path: Optional[str] = None,
         previous_trainer: Optional[Trainer] = None,
         previous_task_id: Optional[str] = None,
+        name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -107,9 +108,8 @@ class LLMFinetune(Trainer):
         )
         ```
         """
-        # 校验train_type
-        if train_type is None or train_type == "":
-            raise InvalidArgumentError("train_type is empty")
+        # 设置name
+        self.name = name
 
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
@@ -159,6 +159,7 @@ class LLMFinetune(Trainer):
                     train_config=train_config,
                     task_id=previous_trainer.train_action.task_id,
                     train_mode=console_consts.TrainMode.SFT,
+                    job_name=name,
                     **kwargs,
                 )
             else:
@@ -170,6 +171,7 @@ class LLMFinetune(Trainer):
                 train_config=train_config,
                 task_id=previous_task_id,
                 train_mode=console_consts.TrainMode.SFT,
+                job_name=name,
                 **kwargs,
             )
         else:
@@ -179,6 +181,7 @@ class LLMFinetune(Trainer):
                 train_type=train_type,
                 train_mode=console_consts.TrainMode.SFT,
                 event_handler=event_handler,
+                job_name=name,
                 **kwargs,
             )
         actions.append(self.train_action)

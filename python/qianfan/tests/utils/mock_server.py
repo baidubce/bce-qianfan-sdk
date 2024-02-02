@@ -1873,92 +1873,92 @@ def release_dataset():
 @iam_auth_checker
 def get_dataset_info():
     args = request.json
-    return json_response(
-        {
-            "log_id": "log_id",
-            "result": {
-                "groupPK": "14510",
-                "name": "ChineseMedicalDialogueData中文医疗问答数据集",
+    resp = {
+        "log_id": "log_id",
+        "result": {
+            "groupPK": "14510",
+            "name": "ChineseMedicalDialogueData中文医疗问答数据集",
+            "dataType": 4,
+            "versionInfo": {
+                "id": 123,
+                "groupId": 14510,
+                "datasetId": 12444,
+                "datasetPK": args["datasetId"],
+                "importRecordCount": 1,
+                "exportRecordCount": 0,
+                "bmlDatasetId": "ds-7pkzh1exthpuy10n",
+                "userId": 0,
+                "versionId": 1,
+                "displayName": "",
+                "importStatus": 2,
+                "importProgress": 100,
+                "exportStatus": 2,
+                "exportProgress": 0,
                 "dataType": 4,
-                "versionInfo": {
-                    "id": 123,
-                    "groupId": 14510,
-                    "datasetId": 12444,
-                    "datasetPK": args["datasetId"],
-                    "importRecordCount": 1,
-                    "exportRecordCount": 0,
-                    "bmlDatasetId": "ds-7pkzh1exthpuy10n",
-                    "userId": 0,
-                    "versionId": 1,
-                    "displayName": "",
-                    "importStatus": 2,
-                    "importProgress": 100,
-                    "exportStatus": 2,
-                    "exportProgress": 0,
-                    "dataType": 4,
-                    "projectType": 20,
-                    "templateType": 2000,
-                    "errCode": None,
-                    "uniqueType": 0,
-                    "importErrorInfo": None,
-                    "createTime": "2023-09-08 17:10:11",
-                    "modifyTime": "2023-10-25 20:45:23",
-                    "storageType": "sysBos",
-                    "storage": {
-                        "storageId": "easydata",
-                        "storageName": "easydata",
-                        "storagePath": (
-                            "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts"
-                        ),
-                        "rawStoragePath": "",
-                        "region": "bj",
-                    },
-                    "releaseStatus": 2,
-                    "releaseErrCode": 0,
-                    "releaseStoragePath": (
-                        "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts/jsonl"
+                "projectType": 20,
+                "templateType": 2000,
+                "errCode": None,
+                "uniqueType": 0,
+                "importErrorInfo": None,
+                "createTime": "2023-09-08 17:10:11",
+                "modifyTime": "2023-10-25 20:45:23",
+                "storageType": "sysBos",
+                "storage": {
+                    "storageId": "easydata",
+                    "storageName": "easydata",
+                    "storagePath": (
+                        "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts"
                     ),
-                    "releaseProgress": 0,
-                    "remark": "",
-                    "annotatedEntityCount": 792099,
-                    "entityCount": 792099,
-                    "labelCount": 1,
-                    "memorySize": 513.42,
-                    "characterCount": 173338860,
-                    "isEnhancing": False,
-                    "enhanceStatus": -1,
-                    "hasEnhance": False,
-                    "isSelfInstructEnhance": False,
-                    "interAnnoRunning": False,
-                    "hardSampleCount": 0,
-                    "etlStatus": 0,
-                    "hasEtl": False,
-                    "isPipelineEtl": False,
-                    "teamAnnoStatus": -1,
-                    "hasTeamAnno": False,
-                    "promptOptimizeStatus": 0,
-                    "demandStatus": "",
-                    "view": 2446,
-                    "usage": 262,
-                    "description": (
-                        "中文医疗对话数据集由792099个问答对组成，包括男科、内科、妇产科、肿瘤科、儿科和外科"
-                    ),
-                    "tag": [
-                        {"name": "文本对话非排序"},
-                        {"name": "限定式问答"},
-                        {"name": "调优"},
-                    ],
-                    "license": "MIT",
-                    "copyright": "toyhom",
-                    "copyrightLink": (
-                        "https://github.com/Toyhom/Chinese-medical-dialogue-data"
-                    ),
+                    "rawStoragePath": "",
+                    "region": "bj",
                 },
+                "releaseStatus": 2,
+                "releaseErrCode": 0,
+                "releaseStoragePath": (
+                    "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts/jsonl"
+                ),
+                "releaseProgress": 0,
+                "remark": "",
+                "annotatedEntityCount": 792099,
+                "entityCount": 792099,
+                "labelCount": 1,
+                "memorySize": 513.42,
+                "characterCount": 173338860,
+                "isEnhancing": False,
+                "enhanceStatus": -1,
+                "hasEnhance": False,
+                "isSelfInstructEnhance": False,
+                "interAnnoRunning": False,
+                "hardSampleCount": 0,
+                "etlStatus": 0,
+                "hasEtl": False,
+                "isPipelineEtl": False,
+                "teamAnnoStatus": -1,
+                "hasTeamAnno": False,
+                "promptOptimizeStatus": 0,
+                "demandStatus": "",
+                "view": 2446,
+                "usage": 262,
+                "description": "中文医疗对话数据集由792099个问答对组成，包括男科、内科、妇产科、肿瘤科、儿科和外科",
+                "tag": [
+                    {"name": "文本对话非排序"},
+                    {"name": "限定式问答"},
+                    {"name": "调优"},
+                ],
+                "license": "MIT",
+                "copyright": "toyhom",
+                "copyrightLink": (
+                    "https://github.com/Toyhom/Chinese-medical-dialogue-data"
+                ),
             },
-            "status": 200,
-            "success": True,
-        }
-    )
+        },
+        "status": 200,
+        "success": True,
+    }
+    if args["datasetId"] == "ds-mock-generic":
+        resp["result"]["versionInfo"]["projectType"] = 401
+        resp["result"]["versionInfo"]["templateType"] = 40100
+    return json_response(resp)
 
 
 @app.route(Consts.DatasetStatusFetchInBatchAPI, methods=["POST"])

@@ -36,6 +36,7 @@ from qianfan.trainer.configs import TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.post_pretrain import PostPreTrain
 
 
 class MyEventHandler(EventHandler):
@@ -153,7 +154,11 @@ def test_trainer_sft_run_from_bos():
 
 def test_trainer_sft_with_deploy():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
+        epoch=1,
+        batch_size=4,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        peft_type=PeftType.ALL,
     )
     deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
@@ -300,7 +305,11 @@ def test_eval_action_resume():
 
 def test_trainer_sft_with_eval():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
+        epoch=1,
+        batch_size=4,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        peft_type=PeftType.LoRA,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "train", console_consts.DataTemplateType.NonSortedConversation
@@ -391,3 +400,37 @@ def test_train_config_validate():
         )
     )
     assert res
+
+
+def test_ppt():
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    ppt_trainer = PostPreTrain(
+        train_type="ERNIE-Speed",
+        dataset=ppt_ds,
+    )
+    res = ppt_trainer.run()
+    assert "task_id" in res and "job_id" in res
+
+
+def test_ppt_with_sft():
+    from qianfan.utils.logging import TRACE_LEVEL, enable_log
+
+    enable_log(TRACE_LEVEL)
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    ppt_trainer = PostPreTrain(
+        train_type="ERNIE-Speed",
+        dataset=ppt_ds,
+    )
+    ppt_trainer.run()
+    assert "task_id" in ppt_trainer.output and "job_id" in ppt_trainer.output
+
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    sft_trainer = LLMFinetune(
+        dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
+    )
+    sft_trainer.run()
+    assert "model_version_id" in sft_trainer.output and "model_id" in sft_trainer.output

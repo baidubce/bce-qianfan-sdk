@@ -227,9 +227,9 @@ class TrainAction(
     """if it's incremental train or not"""
     train_config: Optional[TrainConfig] = None
     """train config"""
-    train_mode: console_consts.TrainMode = console_consts.TrainMode.SFT
+    train_mode: console_consts.TrainMode
     """train mode"""
-    task_name: str = ""
+    job_name: str = ""
     """train task name"""
     task_description: Optional[str] = None
     """train task description"""
@@ -242,12 +242,13 @@ class TrainAction(
 
     def __init__(
         self,
+        train_mode: console_consts.TrainMode,
         train_type: Optional[str] = None,
         train_config: Optional[TrainConfig] = None,
         task_id: Optional[str] = None,
         job_id: Optional[str] = None,
-        train_mode: Optional[console_consts.TrainMode] = None,
-        task_name: Optional[str] = None,
+        peft_type: PeftType = PeftType.ALL,
+        job_name: Optional[str] = None,
         task_description: Optional[str] = None,
         job_description: Optional[str] = None,
         **kwargs: Any,
@@ -255,6 +256,8 @@ class TrainAction(
         """
 
         Parameters:
+            train_mode (Optional[console_consts.TrainMode], optional):
+                train mode, e.g. `SFT`, `PostPretrain`. Defaults to None.
             train_type (Optional[str], optional):
                 train_type, must be specified when it's not increment training
                 like 'ERNIE-Bot-turbo-0725'
@@ -266,9 +269,7 @@ class TrainAction(
                 used in incr train, model train task_id. Defaults to None.
             job_id (Optional[int], optional):
                 used in incr train, mod train job_id. Defaults to None.
-            train_mode (Optional[console_consts.TrainMode], optional):
-                train mode, e.g. `sft`, `incremental`. Defaults to None.
-            task_name (Optional[str], optional):
+            job_name (Optional[str], optional):
                 train task name. Defaults to None.
             task_description (Optional[str], optional):
                 train task description. Defaults to None.
@@ -278,38 +279,39 @@ class TrainAction(
         super().__init__(**kwargs)
         self.task_id = task_id
         self.job_id = job_id
-        if self.task_id is not None and self.job_id is not None:
+        self.train_mode = train_mode
+        if self.task_id is not None:
             # if incremental train
+            pre_task_detail = api.FineTune.V2.task_detail(task_id=self.task_id)
+            # 获取增量任务的训练model
+            if pre_task_detail.get("result") is not None:
+                self.train_type = pre_task_detail["result"]["model"]
+                self.train_mode = train_mode
             self.is_incr = True
-            if train_config is None:
-                raise InvalidArgumentError("incr_config train_config must be specified")
-            self.train_config = train_config
         else:
             if train_type is None:
                 raise InvalidArgumentError("train_type must be specified")
-            # train from base model
+            # 从基础模型开始训练
             self.train_type = train_type
-            assert train_mode
             model_info = get_model_info(train_mode, self.train_type)
             if model_info is None:
                 log_warn(f"unknown train model type: {self.train_type} is not found")
-            self.train_config = (
-                train_config
-                if train_config is not None
-                else self.get_default_train_config(train_type, train_mode, PeftType.ALL)
+        assert self.train_type is not None
+        if train_config is None:
+            train_config = self.get_default_train_config(
+                self.train_type, self.train_mode, peft_type
             )
-            self.validateTrainConfig()
-        if train_mode is not None:
-            self.train_mode = train_mode
-        self.task_name = self._generate_job_name(task_name, self.train_type)
+        self.train_config = train_config
+        self.validateTrainConfig(strict=kwargs.get("validate_strict", True))
+        self.job_name = self._generate_job_name(job_name, self.train_type)
         self.task_description = task_description
         self.job_description = job_description
 
     def _generate_job_name(
-        self, task_name: Optional[str], train_type: Optional[str]
+        self, job_name: Optional[str], train_type: Optional[str]
     ) -> str:
-        if task_name is not None:
-            return task_name
+        if job_name is not None:
+            return job_name
         model_info = (
             get_model_info(self.train_mode, train_type)
             if train_type is not None
@@ -321,7 +323,7 @@ class TrainAction(
             else f"{model_info.short_name}_{utils.generate_letter_num_random_id(5)}"
         )
 
-    def validateTrainConfig(self) -> None:
+    def validateTrainConfig(self, strict: bool = True) -> None:
         """
         validate train_config with ModelInfo Limits
 
@@ -343,26 +345,37 @@ class TrainAction(
                     f"[train_action] train_type {self.train_type}, peft_type"
                     f" {self.train_config.peft_type} not found, it may be not supported"
                 )
+                if strict:
+                    raise InvalidArgumentError(
+                        f"[train_action] train_type {self.train_type}, peft_type"
+                        f" {self.train_config.peft_type} not found, it may be not"
+                        " supported"
+                    )
 
             else:
                 assert train_type_model_info
+                res = False
                 if (
                     train_type_model_info.specific_peft_types_params_limit is not None
                     and self.train_config.peft_type
                     in train_type_model_info.specific_peft_types_params_limit
                 ):
-                    self._validate_train_config(
+                    res = self._validate_train_config(
                         train_type_model_info.specific_peft_types_params_limit[
                             self.train_config.peft_type
                         ]
                         | train_type_model_info.common_params_limit,
                     )
                 else:
-                    self._validate_train_config(
+                    res = self._validate_train_config(
                         train_type_model_info.common_params_limit
                     )
+                if not res and strict:
+                    raise InvalidArgumentError(
+                        "invalid train_config, please check the config"
+                    )
 
-    def _validate_train_config(self, train_limit: TrainLimit) -> None:
+    def _validate_train_config(self, train_limit: TrainLimit) -> bool:
         """
         validate train_config with a specific train_limit
 
@@ -374,26 +387,7 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
-        self.train_config.validate_config(train_limit)
-
-    def _exec_incremental(
-        self, input: Dict[str, Any], **kwargs: Dict
-    ) -> Dict[str, Any]:
-        """
-        increment train from task_id, job_id
-
-        Parameters:
-            input (Dict[str, Any]):
-                input
-
-        Raises:
-            NotImplementedError: not implemented yet
-
-        Returns:
-            Dict[str, Any]:
-                output
-        """
-        raise NotImplementedError("incr train not implemented")
+        return self.train_config.validate_config(train_limit)
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -434,18 +428,21 @@ class TrainAction(
         assert self.train_config
         ds_config["splitRatio"] = self.train_config.trainset_rate
 
-        # request for create model train task
-        assert self.train_type is not None
-        resp = api.FineTune.V2.create_job(
-            name=self.task_name,
-            description=self.task_description,
-            model=self.train_type,
-            train_mode=self.train_mode,
-            **kwargs,
-        )
+        if self.job_id is None:
+            # request for create model train task
+            assert self.train_type is not None
+            resp = api.FineTune.V2.create_job(
+                name=self.job_name,
+                description=self.task_description,
+                model=self.train_type,
+                train_mode=self.train_mode,
+                **kwargs,
+            )
 
-        self.job_id = str(resp["result"]["jobId"])
-        log_debug(f"[train_action] create {self.train_mode} train job: {self.job_id}")
+            self.job_id = str(resp["result"]["jobId"])
+            log_debug(
+                f"[train_action] create {self.train_mode} train job: {self.job_id}"
+            )
 
         assert self.train_config is not None
         hyper_params_dict = {
@@ -464,9 +461,10 @@ class TrainAction(
             # 增量训练
             kwargs["incrementTaskId"] = self.task_id
             log_info(f"train with incrementTaskId: { self.task_id}")
+        assert self.train_config.peft_type is not None
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
-            params_scale=PeftType.ALL.value,
+            params_scale=self.train_config.peft_type,
             hyper_params=hyper_params_dict,
             dataset_config=ds_config,
             **kwargs,
@@ -492,7 +490,7 @@ class TrainAction(
             job_progress = int(job_status_resp["result"]["runProgress"][:-1])
             log_info(
                 "[train_action] fine-tune running..."
-                f" task_name:{self.task_name} current status: {job_status},"
+                f" job_name:{self.job_name} current status: {job_status},"
                 f" {job_progress}% check train task log in"
                 f" https://console.bce.baidu.com/qianfan/train/sft/{self.job_id}/{self.task_id}/detail/traininglog"
             )

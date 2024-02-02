@@ -1,0 +1,60 @@
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    path:
+      - "python/**"
+      - "docs/**"
+      - "README.md"
+  workflow_dispatch:
+
+name: Docs
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./python
+
+env:
+  RUFF_OUTPUT_FORMAT: github
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - 'ubuntu-latest'
+        python-version:
+          - '3.11'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry lock
+      - name: Get Poetry version
+        run: poetry --version
+      - name: Setup Python Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+          cache: "poetry"
+      - name: Install deps
+        run: |
+          make install
+      - name: Build docs
+        run: make doc
+      - name: Prepare artifact
+        run: tar czvf /tmp/docs.tar.gz ./output/docs/_build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: /tmp/docs.tar.gz

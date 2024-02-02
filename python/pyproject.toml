@@ -1,0 +1,99 @@
+[tool.poetry]
+name = "qianfan"
+version = "0.3.0"
+description = "文心千帆大模型平台 Python SDK"
+authors = []
+license = "Apache-2.0"
+readme = "README.pypi.md"
+exclude = [
+    "qianfan/tests",
+    "qianfan/docs",
+]
+homepage = "https://cloud.baidu.com/product/wenxinworkshop"
+repository = "https://github.com/baidubce/bce-qianfan-sdk"
+documentation = "https://qianfan.readthedocs.io/en/stable/README.html"
+keywords = ["baidu", "qianfan"]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<4"
+requests = ">=2.24"
+aiohttp = ">=3.7.0"
+aiolimiter = ">=1.1.0"
+importlib-metadata = { version = ">=1.4.0", python = "<=3.7" }
+bce-python-sdk = ">=0.8.79"
+typing-extensions = { version = ">=4.0.0", python = "<=3.10" }
+pydantic = "*"
+python-dotenv = "<=0.21.1"
+langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
+numpy = [
+    { version = "<1.22.0", python = ">=3.7 <3.8" },
+    { version = ">=1.22.0", python = ">=3.8" }
+]
+pyarrow = [
+    { version = ">=14.0.1", python = ">=3.8" },
+    { version = "<=12.0.1", python = ">=3.7 <3.8" }
+]
+python-dateutil = "^2.8.2"
+rich = ">=13.0.0"
+typer = ">=0.9.0"
+tenacity = "^8.2.3"
+pyyaml = "^6.0.1"
+prompt-toolkit = ">=3.0.38"
+torch = [
+    { version = "<=1.13.1", python = "<3.8", optional = true},
+    { version = "*", python = ">=3.8", optional = true }
+]
+ltp = { version = "*", optional = true}
+emoji = { version = "*", optional = true}
+sentencepiece = { version = "*", optional = true}
+
+[tool.poetry.scripts]
+qianfan = "qianfan.common.client.main:main"
+
+[tool.poetry.group.dev.dependencies]
+sphinx = ">=5"
+pytest = ">=7.0.0"
+flask = ">=2.0.0"
+pytest-asyncio = ">=0.16.0"
+coverage = ">=7.0.0"
+black = "^23.1.0"
+ruff = ">=0.0.290"
+sphinx-rtd-theme = ">=1.2.0"
+mypy = ">=1.4.0"
+myst-parser = ">=0.19.2"
+pytest-mock = "3.11.1"
+types-protobuf = "4.24.0.4"
+
+[tool.poetry.extras]
+langchain = ["langchain"]
+data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
+semantic_kernel = ["semantic_kernel"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
+
+[tool.ruff]
+select = [
+  "E",  # pycodestyle
+  "F",  # pyflakes
+  "I",  # isort
+]
+typing-modules = ["qianfan.resources.typing"]
+
+[tool.ruff.lint]
+extend-select = ["PLW1514"]
+preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"*test*.py" = ["PLW1514"]
+
+[tool.black]
+preview = true
+
+[tool.mypy]
+ignore_missing_imports = "True"
+disallow_untyped_defs = "True"
+exclude = ["qianfan/tests", "qianfan/utils/pydantic"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

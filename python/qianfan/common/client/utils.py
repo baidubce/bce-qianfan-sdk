@@ -22,6 +22,8 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 import click
 import typer
 from prompt_toolkit import prompt
+from prompt_toolkit.document import Document
+from prompt_toolkit.validation import ValidationError, Validator
 from rich import print as rprint
 from rich.console import Console, Group, RenderableType
 from rich.highlighter import JSONHighlighter
@@ -34,7 +36,7 @@ import qianfan.utils.logging as qianfan_logging
 from qianfan import QfResponse
 from qianfan.resources.llm.base import BaseResource
 from qianfan.resources.typing import QfRequest
-from qianfan.utils.bos_uploader import BosHelper
+from qianfan.utils.bos_uploader import BosHelper, parse_bos_path
 from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
@@ -287,3 +289,21 @@ def render_response_debug_info(response: QfResponse) -> Group:
     )
 
     return Group(*render_list)
+
+
+class InputEmptyValidator(Validator):
+    def validate(self, document: Document) -> None:
+        text = document.text
+        if len(text.strip()) == 0:
+            raise ValidationError(message="Input cannot be empty")
+
+
+class BosPathValidator(Validator):
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if len(text) == 0:
+            raise ValidationError(message="Input cannot be empty")
+        try:
+            parse_bos_path("bos:/" + text)
+        except ValueError:
+            raise ValidationError(message="Invalid BOS path")

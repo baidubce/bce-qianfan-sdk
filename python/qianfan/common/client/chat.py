@@ -13,11 +13,13 @@
 # limitations under the License.
 
 
+import json
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, List, Optional, Tuple
 
 import typer
 from prompt_toolkit import prompt
+from prompt_toolkit.completion import WordCompleter
 from rich import print as rprint
 from rich.console import Console, Group, RenderableType
 from rich.live import Live
@@ -29,9 +31,9 @@ from rich.text import Text
 import qianfan
 from qianfan import QfRole
 from qianfan.common.client.utils import (
+    InputEmptyValidator,
     credential_required,
     list_model_option,
-    print_error_msg,
     print_warn_msg,
     render_response_debug_info,
 )
@@ -40,13 +42,24 @@ from qianfan.errors import InternalError
 from qianfan.resources.llm.chat_completion import ChatCompletion
 from qianfan.resources.typing import QfMessages, QfResponse
 
-END_PROMPT = "\exit"
-
 
 class ChatClient(object):
     """
     Client object for the chat command
     """
+
+    END_PROMPT = "/exit"
+    RESET_PROMPT = "/reset"
+    HELP_PROMPT = "/help"
+
+    HELP_MESSAGES = {
+        END_PROMPT: "End the conversation",
+        RESET_PROMPT: "Reset the conversation",
+        HELP_PROMPT: "Print help message",
+    }
+    input_completer = WordCompleter(
+        list(HELP_MESSAGES.keys()), sentence=True, meta_dict=HELP_MESSAGES
+    )
 
     def __init__(
         self,
@@ -168,17 +181,24 @@ class ChatClient(object):
         if self.multi_line:
             rprint(
                 "[bold]Hint[/bold]: [green bold]Press Esc before Enter[/] to submit"
-                f" your message, and use '{END_PROMPT}' to end the conversation."
+                f" your message, and use '{self.END_PROMPT}' to end the conversation."
             )
         else:
             rprint(
                 "[bold]Hint[/bold]: Press enter to submit your message, and use"
-                f" '{END_PROMPT}' to end the conversation."
+                f" '{self.END_PROMPT}' to end the conversation."
             )
             rprint(
                 "[bold]Hint[/bold]: If you want to submit multiple lines, use the"
                 " '--multi-line' option."
             )
+
+    def print_help_message(self) -> None:
+        """
+        Print command introduction
+        """
+        for k, v in self.HELP_MESSAGES.items():
+            rprint(f"[bold green]{k}[/]: {v}")
 
     def chat_in_terminal(self) -> None:
         """
@@ -188,20 +208,12 @@ class ChatClient(object):
         self.print_hint_msg()
         # loop the conversation
         while True:
-            # loop the input and check whether the input is valid
-            while True:
-                rprint("\n[yellow bold]Enter your message[/yellow bold]:")
-                message = prompt(multiline=self.multi_line).strip()
-                # break the loop if input is valid
-                if len(message) != 0:
-                    break
-                # if message is empty, print error message and continue to input
-                print_error_msg("Message cannot be empty!")
-
-            for i in range(len(self.clients)):
-                msg_history = self.msg_history[i]
-                if msg_history is not None:
-                    msg_history.append(message)
+            rprint("\n[yellow bold]Enter your message[/yellow bold]:")
+            message = prompt(
+                multiline=self.multi_line,
+                validator=InputEmptyValidator(),
+                completer=self.input_completer,
+            ).strip()
 
             extra_info = (
                 ""
@@ -212,9 +224,21 @@ class ChatClient(object):
                 f"\n[blue][bold]Model response[/bold][/blue][dim] {extra_info}[/dim]:"
             )
 
-            if message == END_PROMPT:
+            if message == self.END_PROMPT:
                 rprint("Bye!")
                 raise typer.Exit()
+            elif message == self.RESET_PROMPT:
+                self.msg_history = [QfMessages() for _ in range(len(self.clients))]
+                rprint("Chat history has been cleared.")
+                continue
+            elif message == self.HELP_PROMPT:
+                self.print_help_message()
+                continue
+
+            for i in range(len(self.clients)):
+                msg_history = self.msg_history[i]
+                if msg_history is not None:
+                    msg_history.append(message)
 
             # List of (received_msg, is_end, response) for each client
             msg_list: List[Tuple[str, bool, Optional[QfResponse]]] = [
@@ -260,7 +284,7 @@ class ChatClient(object):
                             live.update(self.render_model_response(msg_list))
                     except Exception as e:
                         msg_list[i] = (
-                            msg_list[i][0] + "\n\n**Got Exception**: " + str(e),
+                            msg_list[i][0] + "\n\n**Got Exception**: " + repr(e),
                             True,
                             None,
                         )
@@ -355,6 +379,11 @@ def chat_entry(
     enable_citation: Optional[bool] = typer.Option(
         None, help="Enable citation", rich_help_panel=MODEL_ARGUMENTS_PANEL
     ),
+    extra_parameters: Optional[str] = typer.Option(
+        None,
+        help="Extra parameters for the model. This should be a json string.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
 ) -> None:
     """
     Chat with the LLM in the terminal.
@@ -378,6 +407,8 @@ def chat_entry(
 
     if stop is not None:
         extra_args["stop"] = stop.split(",")
+    if extra_parameters is not None:
+        extra_args["extra_parameters"] = json.loads(extra_parameters)
 
     client = ChatClient(model, endpoint, multi_line, debug=debug, **extra_args)
     client.chat_in_terminal()

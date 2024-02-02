@@ -19,6 +19,12 @@ import functools
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
+from qianfan.dataset.consts import (
+    LLMOutputColumnName,
+    NewInputChatColumnName,
+    NewInputPromptColumnName,
+    OldReferenceColumnName,
+)
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info
 
@@ -262,4 +268,64 @@ class QianfanText2Image(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
+        return False
+
+
+class EvaluationSchema(Schema):
+    """validator for evaluation used"""
+
+    def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
+        if len(table) == 0:
+            log_error("table is empty")
+            return False
+
+        col_names = table.col_names()
+
+        for column in [OldReferenceColumnName, LLMOutputColumnName]:
+            if column not in col_names:
+                log_error(f"{column} not in dataset columns")
+                return False
+
+        if (
+            NewInputPromptColumnName in col_names
+            and NewInputChatColumnName in col_names
+        ):
+            log_error(
+                f"can't have both {NewInputChatColumnName} and"
+                f" {NewInputPromptColumnName} simultaneously"
+            )
+            return False
+
+        if NewInputPromptColumnName in col_names:
+            elem_type = table[0][NewInputPromptColumnName]
+            if not isinstance(elem_type, str):
+                log_error(
+                    f"element in column {NewInputPromptColumnName} isn't str, rather"
+                    f" {type(elem_type)}"
+                )
+                return False
+            return True
+
+        if NewInputChatColumnName in col_names:
+            elem_type = table[0][NewInputChatColumnName]
+            if not isinstance(elem_type, str):
+                log_error(
+                    f"element in column {NewInputChatColumnName} isn't str, rather"
+                    f" {type(elem_type)}"
+                )
+                return False
+            return True
+
+        log_error(
+            f"no neither {NewInputChatColumnName} or {NewInputPromptColumnName} found"
+        )
         return False

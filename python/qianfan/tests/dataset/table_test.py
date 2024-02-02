@@ -170,24 +170,24 @@ def test_append_column():
     with pytest.raises(ValueError):
         table.col_append(123)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         table.col_append({"name": "test"})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         table.col_append({"data": "abc"})
 
     with pytest.raises(TypeError):
-        table.col_append({"name": 1, "data": "abc"})
+        table.col_append({1: "abc"})
 
     with pytest.raises(TypeError):
-        table.col_append({"name": "test", "data": "abc"})
+        table.col_append({"test": "abc"})
     with pytest.raises(ValueError):
-        table.col_append({"name": "test", "data": ["abc"]})
+        table.col_append({"test": ["abc"]})
 
-    table.col_append({"name": "test", "data": ["a", "b", "c", "d"]})
+    table.col_append({"test": ["a", "b", "c", "d"]})
 
     with pytest.raises(ValueError):
-        table.col_append({"name": "test", "data": ["a", "b", None, "d"]})
+        table.col_append({"test": ["a", "b", None, "d"]})
 
 
 def test_insert_column():

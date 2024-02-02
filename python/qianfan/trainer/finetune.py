@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.config import get_config
-from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -25,6 +24,7 @@ from qianfan.trainer.actions import (
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
+    action_mapping,
 )
 from qianfan.trainer.base import (
     BaseAction,
@@ -38,9 +38,7 @@ from qianfan.trainer.configs import (
     TrainConfig,
 )
 from qianfan.trainer.consts import (
-    ActionState,
-    FinetuneStatus,
-    ServiceStatus,
+    TrainStatus,
 )
 
 
@@ -53,15 +51,17 @@ class LLMFinetune(Trainer):
 
     def __init__(
         self,
-        train_type: str,
+        train_type: Optional[str] = None,
         dataset: Optional[Any] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
         event_handler: Optional[EventHandler] = None,
-        base_model: Optional[str] = None,
         eval_dataset: Optional[Any] = None,
         evaluators: Optional[List[Evaluator]] = None,
         dataset_bos_path: Optional[str] = None,
+        previous_trainer: Optional[Trainer] = None,
+        previous_task_id: Optional[str] = None,
+        name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -107,9 +107,8 @@ class LLMFinetune(Trainer):
         )
         ```
         """
-        # 校验train_type
-        if train_type is None or train_type == "":
-            raise InvalidArgumentError("train_type is empty")
+        # 设置name
+        self.name = name
 
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
@@ -117,43 +116,53 @@ class LLMFinetune(Trainer):
         actions: List[BaseAction] = []
         # 校验dataset
         if dataset is not None:
-            if dataset.inner_data_source_cache is None:
-                raise InvalidArgumentError("invalid dataset")
-            if isinstance(dataset.inner_data_source_cache, QianfanDataSource):
-                qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
-                if (
-                    qf_data_src.template_type
-                    != console_consts.DataTemplateType.NonSortedConversation
-                ):
-                    raise InvalidArgumentError(
-                        "dataset must be `non-sorted conversation` template in"
-                        " llm-fine-tune"
-                    )
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs
-                )
-            elif isinstance(dataset.inner_data_source_cache, BosDataSource):
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs
+            self.load_data_action = LoadDataSetAction(
+                dataset=dataset,
+                dataset_template=console_consts.DataTemplateType.NonSortedConversation,
+                event_handler=event_handler,
+                **kwargs,
+            )
+        elif dataset_bos_path:
+            self.load_data_action = LoadDataSetAction(
+                dataset=dataset_bos_path,
+                event_handler=event_handler,
+                **kwargs,
+            )
+        else:
+            raise InvalidArgumentError("either dataset or bos_path is required")
+        actions.append(self.load_data_action)
+        if previous_trainer:
+            # init an increment training
+            if hasattr(previous_trainer, "train_action"):
+                self.train_action = TrainAction(
+                    train_config=train_config,
+                    task_id=previous_trainer.train_action.task_id,
+                    train_mode=console_consts.TrainMode.SFT,
+                    job_name=name,
+                    **kwargs,
                 )
             else:
                 raise InvalidArgumentError(
-                    "dataset must be either implemented with QianfanDataSource or"
-                    " BosDataSource"
+                    "invalid trainer input without previous train action"
                 )
-            actions.append(self.load_data_action)
-        elif dataset_bos_path:
-            self.dataset_bos_path = dataset_bos_path
+        elif previous_task_id:
+            self.train_action = TrainAction(
+                train_config=train_config,
+                task_id=previous_task_id,
+                train_mode=console_consts.TrainMode.SFT,
+                job_name=name,
+                **kwargs,
+            )
         else:
-            raise InvalidArgumentError("either dataset or bos_path is required")
-        self.train_action = TrainAction(
-            train_config=train_config,
-            base_model=base_model,
-            train_type=train_type,
-            train_mode=console_consts.TrainMode.SFT,
-            event_handler=event_handler,
-            **kwargs,
-        )
+            # init train action from base model
+            self.train_action = TrainAction(
+                train_config=train_config,
+                train_type=train_type,
+                train_mode=console_consts.TrainMode.SFT,
+                event_handler=event_handler,
+                job_name=name,
+                **kwargs,
+            )
         actions.append(self.train_action)
         if not kwargs.get("model_not_publish"):
             self.model_publish = ModelPublishAction(
@@ -205,10 +214,6 @@ class LLMFinetune(Trainer):
         kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
-        if not hasattr(self, "load_data_action") and self.dataset_bos_path is not None:
-            kwargs["input"] = {
-                "datasets": [{"id": 2, "bosPath": self.dataset_bos_path}]
-            }
         self.result[0] = self.ppls[0].exec(**kwargs)
         return self
 
@@ -224,10 +229,10 @@ class LLMFinetune(Trainer):
             raise InvalidArgumentError("invalid pipeline to get status")
         action = self.ppls[0][str(self.ppls[0]._state)]
         if action is None:
-            return FinetuneStatus.Unknown
+            return TrainStatus.Unknown
         action_name = action.__class__.__name__
-        return fine_tune_action_mapping.get(action_name, {}).get(
-            action.state, FinetuneStatus.Unknown
+        return action_mapping.get(action_name, {}).get(
+            action.state, TrainStatus.Unknown
         )
 
     def stop(self, **kwargs: Dict) -> Trainer:
@@ -261,43 +266,3 @@ class LLMFinetune(Trainer):
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
         return ModelInfoMapping
-
-
-# mapping for action state -> fine-tune status
-fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
-    LoadDataSetAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.DatasetLoading,
-        ActionState.Running: FinetuneStatus.DatasetLoading,
-        ActionState.Done: FinetuneStatus.DatasetLoaded,
-        ActionState.Error: FinetuneStatus.DatasetLoadFailed,
-        ActionState.Stopped: FinetuneStatus.DatasetLoadStopped,
-    },
-    TrainAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.TrainCreated,
-        ActionState.Running: FinetuneStatus.Training,
-        ActionState.Done: FinetuneStatus.TrainFinished,
-        ActionState.Error: FinetuneStatus.TrainFailed,
-        ActionState.Stopped: FinetuneStatus.TrainStopped,
-    },
-    ModelPublishAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.ModelPublishing,
-        ActionState.Running: FinetuneStatus.ModelPublishing,
-        ActionState.Done: FinetuneStatus.ModelPublished,
-        ActionState.Error: FinetuneStatus.ModelPublishFailed,
-        ActionState.Stopped: FinetuneStatus.ModelPublishFailed,
-    },
-    DeployAction.__class__.__name__: {
-        ActionState.Preceding: ServiceStatus.Created,
-        ActionState.Running: ServiceStatus.Deploying,
-        ActionState.Done: ServiceStatus.Deployed,
-        ActionState.Error: ServiceStatus.DeployFailed,
-        ActionState.Stopped: ServiceStatus.DeployStopped,
-    },
-    EvaluateAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.EvaluationCreated,
-        ActionState.Running: FinetuneStatus.EvaluationRunning,
-        ActionState.Done: FinetuneStatus.EvaluationFinished,
-        ActionState.Error: FinetuneStatus.EvaluationFailed,
-        ActionState.Stopped: FinetuneStatus.EvaluationStopped,
-    },
-}

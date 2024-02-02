@@ -132,13 +132,13 @@ class ServiceStatus(str, Enum):
 
 
 class TrainStatus(str, Enum):
-    Finish = "FINISH"
+    Finish = "Done"
     """训练完成"""
-    Running = "RUNNING"
+    Running = "Running"
     """训练进行中"""
-    Fail = "FAIL"
+    Fail = "Fail"
     """训练失败"""
-    Stop = "STOP"
+    Stop = "Stopped"
     """训练停止"""
 
 
@@ -158,9 +158,22 @@ class TrainDatasetType(int, Enum):
     """私有Bos数据集"""
 
 
+class TrainDatasetSourceType(str, Enum):
+    Platform = "Platform"
+    PrivateBos = "Bos"
+
+
 class TrainMode(str, Enum):
     SFT = "SFT"
     """对应 LLMFinetune"""
+    PostPretrain = "PostPretrain"
+    """PostPretrain """
+
+
+class TrainParameterScale(str, Enum):
+    FullFineTuning = "FullFineTuning"
+    PromptTuning = "PromptTuning"
+    LoRA = "LoRA"
 
 
 class DeployPoolType(int, Enum):

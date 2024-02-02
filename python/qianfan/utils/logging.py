@@ -18,6 +18,10 @@ import sys
 from functools import partial
 from typing import Any
 
+TRACE_LEVEL = 5
+
+logging.addLevelName(TRACE_LEVEL, "TRACE")
+
 
 class Logger(object):
     _DEFAULT_MSG_FORMAT = (
@@ -44,7 +48,7 @@ class Logger(object):
         # 创建一个loggger
         self.__name = name
         self._logger = logging.getLogger(self.__name)
-        self._logger.setLevel(logging.WARN)
+        self._logger.setLevel(logging.INFO)
         formatter = logging.Formatter(format, datefmt)
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
@@ -100,6 +104,16 @@ class Logger(object):
         """
         self._logger.warning(message, *args, **params)
 
+    def trace(self, message: object, *args: object, **params: Any) -> None:
+        """
+        TRACE level log
+        Args:
+            message (object): message content
+        Returns:
+            None
+        """
+        self._logger.log(TRACE_LEVEL, message, *args, **params)
+
 
 logger = Logger()
 
@@ -109,11 +123,13 @@ if sys.version_info < (3, 8):
     log_debug = logger.debug
     log_error = logger.error
     log_warn = logger.warn
+    log_trace = logger.trace
 else:
     log_info = partial(logger.info, stacklevel=2)
     log_debug = partial(logger.debug, stacklevel=2)
     log_error = partial(logger.error, stacklevel=2)
     log_warn = partial(logger.warn, stacklevel=2)
+    log_trace = partial(logger.trace, stacklevel=2)
 
 
 def enable_log(log_level: int = logging.INFO) -> None:

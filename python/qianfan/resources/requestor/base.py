@@ -45,7 +45,7 @@ import qianfan.errors as errors
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import RateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils.logging import log_error, log_warn
+from qianfan.utils.logging import log_error, log_trace, log_warn
 
 _T = TypeVar("_T")
 
@@ -241,6 +241,7 @@ class BaseAPIRequestor(object):
         simple sync request
         """
         with self._rate_limiter:
+            log_trace(f"raw request: {request}")
             response = self._client.request(request)
         _check_if_status_code_is_200(response)
         try:

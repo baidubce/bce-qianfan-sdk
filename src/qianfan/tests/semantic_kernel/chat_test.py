@@ -11,26 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qianfan.trainer.actions import (
-    BaseAction,
-    DeployAction,
-    LoadDataSetAction,
-    ModelPublishAction,
-    TrainAction,
-)
-from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune, Trainer
-from qianfan.trainer.post_pretrain import PostPreTrain
 
-__all__ = [
-    "LLMFinetune",
-    "BaseAction",
-    "Trainer",
-    "EventHandler",
-    "Event",
-    "TrainAction",
-    "LoadDataSetAction",
-    "DeployAction",
-    "ModelPublishAction",
-    "PostPreTrain",
-]
+import sys
+
+import pytest
+
+from qianfan.extensions.semantic_kernel.connectors.qianfan_chat_completion import (
+    QianfanChatCompletion,
+)
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 8, 0), reason="requires Python 3.8.1 or higher"
+)
+def chat_test():
+    chat = QianfanChatCompletion()
+    res = chat.complete_chat_async(messages=[{"role": "user", "content": "你好"}])
+    print(res)

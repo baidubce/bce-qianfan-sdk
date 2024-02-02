@@ -50,17 +50,17 @@ class Model(
     """model name"""
     service: Optional["Service"] = None
     """model service"""
-    task_id: Optional[int]
+    task_id: Optional[str]
     """train tkas id"""
-    job_id: Optional[int]
+    job_id: Optional[str]
     """train job id"""
 
     def __init__(
         self,
         id: Optional[str] = None,
         version_id: Optional[str] = None,
-        task_id: Optional[int] = None,
-        job_id: Optional[int] = None,
+        task_id: Optional[str] = None,
+        job_id: Optional[str] = None,
         name: Optional[str] = None,
         **kwargs: Any,
     ):
@@ -215,11 +215,11 @@ class Model(
                 self._wait_for_publish(**kwargs)
 
         # 发布模型
-        self.model_name = name if name != "" else f"m_{self.task_id}_{self.job_id}"
+        self.model_name = name if name != "" else f"m_{self.job_id}_{self.task_id}"
         model_publish_resp = ResourceModel.publish(
             is_new=True,
             model_name=self.model_name,
-            version_meta={"taskId": self.task_id, "iterationId": self.job_id},
+            version_meta={"taskId": self.job_id, "iterationId": self.task_id},
             **kwargs,
         )
         log_info(
@@ -232,12 +232,11 @@ class Model(
             raise InvalidArgumentError("task id or job id not found")
         # 判断训练任务已经训练完成
         while True:
-            job_status_resp = api.FineTune.get_job(
+            job_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
-                job_id=self.job_id,
                 **kwargs,
             )
-            job_status = job_status_resp["result"]["trainStatus"]
+            job_status = job_status_resp["result"]["runStatus"]
             log_info(f"model publishing keep polling, current status {job_status}")
             if job_status == console_const.TrainStatus.Running:
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)

@@ -33,7 +33,7 @@ class ActionState(str, Enum):
     """`Stopped` stands for the state when stop() is called."""
 
 
-class FinetuneStatus(str, Enum):
+class TrainStatus(str, Enum):
     Unknown = "Unknown"
     """未知状态"""
     DatasetLoading = "DatasetLoading"
@@ -88,9 +88,9 @@ class ServiceStatus(str, Enum):
 
 
 class PeftType(str, Enum):
-    ALL = "ALL"
+    ALL = "FullFineTuning"
     """全量更新"""
-    PTuning = "P-tuning"
+    PTuning = "PromptTuning"
     """p-tuning"""
     LoRA = "LoRA"
     """LoRA"""

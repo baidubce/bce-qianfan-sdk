@@ -15,6 +15,7 @@
 utility for
 uploading content to bos
 """
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -123,6 +124,16 @@ def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
 def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
     p = Path(f"/{bucket_name}{absolute_path}")
     return f"bos:{p.parent}"
+
+
+def is_valid_bos_path(path: str) -> bool:
+    pattern = r"^bos:/([a-zA-Z0-9_-]+(\/)?)*$"
+    match = re.match(pattern, path)
+
+    if match:
+        return True
+    else:
+        return False
 
 
 def parse_bos_path(bos_path: str) -> Tuple[str, str]:

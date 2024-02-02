@@ -183,6 +183,10 @@ def snake_to_camel(name: str) -> str:
     return "".join([x.capitalize() for x in name.split("_")])
 
 
+def first_lower_case(name: str) -> str:
+    return name[:1].lower() + name[1:]
+
+
 def remove_suffix(name: str, suffix: str) -> str:
     if name.endswith(suffix):
         return name[: -len(suffix)]

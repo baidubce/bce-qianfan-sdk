@@ -16,10 +16,11 @@
 FineTune API
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from qianfan.consts import Consts
-from qianfan.resources.console.utils import console_api_request
+from qianfan.resources.console import consts as console_consts
+from qianfan.resources.console.utils import _get_console_v2_query, console_api_request
 from qianfan.resources.typing import QfRequest
 
 
@@ -63,7 +64,7 @@ class FineTune(object):
         base_train_type: str,
         train_type: str,
         description: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> QfRequest:
         """
         Create a model fine-tuning task.
@@ -74,6 +75,10 @@ class FineTune(object):
         Parameters:
           name (str):
             The name of the fine-tuning task.
+          base_train_type (str):
+            The base training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo"
+          train_type (str):
+            The training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo-0922
           description (Optional[str]):
             An optional description for the fine-tuning task.
           kwargs (Any):
@@ -123,7 +128,7 @@ class FineTune(object):
 
     @classmethod
     @console_api_request
-    def stop_job(cls, task_id: int, job_id: int, **kwargs: Any) -> QfRequest:
+    def stop_job(cls, task_id: str, job_id: str, **kwargs: Any) -> QfRequest:
         """
         Stop a fine-tuning job.
 
@@ -131,9 +136,9 @@ class FineTune(object):
         specific task.
 
         Parameters:
-          task_id (int):
+          task_id (str):
             The identifier of the task associated with the fine-tuning job.
-          job_id (int):
+          job_id (str):
             The identifier of the fine-tuning job to be stopped.
           kwargs:
             Additional keyword arguments that can be passed to customize the request.
@@ -147,3 +152,207 @@ class FineTune(object):
         req = QfRequest(method="POST", url=Consts.FineTuneStopJobAPI)
         req.json_body = {"taskId": task_id, "jobId": job_id, **kwargs}
         return req
+
+    class V2:
+        """
+        this class provides methods to interact with the fine-tuning V2 API.
+        """
+
+        @classmethod
+        def base_api_route(cls) -> str:
+            """
+            base api url route for fine-tuning V2.
+
+            Returns:
+                str: base api url route
+            """
+            return Consts.FineTuneV2BaseRouteAPI
+
+        @classmethod
+        @console_api_request
+        def create_job(
+            cls,
+            name: str,
+            model: str,
+            train_mode: Union[str, console_consts.TrainMode],
+            description: Optional[str] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            create a fine-tuning job.
+
+            This function create a fine-tuning job. job may be associated with
+            many tasks.
+
+            Parameters:
+            name (str):
+                The name of job.
+            model (str):
+                The identifier of the fine-tuning job to be stopped.
+                e.g. "ERNIE-Speed"
+            train_mode (Union[str, console_consts.TrainMode]):
+                The train mode of the fine-tuning job, including "SFT" and
+                "PostPreTrain" and so on.
+            description (Optional[str]):
+                The description of the fine-tuning job.
+            kwargs:
+                Additional keyword arguments that can be passed to customize the
+                request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneCreateJobAction),
+            )
+            req.json_body = {**kwargs, "name": name, "model": model}
+            if isinstance(train_mode, console_consts.TrainMode):
+                req.json_body["trainMode"] = train_mode.value
+            elif isinstance(train_mode, str):
+                req.json_body["trainMode"] = train_mode
+            else:
+                raise TypeError(
+                    "train_mode must be a string or TrainMode, but got"
+                    f" {type(train_mode)}"
+                )
+            if description is not None:
+                req.json_body["description"] = description
+            return req
+
+        @classmethod
+        @console_api_request
+        def create_task(
+            cls,
+            job_id: str,
+            params_scale: Union[str, console_consts.TrainParameterScale],
+            hyper_params: Dict[str, Any],
+            dataset_config: Dict[str, Any],
+            incrementTaskId: Optional[str] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            create a fine-tuning task.
+
+            This function create a fine-tuning task associated with a
+            specific job.
+
+            Parameters:
+            name (str):
+                The name of job.
+            model (str):
+                The identifier of the fine-tuning job to be stopped.
+                e.g. "ERNIE-Speed"
+            train_mode (Union[str, console_consts.TrainMode]):
+                The train mode of the fine-tuning job, including "SFT",
+                "PostPreTrain" and so on.
+            description (Optional[str]):
+                The description of the fine-tuning job.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneCreateTaskAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "jobId": job_id,
+                "parameterScale": (
+                    params_scale.value
+                    if isinstance(params_scale, console_consts.TrainParameterScale)
+                    else params_scale
+                ),
+                "hyperParameterConfig": hyper_params,
+                "datasetConfig": dataset_config,
+            }
+            if incrementTaskId is not None:
+                req.json_body["incrementTaskId"] = incrementTaskId
+            return req
+
+        @classmethod
+        @console_api_request
+        def job_list(
+            cls,
+            train_model: Optional[Union[str, console_consts.TrainMode]] = None,
+            marker: Optional[str] = None,
+            max_keys: Optional[int] = None,
+            page_reverse: Optional[bool] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneJobListAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "trainModel": (
+                        train_model.value
+                        if isinstance(train_model, console_consts.TrainMode)
+                        else train_model
+                    ),
+                    "maker": marker,
+                    "maxKeys": max_keys,
+                    "pageReverse": page_reverse,
+                }.items()
+                if v is not None
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def task_list(
+            cls,
+            job_id: str,
+            marker: Optional[str] = None,
+            max_keys: Optional[int] = None,
+            page_reverse: Optional[bool] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneTaskListAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "jobId": job_id,
+                    "maker": marker,
+                    "maxKeys": max_keys,
+                    "pageReverse": page_reverse,
+                }.items()
+                if v is not None
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def task_detail(
+            cls,
+            task_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneTaskDetailAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "taskId": task_id,
+            }
+            return req

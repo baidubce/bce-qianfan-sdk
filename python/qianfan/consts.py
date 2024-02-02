@@ -142,7 +142,7 @@ class DefaultValue:
     ModelPublishStatusPollingInterval: float = 30
     BatchRunStatusPollingInterval: float = 30
     DeployStatusPollingInterval: float = 30
-    DefaultFinetuneTrainType: str = "ERNIE-Bot-turbo-0725"
+    DefaultFinetuneTrainType: str = "ERNIE-Speed"
 
     # 目前可直接下载到本地的千帆数据集解压后的大小上限
     # 后期研究更换为用户机内存大小的上限
@@ -172,6 +172,13 @@ class Consts:
     FineTuneCreateTaskAPI: str = "/wenxinworkshop/finetune/createTask"
     FineTuneCreateJobAPI: str = "/wenxinworkshop/finetune/createJob"
     FineTuneStopJobAPI: str = "/wenxinworkshop/finetune/stopJob"
+    ConsoleAPIQueryAction: str = "Action"
+    FineTuneV2BaseRouteAPI: str = "/v2/finetuning"
+    FineTuneCreateJobAction: str = "CreateFineTuningJob"
+    FineTuneCreateTaskAction: str = "CreateFineTuningTask"
+    FineTuneJobListAction: str = "DescribeFineTuningJobs"
+    FineTuneTaskListAction: str = "DescribeFineTuningTasks"
+    FineTuneTaskDetailAction: str = "DescribeFineTuningTask"
     ModelDetailAPI: str = "/wenxinworkshop/modelrepo/modelDetail"
     ModelVersionDetailAPI: str = "/wenxinworkshop/modelrepo/modelVersionDetail"
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"

@@ -333,8 +333,8 @@ class Completion(BaseResource):
                     "tool_choice",
                 },
             ),
-            "Yi-34B-Chat": QfLLMInfo(
-                endpoint="/chat/yi_34b_chat",
+            "Mixtral-8x7B-Instruct": QfLLMInfo(
+                endpoint="/chat/mixtral_8x7b_instruct",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -348,8 +348,8 @@ class Completion(BaseResource):
                     "tool_choice",
                 },
             ),
-            "Mixtral-8x7B-Instruct": QfLLMInfo(
-                endpoint="/chat/mixtral_8x7b_instruct",
+            "Yi-34B-Chat": QfLLMInfo(
+                endpoint="/chat/yi_34b_chat",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

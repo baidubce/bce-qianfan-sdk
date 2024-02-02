@@ -723,6 +723,147 @@ def create_finetune_task():
     )
 
 
+@app.route(Consts.FineTuneV2BaseRouteAPI, methods=["POST"])
+def finetune_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.FineTuneCreateJobAction: finetune_v2_create_job,
+        Consts.FineTuneCreateTaskAction: finetune_v2_create_task,
+        Consts.FineTuneJobListAction: finetune_v2_job_list,
+        Consts.FineTuneTaskListAction: finetune_v2_task_list,
+        Consts.FineTuneTaskDetailAction: finetune_v2_task_detail,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+def finetune_v2_create_job(body):
+    return json_response(
+        {
+            "requestId": "98d2e3d7-a689-4255-91f1-da514a3a5777",
+            "result": {"jobId": "job-2qm2a9s9rj22"},
+        }
+    )
+
+
+def finetune_v2_create_task(body):
+    return json_response(
+        {
+            "requestId": "aac33135-aed1-416a-8070-c6ecde325df5",
+            "result": {"jobId": body["jobId"], "taskId": "task-92zjbyinxruq"},
+        }
+    )
+
+
+def finetune_v2_job_list(body):
+    return json_response(
+        {
+            "requestId": "f17326a0-91fd-404c-a9bc-db586166893e",
+            "result": {
+                "jobList": [
+                    {
+                        "jobId": "job-b7hmiwmptntt",
+                        "name": "ebspda2",
+                        "description": "",
+                        "model": "ERNIE-Speed",
+                        "trainMode": "PostPretrain",
+                        "createDate": "2024-01-29T16:24:32Z",
+                    },
+                    {
+                        "jobId": "job-yhddtcbesggz",
+                        "name": "0129_yige",
+                        "description": "",
+                        "model": "WENXIN-YIGE",
+                        "trainMode": "SFT",
+                        "createDate": "2024-01-29T14:39:04Z",
+                    },
+                ],
+                "pageInfo": {
+                    "marker": "",
+                    "maxKeys": 20,
+                    "isTruncated": True,
+                    "nextMarker": "job-afik6nqipgnq",
+                },
+            },
+        }
+    )
+
+
+def finetune_v2_task_list(body):
+    return json_response(
+        {
+            "requestId": "eb3de810-3b21-4737-957f-ffd971a5610f",
+            "result": {
+                "pageInfo": {"marker": "", "maxKeys": 100, "isTruncated": False},
+                "taskList": [
+                    {
+                        "taskId": "task-92zjbyinxruq",
+                        "jobId": body["jobId"],
+                        "jobName": "hj_pptr",
+                        "jobDescription": "",
+                        "model": "ERNIE-Speed",
+                        "trainMode": "PostPretrain",
+                        "parameterScale": "FullFineTuning",
+                        "runStatus": "Running",
+                        "createDate": "2024-01-30T09:41:54Z",
+                        "finishDate": "0000-00-00T00:00:00Z",
+                    }
+                ],
+            },
+        }
+    )
+
+
+def finetune_v2_task_detail(body):
+    r = request.json
+    task_id = r["taskId"]
+    global finetune_task_call_times
+    call_times = finetune_task_call_times.get(task_id)
+    if call_times is None:
+        finetune_task_call_times[task_id] = 0
+        return json_response(
+            {
+                "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
+                "result": {
+                    "taskId": task_id,
+                    "jobId": "job-s66h7p9gqqu1",
+                    "jobName": "hj_pptr",
+                    "jobDescription": "",
+                    "model": "ERNIE-Speed",
+                    "trainMode": "PostPretrain",
+                    "parameterScale": "FullFineTuning",
+                    "runStatus": "Running",
+                    "runProgress": "0%",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+                    "createDate": "2024-01-30T09:41:54Z",
+                    "finishDate": "0000-00-00T00:00:00Z",
+                },
+            }
+        )
+    else:
+        MAX_CALL_TIMES = 10
+        finetune_task_call_times[task_id] += 1
+        return json_response(
+            {
+                "requestId": "754dc75c-3515-4ddd-88ff-59caaaaaaa",
+                "result": {
+                    "taskId": task_id,
+                    "jobId": "job-s66h7p9gqqu1",
+                    "jobName": "hj_pptr",
+                    "jobDescription": "",
+                    "model": "ERNIE-Speed",
+                    "trainMode": "PostPretrain",
+                    "parameterScale": "FullFineTuning",
+                    "runStatus": "Done" if call_times >= MAX_CALL_TIMES else "Running",
+                    "runProgress": f"{int(100 * call_times / MAX_CALL_TIMES)}%",
+                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+                    "createDate": "2024-01-30T09:41:54Z",
+                    "finishDate": "0000-00-00T00:00:00Z",
+                },
+            }
+        )
+
+
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])
 @iam_auth_checker
 def create_finetune_job():
@@ -1732,92 +1873,92 @@ def release_dataset():
 @iam_auth_checker
 def get_dataset_info():
     args = request.json
-    return json_response(
-        {
-            "log_id": "log_id",
-            "result": {
-                "groupPK": "14510",
-                "name": "ChineseMedicalDialogueData中文医疗问答数据集",
+    resp = {
+        "log_id": "log_id",
+        "result": {
+            "groupPK": "14510",
+            "name": "ChineseMedicalDialogueData中文医疗问答数据集",
+            "dataType": 4,
+            "versionInfo": {
+                "id": 123,
+                "groupId": 14510,
+                "datasetId": 12444,
+                "datasetPK": args["datasetId"],
+                "importRecordCount": 1,
+                "exportRecordCount": 0,
+                "bmlDatasetId": "ds-7pkzh1exthpuy10n",
+                "userId": 0,
+                "versionId": 1,
+                "displayName": "",
+                "importStatus": 2,
+                "importProgress": 100,
+                "exportStatus": 2,
+                "exportProgress": 0,
                 "dataType": 4,
-                "versionInfo": {
-                    "id": 123,
-                    "groupId": 14510,
-                    "datasetId": 12444,
-                    "datasetPK": args["datasetId"],
-                    "importRecordCount": 1,
-                    "exportRecordCount": 0,
-                    "bmlDatasetId": "ds-7pkzh1exthpuy10n",
-                    "userId": 0,
-                    "versionId": 1,
-                    "displayName": "",
-                    "importStatus": 2,
-                    "importProgress": 100,
-                    "exportStatus": 2,
-                    "exportProgress": 0,
-                    "dataType": 4,
-                    "projectType": 20,
-                    "templateType": 2000,
-                    "errCode": None,
-                    "uniqueType": 0,
-                    "importErrorInfo": None,
-                    "createTime": "2023-09-08 17:10:11",
-                    "modifyTime": "2023-10-25 20:45:23",
-                    "storageType": "sysBos",
-                    "storage": {
-                        "storageId": "easydata",
-                        "storageName": "easydata",
-                        "storagePath": (
-                            "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts"
-                        ),
-                        "rawStoragePath": "",
-                        "region": "bj",
-                    },
-                    "releaseStatus": 2,
-                    "releaseErrCode": 0,
-                    "releaseStoragePath": (
-                        "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts/jsonl"
+                "projectType": 20,
+                "templateType": 2000,
+                "errCode": None,
+                "uniqueType": 0,
+                "importErrorInfo": None,
+                "createTime": "2023-09-08 17:10:11",
+                "modifyTime": "2023-10-25 20:45:23",
+                "storageType": "sysBos",
+                "storage": {
+                    "storageId": "easydata",
+                    "storageName": "easydata",
+                    "storagePath": (
+                        "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts"
                     ),
-                    "releaseProgress": 0,
-                    "remark": "",
-                    "annotatedEntityCount": 792099,
-                    "entityCount": 792099,
-                    "labelCount": 1,
-                    "memorySize": 513.42,
-                    "characterCount": 173338860,
-                    "isEnhancing": False,
-                    "enhanceStatus": -1,
-                    "hasEnhance": False,
-                    "isSelfInstructEnhance": False,
-                    "interAnnoRunning": False,
-                    "hardSampleCount": 0,
-                    "etlStatus": 0,
-                    "hasEtl": False,
-                    "isPipelineEtl": False,
-                    "teamAnnoStatus": -1,
-                    "hasTeamAnno": False,
-                    "promptOptimizeStatus": 0,
-                    "demandStatus": "",
-                    "view": 2446,
-                    "usage": 262,
-                    "description": (
-                        "中文医疗对话数据集由792099个问答对组成，包括男科、内科、妇产科、肿瘤科、儿科和外科"
-                    ),
-                    "tag": [
-                        {"name": "文本对话非排序"},
-                        {"name": "限定式问答"},
-                        {"name": "调优"},
-                    ],
-                    "license": "MIT",
-                    "copyright": "toyhom",
-                    "copyrightLink": (
-                        "https://github.com/Toyhom/Chinese-medical-dialogue-data"
-                    ),
+                    "rawStoragePath": "",
+                    "region": "bj",
                 },
+                "releaseStatus": 2,
+                "releaseErrCode": 0,
+                "releaseStoragePath": (
+                    "/easydata/_system_/dataset/ds-7pkzh1exthpuy10n/texts/jsonl"
+                ),
+                "releaseProgress": 0,
+                "remark": "",
+                "annotatedEntityCount": 792099,
+                "entityCount": 792099,
+                "labelCount": 1,
+                "memorySize": 513.42,
+                "characterCount": 173338860,
+                "isEnhancing": False,
+                "enhanceStatus": -1,
+                "hasEnhance": False,
+                "isSelfInstructEnhance": False,
+                "interAnnoRunning": False,
+                "hardSampleCount": 0,
+                "etlStatus": 0,
+                "hasEtl": False,
+                "isPipelineEtl": False,
+                "teamAnnoStatus": -1,
+                "hasTeamAnno": False,
+                "promptOptimizeStatus": 0,
+                "demandStatus": "",
+                "view": 2446,
+                "usage": 262,
+                "description": "中文医疗对话数据集由792099个问答对组成，包括男科、内科、妇产科、肿瘤科、儿科和外科",
+                "tag": [
+                    {"name": "文本对话非排序"},
+                    {"name": "限定式问答"},
+                    {"name": "调优"},
+                ],
+                "license": "MIT",
+                "copyright": "toyhom",
+                "copyrightLink": (
+                    "https://github.com/Toyhom/Chinese-medical-dialogue-data"
+                ),
             },
-            "status": 200,
-            "success": True,
-        }
-    )
+        },
+        "status": 200,
+        "success": True,
+    }
+    if args["datasetId"] == "ds-mock-generic":
+        resp["result"]["versionInfo"]["projectType"] = 401
+        resp["result"]["versionInfo"]["templateType"] = 40100
+    return json_response(resp)
 
 
 @app.route(Consts.DatasetStatusFetchInBatchAPI, methods=["POST"])

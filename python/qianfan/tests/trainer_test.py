@@ -36,6 +36,7 @@ from qianfan.trainer.configs import TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.post_pretrain import PostPreTrain
 
 
 class MyEventHandler(EventHandler):
@@ -60,24 +61,29 @@ def test_load_data_action():
         qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
     )
 
-    res = LoadDataSetAction(preset).exec()
+    res = LoadDataSetAction(
+        preset, dataset_template=console_consts.DataTemplateType.NonSortedConversation
+    ).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
 
 
 def test_train_action():
-    ds_id = 111
-    ta = TrainAction("ERNIE-Bot-turbo-0725")
+    ta = TrainAction(
+        train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.PostPretrain
+    )
 
     output = ta.exec(
         input={
-            "datasets": [
-                {"type": console_consts.TrainDatasetType.Platform.value, "id": ds_id}
-            ]
+            "datasets": {
+                "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
+                "versions": [{"versionBosUri": "bos:/aaa/"}],
+            }
         }
     )
     assert isinstance(output, dict)
     assert "task_id" in output and "job_id" in output
+    assert isinstance(output["task_id"], str) and output["task_id"] != ""
 
 
 def test_model_publish_action():
@@ -102,7 +108,6 @@ def test_service_deploy_action():
 def test_trainer_sft_run():
     train_config = TrainConfig(
         epoch=1,
-        batch_size=4,
         learning_rate=0.00002,
         max_seq_len=4096,
         trainset_rate=20,
@@ -137,7 +142,7 @@ def test_trainer_sft_run_from_bos():
         )
         sft_task.run()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/ds.jsonl"
+        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/"
     )
     sft_task.run()
     res = sft_task.result
@@ -150,7 +155,11 @@ def test_trainer_sft_run_from_bos():
 
 def test_trainer_sft_with_deploy():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
+        epoch=1,
+        batch_size=4,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        peft_type=PeftType.ALL,
     )
     deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
@@ -297,7 +306,11 @@ def test_eval_action_resume():
 
 def test_trainer_sft_with_eval():
     train_config = TrainConfig(
-        epoch=1, batch_size=4, learning_rate=0.00002, max_seq_len=4096
+        epoch=1,
+        batch_size=4,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        peft_type=PeftType.LoRA,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "train", console_consts.DataTemplateType.NonSortedConversation
@@ -374,25 +387,75 @@ def test_train_limit__or__():
 
 def test_train_config_validate():
     conf = TrainConfig(epoch=4, batch_size=4, max_seq_len=4096, learning_rate=0.0002)
-    res = conf.validate_config(TrainLimit(epoch_limit=(1, 2)))
+    # 不存在的字段
+    res = conf.validate_config(TrainLimit(epoch=(1, 2)))
     assert not res
-    res = conf.validate_config(TrainLimit(epoch_limit=(1, 10)))
-    assert res
-    res = conf.validate_config(TrainLimit(max_seq_len_options=(1, 4096)))
-    assert res
-
-    res = conf.validate_valid_fields(
-        TrainLimit(supported_hyper_params=["epoch", "batch_size"])
-    )
-    assert res != ""
-    res = conf.validate_valid_fields(
+    res = conf.validate_config(TrainLimit(epoch=(1, 2), batch_size=(1, 20)))
+    assert not res
+    res = conf.validate_config(
         TrainLimit(
-            supported_hyper_params=[
-                "epoch",
-                "batch_size",
-                "max_seq_len",
-                "learning_rate",
-            ]
+            epoch=(1, 8),
+            batch_size=(1, 10),
+            max_seq_len=[1024, 2048, 4096],
+            learning_rate=(0.000001, 0.1),
         )
     )
-    assert res == ""
+    assert res
+
+
+def test_ppt():
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    ppt_trainer = PostPreTrain(
+        train_type="ERNIE-Speed",
+        dataset=ppt_ds,
+    )
+    ppt_trainer.run()
+    res = ppt_trainer.output
+    assert "task_id" in res and "job_id" in res
+
+
+def test_ppt_with_sft():
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    ppt_trainer = PostPreTrain(
+        train_type="ERNIE-Speed",
+        dataset=ppt_ds,
+    )
+    ppt_trainer.run()
+    assert "task_id" in ppt_trainer.output and "job_id" in ppt_trainer.output
+
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    sft_trainer = LLMFinetune(
+        dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
+    )
+    sft_trainer.run()
+    assert "model_version_id" in sft_trainer.output and "model_id" in sft_trainer.output
+
+
+def test_all_default_config():
+    from qianfan.trainer.configs import (
+        DefaultPostPretrainTrainConfigMapping,
+        DefaultTrainConfigMapping,
+    )
+
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    from qianfan.utils import log_info
+
+    for k in DefaultTrainConfigMapping.keys():
+        log_info(f"current: {k}")
+        LLMFinetune(
+            train_type=k,
+            dataset=sft_ds,
+        )
+
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    for k in DefaultPostPretrainTrainConfigMapping.keys():
+        PostPreTrain(
+            train_type=k,
+            dataset=ppt_ds,
+        )

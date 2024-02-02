@@ -38,5 +38,6 @@ class QianfanChatRequestSettings(QianfanRequestSettings):
     messages: Optional[List[Dict[str, Any]]] = None
 
 
-class QianfanEmbeddingRequestSettings(QianfanRequestSettings):
+class QianfanEmbeddingRequestSettings(AIRequestSettings):
+    ai_model_id: Optional[str] = Field(None, serialization_alias="model")
     texts: Optional[List[str]] = None

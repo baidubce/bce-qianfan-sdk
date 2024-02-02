@@ -2,8 +2,9 @@ on:
   push:
     branches: ['main']
   pull_request:
-    path:
+    paths:
       - "go/**"
+      - "python/qianfan/tests/utils/mock_server.py"
   workflow_dispatch:
 
 name: Go CI

@@ -453,7 +453,7 @@ class Model(object):
     @classmethod
     @console_api_request
     def user_list(
-        self,
+        cls,
         name_filter: Optional[str] = None,
         model_type: Optional[str] = None,
         order_by: Optional[str] = None,
@@ -502,7 +502,7 @@ class Model(object):
     @classmethod
     @console_api_request
     def batch_delete_model(
-        self,
+        cls,
         model_ids: List[Any],
         **kwargs: Any,
     ) -> QfRequest:
@@ -528,7 +528,7 @@ class Model(object):
     @classmethod
     @console_api_request
     def batch_delete_model_version(
-        self,
+        cls,
         model_version_ids: List[Any],
         **kwargs: Any,
     ) -> QfRequest:
@@ -543,9 +543,29 @@ class Model(object):
         Note:
         The `@console_api_request` decorator is applied to this method, enabling it to
         send the generated QfRequest and return a QfResponse to the user.
-
         """
         req = QfRequest(method="POST", url=Consts.ModelVersionBatchDeleteAPI)
         req.json_body = {"modelVersionIds": model_version_ids}
 
+        return req
+
+    @classmethod
+    @console_api_request
+    def evaluable_model_list(
+        cls,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        get all evaluable model list
+
+        Parameters:
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+        """
+
+        req = QfRequest(method="POST", url=Consts.ModelEvaluableModelListAPI)
         return req

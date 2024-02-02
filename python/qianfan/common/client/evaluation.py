@@ -16,7 +16,7 @@
 from typing import List, Optional, Set
 
 import typer
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.pretty import Pretty
 from rich.table import Table
 
@@ -42,6 +42,7 @@ from qianfan.evaluation.evaluator import (
     QianfanRuleEvaluator,
 )
 from qianfan.model import Model
+from qianfan.resources.console.model import Model as ModelResource
 
 evaluation_app = typer.Typer(
     no_args_is_help=True,
@@ -52,6 +53,34 @@ evaluation_app = typer.Typer(
 RULE_EVALUATOR_PANEL = "Rule Evaluator Options"
 REFEREE_EVALUATOR_PANEL = "Referee Evaluator Options"
 MANUAL_EVALUATOR_PANEL = "Manual Evaluator Options"
+
+
+@credential_required
+def list_evaluable_models(
+    ctx: typer.Context, param: typer.CallbackParam, value: bool
+) -> None:
+    """
+    Print models of ChatCompletion and exit.
+    """
+    if value:
+        model_list = ModelResource.evaluable_model_list()["result"]
+        console = Console()
+        table = Table(show_lines=True)
+        col_list = ["Model Name", "Train Type", "Model Version List"]
+        for col in col_list:
+            table.add_column(col)
+        for model in model_list:
+            row_items: List[RenderableType] = []
+            row_items.append(f"{model['modelName']}\n[dim]{model['modelIdStr']}[/]")
+            row_items.append(model["trainType"])
+            version_list = [
+                f"{version['version']} [dim]({version['modelVersionIdStr']})[/]"
+                for version in model["modelVersionList"]
+            ]
+            row_items.append("\n".join(version_list))
+            table.add_row(*row_items)
+        console.print(table)
+        raise typer.Exit()
 
 
 @evaluation_app.command()
@@ -110,6 +139,13 @@ def run(
         None,
         help="Dimensions for evaluation. Use ',' to split multiple dimensions.",
         rich_help_panel=MANUAL_EVALUATOR_PANEL,
+    ),
+    list_evaluable_models: Optional[bool] = typer.Option(
+        None,
+        "--list-evaluable-models",
+        callback=list_evaluable_models,
+        is_eager=True,
+        help="Print evaluable models.",
     ),
 ) -> None:
     """

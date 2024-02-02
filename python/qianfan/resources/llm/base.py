@@ -47,6 +47,7 @@ from qianfan.version import VERSION
 # This constant is used to express no model is spcified,
 # so that SDK still can get the requirements of API from _supported_models()
 UNSPECIFIED_MODEL = "UNSPECIFIED_MODEL"
+MAX_WORKER_THREAD_COUNT = 100000
 
 
 class BatchRequestFuture(object):
@@ -62,16 +63,19 @@ class BatchRequestFuture(object):
         """
         Init batch request future
         """
-        future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
         max_workers = worker_num if worker_num else len(tasks) + 1
+        if max_workers > MAX_WORKER_THREAD_COUNT:
+            max_workers = MAX_WORKER_THREAD_COUNT
+
+        self._future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        self._finished_count = 0
+        self._task_count = len(tasks)
+        self._lock = threading.Lock()
         for task in tasks:
             future = self._executor.submit(task)
             future.add_done_callback(self._future_callback)
-            future_list.append(future)
-        self._future_list = future_list
-        self._finished_count = 0
-        self._lock = threading.Lock()
+            self._future_list.append(future)
 
     def _future_callback(
         self, fn: Future[Union[QfResponse, Iterator[QfResponse]]]
@@ -81,7 +85,7 @@ class BatchRequestFuture(object):
         """
         with self._lock:
             self._finished_count += 1
-            if self._finished_count == len(self._future_list):
+            if self._finished_count == self._task_count:
                 log_info("All tasks finished, exeutor will be shutdown")
                 self._executor.shutdown(wait=False)
 

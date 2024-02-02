@@ -132,9 +132,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.qf_dataset_id = qf_data_src.id
             return {
                 "datasets": {
-                    "sourceType": (
-                        console_consts.TrainDatasetSourceType.Platform.value
-                    ),
+                    "sourceType": console_consts.TrainDatasetSourceType.Platform.value,
                     "versions": [
                         {
                             "versionId": qf_data_src.id,
@@ -445,7 +443,6 @@ class TrainAction(
             train_mode=self.train_mode,
             **kwargs,
         )
-        print("==>>", resp)
 
         self.job_id = str(resp["result"]["jobId"])
         log_debug(f"[train_action] create {self.train_mode} train job: {self.job_id}")

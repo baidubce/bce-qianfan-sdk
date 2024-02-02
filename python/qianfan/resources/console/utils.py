@@ -111,7 +111,7 @@ def async_console_api_request(
 
 
 def _get_console_v2_query(
-    action: Optional[str] = None, query: dict[str, Any] = {}
+    action: Optional[str] = None, query: Dict[str, Any] = {}
 ) -> Dict[str, Any]:
     res = copy.deepcopy(query)
     if action is not None:

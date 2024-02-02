@@ -65,16 +65,10 @@ def test_load_data_action():
     assert "datasets" in res
 
 
-@pytest.mark.timeout(15)
 def test_train_action():
     ta = TrainAction(
         train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.PostPretrain
     )
-
-    from qianfan.utils import enable_log
-    from qianfan.utils.logging import TRACE_LEVEL
-
-    enable_log(TRACE_LEVEL)
 
     output = ta.exec(
         input={
@@ -86,6 +80,7 @@ def test_train_action():
     )
     assert isinstance(output, dict)
     assert "task_id" in output and "job_id" in output
+    assert isinstance(output["task_id"], str) and output["task_id"] != ""
 
 
 def test_model_publish_action():
@@ -382,31 +377,17 @@ def test_train_limit__or__():
 
 def test_train_config_validate():
     conf = TrainConfig(epoch=4, batch_size=4, max_seq_len=4096, learning_rate=0.0002)
-    res = conf.validate_config(TrainLimit(epoch_limit=(1, 2)))
+    # 不存在的字段
+    res = conf.validate_config(TrainLimit(epoch=(1, 2)))
     assert not res
-    res = conf.validate_config(TrainLimit(epoch_limit=(1, 10)))
-    assert res
-    res = conf.validate_config(TrainLimit(max_seq_len_options=(1, 4096)))
-    assert res
-
     res = conf.validate_config(TrainLimit(epoch=(1, 2), batch_size=(1, 20)))
-    print(res)
     assert not res
     res = conf.validate_config(
         TrainLimit(
-            supported_hyper_params=[
-                "epoch",
-                "batch_size",
-                "max_seq_len",
-                "learning_rate",
-            ]
+            epoch=(1, 8),
+            batch_size=(1, 10),
+            max_seq_len=[1024, 2048, 4096],
+            learning_rate=(0.000001, 0.1),
         )
     )
     assert res
-
-
-def test_a():
-    from qianfan.utils.utils import snake_to_camel
-
-    a = "my_name_low"
-    print(a[:1] + snake_to_camel(a[1:]))

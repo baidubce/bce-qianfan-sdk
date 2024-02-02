@@ -117,6 +117,8 @@ class TrainConfig(BaseModel):
             if limit_type is None:
                 continue
             value = getattr(self, k)
+            if value is None:
+                continue
             if k not in train_limit:
                 log_warn(
                     f"train_config hyper params '{k}' is not in supported_params:"
@@ -130,10 +132,12 @@ class TrainConfig(BaseModel):
             elif limit_type == LimitType.MultipleChoice:
                 for v in value:
                     res &= self._validate_options(v, train_limit[k], k)
+            if not res:
+                break
         return res
 
     def _validate_range(
-        self, value: Any, limit_ranges: List[Optional[Tuple[T, T]]], field_name: str
+        self, value: Any, limit_ranges: Optional[Tuple[T, T]], field_name: str
     ) -> bool:
         """
         return False if value is not in limit_ranges
@@ -149,15 +153,14 @@ class TrainConfig(BaseModel):
         """
         if value is None or limit_ranges is None:
             return True
-        for r in limit_ranges:
-            if r is None:
-                continue
-            if r[0] > value or r[1] < value:
-                log_warn(
-                    f"train_config current {field_name} is {value}:"
-                    f" but suggested {field_name} is in {r}"
-                )
-                return False
+        if limit_ranges is None:
+            return True
+        if limit_ranges[0] > value or limit_ranges[1] < value:
+            log_warn(
+                f"train_config current {field_name} is {value}:"
+                f" but suggested {field_name} is in {limit_ranges}"
+            )
+            return False
         return True
 
     def _validate_options(
@@ -190,6 +193,7 @@ class TrainLimit(dict):
     def __init__(self, **kwargs: Any):
         for k, v in kwargs.items():
             setattr(self, k, v)
+            self.__setitem__(k, v)
 
     def __or__(self, other: Any) -> "TrainLimit":
         assert isinstance(other, TrainLimit)

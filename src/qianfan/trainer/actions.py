@@ -46,7 +46,7 @@ from qianfan.utils import (
     log_warn,
     utils,
 )
-from qianfan.utils.bos_uploader import is_invalid_bos_path
+from qianfan.utils.bos_uploader import is_valid_bos_path
 from qianfan.utils.utils import first_lower_case, snake_to_camel
 
 
@@ -83,7 +83,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.dataset = dataset
         if dataset is not None:
             return
-        elif self.bos_path is not None and is_invalid_bos_path(self.bos_path):
+        elif bos_path is not None:
+            if not is_valid_bos_path(bos_path):
+                raise InvalidArgumentError(f"invalid bos_path {bos_path}")
             self.bos_path = bos_path
         else:
             raise InvalidArgumentError("dataset or bos_path must be set")
@@ -443,6 +445,8 @@ class TrainAction(
             train_mode=self.train_mode,
             **kwargs,
         )
+        print("==>>", resp)
+
         self.job_id = str(resp["result"]["jobId"])
         log_debug(f"[train_action] create {self.train_mode} train job: {self.job_id}")
 

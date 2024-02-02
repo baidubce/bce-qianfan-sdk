@@ -144,7 +144,7 @@ class LLMFinetune(Trainer):
                 )
         elif dataset_bos_path:
             self.load_data_action = LoadDataSetAction(
-                dataset=dataset,
+                bos_path=dataset_bos_path,
                 event_handler=event_handler,
                 **kwargs,
             )

@@ -236,7 +236,7 @@ class Model(
                 task_id=self.task_id,
                 **kwargs,
             )
-            job_status = job_status_resp["result"]["trainStatus"]
+            job_status = job_status_resp["result"]["runStatus"]
             log_info(f"model publishing keep polling, current status {job_status}")
             if job_status == console_const.TrainStatus.Running:
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)

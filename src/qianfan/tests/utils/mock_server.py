@@ -818,8 +818,9 @@ def finetune_v2_task_detail(body):
     r = request.json
     task_id = r["taskId"]
     global finetune_task_call_times
-    call_times = finetune_task_call_times.get((task_id, ""))
+    call_times = finetune_task_call_times.get(task_id)
     if call_times is None:
+        finetune_task_call_times[task_id] = 0
         return json_response(
             {
                 "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
@@ -832,7 +833,7 @@ def finetune_v2_task_detail(body):
                     "trainMode": "PostPretrain",
                     "parameterScale": "FullFineTuning",
                     "runStatus": "Running",
-                    "runProgress": "51%",
+                    "runProgress": "0%",
                     "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
                     "createDate": "2024-01-30T09:41:54Z",
                     "finishDate": "0000-00-00T00:00:00Z",
@@ -841,10 +842,10 @@ def finetune_v2_task_detail(body):
         )
     else:
         MAX_CALL_TIMES = 10
-        finetune_task_call_times[(task_id, "")] += 1
+        finetune_task_call_times[task_id] += 1
         return json_response(
             {
-                "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
+                "requestId": "754dc75c-3515-4ddd-88ff-59caaaaaaa",
                 "result": {
                     "taskId": task_id,
                     "jobId": "job-s66h7p9gqqu1",

@@ -348,6 +348,21 @@ class Completion(BaseResource):
                     "tool_choice",
                 },
             ),
+            "Mixtral-8x7B-Instruct": QfLLMInfo(
+                endpoint="/chat/mixtral_8x7b_instruct",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "user_id",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "penalty_score",
+                    "stop",
+                    "tools",
+                    "tool_choice",
+                },
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 required_keys={"prompt"},

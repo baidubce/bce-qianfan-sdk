@@ -70,3 +70,9 @@ jobs:
           tag: ${{ format('go/qianfan/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main
+      - name: Update Go module index
+        env:
+          GOPROXY: proxy.golang.org
+          VERSION: ${{ steps.check-version.outputs.version }}
+        run: |
+          go list -m github.com/baidubce/bce-qianfan-sdk/go/qianfan@v$VERSION

@@ -1,0 +1,66 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Python Release
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./python
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip3 install poetry
+      - name: run lint
+        run: make lint
+      - name: run UT
+        run: make test
+      - name: Build artifacts
+        run: make build
+      - name: Build docs
+        run: make doc
+      - name: Check Version
+        id: check-version
+        run: |
+          echo version=$(poetry version --short) >> $GITHUB_OUTPUT
+      - name: cleanup before release
+        run: |
+          zip -r ./output/docs.zip ./output/docs/_build/html
+          rm -rf ./output/docs
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{ format('Python v{0}', steps.check-version.outputs.version) }}
+          artifacts: "output/*"
+          token: ${{ secrets.QF_GITHUB_TOKEN }}
+          draft: false
+          generateReleaseNotes: true
+          tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
+          prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
+          commit: main
+      - name: release to pypi
+        env: 
+          TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          export TAG_NAME=${{ steps.check-version.outputs.version }}
+          echo "Triggered by tag: $TAG_NAME"
+          bash ./scripts/release_github.sh
+

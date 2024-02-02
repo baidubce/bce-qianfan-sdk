@@ -1255,7 +1255,13 @@ class Dataset(Table):
                 }
             )
 
-        return Dataset.create_from_pyobj(new_list)
+        return Dataset.create_from_pyobj(
+            new_list,
+            input_columns=["prompt"],
+            reference_column=OldReferenceColumnName,
+            eval_input_column=NewInputPromptColumnName,
+            eval_llm_output_column=LLMOutputColumnName,
+        )
 
     def _get_completion_return_dataset(
         self,
@@ -1564,9 +1570,6 @@ class Dataset(Table):
         input_column = self.input_columns[0]
 
         dataset = deepcopy(self)
-        if not dataset.is_dataset_grouped() and not dataset.is_dataset_packed():
-            dataset.add_default_group_column()
-
         if dataset.is_dataset_grouped():
             dataset.pack()
 

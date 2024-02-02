@@ -128,7 +128,7 @@ class FineTune(object):
 
     @classmethod
     @console_api_request
-    def stop_job(cls, task_id: int, job_id: int, **kwargs: Any) -> QfRequest:
+    def stop_job(cls, task_id: str, job_id: str, **kwargs: Any) -> QfRequest:
         """
         Stop a fine-tuning job.
 
@@ -136,9 +136,9 @@ class FineTune(object):
         specific task.
 
         Parameters:
-          task_id (int):
+          task_id (str):
             The identifier of the task associated with the fine-tuning job.
-          job_id (int):
+          job_id (str):
             The identifier of the fine-tuning job to be stopped.
           kwargs:
             Additional keyword arguments that can be passed to customize the request.

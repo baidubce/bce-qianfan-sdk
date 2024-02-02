@@ -232,9 +232,8 @@ class Model(
             raise InvalidArgumentError("task id or job id not found")
         # 判断训练任务已经训练完成
         while True:
-            job_status_resp = api.FineTune.get_job(
+            job_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
-                job_id=self.job_id,
                 **kwargs,
             )
             job_status = job_status_resp["result"]["trainStatus"]

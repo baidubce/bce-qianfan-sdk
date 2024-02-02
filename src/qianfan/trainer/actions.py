@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan import resources as api
@@ -29,13 +30,14 @@ from qianfan.trainer.base import (
     with_event,
 )
 from qianfan.trainer.configs import (
-    DefaultTrainConfigMapping,
     DefaultPostPretrainTrainConfigMapping,
-    ModelInfoMapping,
+    DefaultTrainConfigMapping,
+    PeftType,
     TrainConfig,
     TrainLimit,
-    PeftType,
+    get_model_info,
 )
+from qianfan.trainer.consts import ServiceStatus, TrainStatus
 from qianfan.utils import (
     bos_uploader,
     log_debug,
@@ -45,6 +47,7 @@ from qianfan.utils import (
     utils,
 )
 from qianfan.utils.bos_uploader import is_invalid_bos_path
+from qianfan.utils.utils import first_lower_case, snake_to_camel
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -80,8 +83,10 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.dataset = dataset
         if dataset is not None:
             return
-        elif is_invalid_bos_path(self.bos_path):
+        elif self.bos_path is not None and is_invalid_bos_path(self.bos_path):
             self.bos_path = bos_path
+        else:
+            raise InvalidArgumentError("dataset or bos_path must be set")
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -93,19 +98,23 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         """
         if self.bos_path is not None:
             if not self.bos_path.endswith("/"):
-                bos_path = bos_uploader.generate_bos_file_parent_path(self.bos_path)
-                log_warn(f"input bos_path {self.bos_path} is a file, auto_convert to dir: {bos_path}")
+                bos_path = f'{Path(f"/{self.bos_path}").parent}'
+                log_warn(
+                    f"input bos_path {self.bos_path} is a file, auto_convert to dir:"
+                    f" {bos_path}"
+                )
             else:
                 bos_path = self.bos_path
             return {
-                "datasets": [
-                    {
-                        "bosPath": bos_path,
-                        "type": console_consts.TrainDatasetType.PrivateBos.value,
-                    }
-                ]
+                "datasets": {
+                    "sourceType": (
+                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                    ),
+                    "versions": [{"versionBosUri": bos_path}],
+                }
             }
         from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
+
         if self.dataset is None:
             raise InvalidArgumentError("dataset or bos_path must be set")
         if self.dataset.inner_data_source_cache is None:
@@ -120,25 +129,33 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             log_debug("[load_dataset_action] dataset loaded successfully")
             self.qf_dataset_id = qf_data_src.id
             return {
-                "datasets": [
-                    {
-                        "id": qf_data_src.old_dataset_id,
-                        "type": console_consts.TrainDatasetType.Platform.value,
-                    }
-                ]
+                "datasets": {
+                    "sourceType": (
+                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                    ),
+                    "versions": [
+                        {
+                            "versionId": qf_data_src.id,
+                        }
+                    ],
+                }
             }
         elif isinstance(self.dataset.inner_data_source_cache, BosDataSource):
             log_debug("[load_dataset_action] prepare train-set in BOS")
             bos_data_src = cast(BosDataSource, self.dataset.inner_data_source_cache)
             return {
-                "datasets": [
-                    {
-                        "type": console_consts.TrainDatasetType.PrivateBos.value,
-                        "bosPath": bos_uploader.generate_bos_file_parent_path(
-                            bos_data_src.bucket, bos_data_src.bos_file_path
-                        ),
-                    }
-                ]
+                "datasets": {
+                    "sourceType": (
+                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                    ),
+                    "versions": [
+                        {
+                            "versionBosUri": bos_uploader.generate_bos_file_parent_path(
+                                bos_data_src.bucket, bos_data_src.bos_file_path
+                            )
+                        }
+                    ],
+                }
             }
         else:
             raise InvalidArgumentError("dataset must be set")
@@ -181,7 +198,16 @@ class TrainAction(
 
     Input:
     ```
-    {'datasets':[{'type': 1, 'id': "ds-xxx"}]}
+    {'datasets': {"sourceType": (
+                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                    ),
+                    "versions": [
+                        {
+                            "versionBosUri": bos_uploader.generate_bos_file_parent_path(
+                                bos_data_src.bucket, bos_data_src.bos_file_path
+                            )
+                        }
+                    ]}
     ```
 
     Output:
@@ -218,9 +244,8 @@ class TrainAction(
         self,
         train_type: Optional[str] = None,
         train_config: Optional[TrainConfig] = None,
-        base_model: Optional[str] = None,
-        task_id: Optional[int] = None,
-        job_id: Optional[int] = None,
+        task_id: Optional[str] = None,
+        job_id: Optional[str] = None,
         train_mode: Optional[console_consts.TrainMode] = None,
         task_name: Optional[str] = None,
         task_description: Optional[str] = None,
@@ -256,23 +281,24 @@ class TrainAction(
         if self.task_id is not None and self.job_id is not None:
             # if incremental train
             self.is_incr = True
+            if train_config is None:
+                raise InvalidArgumentError("incr_config train_config must be specified")
             self.train_config = train_config
         else:
             if train_type is None:
                 raise InvalidArgumentError("train_type must be specified")
             # train from base model
             self.train_type = train_type
-            model_info = ModelInfoMapping.get(self.train_type)
+            assert train_mode
+            model_info = get_model_info(train_mode, self.train_type)
             if model_info is None:
-                log_warn(
-                    f"unknown train model type: {self.train_type} is not found"
-                )
+                log_warn(f"unknown train model type: {self.train_type} is not found")
             self.train_config = (
                 train_config
                 if train_config is not None
-                else self.get_default_train_config(train_type, train_mode, "ALL")
+                else self.get_default_train_config(train_type, train_mode, PeftType.ALL)
             )
-        # self.validateTrainConfig()
+            self.validateTrainConfig()
         if train_mode is not None:
             self.train_mode = train_mode
         self.task_name = self._generate_job_name(task_name, self.train_type)
@@ -285,7 +311,9 @@ class TrainAction(
         if task_name is not None:
             return task_name
         model_info = (
-            ModelInfoMapping.get(train_type) if train_type is not None else None
+            get_model_info(self.train_mode, train_type)
+            if train_type is not None
+            else None
         )
         return (
             f"job_{utils.generate_letter_num_random_id()}"
@@ -302,13 +330,11 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("none train_config")
-        if self.train_type not in ModelInfoMapping:
-            log_warn(
-                f"[train_action] train_type {self.train_type} not found, it may be not"
-                " supported"
-            )
         else:
-            train_type_model_info = ModelInfoMapping[self.train_type]
+            assert self.train_type
+            train_type_model_info = get_model_info(self.train_mode, self.train_type)
+            if train_type_model_info is None:
+                return
             if (
                 self.train_config.peft_type
                 not in train_type_model_info.support_peft_types
@@ -317,7 +343,9 @@ class TrainAction(
                     f"[train_action] train_type {self.train_type}, peft_type"
                     f" {self.train_config.peft_type} not found, it may be not supported"
                 )
+
             else:
+                assert train_type_model_info
                 if (
                     train_type_model_info.specific_peft_types_params_limit is not None
                     and self.train_config.peft_type
@@ -347,7 +375,6 @@ class TrainAction(
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
         self.train_config.validate_config(train_limit)
-        self.train_config.validate_valid_fields(train_limit)
 
     def _exec_incremental(
         self, input: Dict[str, Any], **kwargs: Dict
@@ -398,15 +425,14 @@ class TrainAction(
             self._input = input
         return self._exec(self._input, **kwargs)
 
-    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def _exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
         # 校验数据集
-        train_sets = input.get("datasets")
-        if train_sets is None or len(train_sets) == 0:
+        ds_config = input.get("datasets")
+        if ds_config is None:
             raise InvalidArgumentError("train set must be set")
-
-        # 判断是否增量训练
-        if self.is_incr:
-            return self._exec_incremental(input, **kwargs)
+        assert isinstance(ds_config, dict)
+        assert self.train_config
+        ds_config["splitRatio"] = self.train_config.trainset_rate
 
         # request for create model train task
         assert self.train_type is not None
@@ -417,47 +443,34 @@ class TrainAction(
             train_mode=self.train_mode,
             **kwargs,
         )
-        self.job_id = cast(int, resp["result"]["jobId"])
+        self.job_id = str(resp["result"]["jobId"])
         log_debug(f"[train_action] create {self.train_mode} train job: {self.job_id}")
 
         assert self.train_config is not None
         hyper_params_dict = {
-            "epoch": self.train_config.epoch,
-            "learningRate": self.train_config.learning_rate,
-            "batchSize": self.train_config.batch_size,
-            "maxSeqLen": self.train_config.max_seq_len,
-            "loggingSteps": self.train_config.logging_steps,
-            "warmupRatio": self.train_config.warmup_ratio,
-            "weightDecay": self.train_config.weight_decay,
-            "loraRank": self.train_config.lora_rank,
-            "loraAllLinear": self.train_config.lora_all_linear,
-            "loraAlpha": self.train_config.lora_alpha,
-            "loraDropout": self.train_config.lora_dropout,
-            "schedulerName": self.train_config.scheduler_name,
+            **self.train_config.dict(exclude={"peft_type", "trainset_rate", "extras"}),
             **self.train_config.extras,
         }
         hyper_params_dict = {
-            key: value for key, value in hyper_params_dict.items() if value is not None
+            first_lower_case(snake_to_camel(key)): value
+            for key, value in hyper_params_dict.items()
+            if value is not None
         }
-        ds_config = {
-            "sourceType": "Platform",
-            "datasets": [
-                {
-                    "datasetId": input["datasets"][0]["id"]
-                }
-            ],
-            "splitRatio": 20
-        }
-        
-        
-        create_job_resp = api.FineTune.V2.create_task(
+        ds_config = input["datasets"]
+        log_debug(f"train with ds_config: { ds_config}")
+        log_debug(f"train with hyper_params: { hyper_params_dict}")
+        if self.is_incr:
+            # 增量训练
+            kwargs["incrementTaskId"] = self.task_id
+            log_info(f"train with incrementTaskId: { self.task_id}")
+        create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
-            params_scale=self.train_config.peft_type.value,
+            params_scale=PeftType.ALL.value,
             hyper_params=hyper_params_dict,
             dataset_config=ds_config,
-            **kwargs)
-        self.task_id = cast(int, create_job_resp["result"]["taskId"])
-        self.task_str_id = create_job_resp["result"]["uuid"]
+            **kwargs,
+        )
+        self.task_id = str(create_task_resp["result"]["taskId"])
         log_debug(f"[train_action] create {self.train_mode} train task: {self.task_id}")
 
         # 获取job状态，是否训练完成
@@ -547,13 +560,26 @@ class TrainAction(
         api.FineTune.stop_job(self.task_id, self.job_id)
         log_debug(f"train job {self.task_id}/{self.job_id} stopped")
 
-    def get_default_train_config(self, model_type: str, train_mode: console_consts.TrainMode, peft_mode: PeftType) -> TrainConfig:
+    def get_default_train_config(
+        self, model_type: str, train_mode: console_consts.TrainMode, peft_type: PeftType
+    ) -> TrainConfig:
         if train_mode == console_consts.TrainMode.PostPretrain:
-            return DefaultTrainConfigMapping.get(model_type)[peft_mode]
-        return DefaultTrainConfigMapping.get(
-            model_type,
-            DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
-        )[peft_mode]
+            model_info = DefaultPostPretrainTrainConfigMapping.get(
+                model_type,
+                # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
+            )
+        else:
+            model_info = DefaultTrainConfigMapping.get(
+                model_type,
+                # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
+            )
+        if model_info is None:
+            raise InvalidArgumentError(
+                f"can not find default config for {model_type} in {peft_type}"
+            )
+        train_config = model_info[peft_type]
+        train_config.peft_type = peft_type
+        return train_config
 
 
 class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -902,3 +928,42 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         res = self._exec(llm, **kwargs)
         self.result = {"eval_res": res, **self._input}
         return self.result
+
+
+action_mapping: Dict[str, Dict[str, Any]] = {
+    LoadDataSetAction.__class__.__name__: {
+        ActionState.Preceding: TrainStatus.DatasetLoading,
+        ActionState.Running: TrainStatus.DatasetLoading,
+        ActionState.Done: TrainStatus.DatasetLoaded,
+        ActionState.Error: TrainStatus.DatasetLoadFailed,
+        ActionState.Stopped: TrainStatus.DatasetLoadStopped,
+    },
+    TrainAction.__class__.__name__: {
+        ActionState.Preceding: TrainStatus.TrainCreated,
+        ActionState.Running: TrainStatus.Training,
+        ActionState.Done: TrainStatus.TrainFinished,
+        ActionState.Error: TrainStatus.TrainFailed,
+        ActionState.Stopped: TrainStatus.TrainStopped,
+    },
+    ModelPublishAction.__class__.__name__: {
+        ActionState.Preceding: TrainStatus.ModelPublishing,
+        ActionState.Running: TrainStatus.ModelPublishing,
+        ActionState.Done: TrainStatus.ModelPublished,
+        ActionState.Error: TrainStatus.ModelPublishFailed,
+        ActionState.Stopped: TrainStatus.ModelPublishFailed,
+    },
+    DeployAction.__class__.__name__: {
+        ActionState.Preceding: ServiceStatus.Created,
+        ActionState.Running: ServiceStatus.Deploying,
+        ActionState.Done: ServiceStatus.Deployed,
+        ActionState.Error: ServiceStatus.DeployFailed,
+        ActionState.Stopped: ServiceStatus.DeployStopped,
+    },
+    EvaluateAction.__class__.__name__: {
+        ActionState.Preceding: TrainStatus.EvaluationCreated,
+        ActionState.Running: TrainStatus.EvaluationRunning,
+        ActionState.Done: TrainStatus.EvaluationFinished,
+        ActionState.Error: TrainStatus.EvaluationFailed,
+        ActionState.Stopped: TrainStatus.EvaluationStopped,
+    },
+}

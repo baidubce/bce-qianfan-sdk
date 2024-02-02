@@ -65,15 +65,23 @@ def test_load_data_action():
     assert "datasets" in res
 
 
+@pytest.mark.timeout(15)
 def test_train_action():
-    ds_id = 111
-    ta = TrainAction("ERNIE-Bot-turbo-0725")
+    ta = TrainAction(
+        train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.PostPretrain
+    )
+
+    from qianfan.utils import enable_log
+    from qianfan.utils.logging import TRACE_LEVEL
+
+    enable_log(TRACE_LEVEL)
 
     output = ta.exec(
         input={
-            "datasets": [
-                {"type": console_consts.TrainDatasetType.Platform.value, "id": ds_id}
-            ]
+            "datasets": {
+                "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
+                "versions": [{"versionBosUri": "bos:/aaa/"}],
+            }
         }
     )
     assert isinstance(output, dict)
@@ -381,11 +389,10 @@ def test_train_config_validate():
     res = conf.validate_config(TrainLimit(max_seq_len_options=(1, 4096)))
     assert res
 
-    res = conf.validate_valid_fields(
-        TrainLimit(supported_hyper_params=["epoch", "batch_size"])
-    )
-    assert res != ""
-    res = conf.validate_valid_fields(
+    res = conf.validate_config(TrainLimit(epoch=(1, 2), batch_size=(1, 20)))
+    print(res)
+    assert not res
+    res = conf.validate_config(
         TrainLimit(
             supported_hyper_params=[
                 "epoch",
@@ -395,4 +402,11 @@ def test_train_config_validate():
             ]
         )
     )
-    assert res == ""
+    assert res
+
+
+def test_a():
+    from qianfan.utils.utils import snake_to_camel
+
+    a = "my_name_low"
+    print(a[:1] + snake_to_camel(a[1:]))

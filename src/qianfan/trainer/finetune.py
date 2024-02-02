@@ -25,6 +25,7 @@ from qianfan.trainer.actions import (
     LoadDataSetAction,
     ModelPublishAction,
     TrainAction,
+    action_mapping,
 )
 from qianfan.trainer.base import (
     BaseAction,
@@ -38,9 +39,7 @@ from qianfan.trainer.configs import (
     TrainConfig,
 )
 from qianfan.trainer.consts import (
-    ActionState,
-    FinetuneStatus,
-    ServiceStatus,
+    TrainStatus,
 )
 
 
@@ -134,7 +133,9 @@ class LLMFinetune(Trainer):
                 )
             elif isinstance(dataset.inner_data_source_cache, BosDataSource):
                 self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs,
+                    dataset=dataset,
+                    event_handler=event_handler,
+                    **kwargs,
                 )
             else:
                 raise InvalidArgumentError(
@@ -143,7 +144,9 @@ class LLMFinetune(Trainer):
                 )
         elif dataset_bos_path:
             self.load_data_action = LoadDataSetAction(
-                dataset=dataset, event_handler=event_handler, **kwargs,
+                dataset=dataset,
+                event_handler=event_handler,
+                **kwargs,
             )
         else:
             raise InvalidArgumentError("either dataset or bos_path is required")
@@ -223,10 +226,10 @@ class LLMFinetune(Trainer):
             raise InvalidArgumentError("invalid pipeline to get status")
         action = self.ppls[0][str(self.ppls[0]._state)]
         if action is None:
-            return FinetuneStatus.Unknown
+            return TrainStatus.Unknown
         action_name = action.__class__.__name__
-        return fine_tune_action_mapping.get(action_name, {}).get(
-            action.state, FinetuneStatus.Unknown
+        return action_mapping.get(action_name, {}).get(
+            action.state, TrainStatus.Unknown
         )
 
     def stop(self, **kwargs: Dict) -> Trainer:
@@ -260,43 +263,3 @@ class LLMFinetune(Trainer):
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
         return ModelInfoMapping
-
-
-# mapping for action state -> fine-tune status
-fine_tune_action_mapping: Dict[str, Dict[str, Any]] = {
-    LoadDataSetAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.DatasetLoading,
-        ActionState.Running: FinetuneStatus.DatasetLoading,
-        ActionState.Done: FinetuneStatus.DatasetLoaded,
-        ActionState.Error: FinetuneStatus.DatasetLoadFailed,
-        ActionState.Stopped: FinetuneStatus.DatasetLoadStopped,
-    },
-    TrainAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.TrainCreated,
-        ActionState.Running: FinetuneStatus.Training,
-        ActionState.Done: FinetuneStatus.TrainFinished,
-        ActionState.Error: FinetuneStatus.TrainFailed,
-        ActionState.Stopped: FinetuneStatus.TrainStopped,
-    },
-    ModelPublishAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.ModelPublishing,
-        ActionState.Running: FinetuneStatus.ModelPublishing,
-        ActionState.Done: FinetuneStatus.ModelPublished,
-        ActionState.Error: FinetuneStatus.ModelPublishFailed,
-        ActionState.Stopped: FinetuneStatus.ModelPublishFailed,
-    },
-    DeployAction.__class__.__name__: {
-        ActionState.Preceding: ServiceStatus.Created,
-        ActionState.Running: ServiceStatus.Deploying,
-        ActionState.Done: ServiceStatus.Deployed,
-        ActionState.Error: ServiceStatus.DeployFailed,
-        ActionState.Stopped: ServiceStatus.DeployStopped,
-    },
-    EvaluateAction.__class__.__name__: {
-        ActionState.Preceding: FinetuneStatus.EvaluationCreated,
-        ActionState.Running: FinetuneStatus.EvaluationRunning,
-        ActionState.Done: FinetuneStatus.EvaluationFinished,
-        ActionState.Error: FinetuneStatus.EvaluationFailed,
-        ActionState.Stopped: FinetuneStatus.EvaluationStopped,
-    },
-}

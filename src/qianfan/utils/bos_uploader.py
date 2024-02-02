@@ -15,6 +15,7 @@
 utility for
 uploading content to bos
 """
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -24,7 +25,7 @@ from baidubce.services.bos.bos_client import BosClient
 
 from qianfan import get_config
 from qianfan.utils import log_info
-import re
+
 
 class BosHelper:
     def __init__(
@@ -124,14 +125,16 @@ def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
     p = Path(f"/{bucket_name}{absolute_path}")
     return f"bos:{p.parent}"
 
+
 def is_invalid_bos_path(path: str) -> bool:
-    pattern = r'^bos:/([a-zA-Z0-9_-]+(\/)?)*$'
+    pattern = r"^bos:/([a-zA-Z0-9_-]+(\/)?)*$"
     match = re.match(pattern, path)
-        
+
     if match:
         return True
     else:
         return False
+
 
 def parse_bos_path(bos_path: str) -> Tuple[str, str]:
     """解析 bos 路径，返回 bucket 和 path"""

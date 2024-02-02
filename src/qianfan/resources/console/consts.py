@@ -158,6 +158,11 @@ class TrainDatasetType(int, Enum):
     """私有Bos数据集"""
 
 
+class TrainDatasetSourceType(str, Enum):
+    Platform = "Platform"
+    PrivateBos = "Bos"
+
+
 class TrainMode(str, Enum):
     SFT = "SFT"
     """对应 LLMFinetune"""

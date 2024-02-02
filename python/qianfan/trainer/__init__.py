@@ -20,6 +20,7 @@ from qianfan.trainer.actions import (
 )
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import LLMFinetune, Trainer
+from qianfan.trainer.post_pretrain import PostPreTrain
 
 __all__ = [
     "LLMFinetune",
@@ -31,4 +32,5 @@ __all__ = [
     "LoadDataSetAction",
     "DeployAction",
     "ModelPublishAction",
+    "PostPreTrain",
 ]

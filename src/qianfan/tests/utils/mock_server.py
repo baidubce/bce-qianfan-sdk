@@ -1378,6 +1378,96 @@ def get_mock_eval_resul():
     return flask.Response(gen())
 
 
+@app.route(Consts.ModelEvaluableModelListAPI, methods=["POST"])
+@iam_auth_checker
+def evaluable_model_list():
+    """mock get all evaluable model list api"""
+    return json_response(
+        {
+            "log_id": "2347238209",
+            "result": [
+                {
+                    "modelId": 8,
+                    "modelIdStr": "am-ay2k0r83q9qr",
+                    "modelName": "ERNIE-Bot-turbo",
+                    "source": "PlatformPreset",
+                    "modelType": 0,
+                    "trainType": "ernieBotLite",
+                    "modelVersionList": [
+                        {
+                            "modelVersionId": 600,
+                            "modelVersionIdStr": "amv-nsjesf9kasjt",
+                            "version": "ERNIE-Bot-turbo-0922",
+                            "sourceType": "PlatformPreset",
+                            "framework": "paddle",
+                            "algorithm": "ERNIE_EB-ERNIEBOT_V202_FUSE",
+                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V202_LORA_FUSE",
+                            "trainType": "ernieBotLite",
+                            "description": "通过数据和策略迭代，提升模型生成效果。",
+                        },
+                        {
+                            "modelVersionId": 492,
+                            "modelVersionIdStr": "amv-4u0rw8juur1p",
+                            "version": "ERNIE-Bot-turbo-0725",
+                            "sourceType": "PlatformPreset",
+                            "framework": "paddle",
+                            "algorithm": "ERNIE_EB-ERNIEBOT_V201_8K",
+                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V201_8K",
+                            "trainType": "ernieBotLite",
+                            "description": (
+                                "支持7K输入+1K输出，支持系统设置，新增推理参数"
+                            ),
+                        },
+                        {
+                            "modelVersionId": 244,
+                            "modelVersionIdStr": "amv-70ahikpspjqs",
+                            "version": "ERNIE-Bot-turbo-0704",
+                            "sourceType": "PlatformPreset",
+                            "framework": "paddle",
+                            "algorithm": "ERNIE_EB-ERNIEBOT_V200",
+                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V200",
+                            "trainType": "ernieBotLite",
+                            "description": "优化推理效果，修复部分问题",
+                        },
+                    ],
+                },
+                {
+                    "modelId": 446,
+                    "modelIdStr": "am-44f8ji8eegp0",
+                    "modelName": "Yi-34B",
+                    "source": "PlatformPreset",
+                    "modelType": 0,
+                    "trainType": "",
+                    "modelVersionList": [
+                        {
+                            "modelVersionId": 635,
+                            "modelVersionIdStr": "amv-mpjrtxej6hye",
+                            "version": "Yi-34B-Chat",
+                            "sourceType": "PlatformPreset",
+                            "framework": "Pytorch",
+                            "algorithm": "opensource-yi-34b",
+                            "modelNet": "pytorch-yi-34b-chat-1.13.1",
+                            "trainType": "",
+                            "description": "支持对话的chat版本",
+                        },
+                        {
+                            "modelVersionId": 620,
+                            "modelVersionIdStr": "amv-ffff66e1fm3d",
+                            "version": "Yi-34B",
+                            "sourceType": "PlatformPreset",
+                            "framework": "Pytorch",
+                            "algorithm": "opensource-yi-34b",
+                            "modelNet": "pytorch-yi-34b-1.13.1",
+                            "trainType": "",
+                            "description": "初始预训练版本",
+                        },
+                    ],
+                },
+            ],
+        }
+    )
+
+
 @app.route(Consts.ServiceCreateAPI, methods=["POST"])
 @iam_auth_checker
 def create_service():

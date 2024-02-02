@@ -16,7 +16,6 @@
     Unit test for FineTune
 """
 
-
 from qianfan.resources import Model
 from qianfan.resources.console.consts import EvaluationResultExportDestinationType
 
@@ -150,3 +149,13 @@ def test_get_evaluation_result_export_task_status():
     resp = Model.get_evaluation_result_export_task_status(12)
 
     assert resp["_request"]["exportID"] == 12
+
+
+def test_evaluable_model_list():
+    """
+    test Model.evaluable_model_list
+    """
+
+    resp = Model.evaluable_model_list()
+
+    assert len(resp["_request"]) == 0

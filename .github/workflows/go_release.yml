@@ -1,0 +1,78 @@
+name: Go Release
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - 'ubuntu-latest'
+        go-version: [ '1.21.x' ]
+        python-version: [ '3.11' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+      - name: Display version
+        run: |
+          go version
+          python --version
+      - name: Install latest version of Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: |
+          pip install poetry
+      - name: Add Poetry to $PATH
+        run: |
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      - name: Get Poetry version
+        run: poetry --version
+      - name: Install deps
+        if: steps.cache-deps.cache-hit != 'true'
+        run: |
+          make install
+      - name: Run test
+        run: |
+          make mock
+          make -C go test
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: go/qianfan
+      - name: Check version
+        id: check-version
+        run: |
+          VERSION=$(cat go/qianfan/version.go|grep 'const Version ='|sed -r "s/.*\"v(.*)\"/\1/g")
+          echo $VERSION
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{ format('Go v{0}', steps.check-version.outputs.version) }}
+          token: ${{ secrets.QF_GITHUB_TOKEN }}
+          draft: false
+          generateReleaseNotes: true
+          tag: ${{ format('go/qianfan/v{0}', steps.check-version.outputs.version) }}
+          prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
+          commit: main
+      - name: Update Go module index
+        env:
+          GOPROXY: proxy.golang.org
+          VERSION: ${{ steps.check-version.outputs.version }}
+        run: |
+          go list -m github.com/baidubce/bce-qianfan-sdk/go/qianfan@v$VERSION

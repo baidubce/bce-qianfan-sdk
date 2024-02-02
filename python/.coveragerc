@@ -1,7 +1,7 @@
 # .coveragerc 
 [run]
 branch = True
-source = ./src/qianfan
+source = ./qianfan
 omit = *test.py, test*.py, Test*.py, qianfan/tests/*
 [report]
 omit = *test.py, test*.py, Test*.py

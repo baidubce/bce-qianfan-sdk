@@ -2,20 +2,23 @@ on:
   push:
     branches: ['main']
   pull_request:
+    path:
+      - "python/**"
   workflow_dispatch:
 
-name: Build
+name: Python CI
 
 defaults:
   run:
     shell: bash
+    working-directory: ./python
 
 env:
   RUFF_OUTPUT_FORMAT: github
 
 jobs:
   build:
-    name: Build tool
+    name: Unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -33,23 +36,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
-      # Only runs when key from caching step changes
-      - name: Install latest version of Poetry
-        if: steps.cache-poetry.outputs.cache-hit != 'true'
+      - name: Install Poetry
         run: |
           pip install poetry
-      # Poetry still needs to be re-prepended to the PATH on each run, since
-      # PATH does not persist between runs.
-      - name: Add Poetry to $PATH
-        run: |
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry lock
       - name: Get Poetry version
         run: poetry --version
+      - name: Setup Python Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+          cache: "poetry"
       - name: Install deps
-        if: steps.cache-deps.cache-hit != 'true'
         run: |
           make install
       - name: run lint
@@ -58,3 +60,7 @@ jobs:
         run: make test
       - name: Build artifacts
         run: make build
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest' }}
+        with:
+          path: ${{ github.workspace }}/python/output/**

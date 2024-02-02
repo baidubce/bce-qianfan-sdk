@@ -602,6 +602,14 @@ tc = TrainConfig(learning_rate=0.333)
 # finetune model train type -> default finetune train config
 DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
     "ERNIE-Speed": {
+        PeftType.ALL: TrainConfig(
+            epoch=1,
+            learning_rate=0.00003,
+            max_seq_len=4096,
+            logging_steps=1,
+            warmup_ratio=0.1,
+            weight_decay=0.01,
+        ),
         PeftType.LoRA: TrainConfig(
             epoch=1,
             learning_rate=0.0003,
@@ -611,14 +619,6 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             weight_decay=0.0100,
             lora_rank=8,
             lora_all_linear="True",
-        ),
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-            logging_steps=1,
-            warmup_ratio=0.1,
-            weight_decay=0.01,
         ),
     },
     "ERNIE-Bot-turbo-0922": {
@@ -642,44 +642,32 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
         ),
     },
     "ERNIE-Bot-turbo-0725": {
-        PeftType.LoRA: TrainConfig(
+        PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.00003,
             max_seq_len=4096,
         ),
-        PeftType.ALL: TrainConfig(
+        PeftType.LoRA: TrainConfig(
             epoch=1,
             learning_rate=0.0003,
             max_seq_len=4096,
         ),
     },
     "ERNIE-Bot-turbo-0704": {
-        PeftType.LoRA: TrainConfig(
+        PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.00003,
         ),
-        PeftType.ALL: TrainConfig(
+        PeftType.PTuning: TrainConfig(
             epoch=1,
             learning_rate=0.03,
         ),
-        PeftType.PTuning: TrainConfig(
+        PeftType.LoRA: TrainConfig(
             epoch=1,
             learning_rate=0.00003,
         ),
     },
     "Qianfan-Chinese-Llama-2-7B": {
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
         PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.000001,
@@ -697,21 +685,21 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             warmup_ratio=0.03,
             weight_decay=0.01,
             max_seq_len=4096,
+        ),
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
         ),
     },
     "Qianfan-Chinese-Llama-2-13B": {
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
         PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.000001,
@@ -729,6 +717,18 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             warmup_ratio=0.03,
             weight_decay=0.01,
             max_seq_len=4096,
+        ),
+        PeftType.LoRA: TrainConfig(
+            epoch=1,
+            learning_rate=0.000001,
+            batch_size=1,
+            scheduler_name="cosine",
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            max_seq_len=4096,
+            lora_rank=32,
+            lora_alpha=32,
+            lora_dropout=0.1,
         ),
     },
     "Qianfan-Chinese-Llama-2-7B-32K": {

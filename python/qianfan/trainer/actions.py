@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan import resources as api
 from qianfan.config import get_config
-from qianfan.dataset.dataset import Dataset
+from qianfan.dataset import BosDataSource, Dataset, QianfanDataSource
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.evaluation import EvaluationManager
 from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvaluator
@@ -75,20 +75,34 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     def __init__(
         self,
-        dataset: Optional[Dataset] = None,
-        bos_path: Optional[str] = None,
+        dataset: Optional[Union[Dataset, str]] = None,
+        dataset_template: Optional[console_consts.DataTemplateType] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
-        self.dataset = dataset
-        if dataset is not None:
-            return
-        elif bos_path is not None:
-            if not is_valid_bos_path(bos_path):
-                raise InvalidArgumentError(f"invalid bos_path {bos_path}")
-            self.bos_path = bos_path
+        if dataset is None:
+            raise InvalidArgumentError("dataset must be set")
+        if isinstance(dataset, str):
+            if not is_valid_bos_path(dataset):
+                raise InvalidArgumentError(f"invalid bos_path {dataset}")
+            self.bos_path = dataset
+        elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
+            qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
+            if (
+                dataset_template is not None
+                and qf_data_src.template_type != dataset_template
+            ):
+                raise InvalidArgumentError(
+                    f"dataset must be `{dataset_template}` template."
+                )
+            self.dataset = dataset
+        elif isinstance(dataset.inner_data_source_cache, BosDataSource):
+            self.dataset = dataset
         else:
-            raise InvalidArgumentError("dataset or bos_path must be set")
+            raise InvalidArgumentError(
+                "dataset must be either implemented with QianfanDataSource or"
+                " BosDataSource or a bos path"
+            )
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:

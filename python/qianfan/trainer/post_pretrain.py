@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.config import get_config
 from qianfan.dataset import Dataset
-from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
@@ -31,7 +30,7 @@ from qianfan.trainer.base import (
 )
 from qianfan.trainer.configs import (
     ModelInfo,
-    ModelInfoMapping,
+    PostPreTrainModelInfoMapping,
     TrainConfig,
 )
 from qianfan.trainer.consts import (
@@ -92,36 +91,15 @@ class PostPreTrain(Trainer):
             train_config = TrainConfig.load(train_config)
 
         actions: List[BaseAction] = []
-        # 校验dataset
-        if dataset is not None:
-            if isinstance(dataset, str):
-                self.load_data_action = LoadDataSetAction(
-                    bos_path=dataset, event_handler=event_handler, **kwargs
-                )
-            elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
-                qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
-                if (
-                    qf_data_src.template_type
-                    != console_consts.DataTemplateType.GenericText
-                ):
-                    raise InvalidArgumentError(
-                        "dataset must be `generic_text` template in post_pretrain "
-                    )
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs
-                )
-            elif isinstance(dataset.inner_data_source_cache, BosDataSource):
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs
-                )
-            else:
-                raise InvalidArgumentError(
-                    "dataset must be either implemented with QianfanDataSource or"
-                    " BosDataSource"
-                )
-            actions.append(self.load_data_action)
-        else:
-            raise InvalidArgumentError("either dataset or bos_path is required")
+        # 初始化load action
+        self.load_data_action = LoadDataSetAction(
+            dataset,
+            console_consts.DataTemplateType.GenericText,
+            event_handler=event_handler,
+            **kwargs,
+        )
+        actions.append(self.load_data_action)
+        # 初始化train action
         self.train_action = TrainAction(
             train_config=train_config,
             train_type=train_type,
@@ -213,4 +191,4 @@ class PostPreTrain(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return ModelInfoMapping
+        return PostPreTrainModelInfoMapping

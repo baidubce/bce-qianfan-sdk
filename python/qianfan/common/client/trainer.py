@@ -53,7 +53,6 @@ from qianfan.trainer.base import Pipeline
 from qianfan.trainer.configs import ModelInfo, TrainLimit
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.utils.utils import remove_suffix_list
 
 trainer_app = typer.Typer(
     no_args_is_help=True,
@@ -214,17 +213,14 @@ def print_trainer_config(config: ModelInfo) -> None:
     table.add_column("")
     for p in config.support_peft_types:
         table.add_column(Pretty(p.value, overflow="fold"))
-    example = TrainLimit()
-    limit_fields = [
-        attr
-        for attr in dir(example)
-        if not attr.startswith("_") and not callable(getattr(example, attr))
-    ]
+    from qianfan.trainer.configs import TrainConfig
+
+    limit_fields = (
+        TrainConfig().dict(exclude={"peft_type", "trainset_rate", "extras"}).keys()
+    )
     for k in limit_fields:
-        if k in ["supported_hyper_params"]:
-            continue
         row_objs = []
-        row_objs.append(remove_suffix_list(k, ["_options", "_limit"]))
+        row_objs.append(k)
         has_not_none_limit = False
         for peft in config.support_peft_types:
             peft_limit: Optional[TrainLimit] = config.common_params_limit
@@ -232,8 +228,8 @@ def print_trainer_config(config: ModelInfo) -> None:
                 specific_train_limit = config.specific_peft_types_params_limit.get(peft)
                 if specific_train_limit is not None:
                     peft_limit = specific_train_limit | config.common_params_limit
-            if peft_limit.__getattribute__(k):
-                row_objs.append(peft_limit.__getattribute__(k))
+            if peft_limit and peft_limit.get(k):
+                row_objs.append(f"{peft_limit.get(k)}")
                 has_not_none_limit = True
             else:
                 row_objs.append("---")

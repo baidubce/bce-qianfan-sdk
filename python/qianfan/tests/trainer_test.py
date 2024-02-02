@@ -61,7 +61,9 @@ def test_load_data_action():
         qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
     )
 
-    res = LoadDataSetAction(preset).exec()
+    res = LoadDataSetAction(
+        preset, dataset_template=console_consts.DataTemplateType.NonSortedConversation
+    ).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
 
@@ -106,7 +108,6 @@ def test_service_deploy_action():
 def test_trainer_sft_run():
     train_config = TrainConfig(
         epoch=1,
-        batch_size=4,
         learning_rate=0.00002,
         max_seq_len=4096,
         trainset_rate=20,

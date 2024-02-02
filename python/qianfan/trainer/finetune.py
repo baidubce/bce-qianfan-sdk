@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.config import get_config
-from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -117,35 +116,15 @@ class LLMFinetune(Trainer):
         actions: List[BaseAction] = []
         # 校验dataset
         if dataset is not None:
-            if dataset.inner_data_source_cache is None:
-                raise InvalidArgumentError("invalid dataset")
-            if isinstance(dataset.inner_data_source_cache, QianfanDataSource):
-                qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
-                if (
-                    qf_data_src.template_type
-                    != console_consts.DataTemplateType.NonSortedConversation
-                ):
-                    raise InvalidArgumentError(
-                        "dataset must be `non-sorted conversation` template in"
-                        " llm-fine-tune"
-                    )
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset, event_handler=event_handler, **kwargs
-                )
-            elif isinstance(dataset.inner_data_source_cache, BosDataSource):
-                self.load_data_action = LoadDataSetAction(
-                    dataset=dataset,
-                    event_handler=event_handler,
-                    **kwargs,
-                )
-            else:
-                raise InvalidArgumentError(
-                    "dataset must be either implemented with QianfanDataSource or"
-                    " BosDataSource"
-                )
+            self.load_data_action = LoadDataSetAction(
+                dataset=dataset,
+                dataset_template=console_consts.DataTemplateType.NonSortedConversation,
+                event_handler=event_handler,
+                **kwargs,
+            )
         elif dataset_bos_path:
             self.load_data_action = LoadDataSetAction(
-                bos_path=dataset_bos_path,
+                dataset=dataset_bos_path,
                 event_handler=event_handler,
                 **kwargs,
             )

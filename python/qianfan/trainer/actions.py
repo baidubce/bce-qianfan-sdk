@@ -133,7 +133,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             return {
                 "datasets": {
                     "sourceType": (
-                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                        console_consts.TrainDatasetSourceType.Platform.value
                     ),
                     "versions": [
                         {

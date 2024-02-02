@@ -18,6 +18,7 @@
 
 
 from qianfan.resources import FineTune
+from qianfan.resources.console import consts as console_consts
 
 
 def test_create_finetune_task():
@@ -62,7 +63,7 @@ def test_create_finetune_job():
         "baseTrainType": "ERNIE-Bot-turbo",
         "trainType": "ERNIE-Bot-turbo-0725",
         "trainMode": "SFT",
-        "peftType": "ALL",
+        "peftType": console_consts.TrainParameterScale.FullFineTuning,
         "trainConfig": {"epoch": 1, "learningRate": 0.00003, "maxSeqLen": 4096},
         "trainset": [{"type": 1, "id": 12563}],
         "trainsetRate": 20,

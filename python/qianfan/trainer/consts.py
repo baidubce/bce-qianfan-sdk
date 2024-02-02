@@ -88,9 +88,9 @@ class ServiceStatus(str, Enum):
 
 
 class PeftType(str, Enum):
-    ALL = "ALL"
+    ALL = "FullFineTuning"
     """全量更新"""
-    PTuning = "P-tuning"
+    PTuning = "PromptTuning"
     """p-tuning"""
     LoRA = "LoRA"
     """LoRA"""

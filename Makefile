@@ -1,29 +1,38 @@
-build:
-	bash src/scripts/build.sh
+prepare_output:
+	mkdir -p output
+
+build: prepare_output
+	$(MAKE) -C python build
+	mv python/output/* ./output
+	rm -rf python/output
 
 install:
-	poetry install -E all
+	$(MAKE) -C python install
 
 uninstall:
 	pip uninstall -y qianfan
 
 clean:
-	rm -rf build output dist qianfan.egg-info
+	rm -rf output
+	$(MAKE) -C python clean
 
-doc: install
-	poetry run bash src/scripts/build_doc.sh
+doc: install prepare_output
+	$(MAKE) -C python doc
+	rm -rf output/docs
+	mv python/output/* ./output
+	rm -rf python/output
 
 format: install
-	poetry run black ./src/qianfan
-	poetry run ruff --select I --fix ./src/qianfan
+	$(MAKE) -C python format
 
 lint: install
-	poetry run black ./src/qianfan --check 
-	poetry run ruff check ./src/qianfan
-	poetry run mypy ./src/qianfan --install-types --non-interactive
+	$(MAKE) -C python lint
 
 test: clean install 
-	cd src && bash scripts/run_test.sh
+	$(MAKE) -C python test
+	$(MAKE) -C go test
 
+mock: 
+	bash ./python/scripts/run_mock_server.sh
 
 .PHONY: build install uninstall clean 

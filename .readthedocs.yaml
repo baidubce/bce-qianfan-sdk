@@ -14,13 +14,13 @@ build:
       - pip install poetry
       - poetry config virtualenvs.create false
     post_install:
-      - poetry install --no-interaction
+      - make install
     pre_build:
       - make doc
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
-  configuration: build/docs/conf.py
+  configuration: output/docs/conf.py
   # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
   # builder: "dirhtml"
   # Fail on all warnings to avoid broken references

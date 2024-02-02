@@ -417,9 +417,6 @@ def test_ppt():
 
 
 def test_ppt_with_sft():
-    from qianfan.utils.logging import TRACE_LEVEL, enable_log
-
-    enable_log(TRACE_LEVEL)
     ppt_ds = Dataset.load(
         qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
     )
@@ -436,3 +433,29 @@ def test_ppt_with_sft():
     )
     sft_trainer.run()
     assert "model_version_id" in sft_trainer.output and "model_id" in sft_trainer.output
+
+
+def test_all_default_config():
+    from qianfan.trainer.configs import (
+        DefaultPostPretrainTrainConfigMapping,
+        DefaultTrainConfigMapping,
+    )
+
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    from qianfan.utils import log_info
+
+    for k in DefaultTrainConfigMapping.keys():
+        log_info(f"current: {k}")
+        LLMFinetune(
+            train_type=k,
+            dataset=sft_ds,
+        )
+
+    ppt_ds = Dataset.load(
+        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
+    )
+    for k in DefaultPostPretrainTrainConfigMapping.keys():
+        PostPreTrain(
+            train_type=k,
+            dataset=ppt_ds,
+        )

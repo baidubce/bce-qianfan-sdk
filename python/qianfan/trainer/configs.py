@@ -470,10 +470,19 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         base_model_type="ChatGLM2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
             epoch=(1, 50),
+            batch_size=(1, 4),
+            max_seq_len=[1024, 2048, 4096],
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
             learning_rate=(0.0000002, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
@@ -489,9 +498,18 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         support_peft_types=[PeftType.ALL],
         common_params_limit=TrainLimit(
             batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
+            max_seq_len=[1024, 2048, 4096],
             epoch=(1, 50),
             learning_rate=(0.0000002, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
         ),
     ),
     "Baichuan2-7B": ModelInfo(
@@ -500,16 +518,24 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
             batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
+            max_seq_len=[1024, 2048, 4096],
             epoch=(1, 50),
             learning_rate=(0.0000000001, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
-                batch_size=(1, 4),
-                max_seq_len=[4096, 8192],
-                epoch=(1, 50),
-                learning_rate=(0.0000000001, 0.0002),
+                lora_rank=[8, 16, 32, 64],
+                lora_alpha=[8, 16, 32, 64],
+                lora_dropout=(0.1, 0.5),
             )
         },
     ),
@@ -519,16 +545,24 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
             batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
+            max_seq_len=[1024, 2048, 4096],
             epoch=(1, 50),
             learning_rate=(0.0000000001, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
-                batch_size=(1, 4),
-                max_seq_len=[4096, 8192],
-                epoch=(1, 50),
-                learning_rate=(0.0000000001, 0.0002),
+                lora_rank=[8, 16, 32, 64],
+                lora_alpha=[8, 16, 32, 64],
+                lora_dropout=(0.1, 0.5),
             )
         },
     ),
@@ -538,16 +572,23 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
             batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
             epoch=(1, 50),
             learning_rate=(0.0000002, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
-                batch_size=(1, 4),
-                max_seq_len=[4096, 8192],
-                epoch=(1, 50),
-                learning_rate=(0.0000000001, 0.0002),
+                lora_rank=[8, 16, 32, 64],
+                lora_alpha=[8, 16, 32, 64],
+                lora_dropout=(0.1, 0.5),
             )
         },
     ),
@@ -558,14 +599,23 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         common_params_limit=TrainLimit(
             batch_size=(1, 4),
             epoch=(1, 50),
+            max_seq_len=[1024, 2048, 4096],
             learning_rate=(0.0000000001, 0.0002),
+            warmup_ratio=(0.01, 0.1),
+            weight_decay=(0.001, 1),
+            scheduler_name=[
+                "linear",
+                "cosine",
+                "polynomial",
+                "constant",
+                "constant_with_warmup",
+            ],
         ),
         specific_peft_types_params_limit={
             PeftType.LoRA: TrainLimit(
-                batch_size=(1, 4),
-                max_seq_len=[4096, 8192],
-                epoch=(1, 50),
-                learning_rate=(0.0000000001, 0.0002),
+                lora_rank=[8, 16, 32, 64],
+                lora_alpha=[8, 16, 32, 64],
+                lora_dropout=(0.1, 0.5),
             )
         },
     ),
@@ -850,7 +900,6 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             scheduler_name="cosine",
             warmup_ratio=0.03,
             weight_decay=0.01,
-            max_seq_len=4096,
         ),
         PeftType.PTuning: TrainConfig(
             epoch=1,
@@ -859,7 +908,6 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             scheduler_name="cosine",
             warmup_ratio=0.03,
             weight_decay=0.01,
-            max_seq_len=4096,
         ),
     },
     "CodeLlama-7B": {

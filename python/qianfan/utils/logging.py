@@ -124,6 +124,7 @@ if sys.version_info < (3, 8):
     log_error = logger.error
     log_warn = logger.warn
     log_error = logger.trace
+    log_trace = logger.trace
 else:
     log_info = partial(logger.info, stacklevel=2)
     log_debug = partial(logger.debug, stacklevel=2)

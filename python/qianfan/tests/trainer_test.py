@@ -410,7 +410,8 @@ def test_ppt():
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
     )
-    res = ppt_trainer.run()
+    ppt_trainer.run()
+    res = ppt_trainer.output
     assert "task_id" in res and "job_id" in res
 
 

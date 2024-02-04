@@ -10,5 +10,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/labeler@v5
-    with:
-      repo-token: ${{ secrets.QF_GITHUB_TOKEN }}
+      with:
+        repo-token: ${{ secrets.QF_GITHUB_TOKEN }}

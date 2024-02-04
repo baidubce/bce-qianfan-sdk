@@ -6,6 +6,7 @@ on:
       - "python/**"
       - "docs/**"
       - "README.md"
+      - ".github/workflows/doc_build.yml"
   workflow_dispatch:
 
 name: Docs

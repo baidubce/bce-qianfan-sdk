@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "python/**"
+      - ".github/workflows/py_ci.yml"
   workflow_dispatch:
 
 name: Python CI

@@ -2,10 +2,11 @@ on:
   push:
     branches: ['main']
   pull_request:
-    path:
+    paths:
       - "python/**"
       - "docs/**"
       - "README.md"
+      - ".github/workflows/doc_build.yml"
   workflow_dispatch:
 
 name: Docs

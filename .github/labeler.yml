@@ -1,0 +1,22 @@
+language/go:
+- changed-files:
+  - any-glob-to-any-file: 'go/**'
+
+language/js:
+- changed-files:
+  - any-glob-to-any-file: 'javascript/**'
+
+language/python:
+- changed-files:
+  - any-glob-to-any-file: 'python/**'
+
+doc:
+- changed-files:
+  - any-glob-to-any-file: 
+    - 'docs/**'
+    - "README.md"
+
+cookbook:
+- changed-files:
+  - any-glob-to-any-file: 
+    - 'cookbook/**'

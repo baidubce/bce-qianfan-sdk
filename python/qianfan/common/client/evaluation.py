@@ -74,10 +74,11 @@ def list_evaluable_models(
             # Model Name
             row_items.append(f"{model['modelName']}\n[dim]{model['modelIdStr']}[/]")
             # Platform Preset
-            if model["source"] == "PlatformPreset":
+            model_source = model["source"]
+            if model_source == "PlatformPreset":
                 row_items.append("Yes")
             else:
-                row_items.append("No")
+                row_items.append(f"No\n[dim]{model_source}[/]")
             # Train Type
             row_items.append(model["trainType"])
             # Model Version List

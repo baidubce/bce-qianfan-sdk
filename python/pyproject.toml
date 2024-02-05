@@ -67,8 +67,7 @@ types-protobuf = "4.24.0.4"
 [tool.poetry.extras]
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
-semantic_kernel = ["semantic_kernel"]
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
 
 [tool.ruff]
 select = [

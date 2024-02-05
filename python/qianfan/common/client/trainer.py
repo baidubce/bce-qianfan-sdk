@@ -16,6 +16,7 @@
 import time
 from typing import Any, Callable, Dict, Optional
 
+import click
 import typer
 from rich.console import Console
 from rich.pretty import Pretty
@@ -41,7 +42,7 @@ from qianfan.errors import InternalError
 from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console.consts import DeployPoolType
-from qianfan.trainer import LLMFinetune
+from qianfan.trainer import LLMFinetune, PostPreTrain, Trainer
 from qianfan.trainer.actions import (
     DeployAction,
     EvaluateAction,
@@ -271,6 +272,11 @@ def run(
         None,
         help="Dataset BOS path",
     ),
+    task_type: str = typer.Option(
+        "SFT",
+        help="Task type of training.",
+        click_type=click.Choice(["SFT", "PostPretrain"], case_sensitive=False),
+    ),
     train_type: str = typer.Option(..., help="Train type"),
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
@@ -371,41 +377,55 @@ def run(
             pool_type=DeployPoolType[deploy_pool_type],
             service_type=ServiceType[deploy_service_type],
         )
+    task = task_type.lower()
+    trainer: Trainer
+    if task == "sft":
+        trainer = LLMFinetune(
+            dataset=ds,
+            train_type=train_type,
+            event_handler=callback,
+            train_config=train_config_file,
+            deploy_config=deploy_config,
+            dataset_bos_path=dataset_bos_path,
+        )
+    elif task == "postpretrain":
+        trainer = PostPreTrain(
+            dataset=ds,
+            train_type=train_type,
+            event_handler=callback,
+            train_config=train_config_file,
+            deploy_config=deploy_config,
+            dataset_bos_path=dataset_bos_path,
+        )
+    else:
+        print_error_msg(f"Unknown task `{task}`")
+        raise typer.Exit(1)
 
-    trainer = LLMFinetune(
-        dataset=ds,
-        train_type=train_type,
-        event_handler=callback,
-        train_config=train_config_file,
-        deploy_config=deploy_config,
-        dataset_bos_path=dataset_bos_path,
-    )
-
-    if trainer.train_action.train_config is None:
-        raise InternalError("Train config not found in trainer.")
-
-    if train_epoch is not None:
-        trainer.train_action.train_config.epoch = train_epoch
-    if train_batch_size is not None:
-        trainer.train_action.train_config.batch_size = train_batch_size
-    if train_learning_rate is not None:
-        trainer.train_action.train_config.learning_rate = train_learning_rate
-    if train_max_seq_len is not None:
-        trainer.train_action.train_config.max_seq_len = train_max_seq_len
-    if train_peft_type is not None:
-        trainer.train_action.train_config.peft_type = train_peft_type
-    if trainset_rate is not None:
-        trainer.train_action.train_config.trainset_rate = trainset_rate
-    if train_logging_steps is not None:
-        trainer.train_action.train_config.logging_steps = train_logging_steps
-    if train_warmup_ratio is not None:
-        trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
-    if train_weight_decay is not None:
-        trainer.train_action.train_config.weight_decay = train_weight_decay
-    if train_lora_rank is not None:
-        trainer.train_action.train_config.lora_rank = train_lora_rank
-    if train_lora_all_linear is not None:
-        trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
+    if hasattr(trainer, "train_action"):
+        if trainer.train_action.train_config is None:
+            raise InternalError("Train config not found in trainer.")
+        if train_epoch is not None:
+            trainer.train_action.train_config.epoch = train_epoch
+        if train_batch_size is not None:
+            trainer.train_action.train_config.batch_size = train_batch_size
+        if train_learning_rate is not None:
+            trainer.train_action.train_config.learning_rate = train_learning_rate
+        if train_max_seq_len is not None:
+            trainer.train_action.train_config.max_seq_len = train_max_seq_len
+        if train_peft_type is not None:
+            trainer.train_action.train_config.peft_type = train_peft_type
+        if trainset_rate is not None:
+            trainer.train_action.train_config.trainset_rate = trainset_rate
+        if train_logging_steps is not None:
+            trainer.train_action.train_config.logging_steps = train_logging_steps
+        if train_warmup_ratio is not None:
+            trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
+        if train_weight_decay is not None:
+            trainer.train_action.train_config.weight_decay = train_weight_decay
+        if train_lora_rank is not None:
+            trainer.train_action.train_config.lora_rank = train_lora_rank
+        if train_lora_all_linear is not None:
+            trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
 
     trainer.run()
 

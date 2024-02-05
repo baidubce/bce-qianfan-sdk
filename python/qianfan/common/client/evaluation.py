@@ -16,7 +16,7 @@
 from typing import List, Optional, Set
 
 import typer
-from rich.console import Console, RenderableType
+from rich.console import RenderableType
 from rich.pretty import Pretty
 from rich.table import Table
 
@@ -26,6 +26,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
     print_warn_msg,
+    replace_logger_handler,
 )
 from qianfan.errors import InternalError
 from qianfan.evaluation import EvaluationManager
@@ -64,7 +65,7 @@ def list_evaluable_models(
     """
     if value:
         model_list = ModelResource.evaluable_model_list()["result"]
-        console = Console()
+        console = replace_logger_handler()
         table = Table(show_lines=True)
         col_list = ["Model Name", "Platform Preset", "Train Type", "Model Version List"]
         for col in col_list:
@@ -165,7 +166,7 @@ def run(
     """
     ds = load_dataset(dataset_id, is_download_to_local=False)
     model_list = [Model(version_id=m) for m in models]
-    console = Console()
+    console = replace_logger_handler()
     evaluators: List[QianfanEvaluator] = []
     if enable_rule_evaluator:
         evaluators.append(

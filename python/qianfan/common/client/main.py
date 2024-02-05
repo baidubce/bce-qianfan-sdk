@@ -14,6 +14,7 @@
 
 from typing import Optional
 
+import click
 import typer
 from typer.completion import completion_init, install_callback, show_callback
 
@@ -159,12 +160,18 @@ def entry(
             " customize the installation."
         ),
     ),
+    log_level: str = typer.Option(
+        "WARN",
+        help="Set log level.",
+        click_type=click.Choice(["DEBUG", "INFO", "WARN", "ERROR"]),
+    ),
 ) -> None:
     """
     Qianfan CLI which provides access to various Qianfan services.
     """
     global _enable_traceback
     _enable_traceback = enable_traceback
+    qianfan.enable_log(log_level)
 
 
 if __name__ == "__main__":

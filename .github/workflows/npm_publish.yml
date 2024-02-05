@@ -1,0 +1,29 @@
+name: qianfan-sdk
+
+on:
+  push:
+    branches: multi-language-javascript
+    paths:
+      - "dist/"
+    tags:
+      - "**"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package with Rollup
+        run: npx rollup -c
+
+      - name: Publish package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

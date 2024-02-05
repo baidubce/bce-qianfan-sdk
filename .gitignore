@@ -60,3 +60,5 @@ poetry.lock
 .ipynb_checkpoints
 .DS_Store
 coverage.out
+
+node_modules

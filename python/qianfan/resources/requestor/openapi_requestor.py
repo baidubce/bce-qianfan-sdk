@@ -42,6 +42,7 @@ from qianfan.resources.requestor.base import (
     _check_if_status_code_is_200,
     _with_latency,
 )
+from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_error, log_info
 
@@ -59,6 +60,8 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         super().__init__(**kwargs)
         self._auth = Auth(**kwargs)
+        self._token_limiter = TokenLimiter(**kwargs)
+        self._async_token_limiter = AsyncTokenLimiter(**kwargs)
 
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
@@ -228,6 +231,61 @@ class QfAPIRequestor(BaseAPIRequestor):
                 raise errors.AccessTokenExpiredError
             raise errors.APIError(error_code, err_msg, req_id)
 
+    def _get_token_count_from_body(self, body: Dict[str, Any]) -> Optional[int]:
+        messages = body.get("messages", None)
+        if not messages:
+            return None
+
+        token_count = 0
+        assert isinstance(messages, list)
+        for message in messages:
+            token_count += self._token_limiter.tokenizer.count_tokens(
+                message["content"]
+            )
+
+        return token_count
+
+    def _compensate_token_usage(
+        self, resp: Union[QfResponse, Iterator[QfResponse]], token_count: int
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if isinstance(resp, QfResponse):
+            token_usage = resp.body.get("usage", {}).get("total_tokens", 0)
+            if token_usage:
+                self._token_limiter.compensate(token_count - token_usage)
+
+            return resp
+
+        if isinstance(resp, Iterator):
+            token_usage = 0
+            for res in resp:
+                token_usage = res.body.get("usage", {}).get("total_tokens", 0)
+                yield res
+
+            if token_usage:
+                self._token_limiter.compensate(token_count - token_usage)
+
+    async def _async_compensate_token_usage_non_stream(
+        self, resp: QfResponse, token_count: int
+    ) -> QfResponse:
+        if isinstance(resp, QfResponse):
+            token_usage = resp.body.get("usage", {}).get("total_tokens", 0)
+            if token_usage:
+                await self._async_token_limiter.compensate(token_count - token_usage)
+
+            return resp
+
+    async def _async_compensate_token_usage_stream(
+        self, resp: AsyncIterator[QfResponse], token_count: int
+    ) -> AsyncIterator[QfResponse]:
+        if isinstance(resp, AsyncIterator):
+            token_usage = 0
+            async for res in resp:
+                token_usage = res.body.get("usage", {}).get("total_tokens", 0)
+                yield res
+
+            if token_usage:
+                await self._async_token_limiter.compensate(token_count - token_usage)
+
     def llm(
         self,
         endpoint: str,
@@ -253,9 +311,19 @@ class QfAPIRequestor(BaseAPIRequestor):
                 retry_config=retry_config,
             )
             req = self._add_access_token(req)
+
+            token_count = self._get_token_count_from_body(body)
+            if token_count:
+                self._token_limiter.decline(token_count)
+            else:
+                token_count = 0
+
             if stream:
-                return self._request_stream(req, data_postprocess=data_postprocess)
-            return self._request(req, data_postprocess=data_postprocess)
+                resp = self._request_stream(req, data_postprocess=data_postprocess)
+            else:
+                resp = self._request(req, data_postprocess=data_postprocess)
+
+            return self._compensate_token_usage(resp, token_count)
 
         return self._with_retry(retry_config, _helper)
 
@@ -284,11 +352,23 @@ class QfAPIRequestor(BaseAPIRequestor):
                 retry_config=retry_config,
             )
             req = await self._async_add_access_token(req)
+
+            token_count = self._get_token_count_from_body(body)
+            if token_count:
+                await self._async_token_limiter.decline(token_count)
+            else:
+                token_count = 0
+
             if stream:
-                return self._async_request_stream(
-                    req, data_postprocess=data_postprocess
+                return self._async_compensate_token_usage_stream(
+                    self._async_request_stream(req, data_postprocess=data_postprocess),
+                    token_count,
                 )
-            return await self._async_request(req, data_postprocess=data_postprocess)
+            else:
+                return await self._async_compensate_token_usage_non_stream(
+                    await self._async_request(req, data_postprocess=data_postprocess),
+                    token_count,
+                )
 
         return await self._async_with_retry(retry_config, _helper)
 

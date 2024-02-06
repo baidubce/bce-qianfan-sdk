@@ -502,7 +502,7 @@ class EvaluationManager(BaseModel):
                 raise ValueError(err_msg)
 
             # 检查数据集是否在云上
-            if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+            if not isinstance(dataset.inner_data_source_cache, QianfanDataSource):
                 err_msg = "dataset must be in qianfan, not local storage"
                 log_error(err_msg)
                 raise ValueError(err_msg)

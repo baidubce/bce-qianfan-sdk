@@ -79,6 +79,7 @@ func convertToMap(body RequestBody) (map[string]interface{}, error) {
 // 请求类型，用于区分是模型的请求还是管控类请求
 // 在 QfRequest.Type 处被使用
 const (
+	authRequest    = "auth" // AccessToken 鉴权请求
 	modelRequest   = "model"
 	consoleRequest = "console"
 )
@@ -214,9 +215,10 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	// 设置溯源标识
 	if request.Type == modelRequest {
 		request.URL = GetConfig().BaseURL + request.URL
-		request.Body["extra_parameters"] = map[string]string{
-			"request_source": versionIndicator,
+		if _, ok := request.Body["extra_parameters"]; !ok {
+			request.Body["extra_parameters"] = map[string]interface{}{}
 		}
+		request.Body["extra_parameters"].(map[string]interface{})["request_source"] = versionIndicator
 	} else if request.Type == consoleRequest {
 		request.URL = GetConfig().ConsoleBaseURL + request.URL
 		request.Headers["request-source"] = versionIndicator

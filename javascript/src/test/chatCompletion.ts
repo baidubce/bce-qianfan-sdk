@@ -1,15 +1,18 @@
+import * as dotenv from "dotenv";
+
 import ChatCompletion from "../../src/ChatCompletion";
 
-const API_KEY =  "";
-const SECRET_KEY = "";
-const IAMAK = ""
-const IAMSK = ""
+dotenv.config();
+const API_KEY = process.env.API_KEY || '';
+const SECRET_KEY = process.env.SECRET_KEY || '';
+const IAM_ACESS_KEY = process.env.IAM_ACESS_KEY || '';
+const IAM_SECRET_KEY = process.env.IAM_SECRET_KEY || '';
+// AK/SK 测试
 const client = new  ChatCompletion(API_KEY, SECRET_KEY, 'AK');
 // IAM 测试
-// const client = new ChatCompletion(IAMAK, IAMSK);
+// const client = new ChatCompletion(IAM_ACESS_KEY, IAM_SECRET_KEY);
 
-// IAM 测试
-// AK/SK 测试
+// 流式 测试
 // async function main() {
 //     const resp = await client.chat({
 //         messages: [

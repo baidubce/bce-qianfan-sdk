@@ -1,12 +1,12 @@
 import axios, {AxiosInstance} from 'axios';
 import HttpClient from '../HttpClient';
-import { modelInfoMap, ChatModel } from './utils';
+import { modelInfoMap, EmbeddingModel } from './utils';
 import { api_base, DEFAULT_HEADERS, base_path } from '../constant';
 import {getAccessToken, getRequestBody, getModelEndpoint, getIAMConfig} from '../utils';
-import { ChatBody, ChatResp } from '../interface';
+import { EmbeddingBody, EmbeddingResp } from '../interface';
 import * as packageJson from '../../package.json';
 
-export class ChatCompletion {
+export class Eembedding {
     private API_KEY: string;
     private SECRET_KEY: string;
     private Type: string = 'IAM';
@@ -29,7 +29,7 @@ export class ChatCompletion {
         this.axiosInstance = axios.create();
     }
 
-    private async sendRequest(model, body: ChatBody, stream: boolean = false): Promise<ChatResp> {
+    private async sendRequest(model: EmbeddingModel, body: EmbeddingBody): Promise<EmbeddingResp> {
         const endpoint = getModelEndpoint(model, modelInfoMap);
         const requestBody = getRequestBody(body, packageJson.version);
         // IAM鉴权
@@ -38,7 +38,7 @@ export class ChatCompletion {
             const client = new HttpClient(config);
             const path = `${base_path}${endpoint}`;
             const response = await client.sendRequest('POST', path, requestBody, this.headers);
-            return response as ChatResp;
+            return response as EmbeddingResp;
         }
         // AK/SK鉴权    
         if (this.Type === 'AK') {
@@ -54,22 +54,19 @@ export class ChatCompletion {
                 }
                 try {
                     const resp = await this.axiosInstance.request(options);
-                    return resp.data as ChatResp;
+                    return resp.data as EmbeddingResp;
                 } catch (error) {
                     throw new Error(error);
                 }
             // }
         }
 
-        // TODO 流式结果处理
-
         throw new Error(`Unsupported authentication type: ${this.Type}`);
     }
 
-    public async chat(body: ChatBody, model: ChatModel ='ERNIE-Bot-turbo'): Promise<ChatResp> {
-       const stream = body.stream ?? false;
-       return this.sendRequest(model, body, stream);
+    public async embedding(body: EmbeddingBody, model: EmbeddingModel = 'Embedding-V1'): Promise<EmbeddingResp> {
+       return this.sendRequest(model, body);
     }
 }
 
-export default ChatCompletion;
+export default Eembedding;

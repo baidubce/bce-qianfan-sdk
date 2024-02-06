@@ -699,7 +699,7 @@ class Dataset(Table):
             str: etl task id
         """
 
-        if not self.is_dataset_located_in_qianfan():
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             err_msg = "can't process a non-qianfan dataset on qianfan"
@@ -1222,7 +1222,7 @@ class Dataset(Table):
             Dataset: batch result contained in dataset
         """
 
-        if not self.is_dataset_located_in_qianfan():
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
             err_msg = "can't start a batch run task on non-qianfan dataset"
             log_error(err_msg)
             raise ValueError(err_msg)

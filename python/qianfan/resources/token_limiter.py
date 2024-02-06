@@ -15,21 +15,37 @@
 """
     Implementation of Token Limiter
 """
+import asyncio
 import datetime
 import threading
 import time
+from typing import Any
 
+from qianfan import Tokenizer
 from qianfan.utils import log_error
 
 _MINUTE_DEAD = datetime.timedelta(minutes=1)
 
 
-class TokenLimiter:
-    def __init__(self, token_limit_per_minute: int):
+class BaseTokenLimiter:
+    tokenizer = Tokenizer()
+
+    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
         self._token_limit_per_minute = token_limit_per_minute
         self._token_current = self._token_limit_per_minute
         self._last_check_timestamp = datetime.datetime.utcnow()
-        self._lock = threading.Lock()
+
+    def _check_limit(self, token_used: int) -> None:
+        if token_used > self._token_limit_per_minute:
+            err_msg = (
+                f"the value of token_used {token_used} exceeds the limit"
+                f" {self._token_limit_per_minute}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+    def _is_closed(self) -> bool:
+        return self._token_limit_per_minute == 0
 
     def _refresh_time_and_token(self) -> None:
         current_time = datetime.datetime.utcnow()
@@ -40,14 +56,17 @@ class TokenLimiter:
             self._token_current = self._token_limit_per_minute
         self._last_check_timestamp = current_time
 
+
+class TokenLimiter(BaseTokenLimiter):
+    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
+        self._lock = threading.Lock()
+        super().__init__(token_limit_per_minute, **kwargs)
+
     def decline(self, token_used: int) -> None:
-        if token_used > self._token_limit_per_minute:
-            err_msg = (
-                f"the value of token_used {token_used} exceeds the limit"
-                f" {self._token_limit_per_minute}"
-            )
-            log_error(err_msg)
-            raise ValueError(err_msg)
+        if self._is_closed():
+            return
+
+        self._check_limit(token_used)
 
         with self._lock:
             for i in range(3):
@@ -63,5 +82,38 @@ class TokenLimiter:
             log_error(err_msg)
             raise RuntimeError(err_msg)
 
-    def set_current_usage(self, token_remaining: int) -> None:
-        self._token_current = token_remaining
+    def compensate(self, compensation: int) -> None:
+        if self._lock.acquire(timeout=1):
+            self._token_current += compensation
+            self._lock.release()
+
+
+class AsyncTokenLimiter(BaseTokenLimiter):
+    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
+        self._lock = asyncio.Lock()
+        super().__init__(token_limit_per_minute, **kwargs)
+
+    async def decline(self, token_used: int) -> None:
+        if self._is_closed():
+            return
+
+        self._check_limit(token_used)
+
+        async with self._lock:
+            for i in range(3):
+                self._refresh_time_and_token()
+                if token_used <= self._token_current:
+                    self._token_current -= token_used
+                    return
+                else:
+                    next_minute_dead_interval = 60 - self._last_check_timestamp.second
+                    await asyncio.sleep(next_minute_dead_interval)
+
+            err_msg = "get token from token limiter failed"
+            log_error(err_msg)
+            raise RuntimeError(err_msg)
+
+    async def compensate(self, compensation: int) -> None:
+        if not self._lock.locked():
+            async with self._lock:
+                self._token_current += compensation

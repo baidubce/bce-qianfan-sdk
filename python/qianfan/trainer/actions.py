@@ -534,11 +534,16 @@ class TrainAction(
             elif task_status == console_consts.TrainStatus.Running:
                 job_progress_str = task_status_result.get("runProgress")
                 job_progress = int(job_progress_str[:-1])
+                log_prefix = (
+                    "sft"
+                    if self.train_mode == console_consts.TrainMode.SFT
+                    else "postPretrain"
+                )
                 log_info(
                     "[train_action] training ..."
                     f" job_name:{self.job_name} current status: {task_status},"
                     f" {job_progress}% check train task log in"
-                    f" https://console.bce.baidu.com/qianfan/train/sft/{self.job_id}/{self.task_id}/detail/traininglog"
+                    f" https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
                 )
                 if job_progress >= 50:
                     log_info(

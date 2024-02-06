@@ -179,6 +179,7 @@ class Consts:
     FineTuneJobListAction: str = "DescribeFineTuningJobs"
     FineTuneTaskListAction: str = "DescribeFineTuningTasks"
     FineTuneTaskDetailAction: str = "DescribeFineTuningTask"
+    FineTuneStopTaskAction: str = "StopFineTuningTask"
     ModelDetailAPI: str = "/wenxinworkshop/modelrepo/modelDetail"
     ModelVersionDetailAPI: str = "/wenxinworkshop/modelrepo/modelVersionDetail"
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"

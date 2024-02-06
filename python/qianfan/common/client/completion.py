@@ -16,7 +16,6 @@ from typing import Any, List, Optional
 
 import prompt_toolkit
 import typer
-from rich.console import Console
 from rich.markdown import Markdown
 
 import qianfan
@@ -28,6 +27,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
     render_response_debug_info,
+    replace_logger_handler,
 )
 from qianfan.consts import DefaultLLMModel
 
@@ -51,7 +51,7 @@ class CompletionClient(object):
         self.model = model
         self.endpoint = endpoint
         self.plain = plain
-        self.console = Console(no_color=self.plain)
+        self.console = replace_logger_handler(no_color=self.plain)
         self.debug = debug
         self.inference_args = kwargs
 

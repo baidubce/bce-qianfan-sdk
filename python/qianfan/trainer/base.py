@@ -24,7 +24,6 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
-    cast,
 )
 
 from qianfan.common.runnable.base import ExecuteSerializable
@@ -281,8 +280,12 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 )
             self._state = k
             output = self.actions[k].exec(input=output, **kwargs)
-            if output.get("error") is not None:
-                raise InternalError(cast(str, output.get("error")))
+            err = output.get("error")
+            if err is not None:
+                if isinstance(err, BaseException):
+                    raise err
+                else:
+                    raise InternalError(f"[get internal error: {err}")
 
         for next in self.post_actions:
             next.exec(copy.deepcopy(output), **kwargs)

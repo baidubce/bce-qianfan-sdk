@@ -203,6 +203,7 @@ class FineTune(object):
             The `@console_api_request` decorator is applied to this method, enabling
             it to send the generated QfRequest and return a QfResponse to the user.
 
+            API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/2lnlebz15
             """
             req = QfRequest(
                 method="POST",
@@ -350,6 +351,25 @@ class FineTune(object):
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(Consts.FineTuneTaskDetailAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "taskId": task_id,
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def stop_task(
+            cls,
+            task_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            QfRequest
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneStopTaskAction),
             )
             req.json_body = {
                 **kwargs,

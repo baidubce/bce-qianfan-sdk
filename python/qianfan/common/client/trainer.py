@@ -320,6 +320,9 @@ def finetune(
         help="Dataset BOS path",
     ),
     train_type: str = typer.Option(..., help="Train type"),
+    previous_task_id: Optional[str] = typer.Option(
+        None, help="Task id of previous trainer output."
+    ),
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
         None,
@@ -427,6 +430,7 @@ def finetune(
         train_config=train_config_file,
         deploy_config=deploy_config,
         dataset_bos_path=dataset_bos_path,
+        previous_task_id=previous_task_id,
     )
 
     if trainer.train_action.train_config is None:
@@ -457,6 +461,7 @@ def finetune(
     trainer.run()
 
     console.log("Trainer finished!")
+    console.log(Pretty(trainer.output))
 
     # wait a second for the log to be flushed
     time.sleep(0.1)
@@ -608,6 +613,7 @@ def postpretrain(
     trainer.run()
 
     console.log("Trainer finished!")
+    console.log(Pretty(trainer.output))
 
     # wait a second for the log to be flushed
     time.sleep(0.1)

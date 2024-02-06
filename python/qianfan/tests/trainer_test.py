@@ -442,10 +442,8 @@ def test_all_default_config():
     )
 
     sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
-    from qianfan.utils import log_info
 
     for k in DefaultTrainConfigMapping.keys():
-        log_info(f"current: {k}")
         LLMFinetune(
             train_type=k,
             dataset=sft_ds,
@@ -483,3 +481,16 @@ def test_failed_sft_run():
     with pytest.raises(InternalError):
         sft_task.run()
     assert "error" in sft_task.output
+
+
+def test_increment_sft():
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    trainer = LLMFinetune(
+        dataset=sft_ds,
+        previous_task_id="task-abc",
+    )
+    trainer.run()
+    res = trainer.output
+    assert res is not None
+    assert isinstance(res, dict)
+    assert "model_version_id" in res

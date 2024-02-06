@@ -141,6 +141,7 @@ class LLMFinetune(Trainer):
                     task_id=previous_trainer.train_action.task_id,
                     train_mode=console_consts.TrainMode.SFT,
                     job_name=name,
+                    event_handler=event_handler,
                     **kwargs,
                 )
             else:
@@ -153,6 +154,7 @@ class LLMFinetune(Trainer):
                 task_id=previous_task_id,
                 train_mode=console_consts.TrainMode.SFT,
                 job_name=name,
+                event_handler=event_handler,
                 **kwargs,
             )
         else:
@@ -182,6 +184,7 @@ class LLMFinetune(Trainer):
             self.eval_action = EvaluateAction(
                 eval_dataset=eval_dataset,
                 evaluators=evaluators,
+                event_handler=event_handler,
             )
             actions.append(self.eval_action)
         ppl = Pipeline(

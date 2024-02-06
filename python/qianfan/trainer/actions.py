@@ -64,7 +64,18 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         none
     output:
         ```
-        {"datasets" : [{"id": 1, "name": "test_dataset"}]}
+            {
+                "datasets": {
+                "sourceType": (
+                   2
+                ),
+                "versions": [
+                        {
+                            "versionBosUri": "bos:/bbb/"
+                        }
+                    ],
+                }
+            }
         ```
     """
 
@@ -212,22 +223,23 @@ class TrainAction(
 
     Input:
     ```
-    {'datasets': {"sourceType": (
-                        console_consts.TrainDatasetSourceType.PrivateBos.value
-                    ),
-                    "versions": [
-                        {
-                            "versionBosUri": bos_uploader.generate_bos_file_parent_path(
-                                bos_data_src.bucket, bos_data_src.bos_file_path
-                            )
-                        }
-                    ]}
+        {
+            "datasets": {
+            "sourceType": (
+                2
+            ),
+            "versions": [
+                    {
+                        "versionBosUri": "bos:/bbb/"
+                    }
+                ],
+            }
+        }
     ```
 
     Output:
     ```
-    {'task_id': "task-ddd", 'job_id': "job-xxxx"}
-    Sample code:
+        {'task_id': "task-ddd", 'job_id': "job-xxxx"}
     ```
     """
 
@@ -580,7 +592,7 @@ class TrainAction(
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
             return
-        api.FineTune.V2.job_list(self.task_id, self.job_id)
+        api.FineTune.V2.stop_task(self.task_id)
         log_debug(f"train job {self.task_id}/{self.job_id} stopped")
 
     def get_default_train_config(
@@ -613,12 +625,13 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     Input:
     ```
-    {'task_id': 47923, 'job_id': 33512}
+    {'task_id': "task-xxx", 'job_id': "job-xxx"}
     ```
 
     Output:
     ```
-    {'task_id': 47923, 'job_id': 33512, 'model_id': "xxx", 'model_version_id': "aaa"}
+    {'task_id': "task-xxx", 'job_id': "job-xxx", 'model_id': "xxx",
+    'model_version_id': "aaa", "model": <Model>}
     ```
     """
 
@@ -700,10 +713,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
 
     input:
-        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx"}
+        {'task_id': "task-xxxx", 'job_id': "job-xxxx", 'model_id': "xx",
+        'model_version_id': "xxx"}
     output:
         ```
-        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx",
+        {'task_id': "task-xxx", 'job_id': "job-xxxx", 'model_id': "xx",
+        'model_version_id': "xxx",
         'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
         ```
     """
@@ -820,7 +835,7 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     Sample:
     input:
         ```
-        {'model_id': 47923, 'model_version_id': 33512}
+        {'model_id': "am-xxxx", 'model_version_id': "amv-xxxx"}
         ```
     output:
         ```

@@ -100,22 +100,33 @@ class MyEventHandler(EventHandler):
             self.vdl_printed = False
             self.progress.log("Start training...")
         if event.action_state == ActionState.Running:
-            if self.current_task is not None:
-                resp = event.data
-                self.progress.update(
-                    self.current_task, completed=resp["result"]["progress"]
+            if self.current_task is None:
+                return
+            resp = event.data
+            result = resp["result"]
+            status = result["runStatus"]
+            if status == "Running":
+                progress = int(result["runProgress"][:-1])
+                self.progress.update(self.current_task, completed=progress)
+            elif status == "Failed":
+                self.progress.log("Task failed.")
+                return
+            elif status == "Stopped":
+                self.progress.log("Task stopped.")
+                return
+
+            if not self.vdl_printed:
+                self.progress.log(
+                    f"{result['trainMode']} task id: {resp['result']['taskId']}, job"
+                    f" id: {resp['result']['jobId']}, jobName:"
+                    f" {resp['result']['jobName']}"
                 )
-                if not self.vdl_printed:
-                    self.progress.log(
-                        f"Training task id: {resp['result']['taskId']}, job id:"
-                        f" {resp['result']['id']}, task name:"
-                        f" {resp['result']['taskName']}"
-                    )
-                    self.progress.log(
-                        "Check this vdl link to view training progress: "
-                        + resp["result"]["vdlLink"]
-                    )
-                    self.vdl_printed = True
+                self.progress.log(
+                    "Check this vdl link to view training progress: "
+                    + resp["result"]["vdlLink"]
+                )
+                self.vdl_printed = True
+
         if event.action_state == ActionState.Done:
             if self.current_task is not None:
                 self.progress.update(self.current_task, completed=100)
@@ -200,7 +211,21 @@ def list_train_type(
     list all the supported train types
     """
     if value:
-        model_list = LLMFinetune.train_type_list()
+        cmd = ctx.command.name
+        if cmd is None:
+            print_error_msg(
+                "Command name is not specified. Might be an internal error."
+            )
+            raise typer.Exit(1)
+        if cmd == "postpretrain":
+            model_list = PostPreTrain.train_type_list()
+        elif cmd in ["finetune", "run"]:
+            model_list = LLMFinetune.train_type_list()
+        else:
+            print_error_msg(
+                f"Command {cmd} is not supported. Might be an internal error."
+            )
+            raise typer.Exit(1)
         for m in model_list:
             print(m)
         raise typer.Exit()
@@ -246,7 +271,22 @@ def show_config_limit(
     show config limit for specified train type
     """
     if value:
-        model_list = LLMFinetune.train_type_list()
+        cmd = ctx.command.name
+        if cmd is None:
+            print_error_msg(
+                "Command name is not specified. Might be an internal error."
+            )
+            raise typer.Exit(1)
+        if cmd == "postpretrain":
+            model_list = PostPreTrain.train_type_list()
+        elif cmd in ["finetune", "run"]:
+            model_list = LLMFinetune.train_type_list()
+        else:
+            print_error_msg(
+                f"Command {cmd} is not supported. Might be an internal error."
+            )
+            raise typer.Exit(1)
+
         if value not in model_list:
             print_error_msg(f"Train type {value} is not supported.")
             raise typer.Exit(1)
@@ -357,7 +397,7 @@ def finetune(
     ),
 ) -> None:
     """
-    Run a trainer job.
+    Run a finetune trainer job.
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
@@ -508,7 +548,7 @@ def postpretrain(
     ),
 ) -> None:
     """
-    Run a trainer job.
+    Run a postpretrain trainer job.
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
@@ -532,7 +572,7 @@ def postpretrain(
             service_type=ServiceType[deploy_service_type],
         )
 
-    trainer = LLMFinetune(
+    trainer = PostPreTrain(
         dataset=ds,
         train_type=train_type,
         event_handler=callback,

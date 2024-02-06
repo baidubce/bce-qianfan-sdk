@@ -1933,7 +1933,9 @@ def get_dataset_info():
                 "exportProgress": 0,
                 "dataType": 4,
                 "projectType": 20,
-                "templateType": 2000,
+                "templateType": (
+                    2000 if "generic" not in str(args["datasetId"]) else 40100
+                ),
                 "errCode": None,
                 "uniqueType": 0,
                 "importErrorInfo": None,

@@ -41,7 +41,7 @@ from qianfan.errors import InternalError
 from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console.consts import DeployPoolType
-from qianfan.trainer import LLMFinetune
+from qianfan.trainer import LLMFinetune, PostPreTrain
 from qianfan.trainer.actions import (
     DeployAction,
     EvaluateAction,
@@ -99,22 +99,33 @@ class MyEventHandler(EventHandler):
             self.vdl_printed = False
             self.progress.log("Start training...")
         if event.action_state == ActionState.Running:
-            if self.current_task is not None:
-                resp = event.data
-                self.progress.update(
-                    self.current_task, completed=resp["result"]["progress"]
+            if self.current_task is None:
+                return
+            resp = event.data
+            result = resp["result"]
+            status = result["runStatus"]
+            if status == "Running":
+                progress = int(result["runProgress"][:-1])
+                self.progress.update(self.current_task, completed=progress)
+            elif status == "Failed":
+                self.progress.log("Task failed.")
+                return
+            elif status == "Stopped":
+                self.progress.log("Task stopped.")
+                return
+
+            if not self.vdl_printed:
+                self.progress.log(
+                    f"{result['trainMode']} task id: {resp['result']['taskId']}, job"
+                    f" id: {resp['result']['jobId']}, jobName:"
+                    f" {resp['result']['jobName']}"
                 )
-                if not self.vdl_printed:
-                    self.progress.log(
-                        f"Training task id: {resp['result']['taskId']}, job id:"
-                        f" {resp['result']['id']}, task name:"
-                        f" {resp['result']['taskName']}"
-                    )
-                    self.progress.log(
-                        "Check this vdl link to view training progress: "
-                        + resp["result"]["vdlLink"]
-                    )
-                    self.vdl_printed = True
+                self.progress.log(
+                    "Check this vdl link to view training progress: "
+                    + resp["result"]["vdlLink"]
+                )
+                self.vdl_printed = True
+
         if event.action_state == ActionState.Done:
             if self.current_task is not None:
                 self.progress.update(self.current_task, completed=100)
@@ -199,7 +210,21 @@ def list_train_type(
     list all the supported train types
     """
     if value:
-        model_list = LLMFinetune.train_type_list()
+        cmd = ctx.command.name
+        if cmd is None:
+            print_error_msg(
+                "Command name is not specified. Might be an internal error."
+            )
+            raise typer.Exit(1)
+        if cmd == "postpretrain":
+            model_list = PostPreTrain.train_type_list()
+        elif cmd in ["finetune", "run"]:
+            model_list = LLMFinetune.train_type_list()
+        else:
+            print_error_msg(
+                f"Command {cmd} is not supported. Might be an internal error."
+            )
+            raise typer.Exit(1)
         for m in model_list:
             print(m)
         raise typer.Exit()
@@ -245,7 +270,22 @@ def show_config_limit(
     show config limit for specified train type
     """
     if value:
-        model_list = LLMFinetune.train_type_list()
+        cmd = ctx.command.name
+        if cmd is None:
+            print_error_msg(
+                "Command name is not specified. Might be an internal error."
+            )
+            raise typer.Exit(1)
+        if cmd == "postpretrain":
+            model_list = PostPreTrain.train_type_list()
+        elif cmd in ["finetune", "run"]:
+            model_list = LLMFinetune.train_type_list()
+        else:
+            print_error_msg(
+                f"Command {cmd} is not supported. Might be an internal error."
+            )
+            raise typer.Exit(1)
+
         if value not in model_list:
             print_error_msg(f"Train type {value} is not supported.")
             raise typer.Exit(1)
@@ -263,9 +303,173 @@ list_train_type_option = typer.Option(
 )
 
 
+@trainer_app.command(
+    "run",
+    deprecated=True,
+    help=(
+        "Run a finetune trainer task. This command is deprecated and use command"
+        " `finetune` instead."
+    ),
+)
 @trainer_app.command()
 @credential_required
-def run(
+def finetune(
+    dataset_id: Optional[str] = typer.Option(None, help="Dataset id"),
+    dataset_bos_path: Optional[str] = typer.Option(
+        None,
+        help="Dataset BOS path",
+    ),
+    train_type: str = typer.Option(..., help="Train type"),
+    previous_task_id: Optional[str] = typer.Option(
+        None, help="Task id of previous trainer output."
+    ),
+    list_train_type: Optional[bool] = list_train_type_option,
+    show_config_limit: Optional[str] = typer.Option(
+        None,
+        callback=show_config_limit,
+        is_eager=True,
+        help="Show config limit for specified train type.",
+    ),
+    train_config_file: Optional[str] = typer.Option(
+        None, help="Train config path, support \[json/yaml] "
+    ),
+    train_epoch: Optional[int] = typer.Option(
+        None, help="Train epoch", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_batch_size: Optional[int] = typer.Option(
+        None, help="Train batch size", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_learning_rate: Optional[float] = typer.Option(
+        None, help="Train learning rate", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_max_seq_len: Optional[int] = typer.Option(
+        None, help="Max sequence length", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_peft_type: Optional[PeftType] = typer.Option(
+        None,
+        help="Train peft type",
+        **enum_typer(PeftType),
+        rich_help_panel=TRAIN_CONFIG_PANEL,
+    ),
+    trainset_rate: int = typer.Option(
+        20, help="Trainset ratio", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_logging_steps: Optional[int] = typer.Option(
+        None, help="Logging steps", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_warmup_ratio: Optional[float] = typer.Option(
+        None, help="Warmup ratio", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_weight_decay: Optional[float] = typer.Option(
+        None, help="Weight decay", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_lora_rank: Optional[int] = typer.Option(
+        None, help="Lora rank", rich_help_panel=TRAIN_CONFIG_PANEL
+    ),
+    train_lora_all_linear: Optional[str] = typer.Option(
+        None,
+        help="Whether lora is all linear layer",
+        rich_help_panel=TRAIN_CONFIG_PANEL,
+    ),
+    deploy_name: Optional[str] = typer.Option(
+        None,
+        help="Deploy name. Set this value to enable deploy action.",
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
+    ),
+    deploy_endpoint_prefix: Optional[str] = typer.Option(
+        None, help="Deploy endpoint prefix", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_description: str = typer.Option(
+        "", help="Deploy description", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_replicas: int = typer.Option(
+        1, help="Deploy replicas", rich_help_panel=DEPLOY_CONFIG_PANEL
+    ),
+    deploy_pool_type: str = typer.Option(
+        "private_resource",
+        help="Deploy pool type",
+        **enum_typer(DeployPoolType),
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
+    ),
+    deploy_service_type: str = typer.Option(
+        "chat",
+        help="Service Type",
+        **enum_typer(ServiceType),
+        rich_help_panel=DEPLOY_CONFIG_PANEL,
+    ),
+) -> None:
+    """
+    Run a finetune trainer job.
+    """
+    console = replace_logger_handler()
+    callback = MyEventHandler(console=console)
+    ds = None
+    if dataset_id is not None:
+        ds = Dataset.load(
+            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+        )
+    deploy_config = None
+    if deploy_name is not None:
+        if deploy_endpoint_prefix is None:
+            print_error_msg("Deploy endpoint prefix is required")
+            raise typer.Exit(code=1)
+
+        deploy_config = DeployConfig(
+            name=deploy_name,
+            endpoint_prefix=deploy_endpoint_prefix,
+            description=deploy_description,
+            replicas=deploy_replicas,
+            pool_type=DeployPoolType[deploy_pool_type],
+            service_type=ServiceType[deploy_service_type],
+        )
+
+    trainer = LLMFinetune(
+        dataset=ds,
+        train_type=train_type,
+        event_handler=callback,
+        train_config=train_config_file,
+        deploy_config=deploy_config,
+        dataset_bos_path=dataset_bos_path,
+        previous_task_id=previous_task_id,
+    )
+
+    if trainer.train_action.train_config is None:
+        raise InternalError("Train config not found in trainer.")
+    if train_epoch is not None:
+        trainer.train_action.train_config.epoch = train_epoch
+    if train_batch_size is not None:
+        trainer.train_action.train_config.batch_size = train_batch_size
+    if train_learning_rate is not None:
+        trainer.train_action.train_config.learning_rate = train_learning_rate
+    if train_max_seq_len is not None:
+        trainer.train_action.train_config.max_seq_len = train_max_seq_len
+    if train_peft_type is not None:
+        trainer.train_action.train_config.peft_type = train_peft_type
+    if trainset_rate is not None:
+        trainer.train_action.train_config.trainset_rate = trainset_rate
+    if train_logging_steps is not None:
+        trainer.train_action.train_config.logging_steps = train_logging_steps
+    if train_warmup_ratio is not None:
+        trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
+    if train_weight_decay is not None:
+        trainer.train_action.train_config.weight_decay = train_weight_decay
+    if train_lora_rank is not None:
+        trainer.train_action.train_config.lora_rank = train_lora_rank
+    if train_lora_all_linear is not None:
+        trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
+
+    trainer.run()
+
+    console.log("Trainer finished!")
+    console.log(Pretty(trainer.output))
+
+    # wait a second for the log to be flushed
+    time.sleep(0.1)
+
+
+@trainer_app.command()
+@credential_required
+def postpretrain(
     dataset_id: Optional[str] = typer.Option(None, help="Dataset id"),
     dataset_bos_path: Optional[str] = typer.Option(
         None,
@@ -348,7 +552,7 @@ def run(
     ),
 ) -> None:
     """
-    Run a trainer job.
+    Run a postpretrain trainer job.
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
@@ -372,7 +576,7 @@ def run(
             service_type=ServiceType[deploy_service_type],
         )
 
-    trainer = LLMFinetune(
+    trainer = PostPreTrain(
         dataset=ds,
         train_type=train_type,
         event_handler=callback,
@@ -383,7 +587,6 @@ def run(
 
     if trainer.train_action.train_config is None:
         raise InternalError("Train config not found in trainer.")
-
     if train_epoch is not None:
         trainer.train_action.train_config.epoch = train_epoch
     if train_batch_size is not None:
@@ -410,6 +613,7 @@ def run(
     trainer.run()
 
     console.log("Trainer finished!")
+    console.log(Pretty(trainer.output))
 
     # wait a second for the log to be flushed
     time.sleep(0.1)

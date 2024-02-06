@@ -66,13 +66,22 @@ def list_evaluable_models(
         model_list = ModelResource.evaluable_model_list()["result"]
         console = Console()
         table = Table(show_lines=True)
-        col_list = ["Model Name", "Train Type", "Model Version List"]
+        col_list = ["Model Name", "Platform Preset", "Train Type", "Model Version List"]
         for col in col_list:
             table.add_column(col)
         for model in model_list:
             row_items: List[RenderableType] = []
+            # Model Name
             row_items.append(f"{model['modelName']}\n[dim]{model['modelIdStr']}[/]")
+            # Platform Preset
+            model_source = model["source"]
+            if model_source == "PlatformPreset":
+                row_items.append("Yes")
+            else:
+                row_items.append(f"No\n[dim]{model_source}[/]")
+            # Train Type
             row_items.append(model["trainType"])
+            # Model Version List
             version_list = [
                 f"{version['version']} [dim]({version['modelVersionIdStr']})[/]"
                 for version in model["modelVersionList"]

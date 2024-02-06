@@ -11,7 +11,7 @@
 <br>
 [![Go Release](https://img.shields.io/github/v/release/baidubce/bce-qianfan-sdk?filter=Go*&logo=Go)](https://github.com/baidubce/bce-qianfan-sdk/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/baidubce/bce-qianfan-sdk/go/qianfan.svg)](https://pkg.go.dev/github.com/baidubce/bce-qianfan-sdk/go/qianfan)
-![Go Version](https://img.shields.io/github/go-mod/go-version/baidubce/bce-qianfan-sdk?filename=go%2Fqianfan%2Fgo.mod&logo=go&label=version&color=brightgreen)
+![Go Version](https://img.shields.io/badge/version-v1.18%2B-brightgreen?logo=go)
 
 ## 简介
 

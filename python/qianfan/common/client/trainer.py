@@ -235,7 +235,7 @@ def print_trainer_config(config: ModelInfo) -> None:
             else:
                 row_objs.append("---")
         if has_not_none_limit:
-            table.add_row(*[Pretty(a, overflow="fold") for a in row_objs])
+            table.add_row(*[a for a in row_objs])
     Console().print(table)
 
 

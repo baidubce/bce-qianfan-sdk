@@ -1,11 +1,15 @@
 # 百度千帆大模型平台 SDK
 
 [![LICENSE](https://img.shields.io/github/license/baidubce/bce-qianfan-sdk.svg)](https://github.com/baidubce/bce-qianfan-sdk/blob/master/LICENSE)
-[![Release Notes](https://img.shields.io/github/release/baidubce/bce-qianfan-sdk)](https://github.com/baidubce/bce-qianfan-sdk/releases)
-[![PyPI version](https://badge.fury.io/py/qianfan.svg)](https://pypi.org/project/qianfan/)
 [![Documentation Status](https://readthedocs.org/projects/qianfan/badge/?version=stable)](https://qianfan.readthedocs.io/en/stable/README.html)
 [![Feedback Issue](https://img.shields.io/badge/%E8%81%94%E7%B3%BB%E6%88%91%E4%BB%AC-GitHub_Issue-brightgreen)](https://github.com/baidubce/bce-qianfan-sdk/issues)
 [![Feedback Ticket](https://img.shields.io/badge/%E8%81%94%E7%B3%BB%E6%88%91%E4%BB%AC-%E7%99%BE%E5%BA%A6%E6%99%BA%E8%83%BD%E4%BA%91%E5%B7%A5%E5%8D%95-brightgreen)](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279)
+
+[![Python Release](https://img.shields.io/github/v/release/baidubce/bce-qianfan-sdk?filter=Py*&logo=python)](https://github.com/baidubce/bce-qianfan-sdk/releases)
+[![PyPI version](https://img.shields.io/pypi/v/qianfan?label=pypi%20package&color=green)](https://pypi.org/project/qianfan/)
+
+[![Go Release](https://img.shields.io/github/v/release/baidubce/bce-qianfan-sdk?filter=Go*&logo=Go)](https://github.com/baidubce/bce-qianfan-sdk/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/baidubce/bce-qianfan-sdk/go/qianfan.svg)](https://pkg.go.dev/github.com/baidubce/bce-qianfan-sdk/go/qianfan)
 
 ## 简介
 

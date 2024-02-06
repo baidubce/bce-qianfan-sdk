@@ -256,3 +256,53 @@ export interface CompletionBody {
         request_source?: string;
     };
 }
+export interface EmbeddingBody {
+    /**
+     * 输入文本以获取embeddings
+     *（1）不能为空List，List的每个成员不能为空字符串
+     *（2）文本数量不超过16
+     * (3）每个文本token数不超过384且长度不超过1000个字符
+     */
+    input: string[];
+    /**
+     * 表示最终用户的唯一标识符
+     */
+    user_id?: string;
+    extra_parameters?: {
+        /**
+         * 用户信息，用于识别用户身份，如手机号、身份证号等
+         */
+        request_source?: string;
+    };
+}
+interface EmbeddingData {
+    /**
+     * 固定值"embedding"
+     */
+    object: string;
+    /**
+     * embedding 内容
+     */
+    embedding: number[];
+    index: number;
+}
+export interface EmbeddingResp {
+    /**
+     * 本轮对话的id
+     */
+    id: string;
+    /**
+     * 回包类型, 固定值“embedding_list”
+     */
+    object: string;
+    /**
+     * 时间戳
+     */
+    created: number;
+    data: EmbeddingData[];
+    /**
+     * token统计信息，token数 = 汉字数+单词数*1.3 （仅为估算逻辑）
+     */
+    usage: TokenUsage;
+}
+export {};

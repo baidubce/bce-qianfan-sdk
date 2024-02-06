@@ -1,5 +1,5 @@
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { AccessTokenResp, ChatBody, CompletionBody, IAMConfig, QfLLMInfoMap } from './interface';
+import { AccessTokenResp, ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap } from './interface';
 /**
  * 使用 AK，SK 生成鉴权签名（Access Token）
  * @return string 鉴权签名信息（Access Token）
@@ -13,7 +13,7 @@ export declare function getIAMConfig(ak: string, sk: string): IAMConfig;
  * @param version 版本号
  * @returns 返回JSON格式的字符串
  */
-export declare function getRequestBody(body: ChatBody | CompletionBody, version: string): string;
+export declare function getRequestBody(body: ChatBody | CompletionBody | EmbeddingBody, version: string): string;
 /**
  * 获取模型对应的API端点
  * @param model 模型实例

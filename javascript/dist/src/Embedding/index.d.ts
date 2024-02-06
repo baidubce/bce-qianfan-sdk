@@ -1,6 +1,6 @@
-import { ChatModel } from './utils';
-import { ChatBody, ChatResp } from '../interface';
-export declare class ChatCompletion {
+import { EmbeddingModel } from './utils';
+import { EmbeddingBody, EmbeddingResp } from '../interface';
+export declare class Eembedding {
     private API_KEY;
     private SECRET_KEY;
     private Type;
@@ -16,6 +16,6 @@ export declare class ChatCompletion {
      */
     constructor(API_KEY: string, SECRET_KEY: string, Type?: string);
     private sendRequest;
-    chat(body: ChatBody, model?: ChatModel): Promise<ChatResp>;
+    embedding(body: EmbeddingBody, model?: EmbeddingModel): Promise<EmbeddingResp>;
 }
-export default ChatCompletion;
+export default Eembedding;

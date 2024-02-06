@@ -13,14 +13,14 @@
     "dependencies": {
         "axios": "^1.6.7",
         "debug": "^3.1.0",
+        "dotenv": "^16.4.1",
         "q": "^1.5.1",
         "rollup": "^4.9.6",
         "rollup-plugin-typescript2": "^0.36.0",
         "tslib": "^2.6.2",
         "typescript": "^5.3.3",
         "underscore": "^1.9.1",
-        "urlencode": "^1.1.0",
-        "dotenv": "^16.4.1"
+        "urlencode": "^1.1.0"
     },
     "devDependencies": {
         "@babel/core": "^7.23.9",
@@ -29,6 +29,7 @@
         "@babel/preset-env": "^7.23.9",
         "@babel/preset-typescript": "^7.23.3",
         "@ecomfe/eslint-config": "^8.0.0",
+        "@rollup/plugin-json": "^6.1.0",
         "@types/jest": "^29.5.11",
         "@types/node": "^20.11.13",
         "@types/q": "^1.5.8",

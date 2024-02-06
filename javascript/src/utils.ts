@@ -45,7 +45,7 @@ export function getRequestBody(body: ChatBody | CompletionBody | EmbeddingBody, 
     // 埋点信息
     body.extra_parameters = {
         ...body.extra_parameters,
-        'request_source': `qianfan_appbuilder_${version}`,
+        'request_source': `qianfan_js_sdk_${version}`,
     };
     return JSON.stringify(body);
 }

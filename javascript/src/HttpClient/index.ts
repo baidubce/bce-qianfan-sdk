@@ -150,6 +150,13 @@ class HttpClient extends EventEmitter {
         });
     }
 
+    /**
+     * 猜测数据长度
+     *
+     * @param data 数据，可以是字符串、Buffer、可读流
+     * @returns 返回数据长度
+     * @throws {Error} 当没有指定 Content-Length 时抛出异常
+     */
     private _guessContentLength(data: string | Buffer | stream.Readable): number {
         if (data == null) {
             return 0;

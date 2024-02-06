@@ -16,7 +16,6 @@
 import time
 from typing import Any, Callable, Dict, Optional
 
-import click
 import typer
 from rich.console import Console
 from rich.pretty import Pretty
@@ -42,7 +41,7 @@ from qianfan.errors import InternalError
 from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console.consts import DeployPoolType
-from qianfan.trainer import LLMFinetune, PostPreTrain, Trainer
+from qianfan.trainer import LLMFinetune, PostPreTrain
 from qianfan.trainer.actions import (
     DeployAction,
     EvaluateAction,

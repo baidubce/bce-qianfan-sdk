@@ -1,11 +1,17 @@
-name: JS Release
+name: JS CI
 
 on:
+  push:
+    branches: ["main"]
+  pull_request:
+    paths:
+      - "javascript/**"
   workflow_dispatch:
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    name: Unit tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
@@ -26,7 +32,3 @@ jobs:
         working-directory: ./javascript
         run: npx rollup -c rollup.config.mjs
 
-      - name: Publish package
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -20,20 +20,26 @@ import (
 
 // 默认配置
 var defaultConfig = map[string]string{
-	"QIANFAN_ACCESS_KEY":              "",
-	"QIANFAN_SECRET_KEY":              "",
-	"QIANFAN_BASE_URL":                "https://aip.baidubce.com",
-	"QIANFAN_IAM_SIGN_EXPIRATION_SEC": "300",
-	"QIANFAN_CONSOLE_BASE_URL":        "https://qianfan.baidubce.com",
+	"QIANFAN_AK":                                "",
+	"QIANFAN_SK":                                "",
+	"QIANFAN_ACCESS_KEY":                        "",
+	"QIANFAN_SECRET_KEY":                        "",
+	"QIANFAN_BASE_URL":                          "https://aip.baidubce.com",
+	"QIANFAN_IAM_SIGN_EXPIRATION_SEC":           "300",
+	"QIANFAN_CONSOLE_BASE_URL":                  "https://qianfan.baidubce.com",
+	"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL": "3600",
 }
 
 // SDK 使用的全局配置，可以用 GetConfig() 获取
 type Config struct {
-	AccessKey                string `mapstructure:"QIANFAN_ACCESS_KEY"`
-	SecretKey                string `mapstructure:"QIANFAN_SECRET_KEY"`
-	BaseURL                  string `mapstructure:"QIANFAN_BASE_URL"`
-	IAMSignExpirationSeconds int    `mapstructure:"QIANFAN_IAM_SIGN_EXPIRATION_SEC"`
-	ConsoleBaseURL           string `mapstructure:"QIANFAN_CONSOLE_BASE_URL"`
+	AK                            string `mapstructure:"QIANFAN_AK"`
+	SK                            string `mapstructure:"QIANFAN_SK"`
+	AccessKey                     string `mapstructure:"QIANFAN_ACCESS_KEY"`
+	SecretKey                     string `mapstructure:"QIANFAN_SECRET_KEY"`
+	BaseURL                       string `mapstructure:"QIANFAN_BASE_URL"`
+	IAMSignExpirationSeconds      int    `mapstructure:"QIANFAN_IAM_SIGN_EXPIRATION_SEC"`
+	ConsoleBaseURL                string `mapstructure:"QIANFAN_CONSOLE_BASE_URL"`
+	AccessTokenRefreshMinInterval int    `mapstructure:"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"`
 }
 
 func setConfigDeafultValue(vConfig *viper.Viper) {

@@ -14,7 +14,10 @@
 
 package qianfan
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // 模型相关的结构体基类
 type BaseModel struct {
@@ -40,8 +43,14 @@ type ModelAPIError struct {
 	ErrorMsg  string `json:"error_msg"`  // 错误消息
 }
 
+// 获取错误码和错误信息
 func (e *ModelAPIError) GetError() (int, string) {
 	return e.ErrorCode, e.ErrorMsg
+}
+
+// 获取错误码
+func (e *ModelAPIError) GetErrorCode() string {
+	return strconv.Itoa(e.ErrorCode)
 }
 
 // 搜索结果

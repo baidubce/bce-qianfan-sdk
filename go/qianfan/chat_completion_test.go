@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
@@ -88,6 +89,11 @@ func TestMain(m *testing.M) {
 	os.Setenv("QIANFAN_BASE_URL", "http://127.0.0.1:8866")
 	os.Setenv("QIANFAN_ACCESS_KEY", "test_access_key")
 	os.Setenv("QIANFAN_SECRET_KEY", "test_secret_key")
+	// authManager.GetAccessToken(GetConfig().AK, GetConfig().SK)
+	authManager.tokenMap[credential{AK: GetConfig().AK, SK: GetConfig().SK}] = &accessToken{
+		token:         "expired_token",
+		lastUpateTime: time.Now().Add(time.Duration(-100) * time.Hour),
+	}
 
 	os.Exit(m.Run())
 }

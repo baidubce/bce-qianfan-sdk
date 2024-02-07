@@ -15,7 +15,10 @@
 package qianfan
 
 // 模型请求的前缀
-const modelAPIPrefix = "/rpc/2.0/ai_custom/v1/wenxinworkshop"
+const (
+	modelAPIPrefix = "/rpc/2.0/ai_custom/v1/wenxinworkshop"
+	authAPIPrefix  = "/oauth/2.0/token"
+)
 
 // 默认使用的模型
 const (

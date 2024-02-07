@@ -99,6 +99,11 @@ func newModelRequest(method string, url string, body RequestBody) (*QfRequest, e
 	return newRequest(modelRequest, method, url, body)
 }
 
+// 创建一个用于鉴权类请求的 Request
+func newAuthRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+	return newRequest(authRequest, method, url, body)
+}
+
 // 创建一个用于管控类请求的 Request
 // 暂时注释避免 lint 报错
 // func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
@@ -107,9 +112,13 @@ func newModelRequest(method string, url string, body RequestBody) (*QfRequest, e
 
 // 创建一个 Request，body 可以是任意实现了 RequestBody 接口的类型
 func newRequest(requestType string, method string, url string, body RequestBody) (*QfRequest, error) {
-	b, err := convertToMap(body)
-	if err != nil {
-		return nil, err
+	var b map[string]interface{} = nil
+	if body != nil {
+		bodyMap, err := convertToMap(body)
+		if err != nil {
+			return nil, err
+		}
+		b = bodyMap
 	}
 	return newRequestFromMap(requestType, method, url, b)
 }
@@ -135,6 +144,7 @@ type baseResponse struct {
 // 所有回复类型需实现的接口
 type QfResponse interface {
 	SetResponse(Body []byte, RawResponse *http.Response)
+	GetErrorCode() string
 }
 
 // 设置回复中通用参数的字段
@@ -155,6 +165,28 @@ func newRequestor(options *Options) *Requestor {
 		client:  &http.Client{},
 		Options: options,
 	}
+}
+
+func (r *Requestor) addAuthInfo(request *QfRequest) error {
+	if request.Type == authRequest {
+		return nil
+	}
+	if GetConfig().AK != "" && GetConfig().SK != "" {
+		return r.addAccessToken(request)
+	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
+		return r.sign(request)
+	}
+	return fmt.Errorf("no enough credentails found. Please set AK and SK or AccessKey and SecretKey")
+}
+
+// 增加 accesstoken 鉴权信息
+func (r *Requestor) addAccessToken(request *QfRequest) error {
+	token, err := authManager.GetAccessToken(GetConfig().AK, GetConfig().SK)
+	if err != nil {
+		return err
+	}
+	request.Params["access_token"] = token
+	return nil
 }
 
 // IAM 签名
@@ -211,7 +243,7 @@ func (r *Requestor) sign(request *QfRequest) error {
 }
 
 // 对请求进行统一处理，并转换成 http.Request
-func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
+func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 	// 设置溯源标识
 	if request.Type == modelRequest {
 		request.URL = GetConfig().BaseURL + request.URL
@@ -222,6 +254,10 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	} else if request.Type == consoleRequest {
 		request.URL = GetConfig().ConsoleBaseURL + request.URL
 		request.Headers["request-source"] = versionIndicator
+	} else if request.Type == authRequest {
+		request.URL = GetConfig().BaseURL + request.URL
+	} else {
+		return nil, fmt.Errorf("unexpected request type: %s, this might be an internal error", request.Type)
 	}
 	bodyBytes, err := json.Marshal(request.Body)
 	if err != nil {
@@ -233,7 +269,7 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 	}
 	request.Headers["Content-Type"] = "application/json"
 	// IAM 签名
-	err = r.sign(request)
+	err = r.addAuthInfo(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -252,11 +288,35 @@ func (r *Requestor) prepareRequest(request *QfRequest) (*http.Request, error) {
 
 // 进行请求，返回原始的 baseResponse，并将结果解析至 resp
 func (r *Requestor) request(request *QfRequest, response QfResponse) error {
-	req, err := r.prepareRequest(request)
-	if err != nil {
-		return err
+	sendRequest := func() error {
+		req, err := r.prepareRequest(*request)
+		if err != nil {
+			return err
+		}
+		err = r.sendRequestAndParse(req, response)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	resp, err := r.client.Do(req)
+	sendRequest()
+	// AccessToken 过期，重新获取并重试请求
+	if response.GetErrorCode() == "111" || response.GetErrorCode() == "110" {
+		logger.Info("access token expired, tring to refresh access token and retry request")
+		_, err := authManager.GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+		if err != nil {
+			return err
+		}
+		if modelResp, ok := response.(*ModelResponse); ok {
+			modelResp.ModelAPIError = ModelAPIError{}
+		}
+		return sendRequest()
+	}
+	return nil
+}
+
+func (r *Requestor) sendRequestAndParse(request *http.Request, response QfResponse) error {
+	resp, err := r.client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -271,6 +331,7 @@ func (r *Requestor) request(request *QfRequest, response QfResponse) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -340,7 +401,7 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 
 // 发送请求，返回流对象
 func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
-	req, err := r.prepareRequest(request)
+	req, err := r.prepareRequest(*request)
 	if err != nil {
 		return nil, err
 	}

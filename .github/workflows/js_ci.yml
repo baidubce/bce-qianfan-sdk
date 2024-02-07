@@ -28,4 +28,7 @@ jobs:
         working-directory: ./javascript
         run: yarn install --frozen-lockfile
 
+      - name: Build package with Rollup
+        working-directory: ./javascript
+        run: npx rollup -c rollup.config.mjs
 

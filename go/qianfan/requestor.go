@@ -299,7 +299,10 @@ func (r *Requestor) request(request *QfRequest, response QfResponse) error {
 		}
 		return nil
 	}
-	sendRequest()
+	err := sendRequest()
+	if err != nil {
+		return err
+	}
 	// AccessToken 过期，重新获取并重试请求
 	if response.GetErrorCode() == "111" || response.GetErrorCode() == "110" {
 		logger.Info("access token expired, tring to refresh access token and retry request")

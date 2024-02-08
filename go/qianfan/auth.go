@@ -50,20 +50,27 @@ type accessToken struct {
 
 type AuthManager struct {
 	tokenMap map[credential]*accessToken
-	lock     sync.RWMutex
+	lock     sync.Mutex
 	*Requestor
 }
 
-var authManager = AuthManager{
-	tokenMap:  make(map[credential]*accessToken),
-	lock:      sync.RWMutex{},
-	Requestor: newRequestor(makeOptions()),
+var _authManager *AuthManager
+
+func GetAuthManager() *AuthManager {
+	if _authManager == nil {
+		_authManager = &AuthManager{
+			tokenMap:  make(map[credential]*accessToken),
+			lock:      sync.Mutex{},
+			Requestor: newRequestor(makeOptions()),
+		}
+	}
+	return _authManager
 }
 
 func (m *AuthManager) GetAccessToken(ak, sk string) (string, error) {
 	token, ok := func() (*accessToken, bool) {
-		m.lock.RLock()
-		defer m.lock.RUnlock()
+		m.lock.Lock()
+		defer m.lock.Unlock()
 		token, ok := m.tokenMap[credential{ak, sk}]
 		return token, ok
 	}()

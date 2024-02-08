@@ -20,10 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/baidubce/bce-sdk-go/auth"
 	bceHTTP "github.com/baidubce/bce-sdk-go/http"
@@ -161,10 +163,14 @@ type Requestor struct {
 
 // 创建一个 Requestor
 func newRequestor(options *Options) *Requestor {
-	return &Requestor{
+	r := &Requestor{
 		client:  &http.Client{},
 		Options: options,
 	}
+	if r.Options.LLMRetryTimeout != 0 {
+		r.client.Timeout = time.Duration(r.Options.LLMRetryTimeout) * time.Second
+	}
+	return r
 }
 
 func (r *Requestor) addAuthInfo(request *QfRequest) error {
@@ -181,7 +187,7 @@ func (r *Requestor) addAuthInfo(request *QfRequest) error {
 
 // 增加 accesstoken 鉴权信息
 func (r *Requestor) addAccessToken(request *QfRequest) error {
-	token, err := authManager.GetAccessToken(GetConfig().AK, GetConfig().SK)
+	token, err := GetAuthManager().GetAccessToken(GetConfig().AK, GetConfig().SK)
 	if err != nil {
 		return err
 	}
@@ -299,23 +305,39 @@ func (r *Requestor) request(request *QfRequest, response QfResponse) error {
 		}
 		return nil
 	}
-	err := sendRequest()
-	if err != nil {
-		return err
-	}
-	// AccessToken 过期，重新获取并重试请求
-	if response.GetErrorCode() == "111" || response.GetErrorCode() == "110" {
-		logger.Info("access token expired, tring to refresh access token and retry request")
-		_, err := authManager.GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+	tryCount := 0
+	for {
+		tryCount++
+		err := sendRequest()
 		if err != nil {
-			return err
+			logger.Warnf("send request failed with error: %v, try count: %d", err, tryCount)
+			if tryCount >= r.Options.LLMRetryCount {
+				return err
+			}
+			time.Sleep(
+				time.Duration(
+					math.Pow(
+						2,
+						float64(tryCount))*float64(r.Options.LLMRetryBackoffFactor),
+				) * time.Second,
+			)
+			continue
 		}
-		if modelResp, ok := response.(*ModelResponse); ok {
-			modelResp.ModelAPIError = ModelAPIError{}
+		// AccessToken 过期，重新获取并重试请求
+		if response.GetErrorCode() == "111" || response.GetErrorCode() == "110" {
+			logger.Info("access token expired, tring to refresh access token and retry request")
+			_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+			if err != nil {
+				return err
+			}
+			if modelResp, ok := response.(*ModelResponse); ok {
+				modelResp.ModelAPIError = ModelAPIError{}
+			}
+			tryCount -= 1
+			continue
 		}
-		return sendRequest()
+		return nil
 	}
-	return nil
 }
 
 func (r *Requestor) sendRequestAndParse(request *http.Request, response QfResponse) error {

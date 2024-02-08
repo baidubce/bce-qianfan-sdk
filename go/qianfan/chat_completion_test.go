@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("QIANFAN_ACCESS_KEY", "test_access_key")
 	os.Setenv("QIANFAN_SECRET_KEY", "test_secret_key")
 	// authManager.GetAccessToken(GetConfig().AK, GetConfig().SK)
-	authManager.tokenMap[credential{AK: GetConfig().AK, SK: GetConfig().SK}] = &accessToken{
+	GetAuthManager().tokenMap[credential{AK: GetConfig().AK, SK: GetConfig().SK}] = &accessToken{
 		token:         "expired_token",
 		lastUpateTime: time.Now().Add(time.Duration(-100) * time.Hour),
 	}

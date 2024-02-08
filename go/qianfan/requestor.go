@@ -426,14 +426,66 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 
 // 发送请求，返回流对象
 func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
-	req, err := r.prepareRequest(*request)
-	if err != nil {
-		return nil, err
+	var resp *http.Response
+	sendRequest := func() error {
+		req, err := r.prepareRequest(*request)
+		if err != nil {
+			return err
+		}
+		resp, err = r.client.Do(req)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	resp, err := r.client.Do(req)
-	if err != nil {
-		return nil, err
+	tryCount := 0
+	for {
+		tryCount++
+		err := sendRequest()
+		if err != nil {
+			logger.Warnf("send request failed with error: %v, try count: %d", err, tryCount)
+			if tryCount >= r.Options.LLMRetryCount {
+				return nil, err
+			}
+			time.Sleep(
+				time.Duration(
+					math.Pow(
+						2,
+						float64(tryCount))*float64(r.Options.LLMRetryBackoffFactor),
+				) * time.Second,
+			)
+			continue
+		}
+		contentType := resp.Header.Get("Content-Type")
+		if contentType == "application/json" {
+			// 遇到错误
+			content, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp := make(map[string]interface{})
+			err = json.Unmarshal(content, &resp)
+			if err != nil {
+				return nil, err
+			}
+			if errCode, ok := resp["error_code"]; ok {
+				if code, ok := errCode.(float64); ok {
+					code := int(code)
+					if code == 110 || code == 111 {
+						logger.Info("access token expired, tring to refresh access token and retry request")
+						_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+						if err != nil {
+							return nil, err
+						}
+						tryCount -= 1
+						continue
+					}
+				}
+			}
+		}
+		break
 	}
+
 	stream, err := newStreamInternal(resp)
 	if err != nil {
 		return nil, err

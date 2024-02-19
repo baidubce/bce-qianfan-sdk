@@ -23,7 +23,10 @@ importlib-metadata = { version = ">=1.4.0", python = "<=3.7" }
 bce-python-sdk = ">=0.8.79"
 typing-extensions = { version = ">=4.0.0", python = "<=3.10" }
 pydantic = "*"
-python-dotenv = "<=0.21.1"
+python-dotenv = [
+    { version = "<=0.21.1", python = "<=3.7" },
+    { version = ">=1.0", python = ">=3.8" }
+]
 langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8" },

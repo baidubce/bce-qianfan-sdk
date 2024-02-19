@@ -54,6 +54,14 @@ type AuthManager struct {
 	*Requestor
 }
 
+func maskAk(ak string) string {
+	unmaskLen := 6
+	if len(ak) < unmaskLen {
+		return ak
+	}
+	return fmt.Sprintf("%s******", ak[:unmaskLen])
+}
+
 var _authManager *AuthManager
 
 func GetAuthManager() *AuthManager {
@@ -77,6 +85,7 @@ func (m *AuthManager) GetAccessToken(ak, sk string) (string, error) {
 	if ok {
 		return token.token, nil
 	}
+	logger.Infof("Access token of ak `%s` not found, tring to refresh it...", maskAk(ak))
 	return m.GetAccessTokenWithRefresh(ak, sk)
 }
 
@@ -91,6 +100,7 @@ func (m *AuthManager) GetAccessTokenWithRefresh(ak, sk string) (string, error) {
 		// 最近更新时间小于最小刷新间隔，则直接返回
 		// 避免多个请求同时刷新，导致token被刷新多次
 		if current.Sub(lastUpdate) < time.Duration(GetConfig().AccessTokenRefreshMinInterval)*time.Second {
+			logger.Debugf("Access token of ak `%s` was freshed %s ago, skip refreshing", maskAk(ak), current.Sub(lastUpdate))
 			return token.token, nil
 		}
 	}
@@ -112,8 +122,10 @@ func (m *AuthManager) GetAccessTokenWithRefresh(ak, sk string) (string, error) {
 		return "", err
 	}
 	if resp.Error != "" {
-		return "", fmt.Errorf("refresh access token failed: %s", resp.ErrorDescription)
+		logger.Errorf("refresh access token of ak `%s` failed with error: %s", maskAk(ak), resp.ErrorDescription)
+		return "", &APIError{Msg: resp.ErrorDescription}
 	}
+	logger.Infof("Access token of ak `%s` was refreshed", maskAk(ak))
 	m.tokenMap[credential{ak, sk}] = &accessToken{
 		token:         resp.AccessToken,
 		lastUpateTime: time.Now(),

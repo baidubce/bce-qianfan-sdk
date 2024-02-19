@@ -16,7 +16,6 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 )
 
 // Completion 模型请求的参数结构体，但并非每个模型都完整支持如下参数，具体是否支持以 API 文档为准
@@ -83,10 +82,10 @@ func newCompletion(options *Options) *Completion {
 // 将 endpoint 转换成完整的 endpoint
 func (c *Completion) realEndpoint() (string, error) {
 	url := modelAPIPrefix
-	if c.Model != "" {
+	if c.Endpoint == "" {
 		endpoint, ok := CompletionModelEndpoint[c.Model]
 		if !ok {
-			return "", fmt.Errorf("model %s is not supported", c.Model)
+			return "", &ModelNotSupportedError{Model: c.Model}
 		}
 		url += endpoint
 	} else {

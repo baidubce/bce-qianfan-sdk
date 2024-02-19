@@ -16,6 +16,8 @@ package qianfan
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,11 +62,29 @@ func TestCompletion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, reqComp.Prompt, prompt)
 	assert.Equal(t, reqComp.Temperature, 0.5)
+
+	completion = NewCompletion(WithEndpoint("endpoint111"))
+	resp, err = completion.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt:      prompt,
+			Temperature: 0.5,
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "endpoint111")
+	assert.Contains(t, resp.Result, prompt)
+	reqComp, err = getRequestBody[CompletionRequest](resp.RawResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, reqComp.Prompt, prompt)
+	assert.Equal(t, reqComp.Temperature, 0.5)
 }
 
 func TestCompletionStream(t *testing.T) {
 
 	modelList := []string{"ERNIE-Bot-turbo", "SQLCoder-7B"}
+	prompt := "hello"
 	for _, m := range modelList {
 		chat := NewCompletion(
 			WithModel(m),
@@ -72,7 +92,7 @@ func TestCompletionStream(t *testing.T) {
 		resp, err := chat.Stream(
 			context.Background(),
 			&CompletionRequest{
-				Prompt:      "hello",
+				Prompt:      prompt,
 				Temperature: 0.5,
 			},
 		)
@@ -86,8 +106,76 @@ func TestCompletionStream(t *testing.T) {
 				break
 			}
 			turnCount++
-			assert.Contains(t, resp.Result, "hello")
+			assert.Contains(t, resp.Result, prompt)
 		}
 		assert.Greater(t, turnCount, 1)
 	}
+	for _, endpoint := range testEndpointList {
+		chat := NewCompletion(
+			WithEndpoint(endpoint),
+		)
+		resp, err := chat.Stream(
+			context.Background(),
+			&CompletionRequest{
+				Prompt:      prompt,
+				Temperature: 0.5,
+			},
+		)
+		assert.NoError(t, err)
+		defer resp.Close()
+		turnCount := 0
+		for {
+			resp, err := resp.Recv()
+			assert.NoError(t, err)
+			if resp.IsEnd {
+				break
+			}
+			turnCount++
+			assert.Contains(t, resp.Result, prompt)
+			assert.Equal(t, resp.Object, "completion")
+			assert.Contains(t, resp.RawResponse.Request.URL.Path, endpoint)
+			assert.Contains(t, resp.Result, prompt)
+			reqComp, err := getRequestBody[CompletionRequest](resp.RawResponse)
+			assert.NoError(t, err)
+			assert.Equal(t, reqComp.Prompt, prompt)
+			assert.Equal(t, reqComp.Temperature, 0.5)
+		}
+		assert.Greater(t, turnCount, 1)
+	}
+}
+
+func TestCompletionModelList(t *testing.T) {
+	list := NewCompletion().ModelList()
+	assert.Greater(t, len(list), 0)
+}
+
+func TestCompletionUnsupportedModel(t *testing.T) {
+	chat := NewCompletion(WithModel("unsupported_model"))
+	_, err := chat.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "hello",
+		},
+	)
+	assert.Error(t, err)
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "unsupported_model")
+}
+
+func TestCompletionAPIError(t *testing.T) {
+	chat := NewCompletion(
+		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+	)
+	resp, err := chat.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "",
+		},
+	)
+	fmt.Printf("%s", resp.Object)
+	assert.Error(t, err)
+	var target *APIError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Code, 336100)
 }

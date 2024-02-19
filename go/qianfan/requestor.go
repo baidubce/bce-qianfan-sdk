@@ -182,7 +182,7 @@ func (r *Requestor) addAuthInfo(request *QfRequest) error {
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)
 	}
-	return fmt.Errorf("no enough credentails found. Please set AK and SK or AccessKey and SecretKey")
+	return &CredentialNotFoundError{}
 }
 
 // 增加 accesstoken 鉴权信息
@@ -368,12 +368,12 @@ type streamInternal struct {
 }
 
 // 创建一个流
-func newStreamInternal(httpResponse *http.Response) (*streamInternal, error) {
+func newStreamInternal(httpResponse *http.Response) *streamInternal {
 	return &streamInternal{
 		httpResponse: httpResponse,
 		scanner:      bufio.NewScanner(httpResponse.Body),
 		IsEnd:        false,
-	}, nil
+	}
 }
 
 // 关闭流
@@ -486,9 +486,6 @@ func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 		break
 	}
 
-	stream, err := newStreamInternal(resp)
-	if err != nil {
-		return nil, err
-	}
+	stream := newStreamInternal(resp)
 	return stream, nil
 }

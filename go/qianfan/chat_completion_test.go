@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -25,12 +26,45 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+var testEndpointList = []string{
+	"endpoint1",
+	"sidaofjnon",
+	"98349823",
+	"fjid_432",
+}
 
 func TestChatCompletion(t *testing.T) {
 	for model, endpoint := range ChatModelEndpoint {
 		chat := NewChatCompletion(WithModel(model))
+		resp, err := chat.Do(
+			context.Background(),
+			&ChatCompletionRequest{
+				Messages: []ChatCompletionMessage{
+					ChatCompletionUserMessage("你好"),
+					ChatCompletionAssistantMessage("回复"),
+					ChatCompletionUserMessage("哈哈"),
+				},
+			},
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, resp.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, resp.Id, nil)
+		assert.Equal(t, resp.Object, "chat.completion")
+		assert.Contains(t, resp.RawResponse.Request.URL.Path, endpoint)
+		assert.Contains(t, resp.Result, "你好")
+		assert.Contains(t, resp.Result, "回复")
+		assert.Contains(t, resp.Result, "哈哈")
+
+		req, err := getRequestBody[ChatCompletionRequest](resp.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+	}
+	for _, endpoint := range testEndpointList {
+		chat := NewChatCompletion(WithEndpoint(endpoint))
 		resp, err := chat.Do(
 			context.Background(),
 			&ChatCompletionRequest{
@@ -83,17 +117,86 @@ func TestChatCompletionStream(t *testing.T) {
 		}
 		assert.True(t, turn_count > 1)
 	}
+	for _, endpoint := range testEndpointList {
+		chat := NewChatCompletion(WithEndpoint(endpoint))
+		resp, err := chat.Stream(
+			context.Background(),
+			&ChatCompletionRequest{
+				Messages: []ChatCompletionMessage{
+					ChatCompletionUserMessage("你好"),
+				},
+			},
+		)
+		assert.NoError(t, err)
+		turn_count := 0
+		for {
+			r, err := resp.Recv()
+			assert.NoError(t, err)
+			if resp.IsEnd {
+				break
+			}
+			turn_count++
+			assert.Equal(t, r.RawResponse.StatusCode, 200)
+			assert.NotEqual(t, r.Id, nil)
+			assert.Equal(t, r.Object, "chat.completion")
+			assert.Contains(t, r.RawResponse.Request.URL.Path, endpoint)
+			assert.Contains(t, r.Result, "你好")
+			req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+			assert.NoError(t, err)
+			assert.Equal(t, req.Messages[0].Content, "你好")
+		}
+		assert.True(t, turn_count > 1)
+	}
 }
 
-func TestMain(m *testing.M) {
+func TestChatCompletionUnsupportedModel(t *testing.T) {
+	chat := NewChatCompletion(WithModel("unsupported_model"))
+	_, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported_model")
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "unsupported_model")
+}
+
+func TestChatCompletionAPIError(t *testing.T) {
+	chat := NewChatCompletion()
+	_, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{},
+		},
+	)
+	assert.Error(t, err)
+	var target *APIError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Code, 336003)
+}
+
+func TestChatCompletionModelList(t *testing.T) {
+	list := NewChatCompletion().ModelList()
+	assert.Greater(t, len(list), 0)
+}
+
+func resetTestEnv() {
+	rand.Seed(time.Now().UnixNano())
+	logger.SetLevel(logrus.DebugLevel)
 	os.Setenv("QIANFAN_BASE_URL", "http://127.0.0.1:8866")
 	os.Setenv("QIANFAN_ACCESS_KEY", "test_access_key")
 	os.Setenv("QIANFAN_SECRET_KEY", "test_secret_key")
-	// authManager.GetAccessToken(GetConfig().AK, GetConfig().SK)
-	GetAuthManager().tokenMap[credential{AK: GetConfig().AK, SK: GetConfig().SK}] = &accessToken{
-		token:         "expired_token",
-		lastUpateTime: time.Now().Add(time.Duration(-100) * time.Hour),
-	}
+	_authManager = nil
+	_config = nil
+}
+
+func TestMain(m *testing.M) {
+	resetTestEnv()
 
 	os.Exit(m.Run())
 }

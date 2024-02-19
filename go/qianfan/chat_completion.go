@@ -16,7 +16,6 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 )
 
 // 表示对话内容的结构体
@@ -141,10 +140,10 @@ func newChatCompletion(options *Options) *ChatCompletion {
 // 将 endpoint 转换成完整的 url
 func (c *ChatCompletion) realEndpoint() (string, error) {
 	url := modelAPIPrefix
-	if c.Model != "" {
+	if c.Endpoint == "" {
 		endpoint, ok := ChatModelEndpoint[c.Model]
 		if !ok {
-			return "", fmt.Errorf("model %s is not supported", c.Model)
+			return "", &ModelNotSupportedError{Model: c.Model}
 		}
 		url += endpoint
 	} else {

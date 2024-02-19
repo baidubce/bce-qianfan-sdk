@@ -656,6 +656,13 @@ def auth():
         )
     ak = request.args.get("client_id")
     sk = request.args.get("client_secret")
+    if "bad" in sk:
+        return json_response(
+            {
+                "error_description": "Client authentication failed",
+                "error": "invalid_client",
+            }
+        )
     # check messages
     return json_response(
         {

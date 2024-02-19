@@ -15,7 +15,6 @@
 package qianfan
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -104,7 +103,7 @@ func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
 func checkResponseError(resp ModelAPIResponse) error {
 	errCode, errMsg := resp.GetError()
 	if errCode != 0 {
-		return fmt.Errorf("API return error. code: %d, msg: %s", errCode, errMsg)
+		return &APIError{Code: errCode, Msg: errMsg}
 	}
 	return nil
 }

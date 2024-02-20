@@ -16,7 +16,7 @@ package qianfan
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"math"
 	"strconv"
@@ -135,9 +135,17 @@ func (s *ModelResponseStream) checkResponseError() error {
 			if err != nil {
 				return err
 			}
+			logger.Warnf("stream request got error: %s, retrying request... retry count: %d", apiError, retryCount)
 		} else {
 			return nil
 		}
+		time.Sleep(
+			time.Duration(
+				math.Pow(
+					2,
+					float64(retryCount))*float64(s.Options.LLMRetryBackoffFactor),
+			) * time.Second,
+		)
 	}
 
 	if apiError == nil {
@@ -174,8 +182,9 @@ func checkResponseError(resp ModelAPIResponse) error {
 }
 
 func (m *BaseModel) withRetry(fn func() error) error {
-	for retryCount := 0; retryCount < m.Options.LLMRetryCount; retryCount++ {
-		err := fn()
+	var err error
+	for retryCount := 0; retryCount < m.Options.LLMRetryCount || m.Options.LLMRetryCount == 0; retryCount++ {
+		err = fn()
 		if err == nil {
 			return nil
 		}
@@ -183,6 +192,14 @@ func (m *BaseModel) withRetry(fn func() error) error {
 			retryCount -= 1
 			continue
 		}
+		var apiErr *APIError
+		ok := errors.As(err, &apiErr)
+		if ok {
+			if apiErr.Code != QPSLimitReachedErrCode && apiErr.Code != ServerHighLoadErrCode {
+				return err
+			}
+		}
+		logger.Warnf("request got error: %s, retrying request... retry count: %d", err, retryCount)
 		time.Sleep(
 			time.Duration(
 				math.Pow(
@@ -191,7 +208,7 @@ func (m *BaseModel) withRetry(fn func() error) error {
 			) * time.Second,
 		)
 	}
-	return fmt.Errorf("g")
+	return err
 }
 
 func (m *BaseModel) requestResource(request *QfRequest, response any) error {
@@ -206,7 +223,6 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 	var err error
 	tokenRefreshed := false
 	requestFunc := func() error {
-
 		modelApiResponse.ClearError()
 		err = m.Requestor.request(request, qfResponse)
 		if err != nil {

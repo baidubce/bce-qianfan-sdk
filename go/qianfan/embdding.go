@@ -92,6 +92,7 @@ func (c *Embedding) realEndpoint() (string, error) {
 	} else {
 		url += "/embeddings/" + c.Endpoint
 	}
+	logger.Debugf("requesting endpoint: %s", url)
 	return url, nil
 }
 

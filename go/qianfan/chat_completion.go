@@ -149,6 +149,7 @@ func (c *ChatCompletion) realEndpoint() (string, error) {
 	} else {
 		url += "/chat/" + c.Endpoint
 	}
+	logger.Debugf("requesting endpoint: %s", url)
 	return url, nil
 }
 

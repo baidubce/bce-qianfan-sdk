@@ -181,6 +181,7 @@ func (r *Requestor) addAuthInfo(request *QfRequest) error {
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)
 	}
+	logger.Error("no enough credential found. Please check whether (ak, sk) or (access_key, secret_key) is set in config")
 	return &CredentialNotFoundError{}
 }
 
@@ -214,7 +215,11 @@ func (r *Requestor) sign(request *QfRequest) error {
 		} else if u.Scheme == "https" {
 			port = "443"
 		} else {
-			return fmt.Errorf("unrecognized scheme: %s", u.Scheme)
+			logger.Errorf("Got unexpected protocol `%s` in requested API url `%s`.", u.Scheme, request.URL)
+			return &InvalidParamError{
+				Msg: fmt.Sprintf("unrecognized protocol `%s` is set in API base url."+
+					"Only http and https are supported.", u.Scheme),
+			}
 		}
 	}
 	porti, err := strconv.Atoi(port)
@@ -262,7 +267,7 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 	} else if request.Type == authRequest {
 		request.URL = GetConfig().BaseURL + request.URL
 	} else {
-		return nil, fmt.Errorf("unexpected request type: %s, this might be an internal error", request.Type)
+		return nil, &InternalError{"unexpected request type: " + request.Type}
 	}
 	bodyBytes, err := json.Marshal(request.Body)
 	if err != nil {
@@ -273,7 +278,7 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 		return nil, err
 	}
 	request.Headers["Content-Type"] = "application/json"
-	// IAM 签名
+	// 增加鉴权信息
 	err = r.addAuthInfo(&request)
 	if err != nil {
 		return nil, err
@@ -344,6 +349,7 @@ func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response,
 		IsEnd:         false,
 		firstResponse: false,
 	}
+	// 初始化请求
 	err := si.reset()
 	if err != nil {
 		return nil, err

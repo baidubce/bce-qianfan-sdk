@@ -38,6 +38,15 @@ func (e *InternalError) Error() string {
 	return fmt.Sprintf("internal error: %s. there might be a bug in sdk. please contact us", e.Msg)
 }
 
+// 参数非法
+type InvalidParamError struct {
+	Msg string
+}
+
+func (e *InvalidParamError) Error() string {
+	return fmt.Sprint("invalid param ", e.Msg)
+}
+
 // 内部使用，表示重试
 type tryAgainError struct {
 }

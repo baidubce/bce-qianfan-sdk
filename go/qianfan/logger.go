@@ -24,5 +24,5 @@ var logger = &logrus.Logger{
 	Out:       os.Stderr,
 	Formatter: new(logrus.TextFormatter),
 	Hooks:     make(logrus.LevelHooks),
-	Level:     logrus.WarnLevel,
+	Level:     logrus.InfoLevel,
 }

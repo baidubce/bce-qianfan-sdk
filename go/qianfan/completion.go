@@ -91,6 +91,7 @@ func (c *Completion) realEndpoint() (string, error) {
 	} else {
 		url += "/completions/" + c.Endpoint
 	}
+	logger.Debugf("requesting endpoint: %s", url)
 	return url, nil
 }
 

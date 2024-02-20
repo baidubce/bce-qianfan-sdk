@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 import typer
-from rich.console import Console, Group
+from rich.console import Group
 from rich.pretty import Pretty
 from rich.rule import Rule
 from rich.table import Table
@@ -31,6 +31,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
     print_success_msg,
+    replace_logger_handler,
     timestamp,
 )
 from qianfan.consts import DefaultLLMModel
@@ -124,7 +125,7 @@ def save(
     ),
 ) -> None:
     """Save dataset to platform or local file."""
-    console = Console()
+    console = replace_logger_handler()
     with console.status("Loading dataset..."):
         src_dataset = load_dataset(src)
 
@@ -293,7 +294,7 @@ def view(
     """
     View the content of the dataset.
     """
-    console = Console()
+    console = replace_logger_handler()
     if extract_id_from_path(dataset) is not None:
         check_credential()
     with console.status("Loading dataset..."):
@@ -407,7 +408,7 @@ def predict(
 ) -> None:
     """Predict the dataset using a model and save to local file."""
     input_column_list = input_columns.split(",")
-    console = Console()
+    console = replace_logger_handler()
     with console.status("Loading dataset..."):
         ds = load_dataset(
             dataset, input_columns=input_column_list, reference_column=reference_column

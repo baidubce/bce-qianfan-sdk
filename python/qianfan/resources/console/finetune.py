@@ -203,6 +203,7 @@ class FineTune(object):
             The `@console_api_request` decorator is applied to this method, enabling
             it to send the generated QfRequest and return a QfResponse to the user.
 
+            API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/2lnlebz15
             """
             req = QfRequest(
                 method="POST",
@@ -289,6 +290,26 @@ class FineTune(object):
             page_reverse: Optional[bool] = None,
             **kwargs: Any,
         ) -> QfRequest:
+            """
+            get fine-tune job list .
+
+            Parameters:
+            train_model: Optional[Union[str, console_consts.TrainMode]] = None,
+                "SFT" or "PostPretrain"
+            marker: Optional[str] = None,
+                job_id, the marker of the first page.
+            max_keys: Optional[int] = None,
+                max keys of the page.
+            page_reverse: Optional[bool] = None,
+                page reverse or not.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
@@ -321,6 +342,26 @@ class FineTune(object):
             page_reverse: Optional[bool] = None,
             **kwargs: Any,
         ) -> QfRequest:
+            """
+            get fine-tune task list .
+
+            Parameters:
+            job: str
+                job_id of tasks.
+            marker: Optional[str] = None,
+                job_id, the marker of the first page.
+            max_keys: Optional[int] = None,
+                max keys of the page.
+            page_reverse: Optional[bool] = None,
+                page reverse or not.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
@@ -346,10 +387,43 @@ class FineTune(object):
             task_id: str,
             **kwargs: Any,
         ) -> QfRequest:
+            """
+            stop the fine-tune task
+
+            Parameters:
+            task_id: str
+                task_id of the task.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(Consts.FineTuneTaskDetailAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "taskId": task_id,
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def stop_task(
+            cls,
+            task_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            QfRequest
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneStopTaskAction),
             )
             req.json_body = {
                 **kwargs,

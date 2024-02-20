@@ -32,7 +32,8 @@ from qianfan.resources import (
 )
 from qianfan.resources.console import consts as console_const
 from qianfan.resources.console.model import Model as ResourceModel
-from qianfan.utils import log_error, log_info, log_warn
+from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.utils import generate_letter_num_random_id
 
 
 class Model(
@@ -189,7 +190,6 @@ class Model(
             log_info(f"check model {self.id}/{self.version_id} published...")
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
-
         elif self.id:
             list_resp = ResourceModel.list(self.id, **kwargs)
             if len(list_resp["result"]["modelVersionList"]) == 0:
@@ -213,24 +213,14 @@ class Model(
             ]["runId"]
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
-
-        # 发布模型
-        self.model_name = name if name != "" else f"m_{self.job_id}_{self.task_id}"
-        model_publish_resp = ResourceModel.publish(
-            is_new=True,
-            model_name=self.model_name,
-            version_meta={"taskId": self.job_id, "iterationId": self.task_id},
-            **kwargs,
-        )
+        # 检查是否训练完成
         log_info(
             f"check train job: {self.task_id}/{self.job_id} status before publishing"
             " model"
         )
-        self.id = model_publish_resp["result"]["modelIDStr"]
-        self.old_id = model_publish_resp["result"]["modelId"]
         if self.task_id is None or self.job_id is None:
             raise InvalidArgumentError("task id or job id not found")
-        # 判断训练任务已经训练完成
+        # 判断训练任务已经训练完成：
         while True:
             job_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
@@ -245,6 +235,18 @@ class Model(
                 break
             else:
                 raise InvalidArgumentError("invalid train task job to publish model")
+        # 发布模型
+        self.model_name = (
+            name if name != "" else f"m_{generate_letter_num_random_id(12)}"
+        )
+        model_publish_resp = ResourceModel.publish(
+            is_new=True,
+            model_name=self.model_name,
+            version_meta={"taskId": self.job_id, "iterationId": self.task_id},
+            **kwargs,
+        )
+        self.id = model_publish_resp["result"]["modelIDStr"]
+        self.old_id = model_publish_resp["result"]["modelId"]
 
         if self.id is None:
             raise InvalidArgumentError("model id not found")
@@ -257,8 +259,12 @@ class Model(
 
         if self.version_id is None:
             raise InvalidArgumentError("model version id not found")
+        log_info(
+            f"publishing train task: {self.job_id}/{self.task_id} to model:"
+            f" {self.id}/{self.version_id}"
+        )
         self._wait_for_publish(**kwargs)
-
+        log_info(f"publish successfully to model: {self.id}/{self.version_id}")
         return self
 
     def _wait_for_publish(self, **kwargs: Any) -> None:
@@ -271,13 +277,12 @@ class Model(
         # 获取模型版本详情
         if self.version_id is None:
             raise InvalidArgumentError("model version id not found")
-        log_info("model ready to publish")
         while True:
             model_detail_info = ResourceModel.detail(
                 model_version_id=self.version_id, **kwargs
             )
             model_version_state = model_detail_info["result"]["state"]
-            log_info(f"check model publish status: {model_version_state}")
+            log_debug(f"check model publish status: {model_version_state}")
             if model_version_state == console_const.ModelState.Ready:
                 log_info(f"model {self.id}/{self.version_id} published successfully")
                 break

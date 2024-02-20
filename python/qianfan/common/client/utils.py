@@ -157,8 +157,8 @@ def list_model_callback(
         raise typer.Exit()
 
 
-def replace_logger_handler() -> Console:
-    console = Console(log_time_format="[%m/%d/%y %H:%M:%S]")
+def replace_logger_handler(**kwargs: Any) -> Console:
+    console = Console(log_time_format="[%m/%d/%y %H:%M:%S]", **kwargs)
     logger = qianfan_logging.logger._logger
     handlers = logger.handlers
     for handler in handlers:

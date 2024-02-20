@@ -64,7 +64,18 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         none
     output:
         ```
-        {"datasets" : [{"id": 1, "name": "test_dataset"}]}
+            {
+                "datasets": {
+                "sourceType": (
+                   2
+                ),
+                "versions": [
+                        {
+                            "versionBosUri": "bos:/bbb/"
+                        }
+                    ],
+                }
+            }
         ```
     """
 
@@ -212,22 +223,23 @@ class TrainAction(
 
     Input:
     ```
-    {'datasets': {"sourceType": (
-                        console_consts.TrainDatasetSourceType.PrivateBos.value
-                    ),
-                    "versions": [
-                        {
-                            "versionBosUri": bos_uploader.generate_bos_file_parent_path(
-                                bos_data_src.bucket, bos_data_src.bos_file_path
-                            )
-                        }
-                    ]}
+        {
+            "datasets": {
+            "sourceType": (
+                2
+            ),
+            "versions": [
+                    {
+                        "versionBosUri": "bos:/bbb/"
+                    }
+                ],
+            }
+        }
     ```
 
     Output:
     ```
-    {'task_id': "task-ddd", 'job_id': "job-xxxx"}
-    Sample code:
+        {'task_id': "task-ddd", 'job_id': "job-xxxx"}
     ```
     """
 
@@ -496,41 +508,56 @@ class TrainAction(
         if self.task_id is None:
             raise InvalidArgumentError("task_id must not be None")
         while True:
-            job_status_resp = api.FineTune.V2.task_detail(
+            task_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
                 **kwargs,
             )
-            job_status = job_status_resp["result"]["runStatus"]
-            job_progress = int(job_status_resp["result"]["runProgress"][:-1])
-            log_info(
-                "[train_action] fine-tune running..."
-                f" job_name:{self.job_name} current status: {job_status},"
-                f" {job_progress}% check train task log in"
-                f" https://console.bce.baidu.com/qianfan/train/sft/{self.job_id}/{self.task_id}/detail/traininglog"
-            )
-            if job_progress >= 50:
-                log_info(f" check vdl report in {job_status_resp['result']['vdlLink']}")
-            self.action_event(ActionState.Running, "train running", job_status_resp)
-            if job_status == console_consts.TrainStatus.Finish:
+            task_status_result = task_status_resp.get("result", {})
+            task_status = task_status_result.get("runStatus")
+
+            self.action_event(ActionState.Running, "train running", task_status_resp)
+            if task_status == console_consts.TrainStatus.Finish:
                 break
-            elif job_status in [
+            elif task_status in [
                 console_consts.TrainStatus.Fail,
                 console_consts.TrainStatus.Stop,
             ]:
                 log_error(
-                    "[train_action] fine-tune job"
+                    "[train_action] training job"
                     f" {self.job_id}/{self.task_id} has ended,"
-                    f" {job_status_resp}"
+                    f" {task_status_resp}"
                 )
                 raise InternalError(
-                    f"fine-tune job {self.job_id}/{self.task_id} has ended with"
-                    f" status: {job_status}"
+                    f"[train_action]training job {self.job_id}/{self.task_id} has ended"
+                    f" with status: {task_status}"
                 )
-            else:
+            elif task_status == console_consts.TrainStatus.Running:
+                job_progress_str = task_status_result.get("runProgress")
+                job_progress = int(job_progress_str[:-1])
+                log_prefix = (
+                    "sft"
+                    if self.train_mode == console_consts.TrainMode.SFT
+                    else "postPretrain"
+                )
+                log_info(
+                    "[train_action] training ..."
+                    f" job_name:{self.job_name} current status: {task_status},"
+                    f" {job_progress}% check train task log in"
+                    f" https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
+                )
+                if job_progress >= 50:
+                    log_info(
+                        f" check vdl report in {task_status_result.get('vdlLink')}"
+                    )
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
+            else:
+                raise InternalError(
+                    f"[train_action] job: {self.job_name} task:"
+                    f" {self.job_id}/{self.task_id} get unknown status: {task_status}"
+                )
         log_info(
-            "[train_action] fine-tune job has ended:"
-            f" {self.job_id}/{self.task_id} with status: {job_status}"
+            "[train_action] training job has ended:"
+            f" {self.job_id}/{self.task_id} with status: {task_status}"
         )
 
     @with_event
@@ -570,7 +597,7 @@ class TrainAction(
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
             return
-        api.FineTune.stop_job(self.task_id, self.job_id)
+        api.FineTune.V2.stop_task(self.task_id)
         log_debug(f"train job {self.task_id}/{self.job_id} stopped")
 
     def get_default_train_config(
@@ -603,12 +630,13 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     Input:
     ```
-    {'task_id': 47923, 'job_id': 33512}
+    {'task_id': "task-xxx", 'job_id': "job-xxx"}
     ```
 
     Output:
     ```
-    {'task_id': 47923, 'job_id': 33512, 'model_id': "xxx", 'model_version_id': "aaa"}
+    {'task_id': "task-xxx", 'job_id': "job-xxx", 'model_id': "xxx",
+    'model_version_id': "aaa", "model": <Model>}
     ```
     """
 
@@ -690,10 +718,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
 
     input:
-        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx"}
+        {'task_id': "task-xxxx", 'job_id': "job-xxxx", 'model_id': "xx",
+        'model_version_id': "xxx"}
     output:
         ```
-        {'task_id': 47923, 'job_id': 33512, 'model_id': "xx", 'model_version_id': "xxx",
+        {'task_id': "task-xxx", 'job_id': "job-xxxx", 'model_id': "xx",
+        'model_version_id': "xxx",
         'service_id': 164, 'service_endpoint': 'xbiimimv_xxx'}
         ```
     """
@@ -810,7 +840,7 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     Sample:
     input:
         ```
-        {'model_id': 47923, 'model_version_id': 33512}
+        {'model_id': "am-xxxx", 'model_version_id': "amv-xxxx"}
         ```
     output:
         ```

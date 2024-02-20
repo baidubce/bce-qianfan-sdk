@@ -47,7 +47,7 @@ from qianfan.version import VERSION
 # This constant is used to express no model is spcified,
 # so that SDK still can get the requirements of API from _supported_models()
 UNSPECIFIED_MODEL = "UNSPECIFIED_MODEL"
-MAX_WORKER_THREAD_COUNT = 100000
+MAX_WORKER_THREAD_COUNT = 1000
 
 
 class BatchRequestFuture(object):

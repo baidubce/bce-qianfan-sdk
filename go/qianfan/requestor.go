@@ -335,7 +335,7 @@ type streamInternal struct {
 }
 
 // 创建一个流
-func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) *streamInternal {
+func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
 	si := &streamInternal{
 		Requestor:     requestor,
 		requestFunc:   requestFunc,
@@ -344,8 +344,11 @@ func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response,
 		IsEnd:         false,
 		firstResponse: false,
 	}
-	si.reset()
-	return si
+	err := si.reset()
+	if err != nil {
+		return nil, err
+	}
+	return si, nil
 }
 
 func (si *streamInternal) reset() error {
@@ -427,6 +430,5 @@ func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 		return resp, nil
 	}
 
-	stream := newStreamInternal(r, sendRequest)
-	return stream, nil
+	return newStreamInternal(r, sendRequest)
 }

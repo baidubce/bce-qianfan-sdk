@@ -131,7 +131,10 @@ func (s *ModelResponseStream) checkResponseError() error {
 			} else if resp.ErrorCode != QPSLimitReachedErrCode && resp.ErrorCode != ServerHighLoadErrCode {
 				return apiError
 			}
-			s.reset()
+			err = s.reset()
+			if err != nil {
+				return err
+			}
 		} else {
 			return nil
 		}

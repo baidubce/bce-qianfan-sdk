@@ -17,7 +17,7 @@ Tokenizer
 """
 
 import unicodedata
-from typing import Any, Optional
+from typing import Any
 
 from qianfan import get_config
 from qianfan.consts import Consts
@@ -34,7 +34,7 @@ class Tokenizer(object):
     @classmethod
     def count_tokens(
         cls,
-        text: Optional[str],
+        text: str,
         mode: Literal["local", "remote"] = "local",
         model: str = "ERNIE-Bot",
         **kwargs: Any,
@@ -58,9 +58,6 @@ class Tokenizer(object):
             Additional keyword arguments that can be passed to customize the request.
 
         """
-        if not text:
-            return 0
-
         if mode not in ["local", "remote"]:
             raise InvalidArgumentError(
                 f"Mode `{mode}` is not supported for count token, supported mode:"

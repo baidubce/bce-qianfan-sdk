@@ -20,7 +20,7 @@ import datetime
 import threading
 import time
 import unicodedata
-from typing import Any, Optional
+from typing import Any
 
 from qianfan import get_config
 from qianfan.utils import log_error
@@ -30,7 +30,7 @@ _MINUTE_DEAD = datetime.timedelta(minutes=1)
 
 class _MiniLocalTokenizer:
     @classmethod
-    def count_tokens(cls, text: Optional[str]) -> int:
+    def count_tokens(cls, text: str) -> int:
         """
         Calculate the token count for a given text using a local simulation.
 
@@ -39,9 +39,6 @@ class _MiniLocalTokenizer:
         The token count is computed as follows:
         (Chinese characters count) + (English word count * 1.3)
         """
-        if not text:
-            return 0
-
         han_count = 0
         text_only_word = ""
         for ch in text:

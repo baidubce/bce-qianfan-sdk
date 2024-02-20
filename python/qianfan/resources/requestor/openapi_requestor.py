@@ -231,17 +231,28 @@ class QfAPIRequestor(BaseAPIRequestor):
                 raise errors.AccessTokenExpiredError
             raise errors.APIError(error_code, err_msg, req_id)
 
-    def _get_token_count_from_body(self, body: Dict[str, Any]) -> Optional[int]:
-        messages = body.get("messages", None)
-        if not messages:
-            return None
-
+    def _get_token_count_from_body(self, body: Dict[str, Any]) -> int:
         token_count = 0
-        assert isinstance(messages, list)
-        for message in messages:
-            token_count += self._token_limiter.tokenizer.count_tokens(
-                message["content"]
-            )
+        messages = body.get("messages", None)
+        prompt = body.get("prompt", None)
+
+        if messages and prompt:
+            err_msg = "messages and prompt exist simultaneously"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if messages:
+            assert isinstance(messages, list)
+            for message in messages:
+                content = message.get("content", None)
+                if not content:
+                    continue
+
+                token_count += self._token_limiter.tokenizer.count_tokens(content)
+
+        if prompt:
+            assert isinstance(prompt, str)
+            token_count += self._token_limiter.tokenizer.count_tokens(prompt)
 
         return token_count
 
@@ -316,10 +327,7 @@ class QfAPIRequestor(BaseAPIRequestor):
             req = self._add_access_token(req)
 
             token_count = self._get_token_count_from_body(body)
-            if token_count:
-                self._token_limiter.decline(token_count)
-            else:
-                token_count = 0
+            self._token_limiter.decline(token_count)
 
             if stream:
                 return self._compensate_token_usage_stream(
@@ -360,10 +368,7 @@ class QfAPIRequestor(BaseAPIRequestor):
             req = await self._async_add_access_token(req)
 
             token_count = self._get_token_count_from_body(body)
-            if token_count:
-                await self._async_token_limiter.decline(token_count)
-            else:
-                token_count = 0
+            await self._async_token_limiter.decline(token_count)
 
             if stream:
                 return self._async_compensate_token_usage_stream(

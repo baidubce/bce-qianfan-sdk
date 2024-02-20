@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -294,50 +295,15 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 
 // 进行请求，返回原始的 baseResponse，并将结果解析至 resp
 func (r *Requestor) request(request *QfRequest, response QfResponse) error {
-	sendRequest := func() error {
-		req, err := r.prepareRequest(*request)
-		if err != nil {
-			return err
-		}
-		err = r.sendRequestAndParse(req, response)
-		if err != nil {
-			return err
-		}
-		return nil
+	req, err := r.prepareRequest(*request)
+	if err != nil {
+		return err
 	}
-	tryCount := 0
-	for {
-		tryCount++
-		err := sendRequest()
-		if err != nil {
-			logger.Warnf("send request failed with error: %v, try count: %d", err, tryCount)
-			if tryCount >= r.Options.LLMRetryCount {
-				return err
-			}
-			time.Sleep(
-				time.Duration(
-					math.Pow(
-						2,
-						float64(tryCount))*float64(r.Options.LLMRetryBackoffFactor),
-				) * time.Second,
-			)
-			continue
-		}
-		// AccessToken 过期，重新获取并重试请求
-		if response.GetErrorCode() == "111" || response.GetErrorCode() == "110" {
-			logger.Info("access token expired, tring to refresh access token and retry request")
-			_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
-			if err != nil {
-				return err
-			}
-			if modelResp, ok := response.(*ModelResponse); ok {
-				modelResp.ModelAPIError = ModelAPIError{}
-			}
-			tryCount -= 1
-			continue
-		}
-		return nil
+	err = r.sendRequestAndParse(req, response)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 func (r *Requestor) sendRequestAndParse(request *http.Request, response QfResponse) error {
@@ -436,13 +402,58 @@ func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 		if err != nil {
 			return err
 		}
+		contentType := resp.Header.Get("Content-Type")
+		if contentType == "application/json" {
+			// 遇到错误
+			content, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			resp := make(map[string]interface{})
+			err = json.Unmarshal(content, &resp)
+			if err != nil {
+				return err
+			}
+			if errCode, ok := resp["error_code"]; ok {
+				if code, ok := errCode.(float64); ok {
+					code := int(code)
+					return &APIError{
+						Code: code,
+						Msg:  resp["error_msg"].(string),
+					}
+
+				}
+			}
+		}
 		return nil
 	}
 	tryCount := 0
+	tokenRefreshed := false
 	for {
 		tryCount++
 		err := sendRequest()
 		if err != nil {
+			var apiError *APIError
+			if errors.As(err, &apiError) {
+				// access token 过期
+				if apiError.Code == 110 || apiError.Code == 111 {
+					if tokenRefreshed {
+						return nil, err
+					}
+					logger.Info("access token expired, tring to refresh access token and retry request")
+					_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+					if err != nil {
+						return nil, err
+					}
+					tryCount -= 1
+					tokenRefreshed = true
+					continue
+				}
+				// ServerHighLoad || QPSLimitReached
+				if !(apiError.Code == 336100 || apiError.Code == 18) {
+					return nil, err
+				}
+			}
 			logger.Warnf("send request failed with error: %v, try count: %d", err, tryCount)
 			if tryCount >= r.Options.LLMRetryCount {
 				return nil, err
@@ -456,33 +467,7 @@ func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 			)
 			continue
 		}
-		contentType := resp.Header.Get("Content-Type")
-		if contentType == "application/json" {
-			// 遇到错误
-			content, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, err
-			}
-			resp := make(map[string]interface{})
-			err = json.Unmarshal(content, &resp)
-			if err != nil {
-				return nil, err
-			}
-			if errCode, ok := resp["error_code"]; ok {
-				if code, ok := errCode.(float64); ok {
-					code := int(code)
-					if code == 110 || code == 111 {
-						logger.Info("access token expired, tring to refresh access token and retry request")
-						_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
-						if err != nil {
-							return nil, err
-						}
-						tryCount -= 1
-						continue
-					}
-				}
-			}
-		}
+
 		break
 	}
 

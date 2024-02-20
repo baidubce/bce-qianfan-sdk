@@ -163,13 +163,12 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 		return nil, err
 	}
 	var resp ModelResponse
-	err = c.Requestor.request(req, &resp)
+
+	err = c.requestResource(req, &resp)
 	if err != nil {
 		return nil, err
 	}
-	if err = checkResponseError(&resp); err != nil {
-		return &resp, err
-	}
+
 	return &resp, nil
 }
 

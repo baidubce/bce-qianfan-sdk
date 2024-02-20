@@ -86,10 +86,10 @@ func TestCompletionStream(t *testing.T) {
 	modelList := []string{"ERNIE-Bot-turbo", "SQLCoder-7B"}
 	prompt := "hello"
 	for _, m := range modelList {
-		chat := NewCompletion(
+		comp := NewCompletion(
 			WithModel(m),
 		)
-		resp, err := chat.Stream(
+		resp, err := comp.Stream(
 			context.Background(),
 			&CompletionRequest{
 				Prompt:      prompt,
@@ -111,10 +111,10 @@ func TestCompletionStream(t *testing.T) {
 		assert.Greater(t, turnCount, 1)
 	}
 	for _, endpoint := range testEndpointList {
-		chat := NewCompletion(
+		comp := NewCompletion(
 			WithEndpoint(endpoint),
 		)
-		resp, err := chat.Stream(
+		resp, err := comp.Stream(
 			context.Background(),
 			&CompletionRequest{
 				Prompt:      prompt,
@@ -150,8 +150,8 @@ func TestCompletionModelList(t *testing.T) {
 }
 
 func TestCompletionUnsupportedModel(t *testing.T) {
-	chat := NewCompletion(WithModel("unsupported_model"))
-	_, err := chat.Do(
+	comp := NewCompletion(WithModel("unsupported_model"))
+	_, err := comp.Do(
 		context.Background(),
 		&CompletionRequest{
 			Prompt: "hello",
@@ -164,18 +164,46 @@ func TestCompletionUnsupportedModel(t *testing.T) {
 }
 
 func TestCompletionAPIError(t *testing.T) {
-	chat := NewCompletion(
+	comp := NewCompletion(
 		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
 	)
-	resp, err := chat.Do(
+	_, err := comp.Do(
 		context.Background(),
 		&CompletionRequest{
 			Prompt: "",
 		},
 	)
-	fmt.Printf("%s", resp.Object)
 	assert.Error(t, err)
 	var target *APIError
 	assert.ErrorAs(t, err, &target)
 	assert.Equal(t, target.Code, 336100)
+}
+
+func TestStreamCompletionAPIError(t *testing.T) {
+	comp := NewCompletion(
+		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+	)
+	_, err := comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "",
+		},
+	)
+	assert.Error(t, err)
+}
+
+func TestCompletionRetry(t *testing.T) {
+	defer resetTestEnv()
+	comp := NewCompletion(
+		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithLLMRetryCount(5),
+	)
+	resp, err := comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
 }

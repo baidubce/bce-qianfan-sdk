@@ -16,7 +16,6 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 )
 
 // 用于 Embedding 相关操作的结构体
@@ -84,10 +83,10 @@ func newEmbedding(options *Options) *Embedding {
 // endpoint 转成完整 url
 func (c *Embedding) realEndpoint() (string, error) {
 	url := modelAPIPrefix
-	if c.Model != "" {
+	if c.Endpoint == "" {
 		endpoint, ok := EmbeddingEndpoint[c.Model]
 		if !ok {
-			return "", fmt.Errorf("model %s is not supported", c.Model)
+			return "", &ModelNotSupportedError{Model: c.Model}
 		}
 		url += endpoint
 	} else {
@@ -108,13 +107,11 @@ func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 	}
 	resp := &EmbeddingResponse{}
 
-	err = c.Requestor.request(req, resp)
+	err = c.requestResource(req, resp)
 	if err != nil {
 		return nil, err
 	}
-	if err = checkResponseError(resp); err != nil {
-		return resp, err
-	}
+
 	return resp, nil
 }
 

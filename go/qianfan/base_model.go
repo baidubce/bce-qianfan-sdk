@@ -15,7 +15,10 @@
 package qianfan
 
 import (
+	"fmt"
+	"math"
 	"strconv"
+	"time"
 )
 
 // 模型相关的结构体基类
@@ -34,6 +37,7 @@ type ModelUsage struct {
 
 type ModelAPIResponse interface {
 	GetError() (int, string)
+	ClearError()
 }
 
 // API 错误信息
@@ -50,6 +54,12 @@ func (e *ModelAPIError) GetError() (int, string) {
 // 获取错误码
 func (e *ModelAPIError) GetErrorCode() string {
 	return strconv.Itoa(e.ErrorCode)
+}
+
+// 清除错误码
+func (e *ModelAPIError) ClearError() {
+	e.ErrorCode = 0
+	e.ErrorMsg = ""
 }
 
 // 搜索结果
@@ -72,7 +82,7 @@ type ModelResponse struct {
 	SentenceId       int           `json:"sentence_id"`        // 表示当前子句的序号。只有在流式接口模式下会返回该字段
 	IsEnd            bool          `json:"is_end"`             // 表示当前子句是否是最后一句。只有在流式接口模式下会返回该字段
 	IsTruncated      bool          `json:"is_truncated"`       // 当前生成的结果是否被截断
-	Result           string        `json:"result"`             // 	对话返回结果
+	Result           string        `json:"result"`             // 对话返回结果
 	NeedClearHistory bool          `json:"need_clear_history"` // 表示用户输入是否存在安全风险，是否关闭当前会话，清理历史会话信息
 	Usage            ModelUsage    `json:"usage"`              // token统计信息
 	FunctionCall     *FunctionCall `json:"function_call"`      // 由模型生成的函数调用，包含函数名称，和调用参数
@@ -104,6 +114,66 @@ func checkResponseError(resp ModelAPIResponse) error {
 	errCode, errMsg := resp.GetError()
 	if errCode != 0 {
 		return &APIError{Code: errCode, Msg: errMsg}
+	}
+	return nil
+}
+
+func (m *BaseModel) withRetry(fn func() error) error {
+	for retryCount := 0; retryCount < m.Options.LLMRetryCount; retryCount++ {
+		err := fn()
+		if err == nil {
+			return nil
+		}
+		if _, ok := err.(*tryAgainError); ok {
+			retryCount -= 1
+			continue
+		}
+		time.Sleep(
+			time.Duration(
+				math.Pow(
+					2,
+					float64(retryCount))*float64(m.Options.LLMRetryBackoffFactor),
+			) * time.Second,
+		)
+	}
+	return fmt.Errorf("g")
+}
+
+func (m *BaseModel) requestResource(request *QfRequest, response any) error {
+	qfResponse, ok := response.(QfResponse)
+	if !ok {
+		return &InternalError{Msg: "response is not QfResponse"}
+	}
+	modelApiResponse, ok := response.(ModelAPIResponse)
+	if !ok {
+		return &InternalError{Msg: "response is not ModelResponse"}
+	}
+	var err error
+	tokenRefreshed := false
+	requestFunc := func() error {
+
+		modelApiResponse.ClearError()
+		err = m.Requestor.request(request, qfResponse)
+		if err != nil {
+			return err
+		}
+		if err = checkResponseError(modelApiResponse); err != nil {
+			errCode, _ := modelApiResponse.GetError()
+			if !tokenRefreshed && (errCode == 110 || errCode == 111) {
+				tokenRefreshed = true
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				if err != nil {
+					return err
+				}
+				return &tryAgainError{}
+			}
+			return err
+		}
+		return nil
+	}
+	retryErr := m.withRetry(requestFunc)
+	if retryErr != nil {
+		return err
 	}
 	return nil
 }

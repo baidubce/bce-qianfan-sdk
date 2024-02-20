@@ -18,10 +18,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -328,18 +326,39 @@ func (r *Requestor) sendRequestAndParse(request *http.Request, response QfRespon
 
 // 流的内部实现，用于接收流中的响应
 type streamInternal struct {
-	httpResponse *http.Response // 原始的 http.Response
-	scanner      *bufio.Scanner // 读取流的 scanner
-	IsEnd        bool           // 流是否已经结束
+	*Requestor                                   // 请求器
+	requestFunc   func() (*http.Response, error) // 请求流中的响应的函数
+	httpResponse  *http.Response                 // 原始的 http.Response
+	scanner       *bufio.Scanner                 // 读取流的 scanner
+	IsEnd         bool                           // 流是否已经结束
+	firstResponse bool                           // 是否已经读取过第一个响应
 }
 
 // 创建一个流
-func newStreamInternal(httpResponse *http.Response) *streamInternal {
-	return &streamInternal{
-		httpResponse: httpResponse,
-		scanner:      bufio.NewScanner(httpResponse.Body),
-		IsEnd:        false,
+func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) *streamInternal {
+	si := &streamInternal{
+		Requestor:     requestor,
+		requestFunc:   requestFunc,
+		httpResponse:  nil,
+		scanner:       nil,
+		IsEnd:         false,
+		firstResponse: false,
 	}
+	si.reset()
+	return si
+}
+
+func (si *streamInternal) reset() error {
+	response, err := si.requestFunc()
+	si.IsEnd = false
+	si.firstResponse = true
+	if err != nil {
+		si.IsEnd = true
+		return err
+	}
+	si.httpResponse = response
+
+	return nil
 }
 
 // 关闭流
@@ -349,7 +368,11 @@ func (si *streamInternal) Close() {
 
 // 接受流中的响应，并将结果解析至 resp
 func (si *streamInternal) Recv(resp QfResponse) error {
+	si.firstResponse = false
 	var eventData []byte
+	if si.scanner == nil {
+		si.scanner = bufio.NewScanner(si.httpResponse.Body)
+	}
 	for len(eventData) == 0 {
 		for {
 			if !si.scanner.Scan() {
@@ -392,85 +415,18 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 
 // 发送请求，返回流对象
 func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
-	var resp *http.Response
-	sendRequest := func() error {
+	sendRequest := func() (*http.Response, error) {
 		req, err := r.prepareRequest(*request)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		resp, err = r.client.Do(req)
+		resp, err := r.client.Do(req)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		contentType := resp.Header.Get("Content-Type")
-		if contentType == "application/json" {
-			// 遇到错误
-			content, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-			resp := make(map[string]interface{})
-			err = json.Unmarshal(content, &resp)
-			if err != nil {
-				return err
-			}
-			if errCode, ok := resp["error_code"]; ok {
-				if code, ok := errCode.(float64); ok {
-					code := int(code)
-					return &APIError{
-						Code: code,
-						Msg:  resp["error_msg"].(string),
-					}
-
-				}
-			}
-		}
-		return nil
-	}
-	tryCount := 0
-	tokenRefreshed := false
-	for {
-		tryCount++
-		err := sendRequest()
-		if err != nil {
-			var apiError *APIError
-			if errors.As(err, &apiError) {
-				// access token 过期
-				if apiError.Code == 110 || apiError.Code == 111 {
-					if tokenRefreshed {
-						return nil, err
-					}
-					logger.Info("access token expired, tring to refresh access token and retry request")
-					_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
-					if err != nil {
-						return nil, err
-					}
-					tryCount -= 1
-					tokenRefreshed = true
-					continue
-				}
-				// ServerHighLoad || QPSLimitReached
-				if !(apiError.Code == 336100 || apiError.Code == 18) {
-					return nil, err
-				}
-			}
-			logger.Warnf("send request failed with error: %v, try count: %d", err, tryCount)
-			if tryCount >= r.Options.LLMRetryCount {
-				return nil, err
-			}
-			time.Sleep(
-				time.Duration(
-					math.Pow(
-						2,
-						float64(tryCount))*float64(r.Options.LLMRetryBackoffFactor),
-				) * time.Second,
-			)
-			continue
-		}
-
-		break
+		return resp, nil
 	}
 
-	stream := newStreamInternal(resp)
+	stream := newStreamInternal(r, sendRequest)
 	return stream, nil
 }

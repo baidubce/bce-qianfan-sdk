@@ -15,7 +15,9 @@
 package qianfan
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"time"
@@ -97,9 +99,59 @@ type ModelResponseStream struct {
 	*streamInternal
 }
 
+func newModelResponseStream(si *streamInternal) *ModelResponseStream {
+	return &ModelResponseStream{streamInternal: si}
+}
+
+func (s *ModelResponseStream) checkResponseError() error {
+	tokenRefreshed := false
+	var apiError *APIError
+	for retryCount := 0; retryCount < s.Options.LLMRetryCount || s.Options.LLMRetryCount == 0; retryCount++ {
+		contentType := s.httpResponse.Header.Get("Content-Type")
+		if contentType == "application/json" {
+			// 遇到错误
+			var resp ModelResponse
+			content, err := io.ReadAll(s.httpResponse.Body)
+			if err != nil {
+				return err
+			}
+
+			err = json.Unmarshal(content, &resp)
+			if err != nil {
+				return err
+			}
+			apiError = &APIError{Code: resp.ErrorCode, Msg: resp.ErrorMsg}
+			if !tokenRefreshed && (resp.ErrorCode == APITokenInvalidErrCode || resp.ErrorCode == APITokenExpiredErrCode) {
+				tokenRefreshed = true
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				if err != nil {
+					return err
+				}
+				retryCount--
+			} else if resp.ErrorCode != QPSLimitReachedErrCode && resp.ErrorCode != ServerHighLoadErrCode {
+				return apiError
+			}
+			s.reset()
+		} else {
+			return nil
+		}
+	}
+
+	if apiError == nil {
+		return &InternalError{Msg: "there must be an api error here"}
+	}
+	return apiError
+}
+
 // 获取ModelResponse流式结果
 func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
 	var resp ModelResponse
+	if s.firstResponse {
+		err := s.checkResponseError()
+		if err != nil {
+			return nil, err
+		}
+	}
 	err := s.streamInternal.Recv(&resp)
 	if err != nil {
 		return nil, err
@@ -159,7 +211,8 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 		}
 		if err = checkResponseError(modelApiResponse); err != nil {
 			errCode, _ := modelApiResponse.GetError()
-			if !tokenRefreshed && (errCode == 110 || errCode == 111) {
+			if !tokenRefreshed && (errCode == APITokenInvalidErrCode ||
+				errCode == APITokenExpiredErrCode) {
 				tokenRefreshed = true
 				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
 				if err != nil {

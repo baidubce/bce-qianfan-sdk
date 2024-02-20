@@ -183,12 +183,14 @@ func TestStreamCompletionAPIError(t *testing.T) {
 	comp := NewCompletion(
 		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
 	)
-	_, err := comp.Stream(
+	s, err := comp.Stream(
 		context.Background(),
 		&CompletionRequest{
 			Prompt: "",
 		},
 	)
+	assert.NoError(t, err)
+	_, err = s.Recv()
 	assert.Error(t, err)
 }
 
@@ -206,4 +208,48 @@ func TestCompletionRetry(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Object, "completion")
+}
+
+func TestCompletionStreamRetry(t *testing.T) {
+	GetConfig().LLMRetryCount = 5
+	defer resetTestEnv()
+	prompt := "promptprompt"
+	comp := NewCompletion(
+		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+	)
+	stream, err := comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: prompt,
+		},
+	)
+	assert.NoError(t, err)
+	turnCount := 0
+	for {
+		resp, err := stream.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		turnCount++
+		assert.Contains(t, resp.Result, prompt)
+	}
+	assert.Greater(t, turnCount, 1)
+
+	comp = NewCompletion(
+		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithLLMRetryCount(1),
+	)
+	stream, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: prompt,
+		},
+	)
+	assert.NoError(t, err)
+	_, err = stream.Recv()
+	assert.Error(t, err)
+	var target *APIError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Code, ServerHighLoadErrCode)
 }

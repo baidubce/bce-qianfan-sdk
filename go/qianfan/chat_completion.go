@@ -187,9 +187,7 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 	if err != nil {
 		return nil, err
 	}
-	return &ModelResponseStream{
-		streamInternal: stream,
-	}, nil
+	return newModelResponseStream(stream), nil
 }
 
 // chat 支持的模型列表

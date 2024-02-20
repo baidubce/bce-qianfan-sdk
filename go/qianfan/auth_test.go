@@ -165,12 +165,13 @@ func TestAccessTokenExpired(t *testing.T) {
 		},
 	)
 	assert.NoError(t, err)
-	token, err = GetAuthManager().GetAccessToken(ak, sk)
-	assert.NoError(t, err)
-	assert.Equal(t, token, fakeAccessToken(ak, sk))
+
 	for {
 		r, err := stream.Recv()
 		assert.NoError(t, err)
+		token, err = GetAuthManager().GetAccessToken(ak, sk)
+		assert.NoError(t, err)
+		assert.Equal(t, token, fakeAccessToken(ak, sk))
 		assert.Contains(t, r.RawResponse.Request.URL.Query().Get("access_token"), fakeAccessToken(ak, sk))
 		if r.IsEnd {
 			break

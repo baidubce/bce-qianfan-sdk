@@ -245,9 +245,9 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         return token_count
 
-    def _compensate_token_usage(
-        self, resp: Union[QfResponse, Iterator[QfResponse]], token_count: int
-    ) -> Union[QfResponse, Iterator[QfResponse]]:
+    def _compensate_token_usage_non_stream(
+        self, resp: QfResponse, token_count: int
+    ) -> QfResponse:
         if isinstance(resp, QfResponse):
             token_usage = resp.body.get("usage", {}).get("total_tokens", 0)
             if token_usage:
@@ -255,6 +255,9 @@ class QfAPIRequestor(BaseAPIRequestor):
 
             return resp
 
+    def _compensate_token_usage_stream(
+        self, resp: Iterator[QfResponse], token_count: int
+    ) -> Iterator[QfResponse]:
         if isinstance(resp, Iterator):
             token_usage = 0
             for res in resp:
@@ -319,11 +322,14 @@ class QfAPIRequestor(BaseAPIRequestor):
                 token_count = 0
 
             if stream:
-                resp = self._request_stream(req, data_postprocess=data_postprocess)
+                return self._compensate_token_usage_stream(
+                    self._request_stream(req, data_postprocess=data_postprocess),
+                    token_count,
+                )
             else:
-                resp = self._request(req, data_postprocess=data_postprocess)
-
-            return self._compensate_token_usage(resp, token_count)
+                return self._compensate_token_usage_non_stream(
+                    self._request(req, data_postprocess=data_postprocess), token_count
+                )
 
         return self._with_retry(retry_config, _helper)
 

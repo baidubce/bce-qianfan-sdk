@@ -37,13 +37,9 @@ class VersatileRateLimiter:
         self, query_per_second: float = 0, request_per_minute: float = 0, **kwargs: Any
     ) -> None:
         if request_per_minute <= 0:
-            request_per_minute = 0
+            request_per_minute = get_config().RPM_LIMIT
         if query_per_second <= 0:
             query_per_second = get_config().QPS_LIMIT
-
-        self.is_closed = request_per_minute <= 0 and query_per_second <= 0
-        if self.is_closed:
-            return
 
         if request_per_minute > 0 and query_per_second > 0:
             err_msg = (
@@ -51,6 +47,10 @@ class VersatileRateLimiter:
             )
             log_error(err_msg)
             raise ValueError(err_msg)
+
+        self.is_closed = request_per_minute <= 0 and query_per_second <= 0
+        if self.is_closed:
+            return
 
         if request_per_minute > 0:
             self._is_rpm = True

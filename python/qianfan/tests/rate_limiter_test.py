@@ -145,3 +145,13 @@ def test_set_rate_limiter_through_environment_variable():
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
     get_config().QPS_LIMIT = 0
+
+
+def test_set_rpm_limiter_function():
+    start_timestamp = time.time()
+    rpm_rl = VersatileRateLimiter(request_per_minute=10)
+    for i in range(0, 2):
+        with rpm_rl:
+            pass
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp >= 2

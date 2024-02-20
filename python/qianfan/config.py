@@ -45,6 +45,8 @@ class GlobalConfig(BaseSettings):
         default=DefaultValue.AccessTokenRefreshMinInterval
     )
     QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
+    RPM_LIMIT: float = Field(default=DefaultValue.RpmLimit)
+    TOKEN_LIMIT: int = Field(default=DefaultValue.TokenLimit)
     APPID: Optional[int] = Field(default=None)
 
     # for private

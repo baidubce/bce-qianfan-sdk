@@ -1,0 +1,79 @@
+name: Notebook CI
+
+on:
+#  push:   # 只有push触发
+#    paths:
+#      - 'cookbook/**/*.ipynb'  # cookbook目录下所有ipynb文件有改动时触发
+#      - '!cookbook/.ipynb_checkpoints/**'  # 排除.ipynb_checkpoints目录下所有文件
+  workflow_dispatch:  # 手动触发
+
+defaults:
+  run:
+    shell: bash  # 默认shell为bash
+    working-directory: ./cookbook  # 默认工作目录为cookbook
+
+env:
+  RUFF_OUTPUT_FORMAT: github
+
+jobs:
+  run:
+    name: Unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - 'ubuntu-latest'
+#          - 'macos-latest'
+#          - 'windows-latest'
+        python-version:
+#          - '3.7'
+#          - '3.8'
+          - '3.9'
+#          - '3.10'
+#          - '3.11'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+          # 获取commit内容
+      # - name: Get changed files
+      #   id: changed-files
+      #   uses: tj-actions/changed-files@v42
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+          # poetry 安装库
+#      - name: Install Poetry
+#        run: |
+#          pip install poetry
+#          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+#          poetry lock
+#      - name: Get Poetry version
+#        run: poetry --version
+#      - name: Setup Python Cache
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{matrix.python-version}}
+#          cache: "poetry"
+#      - name: Install deps
+#        run: |
+#          make install
+          # 手动安装库
+      - name: pip_install
+        run: |
+          python3 -m pip install papermill ipykernel nbformat nbconvert pytest qianfan
+          python3 -m pip install langchain chromadb pdfplumber datasets duckduckgo_search
+          python3 -m ipykernel install --user
+
+  #     运行ipynb
+      - name: run_cookbook
+        env:  # 配置环境变量
+          QIANFAN_ACCESS_KEY: ${{ secrets.QIANFAN_ACCESS_KEY }}
+          QIANFAN_SECRET_KEY: ${{ secrets.QIANFAN_SECRET_KEY }}
+          KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
+          github_root: ${{ github.workspace }}
+        run: |
+          cd ${{ github.workspace }}/test_CI/test && pytest ${{ github.workspace }}/test/test_spilt.py --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

@@ -75,7 +75,7 @@ class Env:
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
     RpmLimit: str = "QIANFAN_RPM_LIMIT"
-    TokenLimit: str = "QIANFAN_TOKEN_LIMIT"
+    TpmLimit: str = "QIANFAN_TPM_LIMIT"
     DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
     ImportStatusPollingInterval: str = "QIANFAN_IMPORT_STATUS_POLLING_INTERVAL"
     ExportStatusPollingInterval: str = "QIANFAN_EXPORT_STATUS_POLLING_INTERVAL"
@@ -130,7 +130,7 @@ class DefaultValue:
     }
     QpsLimit: float = 0
     RpmLimit: float = 0
-    TokenLimit: int = 0
+    TpmLimit: int = 0
     DotEnvConfigFile: str = ".env"
 
     EnablePrivate: bool = False

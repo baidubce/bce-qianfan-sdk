@@ -83,12 +83,14 @@ class _MiniLocalTokenizer:
 
 
 class BaseTokenLimiter:
+    """Common base function collection of Token Limiter"""
+
     tokenizer = _MiniLocalTokenizer()
 
     def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
         self._token_limit_per_minute = token_limit_per_minute
         if self._token_limit_per_minute == 0:
-            self._token_limit_per_minute = get_config().TOKEN_LIMIT
+            self._token_limit_per_minute = get_config().TPM_LIMIT
 
         self._token_current = self._token_limit_per_minute
         self._last_check_timestamp = datetime.datetime.utcnow()
@@ -116,11 +118,15 @@ class BaseTokenLimiter:
 
 
 class TokenLimiter(BaseTokenLimiter):
-    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
+    """Synchronous Token Limiter implementation"""
+
+    def __init__(self, token_per_minute: int = 0, **kwargs: Any) -> None:
         self._lock = threading.Lock()
-        super().__init__(token_limit_per_minute, **kwargs)
+        super().__init__(token_per_minute, **kwargs)
 
     def decline(self, token_used: int) -> None:
+        """decline token from limiter when start to do a request"""
+
         if self._is_closed():
             return
 
@@ -141,17 +147,26 @@ class TokenLimiter(BaseTokenLimiter):
             raise RuntimeError(err_msg)
 
     def compensate(self, compensation: int) -> None:
+        """
+        justify the remaining token count in limiter
+        when receive a response from server
+        """
+
         if self._lock.acquire(timeout=1):
             self._token_current += compensation
             self._lock.release()
 
 
 class AsyncTokenLimiter(BaseTokenLimiter):
-    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
+    """Asynchronous Token Limiter implementation"""
+
+    def __init__(self, token_per_minute: int = 0, **kwargs: Any) -> None:
         self._lock = asyncio.Lock()
-        super().__init__(token_limit_per_minute, **kwargs)
+        super().__init__(token_per_minute, **kwargs)
 
     async def decline(self, token_used: int) -> None:
+        """decline token from limiter when start to do a request"""
+
         if self._is_closed():
             return
 
@@ -172,6 +187,11 @@ class AsyncTokenLimiter(BaseTokenLimiter):
             raise RuntimeError(err_msg)
 
     async def compensate(self, compensation: int) -> None:
+        """
+        justify the remaining token count in limiter
+        when receive a response from server
+        """
+
         if not self._lock.locked():
             async with self._lock:
                 self._token_current += compensation

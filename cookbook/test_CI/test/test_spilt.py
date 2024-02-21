@@ -60,8 +60,6 @@ def keywords_dict():
     keywords = os.environ['KEYWORDS_DICT']
     # 读取json字符串api_key
     keywords_dict = json.loads(keywords)
-    print(keywords_dict)
-    # print(keywords_dict['your_bes_url'])
     return keywords_dict
 
 @pytest.mark.parametrize(
@@ -69,12 +67,6 @@ def keywords_dict():
     [(
             '**/test_*.ipynb',
             {
-                # "your_bes_url": "bes",
-                # "your_pinecone_ak": "pine",
-                # "your_wandb_ak": "wandbak",
-                # "your_wandb_sk": "wandbsk",
-                # "your_app_id": 124,
-                # "your_bucket_name": "bsda"
             }
     )]
 )

@@ -136,7 +136,7 @@ class ProcessCookbook(BaseModel):
     @staticmethod
     def clean_env(cell):
         if cell.cell_type == 'code' and cell.get('source'):
-            pat_group = '|'.join(['QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY', "KEYWORDS_DICT", "ROOT_DIR"])
+            pat_group = '|'.join(['QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY', "KEYWORDS_DICT", "ROOT_DIR", "QIANFAN_AK", "QIANFAN_SK"])
             source = cell['source']
 
             pat_l, pat_r = r'(os.environ\[[\'\"])', r'([\'\"]\])'

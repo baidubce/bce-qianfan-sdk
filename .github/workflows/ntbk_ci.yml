@@ -79,4 +79,4 @@ jobs:
           KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
           github_root: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}/cookbook/test_CI/test && pytest -v -r A --full-trace  ${{ github.workspace }}/cookbook/test --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"
+          cd ${{ github.workspace }}/cookbook/test_CI/test && pytest -v -r A --full-trace  ${{ github.workspace }}/cookbook/test_CI --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

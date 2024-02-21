@@ -18,7 +18,7 @@ env:
 
 jobs:
   run:
-    name: Unit tests
+    name: Notebook Unit Tests
     runs-on: ${{ matrix.os }}
     environment:
       name: my_bce_iam
@@ -79,4 +79,4 @@ jobs:
           KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
           github_root: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}/test_CI/test && pytest ${{ github.workspace }}/test/test_spilt.py --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"
+          cd ${{ github.workspace }}/cookbook/test_CI/test && pytest ${{ github.workspace }}/test/test_spilt.py --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

@@ -29,7 +29,7 @@ from qianfan.utils import log_error
 class VersatileRateLimiter:
     """
     Implementation of Versatile Rate Limiter.
-    They're different rules between synchronous and asynchronous method using,
+    There are different rules between synchronous and asynchronous method using,
     we recommend only use one of two method within single rate limiter at same time
     """
 
@@ -125,7 +125,7 @@ class RateLimiter:
 
             Raises:
                 ValueError: A ValueError will be raised if `query_per_period` is smaller
-                than 1 or `period_in_second` isn't positive
+                than 0 or `period_in_second` isn't positive
             """
             if not (query_per_period >= 0 and period_in_second > 0):
                 raise ValueError(

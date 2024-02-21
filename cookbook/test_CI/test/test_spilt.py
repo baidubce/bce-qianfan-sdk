@@ -17,6 +17,8 @@ def env_set(request):
         os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
 
     os.environ['ROOT_DIR'] = request.config.getoption("--root-dir")
+    os.environ['ROOT_DIR'] = '../../..'
+
     yield
     if os.environ.get('QIANFAN_ACCESS_KEY'):
         del os.environ['QIANFAN_ACCESS_KEY']
@@ -59,6 +61,7 @@ def keywords_dict():
     # 读取json字符串api_key
     keywords_dict = json.loads(keywords)
     print(keywords_dict)
+    # print(keywords_dict['your_bes_url'])
     return keywords_dict
 
 @pytest.mark.parametrize(
@@ -76,7 +79,6 @@ def keywords_dict():
     )]
 )
 def test_demo(file_reg, params_dict, keywords_dict, const_dir):
-    print(keywords_dict)
     template(file_reg=file_reg, params_dict=params_dict, keywords_dict=keywords_dict, **const_dir)
 
 
@@ -89,7 +91,6 @@ def test_demo(file_reg, params_dict, keywords_dict, const_dir):
     )]
 )
 def test_function_call(file_reg, params_dict, keywords_dict, const_dir):
-    print(keywords_dict)
     template(file_reg=file_reg, params_dict=params_dict, keywords_dict=keywords_dict, **const_dir)
 
 
@@ -102,7 +103,6 @@ def test_function_call(file_reg, params_dict, keywords_dict, const_dir):
     )]
 )
 def test_qa(file_reg, params_dict, keywords_dict, const_dir):
-    print(keywords_dict)
     template(file_reg=file_reg, params_dict=params_dict, keywords_dict=keywords_dict, **const_dir)
 
 

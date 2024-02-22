@@ -47,6 +47,7 @@ class LLMFinetune(Trainer):
     Class implements the SFT training pipeline with several actions.
     Use `run()` to synchronously run the training pipeline until the
     model training is finished.
+    or use `start()`, `wait()`, `stop()` to run the training asynchronously.
     """
 
     def __init__(
@@ -236,7 +237,7 @@ class LLMFinetune(Trainer):
         """
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to get status")
-        action = self.ppls[0][str(self.ppls[0]._state)]
+        action = self.ppls[0][str(self.ppls[0].current_action)]
         if action is None:
             return TrainStatus.Unknown
         action_name = action.__class__.__name__
@@ -254,9 +255,13 @@ class LLMFinetune(Trainer):
             Trainer:
                 self, for chain invocation.
         """
-        for ppl in self.ppls:
-            ppl.stop()
-        return self
+        # 后台运行的任务
+        if self.process:
+            return super().stop(**kwargs)
+        else:
+            for ppl in self.ppls:
+                ppl.stop()
+            return self
 
     def resume(self, **kwargs: Dict) -> "LLMFinetune":
         """

@@ -106,6 +106,7 @@ func newModelResponseStream(si *streamInternal) *ModelResponseStream {
 func (s *ModelResponseStream) checkResponseError() error {
 	tokenRefreshed := false
 	var apiError *APIError
+	// LLMRetryCount 为 0 时表示不限制重试次数
 	for retryCount := 0; retryCount < s.Options.LLMRetryCount || s.Options.LLMRetryCount == 0; retryCount++ {
 		contentType := s.httpResponse.Header.Get("Content-Type")
 		if contentType == "application/json" {
@@ -183,6 +184,7 @@ func checkResponseError(resp ModelAPIResponse) error {
 
 func (m *BaseModel) withRetry(fn func() error) error {
 	var err error
+	// 当 LLMRetryCount 为 0 表示不限制重试次数
 	for retryCount := 0; retryCount < m.Options.LLMRetryCount || m.Options.LLMRetryCount == 0; retryCount++ {
 		err = fn()
 		if err == nil {

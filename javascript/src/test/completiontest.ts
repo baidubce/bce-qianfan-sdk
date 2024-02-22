@@ -19,4 +19,16 @@ async function main() {
     console.log(resp);
 }
 
+// // 流式 测试
+// async function main() {
+//     const stream =  await client.completions({
+//         prompt: 'Introduce the city Beijing',
+//         stream: true,
+//       }, "SQLCoder-7B");
+//       console.log('流式返回结果')
+//       for await (const chunk of stream as AsyncIterableIterator<any>) {
+//           console.log(chunk);
+//         }
+// }
+
 main();

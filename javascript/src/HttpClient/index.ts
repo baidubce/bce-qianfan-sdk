@@ -12,11 +12,13 @@ import * as packageJson from '../../package.json';
 import Auth from './auth';
 import * as H from './headers';
 import {urlObjectToPlainObject} from './strings';
+import {Stream} from '../streaming'
 
 const debug = createDebug('bce-sdk:HttpClient');
 // 获取版本号
 const version = packageJson.version;
 class HttpClient extends EventEmitter {
+    private controller: AbortController;
     private readonly defaultHeaders: Record<string, any> = {
         [H.CONNECTION]: 'close',
         [H.CONTENT_TYPE]: 'application/json; charset=UTF-8',
@@ -30,15 +32,16 @@ class HttpClient extends EventEmitter {
     constructor(private config: any) {
         super();
         this.axiosInstance = axios.create();
+        this.controller = new AbortController();
     }
     sendRequest(
         httpMethod: string,
         path: string,
         body?: string | Buffer | stream.Readable,
         headers?: Record<string, any>,
+        outputStream?:  boolean | stream.Writable,
         params?: Record<string, any>,
         signFunction?: () => [string, string] | string,
-        outputStream?: stream.Writable
     ): Q.Promise<any> {
         httpMethod = httpMethod.toUpperCase();
         const requestUrl = this._getRequestUrl(path, params);
@@ -63,19 +66,41 @@ class HttpClient extends EventEmitter {
                 headers: _headers,
                 data: body
             }
-            return client._doRequest(requstOption);
+            return client._doRequest(requstOption, outputStream);
         });
     } 
 
-    private async _doRequest(options: AxiosRequestConfig): Promise<any> {
+    private async _doRequest(options: AxiosRequestConfig, outputStream: boolean | stream.Writable): Promise<any> {
+        if(outputStream) {
+           return this.establishSSEConnection(options);
+        }else{
+            try {
+                const response: AxiosResponse = await this.axiosInstance.request(options);
+                    // 处理响应体
+                 return this._recvResponse(response as any);
+            } catch (error) {
+                throw error;
+            }
+        }
+    }
+
+    public async establishSSEConnection(options: AxiosRequestConfig): Promise<AsyncIterable<any>> {
+        const {url, headers, data} = options;
         try {
-            const response: AxiosResponse = await this.axiosInstance.request(options);
-                // 处理响应体
-             return this._recvResponse(response as any);
+            const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(await fetch(url, {
+                method: 'POST',
+                headers: headers as any,
+                body: data,
+            }), this.controller) as any;
+            return sseStream;
         } catch (error) {
+            // Handle errors
+            console.error('Error establishing SSE connection:', error.message);
             throw error;
         }
     }
+
+    // New method for handling SSE line
 
     private _recvResponse(response: AxiosResponse): any {
         const statusCode = response.status;
@@ -150,13 +175,13 @@ class HttpClient extends EventEmitter {
         });
     }
 
-    /**
+   /**
      * 猜测数据长度
      *
      * @param data 数据，可以是字符串、Buffer、可读流
      * @returns 返回数据长度
      * @throws {Error} 当没有指定 Content-Length 时抛出异常
-     */
+     */   
     private _guessContentLength(data: string | Buffer | stream.Readable): number {
         if (data == null) {
             return 0;

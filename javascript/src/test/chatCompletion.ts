@@ -14,17 +14,19 @@ const client = new  ChatCompletion(QIANFAN_AK, QIANFAN_SK, 'AK');
 
 // 流式 测试
 // async function main() {
-//     const resp = await client.chat({
-//         messages: [
-//             {
-//                 role: "user",
-//                 content: "你好，请问你是哪个模型？",
-//             },
-//         ],
-//         stream: true,
-//     }, "ERNIE-Bot-turbo");
-//     console.log('返回结果')
-//     console.log(resp);
+//     const stream =  await client.chat({
+//           messages: [
+//               {
+//                   role: "user",
+//                   content: "等额本金和等额本息有什么区别？"
+//               },
+//           ],
+//           stream: true,
+//       }, "ERNIE-Bot-turbo");
+//       console.log('流式返回结果')
+//       for await (const chunk of stream as AsyncIterableIterator<any>) {
+//           console.log(chunk);
+//         }
 // }
 
 // AK/SK 测试

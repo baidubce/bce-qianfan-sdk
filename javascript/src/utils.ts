@@ -85,7 +85,7 @@ export const getPath = (model: string, modelInfoMap: QfLLMInfoMap, Authenticatio
     return path;
 };
 
-// 返回结果处理，流式和非流式接口返回结果不同 TODO
-export function getResponseResult(resp : AxiosResponse): any {
-    const result = resp.data;
-}
+export const castToError = (err: any): Error => {
+    if (err instanceof Error) return err;
+    return new Error(err);
+};

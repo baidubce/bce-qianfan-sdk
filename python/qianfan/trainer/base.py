@@ -15,6 +15,7 @@ import copy
 import datetime
 import os
 import pickle
+import platform
 import sys
 import threading
 from abc import ABC, abstractmethod
@@ -413,13 +414,8 @@ class Trainer(ABC):
         """
 
         def run_subprocess(pipe: multiprocessing.Pipe) -> None:
-            try:
-                from os import setsid
-
-                setsid()
-            except Exception:
-                # windows
-                pass
+            if platform.system() != "Windows":
+                os.setsid()
             # redirect output
             log_path = self._get_log_path()
             with open(log_path, "a", encoding=encoding()) as f:

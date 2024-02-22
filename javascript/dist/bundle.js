@@ -27,7 +27,7 @@
     var util__namespace = /*#__PURE__*/_interopNamespaceDefault(util);
     var crypto__namespace = /*#__PURE__*/_interopNamespaceDefault(crypto);
 
-    var version$1 = "0.0.1";
+    var version$1 = "0.0.0";
 
     const CONTENT_TYPE = 'Content-Type';
     const CONTENT_LENGTH = 'Content-Length';
@@ -686,7 +686,7 @@
         // 埋点信息
         body.extra_parameters = {
             ...body.extra_parameters,
-            'request_source': `qianfan_appbuilder_${version}`,
+            'request_source': `qianfan_js_sdk_v${version}`,
         };
         return JSON.stringify(body);
     }

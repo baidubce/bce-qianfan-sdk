@@ -367,7 +367,7 @@ $ qianfan evaluation run [OPTIONS] MODELS...
 **Options 选项**:
 
 * `--dataset-id TEXT`: 待评估的数据集 id  [required]
-* `--list-evaluable-models`: 打印支持进行评估的模型列表（已过时，请使用 `qianfan evaluation list-evaluable-models`）
+* `--list-evaluable-models`: 打印支持进行评估的模型列表（已弃用，请使用 `qianfan evaluation list-evaluable-models` 以获取更多功能）
 * `--enable-rule-evaluator / --no-enable-rule-evaluator`: 启用 RuleEvaluator，使用一定的评估规则来对推理结果进行评估，该评估器支持如下参数 [default: no-enable-rule-evaluator]
   * `--using-similarity / --no-using-similarity`: 使用相似度评估结果  [default: no-using-similarity]
   * `--using-accuracy / --no-using-accuracy`: 使用准确率评估结果  [default: no-using-accuracy]

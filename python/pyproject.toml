@@ -49,6 +49,7 @@ torch = [
 ltp = { version = "*", optional = true}
 emoji = { version = "*", optional = true}
 sentencepiece = { version = "*", optional = true}
+multiprocess = "*"
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -66,7 +67,6 @@ mypy = ">=1.4.0"
 myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
-multiprocess = "0.70.15"
 setuptools = "*"
 
 [tool.poetry.extras]

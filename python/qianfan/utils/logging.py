@@ -136,6 +136,12 @@ else:
 
 
 def redirect_log_to_file(file_path: str) -> None:
+    """
+    redirect log to file with same formatter
+
+    Args:
+        file_path (str): local file path
+    """
     logger._logger.removeHandler(logger.handler)
     file_handler = logging.FileHandler(file_path)
     file_handler.setLevel(logging.INFO)

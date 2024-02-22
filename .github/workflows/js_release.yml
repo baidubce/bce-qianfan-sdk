@@ -5,12 +5,15 @@ on:
 
 jobs:
   build-and-publish:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install Rollup globally
         run: npm install --global rollup
@@ -27,6 +30,7 @@ jobs:
         run: npx rollup -c rollup.config.mjs
 
       - name: Publish package
-        run: npm publish
+        working-directory: ./javascript
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

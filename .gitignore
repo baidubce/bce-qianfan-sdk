@@ -62,3 +62,4 @@ poetry.lock
 coverage.out
 
 node_modules
+.npmrc

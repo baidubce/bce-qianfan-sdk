@@ -1,6 +1,14 @@
 {
-    "name": "qianfan-sdk",
-    "version": "0.0.1",
+    "name": "@baiducloud/qianfan",
+    "version": "0.0.0",
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/baidubce/bce-qianfan-sdk"
+    },
     "description": "",
     "main": "dist/bundle.js",
     "type": "module",

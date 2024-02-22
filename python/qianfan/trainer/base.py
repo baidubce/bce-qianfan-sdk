@@ -415,7 +415,7 @@ class Trainer(ABC):
 
         def run_subprocess(pipe: multiprocessing.Pipe) -> None:
             if platform.system() != "Windows":
-                os.setsid()
+                os.setsid()  # type: ignore[attr-defined]
             # redirect output
             log_path = self._get_log_path()
             with open(log_path, "a", encoding=encoding()) as f:

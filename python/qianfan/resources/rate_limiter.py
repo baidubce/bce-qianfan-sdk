@@ -15,6 +15,7 @@
 """
     Implementation of Rate Limiter
 """
+import asyncio
 import threading
 import time
 from types import TracebackType
@@ -34,12 +35,32 @@ class VersatileRateLimiter:
     """
 
     def __init__(
-        self, query_per_second: float = 0, request_per_minute: float = 0, **kwargs: Any
+        self, query_per_second: float = 0, request_per_minute: float = 0, buffer_ratio: float = 0.1, **kwargs: Any
     ) -> None:
+        """
+        initialize a VersatileRateLimiter instance
+
+        Args:
+            query_per_second (float):
+                the query-per-second limitation, default to 0,
+                means to not limit
+            request_per_minute (float):
+                the request-per-minute limitation, default to 0,
+                means to not limit
+            buffer_ratio (float):
+                remaining rate ratio for better practice in
+                production environment, default to 0.1,
+                means only apply 90% rate limitation
+        """
         if request_per_minute <= 0:
             request_per_minute = get_config().RPM_LIMIT
         if query_per_second <= 0:
             query_per_second = get_config().QPS_LIMIT
+
+        if buffer_ratio > 1 or buffer_ratio <= 0:
+            err_msg = "the value of buffer_ratio should between 0 and 1"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         if request_per_minute > 0 and query_per_second > 0:
             err_msg = (
@@ -51,6 +72,9 @@ class VersatileRateLimiter:
         self.is_closed = request_per_minute <= 0 and query_per_second <= 0
         if self.is_closed:
             return
+
+        request_per_minute *= (1-buffer_ratio)
+        query_per_second *= (1-buffer_ratio)
 
         if request_per_minute > 0:
             self._is_rpm = True
@@ -135,7 +159,7 @@ class RateLimiter:
             self._query_per_period = query_per_period
             self._period_in_second = period_in_second
             self._query_per_second = query_per_period / period_in_second
-            self._token_count = self._query_per_period
+            self._token_count = 0
             self._last_leak_timestamp = time.time()
             self._sync_lock = threading.Lock()
 
@@ -201,6 +225,15 @@ class RateLimiter:
 
         self._async_limiter = AsyncLimiter(query_per_period, period_in_second)
         self._sync_limiter = self._SyncLimiter(query_per_period, period_in_second)
+
+        # 必要的 warmup 环节，清空 bucket 中的 token，勿删以下片段
+        def _warmup_procedure():
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(self._async_limiter.acquire(query_per_period))
+
+        warmup_thread = threading.Thread(target=_warmup_procedure)
+        warmup_thread.start()
+        warmup_thread.join()
 
     def __enter__(self) -> None:
         """

@@ -1385,6 +1385,7 @@ def get_evaluation_info():
                         "maxScore": 7,
                     },
                     "resultDatasetId": 1,
+                    "resultDatasetIdStr": "1",
                     "resultDatasetName": "name",
                     "resultDatasetProjectType": 0,
                     "resultDatasetImportStatus": 0,

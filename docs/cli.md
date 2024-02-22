@@ -122,7 +122,7 @@ $ qianfan plugin [OPTIONS]
 
 **Options 选项**:
 
-* `--endpoint TEXT`：千帆插件的 endpoint [required]
+* `--endpoint TEXT`：千帆插件的 endpoint。如果未提供该参数，则使用一言插件。
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--plugins`：启用的插件列表，通过 `,` 分隔不同的插件，例如 `uuid-zhishiku,uuid-chatocr,uuid-weatherforecast`
 * `--debug`：调试模式，会打印请求相关的原始信息
@@ -132,6 +132,7 @@ $ qianfan plugin [OPTIONS]
 在对话进行过程中，可以通过输入命令实现如下功能：
 
 * `/image [file_path]`：上传图片并附加至对话中，`file_path` 可以是网络上的链接，也可以是本地文件路径。其中，本地文件会被上传至 BOS 路径，因此需要提供 `bos-path` 参数。
+* `/file [file_path]`：上传文件并附加至对话中，与 `/image` 使用方法相同。仅一言插件支持该命令。
 * `/reset`：重置对话，清空对话历史
 * `/exit`：结束对话
 * `/help`：展示帮助信息

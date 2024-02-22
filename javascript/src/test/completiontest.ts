@@ -2,14 +2,14 @@ import * as dotenv from "dotenv";
 import Completions from "../../src/Completions";
 
 dotenv.config();
-const API_KEY = process.env.API_KEY || '';
-const SECRET_KEY = process.env.SECRET_KEY || '';
-const IAM_ACESS_KEY = process.env.IAM_ACESS_KEY || '';
-const IAM_SECRET_KEY = process.env.IAM_SECRET_KEY || '';
+const QIANFAN_AK = process.env.QIANFAN_AK || '';
+const QIANFAN_SK = process.env.QIANFAN_SK || '';
+const QIANFAN_ACCESS_KEY = process.env.QIANFAN_ACCESS_KEY || '';
+const QIANFAN_SECRET_KEY = process.env.QIANFAN_SECRET_KEY || '';
 // AK/SK 测试
-// const client = new Completions(API_KEY, SECRET_KEY, 'AK');
+// const client = new Completions(QIANFAN_AK, QIANFAN_SK, 'AK');
 // IAM 测试
-const client = new Completions(IAM_ACESS_KEY, IAM_SECRET_KEY);
+const client = new Completions(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
 
 async function main() {
     const resp = await client.completions({

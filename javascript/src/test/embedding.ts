@@ -2,13 +2,13 @@ import * as dotenv from "dotenv";
 import Embedding from "../../src/Embedding";
 
 dotenv.config();
-const API_KEY = process.env.API_KEY || '';
-const SECRET_KEY = process.env.SECRET_KEY || '';
-const IAM_ACESS_KEY = process.env.IAM_ACESS_KEY || '';
-const IAM_SECRET_KEY = process.env.IAM_SECRET_KEY || '';
-const client = new Embedding(API_KEY, SECRET_KEY, 'AK');
+const QIANFAN_AK = process.env.QIANFAN_AK || '';
+const QIANFAN_SK = process.env.QIANFAN_SK || '';
+const QIANFAN_ACCESS_KEY = process.env.QIANFAN_ACCESS_KEY || '';
+const QIANFAN_SECRET_KEY = process.env.QIANFAN_SECRET_KEY || '';
+const client = new Embedding(QIANFAN_AK, QIANFAN_SK, 'AK');
 // IAM 测试
-// const client = new Embedding(IAM_ACESS_KEY, IAM_SECRET_KEY);
+// const client = new Embedding(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
 
 // AK/SK 测试
 async function main() {

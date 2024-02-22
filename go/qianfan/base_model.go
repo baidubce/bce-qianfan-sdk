@@ -230,10 +230,11 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 		if err != nil {
 			return err
 		}
-		if err = checkResponseError(modelApiResponse); err != nil {
+		err = checkResponseError(modelApiResponse)
+		if err != nil {
 			errCode, _ := modelApiResponse.GetError()
-			if !tokenRefreshed && (errCode == APITokenInvalidErrCode ||
-				errCode == APITokenExpiredErrCode) {
+			if !tokenRefreshed && (errCode == APITokenInvalidErrCode || errCode == APITokenExpiredErrCode) {
+				// access token 过期，重新获取 access token 并重试，且不占用重试次数
 				tokenRefreshed = true
 				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
 				if err != nil {
@@ -241,6 +242,7 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 				}
 				return &tryAgainError{}
 			}
+			// 其他错误直接返回
 			return err
 		}
 		return nil

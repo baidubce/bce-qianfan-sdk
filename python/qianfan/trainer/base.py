@@ -31,9 +31,9 @@ from typing import (
 )
 
 import multiprocess as multiprocessing
-from qianfan.config import encoding
 
 from qianfan.common.runnable.base import ExecuteSerializable
+from qianfan.config import encoding
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.consts import ActionState, QianfanTrainerLocalCacheDir, StopMessage
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
@@ -426,6 +426,7 @@ class Trainer(ABC):
                 log_info(f"check trainer running log in {log_path}")
                 sys.stdout = f
                 from qianfan.utils.logging import redirect_log_to_file
+
                 redirect_log_to_file(log_path)
 
             # start a thread for run

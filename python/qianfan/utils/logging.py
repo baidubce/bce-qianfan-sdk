@@ -53,8 +53,8 @@ class Logger(object):
         self.handler = logging.StreamHandler()
         self.handler.setFormatter(self.formatter)
         self._logger.addHandler(self.handler)
-        
-    def format() -> logging.Formatter:
+
+    def format(self) -> logging.Formatter:
         return self.formatter
 
     def info(self, message: object, *args: object, **params: Any) -> None:
@@ -134,6 +134,7 @@ else:
     log_warn = partial(logger.warn, stacklevel=2)
     log_trace = partial(logger.trace, stacklevel=2)
 
+
 def redirect_log_to_file(file_path: str) -> None:
     logger._logger.removeHandler(logger.handler)
     file_handler = logging.FileHandler(file_path)
@@ -141,16 +142,6 @@ def redirect_log_to_file(file_path: str) -> None:
     file_handler.setFormatter(logger.formatter)
     logger._logger.addHandler(file_handler)
 
-def disable_log() -> None:
-    """
-    Disables logging.
-    This function turns off the logging feature, preventing the recording of log
-    messages.
-    Parameters:
-      None
-    """
-    for h in logger._logger.handlers:
-        logger._logger.removeHandler(h) 
 
 def enable_log(log_level: Union[int, str] = logging.INFO) -> None:
     """

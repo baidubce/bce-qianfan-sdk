@@ -16,8 +16,11 @@ package qianfan
 
 type Option func(*Options)
 type Options struct {
-	Model    *string
-	Endpoint *string
+	Model                 *string
+	Endpoint              *string
+	LLMRetryCount         int
+	LLMRetryTimeout       float32
+	LLMRetryBackoffFactor float32
 }
 
 // 用于模型类对象设置使用的模型
@@ -34,9 +37,34 @@ func WithEndpoint(endpoint string) Option {
 	}
 }
 
+// 设置重试次数
+func WithLLMRetryCount(count int) Option {
+	return func(options *Options) {
+		options.LLMRetryCount = count
+	}
+}
+
+// 设置重试超时时间
+func WithLLMRetryTimeout(timeout float32) Option {
+	return func(options *Options) {
+		options.LLMRetryTimeout = timeout
+	}
+}
+
+// 设置重试退避因子
+func WithLLMRetryBackoffFactor(factor float32) Option {
+	return func(options *Options) {
+		options.LLMRetryBackoffFactor = factor
+	}
+}
+
 // 将多个 Option 转换成最终的 Options 对象
 func makeOptions(options ...Option) *Options {
-	option := Options{}
+	option := Options{
+		LLMRetryCount:         GetConfig().LLMRetryCount,
+		LLMRetryTimeout:       GetConfig().LLMRetryTimeout,
+		LLMRetryBackoffFactor: GetConfig().LLMRetryBackoffFactor,
+	}
 	for _, opt := range options {
 		opt(&option)
 	}

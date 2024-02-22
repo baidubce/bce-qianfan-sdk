@@ -260,6 +260,20 @@ def chat(model_name):
     r = request.json
     request_header = request.headers
     request_id = request_header.get(Consts.XRequestID)
+    if model_name.startswith("test_retry"):
+        global retry_cnt
+        print("mock retry cnt", retry_cnt)
+        if model_name not in retry_cnt:
+            retry_cnt[model_name] = 1
+        if retry_cnt[model_name] % 3 != 0:
+            # need retry
+            retry_cnt[model_name] = (retry_cnt[model_name] + 1) % 3
+            return json_response(
+                {
+                    "error_code": 336100,
+                    "error_msg": "high load",
+                }
+            )
     if request_id == "custom_req":
         return json_response(
             {
@@ -656,6 +670,13 @@ def auth():
         )
     ak = request.args.get("client_id")
     sk = request.args.get("client_secret")
+    if "bad" in sk:
+        return json_response(
+            {
+                "error_description": "Client authentication failed",
+                "error": "invalid_client",
+            }
+        )
     # check messages
     return json_response(
         {

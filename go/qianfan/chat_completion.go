@@ -16,7 +16,6 @@ package qianfan
 
 import (
 	"context"
-	"fmt"
 )
 
 // 表示对话内容的结构体
@@ -141,15 +140,16 @@ func newChatCompletion(options *Options) *ChatCompletion {
 // 将 endpoint 转换成完整的 url
 func (c *ChatCompletion) realEndpoint() (string, error) {
 	url := modelAPIPrefix
-	if c.Model != "" {
+	if c.Endpoint == "" {
 		endpoint, ok := ChatModelEndpoint[c.Model]
 		if !ok {
-			return "", fmt.Errorf("model %s is not supported", c.Model)
+			return "", &ModelNotSupportedError{Model: c.Model}
 		}
 		url += endpoint
 	} else {
 		url += "/chat/" + c.Endpoint
 	}
+	logger.Debugf("requesting endpoint: %s", url)
 	return url, nil
 }
 
@@ -164,13 +164,12 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 		return nil, err
 	}
 	var resp ModelResponse
-	err = c.Requestor.request(req, &resp)
+
+	err = c.requestResource(req, &resp)
 	if err != nil {
 		return nil, err
 	}
-	if err = checkResponseError(&resp); err != nil {
-		return &resp, err
-	}
+
 	return &resp, nil
 }
 
@@ -189,9 +188,7 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 	if err != nil {
 		return nil, err
 	}
-	return &ModelResponseStream{
-		streamInternal: stream,
-	}, nil
+	return newModelResponseStream(stream), nil
 }
 
 // chat 支持的模型列表

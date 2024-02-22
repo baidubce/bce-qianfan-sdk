@@ -414,10 +414,10 @@ class Trainer(ABC):
 
         def run_subprocess(pipe: multiprocessing.Pipe) -> None:
             try:
-                from os import setsid  # noqa
+                from os import setsid
 
                 setsid()
-            except ImportError:
+            except Exception:
                 # windows
                 pass
             # redirect output

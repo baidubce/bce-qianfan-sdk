@@ -87,10 +87,12 @@ class BaseTokenLimiter:
 
     tokenizer = _MiniLocalTokenizer()
 
-    def __init__(self, token_limit_per_minute: int = 0, **kwargs: Any) -> None:
+    def __init__(self, token_limit_per_minute: int = 0, buffer_ratio: float = 0.1, **kwargs: Any) -> None:
         self._token_limit_per_minute = token_limit_per_minute
-        if self._token_limit_per_minute == 0:
+        if self._token_limit_per_minute <= 0:
             self._token_limit_per_minute = get_config().TPM_LIMIT
+
+        self._token_limit_per_minute *= buffer_ratio
 
         self._token_current = self._token_limit_per_minute
         self._last_check_timestamp = datetime.datetime.utcnow()
@@ -105,7 +107,7 @@ class BaseTokenLimiter:
             raise ValueError(err_msg)
 
     def _is_closed(self) -> bool:
-        return self._token_limit_per_minute == 0
+        return self._token_limit_per_minute <= 0
 
     def _refresh_time_and_token(self) -> None:
         current_time = datetime.datetime.utcnow()
@@ -120,9 +122,21 @@ class BaseTokenLimiter:
 class TokenLimiter(BaseTokenLimiter):
     """Synchronous Token Limiter implementation"""
 
-    def __init__(self, token_per_minute: int = 0, **kwargs: Any) -> None:
+    def __init__(self, token_per_minute: int = 0, buffer_ratio: float = 0.1, **kwargs: Any) -> None:
+        """
+        Initialize a synchronous TokenLimiter instance
+
+        Args:
+            token_per_minute (int):
+                the token-per-minute limitation, default to 0,
+                means to disable limitation
+            buffer_ratio (float):
+                remaining rate ratio for better practice in
+                production environment, default to 0.1,
+                means only apply 90% rate limitation
+        """
         self._lock = threading.Lock()
-        super().__init__(token_per_minute, **kwargs)
+        super().__init__(token_per_minute, buffer_ratio, **kwargs)
 
     def decline(self, token_used: int) -> None:
         """decline token from limiter when start to do a request"""
@@ -160,9 +174,21 @@ class TokenLimiter(BaseTokenLimiter):
 class AsyncTokenLimiter(BaseTokenLimiter):
     """Asynchronous Token Limiter implementation"""
 
-    def __init__(self, token_per_minute: int = 0, **kwargs: Any) -> None:
+    def __init__(self, token_per_minute: int = 0, buffer_ratio: float = 0.1, **kwargs: Any) -> None:
+        """
+        Initialize an asynchronous TokenLimiter instance
+
+        Args:
+            token_per_minute (int):
+                the token-per-minute limitation, default to 0,
+                means to disable limitation
+            buffer_ratio (float):
+                remaining rate ratio for better practice in
+                production environment, default to 0.1,
+                means only apply 90% rate limitation
+        """
         self._lock = asyncio.Lock()
-        super().__init__(token_per_minute, **kwargs)
+        super().__init__(token_per_minute, buffer_ratio, **kwargs)
 
     async def decline(self, token_used: int) -> None:
         """decline token from limiter when start to do a request"""

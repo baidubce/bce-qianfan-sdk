@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
+import datetime
 import os
 import pickle
+import sys
 import threading
 from abc import ABC, abstractmethod
 from threading import Lock
@@ -29,10 +31,11 @@ from typing import (
 )
 
 import multiprocess as multiprocessing
+from qianfan.config import encoding
 
 from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.trainer.consts import ActionState, StopMessage
+from qianfan.trainer.consts import ActionState, QianfanTrainerLocalCacheDir, StopMessage
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
 from qianfan.utils import log_debug, log_error, log_info, utils
 
@@ -361,6 +364,9 @@ class Trainer(ABC):
     - stop() stop the training process
     """
 
+    name: Optional[str] = ""
+    """trainer name"""
+
     ppls: List[Pipeline] = []
     """
     Pipelines for training, there may be multiple pipelines in
@@ -380,6 +386,22 @@ class Trainer(ABC):
         """
         ...
 
+    def _get_specific_cache_path(self) -> str:
+        cache_path = os.path.join(
+            QianfanTrainerLocalCacheDir,
+            self.name or utils.generate_letter_num_random_id(8),
+        )
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
+
+        return cache_path
+
+    def _get_log_path(self) -> str:
+        current_date = datetime.datetime.now()
+        date_str = current_date.strftime("%Y-%m-%d")
+
+        return os.path.join(self._get_specific_cache_path(), f"{date_str}.log")
+
     def start(self, join_on_exited: bool = False, **kwargs: Dict) -> "Trainer":
         """
         Trainer start method to start a training process in background.
@@ -391,7 +413,22 @@ class Trainer(ABC):
         """
 
         def run_subprocess(pipe: multiprocessing.Pipe) -> None:
-            os.setsid()
+            try:
+                from os import setsid  # noqa
+
+                setsid()
+            except ImportError:
+                # windows
+                pass
+            # redirect output
+            log_path = self._get_log_path()
+            with open(log_path, "a", encoding=encoding()) as f:
+                log_info(f"check trainer running log in {log_path}")
+                sys.stdout = f
+                from qianfan.utils.logging import redirect_log_to_file
+                redirect_log_to_file(log_path)
+
+            # start a thread for run
             main_t = threading.Thread(target=self.run)
             main_t.start()
 

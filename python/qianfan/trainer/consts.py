@@ -108,3 +108,5 @@ class ServiceType(str, Enum):
 
 
 StopMessage = "STOP"
+# trainer 本地缓存
+QianfanTrainerLocalCacheDir = ".qianfan_trainer_cache"

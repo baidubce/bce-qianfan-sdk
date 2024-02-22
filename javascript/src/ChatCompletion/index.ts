@@ -1,3 +1,17 @@
+// Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import axios, {AxiosInstance} from 'axios';
 import HttpClient from '../HttpClient';
 import { modelInfoMap, ChatModel } from './utils';
@@ -32,6 +46,14 @@ export class ChatCompletion {
         this.controller = new AbortController();
     }
 
+    /**
+     * 发送请求
+     *
+     * @param model ChatModel类型参数
+     * @param body ChatBody类型参数
+     * @param stream 是否开启流式处理，默认为false
+     * @returns Promise<ChatResp | AsyncIterable<ChatResp>>
+     */
     private async sendRequest(model: ChatModel, body: ChatBody, stream: boolean = false): Promise<ChatResp | AsyncIterable<ChatResp>> {
       const endpoint = getModelEndpoint(model, modelInfoMap);
       const requestBody = getRequestBody(body, packageJson.version);
@@ -78,7 +100,13 @@ export class ChatCompletion {
           }
       }
   }  
-
+    /**
+     * chat
+     * @param body 聊天请求体
+     * @param model 聊天模型，默认为 'ERNIE-Bot-turbo'
+     * @param stream 是否开启流模式，默认为 false
+     * @returns Promise<ChatResp | AsyncIterable<ChatResp>> 
+     */
     public async chat(body: ChatBody, model: ChatModel ='ERNIE-Bot-turbo'): Promise<ChatResp | AsyncIterable<ChatResp>> {
        const stream = body.stream ?? false;
        return this.sendRequest(model, body, stream);

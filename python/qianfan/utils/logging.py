@@ -16,7 +16,7 @@
 import logging
 import sys
 from functools import partial
-from typing import Any
+from typing import Any, Union
 
 TRACE_LEVEL = 5
 
@@ -132,7 +132,7 @@ else:
     log_trace = partial(logger.trace, stacklevel=2)
 
 
-def enable_log(log_level: int = logging.INFO) -> None:
+def enable_log(log_level: Union[int, str] = logging.INFO) -> None:
     """
     Set the logging level for the qianfan sdk.
 

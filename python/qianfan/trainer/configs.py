@@ -421,7 +421,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "Qianfan-Chinese-Llama-2-7B-32K": ModelInfo(
-        short_name="Llama2_13b",
+        short_name="Llama2_13b_32K",
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
@@ -512,7 +512,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             ],
         ),
     ),
-    "Baichuan2-7B": ModelInfo(
+    "Baichuan2-7B-Chat": ModelInfo(
         short_name="Baichuan2_7B",
         base_model_type="Baichuan2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
@@ -539,7 +539,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
             )
         },
     ),
-    "Baichuan2-13B": ModelInfo(
+    "Baichuan2-13B-Chat": ModelInfo(
         short_name="Baichuan2_13B",
         base_model_type="Baichuan2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
@@ -616,6 +616,15 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 lora_rank=[8, 16, 32, 64],
                 lora_alpha=[8, 16, 32, 64],
                 lora_dropout=(0.1, 0.5),
+                lora_target_modules=[
+                    "self_attn.q_proj",
+                    "self_attn.k_proj",
+                    "self_attn.v_proj",
+                    "self_attn.o_proj",
+                    "mlp.gate_proj",
+                    "mlp.up_proj",
+                    "mlp.down_proj",
+                ],
             )
         },
     ),
@@ -836,7 +845,7 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             weight_decay=0.01,
         ),
     },
-    "Baichuan2-7B": {
+    "Baichuan2-7B-Chat": {
         PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.000001,
@@ -859,7 +868,7 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
             lora_dropout=0.1,
         ),
     },
-    "Baichuan2-13B": {
+    "Baichuan2-13B-Chat": {
         PeftType.ALL: TrainConfig(
             epoch=1,
             learning_rate=0.000001,

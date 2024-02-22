@@ -51,15 +51,16 @@ class PostPreTrain(Trainer):
         dataset: Optional[Union[Dataset, str]] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
         event_handler: Optional[EventHandler] = None,
+        name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
-        Initialization function for LLM fine-tuning.
+        Initialization function for LLM post-pretrain.
 
         Parameters:
             train_type: str
                 A string representing the model version type.
-                like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
+                like 'ERNIE-Speed'
             dataset: Optional[Union[Dataset, str]] = None,
                 A post_pretrain dataset instance and an bos path.
                 or an bos path for post pretrain
@@ -70,6 +71,9 @@ class PostPreTrain(Trainer):
             event_handler:  EventHandler
                 An EventHandler instance for receive events during
                 the training process
+            name: Optional[str]
+                An optional name for the training task.
+
             **kwargs: Any additional keyword arguments.
 
         for calling example:
@@ -83,6 +87,9 @@ class PostPreTrain(Trainer):
         )
         ```
         """
+        # 设置name
+        self.name = name
+
         # 校验train_type
         if train_type is None or train_type == "":
             raise InvalidArgumentError("train_type is empty")
@@ -105,6 +112,7 @@ class PostPreTrain(Trainer):
             train_type=train_type,
             train_mode=console_consts.TrainMode.PostPretrain,
             event_handler=event_handler,
+            job_name=name,
             **kwargs,
         )
         actions.append(self.train_action)
@@ -116,8 +124,8 @@ class PostPreTrain(Trainer):
         self.result = [None]
 
     def run(self, **kwargs: Any) -> Trainer:
-        """_summary_
-        run a pipeline to run the fine-tune process.
+        """
+        run a pipeline to run the post-pretrain process.
 
         Parameters:
             **kwargs:
@@ -180,7 +188,7 @@ class PostPreTrain(Trainer):
         PostPreTrain resume method.
 
         Returns:
-            PostPreTrain: _description_
+            PostPreTrain:
         """
         self.result[0] = self.ppls[0].resume(**kwargs)
         return self

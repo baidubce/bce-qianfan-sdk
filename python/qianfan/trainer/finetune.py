@@ -83,18 +83,20 @@ class LLMFinetune(Trainer):
             event_handler:  EventHandler
                 An EventHandler instance for receive events during
                 the training process
-            base_model:
-                An optional string representing the base model like
-                'ERNIE-Bot-turbo', 'ChatGLM2'
-                which will be mapped from the model version type if
-                not set.
             eval_dataset: Dataset
                 An optional dataset instance for evaluation.
             evaluators: List[Evaluator]
                 An list of evaluators for evaluation.
-            bos_path: Optional[str]:
-                An bos path for training, this will be ignored
-                if dataset is provided.
+            dataset_bos_path: Optional[str]:
+                deprecated, use  `dataset` instead An bos path for training,
+                this will be ignored when dataset is provided.
+            previous_trainer: Optional[Trainer]
+                An optional previous trainer instance for incremental training.
+            previous_task_id: Optional[str]
+                An optional previous task id for incremental training.
+            name: Optional[str]
+                An optional name for the training task.
+
             **kwargs: Any additional keyword arguments.
 
         for calling example:
@@ -139,6 +141,7 @@ class LLMFinetune(Trainer):
                     task_id=previous_trainer.train_action.task_id,
                     train_mode=console_consts.TrainMode.SFT,
                     job_name=name,
+                    event_handler=event_handler,
                     **kwargs,
                 )
             else:
@@ -151,6 +154,7 @@ class LLMFinetune(Trainer):
                 task_id=previous_task_id,
                 train_mode=console_consts.TrainMode.SFT,
                 job_name=name,
+                event_handler=event_handler,
                 **kwargs,
             )
         else:
@@ -180,6 +184,7 @@ class LLMFinetune(Trainer):
             self.eval_action = EvaluateAction(
                 eval_dataset=eval_dataset,
                 evaluators=evaluators,
+                event_handler=event_handler,
             )
             actions.append(self.eval_action)
         ppl = Pipeline(
@@ -190,7 +195,7 @@ class LLMFinetune(Trainer):
         self.result = [None]
 
     def run(self, **kwargs: Any) -> Trainer:
-        """_summary_
+        """
         run a pipeline to run the fine-tune process.
 
         Parameters:
@@ -214,7 +219,11 @@ class LLMFinetune(Trainer):
         kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
-        self.result[0] = self.ppls[0].exec(**kwargs)
+        try:
+            self.result[0] = self.ppls[0].exec(**kwargs)
+        except Exception as e:
+            self.result[0] = {"error": e}
+            raise e
         return self
 
     @property
@@ -254,7 +263,7 @@ class LLMFinetune(Trainer):
         LLMFinetune resume method.
 
         Returns:
-            LLMFinetune: _description_
+            LLMFinetune:
         """
         self.result[0] = self.ppls[0].resume(**kwargs)
         return self

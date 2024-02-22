@@ -22,7 +22,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
 from rich import print as rprint
-from rich.console import Console, Group, RenderableType
+from rich.console import Group, RenderableType
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.spinner import Spinner
@@ -36,6 +36,7 @@ from qianfan.common.client.utils import (
     credential_required,
     print_error_msg,
     render_response_debug_info,
+    replace_logger_handler,
 )
 from qianfan.resources.typing import QfMessages
 from qianfan.utils.bos_uploader import BosHelper, parse_bos_path
@@ -105,7 +106,7 @@ class PluginClient(object):
         self.client = qianfan.Plugin(endpoint=endpoint)
         self.msg_history = QfMessages()
         self.multi_line = multi_line
-        self.console = Console()
+        self.console = replace_logger_handler()
         self.inference_args = kwargs
         self.bos_path = bos_path
         self.plugins = plugins
@@ -331,7 +332,6 @@ def plugin_entry(
     """
     Chat with the LLM with plugins in the terminal.
     """
-    qianfan.disable_log()
     model = None
 
     extra_args = {}

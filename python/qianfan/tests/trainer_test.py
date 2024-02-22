@@ -17,7 +17,7 @@ import pytest
 
 from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import QianfanDataSource
-from qianfan.errors import InvalidArgumentError
+from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.evaluation.evaluator import (
     QianfanRefereeEvaluator,
     QianfanRuleEvaluator,
@@ -442,10 +442,8 @@ def test_all_default_config():
     )
 
     sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
-    from qianfan.utils import log_info
 
     for k in DefaultTrainConfigMapping.keys():
-        log_info(f"current: {k}")
         LLMFinetune(
             train_type=k,
             dataset=sft_ds,
@@ -459,3 +457,40 @@ def test_all_default_config():
             train_type=k,
             dataset=ppt_ds,
         )
+
+
+def test_failed_sft_run():
+    train_config = TrainConfig(
+        epoch=1,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        trainset_rate=20,
+        peft_type=PeftType.ALL,
+    )
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+
+    sft_task = LLMFinetune(
+        train_type="ERNIE-Speed",
+        dataset=ds,
+        train_config=train_config,
+        name="mock_failed_task",
+    )
+    with pytest.raises(InternalError):
+        sft_task.run()
+    assert "error" in sft_task.output
+
+
+def test_increment_sft():
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    trainer = LLMFinetune(
+        dataset=sft_ds,
+        previous_task_id="task-abc",
+    )
+    trainer.run()
+    res = trainer.output
+    assert res is not None
+    assert isinstance(res, dict)
+    assert "model_version_id" in res

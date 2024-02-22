@@ -16,7 +16,7 @@
 from typing import List, Optional, Set
 
 import typer
-from rich.console import Console, RenderableType
+from rich.console import RenderableType
 from rich.pretty import Pretty
 from rich.table import Table
 
@@ -26,6 +26,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
     print_warn_msg,
+    replace_logger_handler,
 )
 from qianfan.errors import InternalError
 from qianfan.evaluation import EvaluationManager
@@ -64,15 +65,24 @@ def list_evaluable_models(
     """
     if value:
         model_list = ModelResource.evaluable_model_list()["result"]
-        console = Console()
+        console = replace_logger_handler()
         table = Table(show_lines=True)
-        col_list = ["Model Name", "Train Type", "Model Version List"]
+        col_list = ["Model Name", "Platform Preset", "Train Type", "Model Version List"]
         for col in col_list:
             table.add_column(col)
         for model in model_list:
             row_items: List[RenderableType] = []
+            # Model Name
             row_items.append(f"{model['modelName']}\n[dim]{model['modelIdStr']}[/]")
+            # Platform Preset
+            model_source = model["source"]
+            if model_source == "PlatformPreset":
+                row_items.append("Yes")
+            else:
+                row_items.append(f"No\n[dim]{model_source}[/]")
+            # Train Type
             row_items.append(model["trainType"])
+            # Model Version List
             version_list = [
                 f"{version['version']} [dim]({version['modelVersionIdStr']})[/]"
                 for version in model["modelVersionList"]
@@ -156,7 +166,7 @@ def run(
     """
     ds = load_dataset(dataset_id, is_download_to_local=False)
     model_list = [Model(version_id=m) for m in models]
-    console = Console()
+    console = replace_logger_handler()
     evaluators: List[QianfanEvaluator] = []
     if enable_rule_evaluator:
         evaluators.append(

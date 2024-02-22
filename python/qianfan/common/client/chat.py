@@ -21,7 +21,7 @@ import typer
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from rich import print as rprint
-from rich.console import Console, Group, RenderableType
+from rich.console import Group, RenderableType
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.spinner import Spinner
@@ -36,6 +36,7 @@ from qianfan.common.client.utils import (
     list_model_option,
     print_warn_msg,
     render_response_debug_info,
+    replace_logger_handler,
 )
 from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
@@ -83,7 +84,7 @@ class ChatClient(object):
             QfMessages() for _ in range(len(self.clients))
         ]
         self.multi_line = multi_line
-        self.console = Console()
+        self.console = replace_logger_handler()
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
         if len(self.clients) != 1 and len(self.inference_args) != 0:
@@ -388,7 +389,6 @@ def chat_entry(
     """
     Chat with the LLM in the terminal.
     """
-    qianfan.disable_log()
     if model is None and endpoint is None:
         model = DefaultLLMModel.ChatCompletion
 

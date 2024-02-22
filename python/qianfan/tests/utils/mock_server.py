@@ -32,6 +32,7 @@ import requests
 from flask import Flask, request, send_file
 
 from qianfan.consts import APIErrorCode, Consts
+from qianfan.resources.console import consts as console_consts
 from qianfan.utils.utils import generate_letter_num_random_id
 
 app = Flask(__name__)
@@ -478,7 +479,6 @@ def completions(model_name):
     """
     if model_name.startswith("test_retry"):
         global retry_cnt
-        print("mock retry cnt", retry_cnt)
         if model_name not in retry_cnt:
             retry_cnt[model_name] = 1
         if retry_cnt[model_name] % 3 != 0:
@@ -737,20 +737,31 @@ def finetune_v2():
     return action_handler.get(action)(body=json_body)
 
 
+MockFailedJobId = "job-failedone"
+MockFailedTaskId = "task-failedone"
+
+
 def finetune_v2_create_job(body):
+    job_id = f"job-{generate_letter_num_random_id(12)}"
+    if body["name"] == "mock_failed_task":
+        job_id = MockFailedJobId
     return json_response(
         {
             "requestId": "98d2e3d7-a689-4255-91f1-da514a3a5777",
-            "result": {"jobId": "job-2qm2a9s9rj22"},
+            "result": {"jobId": job_id},
         }
     )
 
 
 def finetune_v2_create_task(body):
+    task_id = f"task-{generate_letter_num_random_id(12)}"
+    job_id = body["jobId"]
+    if job_id == MockFailedJobId:
+        task_id = MockFailedTaskId
     return json_response(
         {
             "requestId": "aac33135-aed1-416a-8070-c6ecde325df5",
-            "result": {"jobId": body["jobId"], "taskId": "task-92zjbyinxruq"},
+            "result": {"jobId": job_id, "taskId": task_id},
         }
     )
 
@@ -814,9 +825,30 @@ def finetune_v2_task_list(body):
     )
 
 
+def finetune_v2_fail_task_detail():
+    return {
+        "requestId": "754dc75c-3515-4ddd-88ff-59caaad4358d",
+        "result": {
+            "taskId": MockFailedJobId,
+            "jobId": MockFailedJobId,
+            "jobName": "hj_failed",
+            "jobDescription": "",
+            "model": "ERNIE-Speed",
+            "trainMode": "PostPretrain",
+            "parameterScale": "FullFineTuning",
+            "runStatus": console_consts.TrainStatus.Fail.value,
+            "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+            "createDate": "2024-01-30T09:41:54Z",
+            "finishDate": "0000-00-00T00:00:00Z",
+        },
+    }
+
+
 def finetune_v2_task_detail(body):
     r = request.json
     task_id = r["taskId"]
+    if task_id == MockFailedTaskId:
+        return json_response(finetune_v2_fail_task_detail())
     global finetune_task_call_times
     call_times = finetune_task_call_times.get(task_id)
     if call_times is None:
@@ -832,7 +864,7 @@ def finetune_v2_task_detail(body):
                     "model": "ERNIE-Speed",
                     "trainMode": "PostPretrain",
                     "parameterScale": "FullFineTuning",
-                    "runStatus": "Running",
+                    "runStatus": console_consts.TrainStatus.Running.value,
                     "runProgress": "0%",
                     "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
                     "createDate": "2024-01-30T09:41:54Z",
@@ -843,25 +875,30 @@ def finetune_v2_task_detail(body):
     else:
         MAX_CALL_TIMES = 10
         finetune_task_call_times[task_id] += 1
-        return json_response(
-            {
-                "requestId": "754dc75c-3515-4ddd-88ff-59caaaaaaa",
-                "result": {
-                    "taskId": task_id,
-                    "jobId": "job-s66h7p9gqqu1",
-                    "jobName": "hj_pptr",
-                    "jobDescription": "",
-                    "model": "ERNIE-Speed",
-                    "trainMode": "PostPretrain",
-                    "parameterScale": "FullFineTuning",
-                    "runStatus": "Done" if call_times >= MAX_CALL_TIMES else "Running",
-                    "runProgress": f"{int(100 * call_times / MAX_CALL_TIMES)}%",
-                    "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
-                    "createDate": "2024-01-30T09:41:54Z",
-                    "finishDate": "0000-00-00T00:00:00Z",
-                },
-            }
-        )
+        is_done = call_times >= MAX_CALL_TIMES
+        resp = {
+            "requestId": "754dc75c-3515-4ddd-88ff-59caaaaaaa",
+            "result": {
+                "taskId": task_id,
+                "jobId": "job-s66h7p9gqqu1",
+                "jobName": "hj_pptr",
+                "jobDescription": "",
+                "model": "ERNIE-Speed",
+                "trainMode": "PostPretrain",
+                "parameterScale": "FullFineTuning",
+                "runStatus": (
+                    console_consts.TrainStatus.Finish
+                    if is_done
+                    else console_consts.TrainStatus.Running.value
+                ),
+                "vdlLink": "https://console.bce.baidu.com/qianfan/visualdl/index?displayToken=eyJydW5JZCI6InJ1bi1raXNyYzB4ZWlzcTM4MDgxIn0=",
+                "createDate": "2024-01-30T09:41:54Z",
+                "finishDate": "0000-00-00T00:00:00Z",
+            },
+        }
+        if not is_done:
+            resp["result"]["runProgress"] = f"{int(100 * call_times / MAX_CALL_TIMES)}%"
+        return json_response(resp)
 
 
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])
@@ -1896,7 +1933,9 @@ def get_dataset_info():
                 "exportProgress": 0,
                 "dataType": 4,
                 "projectType": 20,
-                "templateType": 2000,
+                "templateType": (
+                    2000 if "generic" not in str(args["datasetId"]) else 40100
+                ),
                 "errCode": None,
                 "uniqueType": 0,
                 "importErrorInfo": None,

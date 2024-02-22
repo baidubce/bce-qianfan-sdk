@@ -222,7 +222,7 @@ def test_trainer_resume():
             train_action_key = k
             ac.task_id = 112
             ac.job_id = 123
-    ppl._state = train_action_key
+    ppl.current_action = train_action_key
     sft_task.resume()
     res = sft_task.result
     assert res is not None

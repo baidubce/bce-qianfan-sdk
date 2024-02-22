@@ -161,7 +161,7 @@ class PostPreTrain(Trainer):
         """
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to get status")
-        action = self.ppls[0][str(self.ppls[0]._state)]
+        action = self.ppls[0][str(self.ppls[0].current_action)]
         if action is None:
             return TrainStatus.Unknown
         action_name = action.__class__.__name__
@@ -179,9 +179,13 @@ class PostPreTrain(Trainer):
             Trainer:
                 self, for chain invocation.
         """
-        for ppl in self.ppls:
-            ppl.stop()
-        return self
+        # 后台运行的任务
+        if self.process:
+            return super().stop(**kwargs)
+        else:
+            for ppl in self.ppls:
+                ppl.stop()
+            return self
 
     def resume(self, **kwargs: Dict) -> "PostPreTrain":
         """

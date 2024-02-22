@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.1"
+version = "0.3.2"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -66,6 +66,7 @@ mypy = ">=1.4.0"
 myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
+multiprocess = "0.70.15"
 
 [tool.poetry.extras]
 langchain = ["langchain"]

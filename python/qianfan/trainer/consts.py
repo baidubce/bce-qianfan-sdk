@@ -105,3 +105,6 @@ class ServiceType(str, Enum):
     """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
     """Corresponding to the `Text2Image"""
+
+
+StopMessage = "STOP"

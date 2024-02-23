@@ -1,0 +1,36 @@
+name: JS Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install Rollup globally
+        run: npm install --global rollup
+
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies
+        working-directory: ./javascript
+        run: yarn install --frozen-lockfile
+
+      - name: Build package with Rollup
+        working-directory: ./javascript
+        run: npx rollup -c rollup.config.mjs
+
+      - name: Publish package
+        working-directory: ./javascript
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

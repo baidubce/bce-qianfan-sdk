@@ -597,8 +597,11 @@ class TrainAction(
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
             return
-        api.FineTune.V2.stop_task(self.task_id)
-        log_debug(f"train job {self.task_id}/{self.job_id} stopped")
+        resp = api.FineTune.V2.stop_task(self.task_id)
+        if resp.get("result"):
+            log_debug(f"train task {self.task_id}/{self.job_id} stopped successfully")
+        else:
+            log_debug(f"train task {self.task_id}/{self.job_id} stopped failed")
 
     def get_default_train_config(
         self, model_type: str, train_mode: console_consts.TrainMode, peft_type: PeftType

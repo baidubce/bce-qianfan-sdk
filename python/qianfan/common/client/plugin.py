@@ -13,8 +13,10 @@
 # limitations under the License.
 
 
+import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote, urlparse
 
 import typer
 from prompt_toolkit import prompt
@@ -34,7 +36,6 @@ from qianfan.common.client.utils import (
     BosPathValidator,
     InputEmptyValidator,
     credential_required,
-    print_error_msg,
     render_response_debug_info,
     replace_logger_handler,
 )
@@ -71,22 +72,20 @@ class PluginClient(object):
     END_PROMPT = "/exit"
     RESET_PROMPT = "/reset"
     IMAGE_PROMPT = "/image"
+    FILE_PROMPT = "/file"
     HELP_PROMPT = "/help"
 
     HELP_MESSAGES = {
         END_PROMPT: "End the conversation",
         RESET_PROMPT: "Reset the conversation",
         IMAGE_PROMPT: "Attach a local image to the conversation (e.g. /image car.jpg)",
+        FILE_PROMPT: "Attach a local file to the conversation (e.g. /file xx.docx)",
         HELP_PROMPT: "Print help message",
     }
 
-    input_completer = WordCompleter(
-        list(HELP_MESSAGES.keys()), sentence=True, meta_dict=HELP_MESSAGES
-    )
-
     def __init__(
         self,
-        model: Optional[str],
+        model: str,
         endpoint: Optional[str],
         multi_line: bool,
         debug: bool,
@@ -97,13 +96,10 @@ class PluginClient(object):
         """
         Init the chat client
         """
-        if model is not None:
-            print_error_msg("ERNIE Bot pulgin is currently not available in sdk.")
-            raise typer.Exit(1)
         if endpoint is None:
-            print_error_msg("Endpoint must be provided for qianfan plugin.")
-            raise typer.Exit(1)
-        self.client = qianfan.Plugin(endpoint=endpoint)
+            self.client = qianfan.Plugin(model=model)
+        else:
+            self.client = qianfan.Plugin(endpoint=endpoint)
         self.msg_history = QfMessages()
         self.multi_line = multi_line
         self.console = replace_logger_handler()
@@ -111,6 +107,11 @@ class PluginClient(object):
         self.bos_path = bos_path
         self.plugins = plugins
         self.debug = debug
+        if self._is_qianfan_plugin():
+            self.HELP_MESSAGES.pop(self.FILE_PROMPT)
+        self.input_completer = WordCompleter(
+            list(self.HELP_MESSAGES.keys()), sentence=True, meta_dict=self.HELP_MESSAGES
+        )
 
     def print_hint_msg(self) -> None:
         """
@@ -130,7 +131,10 @@ class PluginClient(object):
                 "[bold]Hint[/bold]: If you want to submit multiple lines, use the"
                 " '--multi-line' option."
             )
-        rprint(f"[dim]Using qianfan plugin with {self.plugins}...[/]")
+        if self._is_qianfan_plugin():
+            rprint(f"[dim]Using qianfan plugin with {self.plugins}...[/]")
+        else:
+            rprint("[dim]Using ERNIE Bot plugin...[/]")
 
     def get_bos_path(self) -> str:
         """
@@ -165,6 +169,12 @@ class PluginClient(object):
         for k, v in self.HELP_MESSAGES.items():
             rprint(f"[bold green]{k}[/]: {v}")
 
+    def _is_qianfan_plugin(self) -> bool:
+        """
+        Check if the plugin is qianfan plugin
+        """
+        return self.client._endpoint is not None
+
     def chat_in_terminal(self) -> None:
         """
         Chat in terminal
@@ -185,16 +195,35 @@ class PluginClient(object):
                     path = message[len(self.IMAGE_PROMPT) :].strip()
                     if not path.startswith("http"):
                         bos_path, http_path = self.upload_file_to_bos(path)
+                        filename = os.path.basename(path)
+                        rprint(f"Image has been uploaded to: {bos_path}")
+                        rprint(f"Image share url: {http_path}\n")
+                        path = http_path
+                    else:
+                        filename = unquote(os.path.basename(urlparse(path).path))
+                    if self._is_qianfan_plugin():
+                        rprint(
+                            "[yellow bold]Please continue to input your prompt[/yellow"
+                            " bold]:"
+                        )
+                        extra_field["fileurl"] = path
+                        continue
+                    else:
+                        message = f"<img>{filename}</img><url>{path}</url>"
+                if not self._is_qianfan_plugin() and message.startswith(
+                    self.FILE_PROMPT
+                ):
+                    path = message[len(self.FILE_PROMPT) :].strip()
+                    if not path.startswith("http"):
+                        bos_path, http_path = self.upload_file_to_bos(path)
+                        filename = os.path.basename(path)
                         rprint(f"File has been uploaded to: {bos_path}")
                         rprint(f"File share url: {http_path}\n")
                         path = http_path
-                    rprint(
-                        "[yellow bold]Please continue to input your prompt[/yellow"
-                        " bold]:"
-                    )
+                    else:
+                        filename = unquote(os.path.basename(urlparse(path).path))
+                    message = f"<file>{filename}</file><url>{path}</url>"
 
-                    extra_field["fileurl"] = path
-                    continue
                 break
 
             rprint("\n[blue][bold]Model response[/bold][/blue]:")
@@ -219,21 +248,78 @@ class PluginClient(object):
                 refresh_per_second=24,
                 console=self.console,
             ) as live:
-                response = self.client.do(
-                    message,
-                    plugins=self.plugins,
-                    llm=self.inference_args,
-                    stream=True,
-                    history=self.msg_history._to_list()[:-1],
-                    **extra_field,
-                )
+                if self._is_qianfan_plugin():
+                    response = self.client.do(
+                        message,
+                        plugins=self.plugins,
+                        llm=self.inference_args,
+                        stream=True,
+                        history=self.msg_history._to_list()[:-1],
+                        **self.inference_args,
+                        **extra_field,
+                    )
+                else:
+                    response = self.client.do(
+                        self.msg_history,
+                        plugins=self.plugins,
+                        stream=True,
+                        **self.inference_args,
+                    )
 
                 m = ""
+                plugin_metainfo = {}
+                plugin_render_content = None
                 for r in response:
                     render_list: List[RenderableType] = []
-                    m += r["result"]
-                    render_list.append(Markdown(m))
-                    if not r["is_end"]:
+                    if self._is_qianfan_plugin():
+                        m += r["result"]
+                        render_list.append(Markdown(m))
+                    else:
+                        event = r["_event"]
+                        if event == "pluginMeta":
+                            for meta in r["plugin_metas"]:
+                                plugin_metainfo[meta["pluginId"]] = meta
+                        elif event == "plugin":
+                            plugin_render_list: List[RenderableType] = []
+                            for plugin in r["plugin_info"]:
+                                plugin_name = plugin["plugin_id"]
+                                if plugin_name in plugin_metainfo:
+                                    plugin_name = (
+                                        f"{plugin_metainfo[plugin_name]['pluginNameForHuman']}"
+                                        f"({plugin_metainfo[plugin_name]['pluginNameForModel']})"
+                                    )
+
+                                plugin_resp = plugin["plugin_resp"].strip().split("\n")
+                                status = None
+                                for resp in reversed(plugin_resp):
+                                    if len(resp) == 0:
+                                        continue
+                                    plugin_response = json.loads(resp)
+                                    if "actionName" not in plugin_response:
+                                        continue
+                                    status = plugin_response["actionContent"]
+                                    break
+                                if status is not None:
+                                    if plugin["status"] == "1":
+                                        plugin_info_obj = Text.from_markup(
+                                            text=f"• {plugin_name}\t{status}",
+                                            style="dim",
+                                        )
+                                    else:
+                                        plugin_info_obj = Text(
+                                            f"• {plugin_name}", style="dim"
+                                        )
+                                    plugin_render_list.append(plugin_info_obj)
+                            plugin_render_list.append(Text(""))
+                            plugin_render_content = Group(*plugin_render_list)
+
+                        elif event == "chat":
+                            m += r["result"]
+                        if plugin_render_content is not None:
+                            render_list.append(plugin_render_content)
+                        render_list.append(Markdown(m))
+
+                    if "is_end" not in r or not r["is_end"]:
                         render_list.append(
                             Spinner(
                                 "dots", text="Generating...", style="status.spinner"
@@ -247,7 +333,7 @@ class PluginClient(object):
                             f" {stat['total_latency']:.2f}s.[/]"
                         )
                     )
-                    if r["is_end"]:
+                    if "is_end" in r and r["is_end"]:
                         if "usage" in r:
                             token_usage = r["usage"]
                             render_list.append(
@@ -274,8 +360,8 @@ MODEL_ARGUMENTS_PANEL = (
 @credential_required
 def plugin_entry(
     endpoint: Optional[str] = typer.Option(
-        ...,
-        help="Endpoint of the plugin.",
+        None,
+        help="Endpoint of the plugin. ERNIE-Bot plugin will be used if not specified.",
     ),
     # tui: bool = typer.Option(False, help="Using Terminal UI"),
     multi_line: bool = typer.Option(
@@ -332,7 +418,7 @@ def plugin_entry(
     """
     Chat with the LLM with plugins in the terminal.
     """
-    model = None
+    model = "EBPluginV2"
 
     extra_args = {}
 

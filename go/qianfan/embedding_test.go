@@ -34,5 +34,50 @@ func TestEmbedding(t *testing.T) {
 	req, err := getRequestBody[EmbeddingRequest](resp.RawResponse)
 	assert.NoError(t, err)
 	assert.Equal(t, req.Input[0], "hello1")
-	assert.Equal(t, req.Input[1], "hello2")
+	assert.Equal(t, len(req.Input), 2)
+
+	embed = NewEmbedding(WithModel("bge-large-zh"))
+	resp, err = embed.Do(context.Background(), &EmbeddingRequest{
+		Input: []string{"hello3"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, resp.RawResponse.StatusCode, 200)
+	assert.Equal(t, len(resp.Data), 1)
+	assert.NotEqual(t, len(resp.Data), 0)
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, EmbeddingEndpoint["bge-large-zh"])
+	req, err = getRequestBody[EmbeddingRequest](resp.RawResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, req.Input[0], "hello3")
+	assert.Equal(t, len(req.Input), 1)
+
+	embed = NewEmbedding(WithEndpoint("custom_endpoint"))
+	resp, err = embed.Do(context.Background(), &EmbeddingRequest{
+		Input: []string{"hello4"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, resp.RawResponse.StatusCode, 200)
+	assert.Equal(t, len(resp.Data), 1)
+	assert.NotEqual(t, len(resp.Data), 0)
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "custom_endpoint")
+	req, err = getRequestBody[EmbeddingRequest](resp.RawResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, req.Input[0], "hello4")
+	assert.Equal(t, len(req.Input), 1)
+}
+
+func TestEmbeddingModelList(t *testing.T) {
+	embed := NewEmbedding()
+	list := embed.ModelList()
+	assert.Greater(t, len(list), 0)
+}
+
+func TestEmbeddingUnexistedModel(t *testing.T) {
+	embed := NewEmbedding(WithModel("unexisted_model"))
+	_, err := embed.Do(context.Background(), &EmbeddingRequest{
+		Input: []string{"hello3"},
+	})
+	assert.Error(t, err)
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "unexisted_model")
 }

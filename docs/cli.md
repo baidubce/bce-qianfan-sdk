@@ -122,7 +122,7 @@ $ qianfan plugin [OPTIONS]
 
 **Options 选项**:
 
-* `--endpoint TEXT`：千帆插件的 endpoint [required]
+* `--endpoint TEXT`：千帆插件的 endpoint。如果未提供该参数，则使用一言插件。
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--plugins`：启用的插件列表，通过 `,` 分隔不同的插件，例如 `uuid-zhishiku,uuid-chatocr,uuid-weatherforecast`
 * `--debug`：调试模式，会打印请求相关的原始信息
@@ -132,6 +132,7 @@ $ qianfan plugin [OPTIONS]
 在对话进行过程中，可以通过输入命令实现如下功能：
 
 * `/image [file_path]`：上传图片并附加至对话中，`file_path` 可以是网络上的链接，也可以是本地文件路径。其中，本地文件会被上传至 BOS 路径，因此需要提供 `bos-path` 参数。
+* `/file [file_path]`：上传文件并附加至对话中，与 `/image` 使用方法相同。仅一言插件支持该命令。
 * `/reset`：重置对话，清空对话历史
 * `/exit`：结束对话
 * `/help`：展示帮助信息
@@ -309,7 +310,6 @@ $ qianfan trainer run [OPTIONS]
 
 * `--train-type TEXT`：训练类型  [required]
 * `--dataset-id INTEGER`：数据集 id  [required]
-* `--list-evaluable-models`: 打印支持进行评估的模型列表
 * `--help`：展示帮助文档
 
 训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
@@ -368,6 +368,7 @@ $ qianfan evaluation run [OPTIONS] MODELS...
 **Options 选项**:
 
 * `--dataset-id TEXT`: 待评估的数据集 id  [required]
+* `--list-evaluable-models`: 打印支持进行评估的模型列表（已弃用，请使用 `qianfan evaluation list-evaluable-models` 以获取更多功能）
 * `--enable-rule-evaluator / --no-enable-rule-evaluator`: 启用 RuleEvaluator，使用一定的评估规则来对推理结果进行评估，该评估器支持如下参数 [default: no-enable-rule-evaluator]
   * `--using-similarity / --no-using-similarity`: 使用相似度评估结果  [default: no-using-similarity]
   * `--using-accuracy / --no-using-accuracy`: 使用准确率评估结果  [default: no-using-accuracy]
@@ -385,3 +386,19 @@ $ qianfan evaluation run [OPTIONS] MODELS...
 * `--enable-manual-evaluator / --no-enable-manual-evaluator`: 使用手动评估器，完成推理后由用户在平台上手动对推理结果进行打分评估  [default: no-enable-manual-evaluator]
   * `--dimensions TEXT`: 评估的维度，通过 `,` 分隔不同的维度
 * `--help`: 展示帮助信息
+
+#### list-evaluable-models 打印可评估模型
+
+**用法**:
+
+```console
+$ qianfan evaluation list-evaluable-models [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--preset / --no-preset`: 是否仅打印（非）预置模型，不设置则打印所有模型
+* `--train-type`: 仅打印特定训练类型的模型，可以通过 `,` 分隔多个训练类型
+* `--name`: 过滤模型名称，可以通过 `,` 分隔多个名称
+* `--help`: 展示帮助信息
+

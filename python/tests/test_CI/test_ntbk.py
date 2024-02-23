@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import time
 from glob import glob
 import pytest
 import papermill as pm
@@ -86,29 +85,36 @@ def test_demo(file_reg, params_dict, const_dir):
     [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
         ('batch_prediction.ipynb', {}),
         ('function_call.ipynb', {}),
+        ('function_call_with_tool.ipynb', {}),
         ('langchain_sequential.ipynb', {}),
         ('prompt.ipynb', {}),
         ('text2image.ipynb', {}),
         ('hub.ipynb', {}),
-        ('**/question_answering.ipynb', {}),
-        ('agents/*.ipynb', {}),
         ('function_call.ipynb', {}),
-
-        # ('**/finetune_with_bos_and_evaluate.ipynb', {}),
-        # ('eb_search.ipynb', {}),
+        ('eb_search.ipynb', {}),
 
     ]
 )
-def test_all(file_reg, params_dict, const_dir):
+def test_common(file_reg, params_dict, const_dir):
     template(file_reg=file_reg, params_dict=params_dict, **const_dir)
 
 
 @pytest.mark.parametrize(
     "file_reg,params_dict",
-    [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
-        # ('dataset/dataset101.ipynb', {}),
-        # ('dataset/how_to_use_qianfan_operator.ipynb', {}),
+    [
+        ('agents/langchain_agent_with_qianfan_llm.ipynb', {}),
+        ('agents/qianfan_single_action_agent_example.ipynb', {}),
+    ]
+)
+def test_agents(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
 
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('dataset/dataset101.ipynb', {}),
+        ('dataset/how_to_use_qianfan_operator.ipynb', {}),
         ('dataset/batch_inference_using_dataset.ipynb', {}),
     ]
 )
@@ -116,7 +122,7 @@ def test_datasets(file_reg, params_dict, const_dir):
     template(file_reg=file_reg, params_dict=params_dict, **const_dir)
 
 
-# 这个test专门测试含有async的datasets notebook
+# 测试含有async的datasets notebook
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "file_reg,params_dict",
@@ -131,12 +137,56 @@ async def test_datasets_async(file_reg, params_dict, const_dir):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        # ('**/semantic_kernel/agent_with_sk.ipynb', {}),
-        # ('**/semantic_kernel/chatbot_with_sk.ipynb', {}),
+        ('RAG/**/question_answering.ipynb', {}),
+    ]
+)
+def test_rag(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('**/semantic_kernel/agent_with_sk.ipynb', {}),
+        ('**/semantic_kernel/chatbot_with_sk.ipynb', {}),
         ('**/semantic_kernel/rag_with_sk.ipynb', {}),
     ]
 )
 def test_sk(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('evaluation/how_to_use_evaluation.ipynb', {}),  # 未通过
+        ('evaluation/local_eval_with_qianfan.ipynb', {}),  # 未通过
+    ]
+)
+def test_evaluation(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('finetune/api_based_finetune.ipynb', {}),  # 未通过
+        ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),  # 未通过
+        ('finetune/trainer_finetune.ipynb', {}),  # 未通过
+        ('finetune/trainer_finetune_event_resume.ipynb', {}),  # 未通过
+    ]
+)
+def test_finetune(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('wandb/wandb.ipynb', {}),  # 未通过
+    ]
+)
+def test_wandb(file_reg, params_dict, const_dir):
     template(file_reg=file_reg, params_dict=params_dict, **const_dir)
 
 
@@ -146,7 +196,6 @@ def template(file_reg, params_dict, root_dir, cookbook_dir, temp_dir, output_dir
     params.update(params_dict)
     params.update(json.loads(os.environ.get('KEYWORDS_DICT', '{}')))
     for ipath in notebooks:
-        # print(ipath)
         save_path = ipath.replace(f'/{cookbook_dir}/', f'/{temp_dir}/')
 
         processor = ProcessCookbook(ipath=ipath, save_path=save_path)
@@ -160,20 +209,8 @@ def template(file_reg, params_dict, root_dir, cookbook_dir, temp_dir, output_dir
 
     for ipath, opath in zip(input_path, output_path):
         work_directory = os.path.dirname(ipath).replace(temp_dir, cookbook_dir)
-        create_dir([work_directory, os.path.dirname(ipath), os.path.dirname(opath)])
+        dir_path_list = [work_directory, os.path.dirname(ipath), os.path.dirname(opath)]
+        for dir_path in dir_path_list:
+            os.makedirs(dir_path, exist_ok=True)
         print(f'执行notebook: {ipath}')
         pm.execute_notebook(ipath, opath, log_output=True, cwd=work_directory)
-
-
-def create_dir(dir_path_list):
-    for dir_path in dir_path_list:
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-
-def mv_dir(from_dir, to_dir):
-    """移动文件夹"""
-    if os.path.exists(to_dir):
-        shutil.rmtree(to_dir)
-    if os.path.exists(from_dir):
-        shutil.copytree(from_dir, to_dir)

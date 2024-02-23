@@ -17,7 +17,7 @@ env:
 
 
 jobs:
-  run:
+  test:
     name: Notebook Unit Tests
     runs-on: ${{ matrix.os }}
     environment:
@@ -67,7 +67,7 @@ jobs:
           # 手动安装库
       - name: pip_install
         run: |
-          python3 -m pip install papermill ipykernel nbformat nbconvert pytest qianfan
+          python3 -m pip install papermill ipykernel nbformat nbconvert pytest pytest-asyncio qianfan
           python3 -m pip install langchain==0.1.7 chromadb pdfplumber datasets duckduckgo_search
           python3 -m pip install pillow
           python3 -m ipykernel install --user

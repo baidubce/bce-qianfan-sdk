@@ -63,8 +63,8 @@ def const_dir():
 
     for path in [temp_dir, output_dir]:
         root_path = f'{root_dir}/{path}'
-        # if os.path.exists(root_path):
-        #     shutil.rmtree(root_path)
+        if os.environ.get('DEBUG_MODE', '') == '' and os.path.exists(root_path):
+            shutil.rmtree(root_path)
 
 
 @pytest.mark.skip
@@ -107,12 +107,36 @@ def test_all(file_reg, params_dict, const_dir):
     "file_reg,params_dict",
     [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
         # ('dataset/dataset101.ipynb', {}),
-        # ('dataset/how_to_use_qianfan_operator.ipynb', {})
+        # ('dataset/how_to_use_qianfan_operator.ipynb', {}),
 
         ('dataset/batch_inference_using_dataset.ipynb', {}),
     ]
 )
 def test_datasets(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+# 这个test专门测试含有async的datasets notebook
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('dataset/batch_inference_using_dataset.ipynb', {}),
+    ]
+)
+async def test_datasets_async(file_reg, params_dict, const_dir):
+    template(file_reg=file_reg, params_dict=params_dict, **const_dir)
+
+
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        # ('**/semantic_kernel/agent_with_sk.ipynb', {}),
+        # ('**/semantic_kernel/chatbot_with_sk.ipynb', {}),
+        ('**/semantic_kernel/rag_with_sk.ipynb', {}),
+    ]
+)
+def test_sk(file_reg, params_dict, const_dir):
     template(file_reg=file_reg, params_dict=params_dict, **const_dir)
 
 

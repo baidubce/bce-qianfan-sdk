@@ -13,7 +13,10 @@
     "main": "dist/bundle.js",
     "type": "commonjs",
     "scripts": {
-        "test": "jest"
+        "build": "npx rollup -c rollup.config.mjs",
+        "test": "jest",
+        "publish:main": "npm version patch && npm run build && npm publish --access public",
+        "publish:beta": "npm version prerelease --preid=beta && npm run build && npm publish --access public"
     },
     "keywords": [],
     "author": "",

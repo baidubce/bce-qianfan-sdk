@@ -43,16 +43,9 @@ SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 
 
 #### env 读取
 
-##### Environment Variables
+##### env 文件示例
 
-- `QIANFAN_AK`: your_access_key.
-- `QIANFAN_SK`: your_access_key.
-- `QIANFAN_ACCESS_KEY`:  your_access_key.
-- `QIANFAN_SECRET_KEY`: your_access_key.
-
-##### Example .env File
-
-Create a `.env` file in the root of your project and add the following:
+在你项目的根目录中创建一个名为 .env 的文件，并添加以下内容：
 
 ```dotenv
 QIANFAN_AK=your_access_key

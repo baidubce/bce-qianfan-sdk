@@ -51,6 +51,8 @@ class APIErrorCode(enum.Enum):
     InvalidHTTPMethod = 336101
     InvalidArgumentSystem = 336104
     InvalidArgumentUserSetting = 336105
+    RPMLimitReached = 336501
+    TPMLimitReached = 336502
 
     ConsoleInternalError = 500000
 
@@ -157,8 +159,11 @@ class DefaultValue:
     EvaluationOnlinePollingInterval: float = 30
     BosHostRegion: str = "bj"
     RetryErrCodes: Set = {
+        APIErrorCode.ServiceUnavailable.value,
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.RPMLimitReached.value,
+        APIErrorCode.TPMLimitReached.value,
     }
     SSLVerificationEnabled: bool = True
     Proxy: str = ""

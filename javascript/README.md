@@ -39,25 +39,40 @@ yarn add @baiducloud/qianfan
 
 在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
 
-env 读取
+SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY ，同时支持初始化手动传入 AK/SK 。
+1. env 读取
+## Environment Variables
 
-```ts
-const QIANFAN_AK = process.env.QIANFAN_AK || '';
-const QIANFAN_SK = process.env.QIANFAN_SK || '';
-const QIANFAN_ACCESS_KEY = process.env.QIANFAN_ACESS_KEY || '';
-const QIANFAN_SECRET_KEY = process.env.QIANFAN_SECRET_KEY || '';
+- `QIANFAN_AK`: your_access_key.
+- `QIANFAN_SK`: your_access_key.
+- `QIANFAN_ACCESS_KEY`:  your_access_key.
+- `QIANFAN_SECRET_KEY`: your_access_key.
+
+## Example .env File
+
+Create a `.env` file in the root of your project and add the following:
+
+```dotenv
+QIANFAN_AK=your_access_key
+QIANFAN_SK=your_secret_key
+QIANFAN_ACCESS_KEY=another_access_key
+QIANFAN_SECRET_KEY=another_secret_key
 ```
 
-默认 IAM 认证方式，如果使用 AK/SK 方式鉴权，需要传入 Type 参数, 参数值如下：'AK'  
+2. 修改env的配置 
+```ts
+import {setEnvVariable} from "@baiducloud/qianfan";
+setEnvVariable('QIANFAN_AK','***');
+setEnvVariable('QIANFAN_SK','***');
+ ```   
+3. 初始化手动传入AK/SK
 
 ```ts
-// AK/SK    
- const client = new  ChatCompletion(QIANFAN_AK, QIANFAN_SK, 'AK');
-// IAM 
-const client = new ChatCompletion(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
+// 手动传AK/SK 
+const client = new ChatCompletion({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+// 手动传ACCESS_KEY/ SECRET_KEY
+const client = new ChatCompletion({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
 
-// TO DO！！！
-// 下期优化支持 env 和手动传入
 ```
 
 ### Chat 对话
@@ -66,10 +81,11 @@ const client = new ChatCompletion(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
 
 ```ts
 import {ChatCompletion} from "@baiducloud/qianfan";
-// AK/SK 测试
-const client = new  ChatCompletion(QIANFAN_AK, QIANFAN_SK, 'AK');
-// IAM 测试
-// const client = new ChatCompletion(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
+// 直接读取env
+const client = new  ChatCompletion();
+// 手动传AK/SK 
+// const client = new ChatCompletion({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
 async function main() {
     const resp = await client.chat({
         messages: [
@@ -111,10 +127,11 @@ async function main() {
 
 ```ts
 import {Completions} from "@baiducloud/qianfan";
-// AK/SK 测试
-// const client = new Completions(QIANFAN_AK, QIANFAN_SK, 'AK');
-// IAM 测试
-const client = new Completions(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
+// 直接读取env  
+const client = new Completions();
+
+// 手动传AK/SK
+// const client = new Completions({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
 
 async function main() {
     const resp = await client.completions({
@@ -147,10 +164,11 @@ main();
 
 ```ts
 import {Embedding} from "@baiducloud/qianfan";
-// AK/SK 测试
-const client = new Embedding(QIANFAN_AK, QIANFAN_SK, 'AK');
-// IAM 测试
-// const client = new Embedding(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
+// 直接读取env  
+const client = new Eembedding();
+
+// 手动传AK/SK 测试
+// const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
 async function main() {
     const resp = await client.embedding({
         input: [ 'Introduce the city Beijing'],

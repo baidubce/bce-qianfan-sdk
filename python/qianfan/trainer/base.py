@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
+import datetime
+import os
 import pickle
+import platform
+import sys
+import threading
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import (
@@ -26,11 +31,14 @@ from typing import (
     Union,
 )
 
+import multiprocess as multiprocessing
+
 from qianfan.common.runnable.base import ExecuteSerializable
+from qianfan.config import encoding
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.trainer.consts import ActionState
+from qianfan.trainer.consts import ActionState, QianfanTrainerLocalCacheDir, StopMessage
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
-from qianfan.utils import log_debug, log_error, utils
+from qianfan.utils import log_debug, log_error, log_info, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
@@ -236,7 +244,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.actions[action.id] = action
             self.seq.append(action.id)
         self.post_actions = post_actions
-        self._state: str = ""
+        self.current_action: str = ""
         self._sync_lock = Lock()
         self._stop: bool = False
         self._last_output: Optional[Dict[str, Any]] = None
@@ -278,7 +286,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 self.action_event(
                     ActionState.Running, "pipeline running", {"action": k}
                 )
-            self._state = k
+            self.current_action = k
             output = self.actions[k].exec(input=output, **kwargs)
             err = output.get("error")
             if err is not None:
@@ -311,11 +319,11 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         resume pipeline running from last stopped or failed action.
         """
         self._stop = False
-        last_output = self.actions[self._state].resume(**kwargs)
-        if self.seq[-1] == self._state:
+        last_output = self.actions[self.current_action].resume(**kwargs)
+        if self.seq[-1] == self.current_action:
             # last node return directly
             return last_output
-        idx = self.seq.index(self._state) + 1
+        idx = self.seq.index(self.current_action) + 1
         return self.exec_from(last_output, idx, **kwargs)
 
     def stop(self, **kwargs: Dict) -> None:
@@ -325,10 +333,8 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         with self._sync_lock:
             self._stop = True
 
-        action = self.actions.get(self._state)
-        if action is None:
-            raise InternalError("unknown action to stop")
-        else:
+        action = self.actions.get(self.current_action)
+        if action is not None:
             action.stop()
         return super().stop()
 
@@ -359,6 +365,9 @@ class Trainer(ABC):
     - stop() stop the training process
     """
 
+    name: Optional[str] = ""
+    """trainer name"""
+
     ppls: List[Pipeline] = []
     """
     Pipelines for training, there may be multiple pipelines in
@@ -366,6 +375,7 @@ class Trainer(ABC):
     """
     result: List[Any] = []
     """pipeline running results, which may be an error or an object"""
+    process: Optional[multiprocessing.Process] = None
 
     @abstractmethod
     def run(self, **kwargs: Dict) -> "Trainer":
@@ -377,7 +387,78 @@ class Trainer(ABC):
         """
         ...
 
-    @abstractmethod
+    def _get_specific_cache_path(self) -> str:
+        cache_path = os.path.join(
+            QianfanTrainerLocalCacheDir,
+            self.name or utils.generate_letter_num_random_id(8),
+        )
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
+
+        return cache_path
+
+    def _get_log_path(self) -> str:
+        current_date = datetime.datetime.now()
+        date_str = current_date.strftime("%Y-%m-%d")
+
+        return os.path.join(self._get_specific_cache_path(), f"{date_str}.log")
+
+    def start(self, join_on_exited: bool = False, **kwargs: Dict) -> "Trainer":
+        """
+        Trainer start method to start a training process in background.
+        use `wait()` to block waiting for the training process to be
+        finished.
+
+        Returns:
+            Trainer: Trainer instance
+        """
+
+        def run_subprocess(pipe: multiprocessing.Pipe) -> None:
+            if platform.system() != "Windows":
+                os.setsid()  # type: ignore[attr-defined]
+            # redirect output
+            log_path = self._get_log_path()
+            with open(log_path, "a", encoding=encoding()) as f:
+                log_info(f"check trainer running log in {log_path}")
+                sys.stdout = f
+                from qianfan.utils.logging import redirect_log_to_file
+
+                redirect_log_to_file(log_path)
+
+            # start a thread for run
+            main_t = threading.Thread(target=self.run)
+            main_t.start()
+
+            import time
+
+            while True:
+                time.sleep(1)
+                msg = pipe.recv()  # 接收消息
+                if msg == StopMessage:
+                    log_debug("Child process received STOP signal, exiting...")
+                    self.stop()
+                    break
+            log_info("trainer subprocess exited")
+
+        parent_pipe, child_pipe = multiprocessing.Pipe()
+        p = multiprocessing.Process(target=run_subprocess, args=(child_pipe,))
+        p.start()
+        if not join_on_exited:
+            self.join = p.join
+            # multiprocess 在atexit注册自动join
+            p.join = lambda: None
+        self.parent_pipe = parent_pipe
+        self.process = p
+        return self
+
+    def wait(self, **kwargs: Dict) -> "Trainer":
+        """
+        Trainer wait method. Wait for the training process to finish.
+        """
+        if self.process and self.join:
+            self.join()
+        return self
+
     def stop(self, **kwargs: Dict) -> "Trainer":
         """
         Trainer abstract method. Subclasses implement it to support an
@@ -385,6 +466,8 @@ class Trainer(ABC):
         Returns:
             Trainer: Trainer instance
         """
+        if self.process:
+            self.parent_pipe.send(StopMessage)
         return self
 
     @abstractmethod

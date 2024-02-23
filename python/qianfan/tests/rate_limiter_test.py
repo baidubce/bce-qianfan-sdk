@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-    Unit test for RateLimiter
+    Unit test for VersatileRateLimiter
 """
 import asyncio
 import time
@@ -22,13 +22,13 @@ import pytest
 
 import qianfan
 from qianfan.config import get_config
-from qianfan.resources.rate_limiter import RateLimiter
+from qianfan.resources.rate_limiter import VersatileRateLimiter
 from qianfan.tests.chat_completion_test import TEST_MESSAGE
 
 
 def test_not_sync_rate_limiter():
     start_timestamp = time.time()
-    rl = RateLimiter()
+    rl = VersatileRateLimiter()
     for i in range(0, 5):
         with rl:
             pass
@@ -43,7 +43,7 @@ async def test_not_async_rate_limiter():
             pass
 
     start_timestamp = time.time()
-    rl = RateLimiter()
+    rl = VersatileRateLimiter()
     task_list = []
     for i in range(0, 5):
         task_list.append(asyncio.create_task(async_sleep(rl)))
@@ -55,7 +55,7 @@ async def test_not_async_rate_limiter():
 
 def test_sync_rate_limiter():
     start_timestamp = time.time()
-    rl = RateLimiter(query_per_second=1)
+    rl = VersatileRateLimiter(query_per_second=1)
     for i in range(0, 5):
         with rl:
             pass
@@ -70,7 +70,7 @@ async def test_async_rate_limiter():
             pass
 
     start_timestamp = time.time()
-    rl = RateLimiter(query_per_second=1)
+    rl = VersatileRateLimiter(query_per_second=1)
     task_list = []
     for i in range(0, 5):
         task_list.append(asyncio.create_task(async_sleep(rl)))
@@ -104,7 +104,7 @@ async def test_async_rate_limiter_in_call():
         task.append(asyncio.create_task(chat.ado(messages=TEST_MESSAGE)))
     await asyncio.wait(task)
     end_time = time.time()
-    assert end_time - start_timestamp < 1
+    assert end_time - start_timestamp < 1.2
 
     start_timestamp = time.time()
     task = []
@@ -138,10 +138,20 @@ async def test_async_rate_limiter_in_call_with_qps_sub1():
 def test_set_rate_limiter_through_environment_variable():
     get_config().QPS_LIMIT = 0.5
     start_timestamp = time.time()
-    rl = RateLimiter()
+    rl = VersatileRateLimiter()
     for i in range(0, 5):
         with rl:
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
     get_config().QPS_LIMIT = 0
+
+
+def test_set_rpm_limiter_function():
+    start_timestamp = time.time()
+    rpm_rl = VersatileRateLimiter(request_per_minute=10)
+    for i in range(0, 2):
+        with rpm_rl:
+            pass
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp >= 2

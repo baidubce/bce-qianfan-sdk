@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.1"
+version = "0.3.2"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -49,6 +49,7 @@ torch = [
 ltp = { version = "*", optional = true}
 emoji = { version = "*", optional = true}
 sentencepiece = { version = "*", optional = true}
+multiprocess = "*"
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -66,12 +67,12 @@ mypy = ">=1.4.0"
 myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
+setuptools = "*"
 
 [tool.poetry.extras]
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
-semantic_kernel = ["semantic_kernel"]
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
 
 [tool.ruff]
 select = [

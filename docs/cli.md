@@ -310,7 +310,6 @@ $ qianfan trainer run [OPTIONS]
 
 * `--train-type TEXT`：训练类型  [required]
 * `--dataset-id INTEGER`：数据集 id  [required]
-* `--list-evaluable-models`: 打印支持进行评估的模型列表
 * `--help`：展示帮助文档
 
 训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
@@ -369,6 +368,7 @@ $ qianfan evaluation run [OPTIONS] MODELS...
 **Options 选项**:
 
 * `--dataset-id TEXT`: 待评估的数据集 id  [required]
+* `--list-evaluable-models`: 打印支持进行评估的模型列表（已弃用，请使用 `qianfan evaluation list-evaluable-models` 以获取更多功能）
 * `--enable-rule-evaluator / --no-enable-rule-evaluator`: 启用 RuleEvaluator，使用一定的评估规则来对推理结果进行评估，该评估器支持如下参数 [default: no-enable-rule-evaluator]
   * `--using-similarity / --no-using-similarity`: 使用相似度评估结果  [default: no-using-similarity]
   * `--using-accuracy / --no-using-accuracy`: 使用准确率评估结果  [default: no-using-accuracy]
@@ -386,3 +386,19 @@ $ qianfan evaluation run [OPTIONS] MODELS...
 * `--enable-manual-evaluator / --no-enable-manual-evaluator`: 使用手动评估器，完成推理后由用户在平台上手动对推理结果进行打分评估  [default: no-enable-manual-evaluator]
   * `--dimensions TEXT`: 评估的维度，通过 `,` 分隔不同的维度
 * `--help`: 展示帮助信息
+
+#### list-evaluable-models 打印可评估模型
+
+**用法**:
+
+```console
+$ qianfan evaluation list-evaluable-models [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--preset / --no-preset`: 是否仅打印（非）预置模型，不设置则打印所有模型
+* `--train-type`: 仅打印特定训练类型的模型，可以通过 `,` 分隔多个训练类型
+* `--name`: 过滤模型名称，可以通过 `,` 分隔多个名称
+* `--help`: 展示帮助信息
+

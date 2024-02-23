@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as dotenv from "dotenv";
-import Embedding from "../../src/Embedding";
+import {Eembedding, setEnvVariable} from '../index'
 
-dotenv.config();
-const QIANFAN_AK = process.env.QIANFAN_AK || '';
-const QIANFAN_SK = process.env.QIANFAN_SK || '';
-const QIANFAN_ACCESS_KEY = process.env.QIANFAN_ACCESS_KEY || '';
-const QIANFAN_SECRET_KEY = process.env.QIANFAN_SECRET_KEY || '';
-const client = new Embedding(QIANFAN_AK, QIANFAN_SK, 'AK');
-// IAM 测试
-// const client = new Embedding(QIANFAN_ACCESS_KEY, QIANFAN_SECRET_KEY);
+// 修改env文件  
+// setEnvVariable('QIANFAN_AK','***');
+// setEnvVariable('QIANFAN_SK','***');
+
+// 直接读取env  
+const client = new Eembedding();
+
+// 手动传AK/SK 测试
+// const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+// 手动传ACCESS_KEY/ SECRET_KEY测试
+// const client = new Eembedding({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
 
 // AK/SK 测试
 async function main() {

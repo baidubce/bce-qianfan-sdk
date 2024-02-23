@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
+import axios, {AxiosRequestConfig} from 'axios';
+import * as dotenv from "dotenv";
 
 import {base_host, base_path, api_base} from './constant';
 import {AccessTokenResp, ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap} from './interface';
+
+dotenv.config();
+
 /**
  * 使用 AK，SK 生成鉴权签名（Access Token）
  * @return string 鉴权签名信息（Access Token）
@@ -103,3 +107,31 @@ export const castToError = (err: any): Error => {
     if (err instanceof Error) return err;
     return new Error(err);
 };
+
+// 读取单个环境变量
+export function readEnvVariable(key: string) {
+    return process.env[key];
+}
+
+/**
+ * 获取默认配置
+ *
+ * @returns 返回一个字符串类型的键值对对象，包含环境变量
+ */
+export function getDefaultConfig(): Record<string, string> {
+  const envVariables = ['QIANFAN_AK', 'QIANFAN_SK', 'QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY'];
+  const obj: Record<string, string> = {};
+  for (const key of envVariables) {
+    const value = process.env[key];
+    if (value !== undefined) {
+      obj[key] = value;
+    }
+  }
+
+  return obj;
+}
+
+// 设置环境变量
+export function setEnvVariable(key: string, value: string) {
+  process.env[key] = value;
+}

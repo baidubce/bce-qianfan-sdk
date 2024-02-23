@@ -98,7 +98,7 @@ main();
 
 ```
 
-参数传入 strean 为 `true` 时，返回流式结果
+参数传入 stream 为 `true` 时，返回流式结果
 
 ```ts
 // 流式 测试
@@ -139,7 +139,7 @@ async function main() {
 main();
 ```
 
-参数传入 strean 为 `true` 时，返回流式结果
+参数传入 stream 为 `true` 时，返回流式结果
 
 ```ts
 // 流式 

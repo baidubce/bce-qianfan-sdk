@@ -15,7 +15,7 @@
 import axios, {AxiosInstance} from 'axios';
 import HttpClient from '../HttpClient';
 import {api_base, DEFAULT_HEADERS, base_path} from '../constant';
-import {getAccessToken, getRequestBody, getModelEndpoint, getIAMConfig} from '../utils';
+import {getAccessToken, getRequestBody, getModelEndpoint, getIAMConfig, getDefaultConfig} from '../utils';
 import {Stream} from '../streaming';
 import {ChatBody, ChatResp} from '../interface';
 import * as packageJson from '../../package.json';
@@ -23,9 +23,10 @@ import {modelInfoMap, ChatModel} from './utils';
 
 export class ChatCompletion {
     private controller: AbortController;
-    private API_KEY: string;
-    private SECRET_KEY: string;
-    private Type = 'IAM';
+    private QIANFAN_AK?: string;
+    private QIANFAN_SK?: string;
+    private QIANFAN_ACCESS_KEY?: string;
+    private QIANFAN_SECRET_KEY?: string;
     private headers = DEFAULT_HEADERS;
     private axiosInstance: AxiosInstance;
     access_token = '';
@@ -33,15 +34,15 @@ export class ChatCompletion {
 
     /**
      * 千帆大模型
-     * @param QIANFAN_AK API Key，IAM、AK/SK 鉴权时必填
-     * @param SECRET_KEY Secret Key，IAM、AK/SK 鉴权时必填
-     * @param Type 鉴权方式，默认IAM鉴权，如果使用AK/SK鉴权，请设置为'AK'
+     * @param options 配置选项，可选参数包括 QIANFAN_AK、QIANFAN_SK、QIANFAN_ACCESS_KEY、QIANFAN_SECRET_KEY
      */
 
-    constructor(API_KEY: string, SECRET_KEY: string, Type = 'IAM') {
-        this.API_KEY = API_KEY;
-        this.SECRET_KEY = SECRET_KEY;
-        this.Type = Type;
+    constructor(options?: { QIANFAN_AK?: string, QIANFAN_SK?: string, QIANFAN_ACCESS_KEY?: string, QIANFAN_SECRET_KEY?: string}) {
+        const defaultConfig = getDefaultConfig();
+        this.QIANFAN_AK = options?.QIANFAN_AK ?? defaultConfig.QIANFAN_AK;
+        this.QIANFAN_SK = options?.QIANFAN_SK ?? defaultConfig.QIANFAN_SK;
+        this.QIANFAN_ACCESS_KEY = options?.QIANFAN_ACCESS_KEY ?? defaultConfig.QIANFAN_ACCESS_KEY;
+        this.QIANFAN_SECRET_KEY = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
         this.axiosInstance = axios.create();
         this.controller = new AbortController();
     }
@@ -59,8 +60,8 @@ export class ChatCompletion {
         const requestBody = getRequestBody(body, packageJson.version);
 
         // IAM鉴权
-        if (this.Type === 'IAM') {
-            const config = getIAMConfig(this.API_KEY, this.SECRET_KEY);
+        if (this.QIANFAN_ACCESS_KEY && this.QIANFAN_SECRET_KEY) {
+            const config = getIAMConfig(this.QIANFAN_ACCESS_KEY, this.QIANFAN_SECRET_KEY);
             const client = new HttpClient(config);
             const path = `${base_path}${endpoint}`;
             const response = await client.sendRequest('POST', path, requestBody, this.headers, stream);
@@ -68,8 +69,8 @@ export class ChatCompletion {
         }
 
         // AK/SK鉴权
-        if (this.Type === 'AK') {
-            const access = await getAccessToken(this.API_KEY, this.SECRET_KEY, this.headers);
+        if (this.QIANFAN_AK && this.QIANFAN_SK) {
+            const access = await getAccessToken(this.QIANFAN_AK, this.QIANFAN_SK, this.headers);
             const url = `${api_base}${endpoint}?access_token=${access.access_token}`;
             const options = {
                 method: 'POST',
@@ -102,6 +103,8 @@ export class ChatCompletion {
                 }
             }
         }
+
+        throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
     /**
      * chat

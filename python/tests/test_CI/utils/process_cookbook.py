@@ -44,10 +44,15 @@ class ProcessCookbook(BaseModel):
                 self.ntbk_branches['main'].metadata['kernelspec'] = self.kernel_spec
 
     @staticmethod
-    def get_cell_info(cell):
+    def get_cell_info(cell) -> tuple[str, list, str]:
         source = cell['source']
         cell_tags = cell.get('metadata', {}).get('tags', [])
         cell_type = cell['cell_type']
+
+        if source.startswith('#-#'):
+            tag_line = source.split('\n')[0].replace('#-#', '')
+            cell_tags.extend([src_tag.strip() for src_tag in tag_line.split(' ') if src_tag not in cell_tags])
+
         return source, cell_tags, cell_type
 
     def split_branch(self, cell, tag):
@@ -91,12 +96,10 @@ class ProcessCookbook(BaseModel):
         for branch in branches:
             for cell in self.ntbk_branches[branch].cells:
                 params = self.find_parameters(cell, params_dict)
-                print(params)
                 self.inject_parameters(cell, params)
 
-    @staticmethod
-    def find_parameters(cell, params_dict):
-        cell_tags = cell['metadata'].get('tags', [])
+    def find_parameters(self, cell, params_dict):
+        _, cell_tags, _ = self.get_cell_info(cell)
 
         random_params_list = [x.replace('random_', '') for x in cell_tags if x.startswith('random_')]
         # params_list = [x.replace('parameter_', '') for x in cell_tags if x.startswith('parameter_')]
@@ -111,18 +114,18 @@ class ProcessCookbook(BaseModel):
     @staticmethod
     def inject_parameters(cell, params):
         def re_params(text, param, param_value):
-            re_str1 = f'({param})\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
-            re_str2 = f'[\'\"]\s*{param}\s*[\'\"]'  # 字符串格式的参数： "参数"
-            new_text = re.sub(re_str1, f'\g<1> = "{param_value}"', text)
-            new_text = re.sub(re_str2, f'"{param_value}"', new_text)
+            re_str1 = r"({})\s*=\s*\S+".format(param)  # 赋值表达式的参数： 参数 = "参数值"
+            re_str2 = r'[\'\"]\s*{}\s*[\'\"]'.format(param)  # 字符串格式的参数： "参数"
+            new_text = re.sub(re_str1, f'\g<1> = "{param_value}"', text, flags=re.M)
+            new_text = re.sub(re_str2, f'"{param_value}"', new_text, flags=re.M)
             return new_text
 
         def re_random(text):
-            re_str1 = f'random_([a-zA-Z0-9_]+)\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
-            re_str2 = f'[\'\"]\s*random_([a-zA-Z0-9_]+)\s*[\'\"]'  # 字符串格式的参数： "参数"
+            re_str1 = r'random_([^\'\"\s\[\]\(\)]+)\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
+            re_str2 = r'[\'\"]\s*random_([^\'\"\s]+)\s*[\'\"]'  # 字符串格式的参数： "参数"
             random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}"', text)
-            new_text = re.sub(re_str2, f'"\g<1>_{random_str}"', new_text)
+            new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}"', text, flags=re.M)
+            new_text = re.sub(re_str2, f'"\g<1>_{random_str}"', new_text, flags=re.M)
             return new_text
 
         # 注入参数
@@ -136,7 +139,8 @@ class ProcessCookbook(BaseModel):
     @staticmethod
     def clean_env(cell):
         if cell.cell_type == 'code' and cell.get('source'):
-            pat_group = '|'.join(['QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY', "KEYWORDS_DICT", "ROOT_DIR", "QIANFAN_AK", "QIANFAN_SK"])
+            pat_group = '|'.join(
+                ['QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY', "KEYWORDS_DICT", "ROOT_DIR", "QIANFAN_AK", "QIANFAN_SK"])
             source = cell['source']
 
             pat_l, pat_r = r'(os.environ\[[\'\"])', r'([\'\"]\])'

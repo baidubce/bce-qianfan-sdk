@@ -29,8 +29,28 @@ jobs:
         working-directory: ./javascript
         run: npx rollup -c rollup.config.mjs
 
+      - name: Get version
+        working-directory: ./javascript
+        id: get_version
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version);")
+          echo $VERSION
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Publish package
         working-directory: ./javascript
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{ format('JavaScript v{0}', steps.get_version.outputs.version) }}
+          token: ${{ secrets.QF_GITHUB_TOKEN }}
+          draft: false
+          generateReleaseNotes: true
+          tag: ${{ format('js/v{0}', steps.get_version.outputs.version) }}
+          prerelease: ${{ contains(steps.get_version.outputs.version, 'rc') }}
+          commit: main
+          

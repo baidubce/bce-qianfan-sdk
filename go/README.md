@@ -36,6 +36,20 @@ qianfan.GetConfig().AccessKey = "your_access_key"
 qianfan.GetConfig().SecretKey = "your_secret_key"
 ```
 
+<details>
+<summary> 其他认证方式 </summary>
+
+> 这里是一些其他认证方式，请仅在无法获取 Access Key 与 Secret Key 时使用。这些认证方式已经过时，将在未来从 SDK 中移除。
+
+API Key (**AK**) 和 Secret Key (**SK**）是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
+
+```go
+qianfan.GetConfig().AK = "your_ak"
+qianfan.GetConfig().SK = "your_sk"
+```
+
+</details>
+
 ### Chat 对话
 
 可以使用 `ChatCompletion` 对象完成对话相关操作，可以通过如下方法获取一个 `ChatCompletion` 对象：
@@ -55,7 +69,7 @@ chat := qianfan.NewChatCompletion(
 
 之后就可以通过 `Do` 方法进行对话：
 
-```
+```go
 resp, err := chat.Do(
     context.TODO(),
     &qianfan.ChatCompletionRequest{
@@ -185,4 +199,28 @@ if err != nil {
     return err
 }
 embed := resp.Data[0].Embedding  // 获取第一个输入的向量
+```
+
+### 其他设置
+
+为了便于使用，SDK 提供了一些设置项。
+
+#### 重试
+
+为了避免因 QPS 限制等原因导致请求失败，SDK 提供了重试功能，可以通过如下方式设置
+
+```go
+qianfan.GetConfig().LLMRetryCount = 3          // 最多尝试 3 次，默认为 1，若设置为 0 则无限重试
+qianfan.GetConfig().LLMRetryTimeout = 60       // 请求的超时时间，默认为 0 即不设置
+qianfan.GetConfig().LLMRetryBackoffFactor = 1  // 指数回避因子，默认为 0
+```
+
+也可以单独为某个实例设置
+
+```go
+chat := qianfan.NewChatCompletion(  // Completion 与 Embedding 可以用同样方式设置
+    WithLLMRetryCount(3),           // 最多重试 3 次
+    WithLLMRetryTimeout(60),        // 超时 60s
+    WithLLMRetryBackoffFactor(1),   // 指数回避因子
+)
 ```

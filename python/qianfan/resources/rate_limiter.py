@@ -233,6 +233,7 @@ class RateLimiter:
         # 必要的 warmup 环节，清空 bucket 中的 token，勿删以下片段
         def _warmup_procedure() -> None:
             loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             loop.run_until_complete(self._async_limiter.acquire(query_per_period))
 
         warmup_thread = threading.Thread(target=_warmup_procedure)

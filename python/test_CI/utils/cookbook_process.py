@@ -1,24 +1,25 @@
+import logging
 import os
 import random
 import re
 import string
-from typing import Dict, List, Any, Union
-import logging
+from typing import Dict, List
+
 import nbformat as nbf
 from pydantic import BaseModel, Field
 
 
-class ProcessCookbook(BaseModel):
+class CookbookProcessor(BaseModel):
     ntbk_branches: Dict[str, nbf.NotebookNode] = Field(default={'main': nbf.v4.new_notebook()})
     kernel_spec: Dict[str, str] = Field(default={})
-    ipath: str = Field(default=...)
+    cpath: str = Field(default=...)
     save_path: str = Field(default=...)
 
     class Config:
         arbitrary_types_allowed = True
 
     def process_branches(self):
-        ntbk = nbf.read(self.ipath, nbf.NO_CONVERT)
+        ntbk = nbf.read(self.cpath, nbf.NO_CONVERT)
         self.kernel_spec.update(ntbk.metadata.get('kernelspec', {}))
 
         for cell in ntbk.cells:
@@ -124,8 +125,8 @@ class ProcessCookbook(BaseModel):
             re_str1 = r'random_([^\'\"\s\[\]\(\)]+)\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
             re_str2 = r'[\'\"]\s*random_([^\'\"\s]+)\s*[\'\"]'  # 字符串格式的参数： "参数"
             random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}"', text, flags=re.M)
-            new_text = re.sub(re_str2, f'"\g<1>_{random_str}"', new_text, flags=re.M)
+            new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}_"', text, flags=re.M)
+            new_text = re.sub(re_str2, f'"\g<1>_{random_str}_"', new_text, flags=re.M)
             return new_text
 
         # 注入参数
@@ -147,8 +148,8 @@ class ProcessCookbook(BaseModel):
             pat_str = pat_l + f'((?:{pat_group}))' + pat_r
             re_str = r'\g<1>\g<2>\g<3>'
 
-            source = re.sub(f'#[ ]*{pat_str}', re_str, source)
-            source = re.sub(f'{pat_str}', f'# {re_str}', source)
+            source = re.sub(f'^#[ ]*{pat_str}', re_str, source, flags=re.M)
+            source = re.sub(f'^{pat_str}', f'# {re_str}', source, flags=re.M)
             cell['source'] = source
 
     def save(self):
@@ -162,6 +163,6 @@ class ProcessCookbook(BaseModel):
         save_dir = os.path.dirname(self.save_path)
         os.makedirs(save_dir, exist_ok=True)
 
-        origin_basename = os.path.basename(self.ipath)
+        origin_basename = os.path.basename(self.cpath)
         branch_save_path = self.save_path.replace(origin_basename, f'{branch}_{origin_basename}')
         return branch_save_path

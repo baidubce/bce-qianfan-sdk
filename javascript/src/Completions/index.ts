@@ -15,7 +15,7 @@
 import axios, {AxiosInstance} from 'axios';
 import HttpClient from '../HttpClient';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessToken, getRequestBody, getIAMConfig, getPath} from '../utils';
+import {getAccessToken, getRequestBody, getIAMConfig, getPath, getDefaultConfig} from '../utils';
 import {Stream} from '../streaming';
 import {RespBase, CompletionBody} from '../interface';
 import * as packageJson from '../../package.json';
@@ -23,9 +23,10 @@ import {CompletionModel, modelInfoMap} from './utils';
 
 export class Completions {
     private controller: AbortController;
-    private API_KEY: string;
-    private SECRET_KEY: string;
-    private Type?: string = 'IAM';
+    private QIANFAN_AK?: string;
+    private QIANFAN_SK?: string;
+    private QIANFAN_ACCESS_KEY?: string;
+    private QIANFAN_SECRET_KEY?: string;
     private Endpoint?: string = '';
     private headers = DEFAULT_HEADERS;
     private axiosInstance: AxiosInstance;
@@ -34,17 +35,16 @@ export class Completions {
 
     /**
      * 千帆大模型
-     * @param API_KEY API Key，IAM、AK/SK 鉴权时必填
-     * @param SECRET_KEY Secret Key，IAM、AK/SK 鉴权时必填
-     * @param Type 鉴权方式，默认IAM鉴权，如果使用AK/SK鉴权，请设置为'AK'
-     * @param Endpoint 请求地址，默认使用千帆大模型服务
+     * @param options 配置选项，可选参数包括 QIANFAN_AK、QIANFAN_SK、QIANFAN_ACCESS_KEY、QIANFAN_SECRET_KEY、Endpoint
      */
 
-    constructor(API_KEY: string, SECRET_KEY: string, Type = 'IAM', Endpoint = '') {
-        this.API_KEY = API_KEY;
-        this.SECRET_KEY = SECRET_KEY;
-        this.Type = Type;
-        this.Endpoint = Endpoint;
+    constructor(options?: { QIANFAN_AK?: string, QIANFAN_SK?: string, QIANFAN_ACCESS_KEY?: string, QIANFAN_SECRET_KEY?: string, Endpoint?: string}) {
+        const defaultConfig = getDefaultConfig();
+        this.QIANFAN_AK = options?.QIANFAN_AK ?? defaultConfig.QIANFAN_AK;
+        this.QIANFAN_SK = options?.QIANFAN_SK ?? defaultConfig.QIANFAN_SK;
+        this.QIANFAN_ACCESS_KEY = options?.QIANFAN_ACCESS_KEY ?? defaultConfig.QIANFAN_ACCESS_KEY;
+        this.QIANFAN_SECRET_KEY = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
+        this.Endpoint = options?.Endpoint;
         this.axiosInstance = axios.create();
     }
 
@@ -52,15 +52,15 @@ export class Completions {
         const path = getPath(model, modelInfoMap, endpoint, 'completions');
         const requestBody = getRequestBody(body, packageJson.version);
         // IAM鉴权
-        if (this.Type === 'IAM') {
-            const config = getIAMConfig(this.API_KEY, this.SECRET_KEY);
+        if (this.QIANFAN_ACCESS_KEY && this.QIANFAN_SECRET_KEY) {
+            const config = getIAMConfig(this.QIANFAN_ACCESS_KEY, this.QIANFAN_SECRET_KEY);
             const client = new HttpClient(config);
             const response = await client.sendRequest('POST', path, requestBody, this.headers, stream);
             return response as RespBase;
         }
         // AK/SK鉴权
-        if (this.Type === 'AK') {
-            const access = await getAccessToken(this.API_KEY, this.SECRET_KEY, this.headers);
+        if (this.QIANFAN_AK && this.QIANFAN_SK) {
+            const access = await getAccessToken(this.QIANFAN_AK, this.QIANFAN_SK, this.headers);
             // 重试问题初始化进入不了 TODO!!
             // if (access.expires_in < Date.now() / 1000) {
             const url = `${path}?access_token=${access.access_token}`;
@@ -96,7 +96,7 @@ export class Completions {
             // }
         }
 
-        throw new Error(`Unsupported authentication type: ${this.Type}`);
+        throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
 
     public async completions(body: CompletionBody, model: CompletionModel = 'ERNIE-Bot-turbo'): Promise<RespBase | AsyncIterable<RespBase>> {

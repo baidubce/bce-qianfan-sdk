@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
   #     运行ipynb
       - name: pip_install
-        uses: ${{ github.workspace }}/.github/workflows/pip_install.yml
+        uses: ./.github/workflows/pip_install.yml
         with:
           os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}

@@ -231,6 +231,6 @@ class AsyncTokenLimiter(BaseTokenLimiter):
         """
 
         lock = self._get_internal_async_lock()
-        if lock.locked():
+        if not lock.locked():
             async with lock:
                 self._token_current += compensation

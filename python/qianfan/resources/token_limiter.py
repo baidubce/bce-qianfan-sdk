@@ -20,7 +20,7 @@ import datetime
 import threading
 import time
 import unicodedata
-from typing import Any
+from typing import Any, Optional
 
 from qianfan import get_config
 from qianfan.utils import log_error
@@ -193,8 +193,13 @@ class AsyncTokenLimiter(BaseTokenLimiter):
                 production environment, default to 0.1,
                 means only apply 90% rate limitation
         """
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
         super().__init__(token_per_minute, buffer_ratio, **kwargs)
+
+    def _get_internal_async_lock(self) -> asyncio.Lock:
+        if not self._lock:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     async def decline(self, token_used: int) -> None:
         """decline token from limiter when start to do a request"""
@@ -204,7 +209,8 @@ class AsyncTokenLimiter(BaseTokenLimiter):
 
         self._check_limit(token_used)
 
-        async with self._lock:
+        lock = self._get_internal_async_lock()
+        async with lock:
             for i in range(3):
                 self._refresh_time_and_token()
                 if token_used <= self._token_current:
@@ -224,6 +230,7 @@ class AsyncTokenLimiter(BaseTokenLimiter):
         when receive a response from server
         """
 
-        if not self._lock.locked():
-            async with self._lock:
+        lock = self._get_internal_async_lock()
+        if lock.locked():
+            async with lock:
                 self._token_current += compensation

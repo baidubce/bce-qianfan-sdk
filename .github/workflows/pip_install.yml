@@ -30,10 +30,10 @@ jobs:
     name: Notebook Unit Tests
     runs-on: ${{ inputs.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
 #       获取commit内容
       - name: Get changed files
         id: changed-files

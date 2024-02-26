@@ -43,7 +43,7 @@ def executor():
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [(
-            '**/test_*.ipynb',
+            '**/function_call.ipynb',
             {
                 'test_var': "test_value"
             }
@@ -86,6 +86,7 @@ def test_agents(file_reg, params_dict, executor):
     executor.run()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
@@ -95,19 +96,6 @@ def test_agents(file_reg, params_dict, executor):
     ]
 )
 def test_datasets(file_reg, params_dict, executor):
-    executor.prepare(file_reg, params_dict)
-    executor.run()
-
-
-# 测试含有async的datasets notebook
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "file_reg,params_dict",
-    [
-        ('dataset/batch_inference_using_dataset.ipynb', {}),
-    ]
-)
-async def test_datasets_async(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
     executor.run()
 

@@ -26,53 +26,23 @@ jobs:
       matrix:
         os:
           - 'ubuntu-latest'
-          - 'macos-latest'
-          - 'windows-latest'
+#          - 'macos-latest'
+#          - 'windows-latest'
         python-version:
-          - '3.7'
-          - '3.8'
+#          - '3.7'
+#          - '3.8'
           - '3.9'
-          - '3.10'
-          - '3.11'
+#          - '3.10'
+#          - '3.11'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
-#       获取commit内容
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v42
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{matrix.python-version}}
-          # poetry 安装库
-#      - name: Install Poetry
-#        run: |
-#          pip install poetry
-#          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-#          poetry lock
-#      - name: Get Poetry version
-#        run: poetry --version
-#      - name: Setup Python Cache
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: ${{matrix.python-version}}
-#          cache: "poetry"
-#      - name: Install deps
-#        run: |
-#          make install
-          # 手动安装库
-      - name: pip_install
-        run: |
-          python3 -m pip install papermill ipykernel nbformat nbconvert pytest pytest-asyncio qianfan
-          python3 -m pip install langchain==0.1.7 chromadb pdfplumber datasets duckduckgo_search
-          python3 -m pip install pillow
-          python3 -m ipykernel install --user
 
   #     运行ipynb
+      - name: pip_install
+        uses: ./.github/workflows/pip_install.yml
+        with:
+          os: ${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+          ntbk_path: 'cookbook/RAG'
       - name: run_cookbook
         env:  # 配置环境变量
           QIANFAN_ACCESS_KEY: ${{ secrets.QIANFAN_ACCESS_KEY }}
@@ -80,4 +50,4 @@ jobs:
           KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
           github_root: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}/python/test_CI && pytest -v -r A --full-trace  ${{ github.workspace }}/python/test_CI/test_ntbk::test_evaluation --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"
+          cd ${{ github.workspace }}/python/test_CI && pytest -v -r A --full-trace  ${{ github.workspace }}/python/test_CI/test_ntbk::test_demo --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

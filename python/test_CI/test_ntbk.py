@@ -57,15 +57,15 @@ def test_demo(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
-        # ('batch_prediction.ipynb', {}),
-        # ('function_call.ipynb', {}),
-        # ('function_call_with_tool.ipynb', {}),
-        # ('langchain_sequential.ipynb', {}),
-        # ('prompt.ipynb', {}),
+        ('batch_prediction.ipynb', {}),
+        ('function_call.ipynb', {}),
+        ('function_call_with_tool.ipynb', {}),
+        ('langchain_sequential.ipynb', {}),
+        ('prompt.ipynb', {}),
         ('text2image.ipynb', {}),
-        # ('hub.ipynb', {}),
-        # ('function_call.ipynb', {}),
-        # ('eb_search.ipynb', {}),
+        ('hub.ipynb', {}),
+        ('function_call.ipynb', {}),
+        ('eb_search.ipynb', {}),
 
     ]
 )
@@ -142,7 +142,7 @@ def test_sk(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        ('evaluation/how_to_use_evaluation.ipynb', {}),  # 7/36 鉴权不通过
+        # ('evaluation/how_to_use_evaluation.ipynb', {}),  # 7/36 鉴权不通过
         ('evaluation/local_eval_with_qianfan.ipynb', {}),  # 28/39 ArrowInvalid: Must pass at least one table
     ]
 )

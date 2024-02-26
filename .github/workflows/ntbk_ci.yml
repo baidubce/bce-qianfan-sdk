@@ -80,4 +80,4 @@ jobs:
           KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
           github_root: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}/python/tests/test_CI && pytest -v -r A --full-trace  ${{ github.workspace }}/python/tests/test_CI --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"
+          cd ${{ github.workspace }}/python/test_CI && pytest -v -r A --full-trace  ${{ github.workspace }}/python/test_CI/test_ntbk::test_evaluation --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

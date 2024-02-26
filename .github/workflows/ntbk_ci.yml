@@ -37,8 +37,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
   #     运行ipynb
       - name: pip_install
         uses: ./.github/workflows/pip_install.yml

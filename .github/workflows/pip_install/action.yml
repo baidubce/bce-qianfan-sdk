@@ -28,15 +28,12 @@ env:
 jobs:
   test:
     name: Notebook Unit Tests
-    runs-on: ${{ inputs.os }}
+    runs-on: ${{ github.event.inputs.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{inputs.python-version}}
+          python-version: ${{ github.event.inputs.python-version }}
           # poetry 安装库
 #      - name: Install Poetry
 #        run: |
@@ -61,6 +58,6 @@ jobs:
           python3 -m pip install pillow
           python3 -m ipykernel install --user
       - name: install_RAG
-        if: ${{ inputs.ntbk_path == 'cookbook/RAG'}}
+        if: ${{ github.event.inputs.ntbk_path == 'cookbook/RAG'}}
         run: |
           echo "install RAG"

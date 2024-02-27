@@ -1,6 +1,6 @@
 import os
 import pytest
-
+from utils.cookbook_operate import CookbookExecutor
 
 def pytest_addoption(parser):
     parser.addoption("--ak", default="")
@@ -41,6 +41,5 @@ def env_set(request):
 
 @pytest.fixture(scope="function")
 def executor():
-    from python.test_CI.utils.cookbook_operate import CookbookExecutor
     with CookbookExecutor() as e:
         yield e

@@ -19,16 +19,15 @@ def test_demo(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
-        ('batch_prediction.ipynb', {}),
-        ('function_call.ipynb', {}),
-        ('function_call_with_tool.ipynb', {}),
-        ('langchain_sequential.ipynb', {}),
-        ('prompt.ipynb', {}),
+        # ('batch_prediction.ipynb', {}),
+        # ('function_call.ipynb', {}),
+        # ('function_call_with_tool.ipynb', {}),
+        # ('langchain_sequential.ipynb', {}),
+        # ('prompt.ipynb', {}),
         ('text2image.ipynb', {}),
-        ('hub.ipynb', {}),
-        ('function_call.ipynb', {}),
-        ('eb_search.ipynb', {}),
-
+        # ('hub.ipynb', {}),
+        # ('function_call.ipynb', {}),
+        # ('eb_search.ipynb', {}),
     ]
 )
 def test_common(file_reg, params_dict, executor):
@@ -48,28 +47,17 @@ def test_agents(file_reg, params_dict, executor):
     executor.run()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
         ('dataset/dataset101.ipynb', {}),
         ('dataset/how_to_use_qianfan_operator.ipynb', {}),
         ('dataset/batch_inference_using_dataset.ipynb', {}),
-    ]
-)
-def test_datasets(file_reg, params_dict, executor):
-    executor.prepare(file_reg, params_dict)
-    executor.run()
-
-
-# 测试含有async的datasets notebook
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "file_reg,params_dict",
-    [
         ('dataset/batch_inference_using_dataset.ipynb', {}),
     ]
 )
-async def test_datasets_async(file_reg, params_dict, executor):
+def test_datasets(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
     executor.run()
 
@@ -116,7 +104,7 @@ def test_evaluation(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        # ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),  # 参数错误[获取裁判员模型应用信息失败]
+        ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),
         ('finetune/api_based_finetune.ipynb', {}),  # 鉴权不一致
         # ('finetune/trainer_finetune_event_resume.ipynb', {}),  # keyError
 

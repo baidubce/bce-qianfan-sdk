@@ -122,8 +122,9 @@ class CookbookProcessor(BaseModel):
         def re_params(text, param, param_value):
             re_str1 = r"({})\s*=\s*\S+".format(param)  # 赋值表达式的参数： 参数 = "参数值"
             re_str2 = r'[\'\"]\s*{}\s*[\'\"]'.format(param)  # 字符串格式的参数： "参数"
-            new_text = re.sub(re_str1, f'\g<1> = "{param_value}"', text, flags=re.M)
-            new_text = re.sub(re_str2, f'"{param_value}"', new_text, flags=re.M)
+            re_type = r'"{}"' if isinstance(param_value, str) else r'{}'
+            new_text = re.sub(re_str1, r'\g<1> = ' + re_type.format(param_value), text, flags=re.M)
+            new_text = re.sub(re_str2, re_type.format(param_value), new_text, flags=re.M)
             return new_text
 
         def re_random(text):

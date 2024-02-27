@@ -16,20 +16,12 @@
 
 package com.baidubce.util;
 
-public class StringUtils {
-    public static boolean isEmpty(String str) {
-        return str == null || str.isEmpty();
-    }
+public class Pair<F, S> {
+    public final F first;
+    public final S second;
 
-    public static boolean isNotEmpty(String str) {
-        return !isEmpty(str);
-    }
-
-    public static String bytesToHexString(byte[] bytes) {
-        StringBuilder result = new StringBuilder();
-        for (byte b : bytes) {
-            result.append(String.format("%02x", b));
-        }
-        return result.toString();
+    public Pair(F first, S second) {
+        this.first = first;
+        this.second = second;
     }
 }

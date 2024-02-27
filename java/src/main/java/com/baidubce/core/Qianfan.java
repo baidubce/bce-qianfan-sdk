@@ -29,17 +29,16 @@ import com.baidubce.model.embedding.EmbeddingResponse;
 import com.baidubce.model.exception.QianfanException;
 import com.baidubce.util.Json;
 import com.baidubce.util.http.HttpClient;
+import com.baidubce.util.http.HttpRequest;
 import com.baidubce.util.http.HttpResponse;
 
 import java.util.Iterator;
 
 public class Qianfan {
-    private static final String URL_WITH_TOKEN = "%s?access_token=%s";
-
-    private final QianfanOAuth qianfanOAuth;
+    private final IAMAuth iamAuth;
 
     public Qianfan(String apiKey, String secretKey) {
-        this.qianfanOAuth = new QianfanOAuth(apiKey, secretKey);
+        this.iamAuth = new IAMAuth(apiKey, secretKey);
     }
 
     public ChatBuilder chatCompletion() {
@@ -76,15 +75,13 @@ public class Qianfan {
         return request(endpoint, request, EmbeddingResponse.class);
     }
 
-    private <T> T request(String endpoint, Object request, Class<T> responseClazz) {
-        String token = qianfanOAuth.getToken();
-        String url = String.format(URL_WITH_TOKEN, ModelEndpoint.getUrl(endpoint), token);
-
+    private <T> T request(String endpoint, Object body, Class<T> responseClazz) {
+        String url = ModelEndpoint.getUrl(endpoint);
         try {
-            HttpResponse<T> resp = HttpClient.request()
+            HttpRequest request = HttpClient.request()
                     .post(url)
-                    .body(request)
-                    .executeJson(responseClazz);
+                    .body(body);
+            HttpResponse<T> resp = signRequest(request).executeJson(responseClazz);
             if (resp.getCode() != 200) {
                 throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
             }
@@ -94,35 +91,52 @@ public class Qianfan {
         }
     }
 
-    private <T> Iterator<T> requestStream(String endpoint, Object request, Class<T> responseClazz) {
-        String token = qianfanOAuth.getToken();
-        String url = String.format(URL_WITH_TOKEN, ModelEndpoint.getUrl(endpoint), token);
-
+    private <T> Iterator<T> requestStream(String endpoint, Object body, Class<T> responseClazz) {
+        String url = ModelEndpoint.getUrl(endpoint);
         try {
-            HttpResponse<Iterator<String>> resp = HttpClient.request()
+            HttpRequest request = HttpClient.request()
                     .post(url)
-                    .body(request)
-                    .executeSSE();
+                    .body(body);
+            HttpResponse<Iterator<String>> resp = signRequest(request).executeSSE();
             if (resp.getCode() != 200) {
                 throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
             }
-            Iterator<String> sseIterator = resp.getBody();
-            return new Iterator<T>() {
-                @Override
-                public boolean hasNext() {
-                    return sseIterator.hasNext();
-                }
-
-                @Override
-                public T next() {
-                    String event = sseIterator.next().replaceFirst("data: ", "");
-                    // Skip sse empty line
-                    sseIterator.next();
-                    return Json.deserialize(event, responseClazz);
-                }
-            };
+            return new StreamIterator<>(resp.getBody(), responseClazz);
         } catch (Exception e) {
             throw new QianfanException("Failed to request " + endpoint, e);
+        }
+    }
+
+    private HttpRequest signRequest(HttpRequest request) {
+        try {
+            return request
+                    .addHeader("Authorization", iamAuth.sign(request.getMethod(), request.getUrl()))
+                    .addHeader("X-Bce-Date", iamAuth.getTimestamp());
+        } catch (Exception e) {
+            throw new QianfanException("Failed to sign request", e);
+        }
+    }
+
+    private static class StreamIterator<T> implements Iterator<T> {
+        private final Iterator<String> sseIterator;
+        private final Class<T> responseClazz;
+
+        public StreamIterator(Iterator<String> sseIterator, Class<T> responseClazz) {
+            this.sseIterator = sseIterator;
+            this.responseClazz = responseClazz;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return sseIterator.hasNext();
+        }
+
+        @Override
+        public T next() {
+            String event = sseIterator.next().replaceFirst("data: ", "");
+            // Skip sse empty line
+            sseIterator.next();
+            return Json.deserialize(event, responseClazz);
         }
     }
 }

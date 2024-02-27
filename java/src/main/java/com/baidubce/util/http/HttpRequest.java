@@ -36,6 +36,22 @@ public class HttpRequest {
     private HttpEntity body;
     private Map<String, String> headers = new LinkedHashMap<>();
 
+    public String getUrl() {
+        return url;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public HttpEntity getBody() {
+        return body;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
     public HttpRequest url(String url) {
         this.url = url;
         return this;

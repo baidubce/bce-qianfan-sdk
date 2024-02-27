@@ -1,42 +1,4 @@
-import os
 import pytest
-from utils.cookbook_execute import CookbookExecutor
-
-@pytest.fixture(scope='session', autouse=True)
-def env_set(request):
-    if request.config.getoption('--ak') != '':
-        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--ak")
-    if request.config.getoption('--sk') != '':
-        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--sk")
-    if request.config.getoption('--keywords') != '{}':
-        os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
-    if request.config.getoption('--root-dir') != '':
-        os.environ['ROOT_DIR'] = request.config.getoption("--root-dir")
-    else:
-        os.environ['ROOT_DIR'] = '../../..'
-
-    other_env = [('RetryCount', '3'), ('QIANFAN_QPS_LIMIT', '1'), ('QIANFAN_LLM_API_RETRY_COUNT', '3')]
-    for key, value in other_env:
-        os.environ[key] = value
-
-    yield
-    if os.environ.get('QIANFAN_ACCESS_KEY'):
-        del os.environ['QIANFAN_ACCESS_KEY']
-    if os.environ.get('QIANFAN_SECRET_KEY'):
-        del os.environ['QIANFAN_SECRET_KEY']
-    if os.environ.get('KEYWORDS_DICT'):
-        del os.environ['KEYWORDS_DICT']
-    if os.environ.get('ROOT_DIR'):
-        del os.environ['ROOT_DIR']
-    for key, value in other_env:
-        if key in os.environ:
-            del os.environ[key]
-
-
-@pytest.fixture(scope="function")
-def executor():
-    with CookbookExecutor() as e:
-        yield e
 
 
 @pytest.mark.skip
@@ -115,15 +77,15 @@ async def test_datasets_async(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        ('RAG/**/deeplake_retrieval_qa.ipynb', {}),  # 未通过
+        ('RAG/**/deeplake_retrieval_qa.ipynb', {}),  # 暂不跑
         ('RAG/**/question_answering.ipynb', {}),
-        ('RAG/**/qianfan_baidu_elasticsearch.ipynb', {}),  # 未通过
-        ('RAG/**/pinecone_qa.ipynb', {}),  # 未通过
+        ('RAG/**/qianfan_baidu_elasticsearch.ipynb', {}),  # 暂不跑
+        ('RAG/**/pinecone_qa.ipynb', {}),  # 暂不跑
     ]
 )
 def test_rag(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.parametrize(
@@ -142,28 +104,30 @@ def test_sk(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        # ('evaluation/how_to_use_evaluation.ipynb', {}),  # 7/36 鉴权不通过
-        ('evaluation/local_eval_with_qianfan.ipynb', {}),  # 28/39 ArrowInvalid: Must pass at least one table
+        # ('evaluation/how_to_use_evaluation.ipynb', {}),  # 28/36 Must pass at least one table
+        # ('evaluation/local_eval_with_qianfan.ipynb', {}),  # 28/39 ArrowInvalid: Must pass at least one table
     ]
 )
 def test_evaluation(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
-        # ('finetune/api_based_finetune.ipynb', {}),  # 鉴权不一致
-        # ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),  # 未通过
-        ('finetune/trainer_finetune.ipynb', {}),
+        # ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),  # 参数错误[获取裁判员模型应用信息失败]
+        ('finetune/api_based_finetune.ipynb', {}),  # 鉴权不一致
+        # ('finetune/trainer_finetune_event_resume.ipynb', {}),  # keyError
+
+        # ('finetune/trainer_finetune.ipynb', {})
         # 24/26 APIError: api return error, req_id: 3838549625 code: 500001, msg: param invalid
-        # ('finetune/trainer_finetune_event_resume.ipynb', {}),  # 鉴权不一致
+
     ]
 )
 def test_finetune(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.parametrize(
@@ -174,4 +138,4 @@ def test_finetune(file_reg, params_dict, executor):
 )
 def test_wandb(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)

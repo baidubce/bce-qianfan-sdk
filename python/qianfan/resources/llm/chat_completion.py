@@ -499,6 +499,8 @@ class ChatCompletion(BaseResource):
           truncated_continue_prompt (str):
             [Experimental] The prompt to use when requesting more content for auto
             truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -712,6 +714,8 @@ class ChatCompletion(BaseResource):
           truncated_continue_prompt (str):
             [Experimental] The prompt to use when requesting more content for auto
             truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 

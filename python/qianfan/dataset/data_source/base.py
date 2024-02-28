@@ -17,7 +17,9 @@ base data source definition
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, List, Union
+from typing import Any, Optional
+
+import pyarrow
 
 
 class FormatType(Enum):
@@ -34,14 +36,14 @@ class DataSource(ABC):
     """basic data source class"""
 
     @abstractmethod
-    def save(self, data: str, **kwargs: Any) -> bool:
+    def save(self, table: pyarrow.Table, **kwargs: Any) -> bool:
         """
-        Export the data to the data source
+        Export the pyarrow.Table to the data source
         and return
         whether the import was successful or failed
 
         Args:
-            data (str): data need to be saved
+            table (pyarrow.Table): table need to be saved
             **kwargs (Any): optional arguments
 
         Returns:
@@ -49,42 +51,27 @@ class DataSource(ABC):
         """
 
     @abstractmethod
-    async def asave(self, data: str, **kwargs: Any) -> bool:
+    def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
-        Asynchronously export the data to the data source
-        and return
-        whether the import was successful or failed
+        Get a pyarrow.Table from current DataSource object
 
         Args:
-            data (str): data need to be saved
-            **kwargs (Any): optional arguments
+            **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            bool: is saving successful
+            Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
         """
 
     @abstractmethod
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
+    def fetch(self, **kwargs: Any) -> pyarrow.Table:
         """
-        Fetch data from source
+        Read data from qianfan.
 
         Args:
-            **kwargs (Any): optional arguments
+            **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            Union[str, List[str]]: content retrieved from data source
-        """
-
-    @abstractmethod
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Asynchronously fetch data from source
-
-        Args:
-            **kwargs (Any): optional arguments
-
-        Returns:
-            Union[str, List[str]]: content retrieved from data source
+            pyarrow.Table: table retrieved from file
         """
 
     @abstractmethod

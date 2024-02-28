@@ -14,9 +14,37 @@
 """
 constants for dataset using
 """
+import os.path
 
-# 千帆数据集本地缓存文件夹的相对路径
-QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
+# 千帆本地缓存文件夹的绝对路径
+QianfanLocalCacheDir = os.path.expanduser("~/.qianfan_cache")
+
+# 千帆数据集本地缓存文件夹的绝对路径
+QianfanDatasetLocalCacheDir = os.path.join(QianfanLocalCacheDir, "dataset")
+
+# 千帆数据集下载缓存的存储路径
+QianfanDatasetDownloadingCacheDir = os.path.join(
+    QianfanDatasetLocalCacheDir, ".qianfan_download_cache"
+)
+
+# Bos 数据源使用的缓存目录
+QianfanDatasetBosCacheDir = os.path.join(QianfanDatasetLocalCacheDir, ".bos_cache")
+
+# Bos 数据源使用的上传目录
+QianfanDatasetBosUploadingCacheDir = os.path.join(
+    QianfanDatasetBosCacheDir, "uploading"
+)
+
+# Bos 数据源使用的下载目录
+QianfanDatasetBosDownloadingCacheDir = os.path.join(
+    QianfanDatasetBosCacheDir, "downloading"
+)
+
+# 本地缓存中，元数据的后缀名
+QianfanDatasetMetaInfoExtensionName = ".meta"
+
+# 本地缓存中，缓存文件的后缀名
+QianfanDatasetCacheFileExtensionName = ".arrow"
 
 # 包装成单列表时使用的列名
 QianfanDatasetPackColumnName = "_pack"

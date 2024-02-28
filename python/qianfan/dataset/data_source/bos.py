@@ -17,17 +17,23 @@ bos data source implementation including uploading / downloading
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import dateutil.parser
+import pyarrow
 
 from qianfan import get_config
 from qianfan.config import encoding
-from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset import FileDataSource
+from qianfan.dataset.consts import (
+    QianfanDatasetBosDownloadingCacheDir,
+    QianfanDatasetBosUploadingCacheDir,
+)
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
-    _check_data_and_zip_file_valid,
+    _get_a_memory_mapped_pyarrow_table,
     _read_all_file_from_zip,
+    zip_file_or_folder,
 )
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
@@ -46,8 +52,8 @@ class BosDataSource(DataSource, BaseModel):
 
     def save(
         self,
-        data: Optional[str] = None,
-        zip_file_path: Optional[str] = None,
+        table: pyarrow.Table,
+        should_save_as_zip_file: bool = False,
         should_overwrite_existed_file: bool = False,
         **kwargs: Any,
     ) -> bool:
@@ -57,10 +63,8 @@ class BosDataSource(DataSource, BaseModel):
         whether the import was successful or failed
 
         Args:
-            data (Optional[str]):
-                data need to be saved, default to None
-            zip_file_path (Optional[str]):
-                path of your zip file, default to None
+            table (pyarrow.Table):
+                data waiting to be uploaded.
             should_overwrite_existed_file (bool):
                 should bos data source overwrite existed file when save data,
                 default to False
@@ -76,23 +80,21 @@ class BosDataSource(DataSource, BaseModel):
 
         bos_helper = BosHelper(self.region, self.ak, self.sk)
 
-        _check_data_and_zip_file_valid(data, zip_file_path)
-
-        if data:
+        # 构建远端的 Bos 路径
+        if not should_save_as_zip_file:
             final_bos_file_path = self.bos_file_path
-            log_info(
-                f"ready to fetch a file from bos path: {final_bos_file_path} in bucket"
-                f" {self.bucket}"
-            )
+
         else:
             final_bos_file_path = self.bos_file_path.replace(
                 f".{self.file_format.value}", ".zip"
             )
-            log_info(
-                f"ready to fetch a zip file from bos path: {final_bos_file_path} in"
-                f" bucket {self.bucket}"
-            )
 
+        log_info(
+            f"start to upload file to bos path: {final_bos_file_path} in bucket"
+            f" {self.bucket}"
+        )
+
+        # 检查 BOS 上是否已经存在文件
         if not should_overwrite_existed_file:
             file_existed = bos_helper.check_if_file_existed_on_bos(
                 self.bucket, final_bos_file_path
@@ -106,21 +108,35 @@ class BosDataSource(DataSource, BaseModel):
                 log_error(err_msg)
                 raise ValueError(err_msg)
 
+        # 如果设置了 should_overwrite_existed_file 则防御性删除文件
         if should_overwrite_existed_file:
             log_info(
                 f"try to delete original bos file {final_bos_file_path} for overwrite"
             )
             bos_helper.delete_bos_file_anyway(self.bucket, final_bos_file_path)
 
+        # 构造本地的缓存路径
+        local_file_path = os.path.join(
+            self._get_specific_uploading_cache_path(),
+            os.path.split(final_bos_file_path)[1],
+        )
+        FileDataSource(
+            path=local_file_path,
+            file_format=self.format_type(),
+            save_as_folder=should_save_as_zip_file,
+        ).save(table)
+
+        # 打压缩包
+        if should_save_as_zip_file:
+            local_file_path = zip_file_or_folder(local_file_path)
+
         try:
-            if data:
-                log_info("fetch file content directly from bos file")
-                bos_helper.upload_content_to_bos(data, final_bos_file_path, self.bucket)
-            elif zip_file_path:
-                log_info("start to fetch zip file from bos")
-                bos_helper.upload_file_to_bos(
-                    zip_file_path, final_bos_file_path, self.bucket
-                )
+            log_info(
+                f"start to upload file {local_file_path} to bos {final_bos_file_path}"
+            )
+            bos_helper.upload_file_to_bos(
+                local_file_path, final_bos_file_path, self.bucket
+            )
         except Exception as e:
             err_msg = (
                 "an error occurred during upload data to bos with path"
@@ -132,34 +148,29 @@ class BosDataSource(DataSource, BaseModel):
 
         return True
 
-    async def asave(self, data: str, **kwargs: Any) -> bool:
-        """
-        Asynchronously export the data to specific bos storage
-        and return
-        whether the import was successful or failed
-        Not available currently
+    def _get_specific_uploading_cache_path(self) -> str:
+        bos_file_path = os.path.split(self.bos_file_path[1:])[0]
+        cache_path = os.path.join(
+            QianfanDatasetBosUploadingCacheDir, self.region, self.bucket, bos_file_path
+        )
+        os.makedirs(cache_path, exist_ok=True)
 
-        Args:
-            data (str): data need to be saved
-            **kwargs (Any): optional arguments
+        return cache_path
 
-        Returns:
-            bool: is saving successful
-        """
-        raise NotImplementedError()
-
-    def _get_specific_cache_path(self) -> str:
+    def _get_specific_downloading_cache_path(self) -> str:
         bos_file_path = self.bos_file_path[1:]
         cache_path = os.path.join(
-            QianfanDatasetLocalCacheDir, self.region, self.bucket, bos_file_path
+            QianfanDatasetBosDownloadingCacheDir,
+            self.region,
+            self.bucket,
+            bos_file_path,
         )
-        if not os.path.exists(cache_path):
-            os.makedirs(cache_path)
+        os.makedirs(cache_path, exist_ok=True)
 
         return cache_path
 
     def _check_bos_file_cache(self, bos_helper: BosHelper) -> bool:
-        cache_path = self._get_specific_cache_path()
+        cache_path = self._get_specific_downloading_cache_path()
 
         meta_info_path = os.path.join(cache_path, "info.json")
         if not os.path.exists(meta_info_path):
@@ -180,7 +191,7 @@ class BosDataSource(DataSource, BaseModel):
         return cache_last_modified_time >= new_last_modified_time
 
     def _update_file_cache(self, bos_helper: BosHelper) -> None:
-        cache_path = self._get_specific_cache_path()
+        cache_path = self._get_specific_downloading_cache_path()
         cache_content_path = os.path.join(cache_path, "content")
         cache_meta_info_path = os.path.join(cache_path, "info.json")
 
@@ -194,19 +205,20 @@ class BosDataSource(DataSource, BaseModel):
 
         return
 
-    def _read_from_cache(self, is_read_from_zip: bool) -> Union[List[str], str]:
-        cache_path = self._get_specific_cache_path()
+    def _read_from_cache(self, is_read_from_zip: bool, **kwargs: Any) -> pyarrow.Table:
+        cache_path = self._get_specific_downloading_cache_path()
         cache_content_path = os.path.join(cache_path, "content")
 
         if is_read_from_zip:
-            return _read_all_file_from_zip(cache_content_path, self.format_type())
+            return _read_all_file_from_zip(
+                cache_content_path, self.format_type(), **kwargs
+            )
 
-        with open(cache_content_path, mode="r", encoding=encoding()) as f:
-            return f.read()
+        return _get_a_memory_mapped_pyarrow_table(
+            cache_content_path, self.format_type(), **kwargs
+        )
 
-    def fetch(
-        self, read_from_zip: bool = False, **kwargs: Any
-    ) -> Union[str, List[str]]:
+    def fetch(self, read_from_zip: bool = False, **kwargs: Any) -> pyarrow.Table:
         """
         Read data from bos.
 
@@ -216,7 +228,8 @@ class BosDataSource(DataSource, BaseModel):
                 default to False
             **kwargs (Any): Arbitrary keyword arguments.
 
-        Returns:
+        Ret
+        urns:
             Union[str, List[str]]:
                 String or list of string containing the data read from the file.
         """
@@ -225,28 +238,25 @@ class BosDataSource(DataSource, BaseModel):
         assert self.file_format
 
         bos_helper = BosHelper(self.region, self.ak, self.sk)
+
+        # 检查缓存并且在缓存失效的情况下更新
         if not self._check_bos_file_cache(bos_helper):
             log_info("cache was outdated, start to update bos cache")
             self._update_file_cache(bos_helper)
 
+        # 检查是否是从一个压缩包读取文件
         index = self.bos_file_path.rfind(".")
         read_from_zip = read_from_zip or (
             index != -1 and self.bos_file_path[index + 1 :] == "zip"
         )
 
-        if read_from_zip:
-            log_info(
-                f"ready to fetch a zip file from bos path: {self.bos_file_path} in"
-                f" bucket {self.bucket}"
-            )
-        else:
-            log_info(
-                f"ready to fetch a file from bos path: {self.bos_file_path} in bucket"
-                f" {self.bucket}"
-            )
+        log_info(
+            f"ready to fetch a file from bos path: {self.bos_file_path} in bucket"
+            f" {self.bucket}"
+        )
 
         try:
-            return self._read_from_cache(read_from_zip)
+            return self._read_from_cache(read_from_zip, **kwargs)
         except Exception as e:
             err_msg = (
                 f"fetch file content from bos path {self.bos_file_path} of bucket"
@@ -255,19 +265,17 @@ class BosDataSource(DataSource, BaseModel):
             log_error(err_msg)
             raise e
 
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
+    def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
-        Asynchronously Read data from bos.
-        Not available currently
+        Get a pyarrow.Table from current DataSource object
 
         Args:
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
+            Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
         """
-        raise NotImplementedError()
+        return None
 
     def format_type(self) -> FormatType:
         assert self.file_format

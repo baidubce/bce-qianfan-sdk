@@ -15,17 +15,33 @@
 utilities for data source
 """
 import datetime
+import hashlib
+import json
 import os
 import shutil
 import zipfile
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import dateutil.parser
+import pyarrow
 import requests
 
 from qianfan.config import encoding, get_config
+from qianfan.dataset.consts import (
+    QianfanDatasetCacheFileExtensionName,
+    QianfanDatasetLocalCacheDir,
+    QianfanDatasetMetaInfoExtensionName,
+)
 from qianfan.dataset.data_source.base import FormatType
+from qianfan.dataset.data_source.chunk_reader import (
+    BaseReader,
+    CsvReader,
+    JsonLineReader,
+    JsonReader,
+    TextReader,
+)
+from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -39,36 +55,217 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
+from qianfan.utils.pydantic import BaseModel
+
+
+class _DatasetCacheMetaInfo(BaseModel):
+    """存储数据集缓存中的，单个文件的元信息"""
+
+    # 源文件的路径
+    source_file_path: str
+
+    # 源文件的哈希值
+    source_file_hash: str
+
+    # 缓存文件的路径: str
+    cache_file_path: str
 
 
 def _read_all_file_content_in_an_folder(
-    path: str, format_type: FormatType
-) -> List[str]:
+    path: str, format_type: FormatType, **kwargs: Any
+) -> pyarrow.Table:
     """从文件夹里读取所有指定类型的的文件"""
-    ret_list: List[str] = []
+    og_table: Optional[pyarrow.Table] = None
 
-    # 不保证文件读取的顺序性
+    # 如果是文件夹，则遍历读取
     for root, dirs, files in os.walk(path):
         for file_name in files:
             if not file_name.endswith(format_type.value):
                 continue
-
             file_path = os.path.join(root, file_name)
-            with open(file_path, mode="r", encoding=encoding()) as f:
-                ret_list.append(f.read())
 
-    return ret_list
+            table = _get_a_memory_mapped_pyarrow_table(file_path, format_type, **kwargs)
+            if og_table is None:
+                og_table = table
+            else:
+                og_table = pyarrow.concat_tables([og_table, table])
+
+    assert isinstance(og_table, pyarrow.Table)
+    og_table.combine_chunks()
+    return og_table
 
 
-def _read_all_file_from_zip(path: str, format_type: FormatType) -> List[str]:
+def _read_all_file_from_zip(
+    path: str, format_type: FormatType, **kwargs: Any
+) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = "tmp_folder_path"
     try:
         with zipfile.ZipFile(path) as zip_file:
             zip_file.extractall(tmp_folder_path)
-        return _read_all_file_content_in_an_folder(tmp_folder_path, format_type)
+        return _read_all_file_content_in_an_folder(
+            tmp_folder_path, format_type, **kwargs
+        )
     finally:
         shutil.rmtree(tmp_folder_path, ignore_errors=True)
+
+
+def _get_reader_class(format_type: FormatType) -> Type[BaseReader]:
+    if format_type == FormatType.Jsonl:
+        return JsonLineReader
+    elif format_type == FormatType.Csv:
+        return CsvReader
+    elif format_type == FormatType.Json:
+        return JsonReader
+    elif format_type == FormatType.Text:
+        return TextReader
+    else:
+        err_msg = f"unsupported file reader type: {format_type.value}"
+        log_error(err_msg)
+        raise ValueError(err_msg)
+
+
+def _get_a_memory_mapped_pyarrow_table(
+    path: str, format_type: FormatType, **kwargs: Any
+) -> pyarrow.Table:
+    reader = _get_reader_class(format_type)(file_path=path, **kwargs)
+    cache_file_path = _get_cache_file_path_and_check_cache_validity(path, reader)
+    return _read_mmap_table_from_arrow_file(cache_file_path)
+
+
+def _read_mmap_table_from_arrow_file(arrow_file_path: str) -> pyarrow.Table:
+    mmap_stream = pyarrow.memory_map(arrow_file_path)
+    return pyarrow.ipc.open_stream(mmap_stream).read_all()
+
+
+def _get_cache_file_path_and_check_cache_validity(
+    file_path: str, reader: BaseReader
+) -> str:
+    # 获取源文件的绝对路径
+    abs_file_path: str = os.path.abspath(file_path)
+
+    # 获取绝对路径中的文件夹路径和文件名
+    dir_path, file_name = os.path.split(abs_file_path)
+    assert isinstance(dir_path, str) and isinstance(file_name, str)
+
+    file_name_without_extension_name: str = file_name.split(".")[0]
+
+    # 根据绝对路径来创建缓存文件夹
+    cache_path_dir: str = os.path.join(QianfanDatasetLocalCacheDir, dir_path[1:])
+    os.makedirs(cache_path_dir, exist_ok=True)
+
+    # 计算源文件的哈希值，默认使用 sha256 算法
+    hash_value: str = _calculate_file_hash(file_path)
+
+    # 构造元信息文件路径
+    meta_info_path = os.path.join(
+        cache_path_dir,
+        file_name_without_extension_name + QianfanDatasetMetaInfoExtensionName,
+    )
+
+    # 如果缓存的元信息文件存在，则读取
+    if os.path.exists(meta_info_path):
+        with open(meta_info_path, mode="r", encoding=encoding()) as f:
+            cache_meta = _DatasetCacheMetaInfo(**json.load(f))
+
+        # 如果文件哈希值与记录得到的哈希值一致，则直接返回缓存的 arrow 文件
+        if cache_meta.source_file_hash == hash_value:
+            return cache_meta.cache_file_path
+
+    # 如果不一致，则需要重新更新缓存
+    cache_file_path = os.path.join(
+        cache_path_dir,
+        file_name_without_extension_name + QianfanDatasetCacheFileExtensionName,
+    )
+
+    cache_meta = _DatasetCacheMetaInfo(
+        source_file_path=abs_file_path,
+        source_file_hash=hash_value,
+        cache_file_path=cache_file_path,
+    )
+    cache_meta.source_file_path = abs_file_path
+    cache_meta.source_file_hash = hash_value
+    cache_meta.cache_file_path = cache_file_path
+
+    # 创建缓存文件
+    _write_table_to_arrow_file(cache_file_path, reader)
+
+    # 更新缓存元信息
+    with open(meta_info_path, "w", encoding=encoding()) as meta:
+        meta.write(cache_meta.json())
+
+    return cache_file_path
+
+
+def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
+    # 创建哈希对象
+    hasher = hashlib.new(hash_algorithm)
+
+    # 以二进制模式打开文件
+    with open(file_path, "rb") as file:
+        # 逐块读取文件内容并更新哈希对象
+        for chunk in iter(lambda: file.read(4096), b""):
+            hasher.update(chunk)
+
+    # 返回计算得到的哈希值
+    return hasher.hexdigest()
+
+
+def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
+    stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
+
+    for table in _build_table_from_reader(reader):
+        assert isinstance(table, pyarrow.Table)
+        if stream_writer is None:
+            stream_writer = pyarrow.ipc.new_stream(cache_file_path, table.schema)
+
+        stream_writer.write_table(table)
+
+    return
+
+
+def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
+    reader_type = type(reader)
+    for elem_list in reader:
+        if (
+            reader_type == CsvReader
+            or reader_type == JsonReader
+            or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
+        ):
+            table = pyarrow.Table.from_pylist(elem_list)
+        elif reader_type == JsonLineReader and isinstance(elem_list[0], list):
+            table = _construct_table_from_nest_sequence(elem_list)
+        else:
+            err_msg = "unsupported format when reading file as dataset"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        table.combine_chunks()
+        yield table
+
+
+# 创建压缩包
+def zip_file_or_folder(path: str) -> str:
+    folder_name: str = os.path.split(os.path.abspath(path))[1]
+
+    if folder_name.rfind(".") != 0:
+        # 去除文件内的后缀名
+        folder_name = folder_name[0 : folder_name.rfind(".")]
+        # 去除文件前的英文句号
+        folder_name.strip(".")
+
+    # 如果是文件夹，则直接调用对应的函数处理
+    if os.path.isdir(path):
+        return shutil.make_archive(folder_name, "zip", base_dir=path)
+
+    # 不然得要手动处理文件
+    zip_file_name = f"{folder_name}.zip"
+    with zipfile.ZipFile(zip_file_name, mode="w") as zip_file:
+        zip_file.write(path)
+
+    # 取绝对路径的前缀文件夹并拼接压缩文件名组成路径
+    return os.path.join(os.path.split(os.path.abspath(path))[0], zip_file_name)
 
 
 # 使用 DataTemplateType 来推断配对的 FormatType
@@ -118,6 +315,36 @@ def _create_import_data_task_and_wait_for_success(
         else:
             log_error(f"import failed with status {status}")
             return False
+
+
+def upload_data_from_bos_to_qianfan(
+    bos_helper: BosHelper,
+    is_zip_file: bool,
+    qianfan_dataset_id: str,
+    storage_id: str,
+    remote_file_path: str,
+    is_annotated: bool = False,
+) -> None:
+    # 如果不是压缩包，则直接导入
+    if not is_zip_file:
+        complete_file_path = generate_bos_file_path(storage_id, remote_file_path)
+        if not _create_import_data_task_and_wait_for_success(
+            qianfan_dataset_id, is_annotated, complete_file_path
+        ):
+            err_msg = "import data from bos file failed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+    # 不然需要创建分享链接导入
+    else:
+        shared_str = bos_helper.get_bos_file_shared_url(remote_file_path, storage_id)
+        log_info(f"get shared file url: {shared_str}")
+        if not _create_import_data_task_and_wait_for_success(
+            qianfan_dataset_id, is_annotated, shared_str, DataSourceType.SharedZipUrl
+        ):
+            err_msg = "import data from shared zip url failed"
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
 
 def _get_qianfan_dataset_type_tuple(

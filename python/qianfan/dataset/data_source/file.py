@@ -14,17 +14,23 @@
 """
 file data source implementation
 """
-
+import io
+import json
 import os
-import uuid
 import zipfile
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TextIO
+
+import clevercsv
+import pyarrow
 
 from qianfan.config import encoding
+from qianfan.dataset.consts import QianfanDatasetPackColumnName
 from qianfan.dataset.data_source import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
+    _get_a_memory_mapped_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
+    zip_file_or_folder,
 )
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
@@ -35,9 +41,65 @@ class FileDataSource(DataSource, BaseModel):
 
     path: str
     file_format: Optional[FormatType] = Field(default=None)
+
+    # Available only when 'file_format' is Text
+    # and 'path' points to a folder
+    # This option will convert single row in table into a separate file
+    # in a folder
     save_as_folder: bool = Field(default=False)
 
-    def save(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
+    def _write_as_format(
+        self, fd: TextIO, data: List[Dict[str, Any]], index: int
+    ) -> None:
+        if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
+            lines: List[str] = []
+            for elem in data:
+                lines.append(json.dumps(elem))
+
+            fd.writelines(lines)
+
+        elif self.file_format == FormatType.Csv:
+            string_stream_buffer = io.StringIO()
+            csv_writer = clevercsv.DictWriter(
+                string_stream_buffer, fieldnames=list(data[0].keys())
+            )
+
+            # 如果是第一次写入，则需要加上 header 部分
+            if index == 0:
+                csv_writer.writeheader()
+
+            csv_writer.writerows(data)
+            fd.write(string_stream_buffer.getvalue())
+
+        elif self.file_format == FormatType.Text:
+            for elem in data:
+                fd.write(elem[QianfanDatasetPackColumnName])
+                fd.write("\n")
+        else:
+            err_msg = "unexpected format"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+    def _save_generic_text_into_folder(
+        self, table: pyarrow.Table, batch_size: int = 10, **kwargs: Any
+    ) -> bool:
+        os.makedirs(self.path, exist_ok=True)
+
+        for i in range(0, table.num_rows, batch_size):
+            table_slice = list(
+                table.slice(i, batch_size).to_pydict()[QianfanDatasetPackColumnName]
+            )
+            for j in range(batch_size):
+                with open(
+                    os.path.join(self.path, f"{i + j}.txt"),
+                    mode="w",
+                    encoding=encoding(),
+                ) as f:
+                    f.write(table_slice[j])
+
+        return True
+
+    def save(self, table: pyarrow.Table, batch_size: int = 100, **kwargs: Any) -> bool:
         """
         Write data to file。
 
@@ -48,82 +110,62 @@ class FileDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been written successfully
         """
-        if isinstance(data, str):
-            if os.path.isdir(self.path):
-                file_path = os.path.join(
-                    self.path, f"data_{uuid.uuid4()}.{self.format_type().value}"
-                )
-            else:
-                file_path = self.path
-            with open(file_path, mode="w", encoding=encoding()) as file:
-                file.write(data)
-            return True
-        else:
-            os.makedirs(self.path)
-            for index in range(len(data)):
-                entry = data[index]
-                with open(
-                    os.path.join(
-                        self.path, f"entry_{index}.{self.format_type().value}"
-                    ),
-                    mode="w",
-                    encoding=encoding(),
-                ) as file:
-                    file.write(entry)
-            return True
+        if self.save_as_folder and self.file_format == FormatType.Text:
+            return self._save_generic_text_into_folder(table, batch_size, **kwargs)
 
-    async def asave(self, data: Union[str, List[str]], **kwargs: Any) -> bool:
+        with open(
+            self.path,
+            mode="w",
+            encoding=encoding() if self.file_format != FormatType.Csv else "utf-8-sig",
+        ) as f:
+            # Json 格式的时候需要特判
+            if self.file_format == FormatType.Json:
+                f.write("[\n")
+
+            for i in range(0, table.num_rows, batch_size):
+                self._write_as_format(f, table.slice(i, batch_size).to_pylist(), i)
+
+            # Json 格式的时候需要特判
+            if self.file_format == FormatType.Json:
+                f.write("\n]")
+
+        return True
+
+    def _zip_file_or_folder(self) -> str:
+        return zip_file_or_folder(self.path)
+
+    def fetch(self, **kwargs: Any) -> pyarrow.Table:
+        ret = self.load(**kwargs)
+        assert ret
+        return ret
+
+    def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
-        Asynchronously Write data to file。
-        Not available currently
-
-        Args:
-            data (Union[str, List[str]]): data waiting to be written。
-            **kwargs (Any): optional arguments。
-
-        Returns:
-            bool: has data been written successfully
-        """
-        raise NotImplementedError()
-
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Read data from file.
+        Get a pyarrow.Table from current DataSource object
 
         Args:
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
+            Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
         """
-        # 检查文件是否存在且非目录
-        assert self.file_format
-        read_from_zip = zipfile.is_zipfile(self.path)
 
-        if not os.path.exists(self.path):
-            raise ValueError("file path not found")
-        if os.path.isdir(self.path):
-            return _read_all_file_content_in_an_folder(self.path, self.file_format)
-        elif read_from_zip:
-            return _read_all_file_from_zip(self.path, self.file_format)
-        else:
-            with open(self.path, mode="r", encoding=encoding()) as file:
-                return file.read().strip("\n")
+        # 如果是单个文件，直接读取
+        assert isinstance(self.file_format, FormatType)
 
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Asynchronously Read data from file.
-        Not available currently
+        if not os.path.isdir(self.path):
+            return _get_a_memory_mapped_pyarrow_table(
+                self.path, self.file_format, **kwargs
+            )
 
-        Args:
-            **kwargs (Any): Arbitrary keyword arguments.
+        # 如果是个压缩包，则需要先解压再读取
+        if zipfile.is_zipfile(self.path):
+            return _read_all_file_from_zip(self.path, self.file_format, **kwargs)
 
-        Returns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
-        """
-        raise NotImplementedError()
+        # 如果是个文件夹，则遍历读取并且合并表格
+        return _read_all_file_content_in_an_folder(
+            self.path, self.file_format, **kwargs
+        )
 
     def format_type(self) -> FormatType:
         """

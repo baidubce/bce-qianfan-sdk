@@ -19,37 +19,42 @@ import json
 import os
 import uuid
 import zipfile
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import dateutil.parser
+import pyarrow
 
 from qianfan.config import encoding, get_config
-from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset import FileDataSource
+from qianfan.dataset.consts import (
+    QianfanDatasetDownloadingCacheDir,
+)
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
-    _check_data_and_zip_file_valid,
     _check_is_any_data_existed_in_dataset,
     _create_export_data_task_and_wait_for_success,
     _create_import_data_task_and_wait_for_success,
     _create_release_data_task_and_wait_for_success,
     _datetime_parse_hook,
     _download_file_from_url_streamly,
+    _get_a_memory_mapped_pyarrow_table,
     _get_data_format_from_template_type,
     _get_latest_export_record,
     _get_qianfan_dataset_type_tuple,
     _read_all_file_content_in_an_folder,
+    upload_data_from_bos_to_qianfan,
+    zip_file_or_folder,
 )
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
     DataProjectType,
     DataSetType,
-    DataSourceType,
     DataStorageType,
     DataTemplateType,
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
-from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
+from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.pydantic import BaseModel, Field
 
 
@@ -72,7 +77,7 @@ class QianfanDataSource(DataSource, BaseModel):
     info: Dict[str, Any] = Field(default={})
     # 开关控制是否需要下载到本地进行后续处理。
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
-    download_when_init: bool = Field(default=False)
+    download_when_init: Optional[bool] = Field(default=None)
     data_format_type: FormatType
     old_dataset_id: Optional[int] = None
 
@@ -130,8 +135,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def save(
         self,
-        data: Optional[str] = None,
-        zip_file_path: Optional[str] = None,
+        table: pyarrow.Table,
         is_annotated: bool = False,
         does_release: bool = False,
         sup_storage_id: str = "",
@@ -145,10 +149,10 @@ class QianfanDataSource(DataSource, BaseModel):
         user BOS storage
 
          Args:
-            data (str): data waiting to be uploaded. Default to None
-            zip_file_path (Optional[str]):
-                zip file path which contains data files, default to None.
-            is_annotated (bool): has data been annotated, default to False
+            table (pyarrow.Table):
+                data waiting to be uploaded.
+            is_annotated (bool):
+                has data been annotated, default to False
             does_release (bool):
                 does release dataset
                 after saving successfully,
@@ -176,79 +180,61 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been uploaded successfully
         """
-        _check_data_and_zip_file_valid(data, zip_file_path)
+        # 如果是泛文本，则需要保存为压缩包格式
+        should_save_as_zip_file = self.template_type == DataTemplateType.GenericText
 
+        # 获取存储信息和鉴权信息
         storage_id, storage_path, storage_region = self._get_transmission_bos_info(
             sup_storage_id, sup_storage_path, sup_storage_region
         )
         ak, sk = self._get_console_ak_and_sk()
 
-        if not zip_file_path:
-            suffix = "jsonl" if self.format_type() != FormatType.Text else "txt"
-            file_path = f"{storage_path}data_{uuid.uuid4()}.{suffix}"
-        else:
-            file_path = f"{storage_path}{os.path.split(zip_file_path)[-1]}"
+        # 构造远端的路径
+        suffix = "jsonl" if not should_save_as_zip_file else "zip"
+        file_name = f"data_{uuid.uuid4()}.{suffix}"
+
+        remote_file_path = f"{storage_path}{file_name}"
+
+        # 构造本地路径并且保存数据到缓存文件
+        local_file_path = os.path.join(self._get_cache_folder_path(), file_name)
+        FileDataSource(
+            path=local_file_path,
+            file_format=self.format_type(),
+            save_as_folder=should_save_as_zip_file,
+        ).save(table)
+
+        # 如果是泛文本还需要打压缩包
+        if should_save_as_zip_file:
+            local_file_path = zip_file_or_folder(local_file_path)
 
         log_info("start to upload data to user BOS")
         log_debug(
-            f"bucket path: {file_path} bucket name: {storage_id} bos region:"
+            f"bucket path: {remote_file_path} bucket name: {storage_id} bos region:"
             f" {storage_region}"
         )
 
+        # 上传文件
         bos_helper = BosHelper(storage_region, ak, sk)
 
-        if data:
-            log_info("upload dataset as string")
-            bos_helper.upload_content_to_bos(data, file_path, storage_id)
-        elif zip_file_path:
-            log_info("upload dataset as zip")
-            bos_helper.upload_file_to_bos(zip_file_path, file_path, storage_id)
-        else:
-            err_msg = "unexpected conditional branch error when upload dataset to bos"
-            log_error(err_msg)
-            raise Exception(err_msg)
+        log_info(f"upload dataset file {local_file_path} to {remote_file_path}")
+        bos_helper.upload_file_to_bos(local_file_path, remote_file_path, storage_id)
 
         log_info("uploading data to user BOS finished")
 
-        if not zip_file_path:
-            complete_file_path = generate_bos_file_path(storage_id, file_path)
-            if not _create_import_data_task_and_wait_for_success(
-                self.id, is_annotated, complete_file_path
-            ):
-                log_warn("import data from bos file failed")
-                return False
-        else:
-            shared_str = bos_helper.get_bos_file_shared_url(file_path, storage_id)
-            log_info(f"get shared file url: {shared_str}")
-            if not _create_import_data_task_and_wait_for_success(
-                self.id, is_annotated, shared_str, DataSourceType.SharedZipUrl
-            ):
-                log_warn("import data from shared zip url failed")
-                return False
+        upload_data_from_bos_to_qianfan(
+            bos_helper,
+            should_save_as_zip_file,
+            self.id,
+            storage_id,
+            remote_file_path,
+            is_annotated,
+        )
 
         if does_release:
             log_info("release after saving starts")
             return self.release_dataset(**kwargs)
 
         return True
-
-    async def asave(self, data: str, is_annotated: bool = False, **kwargs: Any) -> bool:
-        """
-        Asynchronously write data to qianfan
-        currently only support to write to
-        user BOS storage
-
-        Not available currently
-
-         Args:
-            data (str): data waiting to be uploaded。
-            is_annotated (bool): has data been annotated
-            **kwargs (Any): optional arguments。
-
-        Returns:
-            bool: has data been uploaded successfully
-        """
-        raise NotImplementedError()
 
     def _fetch_data_from_remote(self, zip_file_path: str, **kwargs: Any) -> Dict:
         """从远端发起数据导出任务，并且将导出的数据集保存在本地缓存文件中"""
@@ -301,16 +287,25 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_info(f"write dataset info to path {info_path} successfully")
 
-    def _get_and_update_dataset_cache(self, **kwargs: Any) -> Union[str, List[str]]:
-        """从本地缓存中获取数据集，并且更新或者下载数据集"""
-
-        # 检查目录，如果不存在目录则创建
-        cache_dir = os.path.join(
-            QianfanDatasetLocalCacheDir,
+    def _get_cache_folder_path(self) -> str:
+        return os.path.join(
+            QianfanDatasetDownloadingCacheDir,
             str(self.group_id),
             str(self.id),
             str(self.version),
         )
+
+    def get_cache_content(self) -> str:
+        return os.path.join(
+            self._get_cache_folder_path(),
+            "content",
+        )
+
+    def _get_and_update_dataset_cache(self, **kwargs: Any) -> pyarrow.Table:
+        """从本地缓存中获取数据集，并且更新或者下载数据集"""
+
+        # 检查目录，如果不存在目录则创建
+        cache_dir = self._get_cache_folder_path()
         if not os.path.exists(cache_dir) or not os.path.isdir(cache_dir):
             os.makedirs(cache_dir)
 
@@ -347,23 +342,35 @@ class QianfanDataSource(DataSource, BaseModel):
             raise
 
         if os.path.isfile(content_path):
-            with open(content_path, mode="r", encoding=encoding()) as f:
-                self.download_when_init = True
-                return f.read()
+            return _get_a_memory_mapped_pyarrow_table(content_path, self.format_type())
 
         else:
-            self.download_when_init = True
             return _read_all_file_content_in_an_folder(content_path, self.format_type())
 
-    def fetch(self, **kwargs: Any) -> Union[str, List[str]]:
+    def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
-        Read data from qianfan or local cache。
+        Get a pyarrow.Table from current DataSource object
 
         Args:
             **kwargs (Any): Arbitrary keyword arguments.
 
         Returns:
-            Union[str, List[str]]: content retrieved from data source
+            Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
+        """
+        if self.download_when_init:
+            return self.fetch(**kwargs)
+
+        return None
+
+    def fetch(self, **kwargs: Any) -> pyarrow.Table:
+        """
+        Read data from qianfan.
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            pyarrow.Table: table retrieved from file
         """
         if self.ak and self.sk:
             kwargs["ak"] = self.ak
@@ -374,19 +381,6 @@ class QianfanDataSource(DataSource, BaseModel):
             raise error
 
         return self._get_and_update_dataset_cache(**kwargs)
-
-    async def afetch(self, **kwargs: Any) -> Union[str, List[str]]:
-        """
-        Asynchronously read data from qianfan or local cache。
-        Not available currently
-
-        Args:
-            **kwargs (Any): Arbitrary keyword arguments.
-
-        Returns:
-            Union[str, List[str]]: content retrieved from data source
-        """
-        raise NotImplementedError()
 
     def format_type(self) -> FormatType:
         """
@@ -488,8 +482,10 @@ class QianfanDataSource(DataSource, BaseModel):
         """
         create bare dataset on qianfan as data source, which is empty
         Args:
-            name (str): dataset name you want
-            template_type (DataTemplateType): template type applying to data set
+            name (str):
+                dataset name you want
+            template_type (DataTemplateType):
+                template type applying to data set
             storage_type (Optional[DataStorageType]):
                 data storage type used to store your data, default to PublicBos
             storage_id (Optional[str]): private BOS bucket name，
@@ -540,19 +536,25 @@ class QianfanDataSource(DataSource, BaseModel):
         addition_info: Optional[Dict[str, Any]] = None,
         ak: Optional[str] = None,
         sk: Optional[str] = None,
-        is_download_to_local: bool = True,
+        is_download_to_local: Optional[bool] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
         """
         create a dataset on qianfan as data source,
         which will import data from specific bos
         Args:
-            name (str): dataset name you want
-            template_type (DataTemplateType): template type applying to data set
-            storage_id (str): private BOS bucket name
-            storage_path (str): private BOS file path
-            file_name (str): file need to upload
-            is_data_annotated (bool): is data in bos annotated
+            name (str):
+                dataset name you want
+            template_type (DataTemplateType):
+                template type applying to data set
+            storage_id (str):
+                private BOS bucket name
+            storage_path (str):
+                private BOS file path
+            file_name (str):
+                file need to upload
+            is_data_annotated (bool):
+                is data in bos annotated
             storage_type (Optional[DataStorageType]):
                 data storage type used to store your data, default to PrivateBos
             addition_info (Optional[Dict[str, Any]]):
@@ -561,8 +563,9 @@ class QianfanDataSource(DataSource, BaseModel):
                 console ak related to your dataset and bos，default to None
             sk (Optional[str]):
                 console sk related to your dataset and bos，default to None
-            is_download_to_local (bool):
-                does dataset download file when initialize object，default to True
+            is_download_to_local (Optional[bool]):
+                This parameter has been set as deprecated.
+                does dataset download file when initialize object，default to None
             kwargs (Any): other arguments
 
         Returns:
@@ -600,9 +603,9 @@ class QianfanDataSource(DataSource, BaseModel):
             log_error(err_msg)
             raise QianfanRequestError(err_msg)
 
-        if is_download_to_local:
-            log_info("start to fetch dataset cache because is_download_to_local is set")
-            source.fetch(**kwargs)
+        if is_download_to_local is not None:
+            log_warn('parameter "is_download_to_local" has been set as deprecated')
+            source.download_when_init = is_download_to_local
 
         return source
 
@@ -610,7 +613,7 @@ class QianfanDataSource(DataSource, BaseModel):
     def get_existed_dataset(
         cls,
         dataset_id: str,
-        is_download_to_local: bool = True,
+        is_download_to_local: Optional[bool] = None,
         ak: Optional[str] = None,
         sk: Optional[str] = None,
         **kwargs: Any,
@@ -619,9 +622,11 @@ class QianfanDataSource(DataSource, BaseModel):
         Load a dataset from qianfan as data source
 
         Args:
-            dataset_id (str): dataset id on Qianfan, show as "数据集版本 ID"
-            is_download_to_local (bool):
-                does dataset download file when initialize object，default to True
+            dataset_id (str):
+                dataset id on Qianfan, show as "数据集版本 ID"
+            is_download_to_local (Optional[bool]):
+                This parameter has been set as deprecated.
+                does dataset download file when initialize object，default to None
             ak (Optional[str]):
                 console ak related to your dataset and bos，default to None
             sk (Optional[str]):
@@ -697,9 +702,8 @@ class QianfanDataSource(DataSource, BaseModel):
             sk=sk,
         )
 
-        if is_download_to_local:
-            log_info("start to fetch dataset cache because is_download_to_local is set")
-            dataset.fetch(**kwargs)
+        if is_download_to_local is not None:
+            log_warn('parameter "is_download_to_local" has been set as deprecated')
 
         return dataset
 

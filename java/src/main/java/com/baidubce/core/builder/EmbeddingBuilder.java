@@ -63,7 +63,9 @@ public class EmbeddingBuilder {
     }
 
     public EmbeddingRequest build() {
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.EMBEDDINGS, model, endpoint);
         return new EmbeddingRequest()
+                .setEndpoint(finalEndpoint)
                 .setInput(input)
                 .setUserId(userId);
     }
@@ -74,7 +76,6 @@ public class EmbeddingBuilder {
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.EMBEDDINGS, model, endpoint);
-        return qianfan.embedding(finalEndpoint, build());
+        return qianfan.embedding(build());
     }
 }

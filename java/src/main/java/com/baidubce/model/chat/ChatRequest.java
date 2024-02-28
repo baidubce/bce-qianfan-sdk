@@ -20,6 +20,11 @@ import java.util.List;
 
 public class ChatRequest {
     /**
+     * 模型的调用端点
+     */
+    private String endpoint;
+
+    /**
      * 聊天上下文信息
      */
     private List<Message> messages;
@@ -88,6 +93,15 @@ public class ChatRequest {
      * 是否为流式请求
      */
     private Boolean stream;
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public ChatRequest setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
+        return this;
+    }
 
     public List<Message> getMessages() {
         return messages;

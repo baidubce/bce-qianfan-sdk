@@ -64,6 +64,7 @@ public class SSEWrapper {
                 try {
                     closeable.close();
                 } catch (Exception ignored) {
+                    // ignored
                 }
             }
         };

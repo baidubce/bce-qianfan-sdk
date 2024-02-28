@@ -55,34 +55,34 @@ public class Qianfan {
         return new ChatBuilder(this);
     }
 
-    public ChatResponse chatCompletion(String endpoint, ChatRequest request) {
-        return request(endpoint, request, ChatResponse.class);
+    public ChatResponse chatCompletion(ChatRequest request) {
+        return request(request.getEndpoint(), request, ChatResponse.class);
     }
 
-    public Iterator<ChatResponse> chatCompletionStream(String endpoint, ChatRequest request) {
+    public Iterator<ChatResponse> chatCompletionStream(ChatRequest request) {
         request.setStream(true);
-        return requestStream(endpoint, request, ChatResponse.class);
+        return requestStream(request.getEndpoint(), request, ChatResponse.class);
     }
 
     public CompletionBuilder completion() {
         return new CompletionBuilder(this);
     }
 
-    public CompletionResponse completion(String endpoint, CompletionRequest request) {
-        return request(endpoint, request, CompletionResponse.class);
+    public CompletionResponse completion(CompletionRequest request) {
+        return request(request.getEndpoint(), request, CompletionResponse.class);
     }
 
-    public Iterator<CompletionResponse> completionStream(String endpoint, CompletionRequest request) {
+    public Iterator<CompletionResponse> completionStream(CompletionRequest request) {
         request.setStream(true);
-        return requestStream(endpoint, request, CompletionResponse.class);
+        return requestStream(request.getEndpoint(), request, CompletionResponse.class);
     }
 
     public EmbeddingBuilder embedding() {
         return new EmbeddingBuilder(this);
     }
 
-    public EmbeddingResponse embedding(String endpoint, EmbeddingRequest request) {
-        return request(endpoint, request, EmbeddingResponse.class);
+    public EmbeddingResponse embedding(EmbeddingRequest request) {
+        return request(request.getEndpoint(), request, EmbeddingResponse.class);
     }
 
     private <T> T request(String endpoint, Object body, Class<T> responseClazz) {

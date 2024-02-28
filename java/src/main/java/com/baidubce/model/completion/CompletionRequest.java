@@ -20,6 +20,11 @@ import java.util.List;
 
 public class CompletionRequest {
     /**
+     * 模型的调用端点
+     */
+    private String endpoint;
+
+    /**
      * 请求信息
      */
     private String prompt;
@@ -58,6 +63,15 @@ public class CompletionRequest {
      * 是否为流式请求
      */
     private Boolean stream;
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public CompletionRequest setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
+        return this;
+    }
 
     public String getPrompt() {
         return prompt;

@@ -99,7 +99,9 @@ public class CompletionBuilder {
     }
 
     public CompletionRequest build() {
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, model, endpoint);
         return new CompletionRequest()
+                .setEndpoint(finalEndpoint)
                 .setPrompt(prompt)
                 .setTemperature(temperature)
                 .setTopK(topK)
@@ -115,8 +117,7 @@ public class CompletionBuilder {
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, model, endpoint);
-        return qianfan.completion(finalEndpoint, build());
+        return qianfan.completion(build());
     }
 
     public Iterator<CompletionResponse> executeStream() {
@@ -125,7 +126,6 @@ public class CompletionBuilder {
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, model, endpoint);
-        return qianfan.completionStream(finalEndpoint, build());
+        return qianfan.completionStream(build());
     }
 }

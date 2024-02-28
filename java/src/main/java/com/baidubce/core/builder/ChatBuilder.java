@@ -165,7 +165,11 @@ public class ChatBuilder {
     }
 
     public ChatRequest build() {
-        return new ChatRequest().setMessages(messageBuilder.build())
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, model, endpoint);
+        List<Message> messages = messageBuilder.build();
+        return new ChatRequest()
+                .setEndpoint(finalEndpoint)
+                .setMessages(messages)
                 .setTemperature(temperature)
                 .setTopP(topP)
                 .setPenaltyScore(penaltyScore)
@@ -186,8 +190,7 @@ public class ChatBuilder {
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, model, endpoint);
-        return qianfan.chatCompletion(finalEndpoint, build());
+        return qianfan.chatCompletion(build());
     }
 
     public Iterator<ChatResponse> executeStream() {
@@ -196,7 +199,6 @@ public class ChatBuilder {
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, model, endpoint);
-        return qianfan.chatCompletionStream(finalEndpoint, build());
+        return qianfan.chatCompletionStream(build());
     }
 }

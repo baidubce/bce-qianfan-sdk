@@ -4,12 +4,14 @@
         "outDir": "./dist",
         "target": "ES2020",
         "lib": ["ES2020", "DOM", "DOM.Iterable", "dom", "esnext"],
-        "module": "ESNext",
+        "module": "commonjs",
         "sourceMap": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true
     },
     "include": ["src"],
     "exclude": ["node_modules", "dist"]

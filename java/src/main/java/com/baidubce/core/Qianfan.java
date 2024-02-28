@@ -16,6 +16,8 @@
 
 package com.baidubce.core;
 
+import com.baidubce.core.auth.Auth;
+import com.baidubce.core.auth.IAuth;
 import com.baidubce.core.builder.ChatBuilder;
 import com.baidubce.core.builder.CompletionBuilder;
 import com.baidubce.core.builder.EmbeddingBuilder;
@@ -35,10 +37,18 @@ import com.baidubce.util.http.HttpResponse;
 import java.util.Iterator;
 
 public class Qianfan {
-    private final IAMAuth iamAuth;
+    private final IAuth auth;
 
-    public Qianfan(String apiKey, String secretKey) {
-        this.iamAuth = new IAMAuth(apiKey, secretKey);
+    public Qianfan() {
+        this.auth = Auth.create();
+    }
+
+    public Qianfan(String accessKey, String secretKey) {
+        this.auth = Auth.create(accessKey, secretKey);
+    }
+
+    public Qianfan(String type, String accessKey, String secretKey) {
+        this.auth = Auth.create(type, accessKey, secretKey);
     }
 
     public ChatBuilder chatCompletion() {
@@ -81,7 +91,7 @@ public class Qianfan {
             HttpRequest request = HttpClient.request()
                     .post(url)
                     .body(body);
-            HttpResponse<T> resp = signRequest(request).executeJson(responseClazz);
+            HttpResponse<T> resp = auth.signRequest(request).executeJson(responseClazz);
             if (resp.getCode() != 200) {
                 throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
             }
@@ -97,23 +107,13 @@ public class Qianfan {
             HttpRequest request = HttpClient.request()
                     .post(url)
                     .body(body);
-            HttpResponse<Iterator<String>> resp = signRequest(request).executeSSE();
+            HttpResponse<Iterator<String>> resp = auth.signRequest(request).executeSSE();
             if (resp.getCode() != 200) {
                 throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
             }
             return new StreamIterator<>(resp.getBody(), responseClazz);
         } catch (Exception e) {
             throw new QianfanException("Failed to request " + endpoint, e);
-        }
-    }
-
-    private HttpRequest signRequest(HttpRequest request) {
-        try {
-            return request
-                    .addHeader("Authorization", iamAuth.sign(request.getMethod(), request.getUrl()))
-                    .addHeader("X-Bce-Date", iamAuth.getTimestamp());
-        } catch (Exception e) {
-            throw new QianfanException("Failed to sign request", e);
         }
     }
 

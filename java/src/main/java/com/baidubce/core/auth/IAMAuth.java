@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.baidubce.core;
+package com.baidubce.core.auth;
 
+import com.baidubce.model.exception.QianfanException;
 import com.baidubce.util.Pair;
 import com.baidubce.util.StringUtils;
+import com.baidubce.util.http.HttpRequest;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -33,7 +35,7 @@ import java.util.stream.Collectors;
 
 import static com.baidubce.util.StringUtils.bytesToHexString;
 
-public class IAMAuth {
+public class IAMAuth implements IAuth {
     private static final int EXPIRATION_IN_SECONDS = 1800;
     private static final String HMAC_SHA256 = "HmacSHA256";
     private static final List<String> HEADER_TO_SIGN = Arrays.asList("host", "x-bce-date");
@@ -49,7 +51,18 @@ public class IAMAuth {
         this.secretKey = secretKey;
     }
 
-    public String sign(String method, String url) {
+    @Override
+    public HttpRequest signRequest(HttpRequest request) {
+        try {
+            return request
+                    .addHeader("Authorization", sign(request.getMethod(), request.getUrl()))
+                    .addHeader("X-Bce-Date", getTimestamp());
+        } catch (Exception e) {
+            throw new QianfanException("Failed to sign request", e);
+        }
+    }
+
+    private String sign(String method, String url) {
         String rawSessionKey = String.format(SESSION_KEY_TEMPLATE, accessKey, getTimestamp(), EXPIRATION_IN_SECONDS);
         String sessionKey = hash(rawSessionKey, secretKey);
 
@@ -69,7 +82,7 @@ public class IAMAuth {
         return String.format(AUTHORIZATION_TEMPLATE, rawSessionKey, signedHeaders, signature);
     }
 
-    public String getTimestamp() {
+    private String getTimestamp() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         return dateFormat.format(new Date());

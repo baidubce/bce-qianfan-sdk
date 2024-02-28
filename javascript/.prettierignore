@@ -1,0 +1,16 @@
+node_modules/
+test-fixtures/
+out/
+dist/
+build/
+types/
+tools/
+scripts/
+docker/
+views/
+coverage/
+.cache/
+.idea/
+.vscode-test/
+
+*.html

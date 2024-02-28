@@ -57,8 +57,6 @@ public class ChatBuilder {
 
     private ToolChoice toolChoice;
 
-    private Boolean stream;
-
     public ChatBuilder() {
     }
 
@@ -166,11 +164,6 @@ public class ChatBuilder {
         return this;
     }
 
-    public ChatBuilder stream(Boolean stream) {
-        this.stream = stream;
-        return this;
-    }
-
     public ChatRequest build() {
         return new ChatRequest().setMessages(messageBuilder.build())
                 .setTemperature(temperature)
@@ -184,8 +177,7 @@ public class ChatBuilder {
                 .setResponseFormat(responseFormat)
                 .setUserId(userId)
                 .setFunctions(functions)
-                .setToolChoice(toolChoice)
-                .setStream(stream);
+                .setToolChoice(toolChoice);
     }
 
     public ChatResponse execute() {

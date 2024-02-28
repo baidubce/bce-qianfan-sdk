@@ -46,8 +46,6 @@ public class CompletionBuilder {
 
     private String userId;
 
-    private Boolean stream;
-
     public CompletionBuilder() {
     }
 
@@ -100,11 +98,6 @@ public class CompletionBuilder {
         return this;
     }
 
-    public CompletionBuilder stream(Boolean stream) {
-        this.stream = stream;
-        return this;
-    }
-
     public CompletionRequest build() {
         return new CompletionRequest()
                 .setPrompt(prompt)
@@ -113,8 +106,7 @@ public class CompletionBuilder {
                 .setTopP(topP)
                 .setPenaltyScore(penaltyScore)
                 .setStop(stop)
-                .setUserId(userId)
-                .setStream(stream);
+                .setUserId(userId);
     }
 
     public CompletionResponse execute() {

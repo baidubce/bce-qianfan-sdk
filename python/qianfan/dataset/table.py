@@ -580,9 +580,13 @@ class Table(Addable, Listable, Processable):
         return _PyarrowColumnManipulator(table=self.inner_table)
 
     def is_dataset_packed(self) -> bool:
+        if not self.inner_table:
+            return False
         return _whether_dataset_is_packed(self.inner_table.column_names)
 
     def is_dataset_grouped(self) -> bool:
+        if not self.inner_table:
+            return False
         return _whether_dataset_is_grouped(self.inner_table.column_names)
 
     def _squash_group_number(self) -> None:

@@ -231,6 +231,7 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
         if (
             reader_type == CsvReader
             or reader_type == JsonReader
+            or reader_type == TextReader
             or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
         ):
             table = pyarrow.Table.from_pylist(elem_list)

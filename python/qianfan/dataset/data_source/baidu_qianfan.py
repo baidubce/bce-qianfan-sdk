@@ -25,11 +25,11 @@ import dateutil.parser
 import pyarrow
 
 from qianfan.config import encoding, get_config
-from qianfan.dataset import FileDataSource
 from qianfan.dataset.consts import (
     QianfanDatasetDownloadingCacheDir,
 )
 from qianfan.dataset.data_source.base import DataSource, FormatType
+from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
     _check_is_any_data_existed_in_dataset,
     _create_export_data_task_and_wait_for_success,
@@ -189,11 +189,14 @@ class QianfanDataSource(DataSource, BaseModel):
         )
         ak, sk = self._get_console_ak_and_sk()
 
-        # 构造远端的路径
-        suffix = "jsonl" if not should_save_as_zip_file else "zip"
-        file_name = f"data_{uuid.uuid4()}.{suffix}"
-
-        remote_file_path = f"{storage_path}{file_name}"
+        # 构造本地和远端的路径
+        if not should_save_as_zip_file:
+            file_name = f"data_{uuid.uuid4()}.{self.format_type().value}"
+            remote_file_path = f"{storage_path}{file_name}"
+        # 因为泛文本需要打包成压缩包，所以单独处理
+        else:
+            file_name = f"data_{uuid.uuid4()}"
+            remote_file_path = f"{storage_path}{file_name}.zip"
 
         # 构造本地路径并且保存数据到缓存文件
         local_file_path = os.path.join(self._get_cache_folder_path(), file_name)

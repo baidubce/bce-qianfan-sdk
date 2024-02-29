@@ -24,12 +24,12 @@ import pyarrow
 
 from qianfan import get_config
 from qianfan.config import encoding
-from qianfan.dataset import FileDataSource
 from qianfan.dataset.consts import (
     QianfanDatasetBosDownloadingCacheDir,
     QianfanDatasetBosUploadingCacheDir,
 )
 from qianfan.dataset.data_source.base import DataSource, FormatType
+from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_from_zip,

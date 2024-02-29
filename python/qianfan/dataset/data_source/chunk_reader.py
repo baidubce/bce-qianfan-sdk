@@ -73,7 +73,11 @@ class CsvReader(BaseReader):
 
         self.file_path = file_path
 
-        self.data_stream = stream_table(file_path)
+        if "dialect" in kwargs:
+            self.data_stream = stream_table(file_path, dialect=kwargs["dialect"])
+        else:
+            self.data_stream = stream_table(file_path)
+
         self.column_list: List[str] = next(self.data_stream)
 
     def _get_an_element(self, index: int) -> Any:
@@ -170,4 +174,4 @@ class TextReader(BaseReader):
             self._close_and_switch()
             return self._get_an_element(index)
 
-        return {QianfanDatasetPackColumnName: self._current_fd.readline()}
+        return {QianfanDatasetPackColumnName: content}

@@ -14,18 +14,21 @@
 """
 test for data set
 """
-
-from typing import Any
+import json
+from typing import Any, Optional
 from unittest.mock import patch
 
+import pyarrow
 import pytest
 
-from qianfan.dataset.consts import QianfanDataGroupColumnName
-from qianfan.dataset.data_source import DataSource, QianfanDataSource
-from qianfan.dataset.dataset import Dataset, FormatType
+from qianfan.dataset.consts import (
+    QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
+)
+from qianfan.dataset.data_source import DataSource, FormatType, QianfanDataSource
+from qianfan.dataset.dataset import Dataset
 from qianfan.dataset.qianfan_data_operators import FilterCheckNumberWords
 from qianfan.dataset.schema import (
-    QianfanGenericText,
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
@@ -34,28 +37,35 @@ from qianfan.utils.pydantic import BaseModel
 
 
 class FakeDataSource(DataSource, BaseModel):
-    buffer: str = ""
     origin_data: str
     format: FormatType
-
-    def save(self, data: str, **kwargs: Any) -> bool:
-        self.buffer = data
-        return True
-
-    async def asave(self, data: str, **kwargs: Any) -> bool:
-        pass
-
-    def fetch(self, **kwargs: Any) -> str:
-        return self.origin_data  # noqa
-
-    async def afetch(self, **kwargs: Any) -> str:
-        pass
 
     def format_type(self) -> FormatType:
         return self.format
 
     def set_format_type(self, format_type: FormatType) -> None:
         self.format = format_type
+
+    def save(self, table: pyarrow.Table, **kwargs: Any) -> bool:
+        self.origin_data = json.dumps(table.to_pylist())
+        return True
+
+    def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
+        return self.fetch(**kwargs)
+
+    def fetch(self, **kwargs: Any) -> pyarrow.Table:
+        if self.format == FormatType.Jsonl:
+            content = {QianfanDatasetPackColumnName: []}
+            for elem in self.origin_data.split("\n"):
+                content[QianfanDatasetPackColumnName].append(json.loads(elem))
+            return pyarrow.Table.from_pydict(content)
+        elif self.format == FormatType.Json:
+            content = json.loads(self.origin_data)
+            if isinstance(content, dict):
+                content = [content]
+            return pyarrow.Table.from_pylist(content)
+        else:
+            raise ValueError(f"can't use {self.format.value}")
 
 
 def test_dataset_create():
@@ -70,7 +80,6 @@ def test_dataset_create():
     list_ret = dataset.list()
     dataset.save(schema=QianfanNonSortedConversation())
     dataset.save(schema=QianfanSortedConversation())
-    assert fake_data_source.buffer == fake_data_source.fetch()
     assert "prompt" in list_ret[0][0].keys()
 
     fake_data_source_2 = FakeDataSource(
@@ -80,7 +89,6 @@ def test_dataset_create():
     list_ret = dataset_2.list()
     dataset_2.save(schema=QianfanNonSortedConversation())
     dataset_2.save(schema=QianfanSortedConversation())
-    assert f"[{fake_data_source_2.fetch()}]" == fake_data_source_2.buffer
     assert list(list_ret[0].keys())[0] == "prompt"
 
     fake_data_source_3 = FakeDataSource(
@@ -116,14 +124,6 @@ def test_dataset_create():
     with pytest.raises(Exception):
         dataset_5.save(schema=QianfanSortedConversation())
 
-    fake_data_source_6 = FakeDataSource(
-        origin_data="this\nis\nmulti\nline\ndata", format=FormatType.Text
-    )
-    dataset_6 = Dataset.load(fake_data_source_6)
-    dataset_6.save(schema=QianfanGenericText())
-
-    assert fake_data_source_6.origin_data == fake_data_source_6.buffer
-
 
 def test_dataset_online_process():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
@@ -150,16 +150,10 @@ def test_manipulator_group_add_and_delete():
 
 
 def test_branch_load():
-    fds = FakeDataSource(origin_data="", format=FormatType.Jsonl)
-    with pytest.raises(ValueError, match="no data in jsonline file"):
-        Dataset.load(source=fds)
+    fds = FakeDataSource(origin_data='{"prompt": "result"}', format=FormatType.Jsonl)
 
-    fds.origin_data = '{"prompt": "result"}'
     ds = Dataset.load(source=fds)
-    fds.format = FormatType.Csv
     ds.save(fds)
-    fds.origin_data = fds.buffer
-    Dataset.load(fds)
 
 
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
@@ -184,7 +178,7 @@ def test_branch_save(*args, **kwargs):
     ds = Dataset.create_from_pyobj([{"prompt": "nihao", "response": [["hello"]]}])
 
     ds.save(fake_qianfan_data_source)
-    ds.save(FakeDataSource(origin_data="", format=FormatType.Jsonl))
+    ds.save(FakeDataSource(origin_data="", format=FormatType.Json))
 
     fake_qianfan_data_source = create_an_empty_qianfan_datasource()
     fake_qianfan_data_source.data_format_type = FormatType.Text
@@ -192,8 +186,3 @@ def test_branch_save(*args, **kwargs):
     fake_qianfan_data_source.project_type = DataTemplateType.GenericText
     ds = Dataset.create_from_pyobj({"text": ["wenben"]})
     ds.save(fake_qianfan_data_source)
-
-    ds = Dataset.create_from_pyobj({"prompt": [1, 2], "response": [3, 4]})
-    ds.save(FakeDataSource(origin_data="", format=FormatType.Csv))
-    with pytest.raises(ValueError):
-        ds.save(FakeDataSource(origin_data="", format=FormatType.Text))

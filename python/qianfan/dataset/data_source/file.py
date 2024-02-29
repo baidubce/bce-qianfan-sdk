@@ -25,7 +25,7 @@ import pyarrow
 
 from qianfan.config import encoding
 from qianfan.dataset.consts import QianfanDatasetPackColumnName
-from qianfan.dataset.data_source import DataSource, FormatType
+from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_content_in_an_folder,
@@ -89,7 +89,7 @@ class FileDataSource(DataSource, BaseModel):
             table_slice = list(
                 table.slice(i, batch_size).to_pydict()[QianfanDatasetPackColumnName]
             )
-            for j in range(batch_size):
+            for j in range(min(batch_size, len(table_slice))):
                 with open(
                     os.path.join(self.path, f"{i + j}.txt"),
                     mode="w",
@@ -112,6 +112,9 @@ class FileDataSource(DataSource, BaseModel):
         """
         if self.save_as_folder and self.file_format == FormatType.Text:
             return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+
+        # 有可能文件路径的父文件夹不存在，得先创建
+        os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
 
         with open(
             self.path,

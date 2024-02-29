@@ -161,7 +161,7 @@ class Dataset(Table):
 
     def _to_source(self, source: DataSource, **kwargs: Any) -> Optional[PyarrowTable]:
         """内部封装的，将数据集序列化并导出字节流到数据源的方法"""
-        # 重置置空，不然会重复加载
+        # 重置，不然会重复加载
         if isinstance(source, QianfanDataSource):
             source.download_when_init = None
 
@@ -212,13 +212,17 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        # 其它情况直接报错
-        err_msg = (
-            f"can't save datast from {type(self.inner_data_source_cache)} to"
-            f" {type(source)}"
-        )
-        log_error(err_msg)
-        raise ValueError(err_msg)
+        # 其它情况可以尝试一下，然后捕捉报错
+        try:
+            source.save(self.inner_table, **kwargs)
+            return source.load(**kwargs)
+        except Exception as e:
+            err_msg = (
+                f"saving dataset from {type(self.inner_data_source_cache)} to"
+                f" {type(source)} has occurred an error: {e}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
     @classmethod
     def _from_args_to_source(
@@ -403,7 +407,6 @@ class Dataset(Table):
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
-        replace_source: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -428,8 +431,6 @@ class Dataset(Table):
                 default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
-            replace_source: (bool):
-                if replace the original source, default to False
             kwargs (Any): optional arguments
 
         Returns:
@@ -545,9 +546,7 @@ class Dataset(Table):
         )
 
     def _is_dataset_located_in_qianfan(self) -> bool:
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
-            return False
-        return not self.inner_data_source_cache.download_when_init
+        return isinstance(self.inner_data_source_cache, QianfanDataSource)
 
     def _is_dataset_generic_text(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
@@ -585,7 +584,7 @@ class Dataset(Table):
             str: etl task id
         """
 
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+        if not self.is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             err_msg = "can't process a non-qianfan dataset on qianfan"
@@ -1108,7 +1107,7 @@ class Dataset(Table):
             Dataset: batch result contained in dataset
         """
 
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+        if not self.is_dataset_located_in_qianfan():
             err_msg = "can't start a batch run task on non-qianfan dataset"
             log_error(err_msg)
             raise ValueError(err_msg)

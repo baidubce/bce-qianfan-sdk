@@ -47,7 +47,7 @@ class Tokenizer(object):
             The input text for which tokens need to be counted.
           mode (str, optional):
             `local` (default):
-              local **SIMULATION** (Chinese characters count + English word count * 1.3)
+              local **SIMULATION** (Chinese characters count + English word count * 1.6)
             `remote`:
               use qianfan api to calculate the token count. API will return accurate
               token count, but only ERNIE-Bot series models are supported.
@@ -99,7 +99,7 @@ class Tokenizer(object):
         ** THIS IS CALCULATED BY LOCAL SIMULATION, NOT REAL TOKEN COUNT **
 
         The token count is computed as follows:
-        (Chinese characters count) + (English word count * 1.3)
+        (Chinese characters count) + (English word count * 1.6)
         """
         han_count = 0
         text_only_word = ""
@@ -112,7 +112,7 @@ class Tokenizer(object):
             else:
                 text_only_word += ch
         word_count = len(list(filter(lambda x: x != "", text_only_word.split(" "))))
-        return han_count + int(word_count * 1.3)
+        return han_count + int(word_count * 1.6)
 
     @staticmethod
     def _is_cjk_character(ch: str) -> bool:

@@ -44,7 +44,7 @@ def merge_messages(messages):
     """
     merge mulitple input messages
     """
-    return "|".join([m["content"] for m in messages])
+    return "|".join([m.get("content", "") for m in messages])
 
 
 def ret_msg(model, extra_msg=""):

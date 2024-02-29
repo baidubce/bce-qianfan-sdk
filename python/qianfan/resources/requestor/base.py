@@ -336,7 +336,9 @@ class BaseAPIRequestor(object):
 
         @retry(
             wait=wait_exponential_jitter(
-                jitter=config.jitter, max=config.max_wait_interval
+                initial=config.backoff_factor,
+                jitter=config.jitter,
+                max=config.max_wait_interval,
             ),
             retry=retry_if_exception(predicate_api_err_code),
             stop=stop_after_attempt(config.retry_count),
@@ -368,7 +370,9 @@ class BaseAPIRequestor(object):
 
         @retry(
             wait=wait_exponential_jitter(
-                jitter=config.jitter, max=config.max_wait_interval
+                initial=config.backoff_factor,
+                jitter=config.jitter,
+                max=config.max_wait_interval,
             ),
             retry=retry_if_exception(predicate_api_err_code),
             stop=stop_after_attempt(config.retry_count),

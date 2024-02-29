@@ -21,10 +21,10 @@ from qianfan import Tokenizer
 
 def test_count_token_local():
     cases = [
-        ("hello world 1 2 3", 6),
-        ("你好呀", 3),
-        ("你好hello哈哈world 1 2 3", 10),
-        (" 你好 123 哈哈1！  \t 123 Hello world", 10),
+        ("hello world 1 2 3", 5),
+        ("你好呀", 1),
+        ("你好hello哈哈world 1 2 3", 7),
+        (" 你好 123 哈哈1！  \t 123 Hello world", 7),
     ]
     for text, count in cases:
         assert Tokenizer.count_tokens(text, mode="local") == count

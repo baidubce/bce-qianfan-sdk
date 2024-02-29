@@ -35,6 +35,7 @@ from qianfan.dataset.data_source.utils import (
     _read_all_file_from_zip,
     zip_file_or_folder,
 )
+from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
@@ -52,7 +53,7 @@ class BosDataSource(DataSource, BaseModel):
 
     def save(
         self,
-        table: pyarrow.Table,
+        table: Table,
         should_save_as_zip_file: bool = False,
         should_overwrite_existed_file: bool = False,
         **kwargs: Any,

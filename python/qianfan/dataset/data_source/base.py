@@ -21,6 +21,8 @@ from typing import Any, Optional
 
 import pyarrow
 
+from qianfan.dataset.table import Table
+
 
 class FormatType(Enum):
     """Enum for data source format type"""
@@ -36,7 +38,7 @@ class DataSource(ABC):
     """basic data source class"""
 
     @abstractmethod
-    def save(self, table: pyarrow.Table, **kwargs: Any) -> bool:
+    def save(self, table: Table, **kwargs: Any) -> bool:
         """
         Export the pyarrow.Table to the data source
         and return

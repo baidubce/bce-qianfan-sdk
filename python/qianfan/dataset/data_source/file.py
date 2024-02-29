@@ -18,7 +18,7 @@ import io
 import json
 import os
 import zipfile
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 import clevercsv
 import pyarrow
@@ -32,6 +32,7 @@ from qianfan.dataset.data_source.utils import (
     _read_all_file_from_zip,
     zip_file_or_folder,
 )
+from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
 
@@ -49,16 +50,21 @@ class FileDataSource(DataSource, BaseModel):
     save_as_folder: bool = Field(default=False)
 
     def _write_as_format(
-        self, fd: TextIO, data: List[Dict[str, Any]], index: int
+        self,
+        fd: TextIO,
+        data: Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]],
+        index: int,
     ) -> None:
         if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
             lines: List[str] = []
             for elem in data:
-                lines.append(json.dumps(elem))
+                lines.append(json.dumps(elem, ensure_ascii=False) + "\n")
 
             fd.writelines(lines)
 
         elif self.file_format == FormatType.Csv:
+            assert isinstance(data[0], dict)
+
             string_stream_buffer = io.StringIO()
             csv_writer = clevercsv.DictWriter(
                 string_stream_buffer, fieldnames=list(data[0].keys())
@@ -73,6 +79,7 @@ class FileDataSource(DataSource, BaseModel):
 
         elif self.file_format == FormatType.Text:
             for elem in data:
+                assert isinstance(elem, dict)
                 fd.write(elem[QianfanDatasetPackColumnName])
                 fd.write("\n")
         else:
@@ -81,13 +88,15 @@ class FileDataSource(DataSource, BaseModel):
             raise ValueError(err_msg)
 
     def _save_generic_text_into_folder(
-        self, table: pyarrow.Table, batch_size: int = 10, **kwargs: Any
+        self, table: Table, batch_size: int = 10, **kwargs: Any
     ) -> bool:
         os.makedirs(self.path, exist_ok=True)
 
-        for i in range(0, table.num_rows, batch_size):
+        for i in range(0, table.row_number(), batch_size):
             table_slice = list(
-                table.slice(i, batch_size).to_pydict()[QianfanDatasetPackColumnName]
+                table.inner_table.slice(i, batch_size).to_pydict()[
+                    QianfanDatasetPackColumnName
+                ]
             )
             for j in range(min(batch_size, len(table_slice))):
                 with open(
@@ -99,12 +108,12 @@ class FileDataSource(DataSource, BaseModel):
 
         return True
 
-    def save(self, table: pyarrow.Table, batch_size: int = 100, **kwargs: Any) -> bool:
+    def save(self, table: Table, batch_size: int = 100, **kwargs: Any) -> bool:
         """
         Write data to file。
 
         Args:
-            table (pyarrow.Table):
+            table (Table):
                 data waiting to be uploaded.
             batch_size (int):
                 the batch size used when
@@ -129,8 +138,8 @@ class FileDataSource(DataSource, BaseModel):
             if self.file_format == FormatType.Json:
                 f.write("[\n")
 
-            for i in range(0, table.num_rows, batch_size):
-                self._write_as_format(f, table.slice(i, batch_size).to_pylist(), i)
+            for i in range(0, table.row_number(), batch_size):
+                self._write_as_format(f, table.list(slice(i, i + batch_size - 1)), i)
 
             # Json 格式的时候需要特判
             if self.file_format == FormatType.Json:

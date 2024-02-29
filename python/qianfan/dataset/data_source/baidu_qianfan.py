@@ -45,6 +45,7 @@ from qianfan.dataset.data_source.utils import (
     upload_data_from_bos_to_qianfan,
     zip_file_or_folder,
 )
+from qianfan.dataset.table import Table
 from qianfan.errors import FileSizeOverflow, QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -136,7 +137,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def save(
         self,
-        table: pyarrow.Table,
+        table: Table,
         is_annotated: bool = False,
         does_release: bool = False,
         sup_storage_id: str = "",
@@ -150,7 +151,7 @@ class QianfanDataSource(DataSource, BaseModel):
         user BOS storage
 
          Args:
-            table (pyarrow.Table):
+            table (Table):
                 data waiting to be uploaded.
             is_annotated (bool):
                 has data been annotated, default to False
@@ -287,7 +288,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_info(f"unzip dataset to path {content_path} successfully")
         with open(info_path, mode="w", encoding=encoding()) as f:
-            f.write(json.dumps(info))
+            f.write(json.dumps(info, ensure_ascii=False))
 
         log_info(f"write dataset info to path {info_path} successfully")
 

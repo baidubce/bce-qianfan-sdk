@@ -23,6 +23,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from qianfan import get_config
+from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     QianfanDatasetLocalCacheDir,
     QianfanDatasetPackColumnName,
@@ -117,7 +118,7 @@ def test_save_to_folder():
 
     try:
         os.makedirs(folder_path)
-        table = pyarrow.Table.from_pydict(
+        table = Dataset.create_from_pyobj(
             {QianfanDatasetPackColumnName: ["this is a data"]}
         )
 
@@ -144,7 +145,7 @@ def test_save_as_folder():
     folder_path = "test_folder"
 
     try:
-        table = pyarrow.Table.from_pydict(
+        table = Dataset.create_from_pyobj(
             {QianfanDatasetPackColumnName: ["file1", "file2"]}
         )
         f = FileDataSource(path=folder_path, save_as_folder=True)
@@ -217,7 +218,7 @@ def create_an_empty_qianfan_datasource() -> QianfanDataSource:
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_file_to_bos", return_value=None)
 def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
-    empty_table = pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: ["1"]})
+    empty_table = Dataset.create_from_pyobj({QianfanDatasetPackColumnName: ["1"]})
     ds = create_an_empty_qianfan_datasource()
 
     ds.storage_type = DataStorageType.PublicBos

@@ -167,10 +167,14 @@ class Dataset(Table):
 
         # 如果是保存到本地
         if isinstance(source, FileDataSource):
+            og_table: Table
+
             if self.inner_table:
-                og_table: PyarrowTable = self.inner_table
+                og_table = self
             elif self.inner_data_source_cache:
-                og_table = self.inner_data_source_cache.fetch(**kwargs)
+                pa_table = self.inner_data_source_cache.fetch(**kwargs)
+                assert pa_table
+                og_table = Table(inner_table=pa_table)
             else:
                 err_msg = (
                     "can't get table because both inner_table and"
@@ -179,13 +183,12 @@ class Dataset(Table):
                 log_error(err_msg)
                 raise ValueError(err_msg)
 
-            table = og_table
-            source.save(table, **kwargs)
-            return table
+            source.save(og_table, **kwargs)
+            return og_table.inner_table
 
         # 如果是从本地转到其它源
         if isinstance(self.inner_data_source_cache, FileDataSource):
-            source.save(self.inner_table, **kwargs)
+            source.save(self, **kwargs)
             return source.load(**kwargs)
 
         # 特判 Bos 到千帆
@@ -214,7 +217,7 @@ class Dataset(Table):
 
         # 其它情况可以尝试一下，然后捕捉报错
         try:
-            source.save(self.inner_table, **kwargs)
+            source.save(self, **kwargs)
             return source.load(**kwargs)
         except Exception as e:
             err_msg = (

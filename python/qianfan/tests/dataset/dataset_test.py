@@ -32,6 +32,7 @@ from qianfan.dataset.schema import (
     QianfanNonSortedConversation,
     QianfanSortedConversation,
 )
+from qianfan.dataset.table import Table
 from qianfan.resources.console.consts import DataTemplateType
 from qianfan.utils.pydantic import BaseModel
 
@@ -46,8 +47,8 @@ class FakeDataSource(DataSource, BaseModel):
     def set_format_type(self, format_type: FormatType) -> None:
         self.format = format_type
 
-    def save(self, table: pyarrow.Table, **kwargs: Any) -> bool:
-        self.origin_data = json.dumps(table.to_pylist())
+    def save(self, table: Table, **kwargs: Any) -> bool:
+        self.origin_data = json.dumps(table.inner_table.to_pylist())
         return True
 
     def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:

@@ -1,0 +1,34 @@
+name: JS CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    paths:
+      - "javascript/**"
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    name: Unit tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Rollup globally
+        run: npm install --global rollup
+
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies
+        working-directory: ./javascript
+        run: yarn install --frozen-lockfile
+
+      - name: Build package with Rollup
+        working-directory: ./javascript
+        run: npx rollup -c rollup.config.mjs
+

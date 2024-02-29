@@ -43,7 +43,7 @@ from tenacity import (
 
 import qianfan.errors as errors
 from qianfan.resources.http_client import HTTPClient
-from qianfan.resources.rate_limiter import RateLimiter
+from qianfan.resources.rate_limiter import VersatileRateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_error, log_trace, log_warn
 
@@ -229,7 +229,7 @@ class BaseAPIRequestor(object):
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
         self._client = HTTPClient(**kwargs)
-        self._rate_limiter = RateLimiter(**kwargs)
+        self._rate_limiter = VersatileRateLimiter(**kwargs)
 
     @_with_latency
     def _request(

@@ -315,7 +315,7 @@ def _wait_evaluation_finished(eval_id: str) -> str:
         log_error(err_msg)
         raise QianfanError(err_msg)
 
-    result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetId"]
+    result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetIdStr"]
     log_info(f"get result dataset id {result_dataset_id}")
 
     return result_dataset_id

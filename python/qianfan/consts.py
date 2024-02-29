@@ -51,6 +51,8 @@ class APIErrorCode(enum.Enum):
     InvalidHTTPMethod = 336101
     InvalidArgumentSystem = 336104
     InvalidArgumentUserSetting = 336105
+    RPMLimitReached = 336501
+    TPMLimitReached = 336502
 
     ConsoleInternalError = 500000
 
@@ -74,6 +76,8 @@ class Env:
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
+    RpmLimit: str = "QIANFAN_RPM_LIMIT"
+    TpmLimit: str = "QIANFAN_TPM_LIMIT"
     DotEnvConfigFile: str = "QIANFAN_DOT_ENV_CONFIG_FILE"
     ImportStatusPollingInterval: str = "QIANFAN_IMPORT_STATUS_POLLING_INTERVAL"
     ExportStatusPollingInterval: str = "QIANFAN_EXPORT_STATUS_POLLING_INTERVAL"
@@ -127,6 +131,8 @@ class DefaultValue:
         APIErrorCode.ConsoleInternalError.value,
     }
     QpsLimit: float = 0
+    RpmLimit: float = 0
+    TpmLimit: int = 0
     DotEnvConfigFile: str = ".env"
 
     EnablePrivate: bool = False
@@ -153,8 +159,11 @@ class DefaultValue:
     EvaluationOnlinePollingInterval: float = 30
     BosHostRegion: str = "bj"
     RetryErrCodes: Set = {
+        APIErrorCode.ServiceUnavailable.value,
         APIErrorCode.ServerHighLoad.value,
         APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.RPMLimitReached.value,
+        APIErrorCode.TPMLimitReached.value,
     }
     SSLVerificationEnabled: bool = True
     Proxy: str = ""

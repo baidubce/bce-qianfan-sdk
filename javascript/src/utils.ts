@@ -12,34 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import axios, {AxiosRequestConfig} from 'axios';
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv';
 
-import {base_host, base_path, api_base} from './constant';
-import {AccessTokenResp, ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap} from './interface';
+import {BASE_HOST, BASE_PATH, API_BASE} from './constant';
+import {ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
+import * as packageJson from '../package.json';
 
 dotenv.config();
 
 /**
- * 使用 AK，SK 生成鉴权签名（Access Token）
- * @return string 鉴权签名信息（Access Token）
+ * 获取访问令牌的URL地址
+ *
+ * @param QIANFAN_AK 百度云AK
+ * @param QIANFAN_SK 百度云SK
+ * @returns 返回访问令牌的URL地址
  */
-
-export async function getAccessToken(
-    API_KEY: string,
-    SECRET_KEY: string,
-    headers: AxiosRequestConfig['headers']
-): Promise<AccessTokenResp> {
-    const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`;
-    const resp = await axios.post(url, {}, {headers, withCredentials: false});
-    if (resp.data?.error && resp.data?.error_description) {
-        throw new Error(resp.data.error_description);
-    }
-    const expires_in = resp.data.expires_in + Date.now() / 1000;
-    return {
-        access_token: resp.data.access_token,
-        expires_in,
-    };
+export function getAccessTokenUrl(QIANFAN_AK: string, QIANFAN_SK: string): string {
+    return `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${QIANFAN_AK}&client_secret=${QIANFAN_SK}`;
 }
 
 export function getIAMConfig(ak: string, sk: string): IAMConfig {
@@ -48,7 +37,7 @@ export function getIAMConfig(ak: string, sk: string): IAMConfig {
             ak,
             sk,
         },
-        endpoint: base_host,
+        endpoint: BASE_HOST,
     };
 }
 
@@ -63,7 +52,7 @@ export function getRequestBody(body: ChatBody | CompletionBody | EmbeddingBody, 
     // 埋点信息
     body.extra_parameters = {
         ...body.extra_parameters,
-        'request_source': `qianfan_js_sdk_v${version}`,
+        request_source: `qianfan_js_sdk_v${version}`,
     };
     return JSON.stringify(body);
 }
@@ -89,22 +78,32 @@ export function getModelEndpoint(model: string, modelInfoMap: QfLLMInfoMap): str
 
 /*
  * 获取请求路径
-*/
-export const getPath = (model: string, modelInfoMap: QfLLMInfoMap, Authentication:string, endpoint: string = '', type?: string): string => {
+ */
+export const getPath = (
+    model: string,
+    modelInfoMap: QfLLMInfoMap,
+    Authentication: string,
+    endpoint: string = '',
+    type?: string
+): string => {
     let path: string;
     if (model && modelInfoMap[model]) {
         const _endpoint = getModelEndpoint(model, modelInfoMap);
-        path = Authentication ==='IAM' ? `${base_path}${_endpoint}` : `${api_base}${_endpoint}`;
-    } else if (endpoint && type) {
-        path = Authentication ==='IAM' ? `${base_path}/${type}/${endpoint}` : `${api_base}/${type}/${endpoint}`;
-    } else {
+        path = Authentication === 'IAM' ? `${BASE_PATH}${_endpoint}` : `${API_BASE}${_endpoint}`;
+    }
+    else if (endpoint && type) {
+        path = Authentication === 'IAM' ? `${BASE_PATH}/${type}/${endpoint}` : `${API_BASE}/${type}/${endpoint}`;
+    }
+    else {
         throw new Error('Path not found');
     }
     return path;
 };
 
 export const castToError = (err: any): Error => {
-    if (err instanceof Error) return err;
+    if (err instanceof Error) {
+        return err;
+    }
     return new Error(err);
 };
 
@@ -119,19 +118,50 @@ export function readEnvVariable(key: string) {
  * @returns 返回一个字符串类型的键值对对象，包含环境变量
  */
 export function getDefaultConfig(): Record<string, string> {
-  const envVariables = ['QIANFAN_AK', 'QIANFAN_SK', 'QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY'];
-  const obj: Record<string, string> = {};
-  for (const key of envVariables) {
-    const value = process.env[key];
-    if (value !== undefined) {
-      obj[key] = value;
+    const envVariables = ['QIANFAN_AK', 'QIANFAN_SK', 'QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY'];
+    const obj: Record<string, string> = {};
+    for (const key of envVariables) {
+        const value = process.env[key];
+        if (value !== undefined) {
+            obj[key] = value;
+        }
     }
-  }
 
-  return obj;
+    return obj;
 }
 
 // 设置环境变量
 export function setEnvVariable(key: string, value: string) {
-  process.env[key] = value;
+    process.env[key] = value;
+}
+
+/**
+ * 获取路径和请求体
+ *
+ * @param model 模型
+ * @param modelInfoMap 模型信息映射
+ * @param body 请求体，可选
+ * @param endpoint 请求路径，可选
+ * @param type 请求类型，可选
+ * @returns 包含路径和请求体的对象
+ */
+export function getPathAndBody(
+    model: string,
+    modelInfoMap: QfLLMInfoMap,
+    body?: ReqBody,
+    endpoint?: string,
+    type?: string
+): {
+    IAMPath: string;
+    AKPath: string;
+    requestBody: string; // 根据您的实际情况替换成合适的类型
+} {
+    const IAMPath = getPath(model, modelInfoMap, 'IAM', endpoint, type);
+    const AKPath = getPath(model, modelInfoMap, 'AK', endpoint, type);
+    const requestBody = getRequestBody(body, packageJson.version);
+    return {
+        IAMPath,
+        AKPath,
+        requestBody,
+    };
 }

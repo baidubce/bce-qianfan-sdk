@@ -71,7 +71,9 @@ public class HttpClient {
             for (Header header : resp.getHeaders()) {
                 headers.put(header.getName(), header.getValue());
             }
-            HttpResponse<T> response = new HttpResponse<T>().setCode(resp.getCode()).setHeaders(headers);
+            HttpResponse<T> response = new HttpResponse<T>()
+                    .setCode(resp.getCode())
+                    .setHeaders(headers);
             return bodyHandler.handle(resp.getEntity(), response);
         });
     }

@@ -42,7 +42,7 @@ public class Function {
     /**
      * function调用的一些历史示例
      */
-    private List<List<Example>> examples;
+    private List<List<Message>> examples;
 
     public String getName() {
         return name;
@@ -80,11 +80,11 @@ public class Function {
         return this;
     }
 
-    public List<List<Example>> getExamples() {
+    public List<List<Message>> getExamples() {
         return examples;
     }
 
-    public Function setExamples(List<List<Example>> examples) {
+    public Function setExamples(List<List<Message>> examples) {
         this.examples = examples;
         return this;
     }

@@ -84,12 +84,22 @@ public class ChatBuilder {
         return this;
     }
 
-    public ChatBuilder addFunctionCall(FunctionCall functionCall) {
+    public ChatBuilder addUserMessage(String content) {
+        this.messageBuilder.addUser(content);
+        return this;
+    }
+
+    public ChatBuilder addAssistantMessage(String content) {
+        this.messageBuilder.addAssistant(content);
+        return this;
+    }
+
+    public ChatBuilder addFunctionCallMessage(FunctionCall functionCall) {
         this.messageBuilder.addFunctionCall(functionCall);
         return this;
     }
 
-    public ChatBuilder addFunctionCallResult(String name, String content) {
+    public ChatBuilder addFunctionCallResultMessage(String name, String content) {
         this.messageBuilder.addFunctionCallResult(name, content);
         return this;
     }

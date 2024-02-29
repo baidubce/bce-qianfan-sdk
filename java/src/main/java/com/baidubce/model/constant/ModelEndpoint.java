@@ -24,11 +24,11 @@ public class ModelEndpoint {
     public static final String COMPLETIONS = "completions";
     public static final String EMBEDDINGS = "embeddings";
 
-    public static final String DEFAULT_CHAT_MODEL = "ERNIE-Bot-turbo";
+    private static final String DEFAULT_CHAT_MODEL = "ERNIE-Bot-turbo";
 
-    public static final String DEFAULT_COMPLETION_MODEL = "ERNIE-Bot-turbo";
+    private static final String DEFAULT_COMPLETION_MODEL = "ERNIE-Bot-turbo";
 
-    public static final String DEFAULT_EMBEDDING_MODEL = "Embedding-V1";
+    private static final String DEFAULT_EMBEDDING_MODEL = "Embedding-V1";
 
     private static final String QIANFAN_URL_PREFIX = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop";
 

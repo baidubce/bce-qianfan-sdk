@@ -39,6 +39,22 @@ public class MessageBuilder {
         return this;
     }
 
+    public MessageBuilder addUser(String content) {
+        this.messages.add(new Message()
+                .setRole(ChatRole.USER)
+                .setContent(content)
+        );
+        return this;
+    }
+
+    public MessageBuilder addAssistant(String content) {
+        this.messages.add(new Message()
+                .setRole(ChatRole.ASSISTANT)
+                .setContent(content)
+        );
+        return this;
+    }
+
     public MessageBuilder addFunctionCall(FunctionCall functionCall) {
         this.messages.add(new Message()
                 .setRole(ChatRole.ASSISTANT)

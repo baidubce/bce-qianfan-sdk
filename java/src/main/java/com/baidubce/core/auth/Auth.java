@@ -21,7 +21,7 @@ import com.baidubce.util.StringUtils;
 
 public class Auth {
     public static final String TYPE_IAM = "IAM";
-    public static final String TYPE_OAuth = "OAuth";
+    public static final String TYPE_OAUTH = "OAuth";
     public static final String ENV_ACCESS_KEY = "QIANFAN_ACCESS_KEY";
     public static final String ENV_SECRET_KEY = "QIANFAN_SECRET_KEY";
     public static final String ENV_QIANFAN_AK = "QIANFAN_AK";
@@ -52,7 +52,7 @@ public class Auth {
     public static IAuth create(String type, String accessKey, String secretKey) {
         if (TYPE_IAM.equals(type)) {
             return new IAMAuth(accessKey, secretKey);
-        } else if (TYPE_OAuth.equals(type)) {
+        } else if (TYPE_OAUTH.equals(type)) {
             return new QianfanOAuth(accessKey, secretKey);
         } else {
             throw new QianfanException("Unsupported auth type: " + type);

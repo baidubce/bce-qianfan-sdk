@@ -694,7 +694,7 @@ def test_truncated_message():
 
     # exceed max_input_token, but not exceed max_input_chars
     messages = [
-        {"role": "user", "content": "s " * 3000},
+        {"role": "user", "content": "s " * 5000},
         {"role": "assistant", "content": "s2"},
         # cut here
         {"role": "user", "content": "h " * 3000},
@@ -714,11 +714,11 @@ def test_truncated_message():
     # no cut
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 5
-    assert req_messages[0]["content"] == "s " * 3000
+    assert req_messages[0]["content"] == "s " * 5000
     assert req_messages[4]["content"] == "s5"
 
     messages = [
-        {"role": "user", "content": "s1 " * 5000},
+        {"role": "user", "content": "s1 " * 7000},
         {"role": "assistant", "function_call": {}, "name": "funcname"},
         # cut here
         {"role": "user", "content": "s3"},

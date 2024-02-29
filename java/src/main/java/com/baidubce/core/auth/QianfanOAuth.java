@@ -16,8 +16,13 @@
 
 package com.baidubce.core.auth;
 
+import com.baidubce.model.OAuthErrorResponse;
 import com.baidubce.model.OAuthResponse;
+import com.baidubce.model.exception.AuthException;
 import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.RequestException;
+import com.baidubce.util.Json;
+import com.baidubce.util.StringUtils;
 import com.baidubce.util.http.HttpClient;
 import com.baidubce.util.http.HttpRequest;
 import com.baidubce.util.http.HttpResponse;
@@ -73,12 +78,15 @@ public class QianfanOAuth implements IAuth {
         String url = String.format(AUTH_URL, apiKey, secretKey);
         try {
             HttpResponse<OAuthResponse> resp = HttpClient.request().get(url).executeJson(OAuthResponse.class);
-            if (resp.getCode() != 200) {
-                throw new QianfanException("Failed to get token, response code: " + resp.getCode());
+            if (resp.getCode() > 400 || StringUtils.isEmpty(resp.getBody().getAccessToken())) {
+                OAuthErrorResponse errorResp = Json.deserialize(resp.getStringBody(), OAuthErrorResponse.class);
+                throw new AuthException("Auth failed with error", errorResp);
             }
             return resp.getBody().getAccessToken();
+        } catch (QianfanException e) {
+            throw e;
         } catch (Exception e) {
-            throw new QianfanException("Failed to get token", e);
+            throw new RequestException(String.format("Auth request failed: %s", e.getMessage()), e);
         }
     }
 }

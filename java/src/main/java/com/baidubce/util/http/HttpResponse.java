@@ -21,7 +21,10 @@ import java.util.Map;
 public class HttpResponse<T> {
     private int code;
     private Map<String, String> headers;
+
     private T body;
+
+    private String stringBody;
 
     public int getCode() {
         return code;
@@ -47,6 +50,15 @@ public class HttpResponse<T> {
 
     protected HttpResponse<T> setBody(T body) {
         this.body = body;
+        return this;
+    }
+
+    public String getStringBody() {
+        return stringBody;
+    }
+
+    protected HttpResponse<T> setStringBody(String stringBody) {
+        this.stringBody = stringBody;
         return this;
     }
 }

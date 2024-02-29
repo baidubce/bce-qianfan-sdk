@@ -16,7 +16,7 @@
 
 package com.baidubce.core.auth;
 
-import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.ValidationException;
 import com.baidubce.util.StringUtils;
 
 public class Auth {
@@ -35,18 +35,18 @@ public class Auth {
         String accessKey = System.getenv(ENV_ACCESS_KEY);
         String secretKey = System.getenv(ENV_SECRET_KEY);
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
-            return new IAMAuth(accessKey, secretKey);
+            return create(TYPE_IAM, accessKey, secretKey);
         }
         String qianfanAK = System.getenv(ENV_QIANFAN_AK);
         String qianfanSK = System.getenv(ENV_QIANFAN_SK);
         if (StringUtils.isNotEmpty(qianfanAK) && StringUtils.isNotEmpty(qianfanSK)) {
-            return new IAMAuth(qianfanAK, qianfanSK);
+            return create(TYPE_OAUTH, qianfanAK, qianfanSK);
         }
-        throw new QianfanException("No access key or secret key found in environment variables");
+        throw new ValidationException("No access key or secret key found in environment variables");
     }
 
     public static IAuth create(String accessKey, String secretKey) {
-        return new IAMAuth(accessKey, secretKey);
+        return create(TYPE_IAM, accessKey, secretKey);
     }
 
     public static IAuth create(String type, String accessKey, String secretKey) {
@@ -55,7 +55,7 @@ public class Auth {
         } else if (TYPE_OAUTH.equals(type)) {
             return new QianfanOAuth(accessKey, secretKey);
         } else {
-            throw new QianfanException("Unsupported auth type: " + type);
+            throw new ValidationException("Unsupported auth type: " + type);
         }
     }
 }

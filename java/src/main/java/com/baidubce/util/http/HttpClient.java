@@ -53,11 +53,20 @@ public class HttpClient {
     }
 
     public static <T> HttpResponse<T> executeJson(ClassicHttpRequest request, Class<T> clazz) throws IOException {
-        return execute(request, (body, resp) -> resp.setBody(Json.deserialize(EntityUtils.toString(body), clazz)));
+        return execute(request, (body, resp) -> {
+            String stringBody = EntityUtils.toString(body);
+            return resp
+                    .setStringBody(stringBody)
+                    .setBody(Json.deserialize(stringBody, clazz));
+        });
     }
 
     public static HttpResponse<String> executeString(ClassicHttpRequest request) throws IOException {
-        return execute(request, (body, resp) -> resp.setBody(EntityUtils.toString(body)));
+        return execute(request, (body, resp) -> {
+            String stringBody = EntityUtils.toString(body);
+            return resp.setStringBody(stringBody)
+                    .setBody(stringBody);
+        });
     }
 
     public static HttpResponse<byte[]> execute(ClassicHttpRequest request) throws IOException {

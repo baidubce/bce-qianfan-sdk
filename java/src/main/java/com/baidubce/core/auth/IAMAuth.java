@@ -16,7 +16,7 @@
 
 package com.baidubce.core.auth;
 
-import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.AuthException;
 import com.baidubce.util.Pair;
 import com.baidubce.util.StringUtils;
 import com.baidubce.util.http.HttpRequest;
@@ -58,7 +58,7 @@ public class IAMAuth implements IAuth {
                     .addHeader("Authorization", sign(request.getMethod(), request.getUrl()))
                     .addHeader("X-Bce-Date", getTimestamp());
         } catch (Exception e) {
-            throw new QianfanException("Failed to sign request", e);
+            throw new AuthException("Failed to sign request", e);
         }
     }
 

@@ -20,7 +20,7 @@ import com.baidubce.core.Qianfan;
 import com.baidubce.model.constant.ModelEndpoint;
 import com.baidubce.model.embedding.EmbeddingRequest;
 import com.baidubce.model.embedding.EmbeddingResponse;
-import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.ValidationException;
 
 import java.util.List;
 
@@ -72,7 +72,7 @@ public class EmbeddingBuilder {
 
     public EmbeddingResponse execute() {
         if (qianfan == null) {
-            throw new QianfanException("Qianfan client is not set. " +
+            throw new ValidationException("Qianfan client is not set. " +
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }

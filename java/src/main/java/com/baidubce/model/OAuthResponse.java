@@ -18,13 +18,16 @@ package com.baidubce.model;
 
 public class OAuthResponse {
     private String refreshToken;
+
     private String expiresIn;
+
     private String sessionKey;
+
     private String accessToken;
+
     private String scope;
+
     private String sessionSecret;
-    private String error;
-    private String errorDescription;
 
     public String getRefreshToken() {
         return refreshToken;
@@ -77,24 +80,6 @@ public class OAuthResponse {
 
     public OAuthResponse setSessionSecret(String sessionSecret) {
         this.sessionSecret = sessionSecret;
-        return this;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public OAuthResponse setError(String error) {
-        this.error = error;
-        return this;
-    }
-
-    public String getErrorDescription() {
-        return errorDescription;
-    }
-
-    public OAuthResponse setErrorDescription(String errorDescription) {
-        this.errorDescription = errorDescription;
         return this;
     }
 }

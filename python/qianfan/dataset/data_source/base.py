@@ -53,7 +53,7 @@ class DataSource(ABC):
     @abstractmethod
     def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
-        Get a pyarrow.Table from current DataSource object
+        Get a pyarrow.Table from current DataSource object, if it cloud.
 
         Args:
             **kwargs (Any): Arbitrary keyword arguments.
@@ -65,7 +65,7 @@ class DataSource(ABC):
     @abstractmethod
     def fetch(self, **kwargs: Any) -> pyarrow.Table:
         """
-        Read data from qianfan.
+        Get a pyarrow.Table mandatorily
 
         Args:
             **kwargs (Any): Arbitrary keyword arguments.

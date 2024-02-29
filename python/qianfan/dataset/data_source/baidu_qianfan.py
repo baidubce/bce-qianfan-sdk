@@ -77,6 +77,7 @@ class QianfanDataSource(DataSource, BaseModel):
     info: Dict[str, Any] = Field(default={})
     # 开关控制是否需要下载到本地进行后续处理。
     # 如果不需要，则创建一个千帆平台对应数据集的代理对象。
+    # 这个参数现已废弃，为保证向前兼容性暂时保留，请勿使用
     download_when_init: Optional[bool] = Field(default=None)
     data_format_type: FormatType
     old_dataset_id: Optional[int] = None

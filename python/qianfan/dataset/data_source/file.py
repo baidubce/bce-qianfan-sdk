@@ -104,7 +104,11 @@ class FileDataSource(DataSource, BaseModel):
         Write data to file。
 
         Args:
-            data (Union[str, List[str]]): data waiting to be written。
+            table (pyarrow.Table):
+                data waiting to be uploaded.
+            batch_size (int):
+                the batch size used when
+                writing entry to file in batch
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -138,6 +142,15 @@ class FileDataSource(DataSource, BaseModel):
         return zip_file_or_folder(self.path)
 
     def fetch(self, **kwargs: Any) -> pyarrow.Table:
+        """
+        Get a pyarrow.Table mandatorily
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            pyarrow.Table: table retrieved from file
+        """
         ret = self.load(**kwargs)
         assert ret
         return ret

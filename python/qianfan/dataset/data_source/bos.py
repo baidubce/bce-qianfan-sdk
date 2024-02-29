@@ -65,6 +65,10 @@ class BosDataSource(DataSource, BaseModel):
         Args:
             table (pyarrow.Table):
                 data waiting to be uploaded.
+            should_save_as_zip_file (bool):
+                whether upload table as a zip file after serialization.
+                when format is txt, an entry in table will become to
+                an individual file in zip file.
             should_overwrite_existed_file (bool):
                 should bos data source overwrite existed file when save data,
                 default to False
@@ -220,7 +224,7 @@ class BosDataSource(DataSource, BaseModel):
 
     def fetch(self, read_from_zip: bool = False, **kwargs: Any) -> pyarrow.Table:
         """
-        Read data from bos.
+        Read data from bos mandatorily.
 
         Args:
             read_from_zip (bool):
@@ -228,10 +232,8 @@ class BosDataSource(DataSource, BaseModel):
                 default to False
             **kwargs (Any): Arbitrary keyword arguments.
 
-        Ret
-        urns:
-            Union[str, List[str]]:
-                String or list of string containing the data read from the file.
+        Returns:
+            pyarrow.Table: A memory-mapped pyarrow.Table object
         """
         assert self.ak
         assert self.sk
@@ -278,10 +280,22 @@ class BosDataSource(DataSource, BaseModel):
         return None
 
     def format_type(self) -> FormatType:
+        """
+        Get format type binding to source
+
+        Returns:
+            FormatType: format type binding to source
+        """
         assert self.file_format
         return self.file_format
 
     def set_format_type(self, format_type: FormatType) -> None:
+        """
+        Set format type binding to source
+
+        Args:
+            format_type (FormatType): format type binding to source
+        """
         self.file_format = format_type
 
     @root_validator

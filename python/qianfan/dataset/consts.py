@@ -17,7 +17,7 @@ constants for dataset using
 import os.path
 
 # 千帆本地缓存文件夹的绝对路径
-QianfanLocalCacheDir = os.path.expanduser("~/.qianfan_cache")
+QianfanLocalCacheDir = os.path.expanduser(os.path.join("~", ".qianfan_cache"))
 
 # 千帆数据集本地缓存文件夹的绝对路径
 QianfanDatasetLocalCacheDir = os.path.join(QianfanLocalCacheDir, "dataset")

@@ -587,6 +587,9 @@ class EvaluationManager(BaseModel):
                 )
             finally:
                 if os.path.exists(local_cache_file_path):
-                    os.remove(local_cache_file_path)
+                    try:
+                        os.remove(local_cache_file_path)
+                    except Exception:
+                        ...
 
         return None

@@ -15,7 +15,7 @@ documentation = "https://qianfan.readthedocs.io/en/stable/README.html"
 keywords = ["baidu", "qianfan"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4"
+python = ">=3.7,<4"
 requests = ">=2.24"
 aiohttp = ">=3.7.0"
 aiolimiter = ">=1.1.0"
@@ -50,9 +50,6 @@ ltp = { version = "*", optional = true}
 emoji = { version = "*", optional = true}
 sentencepiece = { version = "*", optional = true}
 multiprocess = "*"
-papermill = { version="^2.5.0", optional = true }
-nbformat = { version="^5.9.2", optional = true }
-nbconvert = { version="^7.16.1", optional = true }
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -71,13 +68,15 @@ myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
 setuptools = "*"
+#papermill = { version="^2.5.0", optional = true }
+#nbformat = { version="^5.9.2", optional = true }
+#nbconvert = { version="^7.16.1", optional = true }
 
 [tool.poetry.extras]
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
-semantic_kernel = ["semantic_kernel"]
-cookbook_common = ['papermill', 'nbformat', 'nbconvert']
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "semantic_kernel"]
+#cookbook_common = ['papermill', 'nbformat', 'nbconvert']
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
 
 [tool.ruff]
 select = [

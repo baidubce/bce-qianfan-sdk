@@ -20,7 +20,7 @@ import com.baidubce.core.Qianfan;
 import com.baidubce.model.completion.CompletionRequest;
 import com.baidubce.model.completion.CompletionResponse;
 import com.baidubce.model.constant.ModelEndpoint;
-import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.ValidationException;
 
 import java.util.Iterator;
 import java.util.List;
@@ -113,7 +113,7 @@ public class CompletionBuilder {
 
     public CompletionResponse execute() {
         if (qianfan == null) {
-            throw new QianfanException("Qianfan client is not set. " +
+            throw new ValidationException("Qianfan client is not set. " +
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }
@@ -122,7 +122,7 @@ public class CompletionBuilder {
 
     public Iterator<CompletionResponse> executeStream() {
         if (qianfan == null) {
-            throw new QianfanException("Qianfan client is not set. " +
+            throw new ValidationException("Qianfan client is not set. " +
                     "please create builder from Qianfan client, " +
                     "or use build() to get Request and send it by yourself.");
         }

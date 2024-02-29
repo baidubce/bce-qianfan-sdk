@@ -16,8 +16,27 @@
 
 package com.baidubce.model.exception;
 
-public class InvalidArgumentException extends QianfanException {
-    public InvalidArgumentException(String message) {
+import java.io.Serializable;
+
+public class ApiException extends QianfanException {
+    private final Serializable errorResponse;
+
+    public ApiException(String message) {
         super(message);
+        this.errorResponse = null;
+    }
+
+    public ApiException(String message, Throwable cause) {
+        super(message, cause);
+        this.errorResponse = null;
+    }
+
+    public ApiException(String message, Serializable errorResponse) {
+        super(String.format("%s: %s", message, errorResponse));
+        this.errorResponse = errorResponse;
+    }
+
+    public Serializable getErrorResponse() {
+        return errorResponse;
     }
 }

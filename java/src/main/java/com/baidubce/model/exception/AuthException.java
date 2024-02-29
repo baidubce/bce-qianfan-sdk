@@ -16,12 +16,27 @@
 
 package com.baidubce.model.exception;
 
-public abstract class QianfanException extends RuntimeException {
-    protected QianfanException(String message) {
+import java.io.Serializable;
+
+public class AuthException extends QianfanException {
+    private final Serializable errorResponse;
+
+    public AuthException(String message) {
         super(message);
+        this.errorResponse = null;
     }
 
-    protected QianfanException(String message, Throwable cause) {
+    public AuthException(String message, Throwable cause) {
         super(message, cause);
+        this.errorResponse = null;
+    }
+
+    public AuthException(String message, Serializable errorResponse) {
+        super(String.format("%s: %s", message, errorResponse));
+        this.errorResponse = errorResponse;
+    }
+
+    public Serializable getErrorResponse() {
+        return errorResponse;
     }
 }

@@ -16,12 +16,12 @@
 
 package com.baidubce.model.exception;
 
-public abstract class QianfanException extends RuntimeException {
-    protected QianfanException(String message) {
+public class RequestException extends QianfanException {
+    public RequestException(String message) {
         super(message);
     }
 
-    protected QianfanException(String message, Throwable cause) {
+    public RequestException(String message, Throwable cause) {
         super(message, cause);
     }
 }

@@ -21,6 +21,7 @@ import com.baidubce.core.auth.IAuth;
 import com.baidubce.core.builder.ChatBuilder;
 import com.baidubce.core.builder.CompletionBuilder;
 import com.baidubce.core.builder.EmbeddingBuilder;
+import com.baidubce.model.ApiErrorResponse;
 import com.baidubce.model.chat.ChatRequest;
 import com.baidubce.model.chat.ChatResponse;
 import com.baidubce.model.completion.CompletionRequest;
@@ -28,8 +29,11 @@ import com.baidubce.model.completion.CompletionResponse;
 import com.baidubce.model.constant.ModelEndpoint;
 import com.baidubce.model.embedding.EmbeddingRequest;
 import com.baidubce.model.embedding.EmbeddingResponse;
+import com.baidubce.model.exception.ApiException;
 import com.baidubce.model.exception.QianfanException;
+import com.baidubce.model.exception.RequestException;
 import com.baidubce.util.Json;
+import com.baidubce.util.StringUtils;
 import com.baidubce.util.http.HttpClient;
 import com.baidubce.util.http.HttpRequest;
 import com.baidubce.util.http.HttpResponse;
@@ -88,32 +92,36 @@ public class Qianfan {
     private <T> T request(String endpoint, Object body, Class<T> responseClazz) {
         String url = ModelEndpoint.getUrl(endpoint);
         try {
-            HttpRequest request = HttpClient.request()
-                    .post(url)
-                    .body(body);
+            HttpRequest request = HttpClient.request().post(url).body(body);
             HttpResponse<T> resp = auth.signRequest(request).executeJson(responseClazz);
             if (resp.getCode() != 200) {
-                throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
+                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
+            }
+            ApiErrorResponse errorResp = Json.deserialize(resp.getStringBody(), ApiErrorResponse.class);
+            if (StringUtils.isNotEmpty(errorResp.getErrorMsg())) {
+                throw new ApiException("Request failed with api error", errorResp);
             }
             return resp.getBody();
+        } catch (QianfanException e) {
+            throw e;
         } catch (Exception e) {
-            throw new QianfanException("Failed to request " + endpoint, e);
+            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
         }
     }
 
     private <T> Iterator<T> requestStream(String endpoint, Object body, Class<T> responseClazz) {
         String url = ModelEndpoint.getUrl(endpoint);
         try {
-            HttpRequest request = HttpClient.request()
-                    .post(url)
-                    .body(body);
+            HttpRequest request = HttpClient.request().post(url).body(body);
             HttpResponse<Iterator<String>> resp = auth.signRequest(request).executeSSE();
             if (resp.getCode() != 200) {
-                throw new QianfanException("Failed to request " + endpoint + ", response code: " + resp.getCode());
+                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
             }
             return new StreamIterator<>(resp.getBody(), responseClazz);
+        } catch (QianfanException e) {
+            throw e;
         } catch (Exception e) {
-            throw new QianfanException("Failed to request " + endpoint, e);
+            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
         }
     }
 

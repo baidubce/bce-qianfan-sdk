@@ -185,5 +185,5 @@ def test_branch_save(*args, **kwargs):
     fake_qianfan_data_source.data_format_type = FormatType.Text
     fake_qianfan_data_source.template_type = DataTemplateType.GenericText
     fake_qianfan_data_source.project_type = DataTemplateType.GenericText
-    ds = Dataset.create_from_pyobj({"text": ["wenben"]})
+    ds = Dataset.create_from_pyobj({QianfanDatasetPackColumnName: ["wenben"]})
     ds.save(fake_qianfan_data_source)

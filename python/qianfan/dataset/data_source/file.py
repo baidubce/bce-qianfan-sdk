@@ -24,7 +24,6 @@ import clevercsv
 import pyarrow
 
 from qianfan.config import encoding
-from qianfan.dataset.consts import QianfanDatasetPackColumnName
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
     _get_a_memory_mapped_pyarrow_table,
@@ -52,7 +51,7 @@ class FileDataSource(DataSource, BaseModel):
     def _write_as_format(
         self,
         fd: TextIO,
-        data: Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]],
+        data: Union[List[Dict[str, Any]], List[List[Dict[str, Any]]], List[str]],
         index: int,
     ) -> None:
         if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
@@ -79,8 +78,8 @@ class FileDataSource(DataSource, BaseModel):
 
         elif self.file_format == FormatType.Text:
             for elem in data:
-                assert isinstance(elem, dict)
-                fd.write(elem[QianfanDatasetPackColumnName])
+                assert isinstance(elem, str)
+                fd.write(elem)
                 fd.write("\n")
         else:
             err_msg = "unexpected format"
@@ -93,11 +92,7 @@ class FileDataSource(DataSource, BaseModel):
         os.makedirs(self.path, exist_ok=True)
 
         for i in range(0, table.row_number(), batch_size):
-            table_slice = list(
-                table.inner_table.slice(i, batch_size).to_pydict()[
-                    QianfanDatasetPackColumnName
-                ]
-            )
+            table_slice = list(table.list(slice(i, i + batch_size - 1)))
             for j in range(min(batch_size, len(table_slice))):
                 with open(
                     os.path.join(self.path, f"{i + j}.txt"),

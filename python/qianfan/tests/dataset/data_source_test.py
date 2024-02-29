@@ -18,7 +18,6 @@ import os
 import shutil
 from unittest.mock import patch
 
-import pyarrow
 import pytest
 from pytest_mock import MockerFixture
 

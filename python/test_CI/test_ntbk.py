@@ -1,3 +1,6 @@
+"""
+    Unit test for notebooks
+"""
 import pytest
 
 
@@ -12,8 +15,19 @@ import pytest
     )]
 )
 def test_demo(file_reg, params_dict, executor):
+    """
+    测试用例 demo
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.parametrize(
@@ -31,6 +45,17 @@ def test_demo(file_reg, params_dict, executor):
     ]
 )
 def test_common(file_reg, params_dict, executor):
+    """
+    测试用例 cookbook目录下的一级ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run()
 
@@ -43,6 +68,17 @@ def test_common(file_reg, params_dict, executor):
     ]
 )
 def test_agents(file_reg, params_dict, executor):
+    """
+    测试用例 agents目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run()
 
@@ -58,6 +94,17 @@ def test_agents(file_reg, params_dict, executor):
     ]
 )
 def test_datasets(file_reg, params_dict, executor):
+    """
+    测试用例 datasets目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run()
 
@@ -72,6 +119,17 @@ def test_datasets(file_reg, params_dict, executor):
     ]
 )
 def test_rag(file_reg, params_dict, executor):
+    """
+    测试用例 RAG目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run(debug=True)
 
@@ -85,6 +143,17 @@ def test_rag(file_reg, params_dict, executor):
     ]
 )
 def test_sk(file_reg, params_dict, executor):
+    """
+    测试用例 semantic_kernel相关的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run()
 
@@ -97,6 +166,17 @@ def test_sk(file_reg, params_dict, executor):
     ]
 )
 def test_evaluation(file_reg, params_dict, executor):
+    """
+    测试用例 evaluation目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run(debug=True)
 
@@ -114,6 +194,17 @@ def test_evaluation(file_reg, params_dict, executor):
     ]
 )
 def test_finetune(file_reg, params_dict, executor):
+    """
+    测试用例 finetune目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run(debug=True)
 
@@ -125,5 +216,16 @@ def test_finetune(file_reg, params_dict, executor):
     ]
 )
 def test_wandb(file_reg, params_dict, executor):
+    """
+    测试用例 wandb目录下的ntbk文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     executor.prepare(file_reg, params_dict)
     executor.run(debug=True)

@@ -113,7 +113,7 @@ async function main() {
           stream: true,
       }, "ERNIE-Bot-turbo");
       for await (const chunk of stream as AsyncIterableIterator<any>) {
-           // process.stdout.write(chunk);
+           // 返回结果
         }
 }
 ```
@@ -149,7 +149,7 @@ async function main() {
         stream: true,
       }, "SQLCoder-7B");
       for await (const chunk of stream as AsyncIterableIterator<any>) {
-          process.stdout.write(chunk);
+          // 返回结果
         }
 }
 main();

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 千帆 SDK 示例代码
+// 展示了如何使用千帆提供的 Embedding 模型，并计算两个文本的余弦距离
 package main
 
 import (
@@ -22,7 +24,6 @@ import (
 	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
 )
 
-// 展示了如何使用千帆提供的 Embedding 模型，并计算两个文本的余弦距离
 func cosDistance(embed1, embed2 []float64) (float64, error) {
 	length := len(embed1)
 	if length != len(embed2) {

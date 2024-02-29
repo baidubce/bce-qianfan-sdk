@@ -13,7 +13,7 @@ Tips:
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}
-   :caption: Quickstart:
+   :caption: Python SDK:
    :glob:
 
    README.md
@@ -27,6 +27,14 @@ Tips:
    docs/configurable.md
    docs/dataset.md
    docs/cli.md
+
+.. toctree::
+   :maxdepth: {{ mastertocmaxdepth }}
+   :caption: Go SDK:
+   :glob:
+
+   README.go.md
+   docs/go/inference.md
 
 .. toctree::
    :maxdepth: {{ mastertocmaxdepth }}

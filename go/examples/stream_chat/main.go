@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 千帆 SDK 示例代码
+// 实现了简易的能够在命令行与 LLM 聊天的程序，并使用流式输出，加快响应速度
 package main
 
 import (
@@ -21,7 +23,6 @@ import (
 	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
 )
 
-// 实现了简易的能够在命令行与 LLM 聊天的程序，并使用流式输出，加快响应速度
 func main() {
 	// 使用前请先设置 AccessKey 和 SecretKey，通过环境变量设置可省略如下两行
 	// qianfan.GetConfig().AccessKey = "your_access_key"

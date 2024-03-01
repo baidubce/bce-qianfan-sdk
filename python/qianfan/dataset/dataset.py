@@ -183,6 +183,14 @@ class Dataset(Table):
                 log_error(err_msg)
                 raise ValueError(err_msg)
 
+            # 特判，因为从千帆导出来的数据，格式是一定的，用户乱指定也没有用
+            if isinstance(self.inner_data_source_cache, QianfanDataSource):
+                log_info(
+                    f"change local file format {source.file_format} to qianfan file"
+                    f" format {self.inner_data_source_cache.format_type()}"
+                )
+                source.file_format = self.inner_data_source_cache.format_type()
+
             source.save(og_table, **kwargs)
             return og_table.inner_table
 
@@ -446,7 +454,6 @@ class Dataset(Table):
                 qianfan_dataset_id=qianfan_dataset_id,
                 qianfan_dataset_create_args=qianfan_dataset_create_args,
                 bos_source_args=bos_source_args,
-                is_download_to_local=False,
                 **kwargs,
             )
 
@@ -476,7 +483,7 @@ class Dataset(Table):
 
         # 开始写入数据
         table = self._to_source(source, **kwargs)  # noqa
-        return Dataset(
+        new_ds = Dataset(
             inner_table=table,
             inner_data_source_cache=source,
             inner_schema_cache=schema,
@@ -486,6 +493,12 @@ class Dataset(Table):
             eval_llm_output_column=self.eval_llm_output_column,
             **kwargs,
         )
+
+        # 保持一致
+        if new_ds.is_dataset_grouped():
+            new_ds.pack()
+
+        return new_ds
 
     @classmethod
     def create_from_pyobj(

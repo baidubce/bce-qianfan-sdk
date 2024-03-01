@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 千帆 SDK 示例代码
+// 展示了如何获取所有可用的模型
 package main
 
 import "github.com/baidubce/bce-qianfan-sdk/go/qianfan"
 
-// 展示了如何获取所有可用的模型
 func main() {
 	// 根据用途选择
 	u := qianfan.NewChatCompletion()

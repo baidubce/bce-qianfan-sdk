@@ -11,11 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import {APIErrorCode} from './enum';
 
-export const base_host = 'https://aip.baidubce.com';
-export const base_path = '/rpc/2.0/ai_custom/v1/wenxinworkshop';
-export const api_base = base_host + base_path;
+export const BASE_HOST = 'https://aip.baidubce.com';
+export const BASE_PATH = '/rpc/2.0/ai_custom/v1/wenxinworkshop';
+export const API_BASE = BASE_HOST + BASE_PATH;
 export const DEFAULT_HEADERS = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
 };
+
+export const RETRYCODE = [
+    APIErrorCode.TPMLimitReached,
+    APIErrorCode.ConsoleInternalError,
+    APIErrorCode.ServerHighLoad,
+    APIErrorCode.QPSLimitReached,
+];

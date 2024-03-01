@@ -400,6 +400,27 @@ class BaseResource(object):
         """
         raise NotImplementedError
 
+    @classmethod
+    def get_model_info(cls, model: str) -> QfLLMInfo:
+        """
+        Get the model info of `model`
+
+        Args:
+            model (str): the name of the model,
+
+        Return:
+            Information of the model
+        """
+        model_info = cls._supported_models().get(model)
+        if model_info is None:
+            raise errors.InvalidArgumentError(
+                f"The provided model `{model}` is not in the list of supported models."
+                " If this is a recently added model, try using the `endpoint`"
+                " arguments and create an issue to tell us. Supported models:"
+                f" {cls.models()}"
+            )
+        return model_info
+
     def _get_endpoint(self, model: str) -> QfLLMInfo:
         """
         get the endpoint of the given `model`

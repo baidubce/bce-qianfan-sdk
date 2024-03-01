@@ -37,10 +37,11 @@ class HttpClient extends EventEmitter {
         [H.CONNECTION]: 'close',
         [H.CONTENT_TYPE]: 'application/json; charset=UTF-8',
         // 检查是否在浏览器环境中
-        [H.USER_AGENT]: typeof navigator !== 'undefined' && navigator.userAgent
-            ? navigator.userAgent
-            : `bce-sdk-nodejs/${version}/${process.platform}/${process.version}`,
-        [H.X_BCE_DATE]: new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+        [H.USER_AGENT]:
+            typeof navigator !== 'undefined' && navigator.userAgent
+                ? navigator.userAgent
+                : `bce-sdk-nodejs/${version}/${process.platform}/${process.version}`,
+        [H.X_BCE_DATE]: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     };
     private axiosInstance: AxiosInstance;
     constructor(private config: any) {
@@ -51,7 +52,7 @@ class HttpClient extends EventEmitter {
     sendRequest(
         httpMethod: string,
         path: string,
-        body?: string | Buffer | stream.Readable,
+        body?: string | Buffer | stream.Readable | any,
         headers?: Record<string, any>,
         outputStream?: boolean | stream.Writable,
         params?: Record<string, any>,
@@ -78,7 +79,7 @@ class HttpClient extends EventEmitter {
                 method: options.method,
                 url: options.href,
                 headers: _headers,
-                data: body
+                data: body,
             };
             return client._doRequest(requstOption, outputStream);
         });
@@ -96,17 +97,19 @@ class HttpClient extends EventEmitter {
         catch (error) {
             throw error;
         }
-
     }
 
     public async establishSSEConnection(options: AxiosRequestConfig): Promise<AsyncIterable<any>> {
         const {url, headers, data} = options;
         try {
-            const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(await fetch(url, {
-                method: 'POST',
-                headers: headers as any,
-                body: data
-            }), this.controller) as any;
+            const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(
+                await fetch(url, {
+                    method: 'POST',
+                    headers: headers as any,
+                    body: data,
+                }),
+                this.controller
+            ) as any;
             return sseStream;
         }
         catch (error) {
@@ -121,13 +124,17 @@ class HttpClient extends EventEmitter {
     private _recvResponse(response: AxiosResponse): any {
         const statusCode = response.status;
         const responseBody = response.data;
+        if (responseBody.error_code) {
+            const message = JSON.stringify(responseBody);
+            throw new Error(message);
+        }
         if (statusCode >= 100 && statusCode < 200) {
             throw this.failure(statusCode, 'Can not handle 1xx http status code.');
         }
         else if (statusCode < 100 || statusCode >= 300) {
             throw this.failure(statusCode, responseBody.message);
         }
-        return response;
+        return responseBody;
     }
 
     private failure(statusCode: number, message: string | Buffer): any {
@@ -138,7 +145,9 @@ class HttpClient extends EventEmitter {
     }
 
     private setAuthorizationHeader(
-        signFunction: ((credentials: any, method: any, path: any, headers: any) => [string, string] | string) | undefined,
+        signFunction:
+            | ((credentials: any, method: any, path: any, headers: any) => [string, string] | string)
+            | undefined,
         headers: Record<string, any>,
         options: http.RequestOptions
     ): Q.Promise<any> {
@@ -190,7 +199,7 @@ class HttpClient extends EventEmitter {
         const urlEncodeStr = require('querystring').stringify(params);
 
         // https://en.wikipedia.org/wiki/Percent-encoding
-        return urlEncodeStr.replace(/[()'!~.*\-_]/g, (char : any) => {
+        return urlEncodeStr.replace(/[()'!~.*\-_]/g, (char: any) => {
             return '%' + char.charCodeAt(0).toString(16);
         });
     }
@@ -230,7 +239,6 @@ class HttpClient extends EventEmitter {
 
         throw new Error('No Content-Length is specified.');
     }
-
 
     private isPromise(obj: any): obj is Q.Promise<any> {
         return obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';

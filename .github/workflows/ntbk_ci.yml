@@ -1,0 +1,131 @@
+name: Notebook CI
+
+on:
+#  push:   # 只有push触发
+#    paths:
+#      - 'cookbook/**/*.ipynb'  # cookbook目录下所有ipynb文件有改动时触发
+#      - '!cookbook/.ipynb_checkpoints/**'  # 排除.ipynb_checkpoints目录下所有文件
+  workflow_dispatch:  # 手动触发
+
+defaults:
+  run:
+    shell: bash  # 默认shell为bash
+    working-directory: ./cookbook  # 默认工作目录为cookbook
+
+env:
+  RUFF_OUTPUT_FORMAT: github
+
+
+jobs:
+  changed-files:
+    strategy:
+      matrix:
+        os:
+          - 'ubuntu-latest'
+#          - 'macos-latest'
+#          - 'windows-latest'
+        python-version:
+#          - '3.7'
+#          - '3.8'
+          - '3.9'
+#          - '3.10'
+#          - '3.11'
+    name: Get changed files
+    outputs:
+      common: ${{ steps.changed-files.outputs.common_any_modified == 'true' }}
+      agents: ${{ steps.changed-files.outputs.agents_any_modified == 'true' }}
+      dataset: ${{ steps.changed-files.outputs.dataset_any_modified == 'true' }}
+      evaluation: ${{ steps.changed-files.outputs.evaluation_any_modified == 'true' }}
+      extensions: ${{ steps.changed-files.outputs.extensions_any_modified == 'true' }}
+      finetune: ${{ steps.changed-files.outputs.finetune_any_modified == 'true' }}
+      RAG: ${{ steps.changed-files.outputs.RAG_any_modified == 'true' }}
+      wandb: ${{ steps.changed-files.outputs.wandb_any_modified == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # assume PRs are less than 50 commits
+      - name: Get relevant files changed per group
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files_yaml: |
+            common: &common
+              - cookbook/*.ipynb
+            agents: &agents
+              - cookbook/agents/**/*.ipynb
+            dataset: &dataset
+              - cookbook/dataset/**/*.ipynb
+            evaluation: &evaluation
+              - cookbook/evaluation/**/*.ipynb
+            extensions: &extensions
+              - cookbook/extensions/**/*.ipynb
+            finetune: &finetune
+              - cookbook/finetune/**/*.ipynb
+            RAG: &RAG
+              - cookbook/RAG/**/*.ipynb
+            wandb: &wandb
+              - cookbook/wandb/**/*.ipynb
+
+  unit-test:
+    runs-on: ubuntu-latest  # windows-latest || macos-latest
+    name: Test changed-files
+    needs: [ changed-files ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: contain cookbook common  # 在cookbook下第一层的ipynb文件
+        if: ${{ needs.changed-files.outputs.common == 'true' }}
+        run: |
+          echo "cookbook common"
+      - name: contain cookbook agents
+        if: ${{ needs.changed-files.outputs.agents == 'true' }}
+        run: |
+          echo "cookbook agents"
+      - name: contain cookbook dataset
+        if: ${{ needs.changed-files.outputs.dataset == 'true' }}
+        run: |
+          echo "cookbook dataset"
+      - name: contain cookbook evaluation
+        if: ${{ needs.changed-files.outputs.evaluation == 'true' }}
+        run: |
+          echo "cookbook evaluation"
+      - name: contain cookbook extensions
+        if: ${{ needs.changed-files.outputs.extensions == 'true' }}
+        run: |
+          echo "cookbook extensions"
+      - name: contain cookbook finetune
+        if: ${{ needs.changed-files.outputs.finetune == 'true' }}
+        run: |
+          echo "cookbook finetune"
+      - name: contain cookbook RAG
+        if: ${{ needs.changed-files.outputs.RAG == 'true' }}
+        run: |
+          echo "cookbook RAG"
+      - name: contain cookbook wandb
+        if: ${{ needs.changed-files.outputs.wandb == 'true' }}
+        run: |
+          echo "cookbook wandb"
+  test:
+    name: Notebook Unit Tests
+    runs-on: ${{ matrix.os }}
+    environment:
+      name: my_bce_iam
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  #     运行ipynb
+      - name: pip_install
+        uses: ./.github/workflows/pip_install
+        with:
+          os: ${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+          ntbk_path: 'cookbook/RAG'
+      - name: run_cookbook
+        env:  # 配置环境变量
+          QIANFAN_ACCESS_KEY: ${{ secrets.QIANFAN_ACCESS_KEY }}
+          QIANFAN_SECRET_KEY: ${{ secrets.QIANFAN_SECRET_KEY }}
+          KEYWORDS_DICT: ${{ secrets.KEYWORDS_DICT }}
+          github_root: ${{ github.workspace }}
+        run: |
+          cd ${{ github.workspace }}/python/test_CI && pytest -v -r A --full-trace  ${{ github.workspace }}/python/test_CI/test_ntbk::test_demo --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$github_root"

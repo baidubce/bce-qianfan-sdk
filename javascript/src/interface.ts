@@ -36,7 +36,7 @@ export interface AccessTokenResp {
     expires_in: number;
 }
 
-export interface IAMConfig{
+export interface IAMConfig {
     credentials: {
         ak: string;
         sk: string;
@@ -203,7 +203,7 @@ export type TokenUsage = TokenUsageBase;
 /**
  * 响应基类
  */
-export interface RespBase{
+export interface RespBase {
     /**
      * 本轮对话的id
      */
@@ -236,12 +236,12 @@ export interface RespBase{
     usage: TokenUsage;
 }
 
-export interface ChatResp extends RespBase{
-     /**
+export interface ChatResp extends RespBase {
+    /**
      * 当前生成的结果是否被截断
      */
-     is_truncated?: boolean;
-      /**
+    is_truncated?: boolean;
+    /**
      * 表示用户输入是否存在安全，是否关闭当前会话，清理历史会话信息
      *
      * true：是，表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
@@ -268,47 +268,46 @@ export interface ChatRespError {
     error_msg: string;
 }
 
-
 export interface CompletionBody {
     /*
-    * 请求信息
-    */
-    prompt:	string,
+     * 请求信息
+     */
+    prompt: string;
     /*
-    * 是否以流式接口的形式返回数据，默认false
-    */
+     * 是否以流式接口的形式返回数据，默认false
+     */
     stream?: boolean;
     /*
      * 1）较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定
      * 2）范围 (0, 1.0]，不能为0
-    */
+     */
     temperature?: number;
     /*
-    *Top-K 采样参数，在每轮token生成时，保留k个概率最高的token作为候选。说明：
-    *（1）影响输出文本的多样性，取值越大，生成文本的多样性越强
-    *（2）取值范围：正整数
-    */
-    top_k?: number;	
+     *Top-K 采样参数，在每轮token生成时，保留k个概率最高的token作为候选。说明：
+     *（1）影响输出文本的多样性，取值越大，生成文本的多样性越强
+     *（2）取值范围：正整数
+     */
+    top_k?: number;
     /*
-    *（1）影响输出文本的多样性，取值越大，生成文本的多样性越强
-    *（2）取值范围 [0, 1.0]
-    */
-    top_p?: number;	
+     *（1）影响输出文本的多样性，取值越大，生成文本的多样性越强
+     *（2）取值范围 [0, 1.0]
+     */
+    top_p?: number;
     /*
-    * 通过对已生成的token增加惩罚，减少重复生成的现象。说明：
-    *（1）值越大表示惩罚越大
-    *（2）取值范围：[1.0, 2.0]
-    */
-    penalty_score? :number;	
+     * 通过对已生成的token增加惩罚，减少重复生成的现象。说明：
+     *（1）值越大表示惩罚越大
+     *（2）取值范围：[1.0, 2.0]
+     */
+    penalty_score?: number;
     /*
-    * 生成停止标识。当模型生成结果以stop中某个元素结尾时，停止文本生成。说明：
-    *（1）每个元素长度不超过20字符。
-    *（2）最多4个元素
-    */
+     * 生成停止标识。当模型生成结果以stop中某个元素结尾时，停止文本生成。说明：
+     *（1）每个元素长度不超过20字符。
+     *（2）最多4个元素
+     */
     stop?: string[];
     /*
-    * 表示最终用户的唯一标识符
-    */
+     * 表示最终用户的唯一标识符
+     */
     user_id?: string;
     extra_parameters?: {
         /**
@@ -318,12 +317,12 @@ export interface CompletionBody {
     };
 }
 
-export interface EmbeddingBody{
+export interface EmbeddingBody {
     /**
      * 输入文本以获取embeddings
      *（1）不能为空List，List的每个成员不能为空字符串
      *（2）文本数量不超过16
-     * (3）每个文本token数不超过384且长度不超过1000个字符 
+     * (3）每个文本token数不超过384且长度不超过1000个字符
      */
     input: string[];
     /**
@@ -338,7 +337,7 @@ export interface EmbeddingBody{
     };
 }
 
-interface EmbeddingData{
+interface EmbeddingData {
     /**
      * 固定值"embedding"
      */
@@ -346,14 +345,14 @@ interface EmbeddingData{
     /**
      * embedding 内容
      */
-    embedding:	number[];
+    embedding: number[];
     /*
-    * 序号
-    */
+     * 序号
+     */
     index: number;
 }
 
-export interface EmbeddingResp{
+export interface EmbeddingResp {
     /**
      * 本轮对话的id
      */
@@ -372,3 +371,7 @@ export interface EmbeddingResp{
      */
     usage: TokenUsage;
 }
+
+export type ReqBody = ChatBody | CompletionBody | EmbeddingBody;
+export type Resp = RespBase | ChatResp | EmbeddingResp;
+export type AsyncIterableType = AsyncIterable<ChatResp | RespBase>;

@@ -11,6 +11,7 @@ DOCS_PATH="${OUTPUT_PATH}/docs_tmp"
 sphinx-apidoc -f -F -M -o "${DOCS_PATH}" -t "${ROOTPATH}/docs/template" "${SCRIPTPATH}/../qianfan" "*test*"
 cp "${ROOTPATH}/README.md" "${DOCS_PATH}"
 cp -r "${ROOTPATH}/docs" "${DOCS_PATH}"
+cp "${ROOTPATH}/go/README.md" "${DOCS_PATH}/README.go.md"
 make -C "${DOCS_PATH}" html
 mv "${DOCS_PATH}" "${OUTPUT_PATH}/docs"
 rm -rf "${DOCS_PATH}"

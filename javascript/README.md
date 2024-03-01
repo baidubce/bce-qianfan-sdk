@@ -113,7 +113,7 @@ async function main() {
           stream: true,
       }, "ERNIE-Bot-turbo");
       for await (const chunk of stream as AsyncIterableIterator<any>) {
-           // process.stdout.write(chunk);
+           // 返回结果
         }
 }
 ```
@@ -149,7 +149,7 @@ async function main() {
         stream: true,
       }, "SQLCoder-7B");
       for await (const chunk of stream as AsyncIterableIterator<any>) {
-          process.stdout.write(chunk);
+          // 返回结果
         }
 }
 main();
@@ -160,7 +160,7 @@ main();
 千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
 
 ```ts
-import {Embedding} from "@baiducloud/qianfan";
+import {Eembedding} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Eembedding();
 

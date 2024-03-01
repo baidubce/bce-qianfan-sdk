@@ -199,6 +199,8 @@ class QfLLMInfo:
     endpoint: str
     required_keys: Set[str] = default_field(set())
     optional_keys: Set[str] = default_field(set())
+    max_input_chars: Optional[int] = default_field(None)
+    max_input_tokens: Optional[int] = default_field(None)
 
 
 class QfRole(Enum):

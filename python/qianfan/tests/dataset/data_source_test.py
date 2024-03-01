@@ -14,7 +14,6 @@
 """
 test for data source
 """
-import json
 import os
 import shutil
 from unittest.mock import patch
@@ -23,7 +22,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from qianfan import get_config
-from qianfan.dataset.consts import QianfanDatasetLocalCacheDir
+from qianfan.dataset import Dataset
+from qianfan.dataset.consts import (
+    QianfanDatasetPackColumnName,
+    QianfanLocalCacheDir,
+)
 from qianfan.dataset.data_source import FileDataSource, FormatType, QianfanDataSource
 from qianfan.resources.console.consts import (
     DataProjectType,
@@ -31,6 +34,20 @@ from qianfan.resources.console.consts import (
     DataStorageType,
     DataTemplateType,
 )
+
+
+def _clean_func():
+    try:
+        shutil.rmtree(QianfanLocalCacheDir)
+    except Exception:
+        return
+
+
+@pytest.fixture(autouse=True, scope="function")
+def clean_cache():
+    _clean_func()
+    yield
+    _clean_func()
 
 
 def test_automatic_detect_file_format():
@@ -47,7 +64,7 @@ def test_automatic_detect_file_format():
             ...
         with open("123", "w"):
             ...
-        with pytest.raises(ValueError, match="file path not found"):
+        with pytest.raises(FileNotFoundError):
             FileDataSource(path="unexised_file").fetch()
         with pytest.raises(ValueError, match="cannot match proper format type for ddl"):
             FileDataSource(path="file.ddl")
@@ -83,7 +100,9 @@ def test_read_from_folder():
         f.write("test_file3")
 
     f = FileDataSource(path="test_dirs")
-    content_list = f.fetch()
+    content_list = f.fetch(using_file_as_element=True).to_pydict()[
+        QianfanDatasetPackColumnName
+    ]
     content_list.sort()
 
     assert content_list == ["test_file1", "test_file2", "test_file3"]
@@ -97,20 +116,23 @@ def test_save_to_folder():
 
     try:
         os.makedirs(folder_path)
+        table = Dataset.create_from_pyobj(
+            {QianfanDatasetPackColumnName: ["this is a data"]}
+        )
 
-        f = FileDataSource(path=folder_path, file_format=FormatType.Text)
-        f.save("this is a data")
+        f = FileDataSource(
+            path=folder_path, file_format=FormatType.Text, save_as_folder=True
+        )
+        f.save(table)
         assert os.path.isdir(folder_path)
         for root, dirs, files in os.walk(folder_path):
             assert len(files) == 1
 
-        file_content = "this is a data"
-
         f = FileDataSource(path=file_name)
-        f.save(file_content)
+        f.save(table)
         with open(file_name) as f:
             content = f.read()
-            assert content == file_content
+            assert content == "this is a data\n"
 
     finally:
         shutil.rmtree(folder_path)
@@ -121,8 +143,11 @@ def test_save_as_folder():
     folder_path = "test_folder"
 
     try:
+        table = Dataset.create_from_pyobj(
+            {QianfanDatasetPackColumnName: ["file1", "file2"]}
+        )
         f = FileDataSource(path=folder_path, save_as_folder=True)
-        f.save(["file1", "file2"])
+        f.save(table)
         for root, dirs, files in os.walk(folder_path):
             assert len(files) == 2
     finally:
@@ -161,7 +186,7 @@ def test_create_bare_qianfan_data_source():
 
 
 def test_create_qianfan_data_source_from_existed():
-    source = QianfanDataSource.get_existed_dataset(12, False)
+    source = QianfanDataSource.get_existed_dataset("12", False)
     assert source.id == "12"
     assert source.storage_region == "bj"
 
@@ -191,18 +216,12 @@ def create_an_empty_qianfan_datasource() -> QianfanDataSource:
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_content_to_bos", return_value=None)
 @patch("qianfan.utils.bos_uploader.BosHelper.upload_file_to_bos", return_value=None)
 def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
+    empty_table = Dataset.create_from_pyobj({QianfanDatasetPackColumnName: ["1"]})
     ds = create_an_empty_qianfan_datasource()
-    with pytest.raises(
-        ValueError, match="can't set 'data' and 'zip_file_path' simultaneously"
-    ):
-        ds.save("1", "2")
-
-    with pytest.raises(ValueError, match="must set either 'data' or 'zip_file_path'"):
-        ds.save()
 
     ds.storage_type = DataStorageType.PublicBos
     with pytest.raises(NotImplementedError):
-        ds.save("1")
+        ds.save(empty_table)
 
     ds = create_an_empty_qianfan_datasource()
     config = get_config()
@@ -212,25 +231,31 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
 
     with pytest.raises(ValueError):
         ds.save(
-            "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
+            empty_table,
+            sup_storage_id="1",
+            sup_storage_path="/sdasd/",
+            sup_storage_region="bj",
         )
 
     ds.ak = "1"
 
     with pytest.raises(ValueError):
-        ds.save("1")
+        ds.save(empty_table)
 
     ds.sk = "2"
-    assert ds.save("1")
+    assert ds.save(empty_table)
 
     config.ACCESS_KEY = "1"
     config.SECRET_KEY = "2"
 
     assert ds.save(
-        "1", sup_storage_id="1", sup_storage_path="/sdasd/", sup_storage_region="bj"
+        empty_table,
+        sup_storage_id="1",
+        sup_storage_path="/sdasd/",
+        sup_storage_region="bj",
     )
     assert ds.save(
-        zip_file_path="1",
+        empty_table,
         sup_storage_id="1",
         sup_storage_path="/sdasd/",
         sup_storage_region="bj",
@@ -238,11 +263,6 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
 
 
 def test_qianfan_data_source_load():
-    try:
-        ds = create_an_empty_qianfan_datasource()
-        content = ds.fetch()[0]
-        assert len(json.loads(content, strict=False)) == 1
-        content = ds.fetch()[0]
-        assert json.loads(content, strict=False)[0]["response"] == [["no response"]]
-    finally:
-        shutil.rmtree(QianfanDatasetLocalCacheDir)
+    ds = create_an_empty_qianfan_datasource()
+    content = ds.fetch().to_pylist()[0]
+    assert content["response"] == [["no response"]]

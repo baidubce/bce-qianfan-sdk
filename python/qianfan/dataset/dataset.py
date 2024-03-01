@@ -14,25 +14,17 @@
 """
 dataset core concept, a wrap of data processing, data transmission and data validation
 """
-import codecs
-import csv
 import functools
-import io
-import json
-import os
 from copy import deepcopy
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
-from zipfile import ZipFile
 
 import pyarrow.json
 from pyarrow import Table as PyarrowTable
-from pyarrow import csv as pyarrow_csv
 from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
 from qianfan.common import Prompt
-from qianfan.dataset import FormatType
 from qianfan.dataset.consts import (
     FirstTokenLatencyColumnName,
     LLMOutputColumnName,
@@ -40,7 +32,6 @@ from qianfan.dataset.consts import (
     NewInputPromptColumnName,
     OldReferenceColumnName,
     QianfanDataGroupColumnName,
-    QianfanDatasetPackColumnName,
     RequestLatencyColumnName,
 )
 from qianfan.dataset.data_source import (
@@ -49,6 +40,7 @@ from qianfan.dataset.data_source import (
     FileDataSource,
     QianfanDataSource,
 )
+from qianfan.dataset.data_source.utils import upload_data_from_bos_to_qianfan
 from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
     _batch_do_on_service,
@@ -66,14 +58,13 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
-from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.errors import ValidationError
 from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import (
     DataTemplateType,
 )
-from qianfan.utils import log_debug, log_error, log_info
-from qianfan.utils.utils import generate_letter_num_random_id
+from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.utils.bos_uploader import BosHelper
 
 
 # 装饰器，用来阻塞部分对云上数据集（非本地）的操作请求
@@ -92,7 +83,7 @@ class Dataset(Table):
 
     def __init__(
         self,
-        inner_table: PyarrowTable,
+        inner_table: Optional[PyarrowTable] = None,
         inner_data_source_cache: Optional[DataSource] = None,
         inner_schema_cache: Optional[Schema] = None,
         input_columns: Optional[List[str]] = None,
@@ -105,8 +96,8 @@ class Dataset(Table):
         Init a Dataset Object
 
         Args:
-            inner_table (PyarrowTable):
-                a pyarrow.Table object wrapped by Table
+            inner_table (Optional[PyarrowTable]):
+                a pyarrow.Table object wrapped by Table or None
             inner_data_source_cache (Optional[DataSource]):
                 a data source cache where the dataset was loaded from
             inner_schema_cache (Optional[Schema]):
@@ -147,201 +138,102 @@ class Dataset(Table):
         cls,
         source: DataSource,
         schema: Optional[Schema],
-        is_a_text_file_an_entry: bool = False,
         **kwargs: Any,
     ) -> "Dataset":
         """
         内部封装的从数据源导出字节流并构建数据集的方法
-        当设置了 is_a_text_file_an_entry = True，
-        且是读取 txt 格式的文件夹数据，则此时将
-        一个文件中的所有文本作为一条数据，而不是
-        按照一行文本作为一条数据
         """
-        if isinstance(source, QianfanDataSource) and not source.download_when_init:
-            # 如果是云上的数据集，则直接创建空表。
-            # 云上数据集的相关处理能力暂不可用
-            log_info("a cloud dataset has been created")
-            return cls(
-                inner_table=pyarrow.Table.from_pylist([{"place_holder": 1}]),
-                inner_data_source_cache=source,
-                inner_schema_cache=schema,
+        table = source.load(**kwargs)
+
+        # 特判 is_download_to_local 的兼容
+        if table is not None and isinstance(source, QianfanDataSource):
+            content_path = source.get_cache_content()
+            source = FileDataSource(
+                path=content_path, file_format=source.format_type(), save_as_folder=True
             )
-
-        # 从数据源获取字符串格式的数据集。以及数据集的解析格式
-        content = source.fetch(**kwargs)
-        format_type = source.format_type()
-
-        log_debug(
-            f"content (type: {format_type}) fetched from data source: \n{content}"
-        )
-
-        if isinstance(content, str):
-            content = [content]
-
-        if format_type == FormatType.Json:
-            json_dict_list: List[Dict[str, Any]] = []
-            for str_content in content:
-                data_py_rep = json.loads(str_content, strict=False)
-                # 如果导入的是一个字典，则需要转换成列表才能被读取
-                if not isinstance(data_py_rep, list):
-                    data_py_rep = [data_py_rep]
-                json_dict_list.extend(data_py_rep)
-            pyarrow_table = pyarrow.Table.from_pylist(json_dict_list)
-        elif format_type == FormatType.Jsonl:
-            json_data_list: List[Dict[str, Any]] = []
-            for str_content in content:
-                tmp_list = [
-                    json.loads(line, strict=False)
-                    for line in str_content.split("\n")
-                    if line
-                ]
-                json_data_list.extend(tmp_list)
-
-            if not json_data_list:
-                raise ValueError("no data in jsonline file")
-            if isinstance(json_data_list[0], list):
-                pyarrow_table = _construct_table_from_nest_sequence(json_data_list)
-            elif isinstance(json_data_list[0], dict):
-                # 如果读取的是一个 Json 字典的列表，则正常存储，此时行列的处理能力可用
-                pyarrow_table = pyarrow.Table.from_pylist(json_data_list)
-            else:
-                error = TypeError(
-                    f"unknown table element type: {type(json_data_list[0])}"
-                )
-                log_error(str(error))
-                raise error
-        elif format_type == FormatType.Csv:
-            # csv 不支持嵌套格式
-            csv_data: List[Dict[str, Any]] = []
-            for str_content in content:
-                string_buffer = io.StringIO(
-                    str_content.strip(codecs.BOM_UTF8.decode(encoding="utf-8"))
-                )
-                tmp_data = [row for row in csv.DictReader(string_buffer)]
-                csv_data.extend(tmp_data)
-
-            pyarrow_table = pyarrow.Table.from_pylist(csv_data)
-        elif format_type == FormatType.Text:
-            # 如果是纯文本，则放置在 _pack 一列下
-            line_data: List[str] = []
-            for str_content in content:
-                # 如果指定了按照文件为粒度进行读取，
-                # 则此时一行数据就是一个文本中的所有文件
-                if is_a_text_file_an_entry:
-                    line_data.append(str_content)
-                else:
-                    line_data.extend(str_content.split("\n"))
-            pyarrow_table = pyarrow.Table.from_pydict(
-                {QianfanDatasetPackColumnName: line_data}
-            )
-        else:
-            error = ValueError(f"unknown format type: {format_type}")
-            log_error(str(error))
-            raise error
 
         return cls(
-            inner_table=pyarrow_table.combine_chunks(),  # 性能优化，combine_chunks()
+            inner_table=table,
             inner_data_source_cache=source,
             inner_schema_cache=schema,
             **kwargs,
         )
 
-    def _to_source(self, source: DataSource, **kwargs: Any) -> bool:
+    def _to_source(self, source: DataSource, **kwargs: Any) -> Optional[PyarrowTable]:
         """内部封装的，将数据集序列化并导出字节流到数据源的方法"""
-        format_type = source.format_type()
+        # 重置，不然会重复加载
+        if isinstance(source, QianfanDataSource):
+            source.download_when_init = None
 
-        log_info(f"export as format: {format_type}")
+        # 如果是保存到本地
+        if isinstance(source, FileDataSource):
+            og_table: Table
 
-        if format_type == FormatType.Json:
-            # 如果是 json，则直接导出，此时不关注内部是否嵌套。
-            dict_list = self.inner_table.to_pylist()
-            return source.save(json.dumps(dict_list, ensure_ascii=False), **kwargs)
-
-        elif format_type == FormatType.Jsonl:
-            list_of_json: List[str] = []
-
-            # 如果是 Jsonl，则需要处理所有可能的情况
-            if self.is_dataset_packed():
-                log_info("enter packed deserialization logic")
-                data_list = self.col_list(QianfanDatasetPackColumnName)[
-                    QianfanDatasetPackColumnName
-                ]
-
-                for entity in data_list:
-                    list_of_json.append(json.dumps(entity, ensure_ascii=False))
-            elif self.is_dataset_grouped():
-                log_info("enter grouped deserialization logic")
-                self._squash_group_number()
-                compo_list: List[List[Dict[str, Any]]] = []
-                for row in self.inner_table.to_pylist():
-                    group_index = row[QianfanDataGroupColumnName]
-                    while group_index >= len(compo_list):
-                        compo_list.append([])
-                    row.pop(QianfanDataGroupColumnName)
-                    compo_list[group_index].append(row)
-
-                for elem in compo_list:
-                    list_of_json.append(json.dumps(elem, ensure_ascii=False))
-            elif isinstance(source, QianfanDataSource):
-                # 导出到千帆且非嵌套时需要使用特殊格式，只支持文本类数据
-                log_info("enter qianfan deserialization logic")
-                dict_list = self.inner_table.to_pylist()
-                for elem in dict_list:
-                    list_of_json.append(f"[{json.dumps(elem, ensure_ascii=False)}]")
+            if self.inner_table:
+                og_table = self
+            elif self.inner_data_source_cache:
+                pa_table = self.inner_data_source_cache.fetch(**kwargs)
+                assert pa_table
+                og_table = Table(inner_table=pa_table)
             else:
-                log_info("enter else logic")
-                dict_list = self.inner_table.to_pylist()
-                for elem in dict_list:
-                    list_of_json.append(json.dumps(elem, ensure_ascii=False))
-            if isinstance(source, FileDataSource) and source.save_as_folder:
-                return source.save(list_of_json, **kwargs)
-            else:
-                return source.save("\n".join(list_of_json), **kwargs)
-
-        elif format_type == FormatType.Csv:
-            bytes_stream_buffer = io.BytesIO()
-            bytes_stream_buffer.write(codecs.BOM_UTF8)
-            pyarrow_csv.write_csv(self.inner_table, bytes_stream_buffer)
-            return source.save(bytes_stream_buffer.getvalue().decode("utf-8"), **kwargs)
-
-        elif format_type == FormatType.Text:
-            # 导出为纯文本时，列的数量不可大于 1
-            if self.column_number() > 1:
-                error = ValueError(
-                    "cannot export dataset to pure text if the number of column is"
-                    " greater than 1"
+                err_msg = (
+                    "can't get table because both inner_table and"
+                    " inner_data_source_cache are empty"
                 )
-                log_error(str(error))
-                raise error
-            result_list = list(self.inner_table.to_pydict().values())[0]
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
-            if isinstance(source, (QianfanDataSource, BosDataSource)):
-                tmp_zip_file_name = (
-                    f"tmp_zip_file_{generate_letter_num_random_id()}.zip"
+            # 特判，因为从千帆导出来的数据，格式是一定的，用户乱指定也没有用
+            if isinstance(self.inner_data_source_cache, QianfanDataSource):
+                log_info(
+                    f"change local file format {source.file_format} to qianfan file"
+                    f" format {self.inner_data_source_cache.format_type()}"
                 )
+                source.file_format = self.inner_data_source_cache.format_type()
 
-                try:
-                    with ZipFile(tmp_zip_file_name, mode="w") as tmp_zip:
-                        for i in range(len(result_list)):
-                            tmp_zip.writestr(
-                                f"generic_text_file_{i}.txt", data=result_list[i]
-                            )
+            source.save(og_table, **kwargs)
+            return og_table.inner_table
 
-                    result = source.save(zip_file_path=tmp_zip_file_name, **kwargs)
-                    return result
-                finally:
-                    if os.path.exists(tmp_zip_file_name):
-                        os.remove(tmp_zip_file_name)
+        # 如果是从本地转到其它源
+        if isinstance(self.inner_data_source_cache, FileDataSource):
+            source.save(self, **kwargs)
+            return source.load(**kwargs)
 
-            if isinstance(source, FileDataSource) and source.save_as_folder:
-                return source.save(result_list, **kwargs)
-            else:
-                return source.save("\n".join(result_list), **kwargs)
+        # 特判 Bos 到千帆
+        if isinstance(self.inner_data_source_cache, BosDataSource) and isinstance(
+            source, QianfanDataSource
+        ):
+            bos_helper = BosHelper(region=self.inner_data_source_cache.region)
+            upload_data_from_bos_to_qianfan(
+                bos_helper,
+                self.inner_data_source_cache.bos_file_path.find(".zip") != -1,
+                source.id,
+                self.inner_data_source_cache.bucket,
+                self.inner_data_source_cache.bos_file_path,
+                **kwargs,
+            )
 
-        else:
-            error = ValueError(f"unknown format type: {format_type}")
-            log_error(str(error))
-            raise error
+            return None
+
+        # 千帆到 Bos 暂不支持
+        if isinstance(self.inner_data_source_cache, QianfanDataSource) and isinstance(
+            source, BosDataSource
+        ):
+            err_msg = "can't save a qianfan dataset into bos"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        # 其它情况可以尝试一下，然后捕捉报错
+        try:
+            source.save(self, **kwargs)
+            return source.load(**kwargs)
+        except Exception as e:
+            err_msg = (
+                f"saving dataset from {type(self.inner_data_source_cache)} to"
+                f" {type(source)} has occurred an error: {e}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
     @classmethod
     def _from_args_to_source(
@@ -390,19 +282,20 @@ class Dataset(Table):
         log_info("no datasource was constructed")
         return None
 
-    def _set_qianfan_default_io_column(self) -> None:
-        cache_data_source = self.inner_data_source_cache
-        if not isinstance(cache_data_source, QianfanDataSource):
+    def _set_qianfan_default_io_column(self, source: DataSource) -> None:
+        if not isinstance(source, QianfanDataSource):
             return
 
-        if cache_data_source.template_type in [
+        template_type = source.template_type
+
+        if template_type in [
             DataTemplateType.NonSortedConversation,
             DataTemplateType.SortedConversation,
             DataTemplateType.QuerySet,
         ]:
             self.input_columns = ["prompt"]
 
-        if cache_data_source.template_type in [
+        if template_type in [
             DataTemplateType.NonSortedConversation,
             DataTemplateType.SortedConversation,
         ]:
@@ -504,12 +397,13 @@ class Dataset(Table):
         table = cls._from_source(source, schema, **kwargs)
 
         # 校验
-        if schema and not schema.validate(table):
+        if schema and table.inner_table and not schema.validate(table):
             error = ValidationError("validate failed when initialize dataset")
             log_error(str(error))
             raise error
 
-        table._set_qianfan_default_io_column()
+        # 设置默认的数据列
+        table._set_qianfan_default_io_column(source)
 
         if table.is_dataset_grouped() and not organize_data_as_group:
             table.pack()
@@ -524,9 +418,9 @@ class Dataset(Table):
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
-        replace_source: bool = False,
+        replace_source: Optional[bool] = None,
         **kwargs: Any,
-    ) -> bool:
+    ) -> "Dataset":
         """
         Write data to source
         if a schema has been passed,
@@ -549,8 +443,9 @@ class Dataset(Table):
                 default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
-            replace_source: (bool):
-                if replace the original source, default to False
+            replace_source: (Optional[bool]):
+                This parameter has been set as deprecated.
+                if replace the original source, default to None
             kwargs (Any): optional arguments
 
         Returns:
@@ -563,7 +458,6 @@ class Dataset(Table):
                 qianfan_dataset_id=qianfan_dataset_id,
                 qianfan_dataset_create_args=qianfan_dataset_create_args,
                 bos_source_args=bos_source_args,
-                is_download_to_local=False,
                 **kwargs,
             )
 
@@ -592,10 +486,33 @@ class Dataset(Table):
             kwargs["is_annotated"] = schema.is_annotated
 
         # 开始写入数据
-        res = self._to_source(source, **kwargs)  # noqa
-        if res and replace_source:
-            self.inner_data_source_cache = source
-        return res
+        table = self._to_source(source, **kwargs)  # noqa
+        new_ds = Dataset(
+            inner_table=table,
+            inner_data_source_cache=source,
+            inner_schema_cache=schema,
+            input_columns=self.input_columns,
+            reference_column=self.reference_column,
+            eval_input_column=self.eval_input_column,
+            eval_llm_output_column=self.eval_llm_output_column,
+            **kwargs,
+        )
+
+        # 保持一致
+        if new_ds.is_dataset_grouped():
+            new_ds.pack()
+
+        # 特判兼容原来的 replace_source 逻辑
+        if replace_source is not None:
+            log_warn('parameter "replace_source" has been set as deprecated')
+
+        if not replace_source:
+            return new_ds
+
+        self.inner_table = new_ds.inner_table
+        self.inner_data_source_cache = new_ds.inner_data_source_cache
+        self.inner_schema_cache = new_ds.inner_schema_cache
+        return self
 
     @classmethod
     def create_from_pyobj(
@@ -659,9 +576,7 @@ class Dataset(Table):
         )
 
     def _is_dataset_located_in_qianfan(self) -> bool:
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
-            return False
-        return not self.inner_data_source_cache.download_when_init
+        return isinstance(self.inner_data_source_cache, QianfanDataSource)
 
     def _is_dataset_generic_text(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
@@ -699,7 +614,7 @@ class Dataset(Table):
             str: etl task id
         """
 
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+        if not self.is_dataset_located_in_qianfan():
             # 如果数据集不是已经在千帆上，则直接失败，因为被处理的数据集必须在云上
             # 目前不支持自动先将本地数据集上传到云端，处理完成后再同步回本地这种操作。
             err_msg = "can't process a non-qianfan dataset on qianfan"
@@ -1222,7 +1137,7 @@ class Dataset(Table):
             Dataset: batch result contained in dataset
         """
 
-        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+        if not self.is_dataset_located_in_qianfan():
             err_msg = "can't start a batch run task on non-qianfan dataset"
             log_error(err_msg)
             raise ValueError(err_msg)

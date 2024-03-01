@@ -502,7 +502,7 @@ class EvaluationManager(BaseModel):
                 raise ValueError(err_msg)
 
             # 检查数据集是否在云上
-            if not isinstance(dataset.inner_data_source_cache, QianfanDataSource):
+            if not dataset.is_dataset_located_in_qianfan():
                 err_msg = "dataset must be in qianfan, not local storage"
                 log_error(err_msg)
                 raise ValueError(err_msg)
@@ -580,12 +580,16 @@ class EvaluationManager(BaseModel):
                 # 返回指标信息
                 return EvaluationResult(
                     result_dataset=Dataset.load(
-                        FileDataSource(path=local_cache_file_path)
+                        FileDataSource(path=local_cache_file_path),
+                        dialect="excel",
                     ),
                     metrics=metric_list,
                 )
             finally:
                 if os.path.exists(local_cache_file_path):
-                    os.remove(local_cache_file_path)
+                    try:
+                        os.remove(local_cache_file_path)
+                    except Exception:
+                        ...
 
         return None

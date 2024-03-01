@@ -143,7 +143,7 @@ def save(
 
         bucket, path = parse_bos_path(bos_path)
         with console.status("Saving dataset to platform..."):
-            src_dataset.save(
+            src_dataset = src_dataset.save(
                 qianfan_dataset_create_args={
                     "name": dataset_name,
                     "template_type": DataTemplateType[dataset_template_type],
@@ -151,7 +151,6 @@ def save(
                     "storage_id": bucket,
                     "storage_path": path,
                 },
-                replace_source=True,
             )
         data_src = src_dataset.inner_data_source_cache
         assert isinstance(data_src, QianfanDataSource)

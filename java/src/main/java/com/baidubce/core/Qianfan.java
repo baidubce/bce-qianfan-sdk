@@ -16,43 +16,32 @@
 
 package com.baidubce.core;
 
-import com.baidubce.core.auth.Auth;
-import com.baidubce.core.auth.IAuth;
 import com.baidubce.core.builder.ChatBuilder;
 import com.baidubce.core.builder.CompletionBuilder;
 import com.baidubce.core.builder.EmbeddingBuilder;
-import com.baidubce.model.ApiErrorResponse;
+import com.baidubce.model.BaseRequest;
 import com.baidubce.model.chat.ChatRequest;
 import com.baidubce.model.chat.ChatResponse;
 import com.baidubce.model.completion.CompletionRequest;
 import com.baidubce.model.completion.CompletionResponse;
-import com.baidubce.model.constant.ModelEndpoint;
 import com.baidubce.model.embedding.EmbeddingRequest;
 import com.baidubce.model.embedding.EmbeddingResponse;
-import com.baidubce.model.exception.ApiException;
-import com.baidubce.model.exception.QianfanException;
-import com.baidubce.model.exception.RequestException;
-import com.baidubce.util.Json;
-import com.baidubce.util.StringUtils;
-import com.baidubce.util.http.HttpClient;
-import com.baidubce.util.http.HttpRequest;
-import com.baidubce.util.http.HttpResponse;
 
 import java.util.Iterator;
 
 public class Qianfan {
-    private final IAuth auth;
+    private final QianfanClient client;
 
     public Qianfan() {
-        this.auth = Auth.create();
+        this.client = new QianfanClient();
     }
 
     public Qianfan(String accessKey, String secretKey) {
-        this.auth = Auth.create(accessKey, secretKey);
+        this.client = new QianfanClient(accessKey, secretKey);
     }
 
     public Qianfan(String type, String accessKey, String secretKey) {
-        this.auth = Auth.create(type, accessKey, secretKey);
+        this.client = new QianfanClient(type, accessKey, secretKey);
     }
 
     public ChatBuilder chatCompletion() {
@@ -60,12 +49,12 @@ public class Qianfan {
     }
 
     public ChatResponse chatCompletion(ChatRequest request) {
-        return request(request.getEndpoint(), request, ChatResponse.class);
+        return request(request, ChatResponse.class);
     }
 
     public Iterator<ChatResponse> chatCompletionStream(ChatRequest request) {
         request.setStream(true);
-        return requestStream(request.getEndpoint(), request, ChatResponse.class);
+        return requestStream(request, ChatResponse.class);
     }
 
     public CompletionBuilder completion() {
@@ -73,12 +62,12 @@ public class Qianfan {
     }
 
     public CompletionResponse completion(CompletionRequest request) {
-        return request(request.getEndpoint(), request, CompletionResponse.class);
+        return request(request, CompletionResponse.class);
     }
 
     public Iterator<CompletionResponse> completionStream(CompletionRequest request) {
         request.setStream(true);
-        return requestStream(request.getEndpoint(), request, CompletionResponse.class);
+        return requestStream(request, CompletionResponse.class);
     }
 
     public EmbeddingBuilder embedding() {
@@ -86,65 +75,14 @@ public class Qianfan {
     }
 
     public EmbeddingResponse embedding(EmbeddingRequest request) {
-        return request(request.getEndpoint(), request, EmbeddingResponse.class);
+        return request(request, EmbeddingResponse.class);
     }
 
-    private <T> T request(String endpoint, Object body, Class<T> responseClazz) {
-        String url = ModelEndpoint.getUrl(endpoint);
-        try {
-            HttpRequest request = HttpClient.request().post(url).body(body);
-            HttpResponse<T> resp = auth.signRequest(request).executeJson(responseClazz);
-            if (resp.getCode() != 200) {
-                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
-            }
-            ApiErrorResponse errorResp = Json.deserialize(resp.getStringBody(), ApiErrorResponse.class);
-            if (StringUtils.isNotEmpty(errorResp.getErrorMsg())) {
-                throw new ApiException("Request failed with api error", errorResp);
-            }
-            return resp.getBody();
-        } catch (QianfanException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
-        }
+    public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
+        return client.request(request, responseClass);
     }
 
-    private <T> Iterator<T> requestStream(String endpoint, Object body, Class<T> responseClazz) {
-        String url = ModelEndpoint.getUrl(endpoint);
-        try {
-            HttpRequest request = HttpClient.request().post(url).body(body);
-            HttpResponse<Iterator<String>> resp = auth.signRequest(request).executeSSE();
-            if (resp.getCode() != 200) {
-                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
-            }
-            return new StreamIterator<>(resp.getBody(), responseClazz);
-        } catch (QianfanException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
-        }
-    }
-
-    private static class StreamIterator<T> implements Iterator<T> {
-        private final Iterator<String> sseIterator;
-        private final Class<T> responseClazz;
-
-        public StreamIterator(Iterator<String> sseIterator, Class<T> responseClazz) {
-            this.sseIterator = sseIterator;
-            this.responseClazz = responseClazz;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return sseIterator.hasNext();
-        }
-
-        @Override
-        public T next() {
-            String event = sseIterator.next().replaceFirst("data: ", "");
-            // Skip sse empty line
-            sseIterator.next();
-            return Json.deserialize(event, responseClazz);
-        }
+    public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+        return client.requestStream(request, responseClass);
     }
 }

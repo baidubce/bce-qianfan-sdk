@@ -27,7 +27,6 @@ public class Auth {
     public static final String ENV_QIANFAN_AK = "QIANFAN_AK";
     public static final String ENV_QIANFAN_SK = "QIANFAN_SK";
 
-
     private Auth() {
     }
 

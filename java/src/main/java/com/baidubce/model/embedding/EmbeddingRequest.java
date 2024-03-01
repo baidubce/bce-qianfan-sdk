@@ -16,32 +16,15 @@
 
 package com.baidubce.model.embedding;
 
+import com.baidubce.model.BaseRequest;
+
 import java.util.List;
 
-public class EmbeddingRequest {
-    /**
-     * 模型的调用端点
-     */
-    private String endpoint;
-
+public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
     /**
      * 输入文本以获取embedding
      */
     private List<String> input;
-
-    /**
-     * 表示最终用户的唯一标识符
-     */
-    private String userId;
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public EmbeddingRequest setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
-    }
 
     public List<String> getInput() {
         return input;
@@ -49,15 +32,6 @@ public class EmbeddingRequest {
 
     public EmbeddingRequest setInput(List<String> input) {
         this.input = input;
-        return this;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public EmbeddingRequest setUserId(String userId) {
-        this.userId = userId;
         return this;
     }
 }

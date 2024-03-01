@@ -36,7 +36,7 @@ import java.util.Iterator;
 class QianfanClient {
     private static final String SDK_VERSION = "0.0.1";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
-    private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_";
+    private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
 
     private final IAuth auth;

@@ -72,8 +72,7 @@ class FileDataSource(DataSource, BaseModel):
             # 如果是第一次写入，则需要加上 header 部分
             if index == 0:
                 csv_writer.writeheader()
-
-            csv_writer.writerows(data)
+            csv_writer.writerows(data)  # type: ignore
             fd.write(string_stream_buffer.getvalue())
 
         elif self.file_format == FormatType.Text:

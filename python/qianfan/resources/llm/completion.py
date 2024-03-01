@@ -159,6 +159,22 @@ class Completion(BaseResource):
                     "system",
                 },
             ),
+            "ERNIE-Speed-128k": QfLLMInfo(
+                endpoint="/chat/ernie_speed_128k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                },
+                max_input_chars=507904,
+                max_input_tokens=126976,
+            ),
             "EB-turbo-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},

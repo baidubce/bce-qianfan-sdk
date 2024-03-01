@@ -269,4 +269,7 @@ def test_qianfan_data_source_load():
         content = ds.fetch().to_pylist()[0]
         assert content["response"] == [["no response"]]
     finally:
-        shutil.rmtree(QianfanDatasetLocalCacheDir)
+        try:
+            shutil.rmtree(QianfanDatasetLocalCacheDir)
+        except Exception as e:
+            ...

@@ -16,14 +16,11 @@
 
 package com.baidubce.model.chat;
 
+import com.baidubce.model.BaseRequest;
+
 import java.util.List;
 
-public class ChatRequest {
-    /**
-     * 模型的调用端点
-     */
-    private String endpoint;
-
+public class ChatRequest extends BaseRequest<ChatRequest> {
     /**
      * 聊天上下文信息
      */
@@ -75,11 +72,6 @@ public class ChatRequest {
     private String responseFormat;
 
     /**
-     * 表示最终用户的唯一标识符
-     */
-    private String userId;
-
-    /**
      * 一个可触发函数的描述列表
      */
     private List<Function> functions;
@@ -93,15 +85,6 @@ public class ChatRequest {
      * 是否为流式请求
      */
     private Boolean stream;
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public ChatRequest setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
-    }
 
     public List<Message> getMessages() {
         return messages;
@@ -190,15 +173,6 @@ public class ChatRequest {
 
     public ChatRequest setResponseFormat(String responseFormat) {
         this.responseFormat = responseFormat;
-        return this;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public ChatRequest setUserId(String userId) {
-        this.userId = userId;
         return this;
     }
 

@@ -22,7 +22,6 @@ import com.google.gson.GsonBuilder;
 
 public class Json {
     private static final Gson GSON = new GsonBuilder()
-            .serializeNulls()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
 

@@ -26,7 +26,7 @@ public class ModelEndpoint {
 
     private static final String DEFAULT_CHAT_MODEL = "ERNIE-Bot-turbo";
 
-    private static final String DEFAULT_COMPLETION_MODEL = "ERNIE-Bot-turbo";
+    private static final String DEFAULT_COMPLETION_MODEL = "CodeLlama-7b-Instruct";
 
     private static final String DEFAULT_EMBEDDING_MODEL = "Embedding-V1";
 

@@ -16,14 +16,11 @@
 
 package com.baidubce.model.completion;
 
+import com.baidubce.model.BaseRequest;
+
 import java.util.List;
 
-public class CompletionRequest {
-    /**
-     * 模型的调用端点
-     */
-    private String endpoint;
-
+public class CompletionRequest extends BaseRequest<CompletionRequest> {
     /**
      * 请求信息
      */
@@ -55,23 +52,9 @@ public class CompletionRequest {
     private List<String> stop;
 
     /**
-     * 表示最终用户的唯一标识符
-     */
-    private String userId;
-
-    /**
      * 是否为流式请求
      */
     private Boolean stream;
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public CompletionRequest setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
-    }
 
     public String getPrompt() {
         return prompt;
@@ -124,15 +107,6 @@ public class CompletionRequest {
 
     public CompletionRequest setStop(List<String> stop) {
         this.stop = stop;
-        return this;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public CompletionRequest setUserId(String userId) {
-        this.userId = userId;
         return this;
     }
 

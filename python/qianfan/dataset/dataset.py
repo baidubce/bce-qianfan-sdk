@@ -63,7 +63,7 @@ from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import (
     DataTemplateType,
 )
-from qianfan.utils import log_debug, log_error, log_info
+from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
 
 
@@ -418,6 +418,7 @@ class Dataset(Table):
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
+        replace_source: Optional[bool] = None,
         **kwargs: Any,
     ) -> "Dataset":
         """
@@ -442,6 +443,9 @@ class Dataset(Table):
                 default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
+            replace_source: (Optional[bool]):
+                This parameter has been set as deprecated.
+                if replace the original source, default to None
             kwargs (Any): optional arguments
 
         Returns:
@@ -498,7 +502,17 @@ class Dataset(Table):
         if new_ds.is_dataset_grouped():
             new_ds.pack()
 
-        return new_ds
+        # 特判兼容原来的 replace_source 逻辑
+        if replace_source is not None:
+            log_warn('parameter "replace_source" has been set as deprecated')
+
+        if not replace_source:
+            return new_ds
+
+        self.inner_table = new_ds.inner_table
+        self.inner_data_source_cache = new_ds.inner_data_source_cache
+        self.inner_schema_cache = new_ds.inner_schema_cache
+        return self
 
     @classmethod
     def create_from_pyobj(

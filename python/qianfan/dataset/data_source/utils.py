@@ -152,7 +152,9 @@ def _get_cache_file_path_and_check_cache_validity(
     file_name_without_extension_name: str = file_name.split(".")[0]
 
     # 根据绝对路径来创建缓存文件夹
-    cache_path_dir: str = os.path.join(QianfanDatasetLocalCacheDir, dir_path[1:])
+    cache_path_dir: str = os.path.join(
+        QianfanDatasetLocalCacheDir, dir_path[dir_path.find("\\") + 1 :]
+    )
     os.makedirs(cache_path_dir, exist_ok=True)
 
     # 计算源文件的哈希值，默认使用 sha256 算法

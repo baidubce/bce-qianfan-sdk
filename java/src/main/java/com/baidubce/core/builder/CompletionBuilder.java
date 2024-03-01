@@ -20,18 +20,11 @@ import com.baidubce.core.Qianfan;
 import com.baidubce.model.completion.CompletionRequest;
 import com.baidubce.model.completion.CompletionResponse;
 import com.baidubce.model.constant.ModelEndpoint;
-import com.baidubce.model.exception.ValidationException;
 
 import java.util.Iterator;
 import java.util.List;
 
-public class CompletionBuilder {
-    private Qianfan qianfan;
-
-    private String endpoint;
-
-    private String model;
-
+public class CompletionBuilder extends BaseBuilder<CompletionBuilder> {
     private String prompt;
 
     private Double temperature;
@@ -44,23 +37,12 @@ public class CompletionBuilder {
 
     private List<String> stop;
 
-    private String userId;
-
     public CompletionBuilder() {
+        super();
     }
 
     public CompletionBuilder(Qianfan qianfan) {
-        this.qianfan = qianfan;
-    }
-
-    public CompletionBuilder model(String model) {
-        this.model = model;
-        return this;
-    }
-
-    public CompletionBuilder endpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
+        super(qianfan);
     }
 
     public CompletionBuilder prompt(String prompt) {
@@ -93,13 +75,8 @@ public class CompletionBuilder {
         return this;
     }
 
-    public CompletionBuilder userId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
     public CompletionRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, model, endpoint);
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, super.getModel(), super.getEndpoint());
         return new CompletionRequest()
                 .setEndpoint(finalEndpoint)
                 .setPrompt(prompt)
@@ -108,24 +85,15 @@ public class CompletionBuilder {
                 .setTopP(topP)
                 .setPenaltyScore(penaltyScore)
                 .setStop(stop)
-                .setUserId(userId);
+                .setUserId(super.getUserId())
+                .setExtraParameters(super.getExtraParameters());
     }
 
     public CompletionResponse execute() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() to get Request and send it by yourself.");
-        }
-        return qianfan.completion(build());
+        return super.getQianfan().completion(build());
     }
 
     public Iterator<CompletionResponse> executeStream() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() to get Request and send it by yourself.");
-        }
-        return qianfan.completionStream(build());
+        return super.getQianfan().completionStream(build());
     }
 }

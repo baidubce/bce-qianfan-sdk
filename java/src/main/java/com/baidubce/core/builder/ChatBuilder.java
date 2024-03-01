@@ -19,19 +19,12 @@ package com.baidubce.core.builder;
 import com.baidubce.core.Qianfan;
 import com.baidubce.model.chat.*;
 import com.baidubce.model.constant.ModelEndpoint;
-import com.baidubce.model.exception.ValidationException;
 
 import java.util.Iterator;
 import java.util.List;
 
-public class ChatBuilder {
+public class ChatBuilder extends BaseBuilder<ChatBuilder> {
     private final MessageBuilder messageBuilder = new MessageBuilder();
-
-    private Qianfan qianfan;
-
-    private String model;
-
-    private String endpoint;
 
     private Double temperature;
 
@@ -51,27 +44,16 @@ public class ChatBuilder {
 
     private String responseFormat;
 
-    private String userId;
-
     private List<Function> functions;
 
     private ToolChoice toolChoice;
 
     public ChatBuilder() {
+        super();
     }
 
     public ChatBuilder(Qianfan qianfan) {
-        this.qianfan = qianfan;
-    }
-
-    public ChatBuilder model(String model) {
-        this.model = model;
-        return this;
-    }
-
-    public ChatBuilder endpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
+        super(qianfan);
     }
 
     public ChatBuilder addMessage(Message message) {
@@ -159,11 +141,6 @@ public class ChatBuilder {
         return this;
     }
 
-    public ChatBuilder userId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
     public ChatBuilder functions(List<Function> functions) {
         this.functions = functions;
         return this;
@@ -175,7 +152,7 @@ public class ChatBuilder {
     }
 
     public ChatRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, model, endpoint);
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, super.getModel(), super.getEndpoint());
         List<Message> messages = messageBuilder.build();
         return new ChatRequest()
                 .setEndpoint(finalEndpoint)
@@ -189,26 +166,17 @@ public class ChatBuilder {
                 .setEnableCitation(enableCitation)
                 .setMaxOutputTokens(maxOutputTokens)
                 .setResponseFormat(responseFormat)
-                .setUserId(userId)
                 .setFunctions(functions)
-                .setToolChoice(toolChoice);
+                .setToolChoice(toolChoice)
+                .setUserId(super.getUserId())
+                .setExtraParameters(super.getExtraParameters());
     }
 
     public ChatResponse execute() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() to get Request and send it by yourself.");
-        }
-        return qianfan.chatCompletion(build());
+        return super.getQianfan().chatCompletion(build());
     }
 
     public Iterator<ChatResponse> executeStream() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() to get Request and send it by yourself.");
-        }
-        return qianfan.chatCompletionStream(build());
+        return super.getQianfan().chatCompletionStream(build());
     }
 }

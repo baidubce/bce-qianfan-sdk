@@ -20,36 +20,18 @@ import com.baidubce.core.Qianfan;
 import com.baidubce.model.constant.ModelEndpoint;
 import com.baidubce.model.embedding.EmbeddingRequest;
 import com.baidubce.model.embedding.EmbeddingResponse;
-import com.baidubce.model.exception.ValidationException;
 
 import java.util.List;
 
-public class EmbeddingBuilder {
-    private Qianfan qianfan;
-
-    private String model;
-
-    private String endpoint;
-
+public class EmbeddingBuilder extends BaseBuilder<EmbeddingBuilder> {
     private List<String> input;
 
-    private String userId;
-
     public EmbeddingBuilder() {
+        super();
     }
 
     public EmbeddingBuilder(Qianfan qianfan) {
-        this.qianfan = qianfan;
-    }
-
-    public EmbeddingBuilder model(String model) {
-        this.model = model;
-        return this;
-    }
-
-    public EmbeddingBuilder endpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return this;
+        super(qianfan);
     }
 
     public EmbeddingBuilder input(List<String> input) {
@@ -57,25 +39,16 @@ public class EmbeddingBuilder {
         return this;
     }
 
-    public EmbeddingBuilder userId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
     public EmbeddingRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.EMBEDDINGS, model, endpoint);
+        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.EMBEDDINGS, super.getModel(), super.getEndpoint());
         return new EmbeddingRequest()
                 .setEndpoint(finalEndpoint)
                 .setInput(input)
-                .setUserId(userId);
+                .setUserId(super.getUserId())
+                .setExtraParameters(super.getExtraParameters());
     }
 
     public EmbeddingResponse execute() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() to get Request and send it by yourself.");
-        }
-        return qianfan.embedding(build());
+        return super.getQianfan().embedding(build());
     }
 }

@@ -145,8 +145,8 @@ print(ds.filter(filter_func).map(map_func).list())
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
 
-# 加载千帆平台上的数据集，is_download_to_local=False表示不下载数据集到本地，而是直接使用
-ds: Dataset = Dataset.load(qianfan_dataset_id=111, is_download_to_local=False)
+# 加载千帆平台上的数据集
+ds: Dataset = Dataset.load(qianfan_dataset_id="ds-xxx")
 
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。

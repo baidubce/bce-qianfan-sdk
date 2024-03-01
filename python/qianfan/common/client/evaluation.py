@@ -202,7 +202,7 @@ def run(
     At least one evaluator should be enabled.
     Manual evaluator may not be mixed with other evaluators.
     """
-    ds = load_dataset(dataset_id, is_download_to_local=False)
+    ds = load_dataset(dataset_id)
     model_list = [Model(version_id=m) for m in models]
     console = replace_logger_handler()
     evaluators: List[QianfanEvaluator] = []

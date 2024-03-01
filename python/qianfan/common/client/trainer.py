@@ -406,7 +406,7 @@ def finetune(
     ds = None
     if dataset_id is not None:
         ds = Dataset.load(
-            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+            qianfan_dataset_id=dataset_id, does_release=True
         )
     deploy_config = None
     if deploy_name is not None:
@@ -559,7 +559,7 @@ def postpretrain(
     ds = None
     if dataset_id is not None:
         ds = Dataset.load(
-            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
+            qianfan_dataset_id=dataset_id, does_release=True
         )
     deploy_config = None
     if deploy_name is not None:

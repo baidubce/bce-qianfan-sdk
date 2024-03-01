@@ -1544,6 +1544,7 @@ def get_mock_eval_resul():
     sio.writelines(
         [
             "模型名称,模型版本,Prompt问题,模型结果,预期回答,BLEU-4,ROUGE-1,ROUGE-2,ROUGE-L,裁判员模型打分,裁判员模型打分理由",
+            "\n",
             (
                 'ERNIE-Bot-turbo,ERNIE-Bot-turbo-0922,"请根据下面的新闻生成摘要,'
                 " 内容如下：周末采摘杨桃助农，游玩澄迈养生农庄自驾活动，"
@@ -1559,6 +1560,7 @@ def get_mock_eval_resul():
                 "如时间、地点、活动内容和报名方式等，且格式规范，易于理解。因此，"
                 "我认为这个答案应该得到满分。"
             ),
+            "\n",
             (
                 'Llama-2-7B,Qianfan-Chinese-Llama-2-7B,"请根据下面的新闻生成摘要,'
                 " 内容如下：周末采摘杨桃助农，游玩澄迈养生农庄自驾活动，"

@@ -103,13 +103,13 @@ print(ds.filter(filter_func).map(map_func).list())
 
 ```python
 # 导出到本地文件
-ds.save(data_file="path/to/local_file.csv")
+new_ds = ds.save(data_file="path/to/local_file.csv")
 
 # 导出到千帆平台
-ds.save(qianfan_dataset_id="your_dataset_id")
+new_ds = ds.save(qianfan_dataset_id="your_dataset_id")
 
 # 或者导出到它导入的地方
-ds.save()
+new_ds = ds.save()
 ```
 
 恭喜你，已经学会了如何使用千帆 Python SDK 的数据集相关能力。
@@ -181,13 +181,13 @@ ds = Dataset.load(
   file_format=FormatType.Json
 )
 
-ds.save(
+new_ds = ds.save(
   data_file="another/path/to/local_file",
   file_format=FormatType.Csv
 )
 ```
 
-`save` 方法同样支持用户传递文件夹路径，SDK 会自动为导出的文件进行命名，并且按照指定的格式导出（默认为 txt）
+`save` 方法同样支持用户传递文件夹路径并且设置 `save_as_folder` 参数，以将数据集中的单一条目当做文件，导出到指定文件夹目录下，SDK 会自动为导出的文件进行命名。这种导出方式仅支持 `Text` 格式导出，其它格式仍然按照单个文件导出
 
 ```python
 from qianfan.dataset import Dataset, FormatType
@@ -197,9 +197,10 @@ ds = Dataset.load(
   file_format=FormatType.Json
 )
 
-ds.save(
+new_ds = ds.save(
   data_file="path/to/folder",
-  file_format=FormatType.Csv
+  file_format=FormatType.Text,
+  save_as_folder=True,
 )
 ```
 
@@ -233,8 +234,9 @@ from qianfan.dataset import Dataset, FormatType
 from qianfan.dataset.data_source import FileDataSource
 
 file_source = FileDataSource(
-  path="local_file",
-  file_format=FormatType.Json
+  path="local_file_folder",
+  file_format=FormatType.Text,
+  save_as_folder=True,
 )
 
 ds = Dataset.load(
@@ -242,7 +244,15 @@ ds = Dataset.load(
   file_format=FormatType.Json
 )
 
-ds.save(file_source)
+new_ds = ds.save(file_source)
+```
+
+当我们在使用文件数据源作为 `save` 的入参时（传递 `data_file` 作为参数同理），用户还可以指定 `batch_size` 参数，来调整数据集批量写入到文件时的批大小，默认为 100
+
+```python
+new_ds = ds.save(file_source, batch_size=100)
+# 传递路径时 batch_size 依然生效
+new_ds = ds.save(data_file="file.json", batch_size=100)
 ```
 
 ### 千帆平台
@@ -260,15 +270,15 @@ ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
 print(ds_qianfan.list())
 ```
 
-此时 SDK 会将平台上的数据集缓存到当前工作目录中的  `.qianfan_dataset_cache` 文件夹中，免去重复创建带来的重复下载。缓存版本由 SDK 控制且保证最新，用户无需关注。
+此时 SDK 在本地程序中创建了一个指向千帆平台数据集的 `Dataset` 对象，如果用户需要通过 SDK 对千帆平台上的数据集做远端操作，如在线推理 / 评估，或发起在线的数据清洗等，用户可以直接使用该对象进行操作
 
-如果用户不想在创建 `Dataset`  时即进行缓存，可以设置 `is_download_to_local` 为 `False` ，此时用户可以在功能受限的情况下对数据集进行有限的操作
+如果用户想要将数据集下载到本地进行处理，那么用户需要将该数据集对象先保存到本地：
 
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", is_download_to_local=False)
-print(ds_qianfan.list())
+ds_local = Dataset.load(qianfan_dataset_id="your_dataset_id").save(data_file="your_file_path")
+print(ds_local.list())
 ```
 
 #### 导出
@@ -287,10 +297,14 @@ ds_qianfan.save(
   qianfan_dataset_create_args={
     "name": "example_name",
     "template_type": DataTemplateType.NonSortedConversation,
-    "storage_type": DataStorageType.PublicBos
-  }
+    "storage_type": DataStorageType.PrivateBos,
+    "storage_id": "your_bucket_name",
+    "storage_path": "/your_desired_dataset_path/",
+  },
 )
 ```
+
+> 以 `sup` 开头的参数为辅助上传数据集时用到的 Bos 信息。当且仅当目标的千帆数据集使用公共存储（公共 BOS，对应 `DataStorageType.PublicBos`）数据时需要填写，详情见下
 
 + 另一种导出方式是增量导出到已经存在的数据集当中：填写 `save` 函数的 `qianfan_dataset_id` 参数（和 `load` 方法一致）。如果是导出到原本导入的数据集，则可以忽略 `qianfan_dataset_id` 参数。
 
@@ -499,7 +513,7 @@ print(ds[["column_name1", "column_name3"]])
 
 #### 千帆数据集预览
 
-如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `list` 函数或 `[]` 对云上数据集进行本地预览，而无需下载数据。此时返回的是包含云上数据实体的字典列表。可接受的入参类型包括：
+如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，则用户可以通过 `list` 函数或 `[]` 对云上数据集进行本地预览，而无需下载数据。此时返回的是包含云上数据实体的字典列表。可接受的入参类型包括：
 
 + 整数：取指定下标的实体
 + `slice` ：取左闭右开区间内的实体
@@ -507,7 +521,7 @@ print(ds[["column_name1", "column_name3"]])
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
 
 # 单独检视某一实体
 print(ds_qianfan[0])
@@ -559,7 +573,7 @@ ds = ds \
 
 #### 千帆平台的在线数据处理
 
-如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
+如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
 
 ```python
 from qianfan.dataset import Dataset
@@ -570,7 +584,7 @@ from qianfan.dataset.qianfan_data_operators import (
   ReplaceEmails,
 )
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
 
 ds_qianfan.online_data_process([
   RemoveInvisibleCharacter(),

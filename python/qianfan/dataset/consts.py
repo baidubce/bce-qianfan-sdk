@@ -14,9 +14,34 @@
 """
 constants for dataset using
 """
+from pathlib import Path
 
-# 千帆数据集本地缓存文件夹的相对路径
-QianfanDatasetLocalCacheDir = ".qianfan_dataset_cache"
+# 千帆本地缓存文件夹的绝对路径
+QianfanLocalCacheDir = Path.home() / ".qianfan_cache"
+
+# 千帆数据集本地缓存文件夹的绝对路径
+QianfanDatasetLocalCacheDir = QianfanLocalCacheDir / "dataset"
+
+# 千帆数据集下载缓存的存储路径
+QianfanDatasetDownloadingCacheDir = (
+    QianfanDatasetLocalCacheDir / ".qianfan_download_cache"
+)
+
+
+# Bos 数据源使用的缓存目录
+QianfanDatasetBosCacheDir = QianfanDatasetLocalCacheDir / ".bos_cache"
+
+# Bos 数据源使用的上传目录
+QianfanDatasetBosUploadingCacheDir = QianfanDatasetBosCacheDir / "uploading"
+
+# Bos 数据源使用的下载目录
+QianfanDatasetBosDownloadingCacheDir = QianfanDatasetBosCacheDir / "downloading"
+
+# 本地缓存中，元数据的后缀名
+QianfanDatasetMetaInfoExtensionName = ".meta"
+
+# 本地缓存中，缓存文件的后缀名
+QianfanDatasetCacheFileExtensionName = ".arrow"
 
 # 包装成单列表时使用的列名
 QianfanDatasetPackColumnName = "_pack"

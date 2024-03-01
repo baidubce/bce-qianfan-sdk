@@ -405,9 +405,7 @@ def finetune(
     callback = MyEventHandler(console=console)
     ds = None
     if dataset_id is not None:
-        ds = Dataset.load(
-            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
-        )
+        ds = Dataset.load(qianfan_dataset_id=dataset_id, does_release=True)
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:
@@ -558,9 +556,7 @@ def postpretrain(
     callback = MyEventHandler(console=console)
     ds = None
     if dataset_id is not None:
-        ds = Dataset.load(
-            qianfan_dataset_id=dataset_id, is_download_to_local=False, does_release=True
-        )
+        ds = Dataset.load(qianfan_dataset_id=dataset_id, does_release=True)
     deploy_config = None
     if deploy_name is not None:
         if deploy_endpoint_prefix is None:

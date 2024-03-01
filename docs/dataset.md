@@ -297,11 +297,10 @@ ds_qianfan.save(
   qianfan_dataset_create_args={
     "name": "example_name",
     "template_type": DataTemplateType.NonSortedConversation,
-    "storage_type": DataStorageType.PublicBos,
+    "storage_type": DataStorageType.PrivateBos,
+    "storage_id": "your_bucket_name",
+    "storage_path": "/your_desired_dataset_path/",
   },
-    sup_storage_id = "",
-    sup_storage_path = "",
-    sup_storage_region = "",
 )
 ```
 

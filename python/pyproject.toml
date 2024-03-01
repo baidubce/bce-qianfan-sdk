@@ -50,7 +50,10 @@ ltp = { version = "*", optional = true}
 emoji = { version = "*", optional = true}
 sentencepiece = { version = "*", optional = true}
 multiprocess = "*"
-clevercsv = "<=0.8.0"
+clevercsv = [
+    { version = "<=0.8.0", python = "<3.8", optional = true},
+    { version = "*", python = ">=3.8", optional = true }
+]
 ijson = "*"
 
 [tool.poetry.scripts]

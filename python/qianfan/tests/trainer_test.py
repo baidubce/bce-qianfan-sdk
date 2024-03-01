@@ -57,9 +57,7 @@ def test_load_data_action():
     assert isinstance(res, dict)
     assert "datasets" in res
 
-    preset = Dataset.load(
-        qianfan_dataset_id="ds-9cetiuhvnbn4mqs3"
-    )
+    preset = Dataset.load(qianfan_dataset_id="ds-9cetiuhvnbn4mqs3")
 
     res = LoadDataSetAction(
         preset, dataset_template=console_consts.DataTemplateType.NonSortedConversation
@@ -404,9 +402,7 @@ def test_train_config_validate():
 
 
 def test_ppt():
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic"
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -417,9 +413,7 @@ def test_ppt():
 
 
 def test_ppt_with_sft():
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic"
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -449,9 +443,7 @@ def test_all_default_config():
             dataset=sft_ds,
         )
 
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic"
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     for k in DefaultPostPretrainTrainConfigMapping.keys():
         PostPreTrain(
             train_type=k,

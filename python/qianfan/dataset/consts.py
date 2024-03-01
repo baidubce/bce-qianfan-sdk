@@ -15,30 +15,26 @@
 constants for dataset using
 """
 import os.path
+from pathlib import Path
 
 # 千帆本地缓存文件夹的绝对路径
-QianfanLocalCacheDir = os.path.expanduser(os.path.join("~", ".qianfan_cache"))
+QianfanLocalCacheDir = Path.home() / ".qianfan_cache"
 
 # 千帆数据集本地缓存文件夹的绝对路径
-QianfanDatasetLocalCacheDir = os.path.join(QianfanLocalCacheDir, "dataset")
+QianfanDatasetLocalCacheDir = QianfanLocalCacheDir / "dataset"
 
 # 千帆数据集下载缓存的存储路径
-QianfanDatasetDownloadingCacheDir = os.path.join(
-    QianfanDatasetLocalCacheDir, ".qianfan_download_cache"
-)
+QianfanDatasetDownloadingCacheDir = QianfanDatasetLocalCacheDir / ".qianfan_download_cache"
+
 
 # Bos 数据源使用的缓存目录
-QianfanDatasetBosCacheDir = os.path.join(QianfanDatasetLocalCacheDir, ".bos_cache")
+QianfanDatasetBosCacheDir = QianfanDatasetLocalCacheDir / ".bos_cache"
 
 # Bos 数据源使用的上传目录
-QianfanDatasetBosUploadingCacheDir = os.path.join(
-    QianfanDatasetBosCacheDir, "uploading"
-)
+QianfanDatasetBosUploadingCacheDir = QianfanDatasetBosCacheDir / "uploading"
 
 # Bos 数据源使用的下载目录
-QianfanDatasetBosDownloadingCacheDir = os.path.join(
-    QianfanDatasetBosCacheDir, "downloading"
-)
+QianfanDatasetBosDownloadingCacheDir = QianfanDatasetBosCacheDir / "downloading"
 
 # 本地缓存中，元数据的后缀名
 QianfanDatasetMetaInfoExtensionName = ".meta"

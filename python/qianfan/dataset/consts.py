@@ -14,7 +14,6 @@
 """
 constants for dataset using
 """
-import os.path
 from pathlib import Path
 
 # 千帆本地缓存文件夹的绝对路径
@@ -24,7 +23,9 @@ QianfanLocalCacheDir = Path.home() / ".qianfan_cache"
 QianfanDatasetLocalCacheDir = QianfanLocalCacheDir / "dataset"
 
 # 千帆数据集下载缓存的存储路径
-QianfanDatasetDownloadingCacheDir = QianfanDatasetLocalCacheDir / ".qianfan_download_cache"
+QianfanDatasetDownloadingCacheDir = (
+    QianfanDatasetLocalCacheDir / ".qianfan_download_cache"
+)
 
 
 # Bos 数据源使用的缓存目录

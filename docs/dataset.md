@@ -514,7 +514,7 @@ print(ds[["column_name1", "column_name3"]])
 
 #### 千帆数据集预览
 
-如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `list` 函数或 `[]` 对云上数据集进行本地预览，而无需下载数据。此时返回的是包含云上数据实体的字典列表。可接受的入参类型包括：
+如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，则用户可以通过 `list` 函数或 `[]` 对云上数据集进行本地预览，而无需下载数据。此时返回的是包含云上数据实体的字典列表。可接受的入参类型包括：
 
 + 整数：取指定下标的实体
 + `slice` ：取左闭右开区间内的实体
@@ -522,7 +522,7 @@ print(ds[["column_name1", "column_name3"]])
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
 
 # 单独检视某一实体
 print(ds_qianfan[0])
@@ -574,7 +574,7 @@ ds = ds \
 
 #### 千帆平台的在线数据处理
 
-如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，且在 `load` 时或创建数据源时指定了 `is_download_to_local=False` ，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
+如果用来创建 `Dataset` 对象的源数据源是 `QianfanDataSource` 千帆数据源，则用户可以通过 `Dataset` 对象的 `online_data_process` 接口，在千帆平台上发起一个数据清洗任务。`online_data_process` 需要传入清洗时使用的 `operator` 对象列表。具体定义可以在  `qianfan/dataset/data_operator.py` 中找到。一共存在四个大类的 `operator` ，分别对应千帆平台数据清洗时的四个阶段。每个大类下都有一个或多个具体的 `operator` 类可供使用。部分对象提供可选或必选参数进行填写。
 
 ```python
 from qianfan.dataset import Dataset
@@ -585,7 +585,7 @@ from qianfan.dataset.qianfan_data_operators import (
   ReplaceEmails,
 )
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", is_download_to_local=False)
+ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
 
 ds_qianfan.online_data_process([
   RemoveInvisibleCharacter(),

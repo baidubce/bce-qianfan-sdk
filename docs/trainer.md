@@ -18,8 +18,8 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
 
-# 加载千帆平台上的数据集，is_download_to_local=False表示不下载数据集到本地，而是直接使用
-ds: Dataset = Dataset.load(qianfan_dataset_id=111, is_download_to_local=False)
+# 加载千帆平台上的数据集
+ds: Dataset = Dataset.load(qianfan_dataset_id="111")
 
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
@@ -41,7 +41,7 @@ from qianfan.trainer.consts import PeftType
 from qianfan.dataset import Dataset
 
 # 泛文本 数据集
-ds = Dataset.load(qianfan_dataset_id="ds-ag138", is_download_to_local=False)
+ds = Dataset.load(qianfan_dataset_id="ds-ag138")
 
 # postpretrain
 trainer = PostPreTrain(
@@ -54,7 +54,7 @@ print(trainer.output)
 
 
 # sft数据集
-sft_ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x", is_download_to_local=False)
+sft_ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
 ppt_sft_trainer = LLMFinetune(
     train_type="ERNIE-Speed",
     dataset=sft_ds,

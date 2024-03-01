@@ -227,6 +227,7 @@ def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None
 
 def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
     reader_type = type(reader)
+    group_index_start = 0
     for elem_list in reader:
         if (
             reader_type == CsvReader
@@ -236,7 +237,8 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
         ):
             table = pyarrow.Table.from_pylist(elem_list)
         elif reader_type == JsonLineReader and isinstance(elem_list[0], list):
-            table = _construct_table_from_nest_sequence(elem_list)
+            table = _construct_table_from_nest_sequence(elem_list, group_index_start)
+            group_index_start += len(elem_list)
         else:
             err_msg = "unsupported format when reading file as dataset"
             log_error(err_msg)

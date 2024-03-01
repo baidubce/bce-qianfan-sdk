@@ -291,9 +291,20 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         """
 
         # 构建出的新 table 会按照首行的 key 作为 columns
+        # 现在处理都是按照单行为单位处理，
+        # 这样子做的目的是确保每次处理时只会有一条数据被读入到内存中，
+        # 防止一次性读入全部数据，丧失 Memory-Map 的含义
+        # 后续需要优化成 Batch + 多线程的形式来优化数据集处理速度
+
+        # TODO 但是还缺失了结果数据集的 mmap 能力，这个需要再看下怎么解决
+
+        # 如果数据集是被 pack 起来的，则按照一行作为一个列表，传递给 op 函数
         if self._inner_table_is_packed():
             new_list: List[Union[List[Dict[str, Any]], str]] = []
-            for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
+            for row_index in range(self.table.num_rows):
+                row = self.table.take([row_index]).to_pylist()[0][
+                    QianfanDatasetPackColumnName
+                ]
                 returned_data = op(row)
                 if not returned_data:
                     log_warn("a row has been deleted from table")
@@ -307,6 +318,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 new_list.append(returned_data)
 
             return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: new_list})
+        # 反之，则按照正常的一个行为一个字典传递给 op 函数
         else:
             new_table: List[Dict[str, Any]] = []
             is_grouped = self._inner_table_is_grouped()
@@ -345,7 +357,10 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
 
         selection_masks: List[bool] = []
         if self._inner_table_is_packed():
-            for row in self.table.column(QianfanDatasetPackColumnName).to_pylist():
+            for row_index in range(self.table.num_rows):
+                row = self.table.take([row_index]).to_pylist()[0][
+                    QianfanDatasetPackColumnName
+                ]
                 flag = op(row)
                 if flag is None:
                     raise ValueError("cant return None")

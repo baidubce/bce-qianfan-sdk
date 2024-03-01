@@ -32,6 +32,9 @@ test: clean install
 	$(MAKE) -C python test
 	$(MAKE) -C go test
 
+test_ntbk: clean install
+	$(MAKE) -C python test_ntbk func_call=$(func_call)
+
 mock: 
 	bash ./python/scripts/run_mock_server.sh
 

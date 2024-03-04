@@ -48,7 +48,10 @@ public class ModelEndpoint {
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot", "completions");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-4", "completions_pro");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-8k", "ernie_bot_8k");
+        CHAT_MODEL_ENDPOINTS.put("ernie-3.5-4k-0205", "ernie-3.5-4k-0205");
+        CHAT_MODEL_ENDPOINTS.put("ernie-3.5-8k-0205", "ernie-3.5-8k-0205");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed", "ernie_speed");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed-128k", "ernie_speed");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-turbo-AI", "ai_apaas");
         CHAT_MODEL_ENDPOINTS.put("EB-turbo-AppBuilder", "ai_apaas");
         CHAT_MODEL_ENDPOINTS.put("BLOOMZ-7B", "bloomz_7b1");
@@ -63,6 +66,7 @@ public class ModelEndpoint {
         CHAT_MODEL_ENDPOINTS.put("Qianfan-Chinese-Llama-2-13B", "qianfan_chinese_llama_2_13b");
         CHAT_MODEL_ENDPOINTS.put("ChatLaw", "chatlaw");
         CHAT_MODEL_ENDPOINTS.put("Yi-34B-Chat", "yi_34b_chat");
+        CHAT_MODEL_ENDPOINTS.put("Mixtral-8x7B-Instruct", "mixtral_8x7b_instruct");
 
         COMPLETION_MODEL_ENDPOINTS.put("SQLCoder-7B", "sqlcoder_7b");
         COMPLETION_MODEL_ENDPOINTS.put("CodeLlama-7b-Instruct", "codellama_7b_instruct");

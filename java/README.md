@@ -30,7 +30,7 @@ export QIANFAN_SK=your_sk
 
 也可以在代码中通过如下方式配置
 
-```go
+```java
 Qianfan qianfan = new Qianfan(Auth.TYPE_OAUTH, "your_ak", "your_sk");
 ```
 
@@ -40,10 +40,10 @@ Qianfan qianfan = new Qianfan(Auth.TYPE_OAUTH, "your_ak", "your_sk");
 
 示例如下：
 
-```go
+```java
 ChatResponse response = new Qianfan().chatCompletion()
         .model("ERNIE-Bot-4") // 使用model指定预置模型
-        // .endpoint("/chat/completions_pro") 也可以使用endpoint指定任意模型 (二选一)
+        // .endpoint("completions_pro") // 也可以使用endpoint指定任意模型 (二选一)
         .addMessage("user", "你好") // 添加用户消息 (此方法可以调用多次，以实现多轮对话的消息传递)
         .temperature(0.7) // 自定义超参数
         .execute(); // 发起请求
@@ -54,7 +54,7 @@ System.out.println(response.getResult());
 
 示例如下：
 
-```go
+```java
 new Qianfan().chatCompletion()
         .model("ERNIE-Bot-4")
         .addMessage("user", "你好")
@@ -66,7 +66,7 @@ new Qianfan().chatCompletion()
 
 对于不需要多轮对话，仅需要根据prompt进行补全的场景来说，用户可以使用 `completion` 来完成这一任务。
 
-```go
+```java
 CompletionResponse response = new Qianfan().completion()
         .model("CodeLlama-7b-Instruct")
         // 与Chat类似，但通过prompt传入指令
@@ -77,7 +77,7 @@ System.out.println(response.getResult());
 
 也可以调用 `executeStream` 方法实现流式返回
 
-```go
+```java
 Iterator<CompletionResponse> response = new Qianfan().completion()
         .model("CodeLlama-7b-Instruct")
         .prompt("hello")
@@ -91,7 +91,7 @@ while (response.hasNext()) {
 
 千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
 
-```go
+```java
 List<String> inputs = new ArrayList<>();
 inputs.add("今天的晚饭好吃吗");
 inputs.add("今日晚餐味道咋样");

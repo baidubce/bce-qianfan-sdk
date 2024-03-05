@@ -102,6 +102,12 @@ class HttpClient extends EventEmitter {
     public async establishSSEConnection(options: AxiosRequestConfig): Promise<AsyncIterable<any>> {
         const {url, headers, data} = options;
         try {
+            /**
+             * NodeJS V18 原生的 fetch 定义 Connection header 会报错
+             * @see https://github.com/nodejs/undici/blob/1f2cca68f0608e31eb02f0d08956786dd1260ef9/lib/core/request.js
+             * @see https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name
+             */
+            delete headers.Connection;
             const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(
                 await fetch(url, {
                     method: 'POST',

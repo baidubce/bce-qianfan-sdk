@@ -32,6 +32,7 @@ from qianfan.dataset.consts import (
     NewInputPromptColumnName,
     OldReferenceColumnName,
     QianfanDataGroupColumnName,
+    QianfanDatasetPackColumnName,
     RequestLatencyColumnName,
 )
 from qianfan.dataset.data_source import (
@@ -58,6 +59,7 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.dataset.table import Table
+from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
 from qianfan.errors import ValidationError
 from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import (
@@ -541,11 +543,30 @@ class Dataset(Table):
             Dataset: a dataset instance
         """
         if isinstance(data, list):
-            return cls(
-                inner_table=pyarrow.Table.from_pylist(data).combine_chunks(),
-                inner_schema_cache=schema,
-                **kwargs,
-            )
+            if isinstance(data[0], dict):
+                return cls(
+                    inner_table=pyarrow.Table.from_pylist(data).combine_chunks(),
+                    inner_schema_cache=schema,
+                    **kwargs,
+                )
+            elif isinstance(data[0], list):
+                return cls(
+                    inner_table=_construct_packed_table_from_nest_sequence(data),
+                    inner_schema_cache=schema,
+                    **kwargs,
+                )
+            elif isinstance(data[0], str):
+                return cls(
+                    inner_table=pyarrow.Table.from_pydict(
+                        {QianfanDatasetPackColumnName: data}
+                    ),
+                    inner_schema_cache=schema,
+                    **kwargs,
+                )
+            else:
+                err_msg = f"unsupported element in list: {type(data[0])}"
+                log_error(err_msg)
+                raise ValueError(err_msg)
         else:
             return cls(
                 inner_table=pyarrow.Table.from_pydict(data).combine_chunks(),

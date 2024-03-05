@@ -289,12 +289,14 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
     for elem_list in reader:
         if (
             reader_type == CsvReader
-            or reader_type == JsonReader
             or reader_type == TextReader
+            or (reader_type == JsonReader and isinstance(elem_list[0], dict))
             or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
         ):
             table = pyarrow.Table.from_pylist(elem_list)
-        elif reader_type == JsonLineReader and isinstance(elem_list[0], list):
+        elif (
+            reader_type == JsonLineReader or reader_type == JsonReader
+        ) and isinstance(elem_list[0], list):
             table = _construct_packed_table_from_nest_sequence(elem_list)
         elif reader_type == MapperReader:
             if isinstance(elem_list[0], (list, str)):

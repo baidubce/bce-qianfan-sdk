@@ -87,11 +87,6 @@ class ChatClient(object):
         self.console = replace_logger_handler()
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
-        if len(self.clients) != 1 and len(self.inference_args) != 0:
-            print_warn_msg(
-                "Model arguments are not available when there are multiple models."
-            )
-            self.inference_args = {}
         self.debug = debug
 
     def single_model_response(
@@ -359,6 +354,11 @@ def chat_entry(
         ),
         rich_help_panel=MODEL_ARGUMENTS_PANEL,
     ),
+    top_k: Optional[int] = typer.Option(
+        None,
+        help="Number of tokens to sample from the top_k distribution.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
     penalty_score: Optional[float] = typer.Option(
         None,
         help="Penalty scores can be applied to discourage repetition.",
@@ -372,6 +372,16 @@ def chat_entry(
     stop: Optional[str] = typer.Option(
         None,
         help="Stop words. Use comma to split multiple stop words.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    max_output_tokens: Optional[int] = typer.Option(
+        None,
+        help="Maximum number of tokens to output.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    response_format: Optional[str] = typer.Option(
+        None,
+        help="Response format (e.g. json_object / text).",
         rich_help_panel=MODEL_ARGUMENTS_PANEL,
     ),
     disable_search: Optional[bool] = typer.Option(
@@ -400,8 +410,11 @@ def chat_entry(
 
     add_if_not_none("temperature", temperature)
     add_if_not_none("top_p", top_p)
+    add_if_not_none("top_k", top_k)
     add_if_not_none("penalty_score", penalty_score)
     add_if_not_none("system", system)
+    add_if_not_none("max_output_tokens", max_output_tokens)
+    add_if_not_none("response_format", response_format)
     add_if_not_none("disable_search", disable_search)
     add_if_not_none("enable_citation", enable_citation)
 

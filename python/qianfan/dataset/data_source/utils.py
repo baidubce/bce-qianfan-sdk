@@ -150,7 +150,11 @@ def _create_map_arrow_file(
     )
     tmp_arrow_file_path = os.path.join(
         tmp_folder_path,
-        f"{file_name}_{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{QianfanDatasetCacheFileExtensionName}",
+        (
+            f"{file_name}_"
+            f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            f"{QianfanDatasetCacheFileExtensionName}"
+        ),
     )
 
     _write_table_to_arrow_file(tmp_arrow_file_path, reader)
@@ -190,7 +194,7 @@ def _construct_buffer_folder_path_and_file_name(
     file_name_without_extension_name: str = file_name.split(".")[0]
 
     # 根据绝对路径来创建缓存文件夹
-    cache_path_dir: str = os.path.join(base_path, dir_path[dir_path.find("\\") + 1 :])
+    cache_path_dir: str = os.path.join(base_path, dir_path[dir_path.find(os.sep) + 1 :])
     os.makedirs(cache_path_dir, exist_ok=True)
 
     return cache_path_dir, file_name_without_extension_name
@@ -266,6 +270,8 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
     stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
 
+    log_info(f"start to write arrow table to {cache_file_path}")
+
     for table in _build_table_from_reader(reader):
         assert isinstance(table, pyarrow.Table)
         if stream_writer is None:
@@ -273,6 +279,8 @@ def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None
 
         stream_writer.write_table(table)
 
+    assert stream_writer
+    stream_writer.close()
     return
 
 

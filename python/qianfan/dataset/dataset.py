@@ -71,8 +71,13 @@ from qianfan.utils.bos_uploader import BosHelper
 def _online_except_decorator(func: Callable) -> Callable:
     @functools.wraps(func)
     def inner(dataset: Any, *args: Any, **kwargs: Any) -> Any:
-        if dataset._is_dataset_located_in_qianfan():  # noqa
-            raise Exception()
+        if isinstance(dataset.inner_data_source_cache, QianfanDataSource) or isinstance(
+            dataset.inner_data_source_cache, BosDataSource
+        ):  # noqa
+            raise Exception(
+                "can't do process on dataset "
+                f"which is loaded from {type(dataset.inner_data_source_cache)}"
+            )  # noqa
         return func(dataset, *args, **kwargs)
 
     return inner
@@ -578,6 +583,9 @@ class Dataset(Table):
     def _is_dataset_located_in_qianfan(self) -> bool:
         return isinstance(self.inner_data_source_cache, QianfanDataSource)
 
+    def _is_dataset_local(self) -> bool:
+        return isinstance(self.inner_data_source_cache, FileDataSource)
+
     def _is_dataset_generic_text(self) -> bool:
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
             return False
@@ -725,18 +733,19 @@ class Dataset(Table):
     # 直接调用 Table 对象的接口方法
     # 这些接口不支持用在云端数据集上
     @_online_except_decorator
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
         """
         map on dataset
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
         assert isinstance(self.inner_data_source_cache, FileDataSource)
-        return super().map(op, path=self.inner_data_source_cache.path)
+        return super().map(op, path=self.inner_data_source_cache.path, **kwargs)
 
     @_online_except_decorator
     def filter(self, op: Callable[[Any], bool]) -> Self:
@@ -846,22 +855,40 @@ class Dataset(Table):
         Returns:
             Any: dataset row list
         """
-        if not self.is_dataset_located_in_qianfan():
+        if self._is_dataset_local():
             log_info(f"list local dataset data by {by}")
             return super().list(by)
-        else:
+        elif self.is_dataset_located_in_qianfan():
             return _list_cloud_data(self.inner_data_source_cache, by, **kwargs)
+        else:
+            try:
+                return super().list(by)
+            except Exception:
+                err_msg = (
+                    "can't list dataset from data source:"
+                    f" {type(self.inner_data_source_cache)}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
     def row_number(self) -> int:
-        if (
-            isinstance(self.inner_data_source_cache, QianfanDataSource)
-            and not self.inner_data_source_cache.download_when_init
-        ):
+        if self.is_dataset_located_in_qianfan():
+            assert isinstance(self.inner_data_source_cache, QianfanDataSource)
             return Data.get_dataset_info(self.inner_data_source_cache.id)["result"][
                 "versionInfo"
             ]["entityCount"]
-        else:
+        elif self._is_dataset_local():
             return super().row_number()
+        else:
+            try:
+                return super().row_number()
+            except Exception:
+                err_msg = (
+                    "can't get row number from data source:"
+                    f" {type(self.inner_data_source_cache)}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
     def __getitem__(self, key: Any) -> Any:
         if (
@@ -991,6 +1018,72 @@ class Dataset(Table):
             Self: A brand-new Dataset with new name
         """
         return super().col_renames(new_names)
+
+    @_online_except_decorator
+    def column_number(self) -> int:
+        """
+        get dataset column count。
+
+        Returns:
+            int: column count。
+
+        """
+        return super().column_number()
+
+    @_online_except_decorator
+    def pack(self, **kwargs: Any) -> bool:
+        """
+        pack all group into 1 row
+        and make table array-like with single column
+
+        Args:
+            **kwargs (Any): other arguments
+
+        Returns:
+            bool: whether packing succeeded
+        """
+        if isinstance(self.inner_data_source_cache, FileDataSource):
+            return super().pack(path=self.inner_data_source_cache.path, **kwargs)
+        else:
+            return super().pack(**kwargs)
+
+    @_online_except_decorator
+    def unpack(self, **kwargs: Any) -> bool:
+        """
+        unpack all element in the row "_pack"
+        make sure the element in the column "_pack"
+        is Sequence[Dict[str, Any]]
+
+        Args:
+            **kwargs (Any): other arguments
+
+        Returns:
+            bool: whether unpacking succeeded
+        """
+        if isinstance(self.inner_data_source_cache, FileDataSource):
+            return super().unpack(path=self.inner_data_source_cache.path, **kwargs)
+        else:
+            return super().unpack(**kwargs)
+
+    @_online_except_decorator
+    def to_pydict(self) -> Dict:
+        """
+        convert dataset to dict
+
+        Returns:
+            Dict: a dict
+        """
+        return super().to_pydict()
+
+    @_online_except_decorator
+    def to_pylist(self) -> List:
+        """
+        convert dataset to list
+
+        Returns:
+            List: a list
+        """
+        return super().to_pylist()
 
     @property
     @_online_except_decorator

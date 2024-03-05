@@ -290,7 +290,11 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             raise ValueError(f"unsupported key type {type(by)} when get row from table")
 
     def map(
-        self, op: Callable[[Any], Any], batch_size: int = 100, **kwargs: Any
+        self,
+        op: Callable[[Any], Any],
+        batch_size: int = 100,
+        path: str = "./default_path",
+        **kwargs: Any,
     ) -> Self:
         """
         map on pyarrow table's row
@@ -298,6 +302,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         Args:
             op (Callable[[Any], Any]): handler used to map
             batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
             **kwargs (Any): other arguments
 
         Returns:
@@ -363,7 +368,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         from qianfan.dataset.data_source.utils import _create_map_arrow_file
 
         return _create_map_arrow_file(
-            **kwargs, mapper_closure=_mapper_closure, chunk_size=batch_size
+            path=path, **kwargs, mapper_closure=_mapper_closure, chunk_size=batch_size
         )
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
@@ -630,6 +635,7 @@ class Table(Addable, Listable, Processable):
         if not self.is_dataset_grouped():
             log_warn("squash group number when table isn't grouped")
             return
+
         self.inner_table = self.inner_table.sort_by(QianfanDataGroupColumnName)
         group_column_list = self.col_list(QianfanDataGroupColumnName)[
             QianfanDataGroupColumnName
@@ -652,10 +658,17 @@ class Table(Addable, Listable, Processable):
 
         return
 
-    def pack(self) -> bool:
+    def pack(
+        self, batch_size: int = 100, path: str = "./default_path", **kwargs: Any
+    ) -> bool:
         """
         pack all group into 1 row
         and make table array-like with single column
+
+        Args:
+            batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
+            **kwargs (Any): other arguments
 
         Returns:
             bool: whether packing succeeded
@@ -674,38 +687,67 @@ class Table(Addable, Listable, Processable):
 
         self._squash_group_number()
 
+        # 添加用于定位错误的 _index 列，并且按照压缩后的组号重排数据
         inner_index = "_index"
         group_ordered_table: pyarrow.Table = self.inner_table.append_column(
             inner_index, [list(range(self.row_number()))]
         ).sort_by(QianfanDataGroupColumnName)
 
-        result_list: List[List[Dict[str, Any]]] = []
-        for row in group_ordered_table.to_pylist():
-            group_index = row[QianfanDataGroupColumnName]
-            if group_index < 0:
-                log_error(
-                    f"row {row[inner_index]} has illegal group value:"
-                    f" {row[QianfanDataGroupColumnName]}"
-                )
-                return False
+        def _pack_closure() -> Generator[Any, None, None]:
+            # 记录当前处理的组号，从 0 开始
+            current_group_index = 0
+            # 当前组别的数据缓存
+            group_data: List[Dict[str, Any]] = []
 
-            row.pop(inner_index)
-            row.pop(QianfanDataGroupColumnName)
+            for batch_index in range(0, group_ordered_table.num_rows, batch_size):
+                rows = group_ordered_table.slice(batch_index, batch_size).to_pylist()
 
-            while group_index >= len(result_list):
-                result_list.append([])
-            result_list[group_index].append(row)
+                for i in range(len(rows)):
+                    group_index = rows[i][QianfanDataGroupColumnName]
+                    if group_index < 0:
+                        err_msg = (
+                            f"row {rows[i][inner_index]} has illegal group value:"
+                            f" {rows[i][QianfanDataGroupColumnName]}"
+                        )
+                        log_error(err_msg)
+                        raise ValueError(err_msg)
 
-        self.inner_table = pyarrow.Table.from_pydict(
-            {QianfanDatasetPackColumnName: result_list}
+                    rows[i].pop(inner_index)
+                    rows[i].pop(QianfanDataGroupColumnName)
+
+                    # 当读完所有当前组的数据后，返回一次
+                    if group_index != current_group_index:
+                        current_group_index = group_index
+                        yield group_data
+                        group_data = []
+
+                    group_data.append(rows[i])
+
+            # 结束后再把剩下没有返回的给丢出去
+            yield group_data
+
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        self.inner_table = _create_map_arrow_file(
+            path=path,
+            chunk_size=max(batch_size // 10, 1),
+            **kwargs,
+            mapper_closure=_pack_closure,
         )
         return True
 
-    def unpack(self) -> bool:
+    def unpack(
+        self, batch_size: int = 100, path: str = "./default_path", **kwargs: Any
+    ) -> bool:
         """
         unpack all element in the row "_pack"
         make sure the element in the column "_pack"
         is Sequence[Dict[str, Any]]
+
+        Args:
+            batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
+            **kwargs (Any): other arguments
 
         Returns:
             bool: whether unpacking succeeded
@@ -731,8 +773,24 @@ class Table(Addable, Listable, Processable):
             log_warn(f"dataset has element not supported: {element}")
             return False
 
-        data_list = self.to_pydict()[QianfanDatasetPackColumnName]
-        self.inner_table = _construct_table_from_nest_sequence(data_list)
+        def _unpack_closure() -> Generator[Any, None, None]:
+            for batch_index in range(0, self.inner_table.num_rows, batch_size):
+                rows = self.inner_table.slice(batch_index, batch_size).to_pydict()[
+                    QianfanDatasetPackColumnName
+                ]
+                for i in range(len(rows)):
+                    returned_data = _construct_table_from_nest_sequence(
+                        rows[i], batch_index + i
+                    )
+
+                    for data in returned_data:
+                        yield data
+
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        self.inner_table = _create_map_arrow_file(
+            path=path, **kwargs, mapper_closure=_unpack_closure, chunk_size=batch_size
+        )
         return True
 
     # 直接调用 Table 对象的接口方法都默认是在行上做处理

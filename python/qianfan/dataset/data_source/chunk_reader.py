@@ -18,7 +18,7 @@ import io
 import json
 import os.path
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import ijson
 from clevercsv import stream_table
@@ -175,3 +175,17 @@ class TextReader(BaseReader):
             return self._get_an_element(index)
 
         return {QianfanDatasetPackColumnName: content}
+
+
+class MapperReader(BaseReader):
+    """
+    专门用于封装 Table 的 Map 函数作为一个 Reader
+    方便对外输出为一个 Arrow 文件并保存
+    """
+
+    def __init__(self, mapper_closure: Callable, chunk_size: int = 100, **kwargs: Any):
+        super().__init__(chunk_size, **kwargs)
+        self.mapper_closure = mapper_closure()
+
+    def _get_an_element(self, index: int) -> Any:
+        return next(self.mapper_closure)

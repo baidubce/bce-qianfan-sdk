@@ -40,12 +40,12 @@ class DataSource(ABC):
     @abstractmethod
     def save(self, table: Table, **kwargs: Any) -> bool:
         """
-        Export the pyarrow.Table to the data source
+        Export the Table to the data source
         and return
         whether the import was successful or failed
 
         Args:
-            table (pyarrow.Table): table need to be saved
+            table (Table): table need to be saved
             **kwargs (Any): optional arguments
 
         Returns:

@@ -14,7 +14,17 @@
 """
 wrapper for pyarrow.Table
 """
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pyarrow
 import pyarrow.compute as pc
@@ -279,12 +289,16 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         else:
             raise ValueError(f"unsupported key type {type(by)} when get row from table")
 
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(
+        self, op: Callable[[Any], Any], batch_size: int = 100, **kwargs: Any
+    ) -> Self:
         """
         map on pyarrow table's row
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            batch_size (int): batch size of concurrent processing
+            **kwargs (Any): other arguments
 
         Returns:
             Self: a new pyarrow table
@@ -296,53 +310,61 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         # 防止一次性读入全部数据，丧失 Memory-Map 的含义
         # 后续需要优化成 Batch + 多线程的形式来优化数据集处理速度
 
-        # TODO 但是还缺失了结果数据集的 mmap 能力，这个需要再看下怎么解决
-
         # 如果数据集是被 pack 起来的，则按照一行作为一个列表，传递给 op 函数
         if self._inner_table_is_packed():
-            new_list: List[Union[List[Dict[str, Any]], str]] = []
-            for row_index in range(self.table.num_rows):
-                row = self.table.take([row_index]).to_pylist()[0][
-                    QianfanDatasetPackColumnName
-                ]
-                returned_data = op(row)
-                if not returned_data:
-                    log_warn("a row has been deleted from table")
-                    continue
-                if not isinstance(returned_data, (list, str)):
-                    raise ValueError(
-                        "returned value isn't list or str, rather"
-                        f" {type(returned_data)}"
-                    )
 
-                new_list.append(returned_data)
+            def _mapper_closure() -> Generator[Any, None, None]:
+                for batch_index in range(0, self.table.num_rows, batch_size):
+                    rows = self.table.slice(batch_index, batch_size).to_pydict()[
+                        QianfanDatasetPackColumnName
+                    ]
+                    for row in rows:
+                        returned_data = op(row)
+                        if not returned_data:
+                            log_warn("a row has been deleted from table")
+                            continue
+                        if not isinstance(returned_data, (list, str)):
+                            raise ValueError(
+                                "returned value isn't list or str, rather"
+                                f" {type(returned_data)}"
+                            )
 
-            return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: new_list})
-        # 反之，则按照正常的一个行为一个字典传递给 op 函数
+                        yield returned_data
+
         else:
-            new_table: List[Dict[str, Any]] = []
             is_grouped = self._inner_table_is_grouped()
 
-            for row_index in range(self.table.num_rows):
-                origin_data = self.table.take([row_index]).to_pylist()[0]
-                input_dict = {key: val for key, val in origin_data.items()}
-                group_number = (
-                    None if not is_grouped else input_dict[QianfanDataGroupColumnName]
-                )
+            def _mapper_closure() -> Generator[Any, None, None]:
+                for batch_index in range(0, self.table.num_rows, batch_size):
+                    rows = self.table.slice(batch_index, batch_size).to_pylist()
+                    for row in rows:
+                        input_dict = {key: val for key, val in row.items()}
+                        group_number = (
+                            None
+                            if not is_grouped
+                            else input_dict[QianfanDataGroupColumnName]
+                        )
+                        returned_data = op(input_dict)
 
-                returned_data = op(input_dict)
-                if not returned_data:
-                    log_warn("a row has been deleted from table")
-                    continue
-                if not isinstance(returned_data, dict):
-                    raise ValueError("returned value isn't dict")
+                        if not returned_data:
+                            log_warn("a row has been deleted from table")
+                            continue
+                        if not isinstance(returned_data, dict):
+                            raise ValueError("returned value isn't dict")
 
-                if is_grouped and QianfanDataGroupColumnName not in returned_data:
-                    returned_data[QianfanDataGroupColumnName] = group_number
+                        if (
+                            is_grouped
+                            and QianfanDataGroupColumnName not in returned_data
+                        ):
+                            returned_data[QianfanDataGroupColumnName] = group_number
 
-                new_table.append(returned_data)
+                        yield returned_data
 
-            return pyarrow.Table.from_pylist(new_table)
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        return _create_map_arrow_file(
+            **kwargs, mapper_closure=_mapper_closure, chunk_size=batch_size
+        )
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
         """
@@ -714,18 +736,19 @@ class Table(Addable, Listable, Processable):
         return True
 
     # 直接调用 Table 对象的接口方法都默认是在行上做处理
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
         """
         map on pyarrow table's row
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
-        self.inner_table = manipulator.map(op)  # noqa
+        self.inner_table = manipulator.map(op, **kwargs)  # noqa
         return self
 
     def filter(self, op: Callable[[Any], bool]) -> Self:

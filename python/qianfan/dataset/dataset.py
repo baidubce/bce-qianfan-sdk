@@ -396,6 +396,9 @@ class Dataset(Table):
 
         table = cls._from_source(source, schema, **kwargs)
 
+        if table.is_dataset_packed() and organize_data_as_group:
+            table.unpack()
+
         # 校验
         if schema and table.inner_table and not schema.validate(table):
             error = ValidationError("validate failed when initialize dataset")
@@ -404,9 +407,6 @@ class Dataset(Table):
 
         # 设置默认的数据列
         table._set_qianfan_default_io_column(source)
-
-        if table.is_dataset_grouped() and not organize_data_as_group:
-            table.pack()
 
         return table
 
@@ -735,7 +735,8 @@ class Dataset(Table):
         Returns:
             Self: Dataset itself
         """
-        return super().map(op)
+        assert isinstance(self.inner_data_source_cache, FileDataSource)
+        return super().map(op, path=self.inner_data_source_cache.path)
 
     @_online_except_decorator
     def filter(self, op: Callable[[Any], bool]) -> Self:

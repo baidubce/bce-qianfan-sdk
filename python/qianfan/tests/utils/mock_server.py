@@ -754,6 +754,8 @@ def finetune_v2():
         Consts.FineTuneJobListAction: finetune_v2_job_list,
         Consts.FineTuneTaskListAction: finetune_v2_task_list,
         Consts.FineTuneTaskDetailAction: finetune_v2_task_detail,
+        Consts.FineTuneStopTaskAction: finetune_v2_stop_task,
+        Consts.FineTuneSupportedModelsAction: finetune_v2_supported_models,
     }
     return action_handler.get(action)(body=json_body)
 
@@ -779,6 +781,8 @@ def finetune_v2_create_task(body):
     job_id = body["jobId"]
     if job_id == MockFailedJobId:
         task_id = MockFailedTaskId
+    global finetune_task_call_times
+    finetune_task_call_times[task_id] = 0
     return json_response(
         {
             "requestId": "aac33135-aed1-416a-8070-c6ecde325df5",
@@ -920,6 +924,77 @@ def finetune_v2_task_detail(body):
         if not is_done:
             resp["result"]["runProgress"] = f"{int(100 * call_times / MAX_CALL_TIMES)}%"
         return json_response(resp)
+
+
+def finetune_v2_stop_task(body):
+    task_id = body.get("taskId", "")
+    resp = {"result": False, "requestId": "754dc75c-3515-4ddd-88ff-59caaaaabbbb"}
+    if task_id in finetune_task_call_times:
+        finetune_task_call_times.pop(task_id)
+        resp["result"] = True
+    return json_response(resp)
+
+
+def finetune_v2_supported_models(body):
+    return json_response(
+        {
+            "requestId": "754dc75c-3515-4ddd-88ff-59caaaaabbbb",
+            "result": [
+                {
+                    "model": "ERNIE-Speed-8K",
+                    "modelType": "text2text",
+                    "supportTrainMode": [
+                        {
+                            "supportParameterScale": [
+                                {
+                                    "parameterScale": "FullFineTuning",
+                                    "supportHyperParameterConfig": [
+                                        {
+                                            "checkType": "range",
+                                            "checkValue": [0.0001, 0.1],
+                                            "default": 0.01,
+                                            "feKey": "weightDecay",
+                                            "type": "float",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "parameterScale": "LoRA",
+                                    "supportHyperParameterConfig": [
+                                        {
+                                            "checkType": "choice",
+                                            "checkValue": ["True", "False"],
+                                            "default": "True",
+                                            "feKey": "loraAllLinear",
+                                            "type": "string",
+                                        },
+                                    ],
+                                },
+                            ],
+                            "trainMode": "SFT",
+                        },
+                        {
+                            "supportParameterScale": [
+                                {
+                                    "parameterScale": "FullFineTuning",
+                                    "supportHyperParameterConfig": [
+                                        {
+                                            "checkType": "choice",
+                                            "checkValue": [4096, 8192],
+                                            "default": 4096,
+                                            "feKey": "maxSeqLen",
+                                            "type": "int",
+                                        },
+                                    ],
+                                }
+                            ],
+                            "trainMode": "PostPretrain",
+                        },
+                    ],
+                }
+            ],
+        }
+    )
 
 
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])

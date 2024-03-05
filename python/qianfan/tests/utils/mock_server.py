@@ -922,6 +922,49 @@ def finetune_v2_task_detail(body):
         return json_response(resp)
 
 
+@app.route(Consts.DatasetV2OfflineBatchInferenceAPI, methods=["POST"])
+def offline_batch_inference_task_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    action_handler = {
+        Consts.DatasetCreateOfflineBatchInferenceAction: (
+            create_offline_batch_inference_task_v2
+        ),
+        Consts.DatasetDescribeOfflineBatchInferenceAction: (
+            describe_offline_batch_inference_task_v2
+        ),
+    }
+    return action_handler.get(action)()
+
+
+def create_offline_batch_inference_task_v2():
+    return json_response(
+        {
+            "requestId": "c1111-944f-4a9a-a12b-cc9o99999",
+            "result": {"taskId": "65e6cd33bb6ef39c5370ec46"},
+        }
+    )
+
+
+def describe_offline_batch_inference_task_v2():
+    return json_response(
+        {
+            "requestId": "b6999-5fdc-495c-b526-ef68145345354",
+            "result": {
+                "taskId": "65e6c354345346",
+                "name": "sdk-test-YK5zI923zN",
+                "description": "",
+                "endpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+                "runStatus": "Done",
+                "inferenceParams": {},
+                "inputBosUri": "bos:/sdk_test/inference-input/",
+                "outputBosUri": "bos:/sdk-test/inference-output/",
+                "createTime": "2024-03-05T07:43:48Z",
+                "finishTime": "2024-03-05T15:44:56Z",
+            },
+        }
+    )
+
+
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])
 @iam_auth_checker
 def create_finetune_job():

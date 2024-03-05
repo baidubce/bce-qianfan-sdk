@@ -163,8 +163,8 @@ def _create_map_arrow_file(
 
 
 def _read_mmap_table_from_arrow_file(arrow_file_path: str) -> pyarrow.Table:
-    mmap_stream = pyarrow.memory_map(arrow_file_path)
-    return pyarrow.ipc.open_stream(mmap_stream).read_all()
+    with pyarrow.memory_map(arrow_file_path) as mmap_stream:
+        return pyarrow.ipc.open_stream(mmap_stream).read_all()
 
 
 def _remove_previous_folder_file(path: str) -> None:

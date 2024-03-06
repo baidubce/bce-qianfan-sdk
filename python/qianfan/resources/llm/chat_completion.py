@@ -478,7 +478,7 @@ class ChatCompletion(BaseResource):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
-        truncate_overlong_msgs: bool = True,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -693,7 +693,7 @@ class ChatCompletion(BaseResource):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
-        truncate_overlong_msgs: bool = True,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """

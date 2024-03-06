@@ -135,7 +135,9 @@ def _get_a_memory_mapped_pyarrow_table(
 ) -> pyarrow.Table:
     reader = _get_reader_class(format_type)(file_path=path, **kwargs)
     cache_file_path = _get_cache_file_path_and_check_cache_validity(path, reader)
-    return _read_mmap_table_from_arrow_file(cache_file_path)
+    table = _read_mmap_table_from_arrow_file(cache_file_path)
+    log_info("has got a memory-mapped table")
+    return table
 
 
 def _create_map_arrow_file(
@@ -163,6 +165,7 @@ def _create_map_arrow_file(
 
 
 def _read_mmap_table_from_arrow_file(arrow_file_path: str) -> pyarrow.Table:
+    log_info(f"start to get memory_map from {arrow_file_path}")
     with pyarrow.memory_map(arrow_file_path) as mmap_stream:
         return pyarrow.ipc.open_stream(mmap_stream).read_all()
 
@@ -194,7 +197,7 @@ def _construct_buffer_folder_path_and_file_name(
     file_name_without_extension_name: str = file_name.split(".")[0]
 
     # 根据绝对路径来创建缓存文件夹
-    cache_path_dir: str = os.path.join(base_path, dir_path[dir_path.find(os.sep) + 1 :])
+    cache_path_dir: str = os.path.join(base_path, dir_path[dir_path.find(os.path.sep) + 1 :])
     os.makedirs(cache_path_dir, exist_ok=True)
 
     return cache_path_dir, file_name_without_extension_name
@@ -210,7 +213,7 @@ def _get_cache_file_path_and_check_cache_validity(
     )
     abs_file_path: str = os.path.abspath(file_path)
 
-    # 计算源文件的哈希值，默认使用 sha256 算法
+    # 计算源文件的哈希值，默认使用 md5 算法
     hash_value: str = _calculate_file_hash(file_path)
 
     # 构造元信息文件路径
@@ -229,6 +232,8 @@ def _get_cache_file_path_and_check_cache_validity(
             return cache_meta.cache_file_path
 
     # 如果不一致，则需要重新更新缓存
+    log_info(f"need create cached arrow file for {abs_file_path}")
+
     cache_file_path = os.path.join(
         cache_path_dir,
         file_name_without_extension_name + QianfanDatasetCacheFileExtensionName,
@@ -253,7 +258,7 @@ def _get_cache_file_path_and_check_cache_validity(
     return cache_file_path
 
 
-def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
+def _calculate_file_hash(file_path: str, hash_algorithm: str = "md5") -> str:
     # 创建哈希对象
     hasher = hashlib.new(hash_algorithm)
 
@@ -261,7 +266,9 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
     with open(file_path, "rb") as file:
         # 逐块读取文件内容并更新哈希对象
         for chunk in iter(lambda: file.read(4096), b""):
-            hasher.update(chunk)
+            result = hasher.digest() + chunk
+            hasher = hashlib.new(hash_algorithm)
+            hasher.update(result)
 
     # 返回计算得到的哈希值
     return hasher.hexdigest()
@@ -281,6 +288,8 @@ def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None
 
     assert stream_writer
     stream_writer.close()
+
+    log_info("writing succeeded")
     return
 
 

@@ -4,11 +4,33 @@
 
     <groupId>com.baidubce</groupId>
     <artifactId>qianfan</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>qianfan</name>
+    <description>The Java SDK for Baidu Qianfan MaaS Platform.</description>
     <url>https://github.com/baidubce/bce-qianfan-sdk</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>bce</id>
+            <organization>Baidu Open Cloud</organization>
+            <organizationUrl>https://cloud.baidu.com/</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/baidubce/bce-qianfan-sdk.git</connection>
+        <developerConnection>scm:git:ssh://github.com:baidubce/bce-qianfan-sdk.git</developerConnection>
+        <url>https://github.com/baidubce/bce-qianfan-sdk/tree/master</url>
+    </scm>
 
     <properties>
         <java.version>1.8</java.version>
@@ -48,6 +70,33 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

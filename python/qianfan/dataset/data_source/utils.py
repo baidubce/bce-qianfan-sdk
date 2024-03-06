@@ -197,7 +197,9 @@ def _construct_buffer_folder_path_and_file_name(
     file_name_without_extension_name: str = file_name.split(".")[0]
 
     # 根据绝对路径来创建缓存文件夹
-    cache_path_dir: str = os.path.join(base_path, dir_path[dir_path.find(os.path.sep) + 1 :])
+    cache_path_dir: str = os.path.join(
+        base_path, dir_path[dir_path.find(os.path.sep) + 1 :]
+    )
     os.makedirs(cache_path_dir, exist_ok=True)
 
     return cache_path_dir, file_name_without_extension_name

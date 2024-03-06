@@ -14,7 +14,7 @@
 
 import * as dotenv from 'dotenv';
 
-import {BASE_HOST, BASE_PATH, API_BASE} from './constant';
+import {BASE_PATH, DEFAULT_CONFIG} from './constant';
 import {ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
@@ -31,13 +31,13 @@ export function getAccessTokenUrl(QIANFAN_AK: string, QIANFAN_SK: string): strin
     return `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${QIANFAN_AK}&client_secret=${QIANFAN_SK}`;
 }
 
-export function getIAMConfig(ak: string, sk: string): IAMConfig {
+export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig {
     return {
         credentials: {
             ak,
             sk,
         },
-        endpoint: BASE_HOST,
+        endpoint: baseUrl,
     };
 }
 
@@ -83,16 +83,17 @@ export const getPath = (
     model: string,
     modelInfoMap: QfLLMInfoMap,
     Authentication: string,
+    api_base: string,
     endpoint: string = '',
     type?: string
 ): string => {
     let path: string;
     if (model && modelInfoMap[model]) {
         const _endpoint = getModelEndpoint(model, modelInfoMap);
-        path = Authentication === 'IAM' ? `${BASE_PATH}${_endpoint}` : `${API_BASE}${_endpoint}`;
+        path = Authentication === 'IAM' ? `${BASE_PATH}${_endpoint}` : `${api_base}${_endpoint}`;
     }
     else if (endpoint && type) {
-        path = Authentication === 'IAM' ? `${BASE_PATH}/${type}/${endpoint}` : `${API_BASE}/${type}/${endpoint}`;
+        path = Authentication === 'IAM' ? `${BASE_PATH}/${type}/${endpoint}` : `${api_base}/${type}/${endpoint}`;
     }
     else {
         throw new Error('Path not found');
@@ -118,7 +119,7 @@ export function readEnvVariable(key: string) {
  * @returns 返回一个字符串类型的键值对对象，包含环境变量
  */
 export function getDefaultConfig(): Record<string, string> {
-    const envVariables = ['QIANFAN_AK', 'QIANFAN_SK', 'QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY'];
+    const envVariables = Object.keys(DEFAULT_CONFIG);
     const obj: Record<string, string> = {};
     for (const key of envVariables) {
         const value = process.env[key];
@@ -126,8 +127,7 @@ export function getDefaultConfig(): Record<string, string> {
             obj[key] = value;
         }
     }
-
-    return obj;
+    return Object.assign({}, DEFAULT_CONFIG, obj);
 }
 
 // 设置环境变量
@@ -148,6 +148,7 @@ export function setEnvVariable(key: string, value: string) {
 export function getPathAndBody(
     model: string,
     modelInfoMap: QfLLMInfoMap,
+    baseUrl: string,
     body?: ReqBody,
     endpoint?: string,
     type?: string
@@ -156,12 +157,29 @@ export function getPathAndBody(
     AKPath: string;
     requestBody: string; // 根据您的实际情况替换成合适的类型
 } {
-    const IAMPath = getPath(model, modelInfoMap, 'IAM', endpoint, type);
-    const AKPath = getPath(model, modelInfoMap, 'AK', endpoint, type);
+    const api_base = baseUrl + BASE_PATH;
+    const IAMPath = getPath(model, modelInfoMap, 'IAM', api_base, endpoint, type);
+    const AKPath = getPath(model, modelInfoMap, 'AK', api_base, endpoint, type);
     const requestBody = getRequestBody(body, packageJson.version);
     return {
         IAMPath,
         AKPath,
         requestBody,
     };
+}
+
+/**
+ * 计算重试延迟时间的函数。
+ *
+ * @param attempt 当前重试尝试的次数。
+ * @param backoff_factor 回避因子，用于控制重试延迟的增长速率。
+ * @param retry_max_wait_interval 最大重试等待时间间隔，确保重试延迟不会超过此值。
+ * @returns 重试延迟时间（毫秒）。
+ */
+export function calculateRetryDelay(
+    attempt: number,
+    backoff_factor: number = 0,
+    retry_max_wait_interval: number = 120000
+): number {
+    return Math.min(retry_max_wait_interval, backoff_factor * Math.pow(2, attempt));
 }

@@ -13,15 +13,26 @@
 // limitations under the License.
 import {APIErrorCode} from './enum';
 
-export const BASE_HOST = 'https://aip.baidubce.com';
+// export const BASE_HOST = 'http://127.0.0.1:5000';
 export const BASE_PATH = '/rpc/2.0/ai_custom/v1/wenxinworkshop';
-export const API_BASE = BASE_HOST + BASE_PATH;
+// export const API_BASE = BASE_HOST + BASE_PATH;
 export const DEFAULT_HEADERS = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
 };
+export const DEFAULT_CONFIG = {
+    QIANFAN_AK: '',
+    QIANFAN_SK: '',
+    QIANFAN_ACCESS_KEY: '',
+    QIANFAN_SECRET_KEY: '',
+    QIANFAN_BASE_URL: 'https://aip.baidubce.com',
+    QIANFAN_LLM_API_RETRY_TIMEOUT: '600000',
+    QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: '0',
+    QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: '120000',
+    QIANFAN_LLM_API_RETRY_COUNT: '1',
+};
 
-export const RETRYCODE = [
+export const RETRY_CODE = [
     APIErrorCode.TPMLimitReached,
     APIErrorCode.ConsoleInternalError,
     APIErrorCode.ServerHighLoad,

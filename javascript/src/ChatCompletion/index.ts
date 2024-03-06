@@ -27,7 +27,14 @@ class ChatCompletion extends BaseClient {
      */
     public async chat(body: ChatBody, model: ChatModel = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
-        const {IAMPath, AKPath, requestBody} = getPathAndBody(model, modelInfoMap, body, this.Endpoint, 'chat');
+        const {IAMPath, AKPath, requestBody} = getPathAndBody(
+            model,
+            modelInfoMap,
+            this.qianfanBaseUrl,
+            body,
+            this.Endpoint,
+            'chat'
+        );
         return this.sendRequest(IAMPath, AKPath, requestBody, stream);
     }
 }

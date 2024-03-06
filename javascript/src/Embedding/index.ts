@@ -25,7 +25,14 @@ class Eembedding extends BaseClient {
      * @returns Promise<Resp | AsyncIterable<Resp>>
      */
     public async embedding(body: EmbeddingBody, model: EmbeddingModel = 'Embedding-V1'): Promise<EmbeddingResp> {
-        const {IAMPath, AKPath, requestBody} = getPathAndBody(model, modelInfoMap, body, this.Endpoint, 'chat');
+        const {IAMPath, AKPath, requestBody} = getPathAndBody(
+            model,
+            modelInfoMap,
+            this. qianfanBaseUrl,
+            body,
+            this.Endpoint,
+            'chat'
+        );
         const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
         return resp as EmbeddingResp;
     }

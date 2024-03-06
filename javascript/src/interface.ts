@@ -34,6 +34,14 @@ export interface AccessTokenResp {
      * access_token 有效期。单位秒，有效期30天
      */
     expires_in: number;
+    /**
+     * 错误码 响应失败时返回该字段，成功时不返回
+     */
+    error?:string;
+    /**
+     * 错误描述信息，帮助理解和解决发生的错误，响应失败时返回该字段，成功时不返回
+     */
+    error_description?: string;
 }
 
 export interface IAMConfig {

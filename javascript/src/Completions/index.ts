@@ -29,7 +29,14 @@ class Completions extends BaseClient {
         model: CompletionModel = 'ERNIE-Bot-turbo'
     ): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
-        const {IAMPath, AKPath, requestBody} = getPathAndBody(model, modelInfoMap, body, this.Endpoint, 'completions');
+        const {IAMPath, AKPath, requestBody} = getPathAndBody(
+            model,
+            modelInfoMap,
+            this.qianfanBaseUrl,
+            body,
+            this.Endpoint,
+            'completions'
+        );
         return this.sendRequest(IAMPath, AKPath, requestBody, stream);
     }
 }

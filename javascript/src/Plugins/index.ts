@@ -13,29 +13,28 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {EmbeddingBody, EmbeddingResp} from '../interface';
-import {modelInfoMap, EmbeddingModel} from './utils';
+import {PluginsBody, PluginsResp} from '../interface';
 import {getPathAndBody} from '../utils';
 
-class Eembedding extends BaseClient {
+class Plugins extends BaseClient {
     /**
-     * 向量化
+     * 插件
      * @param body 请求体
-     * @param model 向量化模型，默认为'Embedding-V1'
-     * @returns Promise<Resp | AsyncIterable<Resp>>
+     * @param model 续写模型，默认为 'ERNIE-Bot-turbo'
+     * @returns 返回 Promise 对象，异步获取续写结果
      */
-    public async embedding(body: EmbeddingBody, model: EmbeddingModel = 'Embedding-V1'): Promise<EmbeddingResp> {
+    public async plugin(
+        body: PluginsBody
+    ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
+        const stream = body.stream ?? false;
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'embeddings',
+            type: 'plugin',
         });
-        const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
-        return resp as EmbeddingResp;
+        return await this.sendRequest(IAMPath, AKPath, requestBody, stream) as PluginsResp | AsyncIterable<PluginsResp>;
     }
 }
 
-export default Eembedding;
+export default Plugins;

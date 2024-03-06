@@ -15,6 +15,8 @@
 import ChatCompletion from './ChatCompletion';
 import Completions from './Completions';
 import Eembedding from './Embedding';
+import Plugins from './Plugins';
+import {Text2Image} from './Images';
 import {setEnvVariable} from './utils';
 
-export {ChatCompletion, Completions, Eembedding, setEnvVariable};
+export {ChatCompletion, Completions, Eembedding, Plugins, Text2Image, setEnvVariable};

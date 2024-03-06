@@ -15,7 +15,7 @@
 import * as dotenv from 'dotenv';
 
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
-import {ChatBody, CompletionBody, EmbeddingBody, IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
+import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
 dotenv.config();
@@ -48,14 +48,17 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  * @param version 版本号
  * @returns 返回JSON格式的字符串
  */
-export function getRequestBody(body: ChatBody | CompletionBody | EmbeddingBody, version: string): string {
-    // 埋点信息
-    body.extra_parameters = {
-        ...body.extra_parameters,
-        request_source: `qianfan_js_sdk_v${version}`,
+export function getRequestBody(body: ReqBody, version: string): string {
+    const modifiedBody = {
+        ...body,
+        extra_parameters: {
+            ...body.extra_parameters,
+            request_source: `qianfan_js_sdk_v${version}`,
+        },
     };
-    return JSON.stringify(body);
+    return JSON.stringify(modifiedBody);
 }
+
 
 /**
  * 获取模型对应的API端点
@@ -79,27 +82,37 @@ export function getModelEndpoint(model: string, modelInfoMap: QfLLMInfoMap): str
 /*
  * 获取请求路径
  */
-export const getPath = (
-    model: string,
-    modelInfoMap: QfLLMInfoMap,
-    Authentication: string,
+export const getPath = ({
+    model,
+    modelInfoMap,
+    Authentication,
+    api_base,
+    endpoint = '',
+    type,
+}: {
+    model?: string,
+    modelInfoMap?: QfLLMInfoMap,
+    Authentication: 'IAM' | 'AK', // 假设 Authentication 只能是 'IAM' 或 'AK'
     api_base: string,
-    endpoint: string = '',
-    type?: string
-): string => {
-    let path: string;
-    if (model && modelInfoMap[model]) {
-        const _endpoint = getModelEndpoint(model, modelInfoMap);
-        path = Authentication === 'IAM' ? `${BASE_PATH}${_endpoint}` : `${api_base}${_endpoint}`;
+    endpoint?: string,
+    type?: string,
+}): string => {
+    if (model && modelInfoMap && modelInfoMap[model]) {
+        const modelEndpoint = getModelEndpoint(model, modelInfoMap);
+        return Authentication === 'IAM'
+            ? `${BASE_PATH}${modelEndpoint}`
+            : `${api_base}${modelEndpoint}`;
     }
     else if (endpoint && type) {
-        path = Authentication === 'IAM' ? `${BASE_PATH}/${type}/${endpoint}` : `${api_base}/${type}/${endpoint}`;
+        const boundary = type === 'plugin' ? '/' : ''; // 考虑将 '/' 的逻辑处理更明确化
+        return Authentication === 'IAM'
+            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
+            : `${api_base}/${type}/${endpoint}${boundary}`;
     }
-    else {
-        throw new Error('Path not found');
-    }
-    return path;
+    throw new Error('Path not found');
+
 };
+
 
 export const castToError = (err: any): Error => {
     if (err instanceof Error) {
@@ -145,21 +158,42 @@ export function setEnvVariable(key: string, value: string) {
  * @param type 请求类型，可选
  * @returns 包含路径和请求体的对象
  */
-export function getPathAndBody(
-    model: string,
-    modelInfoMap: QfLLMInfoMap,
+export function getPathAndBody({
+    model,
+    modelInfoMap,
+    baseUrl,
+    body,
+    endpoint = '',
+    type,
+}: {
+    model?: string,
+    modelInfoMap?: QfLLMInfoMap,
     baseUrl: string,
     body?: ReqBody,
     endpoint?: string,
     type?: string
-): {
+}): {
     IAMPath: string;
     AKPath: string;
-    requestBody: string; // 根据您的实际情况替换成合适的类型
+    requestBody: string;
 } {
     const api_base = baseUrl + BASE_PATH;
-    const IAMPath = getPath(model, modelInfoMap, 'IAM', api_base, endpoint, type);
-    const AKPath = getPath(model, modelInfoMap, 'AK', api_base, endpoint, type);
+    const IAMPath = getPath({
+        model,
+        modelInfoMap,
+        Authentication: 'IAM',
+        api_base,
+        endpoint,
+        type,
+    });
+    const AKPath = getPath({
+        model,
+        modelInfoMap,
+        Authentication: 'AK',
+        api_base,
+        endpoint,
+        type,
+    });
     const requestBody = getRequestBody(body, packageJson.version);
     return {
         IAMPath,

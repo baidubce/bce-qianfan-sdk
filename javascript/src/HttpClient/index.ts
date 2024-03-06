@@ -44,7 +44,6 @@ class HttpClient extends EventEmitter {
     private controller: AbortController;
     private fetchInstance: Fetch;
     private readonly defaultHeaders: Record<string, any> = {
-        // [H.CONNECTION]: 'close',
         [H.CONTENT_TYPE]: 'application/json; charset=UTF-8',
         // 检查是否在浏览器环境中
         [H.USER_AGENT]:

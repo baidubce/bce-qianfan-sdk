@@ -1,5 +1,35 @@
 # 百度千帆大模型平台 Java SDK
 
+## 安装
+
+> 使用千帆JavaSDK，需要Java版本>=8
+
+### Maven
+
+在pom.xml的dependencies中添加依赖
+
+```xml
+<dependency>
+    <groupId>com.baidubce</groupId>
+    <artifactId>qianfan</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+### Gradle
+
+对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖
+
+```kotlin
+implementation("com.baidubce:qianfan:0.0.1")
+```
+
+对于Groovy DSL，在build.gradle的dependencies中添加依赖
+
+```groovy
+implementation 'com.baidubce:qianfan:0.0.1'
+```
+
 ## 如何使用
 
 ### 鉴权

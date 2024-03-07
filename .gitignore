@@ -67,6 +67,9 @@ node_modules
 # Compiled class file
 *.class
 
+# Java
+target/
+
 # IntelliJ IDEA
 *.iml
 .idea

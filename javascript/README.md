@@ -223,14 +223,37 @@ main();
 SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。支持知识库、智慧图问、天气等插件。
 
 ```ts
-import {Plugins} from "@baiducloud/qianfan";
+async function main() {
+    const resp = await client.plugins({
+        query: '深圳今天天气如何',
+        /** 
+         *  插件名称
+         * 知识库插件固定值为["uuid-zhishiku"] 
+         * 智慧图问插件固定值为["uuid-chatocr"]
+         * 天气插件固定值为["uuid-weatherforecast"]
+         */ 
+        plugins: [
+            'uuid-weatherforecast',
+        ],
+        stream: true,
+    });
+    // 返回结果
+}
+
+main();
+```
+
+参数传入 stream 为 `true` 时，返回流式结果
+
+```ts
+import {Plugin} from "@baiducloud/qianfan";
 // 直接读取 env  
-const client = new Plugins();
+const client = new Plugin();
 
 // 手动传 AK/SK 测试
-// const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+// const client = new Plugins({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
 async function main() {
-    const resp = await client.plugin({
+    const resp = await client.plugins({
         query: '深圳今天天气如何',
         /** 
          *  插件名称

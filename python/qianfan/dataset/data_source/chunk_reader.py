@@ -16,12 +16,16 @@ A file which implements chunk reading from various file
 """
 import io
 import json
+import multiprocessing
 import os.path
+import threading
 from abc import ABC, abstractmethod
+from queue import PriorityQueue, Queue
 from typing import Any, Callable, Dict, List, Optional
 
 import ijson
 from clevercsv import stream_table
+from typing_extensions import override
 
 from qianfan.config import encoding
 from qianfan.dataset.consts import QianfanDatasetPackColumnName
@@ -181,11 +185,105 @@ class MapperReader(BaseReader):
     """
     专门用于封装 Table 的 Map 函数作为一个 Reader
     方便对外输出为一个 Arrow 文件并保存
+    接受的 Callable 函数一定是需要返回一个用于排序的下标
     """
 
-    def __init__(self, mapper_closure: Callable, chunk_size: int = 100, **kwargs: Any):
+    def __init__(
+        self,
+        mapper_closure: Callable,
+        chunk_size: int = 100,
+        keep_original_order: bool = True,
+        **kwargs: Any,
+    ):
         super().__init__(chunk_size, **kwargs)
-        self.mapper_closure = mapper_closure()
+        # 设置生成器函数，以及判断是否需要保持顺序
+        self.mapper_closure_func = mapper_closure
+        self.keep_original_order = keep_original_order
 
-    def _get_an_element(self, index: int) -> Any:
-        return next(self.mapper_closure)
+        self.queue: Queue
+        # 如果要保持顺序，则创建优先队列和其它附件
+        if self.keep_original_order:
+            self.data_id = 0
+            self.queue = PriorityQueue()
+        # 否则使用普通队列
+        # 这两种队列都是原子的
+        else:
+            self.data_id = 0
+            self.queue = Queue()
+
+        # 一个可用 CPU 逻辑核一个迭代线程
+        processing_thread_count = multiprocessing.cpu_count() + 1
+
+        # 用于在顺序处理可行时唤醒的信号量
+        self.processing_counter = threading.Semaphore()
+
+        # 用于判断是否所有数据都已处理完毕的事件
+        self.is_all_processing_done = threading.Event()
+
+        # 用于同步所有处理线程的屏障和单词回调函数
+        def _mark_process_done() -> None:
+            self.is_all_processing_done.set()
+            # 重新唤醒处理线程
+            self.processing_counter.release()
+
+        self.sync_done_barrier = threading.Barrier(
+            processing_thread_count, _mark_process_done
+        )
+
+        def _process_closure() -> None:
+            for elem in self.mapper_closure_func():
+                assert isinstance(elem, tuple)
+                data_id = elem[0]
+                self.queue.put(elem)
+
+                if not self.keep_original_order or (
+                    self.keep_original_order and data_id <= self.data_id
+                ):
+                    self.processing_counter.release()
+
+            self.sync_done_barrier.wait()
+
+        for i in range(processing_thread_count):
+            t = threading.Thread(target=_process_closure)
+            t.start()
+
+    def _get_an_element(self, index: int) -> List[Any]:
+        # 循环检查输出队列是否为空
+        while self.queue.empty():
+            # 如果已经处理完毕，则跳出
+            if self.is_all_processing_done.is_set():
+                raise StopIteration()
+            # 否则等待数据输入
+            self.processing_counter.acquire()
+
+        if self.keep_original_order:
+            # 循环检查唤醒时拿到的数据是否是我们需要的数据
+            while True:
+                # 其实可以去掉超时，但是兜底
+                data = self.queue.get(timeout=5)
+                if data[0] != self.data_id:
+                    self.queue.put(data)
+                    self.processing_counter.acquire()
+                    if self.is_all_processing_done.is_set():
+                        raise StopIteration()
+                else:
+                    self.data_id += 1
+                    break
+        else:
+            data = self.queue.get(timeout=5)
+
+        return data[1]
+
+    @override
+    def get_chunk(self, chunk_size: int = 0) -> List[Any]:
+        """get number of chunk from file"""
+        try:
+            data_list = self._get_an_element(0)
+        except StopIteration:
+            raise StopIteration()
+        except Exception as e:
+            err_msg = f"exception occurred during read csv file streamly: {e}"
+            log_error(err_msg)
+            raise e
+
+        return data_list

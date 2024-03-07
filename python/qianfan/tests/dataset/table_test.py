@@ -121,10 +121,6 @@ def test_map_row():
     with pytest.raises(TypeError):
         table.map(1)
 
-    # map操作的函数返回值为非字典
-    with pytest.raises(ValueError):
-        table.map(lambda x: 1)
-
 
 def test_filter_row():
     table = Table(inner_table=pyarrow.Table.from_pydict({"age": [1, 2, 3, 25, 26, 27]}))

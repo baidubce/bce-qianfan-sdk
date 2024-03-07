@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import * as http from 'http';
 import {Text2Image, setEnvVariable} from '../index';
 
 // 修改env文件
@@ -29,14 +30,27 @@ const client = new Text2Image();
 // AK/SK 测试
 async function main() {
     const resp = await client.text2Image({
-        prompt: '生成小狗',
-        size: '1024x1024',
-        n: 4,
+        prompt: '生成爱莎公主的图片',
+        size: '768x768',
+        n: 1,
         steps: 20,
         sampler_index: 'Euler a',
     }, 'Stable-Diffusion-XL');
-    console.log('返回结果');
-    console.log(resp.data);
+
+    const base64Image = resp.data[0].b64_image;
+    // 创建一个简单的服务器
+    const server = http.createServer((req, res) => {
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        let html = `<html><body><img src="data:image/jpeg;base64,${base64Image}" /><br/></body></html>`;
+
+        // 发送HTML响应
+        res.end(html);
+    });
+
+    const port = 3001;
+    server.listen(port, () => {
+        console.log(`服务器运行在 http://localhost:${port}`);
+    });
 }
 
 main();

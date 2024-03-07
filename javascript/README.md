@@ -174,3 +174,77 @@ async function main() {
 
 main();
 ```
+
+### 图像
+
+#### 文生图
+
+根据用户输入的文本生成图片。
+
+模型支持列表
+    Stable-Diffusion-XL
+
+```ts
+import * as http from 'http';
+import {Text2Image} from "@baiducloud/qianfan";
+// 直接读取 env  
+const client = new Text2Image();
+
+// 手动传 AK/SK 测试
+// const client = new Text2Image({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+async function main() {
+    const resp = await client.text2Image({
+        prompt: '生成爱莎公主的图片',
+        size: '768x768',
+        n: 1,
+        steps: 20,
+        sampler_index: 'Euler a',
+    }, 'Stable-Diffusion-XL');
+
+    const base64Image = resp.data[0].b64_image;
+    // 注意 base64Image没有带ata:image/jpeg;base64 前缀，要直接使用的话，需要加上
+    // 创建一个简单的服务器
+    const server = http.createServer((req, res) => {
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        let html = `<html><body><img src="data:image/jpeg;base64,${base64Image}" /><br/></body></html>`;
+        res.end(html);
+    });
+    const port = 3001;
+    server.listen(port, () => {
+        console.log(`服务器运行在 http://localhost:${port}`);
+    });
+}
+
+main();
+```
+
+### Plugin 插件
+
+SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。支持知识库、智慧图问、天气等插件。
+
+```ts
+import {Plugins} from "@baiducloud/qianfan";
+// 直接读取 env  
+const client = new Plugins();
+
+// 手动传 AK/SK 测试
+// const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+async function main() {
+    const resp = await client.plugin({
+        query: '深圳今天天气如何',
+        /** 
+         *  插件名称
+         * 知识库插件固定值为["uuid-zhishiku"] 
+         * 智慧图问插件固定值为["uuid-chatocr"]
+         * 天气插件固定值为["uuid-weatherforecast"]
+         */ 
+        plugins: [
+            'uuid-weatherforecast',
+        ],
+        verbose: false,
+    });
+    // 返回结果
+}
+
+main();
+```

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {QfLLMInfoMap} from '../interface';
+import {QfLLMInfoMap, CompletionBody} from '../interface';
 
 /**
  * 续写公共服务模型列表
@@ -343,3 +343,8 @@ export const modelInfoMap: QfLLMInfoMap = {
         optional_keys: [],
     },
 };
+
+// 检查是否为CompletionBody
+export function isCompletionBody(body: any): body is CompletionBody {
+    return 'prompt' in body;
+}

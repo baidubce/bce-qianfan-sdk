@@ -36,14 +36,12 @@ async function main() {
         steps: 20,
         sampler_index: 'Euler a',
     }, 'Stable-Diffusion-XL');
-
+    console.log(resp);
     const base64Image = resp.data[0].b64_image;
     // 创建一个简单的服务器
     const server = http.createServer((req, res) => {
         res.writeHead(200, {'Content-Type': 'text/html'});
         let html = `<html><body><img src="data:image/jpeg;base64,${base64Image}" /><br/></body></html>`;
-
-        // 发送HTML响应
         res.end(html);
     });
 

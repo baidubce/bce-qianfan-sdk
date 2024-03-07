@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {CompletionBody, Resp} from '../interface';
-import {modelInfoMap, CompletionModel} from './utils';
+import {ChatBody, CompletionBody, Resp} from '../interface';
+import {modelInfoMap, CompletionModel, isCompletionBody} from './utils';
 import {getPathAndBody} from '../utils';
 
 class Completions extends BaseClient {
@@ -31,11 +31,11 @@ class Completions extends BaseClient {
         const stream = body.stream ?? false;
         // 兼容Chat模型
         const required_keys = modelInfoMap[model]?.required_keys;
-        let reqBody = body;
-        if (required_keys.includes('messages')) {
+        let reqBody: CompletionBody | ChatBody;
+        if (required_keys.includes('messages') && isCompletionBody(body)) {
             const {prompt, ...restOfBody} = body;
             reqBody = {
-                ...restOfBody,
+                ...restOfBody, // 保留除prompt之外的所有属性
                 messages: [
                     {
                         role: 'user',
@@ -43,6 +43,9 @@ class Completions extends BaseClient {
                     },
                 ],
             };
+        }
+        else {
+            reqBody = body;
         }
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
             model,

@@ -287,7 +287,7 @@ export interface CompletionBody {
     /*
      * 请求信息
      */
-    prompt?: string;
+    prompt: string;
     /*
      * 是否以流式接口的形式返回数据，默认false
      */

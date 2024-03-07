@@ -29,11 +29,26 @@ class Completions extends BaseClient {
         model: CompletionModel = 'ERNIE-Bot-turbo'
     ): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
+        // 兼容Chat模型
+        const required_keys = modelInfoMap[model]?.required_keys;
+        let reqBody = body;
+        if (required_keys.includes('messages')) {
+            const {prompt, ...restOfBody} = body;
+            reqBody = {
+                ...restOfBody,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+            };
+        }
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
             model,
             modelInfoMap,
             baseUrl: this.qianfanBaseUrl,
-            body,
+            body: reqBody,
             endpoint: this.Endpoint,
             type: 'completions',
         });

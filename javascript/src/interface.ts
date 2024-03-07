@@ -277,10 +277,17 @@ export interface ChatRespError {
 }
 
 export interface CompletionBody {
+    /**
+     * 聊天上下文信息 兼容Chat模型
+     * 1. messages 成员不能为空，1 个成员表示单轮对话，多个成员表示多轮对话
+     * 2. 最后一个 message 为当前请求的信息，前面的 message 为历史对话信息
+     * 3. 必须为奇数个成员
+     */
+    messages?: ChatMessage[];
     /*
      * 请求信息
      */
-    prompt: string;
+    prompt?: string;
     /*
      * 是否以流式接口的形式返回数据，默认false
      */

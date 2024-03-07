@@ -13,9 +13,7 @@
 // limitations under the License.
 import {APIErrorCode} from './enum';
 
-// export const BASE_HOST = 'http://127.0.0.1:5000';
 export const BASE_PATH = '/rpc/2.0/ai_custom/v1/wenxinworkshop';
-// export const API_BASE = BASE_HOST + BASE_PATH;
 export const DEFAULT_HEADERS = {
     'Content-Type': 'application/json',
     Accept: 'application/json',

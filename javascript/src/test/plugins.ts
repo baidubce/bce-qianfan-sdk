@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Plugins, setEnvVariable} from '../index';
+import {Plugin, setEnvVariable} from '../index';
 
 // 修改env文件
 // setEnvVariable('QIANFAN_AK','***');
 // setEnvVariable('QIANFAN_SK','***');
 
 // 直接读取env
-const client = new Plugins({Endpoint: '***'});
+const client = new Plugin({Endpoint: '***'});
 
 // 手动传AK/SK 测试
 // const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
@@ -33,7 +33,7 @@ const client = new Plugins({Endpoint: '***'});
 */
 // 天气插件 测试
 async function weatherMain() {
-    const resp = await client.plugin({
+    const resp = await client.plugins({
         query: '深圳今天天气如何',
         plugins: [
             'uuid-weatherforecast',
@@ -44,11 +44,11 @@ async function weatherMain() {
     console.log(resp);
 }
 
-// weatherMain();
+weatherMain();
 
 // 天气插件 流式测试
 async function weatherStreamMain() {
-    const stream = await client.plugin({
+    const stream = await client.plugins({
         query: '深圳今天天气如何',
         plugins: [
             'uuid-weatherforecast',
@@ -62,5 +62,5 @@ async function weatherStreamMain() {
     }
 }
 
-weatherStreamMain();
+// weatherStreamMain();
 

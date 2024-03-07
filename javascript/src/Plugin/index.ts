@@ -16,14 +16,14 @@ import {BaseClient} from '../Base';
 import {PluginsBody, PluginsResp} from '../interface';
 import {getPathAndBody} from '../utils';
 
-class Plugins extends BaseClient {
+class Plugin extends BaseClient {
     /**
      * 插件
      * @param body 请求体
      * @param model 续写模型，默认为 'ERNIE-Bot-turbo'
      * @returns 返回 Promise 对象，异步获取续写结果
      */
-    public async plugin(
+    public async plugins(
         body: PluginsBody
     ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
         const stream = body.stream ?? false;
@@ -37,4 +37,4 @@ class Plugins extends BaseClient {
     }
 }
 
-export default Plugins;
+export default Plugin;

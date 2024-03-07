@@ -47,7 +47,8 @@ class Tokenizer(object):
             The input text for which tokens need to be counted.
           mode (str, optional):
             `local` (default):
-              local **SIMULATION** (Chinese characters count + English word count * 1.3)
+              local **SIMULATION**
+              (Chinese characters count * 0.625 + English word count * 1)
             `remote`:
               use qianfan api to calculate the token count. API will return accurate
               token count, but only ERNIE-Bot series models are supported.
@@ -64,7 +65,7 @@ class Tokenizer(object):
                 " `local`"
             )
         if mode == "local":
-            return cls._local_count_tokens(text)
+            return cls._local_count_tokens(text, **kwargs)
         if mode == "remote":
             return cls._remote_count_tokens_eb(text, model, **kwargs)
 
@@ -92,14 +93,20 @@ class Tokenizer(object):
         return resp["usage"]["total_tokens"]
 
     @classmethod
-    def _local_count_tokens(cls, text: str, model: str = "ERNIE-Bot") -> int:
+    def _local_count_tokens(
+        cls,
+        text: str,
+        model: str = "ERNIE-Bot",
+        han_tokens: float = 0.625,
+        word_tokens: float = 1,
+    ) -> int:
         """
         Calculate the token count for a given text using a local simulation.
 
         ** THIS IS CALCULATED BY LOCAL SIMULATION, NOT REAL TOKEN COUNT **
 
         The token count is computed as follows:
-        (Chinese characters count) + (English word count * 1.3)
+        (Chinese characters count * 0.625) + (English word count * 1)
         """
         han_count = 0
         text_only_word = ""
@@ -112,7 +119,7 @@ class Tokenizer(object):
             else:
                 text_only_word += ch
         word_count = len(list(filter(lambda x: x != "", text_only_word.split(" "))))
-        return han_count + int(word_count * 1.3)
+        return int(han_count * han_tokens + word_count * word_tokens)
 
     @staticmethod
     def _is_cjk_character(ch: str) -> bool:

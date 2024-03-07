@@ -57,9 +57,7 @@ def test_load_data_action():
     assert isinstance(res, dict)
     assert "datasets" in res
 
-    preset = Dataset.load(
-        qianfan_dataset_id="ds-9cetiuhvnbn4mqs3", is_download_to_local=False
-    )
+    preset = Dataset.load(qianfan_dataset_id="ds-9cetiuhvnbn4mqs3")
 
     res = LoadDataSetAction(
         preset, dataset_template=console_consts.DataTemplateType.NonSortedConversation
@@ -237,7 +235,7 @@ def test_batch_run_on_qianfan():
     origin_dataset = Dataset.load(source)
 
     model = Model("1", "2")
-    result_dataset = model.batch_inference(origin_dataset, is_download_to_local=False)
+    result_dataset = model.batch_inference(origin_dataset)
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)
@@ -404,9 +402,7 @@ def test_train_config_validate():
 
 
 def test_ppt():
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -417,9 +413,7 @@ def test_ppt():
 
 
 def test_ppt_with_sft():
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -427,7 +421,7 @@ def test_ppt_with_sft():
     ppt_trainer.run()
     assert "task_id" in ppt_trainer.output and "job_id" in ppt_trainer.output
 
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
     sft_trainer = LLMFinetune(
         dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
     )
@@ -441,7 +435,7 @@ def test_all_default_config():
         DefaultTrainConfigMapping,
     )
 
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
 
     for k in DefaultTrainConfigMapping.keys():
         LLMFinetune(
@@ -449,9 +443,7 @@ def test_all_default_config():
             dataset=sft_ds,
         )
 
-    ppt_ds = Dataset.load(
-        qianfan_dataset_id="ds-mock-generic", is_download_to_local=False
-    )
+    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
     for k in DefaultPostPretrainTrainConfigMapping.keys():
         PostPreTrain(
             train_type=k,
@@ -484,7 +476,7 @@ def test_failed_sft_run():
 
 
 def test_increment_sft():
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111", is_download_to_local=False)
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
     trainer = LLMFinetune(
         dataset=sft_ds,
         previous_task_id="task-abc",

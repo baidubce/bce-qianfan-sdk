@@ -63,3 +63,13 @@ coverage.out
 
 node_modules
 .npmrc
+
+# Compiled class file
+*.class
+
+# Java
+target/
+
+# IntelliJ IDEA
+*.iml
+.idea

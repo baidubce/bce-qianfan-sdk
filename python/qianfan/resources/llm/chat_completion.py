@@ -24,7 +24,9 @@ from qianfan.resources.llm.base import (
     BaseResource,
     BatchRequestFuture,
 )
-from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse, QfRole
+from qianfan.resources.tools.tokenizer import Tokenizer
+from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
+from qianfan.utils.logging import log_info
 
 
 class ChatCompletion(BaseResource):
@@ -58,6 +60,8 @@ class ChatCompletion(BaseResource):
                     "tool_choice",
                     "system",
                 },
+                max_input_chars=11200,
+                max_input_tokens=7168,
             ),
             "ERNIE-Bot": QfLLMInfo(
                 endpoint="/chat/completions",
@@ -77,6 +81,8 @@ class ChatCompletion(BaseResource):
                     "max_output_tokens",
                     "tool_choice",
                 },
+                max_input_chars=20000,
+                max_input_tokens=5120,
             ),
             "ERNIE-Bot-4": QfLLMInfo(
                 endpoint="/chat/completions_pro",
@@ -94,6 +100,8 @@ class ChatCompletion(BaseResource):
                     "enable_citation",
                     "max_output_tokens",
                 },
+                max_input_chars=20000,
+                max_input_tokens=5120,
             ),
             "ERNIE-Bot-8k": QfLLMInfo(
                 endpoint="/chat/ernie_bot_8k",
@@ -110,6 +118,8 @@ class ChatCompletion(BaseResource):
                     "enable_citation",
                     "user_id",
                 },
+                max_input_chars=20000,
+                max_input_tokens=5120,
             ),
             "ERNIE-3.5-4K-0205": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-4k-0205",
@@ -126,6 +136,8 @@ class ChatCompletion(BaseResource):
                     "enable_citation",
                     "user_id",
                 },
+                max_input_chars=8000,
+                max_input_tokens=2048,
             ),
             "ERNIE-3.5-8K-0205": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-0205",
@@ -142,6 +154,8 @@ class ChatCompletion(BaseResource):
                     "enable_citation",
                     "user_id",
                 },
+                max_input_chars=20000,
+                max_input_tokens=5120,
             ),
             "ERNIE-Speed": QfLLMInfo(
                 endpoint="/chat/ernie_speed",
@@ -156,6 +170,24 @@ class ChatCompletion(BaseResource):
                     "tool_choice",
                     "system",
                 },
+                max_input_chars=11200,
+                max_input_tokens=7168,
+            ),
+            "ERNIE-Speed-128k": QfLLMInfo(
+                endpoint="/chat/ernie_speed",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                },
+                max_input_chars=507904,
+                max_input_tokens=126976,
             ),
             "ERNIE-Bot-turbo-AI": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
@@ -170,6 +202,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=11200,
+                max_input_tokens=7168,
             ),
             "EB-turbo-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
@@ -184,6 +218,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=11200,
+                max_input_tokens=7168,
             ),
             "BLOOMZ-7B": QfLLMInfo(
                 endpoint="/chat/bloomz_7b1",
@@ -199,6 +235,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Llama-2-7b-chat": QfLLMInfo(
                 endpoint="/chat/llama_2_7b",
@@ -214,6 +252,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Llama-2-13b-chat": QfLLMInfo(
                 endpoint="/chat/llama_2_13b",
@@ -229,6 +269,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Llama-2-70b-chat": QfLLMInfo(
                 endpoint="/chat/llama_2_70b",
@@ -244,6 +286,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Qianfan-BLOOMZ-7B-compressed": QfLLMInfo(
                 endpoint="/chat/qianfan_bloomz_7b_compressed",
@@ -259,6 +303,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Qianfan-Chinese-Llama-2-7B": QfLLMInfo(
                 endpoint="/chat/qianfan_chinese_llama_2_7b",
@@ -274,6 +320,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "ChatGLM2-6B-32K": QfLLMInfo(
                 endpoint="/chat/chatglm2_6b_32k",
@@ -289,6 +337,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "AquilaChat-7B": QfLLMInfo(
                 endpoint="/chat/aquilachat_7b",
@@ -304,6 +354,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "XuanYuan-70B-Chat-4bit": QfLLMInfo(
                 endpoint="/chat/xuanyuan_70b_chat",
@@ -319,6 +371,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Qianfan-Chinese-Llama-2-13B": QfLLMInfo(
                 endpoint="/chat/qianfan_chinese_llama_2_13b",
@@ -334,6 +388,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "ChatLaw": QfLLMInfo(
                 endpoint="/chat/chatlaw",
@@ -346,6 +402,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Yi-34B-Chat": QfLLMInfo(
                 endpoint="/chat/yi_34b_chat",
@@ -361,6 +419,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             "Mixtral-8x7B-Instruct": QfLLMInfo(
                 endpoint="/chat/mixtral_8x7b_instruct",
@@ -376,6 +436,8 @@ class ChatCompletion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
+                max_input_chars=4800,
+                max_input_tokens=None,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
@@ -416,6 +478,7 @@ class ChatCompletion(BaseResource):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -452,6 +515,8 @@ class ChatCompletion(BaseResource):
           truncated_continue_prompt (str):
             [Experimental] The prompt to use when requesting more content for auto
             truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -486,6 +551,7 @@ class ChatCompletion(BaseResource):
             )
         if request_id is not None:
             kwargs["request_id"] = request_id
+        kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = self._do(
             model,
@@ -627,6 +693,7 @@ class ChatCompletion(BaseResource):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -663,6 +730,8 @@ class ChatCompletion(BaseResource):
           truncated_continue_prompt (str):
             [Experimental] The prompt to use when requesting more content for auto
             truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -697,6 +766,7 @@ class ChatCompletion(BaseResource):
             )
         if request_id is not None:
             kwargs["request_id"] = request_id
+        kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = await self._ado(
             model,
@@ -868,3 +938,77 @@ class ChatCompletion(BaseResource):
         """
         tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
         return await self._abatch_request(tasks, worker_num)
+
+    def _generate_body(
+        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+    ) -> JsonBody:
+        """
+        generate body
+        """
+        truncate_msg = kwargs["_auto_truncate"]
+        del kwargs["_auto_truncate"]
+
+        body = super()._generate_body(model, endpoint, stream, **kwargs)
+        if not truncate_msg or len(body["messages"]) <= 1:
+            return body
+
+        # truncate the messages if the length is too long
+        if model is not None and model in self._supported_models():
+            model_info = self._supported_models()[model]
+        else:
+            default_model_info = self._supported_models()[self._default_model()]
+            if endpoint == default_model_info.endpoint:
+                model_info = default_model_info
+            else:
+                model_info = self._supported_models()[UNSPECIFIED_MODEL]
+
+        if model_info.max_input_chars is not None:
+            chars_limit = model_info.max_input_chars
+            msg_list = body["messages"]
+            last_msg = msg_list[-1]
+            cur_length = len(last_msg["content"]) if last_msg.get("content") else 0
+            new_messages = [last_msg]
+            for m in reversed(body["messages"][:-1]):
+                cur_length += len(m["content"]) if m.get("content") else 0
+                if cur_length > chars_limit:
+                    break
+                new_messages = [m] + new_messages
+            if len(new_messages) % 2 != 1:
+                new_messages = new_messages[1:]
+            if len(body["messages"]) != len(new_messages):
+                log_info(
+                    "Top {} messages are truncated due to max_input_chars limit".format(
+                        len(body["messages"]) - len(new_messages)
+                    )
+                )
+            body["messages"] = new_messages
+
+        if model_info.max_input_tokens is not None:
+            token_limit = model_info.max_input_tokens
+            msg_list = body["messages"]
+            last_msg = msg_list[-1]
+            cur_length = (
+                Tokenizer.count_tokens(last_msg["content"], mode="local")
+                if last_msg.get("content")
+                else 0
+            )
+            new_messages = [last_msg]
+            for m in reversed(body["messages"][:-1]):
+                cur_length += (
+                    Tokenizer.count_tokens(m["content"], mode="local")
+                    if m.get("content")
+                    else 0
+                )
+                if cur_length > token_limit:
+                    break
+                new_messages = [m] + new_messages
+            if len(new_messages) % 2 != 1:
+                new_messages = new_messages[1:]
+            if len(body["messages"]) != len(new_messages):
+                log_info(
+                    "Top {} messages are truncated due to max_input_tokens limit"
+                    .format(len(body["messages"]) - len(new_messages))
+                )
+            body["messages"] = new_messages
+
+        return body

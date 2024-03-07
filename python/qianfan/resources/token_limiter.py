@@ -20,7 +20,7 @@ import datetime
 import threading
 import time
 import unicodedata
-from typing import Any
+from typing import Any, Optional
 
 from qianfan import get_config
 from qianfan.utils import log_error
@@ -30,14 +30,16 @@ _MINUTE_DEAD = datetime.timedelta(minutes=1)
 
 class _MiniLocalTokenizer:
     @classmethod
-    def count_tokens(cls, text: str) -> int:
+    def count_tokens(
+        cls, text: str, han_tokens: float = 0.625, word_tokens: float = 1
+    ) -> int:
         """
         Calculate the token count for a given text using a local simulation.
 
         ** THIS IS CALCULATED BY LOCAL SIMULATION, NOT REAL TOKEN COUNT **
 
         The token count is computed as follows:
-        (Chinese characters count) + (English word count * 1.3)
+        (Chinese characters count) * 0.625 + (English word count * 1)
         """
         han_count = 0
         text_only_word = ""
@@ -50,7 +52,7 @@ class _MiniLocalTokenizer:
             else:
                 text_only_word += ch
         word_count = len(list(filter(lambda x: x != "", text_only_word.split(" "))))
-        return han_count + int(word_count * 1.3)
+        return int(han_count * han_tokens + word_count * word_tokens)
 
     @staticmethod
     def _is_cjk_character(ch: str) -> bool:
@@ -193,8 +195,13 @@ class AsyncTokenLimiter(BaseTokenLimiter):
                 production environment, default to 0.1,
                 means only apply 90% rate limitation
         """
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
         super().__init__(token_per_minute, buffer_ratio, **kwargs)
+
+    def _get_internal_async_lock(self) -> asyncio.Lock:
+        if not self._lock:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     async def decline(self, token_used: int) -> None:
         """decline token from limiter when start to do a request"""
@@ -204,7 +211,8 @@ class AsyncTokenLimiter(BaseTokenLimiter):
 
         self._check_limit(token_used)
 
-        async with self._lock:
+        lock = self._get_internal_async_lock()
+        async with lock:
             for i in range(3):
                 self._refresh_time_and_token()
                 if token_used <= self._token_current:
@@ -224,6 +232,7 @@ class AsyncTokenLimiter(BaseTokenLimiter):
         when receive a response from server
         """
 
-        if not self._lock.locked():
-            async with self._lock:
+        lock = self._get_internal_async_lock()
+        if not lock.locked():
+            async with lock:
                 self._token_current += compensation

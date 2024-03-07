@@ -647,3 +647,94 @@ def test_auth_using_iam():
 def test_keyword_arguments_passing():
     cc = qianfan.ChatCompletion(ssl=False)
     assert not cc._client._client.ssl
+
+
+def test_truncated_message():
+    messages = [{"role": "user", "content": "hello " * 10000}]
+    resp = qianfan.ChatCompletion().do(messages=messages, truncate_overlong_msgs=True)
+    req = resp["_request"]
+    req_messages = req["messages"]
+    assert len(req_messages) == 1
+
+    messages.extend(
+        [{"role": "assistant", "content": "hi1"}, {"role": "user", "content": "hi2"}]
+    )
+    resp = qianfan.ChatCompletion().do(messages=messages, truncate_overlong_msgs=True)
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 1
+    assert req_messages[0]["content"] == "hi2"
+
+    messages = [
+        {"role": "user", "content": "s1"},
+        {"role": "assistant", "content": "s2"},
+        {"role": "user", "content": "s3 " * 10000},
+        {"role": "assistant", "content": "s4"},
+        # cut here
+        {"role": "user", "content": "s5"},
+    ]
+    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 1
+    assert req_messages[0]["content"] == "s5"
+
+    messages = [
+        {"role": "user", "content": "s1 " * 10000},
+        {"role": "assistant", "content": "s2"},
+        # cut here
+        {"role": "user", "content": "s3"},
+        {"role": "assistant", "content": "s4"},
+        {"role": "user", "content": "s5"},
+    ]
+    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 3
+    assert req_messages[0]["content"] == "s3"
+    assert req_messages[1]["content"] == "s4"
+    assert req_messages[2]["content"] == "s5"
+
+    # exceed max_input_token, but not exceed max_input_chars
+    messages = [
+        {"role": "user", "content": "s " * 5000},
+        {"role": "assistant", "content": "s2"},
+        # cut here
+        {"role": "user", "content": "h " * 3000},
+        {"role": "assistant", "content": "s4"},
+        {"role": "user", "content": "s5"},
+    ]
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 3
+    assert req_messages[0]["content"] == "h " * 3000
+    assert req_messages[1]["content"] == "s4"
+    assert req_messages[2]["content"] == "s5"
+
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=False
+    )
+    # no cut
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 5
+    assert req_messages[0]["content"] == "s " * 5000
+    assert req_messages[4]["content"] == "s5"
+
+    messages = [
+        {"role": "user", "content": "s1 " * 7000},
+        {"role": "assistant", "function_call": {}, "name": "funcname"},
+        # cut here
+        {"role": "user", "content": "s3"},
+        {"role": "assistant", "content": "s4"},
+        {"role": "user", "content": "s5"},
+    ]
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 3
+    assert req_messages[0]["content"] == "s3"
+    assert req_messages[2]["content"] == "s5"

@@ -154,7 +154,7 @@ def _create_map_arrow_file(
         tmp_folder_path,
         (
             f"{file_name}_"
-            f"{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+            f"{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
             f"{QianfanDatasetCacheFileExtensionName}"
         ),
     )

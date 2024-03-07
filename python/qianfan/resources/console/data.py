@@ -29,7 +29,7 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
     EntityListingType,
 )
-from qianfan.resources.console.utils import console_api_request
+from qianfan.resources.console.utils import _get_console_v2_query, console_api_request
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse
 from qianfan.utils import log_error
 
@@ -899,11 +899,9 @@ class Data:
         req = QfRequest(
             method="POST",
             url=Consts.DatasetV2OfflineBatchInferenceAPI,
-            query={
-                Consts.ConsoleAPIQueryAction: (
-                    Consts.DatasetCreateOfflineBatchInferenceAction
-                )
-            },
+            query=_get_console_v2_query(
+                Consts.DatasetCreateOfflineBatchInferenceAction
+            ),
         )
         request_json: Dict[str, Any] = {
             "name": name,
@@ -942,11 +940,9 @@ class Data:
         req = QfRequest(
             method="POST",
             url=Consts.DatasetV2OfflineBatchInferenceAPI,
-            query={
-                Consts.ConsoleAPIQueryAction: (
-                    Consts.DatasetDescribeOfflineBatchInferenceAction
-                )
-            },
+            query=_get_console_v2_query(
+                Consts.DatasetDescribeOfflineBatchInferenceAction
+            ),
         )
         request_json: Dict[str, Any] = {
             "taskId": task_id,

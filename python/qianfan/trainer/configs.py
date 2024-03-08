@@ -253,7 +253,7 @@ def _get_online_supported_model_info_mapping(
 
 
 def create_train_config_class(class_name: str, fields: Dict[str, Any]) -> Type:
-    annotations = {}
+    annotations: Any = {}
     # 遍历字段字典，将字段名称和类型添加到字典中
     for field_name, field_info in fields.items():
         annotations[field_name] = (
@@ -262,8 +262,10 @@ def create_train_config_class(class_name: str, fields: Dict[str, Any]) -> Type:
         )  # 将字段类型修改为 Optional
     # 使用 create_model 函数创建一个动态生成的类
     dynamic_class = create_model(
-        __model_name=class_name, __base__=BaseTrainConfig, **annotations
-    )  # type: ignore
+        __model_name=class_name,
+        __base__=BaseTrainConfig,
+        **annotations,
+    )  # type: ignore[call-overload]
     return dynamic_class
 
 

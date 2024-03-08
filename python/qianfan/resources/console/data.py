@@ -29,7 +29,7 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
     EntityListingType,
 )
-from qianfan.resources.console.utils import console_api_request
+from qianfan.resources.console.utils import _get_console_v2_query, console_api_request
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse
 from qianfan.utils import log_error
 
@@ -858,6 +858,96 @@ class Data:
             request_json["annoTime"] = annotating_time_closure
         if label_id_str:
             request_json["labelId"] = label_id_str
+
+        req.json_body = request_json
+        return req
+
+    @classmethod
+    @console_api_request
+    def create_offline_batch_inference_task(
+        cls,
+        name: str,
+        endpoint: str,
+        input_bos_uri: str,
+        output_bos_uri: str,
+        inference_params: Dict[str, Any] = {},
+        description: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Create an offline batch inference task
+
+        Parameters:
+            name (str):
+                Name of the batch inference task
+            endpoint (str):
+                Endpoint of the model to be used for inference
+            input_bos_uri (str):
+                BOS URI of the input data
+            output_bos_uri (str):
+                BOS URI of the output data
+            inference_params (Dict[str, Any]):
+                The inferece parameters used in the model
+            description (Optional[str]):
+                Description of the batch inference task
+
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+        """
+        req = QfRequest(
+            method="POST",
+            url=Consts.DatasetV2OfflineBatchInferenceAPI,
+            query=_get_console_v2_query(
+                Consts.DatasetCreateOfflineBatchInferenceAction
+            ),
+        )
+        request_json: Dict[str, Any] = {
+            "name": name,
+            "endpoint": endpoint,
+            "inferenceParams": inference_params,
+            "inputBosUri": input_bos_uri,
+            "outputBosUri": output_bos_uri,
+            **kwargs,
+        }
+
+        if description is not None:
+            request_json["description"] = description
+
+        req.json_body = request_json
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_offline_batch_inference_task(
+        cls,
+        task_id: str,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get detail of an offline batch inference task
+
+        Parameters:
+            task_id (str):
+                Id of the batch inference task
+
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+        """
+        req = QfRequest(
+            method="POST",
+            url=Consts.DatasetV2OfflineBatchInferenceAPI,
+            query=_get_console_v2_query(
+                Consts.DatasetDescribeOfflineBatchInferenceAction
+            ),
+        )
+        request_json: Dict[str, Any] = {
+            "taskId": task_id,
+            **kwargs,
+        }
 
         req.json_body = request_json
         return req

@@ -374,3 +374,45 @@ def test_list_all_entity_in_dataset():
     assert reqs["offset"] == 2
     assert reqs["pageSize"] == 3
     assert reqs["tabType"] == EntityListingType.All.value
+
+
+def test_create_offline_batch_infer_task():
+    """
+    test Data.create_offline_batch_inference_task
+    """
+
+    resp = Data.create_offline_batch_inference_task(
+        name="test_name",
+        endpoint="https://test_endpoint",
+        input_bos_uri="bos:/input",
+        output_bos_uri="bos:/output",
+        inference_params={
+            "temperature": 0.9,
+        },
+        description="test_description",
+    )
+    assert "taskId" in resp["result"]
+    reqs = resp.get("_request")
+
+    assert reqs["name"] == "test_name"
+    assert reqs["endpoint"] == "https://test_endpoint"
+    assert reqs["inputBosUri"] == "bos:/input"
+    assert reqs["outputBosUri"] == "bos:/output"
+    assert reqs["inferenceParams"] == {
+        "temperature": 0.9,
+    }
+    assert reqs["description"] == "test_description"
+
+
+def test_get_offline_batch_infer_task():
+    """
+    test Data.create_offline_batch_inference_task
+    """
+
+    resp = Data.get_offline_batch_inference_task(
+        task_id="test_task_id",
+    )
+    assert "taskId" in resp["result"]
+    reqs = resp.get("_request")
+
+    assert reqs["taskId"] == "test_task_id"

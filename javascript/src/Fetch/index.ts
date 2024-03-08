@@ -55,12 +55,13 @@ export class Fetch {
 
             try {
                 const response = await fetch(url, options);
-                clearTimeout(timer);
                 return response;
             }
             catch (error) {
-                clearTimeout(timer);
                 throw error;
+            }
+            finally {
+                clearTimeout(timer);
             }
         };
 

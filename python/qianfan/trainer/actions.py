@@ -488,6 +488,9 @@ class TrainAction(
             for key, value in hyper_params_dict.items()
             if value is not None
         }
+        # custom fix
+        if "packing" in hyper_params_dict:
+            hyper_params_dict["Packing"] = hyper_params_dict.pop("packing")
         ds_config = input["datasets"]
         log_debug(f"train with ds_config: { ds_config}")
         log_debug(f"train with hyper_params: { hyper_params_dict}")

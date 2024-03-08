@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ChatCompletion, setEnvVariable} from '../index'
+import {ChatCompletion, setEnvVariable} from '../index';
 
-// 修改env文件  
+// 修改env文件
 // setEnvVariable('QIANFAN_AK','***');
 // setEnvVariable('QIANFAN_SK','***');
 
-// 直接读取env  
+// 直接读取env
 const client = new ChatCompletion();
 
 // 手动传AK/SK 测试
@@ -28,19 +28,19 @@ const client = new ChatCompletion();
 
 // 流式 测试
 async function main() {
-  const stream =  await client.chat({
+    const stream =  await client.chat({
         messages: [
             {
-                role: "user",
-                content: "等额本金和等额本息有什么区别？"
+                role: 'user',
+                content: '等额本金和等额本息有什么区别？',
             },
         ],
         stream: true,
-    }, "ERNIE-Bot-turbo");
-    console.log('流式返回结果')
+    }, 'ERNIE-Bot-turbo');
+    console.log('流式返回结果');
     for await (const chunk of stream as AsyncIterableIterator<any>) {
         console.log(chunk);
-      }
+    }
 }
 
 // 基础 测试

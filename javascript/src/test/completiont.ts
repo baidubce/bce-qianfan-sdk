@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Completions, setEnvVariable} from '../index'
+import {Completions, setEnvVariable} from '../index';
 
-// 修改env文件  
+// 修改env文件
 // setEnvVariable('QIANFAN_AK','***');
 // setEnvVariable('QIANFAN_SK','***');
 
-// 直接读取env  
+// 直接读取env
 const client = new Completions();
 
 // 手动传AK/SK 测试
@@ -40,11 +40,11 @@ async function main() {
     const stream =  await client.completions({
         prompt: 'Introduce the city Beijing',
         stream: true,
-      }, "SQLCoder-7B");
-      console.log('流式返回结果')
-      for await (const chunk of stream as AsyncIterableIterator<any>) {
-          console.log(chunk);
-        }
+    }, 'SQLCoder-7B');
+    console.log('流式返回结果');
+    for await (const chunk of stream as AsyncIterableIterator<any>) {
+        console.log(chunk);
+    }
 }
 
 main();

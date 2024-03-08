@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import axios, {AxiosInstance} from 'axios';
-
 import HttpClient from '../HttpClient';
+import {Fetch, FetchConfig} from '../Fetch';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay} from '../utils';
 import {Stream} from '../streaming';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 
 export class BaseClient {
     protected controller: AbortController;
-    protected QIANFAN_AK?: string;
-    protected QIANFAN_SK?: string;
-    protected QIANFAN_ACCESS_KEY?: string;
-    protected QIANFAN_SECRET_KEY?: string;
+    protected qianfanAk?: string;
+    protected qianfanSk?: string;
+    protected qianfanAccessKey?: string;
+    protected qianfanSecretKey?: string;
+    protected qianfanBaseUrl?: string;
+    protected qianfanLlmApiRetryTimeout?: string;
+    protected qianfanLlmApiRetryBackoffFactor?: string;
+    protected qianfanLlmApiRetryCount?: string;
+    protected qianfanLlmRetryMaxWaitInterval?: string;
     protected Endpoint?: string;
     protected headers = DEFAULT_HEADERS;
-    protected axiosInstance: AxiosInstance;
+    protected fetchInstance: Fetch;
+    protected fetchConfig: FetchConfig;
     access_token = '';
     expires_in = 0;
 
@@ -37,16 +42,38 @@ export class BaseClient {
         QIANFAN_SK?: string;
         QIANFAN_ACCESS_KEY?: string;
         QIANFAN_SECRET_KEY?: string;
+        QIANFAN_BASE_URL?: string;
+        QIANFAN_LLM_API_RETRY_TIMEOUT?: string;
+        QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR?: string;
+        QIANFAN_LLM_API_RETRY_COUNT?: string;
+        QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL?: string;
         Endpoint?: string;
     }) {
         const defaultConfig = getDefaultConfig();
-        this.QIANFAN_AK = options?.QIANFAN_AK ?? defaultConfig.QIANFAN_AK;
-        this.QIANFAN_SK = options?.QIANFAN_SK ?? defaultConfig.QIANFAN_SK;
-        this.QIANFAN_ACCESS_KEY = options?.QIANFAN_ACCESS_KEY ?? defaultConfig.QIANFAN_ACCESS_KEY;
-        this.QIANFAN_SECRET_KEY = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
+        this.qianfanAk = options?.QIANFAN_AK ?? defaultConfig.QIANFAN_AK;
+        this.qianfanSk = options?.QIANFAN_SK ?? defaultConfig.QIANFAN_SK;
+        this.qianfanAccessKey = options?.QIANFAN_ACCESS_KEY ?? defaultConfig.QIANFAN_ACCESS_KEY;
+        this.qianfanSecretKey = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
         this.Endpoint = options?.Endpoint;
-        this.axiosInstance = axios.create();
+        this.qianfanBaseUrl = options?.QIANFAN_BASE_URL ?? defaultConfig.QIANFAN_BASE_URL;
+        this.qianfanLlmApiRetryTimeout
+            = options?.QIANFAN_LLM_API_RETRY_TIMEOUT ?? defaultConfig.QIANFAN_LLM_API_RETRY_TIMEOUT;
+        this.qianfanLlmApiRetryBackoffFactor
+            = options?.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR ?? defaultConfig.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR;
+        this.qianfanLlmApiRetryCount
+            = options?.QIANFAN_LLM_API_RETRY_COUNT ?? defaultConfig.QIANFAN_LLM_API_RETRY_COUNT;
         this.controller = new AbortController();
+        this.fetchConfig = {
+            retries: Number(this.qianfanLlmApiRetryCount),
+            timeout: Number(this.qianfanLlmApiRetryTimeout),
+            retryDelay: attempt =>
+                calculateRetryDelay(
+                    attempt,
+                    Number(this.qianfanLlmApiRetryBackoffFactor),
+                    Number(this.qianfanLlmRetryMaxWaitInterval)
+                ),
+        };
+        this.fetchInstance = new Fetch(this.fetchConfig);
     }
 
     /**
@@ -55,18 +82,18 @@ export class BaseClient {
      */
 
     private async getAccessToken(): Promise<AccessTokenResp> {
-        const url = getAccessTokenUrl(this.QIANFAN_AK, this.QIANFAN_SK);
+        const url = getAccessTokenUrl(this.qianfanAk, this.qianfanSk);
         try {
-            const resp = await axios.post(url, {}, {headers: this.headers, withCredentials: false});
-            const {data} = resp;
+            const resp = await this.fetchInstance.fetchWithRetry(url, {headers: this.headers});
+            const data = (await resp.json()) as AccessTokenResp;
             if (data?.error) {
                 throw new Error(data?.error_description || 'Failed to get access token');
             }
-            this.access_token = resp.data.access_token ?? '';
-            this.expires_in = resp.data.expires_in + Date.now() / 1000;
+            this.access_token = data.access_token ?? '';
+            this.expires_in = data.expires_in + Date.now() / 1000;
             return {
-                access_token: resp.data.access_token,
-                expires_in: resp.data.expires_in,
+                access_token: data.access_token,
+                expires_in: data.expires_in,
             };
         }
         catch (error) {
@@ -82,33 +109,34 @@ export class BaseClient {
         stream = false
     ): Promise<Resp | AsyncIterableType> {
         // IAM鉴权
-        if (this.QIANFAN_ACCESS_KEY && this.QIANFAN_SECRET_KEY) {
-            const config = getIAMConfig(this.QIANFAN_ACCESS_KEY, this.QIANFAN_SECRET_KEY);
-            const client = new HttpClient(config);
-            const response = await client.sendRequest('POST', IAMpath, requestBody, this.headers, stream);
+        if (this.qianfanAccessKey && this.qianfanSecretKey) {
+            const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
+            const client = new HttpClient(config, this.fetchConfig);
+            const response = await client.sendRequest({
+                httpMethod: 'POST',
+                path: IAMpath,
+                body: requestBody,
+                headers: this.headers,
+                outputStream: stream,
+            });
             return response as Resp;
         }
         // AK/SK鉴权
-        if (this.QIANFAN_AK && this.QIANFAN_SK) {
+        if (this.qianfanAk && this.qianfanSk) {
             if (this.expires_in < Date.now() / 1000) {
                 await this.getAccessToken();
             }
             const url = `${AKPath}?access_token=${this.access_token}`;
-            const options = {
+            const fetchOptions = {
                 method: 'POST',
-                url: url,
                 headers: this.headers,
-                data: requestBody,
+                body: requestBody,
             };
             // 流式处理
             if (stream) {
                 try {
                     const sseStream: AsyncIterable<Resp> = Stream.fromSSEResponse(
-                        await fetch(url, {
-                            method: 'POST',
-                            headers: this.headers,
-                            body: requestBody as any,
-                        }),
+                        await this.fetchInstance.fetchWithRetry(url, fetchOptions),
                         this.controller
                     ) as any;
                     return sseStream as AsyncIterableType;
@@ -119,18 +147,11 @@ export class BaseClient {
             }
             else {
                 try {
-                    const resp = await this.axiosInstance.request(options);
-                    const {data} = resp;
-                    if (data?.error) {
-                        throw new Error(data?.error_description || 'Failed to getResult');
-                    }
-                    return resp.data as Resp;
+                    const resp = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
+                    const data = await resp.json();
+                    return data as any;
                 }
                 catch (error) {
-                    // 如果是 axios 请求相关的错误，直接抛出
-                    if (axios.isAxiosError(error)) {
-                        throw error;
-                    }
                     throw new Error(`Request failed: ${error.message}`);
                 }
             }

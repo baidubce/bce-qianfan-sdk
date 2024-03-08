@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from 'axios';
 import * as process from 'process';
 import * as http from 'http';
 import * as stream from 'stream';
@@ -23,18 +22,28 @@ import {URL} from 'url';
 import createDebug from 'debug';
 import * as packageJson from '../../package.json';
 
-import {Stream} from '../streaming';
+import {Fetch, FetchConfig, RequestOptions} from '../Fetch';
 import Auth from './auth';
 import * as H from './headers';
 import {urlObjectToPlainObject} from './strings';
+import {Stream} from '../streaming';
 
+interface RequestConfig {
+    httpMethod: string;
+    path: string;
+    body?: string | Buffer | ReadableStream | any;
+    headers?: Record<string, any>;
+    outputStream?: boolean | WritableStream | any;
+    params?: Record<string, any>;
+    signFunction?: () => [string, string] | string;
+}
 const debug = createDebug('bce-sdk:HttpClient');
 // 获取版本号
 const version = packageJson.version;
 class HttpClient extends EventEmitter {
     private controller: AbortController;
+    private fetchInstance: Fetch;
     private readonly defaultHeaders: Record<string, any> = {
-        [H.CONNECTION]: 'close',
         [H.CONTENT_TYPE]: 'application/json; charset=UTF-8',
         // 检查是否在浏览器环境中
         [H.USER_AGENT]:
@@ -43,27 +52,22 @@ class HttpClient extends EventEmitter {
                 : `bce-sdk-nodejs/${version}/${process.platform}/${process.version}`,
         [H.X_BCE_DATE]: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     };
-    private axiosInstance: AxiosInstance;
-    constructor(private config: any) {
+    constructor(
+        private config: any,
+        fetchConfig: FetchConfig
+    ) {
         super();
-        this.axiosInstance = axios.create();
         this.controller = new AbortController();
+        this.fetchInstance = new Fetch(fetchConfig);
     }
-    sendRequest(
-        httpMethod: string,
-        path: string,
-        body?: string | Buffer | stream.Readable | any,
-        headers?: Record<string, any>,
-        outputStream?: boolean | stream.Writable,
-        params?: Record<string, any>,
-        signFunction?: () => [string, string] | string
-    ): Q.Promise<any> {
-        httpMethod = httpMethod.toUpperCase();
+    sendRequest(config: RequestConfig): Q.Promise<any> {
+        const {httpMethod, path, body, headers, outputStream, params, signFunction} = config;
+        const method = httpMethod.toUpperCase();
         const requestUrl = this._getRequestUrl(path, params);
         const _headers = u.extend({}, this.defaultHeaders, headers);
         if (!_headers.hasOwnProperty(H.CONTENT_LENGTH)) {
-            const contentLength = this._guessContentLength(body);
-            if (!(contentLength === 0 && /GET|HEAD/i.test(httpMethod))) {
+            let contentLength = this._guessContentLength(body);
+            if (!(contentLength === 0 && /GET|HEAD/i.test(method))) {
                 // 如果是 GET 或 HEAD 请求，并且 Content-Length 是 0，那么 Request Header 里面就不要出现 Content-Length
                 // 否则本地计算签名的时候会计算进去，但是浏览器发请求的时候不一定会有，此时导致 Signature Mismatch 的情况
                 _headers[H.CONTENT_LENGTH] = contentLength;
@@ -72,76 +76,55 @@ class HttpClient extends EventEmitter {
         const client = this;
         const url = new URL(requestUrl) as any;
         _headers[H.HOST] = url.host;
-        const options = urlObjectToPlainObject(url, httpMethod, _headers);
+        const options = urlObjectToPlainObject(url, method, _headers);
         return this.setAuthorizationHeader(signFunction, _headers, options).then(() => {
             debug('options = %j', options);
-            const requstOption = {
+            const fetchOptions = {
                 method: options.method,
-                url: options.href,
                 headers: _headers,
-                data: body,
+                body,
             };
-            return client._doRequest(requstOption, outputStream);
+            return client._doRequest(options.href, fetchOptions, outputStream);
         });
     }
 
-    private async _doRequest(options: AxiosRequestConfig, outputStream: boolean | stream.Writable): Promise<any> {
+    private async _doRequest(
+        url: string,
+        fetchOptions: RequestOptions,
+        outputStream: boolean | stream.Writable
+    ): Promise<any> {
         if (outputStream) {
-            return this.establishSSEConnection(options);
+            return this.establishSSEConnection(url, fetchOptions);
         }
         try {
-            const response: AxiosResponse = await this.axiosInstance.request(options);
-            // 处理响应体
-            return this._recvResponse(response as any);
+            const resp = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
+            const data = await resp.json();
+            return data as any;
+        }
+        catch (error) {
+            throw new Error(`Request failed: ${error.message}`);
+        }
+    }
+
+    public async establishSSEConnection(url: string, fetchOptions: RequestOptions): Promise<AsyncIterable<any>> {
+        try {
+            const response = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
+            const contentType = response.headers.get('Content-Type');
+            if (contentType && contentType.includes('application/json')) {
+                const res = await response.json();
+                if (res.error_code) {
+                    const message = JSON.stringify(res);
+                    throw new Error(message);
+                }
+            }
+            else {
+                const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(response, this.controller) as any;
+                return sseStream;
+            }
         }
         catch (error) {
             throw error;
         }
-    }
-
-    public async establishSSEConnection(options: AxiosRequestConfig): Promise<AsyncIterable<any>> {
-        const {url, headers, data} = options;
-        try {
-            const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(
-                await fetch(url, {
-                    method: 'POST',
-                    headers: headers as any,
-                    body: data,
-                }),
-                this.controller
-            ) as any;
-            return sseStream;
-        }
-        catch (error) {
-            // Handle errors
-            console.error('Error establishing SSE connection:', error.message);
-            throw error;
-        }
-    }
-
-    // New method for handling SSE line
-
-    private _recvResponse(response: AxiosResponse): any {
-        const statusCode = response.status;
-        const responseBody = response.data;
-        if (responseBody.error_code) {
-            const message = JSON.stringify(responseBody);
-            throw new Error(message);
-        }
-        if (statusCode >= 100 && statusCode < 200) {
-            throw this.failure(statusCode, 'Can not handle 1xx http status code.');
-        }
-        else if (statusCode < 100 || statusCode >= 300) {
-            throw this.failure(statusCode, responseBody.message);
-        }
-        return responseBody;
-    }
-
-    private failure(statusCode: number, message: string | Buffer): any {
-        const response: Record<string, any> = {};
-        response[H.X_STATUS_CODE] = statusCode;
-        response[H.X_MESSAGE] = Buffer.isBuffer(message) ? message.toString() : message;
-        return response;
     }
 
     private setAuthorizationHeader(
@@ -151,7 +134,6 @@ class HttpClient extends EventEmitter {
         headers: Record<string, any>,
         options: http.RequestOptions
     ): Q.Promise<any> {
-        const client = this;
         if (typeof signFunction === 'function') {
             const promise = signFunction(this.config.credentials, options.method!, options.path!, options.headers!);
             if (this.isPromise(promise)) {
@@ -177,7 +159,6 @@ class HttpClient extends EventEmitter {
                 options.headers!
             );
         }
-
         return Q.resolve(); // Return a resolved promise for consistency
     }
 

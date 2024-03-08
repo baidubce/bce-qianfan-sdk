@@ -53,4 +53,3 @@ jobs:
           tag: ${{ format('js/v{0}', steps.get_version.outputs.version) }}
           prerelease: ${{ contains(steps.get_version.outputs.version, 'rc') }}
           commit: main
-          

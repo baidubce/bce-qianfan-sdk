@@ -212,15 +212,15 @@ export interface RespBase {
 }
 export interface ChatResp extends RespBase {
     /**
-    * 当前生成的结果是否被截断
-    */
+     * 当前生成的结果是否被截断
+     */
     is_truncated?: boolean;
     /**
-   * 表示用户输入是否存在安全，是否关闭当前会话，清理历史会话信息
-   *
-   * true：是，表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
-   * false：否，表示用户输入无安全风险
-   */
+     * 表示用户输入是否存在安全，是否关闭当前会话，清理历史会话信息
+     *
+     * true：是，表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
+     * false：否，表示用户输入无安全风险
+     */
     need_clear_history: boolean;
     /**
      * 当 need_clear_history 为 true 时，此字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round=-1
@@ -305,4 +305,7 @@ export interface EmbeddingResp {
      */
     usage: TokenUsage;
 }
+export type ReqBody = ChatBody | CompletionBody | EmbeddingBody;
+export type Resp = RespBase | ChatResp | EmbeddingResp;
+export type AsyncIterableType = AsyncIterable<ChatResp | RespBase>;
 export {};

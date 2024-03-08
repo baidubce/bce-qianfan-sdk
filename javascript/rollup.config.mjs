@@ -1,7 +1,8 @@
-import typescript from 'rollup-plugin-typescript2';
 import json from '@rollup/plugin-json';
-import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import babel from '@rollup/plugin-babel';
+import typescript from '@rollup/plugin-typescript';
 import eslint from '@rollup/plugin-eslint';
 
 export default {
@@ -23,8 +24,14 @@ export default {
         }),
         json(),
         resolve(),
-        commonjs({
-            include: /node_modules/,
+        commonjs(),
+        babel({
+            extensions: ['.js', '.ts'],
+            babelHelpers: 'bundled',
+            presets: [
+                '@babel/preset-env',
+                '@babel/preset-typescript',
+            ],
         }),
         eslint({
             throwOnError: true,

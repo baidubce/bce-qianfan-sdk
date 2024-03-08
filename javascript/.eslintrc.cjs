@@ -3,4 +3,7 @@ module.exports = {
     extends: [
         '@ecomfe/eslint-config',
     ],
+    env: {
+        jest: true,
+    },
 };

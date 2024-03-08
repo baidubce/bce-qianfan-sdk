@@ -12,11 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ChatCompletion from './ChatCompletion';
-import Completions from './Completions';
-import Eembedding from './Embedding';
-import Plugin from './Plugin';
-import {Text2Image} from './Images';
-import {setEnvVariable} from './utils';
-
-export {ChatCompletion, Completions, Eembedding, Plugin, Text2Image, setEnvVariable};
+export {default as Text2Image} from './text2image';
+export {default as Image2Text} from './image2text';

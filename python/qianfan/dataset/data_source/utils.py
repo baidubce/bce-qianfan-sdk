@@ -19,7 +19,7 @@ import hashlib
 import json
 import os
 import shutil
-import time
+import uuid
 import zipfile
 from pathlib import Path
 from time import sleep
@@ -153,7 +153,7 @@ def _create_map_arrow_file(
     )
     tmp_arrow_file_path = os.path.join(
         tmp_folder_path,
-        f"{file_name}_{time.time_ns()}{QianfanDatasetCacheFileExtensionName}",
+        f"{file_name}_{uuid.uuid4()}{QianfanDatasetCacheFileExtensionName}",
     )
 
     _write_table_to_arrow_file(tmp_arrow_file_path, reader)

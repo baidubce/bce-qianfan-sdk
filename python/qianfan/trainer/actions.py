@@ -466,7 +466,9 @@ class TrainAction(
             resp = api.FineTune.V2.create_job(
                 name=self.job_name,
                 description=self.task_description,
-                model=self.train_model_name if self.train_model_name else self.train_type,
+                model=(
+                    self.train_model_name if self.train_model_name else self.train_type
+                ),
                 train_mode=self.train_mode,
                 **kwargs,
             )
@@ -523,7 +525,10 @@ class TrainAction(
 
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
-                log_info(f'[train_action] training task metrics: {task_status_resp.get("metrics", {})}')
+                log_info(
+                    "[train_action] training task metrics:"
+                    f" {task_status_resp.get('metrics', {})}"
+                )
                 break
             elif task_status in [
                 console_consts.TrainStatus.Fail,

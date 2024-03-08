@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Eembedding, setEnvVariable} from '../index'
+import {Eembedding, setEnvVariable} from '../index';
 
-// 修改env文件  
+// 修改env文件
 // setEnvVariable('QIANFAN_AK','***');
 // setEnvVariable('QIANFAN_SK','***');
 
-// 直接读取env  
+// 直接读取env
 const client = new Eembedding();
 
 // 手动传AK/SK 测试
@@ -29,10 +29,10 @@ const client = new Eembedding();
 // AK/SK 测试
 async function main() {
     const resp = await client.embedding({
-        input: [ 'Introduce the city Beijing'],
-    }, "Embedding-V1");
-    console.log('返回结果')
-    console.log(resp.data as any);
+        input: ['Introduce the city Beijing'],
+    }, 'Embedding-V1');
+    console.log('返回结果');
+    console.log(resp.data);
 }
 
 main();

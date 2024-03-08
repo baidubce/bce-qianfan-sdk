@@ -651,7 +651,7 @@ def test_keyword_arguments_passing():
 
 def test_truncated_message():
     messages = [{"role": "user", "content": "hello " * 10000}]
-    resp = qianfan.ChatCompletion().do(messages=messages)
+    resp = qianfan.ChatCompletion().do(messages=messages, truncate_overlong_msgs=True)
     req = resp["_request"]
     req_messages = req["messages"]
     assert len(req_messages) == 1
@@ -659,7 +659,7 @@ def test_truncated_message():
     messages.extend(
         [{"role": "assistant", "content": "hi1"}, {"role": "user", "content": "hi2"}]
     )
-    resp = qianfan.ChatCompletion().do(messages=messages)
+    resp = qianfan.ChatCompletion().do(messages=messages, truncate_overlong_msgs=True)
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 1
     assert req_messages[0]["content"] == "hi2"
@@ -672,7 +672,9 @@ def test_truncated_message():
         # cut here
         {"role": "user", "content": "s5"},
     ]
-    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(messages=messages)
+    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 1
     assert req_messages[0]["content"] == "s5"
@@ -685,7 +687,9 @@ def test_truncated_message():
         {"role": "assistant", "content": "s4"},
         {"role": "user", "content": "s5"},
     ]
-    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(messages=messages)
+    resp = qianfan.ChatCompletion(model="BLOOMZ-7B").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 3
     assert req_messages[0]["content"] == "s3"
@@ -701,7 +705,9 @@ def test_truncated_message():
         {"role": "assistant", "content": "s4"},
         {"role": "user", "content": "s5"},
     ]
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(messages=messages)
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 3
     assert req_messages[0]["content"] == "h " * 3000
@@ -725,7 +731,9 @@ def test_truncated_message():
         {"role": "assistant", "content": "s4"},
         {"role": "user", "content": "s5"},
     ]
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot").do(messages=messages)
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 3
     assert req_messages[0]["content"] == "s3"

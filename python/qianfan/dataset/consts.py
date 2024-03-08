@@ -22,11 +22,12 @@ QianfanLocalCacheDir = Path.home() / ".qianfan_cache"
 # 千帆数据集本地缓存文件夹的绝对路径
 QianfanDatasetLocalCacheDir = QianfanLocalCacheDir / "dataset"
 
+QianfanMapperCacheDir = QianfanDatasetLocalCacheDir / ".mapper_cache"
+
 # 千帆数据集下载缓存的存储路径
 QianfanDatasetDownloadingCacheDir = (
     QianfanDatasetLocalCacheDir / ".qianfan_download_cache"
 )
-
 
 # Bos 数据源使用的缓存目录
 QianfanDatasetBosCacheDir = QianfanDatasetLocalCacheDir / ".bos_cache"

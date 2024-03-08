@@ -14,7 +14,18 @@
 """
 wrapper for pyarrow.Table
 """
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+import threading
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pyarrow
 import pyarrow.compute as pc
@@ -123,6 +134,43 @@ def _whether_dataset_is_packed(col_names: List[str]) -> bool:
 
 def _whether_dataset_is_grouped(col_names: List[str]) -> bool:
     return QianfanDataGroupColumnName in col_names
+
+
+class TaskDispatcher:
+    def __init__(self, batch_size: int, task_number: int):
+        self.task_queue: List[Tuple[int, int]] = []
+        for batch_index in range(0, task_number, batch_size):
+            current_batch_size = min(task_number - batch_index, batch_size)
+            self.task_queue.append((batch_index, current_batch_size))
+
+        self.lock = threading.Lock()
+        self.current_task_queue_index = 0
+
+    def get_task(self) -> Optional[Tuple[int, int]]:
+        with self.lock:
+            if self.current_task_queue_index >= len(self.task_queue):
+                return None
+
+            task = self.task_queue[self.current_task_queue_index]
+            self.current_task_queue_index += 1
+            return task
+
+    def mapper_closure(
+        self, func: Callable[[int, int], Generator[Any, None, None]]
+    ) -> Callable[[], Generator[Tuple[int, Any], None, None]]:
+        def new_func() -> Generator[Tuple[int, Any], None, None]:
+            task_slice = self.get_task()
+            while task_slice:
+                batch_index, batch_size = task_slice[0], task_slice[1]
+                returned_data_list: List[Any] = []
+
+                for returned_data in func(batch_index, batch_size):
+                    returned_data_list.append(returned_data)
+
+                yield batch_index, returned_data_list
+                task_slice = self.get_task()
+
+        return new_func
 
 
 class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
@@ -279,12 +327,24 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         else:
             raise ValueError(f"unsupported key type {type(by)} when get row from table")
 
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(
+        self,
+        op: Callable[[Any], Any],
+        batch_size: int = 10000,
+        path: str = "./default_path",
+        keep_original_order: bool = True,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on pyarrow table's row
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
+            keep_original_order (bool): does table after mapping will keep
+                same order with OG Table, default to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: a new pyarrow table
@@ -296,53 +356,70 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         # 防止一次性读入全部数据，丧失 Memory-Map 的含义
         # 后续需要优化成 Batch + 多线程的形式来优化数据集处理速度
 
-        # TODO 但是还缺失了结果数据集的 mmap 能力，这个需要再看下怎么解决
-
         # 如果数据集是被 pack 起来的，则按照一行作为一个列表，传递给 op 函数
+
+        # 创建一个任务分配器，来分配需要处理的区间
+        task_dispatcher = TaskDispatcher(batch_size, self.table.num_rows)
+
         if self._inner_table_is_packed():
-            new_list: List[Union[List[Dict[str, Any]], str]] = []
-            for row_index in range(self.table.num_rows):
-                row = self.table.take([row_index]).to_pylist()[0][
+
+            def _mapper_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[Any, None, None]:
+                # 拿到一个区间任务并取出区间数据
+                rows = self.table.slice(batch_index, batch_size).to_pydict()[
                     QianfanDatasetPackColumnName
                 ]
-                returned_data = op(row)
-                if not returned_data:
-                    log_warn("a row has been deleted from table")
-                    continue
-                if not isinstance(returned_data, (list, str)):
-                    raise ValueError(
-                        "returned value isn't list or str, rather"
-                        f" {type(returned_data)}"
-                    )
 
-                new_list.append(returned_data)
+                # 开始处理并且放在结果集合里面
+                for row in rows:
+                    returned_data = op(row)
+                    if not returned_data:
+                        log_warn("a row has been deleted from table")
+                        continue
+                    if not isinstance(returned_data, (list, str)):
+                        raise ValueError(
+                            "returned value isn't list or str, rather"
+                            f" {type(returned_data)}"
+                        )
 
-            return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: new_list})
-        # 反之，则按照正常的一个行为一个字典传递给 op 函数
+                    yield returned_data
+
         else:
-            new_table: List[Dict[str, Any]] = []
             is_grouped = self._inner_table_is_grouped()
 
-            for row_index in range(self.table.num_rows):
-                origin_data = self.table.take([row_index]).to_pylist()[0]
-                input_dict = {key: val for key, val in origin_data.items()}
-                group_number = (
-                    None if not is_grouped else input_dict[QianfanDataGroupColumnName]
-                )
+            def _mapper_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[Any, None, None]:
+                rows = self.table.slice(batch_index, batch_size).to_pylist()
+                for row in rows:
+                    input_dict = {key: val for key, val in row.items()}
+                    group_number = (
+                        None
+                        if not is_grouped
+                        else input_dict[QianfanDataGroupColumnName]
+                    )
+                    returned_data = op(input_dict)
 
-                returned_data = op(input_dict)
-                if not returned_data:
-                    log_warn("a row has been deleted from table")
-                    continue
-                if not isinstance(returned_data, dict):
-                    raise ValueError("returned value isn't dict")
+                    if not returned_data:
+                        log_warn("a row has been deleted from table")
+                        continue
+                    if not isinstance(returned_data, dict):
+                        raise ValueError("returned value isn't dict")
 
-                if is_grouped and QianfanDataGroupColumnName not in returned_data:
-                    returned_data[QianfanDataGroupColumnName] = group_number
+                    if is_grouped and QianfanDataGroupColumnName not in returned_data:
+                        returned_data[QianfanDataGroupColumnName] = group_number
 
-                new_table.append(returned_data)
+                    yield returned_data
 
-            return pyarrow.Table.from_pylist(new_table)
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        return _create_map_arrow_file(
+            path=path,
+            **kwargs,
+            mapper_closure=task_dispatcher.mapper_closure(_mapper_closure),
+            keep_original_order=keep_original_order,
+        )
 
     def filter(self, op: Callable[[Any], bool]) -> Self:
         """
@@ -608,6 +685,7 @@ class Table(Addable, Listable, Processable):
         if not self.is_dataset_grouped():
             log_warn("squash group number when table isn't grouped")
             return
+
         self.inner_table = self.inner_table.sort_by(QianfanDataGroupColumnName)
         group_column_list = self.col_list(QianfanDataGroupColumnName)[
             QianfanDataGroupColumnName
@@ -630,10 +708,17 @@ class Table(Addable, Listable, Processable):
 
         return
 
-    def pack(self) -> bool:
+    def pack(
+        self, batch_size: int = 10000, path: str = "./default_path", **kwargs: Any
+    ) -> bool:
         """
         pack all group into 1 row
         and make table array-like with single column
+
+        Args:
+            batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
+            **kwargs (Any): other arguments
 
         Returns:
             bool: whether packing succeeded
@@ -652,38 +737,92 @@ class Table(Addable, Listable, Processable):
 
         self._squash_group_number()
 
+        # 添加用于定位错误的 _index 列，并且按照压缩后的组号重排数据
         inner_index = "_index"
         group_ordered_table: pyarrow.Table = self.inner_table.append_column(
             inner_index, [list(range(self.row_number()))]
         ).sort_by(QianfanDataGroupColumnName)
 
-        result_list: List[List[Dict[str, Any]]] = []
-        for row in group_ordered_table.to_pylist():
-            group_index = row[QianfanDataGroupColumnName]
-            if group_index < 0:
-                log_error(
-                    f"row {row[inner_index]} has illegal group value:"
-                    f" {row[QianfanDataGroupColumnName]}"
-                )
-                return False
+        # 用于合并由于切分数据集而导致被分割的同组元素的一个 Dict
+        # 键是由下一个切片的开始索引
+        merge_dict: Dict[int, Tuple[int, List[Dict[str, Any]]]] = {}
 
-            row.pop(inner_index)
-            row.pop(QianfanDataGroupColumnName)
+        task_dispatcher = TaskDispatcher(batch_size, self.inner_table.num_rows)
 
-            while group_index >= len(result_list):
-                result_list.append([])
-            result_list[group_index].append(row)
+        def _pack_closure(
+            batch_index: int, batch_size: int
+        ) -> Generator[Any, None, None]:
+            # 当前组别的数据缓存
+            group_data: List[Dict[str, Any]] = []
 
-        self.inner_table = pyarrow.Table.from_pydict(
-            {QianfanDatasetPackColumnName: result_list}
+            rows = group_ordered_table.slice(batch_index, batch_size).to_pylist()
+            # 记录当前处理的组号
+            current_group_index: int = rows[0][QianfanDataGroupColumnName]
+
+            # 记录是否需要合并组
+            is_first_group_chunk: bool = True
+
+            for i in range(len(rows)):
+                group_index = rows[i][QianfanDataGroupColumnName]
+                if group_index < 0:
+                    err_msg = (
+                        f"row {rows[i][inner_index]} has illegal group value:"
+                        f" {rows[i][QianfanDataGroupColumnName]}"
+                    )
+                    log_error(err_msg)
+                    raise ValueError(err_msg)
+
+                rows[i].pop(inner_index)
+                rows[i].pop(QianfanDataGroupColumnName)
+
+                # 当读完所有当前组的数据后，返回一次
+                if group_index != current_group_index:
+                    if is_first_group_chunk:
+                        is_first_group_chunk = False
+                        if batch_index in merge_dict:
+                            data_tuple = merge_dict[batch_index]
+                            if data_tuple[0] == group_index:
+                                group_data += data_tuple[1]
+                            del merge_dict[batch_index]
+
+                    current_group_index = group_index
+                    yield group_data
+                    group_data = []
+
+                group_data.append(rows[i])
+
+            # 结束后再把剩下没有返回的给丢到合并字典中
+            if group_data:
+                if batch_index + batch_size < self.inner_table.num_rows:
+                    merge_dict[batch_index + batch_size] = (
+                        current_group_index,
+                        group_data,
+                    )
+                else:
+                    # 如果是最后一组，则不合并，抛出
+                    yield group_data
+
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        self.inner_table = _create_map_arrow_file(
+            path=path,
+            **kwargs,
+            mapper_closure=task_dispatcher.mapper_closure(_pack_closure),
         )
         return True
 
-    def unpack(self) -> bool:
+    def unpack(
+        self, batch_size: int = 10000, path: str = "./default_path", **kwargs: Any
+    ) -> bool:
         """
         unpack all element in the row "_pack"
         make sure the element in the column "_pack"
         is Sequence[Dict[str, Any]]
+
+        Args:
+            batch_size (int): batch size of concurrent processing
+            path (str): where to save temporary arrow file
+            **kwargs (Any): other arguments
 
         Returns:
             bool: whether unpacking succeeded
@@ -709,23 +848,50 @@ class Table(Addable, Listable, Processable):
             log_warn(f"dataset has element not supported: {element}")
             return False
 
-        data_list = self.to_pydict()[QianfanDatasetPackColumnName]
-        self.inner_table = _construct_table_from_nest_sequence(data_list)
+        task_dispatcher = TaskDispatcher(batch_size, self.inner_table.num_rows)
+
+        def _unpack_closure(
+            batch_index: int, batch_size: int
+        ) -> Generator[Any, None, None]:
+            rows = self.inner_table.slice(batch_index, batch_size).to_pydict()[
+                QianfanDatasetPackColumnName
+            ]
+            for i in range(len(rows)):
+                returned_data = _construct_table_from_nest_sequence(
+                    rows[i], batch_index + i
+                )
+
+                for data in returned_data:
+                    yield data
+
+        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+
+        self.inner_table = _create_map_arrow_file(
+            path=path,
+            **kwargs,
+            mapper_closure=task_dispatcher.mapper_closure(_unpack_closure),
+        )
         return True
 
     # 直接调用 Table 对象的接口方法都默认是在行上做处理
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
         """
         map on pyarrow table's row
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
-        self.inner_table = manipulator.map(op)  # noqa
+        if not callable(op):
+            err_msg = "op has type {type}, rather than callable"
+            log_error(err_msg)
+            raise TypeError(err_msg)
+
+        self.inner_table = manipulator.map(op, **kwargs)  # noqa
         return self
 
     def filter(self, op: Callable[[Any], bool]) -> Self:

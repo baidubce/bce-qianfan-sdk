@@ -56,8 +56,12 @@ class FileDataSource(DataSource, BaseModel):
     ) -> None:
         if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
             lines: List[str] = []
-            for elem in data:
-                lines.append(json.dumps(elem, ensure_ascii=False) + "\n")
+            if index != 0:
+                lines.append(",\n")
+            for i in range(len(data)):
+                lines.append(json.dumps(data[i], ensure_ascii=False))
+                if i != len(data) - 1:
+                    lines.append(",\n")
 
             fd.writelines(lines)
 

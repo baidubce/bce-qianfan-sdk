@@ -1,21 +1,14 @@
+import { BaseClient } from '../Base';
+import { ChatBody, Resp } from '../interface';
 import { ChatModel } from './utils';
-import { ChatBody, ChatResp } from '../interface';
-export declare class ChatCompletion {
-    private API_KEY;
-    private SECRET_KEY;
-    private Type;
-    private headers;
-    private axiosInstance;
-    access_token: string;
-    expires_in: number;
+declare class ChatCompletion extends BaseClient {
     /**
-     * 千帆大模型
-     * @param API_KEY API Key，IAM、AK/SK 鉴权时必填
-     * @param SECRET_KEY Secret Key，IAM、AK/SK 鉴权时必填
-     * @param Type 鉴权方式，默认IAM鉴权，如果使用AK/SK鉴权，请设置为'AK'
+     * chat
+     * @param body 聊天请求体
+     * @param model 聊天模型，默认为 'ERNIE-Bot-turbo'
+     * @param stream 是否开启流模式，默认为 false
+     * @returns Promise<ChatResp | AsyncIterable<ChatResp>>
      */
-    constructor(API_KEY: string, SECRET_KEY: string, Type?: string);
-    private sendRequest;
-    chat(body: ChatBody, model?: ChatModel): Promise<ChatResp>;
+    chat(body: ChatBody, model?: ChatModel): Promise<Resp | AsyncIterable<Resp>>;
 }
 export default ChatCompletion;

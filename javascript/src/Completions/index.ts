@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {CompletionBody, Resp} from '../interface';
-import {modelInfoMap, CompletionModel} from './utils';
+import {ChatBody, CompletionBody, Resp} from '../interface';
+import {modelInfoMap, CompletionModel, isCompletionBody} from './utils';
 import {getPathAndBody} from '../utils';
 
 class Completions extends BaseClient {
@@ -29,7 +29,32 @@ class Completions extends BaseClient {
         model: CompletionModel = 'ERNIE-Bot-turbo'
     ): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
-        const {IAMPath, AKPath, requestBody} = getPathAndBody(model, modelInfoMap, body, this.Endpoint, 'completions');
+        // 兼容Chat模型
+        const required_keys = modelInfoMap[model]?.required_keys;
+        let reqBody: CompletionBody | ChatBody;
+        if (required_keys.includes('messages') && isCompletionBody(body)) {
+            const {prompt, ...restOfBody} = body;
+            reqBody = {
+                ...restOfBody, // 保留除prompt之外的所有属性
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+            };
+        }
+        else {
+            reqBody = body;
+        }
+        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+            model,
+            modelInfoMap,
+            baseUrl: this.qianfanBaseUrl,
+            body: reqBody,
+            endpoint: this.Endpoint,
+            type: 'completions',
+        });
         return this.sendRequest(IAMPath, AKPath, requestBody, stream);
     }
 }

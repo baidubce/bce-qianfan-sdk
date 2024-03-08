@@ -55,7 +55,13 @@ class Auth {
         debug('canonicalHeaders = %j', canonicalHeaders);
         debug('signedHeaders = %j', signedHeaders);
 
-        const rawSignature = util.format('%s\n%s\n%s\n%s', method, canonicalUri, canonicalQueryString, canonicalHeaders);
+        const rawSignature = util.format(
+            '%s\n%s\n%s\n%s',
+            method,
+            canonicalUri,
+            canonicalQueryString,
+            canonicalHeaders
+        );
         debug('rawSignature = %j', rawSignature);
         debug('sessionKey = %j', sessionKey);
         const signature = this.hash(rawSignature, sessionKey);
@@ -66,13 +72,13 @@ class Auth {
         return util.format('%s//%s', rawSessionKey, signature);
     }
 
-    private  normalize(string: string, encodingSlash: boolean = true): string {
+    private normalize(string: string, encodingSlash: boolean = true): string {
         const kEscapedMap: Record<string, string> = {
             '!': '%21',
             "'": '%27',
             '(': '%28',
             ')': '%29',
-            '*': '%2A'
+            '*': '%2A',
         };
 
         if (string === null) {
@@ -81,7 +87,7 @@ class Auth {
 
         let result = encodeURIComponent(string);
 
-        result = result.replace(/[!'\(\)\*]/g, ($1) => {
+        result = result.replace(/[!'\(\)\*]/g, $1 => {
             return kEscapedMap[$1];
         });
 
@@ -118,8 +124,8 @@ class Auth {
 
     private queryStringCanonicalization(params: Record<string, any>): string {
         const canonicalQueryString: string[] = [];
-        
-        Object.keys(params).forEach((key) => {
+
+        Object.keys(params).forEach(key => {
             if (key.toLowerCase() === H.AUTHORIZATION.toLowerCase()) {
                 return;
             }
@@ -140,12 +146,12 @@ class Auth {
         debug('headers = %j, headersToSign = %j', headers, headersToSign);
 
         const headersMap: Record<string, boolean> = {};
-        headersToSign.forEach((item) => {
+        headersToSign.forEach(item => {
             headersMap[item.toLowerCase()] = true;
         });
 
         const canonicalHeaders: string[] = [];
-        Object.keys(headers).forEach((key) => {
+        Object.keys(headers).forEach(key => {
             let value = headers[key];
             value = _.isString(value) ? trim(value) : value;
             if (value == null || value === '') {
@@ -153,20 +159,14 @@ class Auth {
             }
             key = key.toLowerCase();
             if (/^x\-bce\-/.test(key) || headersMap[key] === true) {
-                canonicalHeaders.push(
-                    util.format(
-                        '%s:%s',
-                        normalize(key),
-                        normalize(value)
-                    )
-                );
+                canonicalHeaders.push(util.format('%s:%s', normalize(key), normalize(value)));
             }
         });
 
         canonicalHeaders.sort();
 
         const signedHeaders: string[] = [];
-        canonicalHeaders.forEach((item) => {
+        canonicalHeaders.forEach(item => {
             signedHeaders.push(item.split(':')[0]);
         });
 

@@ -44,28 +44,6 @@ class BaseTrainConfig(BaseModel):
     extra fields for train_config
     """
 
-    @classmethod
-    def load(cls, path: str) -> "TrainConfig":
-        import yaml
-
-        try:
-            from pathlib import Path
-
-            path_obj = Path(path)
-            if path_obj.suffix == ".yaml":
-                with open(path_obj, "r", encoding=encoding()) as file:
-                    data = yaml.safe_load(file)
-                    return TrainConfig.parse_obj(data)
-            elif path_obj.suffix == ".json":
-                return cls.parse_file(path)
-            else:
-                raise InvalidArgumentError("unsupported file to parse: {path}")
-        except FileNotFoundError as e:
-            log_error(f"load train_config from file: {path} not found")
-            raise e
-        except Exception as e:
-            raise e
-
     def validate_config(self, train_limit: "TrainLimit") -> bool:
         schema = self.schema()
         res = True
@@ -146,7 +124,6 @@ class BaseTrainConfig(BaseModel):
         return True
 
 
-
 class TrainConfig(BaseTrainConfig):
     epoch: Optional[int] = Field(default=None, limit_type=LimitType.Range)
     """
@@ -185,7 +162,28 @@ class TrainConfig(BaseTrainConfig):
     )
     """LoRA参数层列表"""
 
-    
+    @classmethod
+    def load(cls, path: str) -> "TrainConfig":
+        import yaml
+
+        try:
+            from pathlib import Path
+
+            path_obj = Path(path)
+            if path_obj.suffix == ".yaml":
+                with open(path_obj, "r", encoding=encoding()) as file:
+                    data = yaml.safe_load(file)
+                    return TrainConfig.parse_obj(data)
+            elif path_obj.suffix == ".json":
+                return cls.parse_file(path)
+            else:
+                raise InvalidArgumentError("unsupported file to parse: {path}")
+        except FileNotFoundError as e:
+            log_error(f"load train_config from file: {path} not found")
+            raise e
+        except Exception as e:
+            raise e
+
 
 class TrainLimit(dict):
     def __init__(self, **kwargs: Any):

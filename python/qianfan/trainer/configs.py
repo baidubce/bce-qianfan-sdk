@@ -261,11 +261,11 @@ def create_train_config_class(class_name: str, fields: Dict[str, Any]) -> Type:
             Field(**field_info),
         )  # 将字段类型修改为 Optional
     # 使用 create_model 函数创建一个动态生成的类
-    dynamic_class = create_model(
+    dynamic_class = create_model(  # type: ignore
         __model_name=class_name,
         __base__=BaseTrainConfig,
         **annotations,
-    )  # type: ignore[call-overload]
+    )
     return dynamic_class
 
 

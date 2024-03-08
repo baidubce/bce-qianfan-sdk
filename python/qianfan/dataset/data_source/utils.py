@@ -19,9 +19,11 @@ import hashlib
 import json
 import os
 import shutil
+import uuid
 import zipfile
+from pathlib import Path
 from time import sleep
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import dateutil.parser
 import pyarrow
@@ -32,6 +34,8 @@ from qianfan.dataset.consts import (
     QianfanDatasetCacheFileExtensionName,
     QianfanDatasetLocalCacheDir,
     QianfanDatasetMetaInfoExtensionName,
+    QianfanDatasetPackColumnName,
+    QianfanMapperCacheDir,
 )
 from qianfan.dataset.data_source.base import FormatType
 from qianfan.dataset.data_source.chunk_reader import (
@@ -39,9 +43,10 @@ from qianfan.dataset.data_source.chunk_reader import (
     CsvReader,
     JsonLineReader,
     JsonReader,
+    MapperReader,
     TextReader,
 )
-from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
+from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
 from qianfan.resources.console.consts import (
@@ -131,17 +136,54 @@ def _get_a_memory_mapped_pyarrow_table(
 ) -> pyarrow.Table:
     reader = _get_reader_class(format_type)(file_path=path, **kwargs)
     cache_file_path = _get_cache_file_path_and_check_cache_validity(path, reader)
-    return _read_mmap_table_from_arrow_file(cache_file_path)
+    table = _read_mmap_table_from_arrow_file(cache_file_path)
+    log_info("has got a memory-mapped table")
+    return table
+
+
+def _create_map_arrow_file(
+    path: str,
+    mapper_closure: Callable,
+    **kwargs: Any,
+) -> pyarrow.Table:
+    reader = MapperReader(mapper_closure=mapper_closure, **kwargs)
+
+    tmp_folder_path, file_name = _construct_buffer_folder_path_and_file_name(
+        QianfanMapperCacheDir, path
+    )
+    tmp_arrow_file_path = os.path.join(
+        tmp_folder_path,
+        f"{file_name}_{uuid.uuid4()}{QianfanDatasetCacheFileExtensionName}",
+    )
+
+    _write_table_to_arrow_file(tmp_arrow_file_path, reader)
+    _remove_previous_folder_file(tmp_arrow_file_path)
+    return _read_mmap_table_from_arrow_file(tmp_arrow_file_path)
 
 
 def _read_mmap_table_from_arrow_file(arrow_file_path: str) -> pyarrow.Table:
-    mmap_stream = pyarrow.memory_map(arrow_file_path)
-    return pyarrow.ipc.open_stream(mmap_stream).read_all()
+    log_info(f"start to get memory_map from {arrow_file_path}")
+    with pyarrow.memory_map(arrow_file_path) as mmap_stream:
+        return pyarrow.ipc.open_stream(mmap_stream).read_all()
 
 
-def _get_cache_file_path_and_check_cache_validity(
-    file_path: str, reader: BaseReader
-) -> str:
+def _remove_previous_folder_file(path: str) -> None:
+    dir_path, og_file_name = os.path.split(path)
+    for root, dirs, files in os.walk(dir_path):
+        for file_name in files:
+            if not file_name.endswith(QianfanDatasetCacheFileExtensionName):
+                continue
+            file_path = os.path.join(root, file_name)
+            if file_name != og_file_name:
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    continue
+
+
+def _construct_buffer_folder_path_and_file_name(
+    base_path: Union[str, Path], file_path: str
+) -> Tuple[str, str]:
     # 获取源文件的绝对路径
     abs_file_path: str = os.path.abspath(file_path)
 
@@ -153,11 +195,24 @@ def _get_cache_file_path_and_check_cache_validity(
 
     # 根据绝对路径来创建缓存文件夹
     cache_path_dir: str = os.path.join(
-        QianfanDatasetLocalCacheDir, dir_path[dir_path.find("\\") + 1 :]
+        base_path, dir_path[dir_path.find(os.path.sep) + 1 :]
     )
     os.makedirs(cache_path_dir, exist_ok=True)
 
-    # 计算源文件的哈希值，默认使用 sha256 算法
+    return cache_path_dir, file_name_without_extension_name
+
+
+def _get_cache_file_path_and_check_cache_validity(
+    file_path: str, reader: BaseReader
+) -> str:
+    cache_path_dir, file_name_without_extension_name = (
+        _construct_buffer_folder_path_and_file_name(
+            QianfanDatasetLocalCacheDir, file_path
+        )
+    )
+    abs_file_path: str = os.path.abspath(file_path)
+
+    # 计算源文件的哈希值，默认使用 md5 算法
     hash_value: str = _calculate_file_hash(file_path)
 
     # 构造元信息文件路径
@@ -176,6 +231,8 @@ def _get_cache_file_path_and_check_cache_validity(
             return cache_meta.cache_file_path
 
     # 如果不一致，则需要重新更新缓存
+    log_info(f"need create cached arrow file for {abs_file_path}")
+
     cache_file_path = os.path.join(
         cache_path_dir,
         file_name_without_extension_name + QianfanDatasetCacheFileExtensionName,
@@ -200,7 +257,7 @@ def _get_cache_file_path_and_check_cache_validity(
     return cache_file_path
 
 
-def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
+def _calculate_file_hash(file_path: str, hash_algorithm: str = "md5") -> str:
     # 创建哈希对象
     hasher = hashlib.new(hash_algorithm)
 
@@ -208,7 +265,9 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
     with open(file_path, "rb") as file:
         # 逐块读取文件内容并更新哈希对象
         for chunk in iter(lambda: file.read(4096), b""):
-            hasher.update(chunk)
+            result = hasher.digest() + chunk
+            hasher = hashlib.new(hash_algorithm)
+            hasher.update(result)
 
     # 返回计算得到的哈希值
     return hasher.hexdigest()
@@ -217,6 +276,8 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
     stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
 
+    log_info(f"start to write arrow table to {cache_file_path}")
+
     for table in _build_table_from_reader(reader):
         assert isinstance(table, pyarrow.Table)
         if stream_writer is None:
@@ -224,23 +285,41 @@ def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None
 
         stream_writer.write_table(table)
 
+    assert stream_writer
+    stream_writer.close()
+
+    log_info("writing succeeded")
     return
 
 
 def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
     reader_type = type(reader)
-    group_index_start = 0
     for elem_list in reader:
         if (
             reader_type == CsvReader
-            or reader_type == JsonReader
             or reader_type == TextReader
+            or (reader_type == JsonReader and isinstance(elem_list[0], dict))
             or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
         ):
             table = pyarrow.Table.from_pylist(elem_list)
-        elif reader_type == JsonLineReader and isinstance(elem_list[0], list):
-            table = _construct_table_from_nest_sequence(elem_list, group_index_start)
-            group_index_start += len(elem_list)
+        elif (
+            reader_type == JsonLineReader or reader_type == JsonReader
+        ) and isinstance(elem_list[0], list):
+            table = _construct_packed_table_from_nest_sequence(elem_list)
+        elif reader_type == MapperReader:
+            if isinstance(elem_list[0], (list, str)):
+                table = pyarrow.Table.from_pydict(
+                    {QianfanDatasetPackColumnName: elem_list}
+                )
+            elif isinstance(elem_list[0], dict):
+                table = pyarrow.Table.from_pylist(elem_list)
+            else:
+                err_msg = (
+                    "get unsupported element type from the return value of map"
+                    f" function: {type(elem_list[0])} with value: {elem_list[0]}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
         else:
             err_msg = "unsupported format when reading file as dataset"
             log_error(err_msg)

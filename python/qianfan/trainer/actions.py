@@ -265,6 +265,8 @@ class TrainAction(
     """train input"""
     result: Optional[Dict[str, Any]] = None
     """"train result"""
+    train_model_name: Optional[str] = None
+    """real name to start training"""
 
     def __init__(
         self,
@@ -306,6 +308,7 @@ class TrainAction(
         self.task_id = task_id
         self.job_id = job_id
         self.train_mode = train_mode
+        self.train_model_name = train_type
         if self.task_id is not None:
             # if incremental train
             pre_task_detail = api.FineTune.V2.task_detail(task_id=self.task_id)
@@ -322,6 +325,9 @@ class TrainAction(
             model_info = get_model_info(train_mode, self.train_type)
             if model_info is None:
                 log_warn(f"unknown train model type: {self.train_type} is not found")
+            elif model_info.model != "":
+                # 兼容改名模型
+                self.train_model_name = model_info.model
         assert self.train_type is not None
         if train_config is None:
             train_config = self.get_default_train_config(
@@ -460,7 +466,9 @@ class TrainAction(
             resp = api.FineTune.V2.create_job(
                 name=self.job_name,
                 description=self.task_description,
-                model=self.train_type,
+                model=(
+                    self.train_model_name if self.train_model_name else self.train_type
+                ),
                 train_mode=self.train_mode,
                 **kwargs,
             )
@@ -480,6 +488,9 @@ class TrainAction(
             for key, value in hyper_params_dict.items()
             if value is not None
         }
+        # custom fix
+        if "packing" in hyper_params_dict:
+            hyper_params_dict["Packing"] = hyper_params_dict.pop("packing")
         ds_config = input["datasets"]
         log_debug(f"train with ds_config: { ds_config}")
         log_debug(f"train with hyper_params: { hyper_params_dict}")
@@ -517,6 +528,10 @@ class TrainAction(
 
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
+                log_info(
+                    "[train_action] training task metrics:"
+                    f" {task_status_resp.get('metrics', {})}"
+                )
                 break
             elif task_status in [
                 console_consts.TrainStatus.Fail,

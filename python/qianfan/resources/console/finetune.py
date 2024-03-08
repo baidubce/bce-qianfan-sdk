@@ -388,7 +388,7 @@ class FineTune(object):
             **kwargs: Any,
         ) -> QfRequest:
             """
-            stop the fine-tune task
+            get the fine-tune task detail
 
             Parameters:
             task_id: str
@@ -419,7 +419,20 @@ class FineTune(object):
             task_id: str,
             **kwargs: Any,
         ) -> QfRequest:
-            QfRequest
+            """
+            stop the fine-tune task
+
+            Parameters:
+            task_id: str
+                task_id of the task.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
@@ -429,4 +442,27 @@ class FineTune(object):
                 **kwargs,
                 "taskId": task_id,
             }
+            return req
+
+        @classmethod
+        @console_api_request
+        def supported_models(cls, **kwargs: Any) -> QfRequest:
+            """
+            get the supported models and training params for
+            fine-tuning
+
+            Parameters:
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneSupportedModelsAction),
+            )
             return req

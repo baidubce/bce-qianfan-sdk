@@ -271,3 +271,30 @@ class ServiceType(str, Enum):
     """Text2image Service"""
     Image2text: str = "image2text"
     """Image2text Service"""
+
+
+class FinetuneSupportModelType(str, Enum):
+    Text2Text: str = "text2text"
+    """Text2Text Model"""
+    Text2Image: str = "text2image"
+    """Text2Image Model"""
+
+
+class FinetuneSupportHyperParameterType(str, Enum):
+    Int: str = "int"
+    """int type"""
+    Float: str = "float"
+    """float type"""
+    Boolean: str = "boolean"
+    """boolean type"""
+    String: str = "string"
+    """string type"""
+
+
+class FinetuneSupportHyperParameterCheckType(str, Enum):
+    Range: str = "range"
+    """range type"""
+    Choice: str = "choice"
+    """choice type"""
+    MultipleChoice: str = "mult_choice"
+    """multiple choice type"""

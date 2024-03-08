@@ -13,4 +13,4 @@
 // limitations under the License.
 
 export {default as Text2Image} from './text2image';
-export {default as Image2Text} from './image2text';
+// export {default as Image2Text} from './image2text';

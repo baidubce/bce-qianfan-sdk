@@ -923,6 +923,13 @@ def finetune_v2_task_detail(body):
         }
         if not is_done:
             resp["result"]["runProgress"] = f"{int(100 * call_times / MAX_CALL_TIMES)}%"
+        else:
+            resp["result"]["metrics"] = {
+                "BLEU-4": "16.56%",
+                "ROUGE-1": "27.84%",
+                "ROUGE-2": "11.96%",
+                "ROUGE-L": "26.02%",
+            }
         return json_response(resp)
 
 
@@ -953,7 +960,7 @@ def finetune_v2_supported_models(body):
                                             "checkType": "range",
                                             "checkValue": [0.0001, 0.1],
                                             "default": 0.01,
-                                            "feKey": "weightDecay",
+                                            "key": "weightDecay",
                                             "type": "float",
                                         },
                                     ],
@@ -965,7 +972,7 @@ def finetune_v2_supported_models(body):
                                             "checkType": "choice",
                                             "checkValue": ["True", "False"],
                                             "default": "True",
-                                            "feKey": "loraAllLinear",
+                                            "key": "loraAllLinear",
                                             "type": "string",
                                         },
                                     ],
@@ -982,7 +989,7 @@ def finetune_v2_supported_models(body):
                                             "checkType": "choice",
                                             "checkValue": [4096, 8192],
                                             "default": 4096,
-                                            "feKey": "maxSeqLen",
+                                            "key": "maxSeqLenb",
                                             "type": "int",
                                         },
                                     ],

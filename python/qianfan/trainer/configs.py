@@ -12,67 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
+import hashlib
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from qianfan.config import encoding
 from qianfan.errors import InvalidArgumentError
+from qianfan.resources import FineTune
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.consts import PeftType
 from qianfan.utils import log_error, log_warn
-from qianfan.utils.pydantic import BaseModel, Field
+from qianfan.utils.pydantic import BaseModel, Field, create_model
+from qianfan.utils.utils import camel_to_snake
 
 T = TypeVar("T")
 
 
-class LimitType(int, Enum):
-    SingleChoice = 1
-    MultipleChoice = 2
-    Range = 3
+LimitType = console_consts.FinetuneSupportHyperParameterCheckType
 
 
-class TrainConfig(BaseModel):
-    epoch: Optional[int] = Field(default=None, limit_type=LimitType.Range)
-    """
-    epoch number: differ from models
-    """
-    batch_size: Optional[int] = Field(default=None, limit_type=LimitType.Range)
-    """
-    batch size: differ from models
-    """
-    learning_rate: Optional[float] = Field(default=None, limit_type=LimitType.Range)
-    """
-    learning rate: differ from models
-    """
-    max_seq_len: Optional[int] = Field(default=None, limit_type=LimitType.SingleChoice)
-    """
-    max_seq_len: differ from models
-    """
-    logging_steps: Optional[int] = Field(default=None, limit_type=LimitType.Range)
-    """log saving interval steps"""
-    warmup_ratio: Optional[float] = Field(default=None, limit_type=LimitType.Range)
-    """warmup ratio"""
-    weight_decay: Optional[float] = Field(default=None, limit_type=LimitType.Range)
-    """normalization params"""
-    lora_rank: Optional[int] = Field(default=None, limit_type=LimitType.SingleChoice)
-    """loRA rank"""
-    lora_all_linear: Optional[str] = Field(
-        default=None, limit_type=LimitType.SingleChoice
-    )
-    """loRA all linear layer"""
-    scheduler_name: Optional[str] = Field(
-        default=None, limit_type=LimitType.SingleChoice
-    )
-    """for learning rate schedule"""
-    lora_alpha: Optional[int] = Field(default=None, limit_type=LimitType.Range)
-    """LoRA scaling params"""
-    lora_dropout: Optional[float] = Field(default=None, limit_type=LimitType.Range)
-    """loRA dropout"""
-    lora_target_modules: Optional[List[str]] = Field(
-        default=None, limit_type=LimitType.MultipleChoice
-    )
-    """LoRA参数层列表"""
-
+class BaseTrainConfig(BaseModel):
     peft_type: Optional[Union[str, PeftType]] = None
     """
     parameter efficient FineTuning method, like `LoRA`, `P-tuning`, `ALL`
@@ -126,7 +84,7 @@ class TrainConfig(BaseModel):
                 return False
             if limit_type == LimitType.Range:
                 res &= self._validate_range(value, train_limit[k], k)
-            elif limit_type == LimitType.SingleChoice:
+            elif limit_type == LimitType.Choice:
                 res &= self._validate_options(value, train_limit[k], k)
             elif limit_type == LimitType.MultipleChoice:
                 for v in value:
@@ -188,6 +146,47 @@ class TrainConfig(BaseModel):
         return True
 
 
+
+class TrainConfig(BaseTrainConfig):
+    epoch: Optional[int] = Field(default=None, limit_type=LimitType.Range)
+    """
+    epoch number: differ from models
+    """
+    batch_size: Optional[int] = Field(default=None, limit_type=LimitType.Range)
+    """
+    batch size: differ from models
+    """
+    learning_rate: Optional[float] = Field(default=None, limit_type=LimitType.Range)
+    """
+    learning rate: differ from models
+    """
+    max_seq_len: Optional[int] = Field(default=None, limit_type=LimitType.Choice)
+    """
+    max_seq_len: differ from models
+    """
+    logging_steps: Optional[int] = Field(default=None, limit_type=LimitType.Range)
+    """log saving interval steps"""
+    warmup_ratio: Optional[float] = Field(default=None, limit_type=LimitType.Range)
+    """warmup ratio"""
+    weight_decay: Optional[float] = Field(default=None, limit_type=LimitType.Range)
+    """normalization params"""
+    lora_rank: Optional[int] = Field(default=None, limit_type=LimitType.Choice)
+    """loRA rank"""
+    lora_all_linear: Optional[str] = Field(default=None, limit_type=LimitType.Choice)
+    """loRA all linear layer"""
+    scheduler_name: Optional[str] = Field(default=None, limit_type=LimitType.Choice)
+    """for learning rate schedule"""
+    lora_alpha: Optional[int] = Field(default=None, limit_type=LimitType.Range)
+    """LoRA scaling params"""
+    lora_dropout: Optional[float] = Field(default=None, limit_type=LimitType.Range)
+    """loRA dropout"""
+    lora_target_modules: Optional[List[str]] = Field(
+        default=None, limit_type=LimitType.MultipleChoice
+    )
+    """LoRA参数层列表"""
+
+    
+
 class TrainLimit(dict):
     def __init__(self, **kwargs: Any):
         for k, v in kwargs.items():
@@ -196,10 +195,8 @@ class TrainLimit(dict):
 
     def __or__(self, other: Any) -> "TrainLimit":
         assert isinstance(other, TrainLimit)
-        # 使用copy模块深拷贝a的数据，避免修改原始数据
         merged_data = copy.deepcopy(self)
 
-        # 遍历b的字段，如果a中的值为None，则取b的值
         for field, value in other.items():
             if merged_data.get(field) is None:
                 merged_data[field] = value
@@ -210,17 +207,21 @@ class TrainLimit(dict):
 
 
 class ModelInfo(BaseModel):
+    model: str = ""
+    """
+    model used to create train task
+    """
     short_name: str
     """
     short_name must be shorter than 15 characters
     """
-    base_model_type: str
+    base_model_type: str = ""
     """
-    base model name
+    [deprecated] base model name
     """
     support_peft_types: List[PeftType] = []
     """support peft types and suggestions for training params"""
-    common_params_limit: TrainLimit
+    common_params_limit: TrainLimit = TrainLimit()
     """common params limit, except suggestion params
     diverse from different peft types"""
     specific_peft_types_params_limit: Optional[
@@ -240,8 +241,158 @@ def get_model_info(
         return None
 
 
+def _get_online_supported_model_info_mapping(
+    model_info_list: List[Any], train_mode: console_consts.TrainMode
+) -> Dict[str, ModelInfo]:
+    try:
+        # 更新校验限制 & 更新模型默认配置
+        return _parse_model_info_list(
+            model_info_list=model_info_list, train_mode=train_mode
+        )
+    except ValueError as e:
+        log_warn(f"get latest model info failed, {e}")
+    return {}
+
+
+def create_train_config_class(class_name: str, fields: Dict[str, Any]) -> Type:
+    annotations = {}
+    # 遍历字段字典，将字段名称和类型添加到字典中
+    for field_name, field_info in fields.items():
+        annotations[field_name] = (
+            Optional[field_info.get("type", str)],
+            Field(**field_info),
+        )  # 将字段类型修改为 Optional
+    # 使用 create_model 函数创建一个动态生成的类
+    dynamic_class = create_model(
+        __model_name=class_name, __base__=BaseTrainConfig, **annotations
+    )  # type: ignore
+    return dynamic_class
+
+
+type_mapping = {
+    "integer": int,
+    "string": str,
+    "number": float,
+    "array": list,
+    "float": float,
+    "int": int,
+    "str": str,
+    "boolean": bool,
+    "bool": bool,
+}
+
+
+def _update_train_config(model_info_list: List[Dict]) -> Type:
+    # 使用动态生成类的函数创建 TrainConfig 类
+    global TrainConfig
+    schema_dict = TrainConfig.schema()
+    # try:
+    train_config_fields = {}
+    params = schema_dict.get("properties", {})
+    for key, val in params.items():
+        if val.get("type", None):
+            if "limit_type" not in val:
+                continue
+            field_info: Dict[str, Any] = {}
+            if val["type"] in type_mapping:
+                field_info["type"] = type_mapping[val["type"]]
+                field_info["limit_type"] = val["limit_type"]
+                field_info["default"] = None
+
+                train_config_fields[key] = field_info
+
+    for info in model_info_list:
+        for train_mode_info in info["supportTrainMode"]:
+            for param_scale in train_mode_info["supportParameterScale"]:
+                for params in param_scale["supportHyperParameterConfig"]:
+                    try:
+                        field_name = camel_to_snake(params["key"])
+                        train_config_fields[field_name] = {
+                            "type": type_mapping[params["type"]],
+                            "limit_type": LimitType(params["checkType"]),
+                            "default": None,
+                        }
+                        if params["checkType"] == "mult_choice":
+                            train_config_fields[field_name]["type"] = list
+                    except Exception as e:
+                        log_warn(f'invalid field name: {params["key"]} err: {e}')
+                        continue
+
+    new_train_config_type = create_train_config_class(
+        "TrainConfig", train_config_fields
+    )
+    # except Exception as e:
+    #     log_error(f"update train config failed, {e}")
+    #     return TrainConfig
+
+    TrainConfig = new_train_config_type  # type: ignore
+    return TrainConfig
+
+
+def _update_default_config(model_info_list: List[Dict]) -> Dict:
+    model_info_mapping: Dict[str, Any] = {
+        console_consts.TrainMode.PostPretrain: {},
+        console_consts.TrainMode.SFT: {},
+    }
+    for info in model_info_list:
+        model = info["model"]
+        for train_mode_info in info["supportTrainMode"]:
+            train_mode = train_mode_info.get("trainMode")
+            if not model_info_mapping[train_mode].get(model, None):
+                model_info_mapping[train_mode][model] = {}
+            for param_scale in train_mode_info["supportParameterScale"]:
+                default_fields = {}
+                param_scale_peft = param_scale["parameterScale"]
+                for params in param_scale["supportHyperParameterConfig"]:
+                    field_name = camel_to_snake(params["key"])
+                    default_fields[field_name] = params["default"]
+                model_info_mapping[train_mode][model][param_scale_peft] = TrainConfig(
+                    **default_fields
+                )
+    return model_info_mapping
+
+
+def _parse_model_info_list(
+    model_info_list: List[Dict], train_mode: console_consts.TrainMode
+) -> Dict[str, ModelInfo]:
+    """
+    parse the supported fine-tune info list, update the train_limit
+
+    Args:
+        model_info_list: the list of model info
+
+    Return:
+        model_info_mapping: (Dict[Dict[str, ModelInfo]])
+    """
+    model_info_mapping = {}
+    for info in model_info_list:
+        model = info["model"]
+        model_hash = hashlib.sha256(model.encode()).hexdigest()[:8]
+        m = ModelInfo(
+            model=model,
+            short_name=f"model{model_hash}",
+            support_peft_types=[],
+            specific_peft_types_params_limit={},
+        )
+        for train_mode_info in info["supportTrainMode"]:
+            if train_mode.value != train_mode_info.get("trainMode"):
+                continue
+            for param_scale in train_mode_info["supportParameterScale"]:
+                train_limit = TrainLimit()
+                param_scale_peft = param_scale["parameterScale"]
+                if param_scale_peft not in m.support_peft_types:
+                    m.support_peft_types.append(PeftType(param_scale_peft))
+                for params in param_scale["supportHyperParameterConfig"]:
+                    field_name = camel_to_snake(params["key"])
+                    train_limit[field_name] = params["checkValue"]
+                m.specific_peft_types_params_limit[param_scale_peft] = train_limit  # type: ignore
+        model_info_mapping[model] = m
+    return model_info_mapping
+
+
 PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
+        model="ERNIE-Speed-8K",
         short_name="ERNIE_Speed",
         base_model_type="ERNIE-Speed",
         support_peft_types=[PeftType.ALL],
@@ -286,6 +437,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
 # model train type -> default train config
 ModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
+        model="ERNIE-Speed-8K",
         short_name="ERNIE_Speed",
         base_model_type="ERNIE-Speed",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
@@ -309,6 +461,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
+        model="ERNIE-Lite-8K-0922",
         short_name="turbo_0922",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
@@ -331,6 +484,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
+        model="ERNIE-Lite-8K-0725",
         short_name="turbo_0725",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
@@ -348,6 +502,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         },
     ),
     "ERNIE-Bot-turbo-0704": ModelInfo(
+        model="ERNIE-Lite-8K-0704",
         short_name="turbo_0704",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
@@ -944,3 +1099,50 @@ DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
         ),
     },
 }
+
+
+def update_train_configs() -> None:
+    try:
+        # 获取最新支持的配置：
+        model_info_list = FineTune.V2.supported_models()["result"]
+        # 更新训练config
+        _update_train_config(model_info_list=model_info_list)
+    except Exception as e:
+        log_warn(f"failed to get supported models: {e}")
+        return
+
+
+def update_all_train_configs() -> None:
+    try:
+        # 获取最新支持的配置：
+        model_info_list = FineTune.V2.supported_models()["result"]
+        # 更新训练config
+        _update_train_config(model_info_list=model_info_list)
+        # 更新模型的类型和校验参数
+        sft_model_info = _get_online_supported_model_info_mapping(
+            model_info_list, console_consts.TrainMode.SFT
+        )
+        ppt_model_info = _get_online_supported_model_info_mapping(
+            model_info_list, console_consts.TrainMode.PostPretrain
+        )
+        # 更新模型默认配置：
+        default_configs_mapping = _update_default_config(model_info_list)
+    except Exception as e:
+        log_warn(f"failed to get supported models: {e}")
+        return
+    global ModelInfoMapping
+    ModelInfoMapping = {**ModelInfoMapping, **sft_model_info}
+    global PostPreTrainModelInfoMapping
+    PostPreTrainModelInfoMapping = {
+        **PostPreTrainModelInfoMapping,
+        **ppt_model_info,
+    }
+    global DefaultTrainConfigMapping
+    DefaultTrainConfigMapping = default_configs_mapping[console_consts.TrainMode.SFT]
+    global DefaultPostPretrainTrainConfigMapping
+    DefaultPostPretrainTrainConfigMapping = default_configs_mapping[
+        console_consts.TrainMode.PostPretrain
+    ]
+
+
+update_all_train_configs()

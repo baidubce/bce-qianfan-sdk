@@ -482,6 +482,9 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy config not found")
         log_info(f"ready to deploy service with model {model.id}/{model.version_id}")
+        model.auto_complete_info()
+        assert model.old_id is not None
+        assert model.old_version_id is not None
         svc_publish_resp = api.Service.create(
             model_id=model.old_id,
             model_version_id=model.old_version_id,

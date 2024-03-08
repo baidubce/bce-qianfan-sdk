@@ -223,6 +223,7 @@ main();
 SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。支持知识库、智慧图问、天气等插件。
 
 ```ts
+// 天气插件
 async function main() {
     const resp = await client.plugins({
         query: '深圳今天天气如何',
@@ -235,12 +236,35 @@ async function main() {
         plugins: [
             'uuid-weatherforecast',
         ],
-        stream: true,
     });
-    // 返回结果
+}
+
+// 智慧图问
+async function chatocrMain() {
+    const resp = await client.plugins({
+        query: '请解析这张图片, 告诉我怎么画这张图的简笔画',
+        plugins: [
+            'uuid-chatocr',
+        ],
+        fileurl: 'https://xxx.bcebos.com/xxx/xxx.jpeg',
+    });
+}
+
+// 知识库
+async function zhishikuMain() {
+    const reps = await client.plugins({
+        query: '你好什么时候飞行员需要负法律责任？',
+        plugins: [
+            'uuid-zhishiku',
+        ],
+    });
 }
 
 main();
+
+// chatocrMain();
+
+// zhishikuMain();
 ```
 
 参数传入 stream 为 `true` 时，返回流式结果
@@ -253,7 +277,7 @@ const client = new Plugin();
 // 手动传 AK/SK 测试
 // const client = new Plugins({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
 async function main() {
-    const resp = await client.plugins({
+    const stream = await client.plugins({
         query: '深圳今天天气如何',
         /** 
          *  插件名称
@@ -264,9 +288,11 @@ async function main() {
         plugins: [
             'uuid-weatherforecast',
         ],
-        verbose: false,
+        stream: true,
     });
-    // 返回结果
+    for await (const chunk of stream as AsyncIterableIterator<any>) {
+        // 返回结果
+    }
 }
 
 main();

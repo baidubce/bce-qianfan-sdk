@@ -38,7 +38,6 @@ async function weatherMain() {
         plugins: [
             'uuid-weatherforecast',
         ],
-        verbose: false,
     });
     console.log('返回结果');
     console.log(resp);
@@ -60,6 +59,23 @@ async function weatherStreamMain() {
     for await (const chunk of stream as AsyncIterableIterator<any>) {
         console.log(chunk);
     }
+}
+
+// 智慧图问插件 测试
+async function main() {
+    const stream = await client.plugins({
+        query: '请解析这张图片, 告诉我怎么画这张图的简笔画',
+        plugins: [
+            'uuid-chatocr',
+        ],
+        stream: true,
+        fileurl: 'https://xxx.bcebos.com/xxx/xxx.jpeg',
+    });
+    for await (const chunk of stream as AsyncIterableIterator<any>) {
+        console.log(chunk);
+    }
+    // console.log('返回结果');
+    // console.log(resp);
 }
 
 // weatherStreamMain();

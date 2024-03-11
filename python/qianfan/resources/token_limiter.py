@@ -92,13 +92,17 @@ class BaseTokenLimiter:
     def __init__(
         self, token_limit_per_minute: int = 0, buffer_ratio: float = 0.1, **kwargs: Any
     ) -> None:
-        self._token_limit_per_minute = token_limit_per_minute
+        self._token_limit_per_minute: int = token_limit_per_minute
         if self._token_limit_per_minute <= 0:
             self._token_limit_per_minute = get_config().TPM_LIMIT
 
+        self._og_token_limit_per_minute: int = self._token_limit_per_minute
+        self._buffer_ratio: float = buffer_ratio
         self._token_limit_per_minute = int(self._token_limit_per_minute * buffer_ratio)
 
-        self._token_current = self._token_limit_per_minute
+        self._has_been_reset = False
+
+        self._token_current: int = self._token_limit_per_minute
         self._last_check_timestamp = datetime.datetime.utcnow()
 
     def _check_limit(self, token_used: int) -> None:
@@ -176,6 +180,34 @@ class TokenLimiter(BaseTokenLimiter):
             self._token_current += compensation
             self._lock.release()
 
+    def reset_once(self, tpm: int) -> None:
+        if self._has_been_reset:
+            return
+
+        self._lock.acquire()
+        if self._has_been_reset:
+            self._lock.release()
+            return
+
+        if self._og_token_limit_per_minute == tpm:
+            self._has_been_reset = True
+            self._lock.release()
+            return
+
+        tpm = (
+            min(self._og_token_limit_per_minute, tpm) if not self._is_closed() else tpm
+        )
+        tpm = max(tpm, 0)
+
+        og_token_current = self._token_current
+        og_token_max = self._token_limit_per_minute
+        diff = og_token_max - og_token_current
+        self._token_limit_per_minute = int(tpm * self._buffer_ratio)
+        self._token_current = max(self._token_limit_per_minute - diff, 0)
+
+        self._has_been_reset = True
+        self._lock.release()
+
 
 class AsyncTokenLimiter(BaseTokenLimiter):
     """Asynchronous Token Limiter implementation"""
@@ -236,3 +268,31 @@ class AsyncTokenLimiter(BaseTokenLimiter):
         if not lock.locked():
             async with lock:
                 self._token_current += compensation
+
+    async def reset_once(self, tpm: int) -> None:
+        if self._has_been_reset:
+            return
+
+        await self._get_internal_async_lock().acquire()
+        if self._has_been_reset:
+            self._get_internal_async_lock().release()
+            return
+
+        if self._og_token_limit_per_minute == tpm:
+            self._has_been_reset = True
+            self._get_internal_async_lock().release()
+            return
+
+        tpm = (
+            min(self._og_token_limit_per_minute, tpm) if not self._is_closed() else tpm
+        )
+        tpm = max(tpm, 0)
+
+        og_token_current = self._token_current
+        og_token_max = self._token_limit_per_minute
+        diff = og_token_max - og_token_current
+        self._token_limit_per_minute = int(tpm * self._buffer_ratio)
+        self._token_current = max(self._token_limit_per_minute - diff, 0)
+
+        self._has_been_reset = True
+        self._get_internal_async_lock().release()

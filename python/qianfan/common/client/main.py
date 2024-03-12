@@ -47,6 +47,16 @@ app.add_typer(evaluation_app, name="evaluation")
 _enable_traceback = False
 
 
+@app.command(name="openai")
+def openai(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8001)) -> None:
+    """
+    Openai wrapper server
+    """
+    import uvicorn
+
+    uvicorn.run("qianfan.common.client.openai_adapter:app", host=host, port=port)
+
+
 def version_callback(value: bool) -> None:
     """
     Print qianfan sdk version

@@ -13,32 +13,28 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {Text2ImageBody, Text2ImageResp} from '../interface';
-import {modelInfoMap, Text2ImageModel} from './utils';
+import {RespBase, Image2TextBody, Text2ImageResp} from '../interface';
 import {getPathAndBody} from '../utils';
 
-class Text2Image extends BaseClient {
+class Image2Text extends BaseClient {
     /**
      * 文生图
      * @param body 续写请求体
      * @param model 续写模型，默认为 'ERNIE-Bot-turbo'
      * @returns 返回 Promise 对象，异步获取续写结果
      */
-    public async text2Image(
-        body: Text2ImageBody,
-        model: Text2ImageModel = 'Stable-Diffusion-XL'
-    ): Promise<Text2ImageResp> {
+    public async image2Text(
+        body: Image2TextBody
+    ): Promise<RespBase> {
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'text2image',
+            type: 'image2text',
         });
         const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
-        return resp as Text2ImageResp;
+        return resp as RespBase;
     }
 }
 
-export default Text2Image;
+export default Image2Text;

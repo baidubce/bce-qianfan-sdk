@@ -34,7 +34,7 @@ class Text2Image extends BaseClient {
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'completions',
+            type: 'text2image',
         });
         const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
         return resp as Text2ImageResp;

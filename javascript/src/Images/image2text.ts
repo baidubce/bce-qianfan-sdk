@@ -13,32 +13,27 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {modelInfoMap, Image2TextModel} from './utilts';
-import {PluginsBody, PluginsResp, YiYanPluginBody} from '../interface';
+import {Image2TextBody, RespBase} from '../interface';
 import {getPathAndBody} from '../utils';
 
-class Plugin extends BaseClient {
+class Image2Text extends BaseClient {
     /**
-     * 插件
+     * 图生文
      * @param body 请求体
-     * @param model 续写模型，默认为 'ERNIE-Bot-turbo'
-     * @returns 返回 Promise 对象，异步获取续写结果
+     * @returns 返回文本转图像响应
      */
-    public async plugins(
-        body: PluginsBody | YiYanPluginBody,
-        model: Image2TextModel = 'EBPluginV2',
-    ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
-        const stream = body.stream ?? false;
+    public async image2Text(
+        body: Image2TextBody
+    ): Promise<RespBase> {
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'plugin',
+            type: 'image2text',
         });
-        return await this.sendRequest(IAMPath, AKPath, requestBody, stream) as PluginsResp | AsyncIterable<PluginsResp>;
+        const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
+        return resp as RespBase;
     }
 }
 
-export default Plugin;
+export default Image2Text;

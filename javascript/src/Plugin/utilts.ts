@@ -12,11 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ChatCompletion from './ChatCompletion';
-import Completions from './Completions';
-import Eembedding from './Embedding';
-import Plugin from './Plugin';
-import {Text2Image, Image2Text} from './Images';
-import {setEnvVariable} from './utils';
+import {QfLLMInfoMap} from '../interface';
 
-export {ChatCompletion, Completions, Eembedding, Plugin, Text2Image, Image2Text, setEnvVariable};
+/**
+ * 一言插件 v2
+ */
+export type Image2TextModel =
+    | 'EBPluginV2';
+
+export const modelInfoMap: QfLLMInfoMap = {
+    'EBPluginV2': {
+        endpoint: '/erniebot/plugin',
+        required_keys: ['messages', 'plugins'],
+        optional_keys: [
+            'user_id',
+            'extra_data'
+        ],
+    },
+    UNSPECIFIED_MODEL: {
+        endpoint: '',
+        required_keys: ['query'],
+        optional_keys: [],
+    },
+};

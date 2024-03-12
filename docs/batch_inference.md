@@ -112,7 +112,7 @@ print(result[0])
 
 ## 离线批量推理
 
-> [点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/offline_batch_inference.ipynb) 查看 Cookbook
+> [点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/cookbook/offline_batch_inference.ipynb) 查看 Cookbook
 
 对于时间要求不那么严格的场景，可以考虑使用平台提供的离线批量推理能力，减少推理的成本消耗。
 

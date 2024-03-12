@@ -90,10 +90,26 @@ export interface ChatMessage {
     function_call?: FunctionCall;
 }
 
+interface baseReq{
+    /**
+     * 埋点信息
+     */
+   extra_parameters?: {
+        /**
+        * 用户信息，用于识别用户身份，如手机号、身份证号等
+        */
+        request_source?: string;
+   };
+    /**
+     * 表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用
+     */
+    user_id?: string;
+}
+
 /**
  * 对话请求
  */
-export interface ChatBody {
+export interface ChatBody extends baseReq {
     /**
      * 聊天上下文信息
      * 1. messages 成员不能为空，1 个成员表示单轮对话，多个成员表示多轮对话
@@ -105,19 +121,6 @@ export interface ChatBody {
      * 是否以流式接口的形式返回数据，默认为 false
      */
     stream?: boolean;
-    /**
-     * 表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用
-     */
-    user_id?: string;
-    /**
-     * 埋点信息
-     */
-    extra_parameters?: {
-        /**
-         * 用户信息，用于识别用户身份，如手机号、身份证号等
-         */
-        request_source?: string;
-    };
     /**
      * 其他额外参数
      */
@@ -239,6 +242,11 @@ export interface RespBase {
      */
     result: string;
     /**
+     * 1：表示输入内容无安全风险
+     * 0：表示输入内容有安全风险
+     */
+    is_safe?: number;
+    /**
      * token统计信息，token数 = 汉字数+单词数*1.3 （仅为估算逻辑）
      */
     usage: TokenUsage;
@@ -276,7 +284,7 @@ export interface ChatRespError {
     error_msg: string;
 }
 
-export interface CompletionBody {
+export interface CompletionBody extends baseReq{
     /**
      * 聊天上下文信息 兼容Chat模型
      * 1. messages 成员不能为空，1 个成员表示单轮对话，多个成员表示多轮对话
@@ -320,19 +328,9 @@ export interface CompletionBody {
      *（2）最多4个元素
      */
     stop?: string[];
-    /*
-     * 表示最终用户的唯一标识符
-     */
-    user_id?: string;
-    extra_parameters?: {
-        /**
-         * 用户信息，用于识别用户身份，如手机号、身份证号等
-         */
-        request_source?: string;
-    };
 }
 
-export interface EmbeddingBody {
+export interface EmbeddingBody extends baseReq {
     /**
      * 输入文本以获取embeddings
      *（1）不能为空List，List的每个成员不能为空字符串
@@ -340,16 +338,6 @@ export interface EmbeddingBody {
      * (3）每个文本token数不超过384且长度不超过1000个字符
      */
     input: string[];
-    /**
-     * 表示最终用户的唯一标识符
-     */
-    user_id?: string;
-    extra_parameters?: {
-        /**
-         * 用户信息，用于识别用户身份，如手机号、身份证号等
-         */
-        request_source?: string;
-    };
 }
 
 interface EmbeddingData {
@@ -387,7 +375,7 @@ export interface EmbeddingResp {
     usage: TokenUsage;
 }
 
-export interface Text2ImageBody {
+export interface Text2ImageBody extends baseReq{
     /**
      * 提示词
      * 即用户希望图片包含的元素。长度限制为1024字符，建议中文或者英文单词总数量不超过150个
@@ -428,19 +416,6 @@ export interface Text2ImageBody {
      * 生成风格，默认值为Base
      */
     style?: string;
-    /**
-     * 表示最终用户的唯一标识符
-     */
-    user_id?: string;
-    /**
-     * 埋点信息
-     */
-    extra_parameters?: {
-        /**
-         * 用户信息，用于识别用户身份，如手机号、身份证号等
-         */
-        request_source?: string;
-    };
 }
 
 export interface ImageData {
@@ -455,7 +430,7 @@ export interface Text2ImageResp {
     data: ImageData[]; // 生成图片结果
     usage: TokenUsage; // token统计信息
 }
-export interface PluginsBody {
+export interface PluginsBody extends baseReq{
     /**
      * 查询信息
      * 成员不能为空，长度不能超过1000个字符
@@ -507,16 +482,37 @@ export interface PluginsBody {
      * 默认为false
      */
     verbose?: boolean;
-    /**
-     * 埋点信息
-     */
-    extra_parameters?: {
-        /**
-         * 用户信息，用于识别用户身份，如手机号、身份证号等
-         */
-        request_source?: string;
-    };
 }
+
+
+export interface YiYanPluginBody extends baseReq{
+    /**
+     * 聊天上下文信息
+     * messages成员不能为空，1个成员表示单轮对话，多个成员表示多轮对话；
+     * 最后一个message为当前请求的信息，前面的message为历史对话信息；
+     * 必须为奇数个成员，成员中message的role必须依次为user、assistant；
+     * 最后一个message的content长度（即此轮对话的问题）不能超过4800个字符；
+     * 当messages中content的总长度大于4800字符时，系统会依次遗忘最早的历史QA，直到content的总长度不超过4800字符；
+     */
+    messages: ChatMessage[];
+    /**
+     * 需要调用的插件，当前支持["eChart", "ImageAI", "ChatFile"]。
+     * 最多3个插件，最少1个插件。插件触发由ERNIE-Bot控制。
+     * - ImageAI：最大支持10M以内图片
+     * - Chatfile：最大支持10M以内文档
+     */
+    plugins: ('eChart' | 'ImageAI' | 'ChatFile')[];
+    /**
+     * 是否以流式接口的形式返回数据；
+     * 默认false
+     */
+    stream?: boolean;
+    /**
+     * 表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用。
+     */
+    user_id?: string;
+  }
+
 interface MetaInfo {
     plugin_id: string; // 插件 Id，为“uuid-zhishiku”
     request: any; // 知识库原始请求参数
@@ -575,6 +571,44 @@ export interface PluginsResp {
      */
     meta_info?: MetaInfo; // 根据实际meta_info的结构进一步定义
 }
+
+
+export interface Image2TextBody extends baseReq{
+    /**
+     * 请求信息
+     */
+    prompt: string;
+    /**
+     * 图片数据，说明：base64编码，要求base64编码后大小不超过4M，最短边至少15px，最长边最大4096px，支持jpg/png/bmp格式，注意请去掉头部
+     */
+    image: string;
+    /**
+     * 是否以流式接口的形式返回数据，默认false
+     */
+    stream?: boolean;
+    /**
+     * 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定。范围 (0, 1.0]，不能为0
+     */
+    temperature?: number;
+    /**
+     * Top-K 采样参数，在每轮token生成时，保留k个概率最高的token作为候选。影响输出文本的多样性，取值越大，生成文本的多样性越强。取值范围：正整数
+     */
+    top_k?: number;
+    /**
+     * 影响输出文本的多样性，取值越大，生成文本的多样性越强。取值范围 [0, 1.0]
+     */
+    top_p?: number;
+    /**
+     * 通过对已生成的token增加惩罚，减少重复生成的现象。值越大表示惩罚越大。取值范围：[1.0, 2.0]
+     */
+    penalty_score?: number;
+    /**
+     * 生成停止标识。当模型生成结果以stop中某个元素结尾时，停止文本生成。每个元素长度不超过20字符。最多4个元素
+     */
+    stop?: string[];
+}
+
+
 
 export type ReqBody = ChatBody | CompletionBody | EmbeddingBody | PluginsBody | Text2ImageBody;
 export type Resp = RespBase | ChatResp | EmbeddingResp | PluginsResp | Text2ImageResp;

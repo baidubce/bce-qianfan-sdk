@@ -13,7 +13,8 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {PluginsBody, PluginsResp} from '../interface';
+import {modelInfoMap, Image2TextModel} from './utilts';
+import {PluginsBody, PluginsResp, YiYanPluginBody} from '../interface';
 import {getPathAndBody} from '../utils';
 
 class Plugin extends BaseClient {
@@ -24,10 +25,13 @@ class Plugin extends BaseClient {
      * @returns 返回 Promise 对象，异步获取续写结果
      */
     public async plugins(
-        body: PluginsBody
+        body: PluginsBody | YiYanPluginBody,
+        model: Image2TextModel = 'EBPluginV2',
     ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
         const stream = body.stream ?? false;
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
+            model,
+            modelInfoMap,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,

@@ -14,6 +14,7 @@
 import {OpenAIError, APIError} from './error';
 
 type Bytes = string | ArrayBuffer | Uint8Array | Buffer | null | undefined;
+const EVENT_TYPE = ['null', 'pluginMeta', 'plugin', 'chat'];
 
 export type ServerSentEvent = {
   event: string | null;
@@ -245,9 +246,8 @@ export class Stream<Item> implements AsyncIterable<Item> {
                         continue;
                     }
 
-                    if (sse.event === null) {
+                    if (EVENT_TYPE.includes(sse.event)) {
                         let data;
-
                         try {
                             data = JSON.parse(sse.data);
                         }

@@ -13,19 +13,18 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {Image2TextBody, Text2ImageResp} from '../interface';
+import {Image2TextBody, RespBase} from '../interface';
 import {getPathAndBody} from '../utils';
 
 class Image2Text extends BaseClient {
     /**
-     * 文生图
-     * @param body 续写请求体
-     * @param model 续写模型，默认为 'ERNIE-Bot-turbo'
-     * @returns 返回 Promise 对象，异步获取续写结果
+     * 图生文
+     * @param body 请求体
+     * @returns 返回文本转图像响应
      */
     public async image2Text(
         body: Image2TextBody
-    ): Promise<Text2ImageResp> {
+    ): Promise<RespBase> {
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
             baseUrl: this.qianfanBaseUrl,
             body,
@@ -33,7 +32,7 @@ class Image2Text extends BaseClient {
             type: 'image2text',
         });
         const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
-        return resp as Text2ImageResp;
+        return resp as RespBase;
     }
 }
 

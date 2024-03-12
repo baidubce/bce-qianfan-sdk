@@ -57,11 +57,11 @@ class FileDataSource(DataSource, BaseModel):
         if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
             lines: List[str] = []
             if index != 0:
-                lines.append(",\n")
+                lines.append(",\n" if self.file_format is FormatType.Json else "\n")
             for i in range(len(data)):
                 lines.append(json.dumps(data[i], ensure_ascii=False))
                 if i != len(data) - 1:
-                    lines.append(",\n")
+                    lines.append(",\n" if self.file_format is FormatType.Json else "\n")
 
             fd.writelines(lines)
 
@@ -106,7 +106,7 @@ class FileDataSource(DataSource, BaseModel):
 
         return True
 
-    def save(self, table: Table, batch_size: int = 100, **kwargs: Any) -> bool:
+    def save(self, table: Table, batch_size: int = 10000, **kwargs: Any) -> bool:
         """
         Write data to file。
 

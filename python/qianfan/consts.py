@@ -115,7 +115,7 @@ class DefaultValue:
     IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
     AccessTokenRefreshMinInterval: float = 3600
-    RetryCount: int = 1
+    RetryCount: int = 3
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1

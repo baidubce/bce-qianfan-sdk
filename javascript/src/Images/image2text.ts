@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {RespBase, Image2TextBody, Text2ImageResp} from '../interface';
+import {Image2TextBody, Text2ImageResp} from '../interface';
 import {getPathAndBody} from '../utils';
 
 class Image2Text extends BaseClient {
@@ -25,7 +25,7 @@ class Image2Text extends BaseClient {
      */
     public async image2Text(
         body: Image2TextBody
-    ): Promise<RespBase> {
+    ): Promise<Text2ImageResp> {
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
             baseUrl: this.qianfanBaseUrl,
             body,
@@ -33,7 +33,7 @@ class Image2Text extends BaseClient {
             type: 'image2text',
         });
         const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
-        return resp as RespBase;
+        return resp as Text2ImageResp;
     }
 }
 

@@ -19,7 +19,7 @@ import {Image2Text, setEnvVariable} from '../index';
 // setEnvVariable('QIANFAN_SK','***');
 
 // 直接读取env
-const client = new Image2Text({Endpoint: 'bjpyl6w8_zuowen_fewshot'});
+const client = new Image2Text({Endpoint: '***'});
 
 // 手动传AK/SK 测试
 // const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
@@ -30,7 +30,7 @@ const client = new Image2Text({Endpoint: 'bjpyl6w8_zuowen_fewshot'});
 async function main() {
     const resp = await client.image2Text({
         prompt:"分析一下图片画了什么",
-        image: 'https://qianfan-doc.bj.bcebos.com/imageai/cow2.jpeg'
+        image: '图片的base64编码'
     });
     console.log(resp);
 }

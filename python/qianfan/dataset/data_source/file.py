@@ -53,15 +53,31 @@ class FileDataSource(DataSource, BaseModel):
         fd: TextIO,
         data: Union[List[Dict[str, Any]], List[List[Dict[str, Any]]], List[str]],
         index: int,
+        use_qianfan_special_jsonl_format: bool,
     ) -> None:
-        if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
-            lines: List[str] = []
+        lines: List[str] = []
+        if self.file_format == FormatType.Json:
             if index != 0:
-                lines.append(",\n" if self.file_format is FormatType.Json else "\n")
+                lines.append(",\n")
             for i in range(len(data)):
                 lines.append(json.dumps(data[i], ensure_ascii=False))
                 if i != len(data) - 1:
-                    lines.append(",\n" if self.file_format is FormatType.Json else "\n")
+                    lines.append(",\n")
+
+            fd.writelines(lines)
+
+        elif self.file_format == FormatType.Jsonl:
+            if index != 0:
+                lines.append("\n")
+
+            is_list = True if data and isinstance(data[0], list) else False
+            for i in range(len(data)):
+                if use_qianfan_special_jsonl_format and not is_list:
+                    lines.append(f"[{json.dumps(data[i], ensure_ascii=False)}]")
+                else:
+                    lines.append(json.dumps(data[i], ensure_ascii=False))
+                if i != len(data) - 1:
+                    lines.append("\n")
 
             fd.writelines(lines)
 
@@ -106,7 +122,13 @@ class FileDataSource(DataSource, BaseModel):
 
         return True
 
-    def save(self, table: Table, batch_size: int = 10000, **kwargs: Any) -> bool:
+    def save(
+        self,
+        table: Table,
+        batch_size: int = 10000,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
+    ) -> bool:
         """
         Write data to file。
 
@@ -116,6 +138,9 @@ class FileDataSource(DataSource, BaseModel):
             batch_size (int):
                 the batch size used when
                 writing entry to file in batch
+            use_qianfan_special_jsonl_format (bool):
+                whether writer use qianfan special format
+                when write jsonline data, default to False
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -137,7 +162,12 @@ class FileDataSource(DataSource, BaseModel):
                 f.write("[\n")
 
             for i in range(0, table.row_number(), batch_size):
-                self._write_as_format(f, table.list(slice(i, i + batch_size - 1)), i)
+                self._write_as_format(
+                    f,
+                    table.list(slice(i, i + batch_size - 1)),
+                    i,
+                    use_qianfan_special_jsonl_format,
+                )
 
             # Json 格式的时候需要特判
             if self.file_format == FormatType.Json:

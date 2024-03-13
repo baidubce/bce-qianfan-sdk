@@ -200,13 +200,21 @@ class QianfanDataSource(DataSource, BaseModel):
             file_name = f"data_{uuid.uuid4()}"
             remote_file_path = f"{storage_path}{file_name}.zip"
 
+        # 如果数据集还是 grouped 格式，需要先转换为 packed
+        if table.is_dataset_grouped() and not should_save_as_zip_file:
+            table.pack()
+
         # 构造本地路径并且保存数据到缓存文件
         local_file_path = os.path.join(self._get_cache_folder_path(), file_name)
         FileDataSource(
             path=local_file_path,
             file_format=self.format_type(),
             save_as_folder=should_save_as_zip_file,
-        ).save(table)
+        ).save(
+            table,
+            use_qianfan_special_jsonl_format=not should_save_as_zip_file,
+            **kwargs,
+        )
 
         # 如果是泛文本还需要打压缩包
         if should_save_as_zip_file:

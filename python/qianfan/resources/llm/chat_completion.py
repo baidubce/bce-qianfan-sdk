@@ -46,8 +46,8 @@ class ChatCompletion(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return {
-            "ERNIE-Bot-turbo": QfLLMInfo(
+        base = {
+            "ERNIE-Lite-8K-0922": QfLLMInfo(
                 endpoint="/chat/eb-instant",
                 required_keys={"messages"},
                 optional_keys={
@@ -63,7 +63,21 @@ class ChatCompletion(BaseResource):
                 max_input_chars=11200,
                 max_input_tokens=7168,
             ),
-            "ERNIE-Bot": QfLLMInfo(
+            "ERNIE-Lite-8K-0308": QfLLMInfo(
+                endpoint="/chat/eb-instant",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                },
+                max_input_chars=11200,
+                max_input_tokens=7168,
+            ),
+            "ERNIE-3.5-8K": QfLLMInfo(
                 endpoint="/chat/completions",
                 required_keys={"messages"},
                 optional_keys={
@@ -85,7 +99,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Bot-4": QfLLMInfo(
+            "ERNIE-4.0-8K": QfLLMInfo(
                 endpoint="/chat/completions_pro",
                 required_keys={"messages"},
                 optional_keys={
@@ -185,7 +199,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Speed": QfLLMInfo(
+            "ERNIE-Speed-8K": QfLLMInfo(
                 endpoint="/chat/ernie_speed",
                 required_keys={"messages"},
                 optional_keys={
@@ -202,7 +216,7 @@ class ChatCompletion(BaseResource):
                 max_input_tokens=7168,
             ),
             "ERNIE-Speed-128k": QfLLMInfo(
-                endpoint="/chat/ernie_speed",
+                endpoint="/chat/ernie_speed_128k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -217,23 +231,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=507904,
                 max_input_tokens=126976,
             ),
-            "ERNIE-Bot-turbo-AI": QfLLMInfo(
-                endpoint="/chat/ai_apaas",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "system",
-                    "user_id",
-                    "tools",
-                    "tool_choice",
-                },
-                max_input_chars=11200,
-                max_input_tokens=7168,
-            ),
-            "EB-turbo-AppBuilder": QfLLMInfo(
+            "ERNIE Speed-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},
                 optional_keys={
@@ -473,6 +471,26 @@ class ChatCompletion(BaseResource):
                 optional_keys=set(),
             ),
         }
+        alias = {
+            "ERNIE-Speed": "ERNIE-Speed-8K",
+            "ERNIE Speed": "ERNIE-Speed-8K",
+            "ERNIE 3.5": "ERNIE-3.5-8K",
+        }
+        for src, target in alias.items():
+            base[src] = base[target]
+
+        depracated_alias = {
+            "ERNIE-Bot-4": "ERNIE-4.0-8K",
+            "ERNIE-Bot": "ERNIE-3.5-8K",
+            "ERNIE-Bot-turbo": "ERNIE-Lite-8K-0922",
+            "EB-turbo-AppBuilder": "ERNIE Speed-AppBuilder",
+            "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
+        }
+        for src, target in depracated_alias.items():
+            info = copy.deepcopy(base[target])
+            info.depracated = True
+            base[src] = info
+        return base
 
     @classmethod
     def _default_model(cls) -> str:

@@ -229,6 +229,13 @@ class ModelInfo(BaseModel):
     model_type: console_consts.FinetuneSupportModelType = (
         console_consts.FinetuneSupportModelType.Text2Text
     )
+    """
+    model type, like text2text, image2image
+    """
+    deprecated: bool = False
+    """
+    if it's deprecated model
+    """
 
 
 def get_model_info(
@@ -414,6 +421,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 max_seq_len=[4096, 8192],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
         short_name="turbo_0922",
@@ -427,6 +435,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 max_seq_len=[4096, 8192],
             ),
         },
+        deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
         short_name="Llama2_13b",
@@ -469,6 +478,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 lora_all_linear=["True", "False"],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
         model="ERNIE-Lite-8K-0922",
@@ -492,6 +502,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 lora_rank=[2, 4, 8],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
         model="ERNIE-Lite-8K-0725",
@@ -510,6 +521,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 learning_rate=(0.00003, 0.001),
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0704": ModelInfo(
         model="ERNIE-Lite-8K-0704",
@@ -530,6 +542,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 learning_rate=(0.00003, 0.001),
             ),
         },
+        deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-7B": ModelInfo(
         short_name="Llama2_7b",

@@ -237,10 +237,10 @@ def list_train_type(
             console.print(f"[bold]{type.name}:[/]")
             for model in sorted(models):
                 info = model_list[model]
-                console.print(
-                    f"  {model}{' [dim](deprecated)[/]' if info.deprecated else ''}",
-                    highlight=False,
-                )
+                if info.deprecated:
+                    console.print(f"  [s]{model}[dim] (deprecated)[/]", highlight=False)
+                else:
+                    console.print(f"  {model}", highlight=False)
 
         raise typer.Exit()
 

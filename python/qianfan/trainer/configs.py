@@ -226,6 +226,9 @@ class ModelInfo(BaseModel):
         Dict[Union[str, PeftType], TrainLimit]
     ] = None
     """special params suggestion of specific peft types"""
+    model_type: console_consts.FinetuneSupportModelType = (
+        console_consts.FinetuneSupportModelType.Text2Text
+    )
 
 
 def get_model_info(
@@ -374,7 +377,13 @@ def _parse_model_info_list(
             short_name=f"model{model_hash}",
             support_peft_types=[],
             specific_peft_types_params_limit={},
+            model_type=console_consts.FinetuneSupportModelType(
+                info.get("modelType", console_consts.FinetuneSupportModelType.Text2Text)
+            ),
         )
+        if m.model_type == console_consts.FinetuneSupportModelType.Text2Image:
+            # 暂时不支持text2image训练
+            continue
         for train_mode_info in info["supportTrainMode"]:
             if train_mode.value != train_mode_info.get("trainMode"):
                 continue

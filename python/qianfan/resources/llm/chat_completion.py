@@ -46,7 +46,7 @@ class ChatCompletion(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        base = {
+        info_list = {
             "ERNIE-Lite-8K-0922": QfLLMInfo(
                 endpoint="/chat/eb-instant",
                 required_keys={"messages"},
@@ -64,7 +64,7 @@ class ChatCompletion(BaseResource):
                 max_input_tokens=7168,
             ),
             "ERNIE-Lite-8K-0308": QfLLMInfo(
-                endpoint="/chat/eb-instant",
+                endpoint="/chat/ernie-lite-8k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -477,7 +477,7 @@ class ChatCompletion(BaseResource):
             "ERNIE 3.5": "ERNIE-3.5-8K",
         }
         for src, target in alias.items():
-            base[src] = base[target]
+            info_list[src] = info_list[target]
 
         depracated_alias = {
             "ERNIE-Bot-4": "ERNIE-4.0-8K",
@@ -487,10 +487,10 @@ class ChatCompletion(BaseResource):
             "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
         }
         for src, target in depracated_alias.items():
-            info = copy.deepcopy(base[target])
+            info = copy.deepcopy(info_list[target])
             info.depracated = True
-            base[src] = info
-        return base
+            info_list[src] = info
+        return info_list
 
     @classmethod
     def _default_model(cls) -> str:

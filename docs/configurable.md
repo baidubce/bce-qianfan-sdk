@@ -40,14 +40,37 @@ chat_comp = qianfan.ChatCompletion()
 
 ### 接口流控
 千帆 SDK 支持对用户接口的请求进行限流，以防止超额请求带来的潜在问题。
-若用户有自行配置限流的需求，只需要在创建对象时传入名为 `query_per_second` 的浮点参数，或者设置名为 `QIANFAN_QPS_LIMIT` 的环境变量即可限制接口的请求 QPS
 
-创建对象时传入的实参，其应用优先级高于环境变量。
+如果用户调用的是 ERNIE 系列的模型，千帆 SDK 会自动从平台获取限流配置。
+此时用户也可以自己指定限流配置，千帆 SDK 会取两者中较小的那一个。
 
-一个构造案例如下所示
+如果用户使用的是第三方模型，则需要自行配置限流。
+
+现在的限流配置包括两类三种：
++ 请求频率类：
+  + `query_per_second` : 设置一个 QPS 限制，为正浮点数
+  + `request_per_minute`: 设置一个 RPM 限制，会限制每分钟请求的次数，为正浮点数
+  
+  上述两种参数只能同时使用一个
++ 文字总量类：
+  + `token_limit_per_minute` : 设置每分钟内可以消耗的 Token 总数，为正整数
+
+用户可以在创建相关请求对象时，传入上述参数来设置限流配置，如：
 ```python
 import qianfan
-chat_comp = qianfan.ChatCompletion(query_per_second=0.5)
+chat_comp = qianfan.ChatCompletion(
+    request_per_minute=300,
+    token_limit_per_minute=300000,
+)
+```
+
+也可以通过系统环境变量来设置
+```python
+import os
+
+os.environ["QIANFAN_RPM_LIMIT"] = "300"
+os.environ["QIANFAN_QPS_LIMIT"] = "1"
+os.environ["QIANFAN_TOKEN_LIMIT"] = "30000"
 ```
 
 ### request_id

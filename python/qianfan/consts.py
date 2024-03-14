@@ -248,9 +248,10 @@ class Consts:
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
 
-    RPMChargeAPI: str = "/v2/charge"
-    RPMInfoAPI: str = "/v2/charge"
-    RPMStopAPI: str = "/v2/charge"
+    ChargeAPI: str = "/v2/charge"
+    ChargePurchaseQueryParam: str = "PurchaseTPMResource"
+    ChargeInfoQueryParam: str = "DescribeTPMResource"
+    ChargeStopQueryParam: str = "ReleaseTPMResource"
 
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "

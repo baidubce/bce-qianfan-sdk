@@ -22,9 +22,9 @@ from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
 
 
-class RPMAndTPM(object):
+class Charge(object):
     """
-    Class for FineTune API
+    Class for Charging API
     """
 
     @classmethod
@@ -47,8 +47,8 @@ class RPMAndTPM(object):
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/pltmk8zoc
         """
-        req = QfRequest(method="POST", url=Consts.RPMChargeAPI)
-        req.query = {"Action": "PurchaseTPMResource"}
+        req = QfRequest(method="POST", url=Consts.ChargeAPI)
+        req.query = {"Action": Consts.ChargePurchaseQueryParam}
         req.json_body = {
             "model": model,
             "purchaseCount": purchase_count,
@@ -87,8 +87,8 @@ class RPMAndTPM(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/oltmo6eq4
         """
 
-        req = QfRequest(method="POST", url=Consts.RPMInfoAPI)
-        req.query = {"Action": "DescribeTPMResource"}
+        req = QfRequest(method="POST", url=Consts.ChargeAPI)
+        req.query = {"Action": Consts.ChargeInfoQueryParam}
         req.json_body = {
             "model": model,
         }
@@ -122,8 +122,8 @@ class RPMAndTPM(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/oltmo6eq4
         """
 
-        req = QfRequest(method="POST", url=Consts.RPMStopAPI)
-        req.query = {"Action": "ReleaseTPMResource"}
+        req = QfRequest(method="POST", url=Consts.ChargeAPI)
+        req.query = {"Action": Consts.ChargeStopQueryParam}
         req.json_body = {
             "model": model,
             "instanceId": instance_id,

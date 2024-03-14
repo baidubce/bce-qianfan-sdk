@@ -16,17 +16,17 @@
     Unit test for RPM and TPM
 """
 
-from qianfan.resources.console.rpm_tpm import RPMAndTPM
+from qianfan.resources.console.charge import Charge
 
 
 def test_charge():
     """
-    test RPMAndTPM.charge
+    test charge.Charge
     """
 
     model = "ernie-4.0-8k"
     count = 10
-    resp = RPMAndTPM.charge(model, count)
+    resp = Charge.charge(model, count)
     assert resp["_request"]["model"] == model
     assert resp["_request"]["purchaseCount"] == count
     assert resp["_request"]["billing"]["paymentTiming"] == "Postpaid"
@@ -34,25 +34,25 @@ def test_charge():
 
 def test_info():
     """
-    test RPMAndTPM.info
+    test Charge.info
     """
 
     model = "ernie-4.0-8k"
     wrong_payment_type = "wrong_payment_type"
 
-    resp = RPMAndTPM.info(model, wrong_payment_type)
+    resp = Charge.info(model, wrong_payment_type)
     assert resp["_request"]["model"] == model
     assert "paymentTiming" not in resp["_request"]
 
 
 def test_stop():
     """
-    test RPMAndTPM.stop
+    test Charge.stop
     """
 
     model = "ernie-4.0-8k"
     instance_id = "instance_id"
 
-    resp = RPMAndTPM.stop(model, instance_id)
+    resp = Charge.stop(model, instance_id)
     assert resp["_request"]["model"] == model
     assert resp["_request"]["instanceId"] == instance_id

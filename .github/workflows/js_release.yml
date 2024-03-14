@@ -38,7 +38,7 @@ jobs:
         working-directory: ./javascript
         run: |
           yarn install --frozen-lockfile
-          make install
+          cd ../ && make install
 
       - name: Run mock
         run: 

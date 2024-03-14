@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.4"
+version = "0.3.5"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -79,17 +79,15 @@ langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
 all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
 
-[tool.ruff]
+[tool.ruff.lint]
+extend-select = ["PLW1514"]
+preview = true
 select = [
   "E",  # pycodestyle
   "F",  # pyflakes
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
-
-[tool.ruff.lint]
-extend-select = ["PLW1514"]
-preview = true
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = ["PLW1514"]

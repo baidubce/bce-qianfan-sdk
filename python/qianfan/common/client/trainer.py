@@ -14,7 +14,7 @@
 
 
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import typer
 from rich.console import Console
@@ -40,7 +40,7 @@ from qianfan.dataset import Dataset
 from qianfan.errors import InternalError
 from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
-from qianfan.resources.console.consts import DeployPoolType
+from qianfan.resources.console.consts import DeployPoolType, FinetuneSupportModelType
 from qianfan.trainer import LLMFinetune, PostPreTrain
 from qianfan.trainer.actions import (
     DeployAction,
@@ -210,6 +210,7 @@ def list_train_type(
     list all the supported train types
     """
     if value:
+        console = replace_logger_handler()
         cmd = ctx.command.name
         if cmd is None:
             print_error_msg(
@@ -225,8 +226,28 @@ def list_train_type(
                 f"Command {cmd} is not supported. Might be an internal error."
             )
             raise typer.Exit(1)
-        for m in model_list:
-            print(m)
+
+        model_type_map: Dict[FinetuneSupportModelType, Dict[str, List]] = {}
+        for model, info in model_list.items():
+            if info.model_type not in model_type_map:
+                model_type_map[info.model_type] = {}
+            if info.base_model_type not in model_type_map[info.model_type]:
+                model_type_map[info.model_type][info.base_model_type] = []
+            model_type_map[info.model_type][info.base_model_type].append(model)
+
+        for type, model_set in model_type_map.items():
+            console.print(f"[bold red]{type.name}:[/]")
+            for base_model, models in model_set.items():
+                console.print(f"  [bold green]{base_model}:[/]")
+                for model in sorted(models):
+                    info = model_list[model]
+                    if info.deprecated:
+                        console.print(
+                            f"    [s]{model}[dim] (deprecated)[/]", highlight=False
+                        )
+                    else:
+                        console.print(f"    {model}", highlight=False)
+
         raise typer.Exit()
 
 

@@ -226,6 +226,16 @@ class ModelInfo(BaseModel):
         Dict[Union[str, PeftType], TrainLimit]
     ] = None
     """special params suggestion of specific peft types"""
+    model_type: console_consts.FinetuneSupportModelType = (
+        console_consts.FinetuneSupportModelType.Text2Text
+    )
+    """
+    model type, like text2text, image2image
+    """
+    deprecated: bool = False
+    """
+    if it's deprecated model
+    """
 
 
 def get_model_info(
@@ -372,12 +382,21 @@ def _parse_model_info_list(
         m = ModelInfo(
             model=model,
             short_name=f"model{model_hash}",
+            base_model_type=info.get("baseModel", ""),
             support_peft_types=[],
             specific_peft_types_params_limit={},
+            model_type=console_consts.FinetuneSupportModelType(
+                info.get("modelType", console_consts.FinetuneSupportModelType.Text2Text)
+            ),
         )
+        if m.model_type == console_consts.FinetuneSupportModelType.Text2Image:
+            # 暂时不支持text2image训练
+            continue
+        has_train_mode = False
         for train_mode_info in info["supportTrainMode"]:
             if train_mode.value != train_mode_info.get("trainMode"):
                 continue
+            has_train_mode = True
             for param_scale in train_mode_info["supportParameterScale"]:
                 train_limit = TrainLimit()
                 param_scale_peft = param_scale["parameterScale"]
@@ -387,7 +406,8 @@ def _parse_model_info_list(
                     field_name = camel_to_snake(params["key"])
                     train_limit[field_name] = params["checkValue"]
                 m.specific_peft_types_params_limit[param_scale_peft] = train_limit  # type: ignore
-        model_info_mapping[model] = m
+        if has_train_mode:
+            model_info_mapping[model] = m
     return model_info_mapping
 
 
@@ -405,8 +425,10 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 max_seq_len=[4096, 8192],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
+        model="ERNIE-Lite-8K-0922",
         short_name="turbo_0922",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL],
@@ -418,6 +440,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 max_seq_len=[4096, 8192],
             ),
         },
+        deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
         short_name="Llama2_13b",
@@ -460,6 +483,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 lora_all_linear=["True", "False"],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
         model="ERNIE-Lite-8K-0922",
@@ -483,6 +507,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 lora_rank=[2, 4, 8],
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0725": ModelInfo(
         model="ERNIE-Lite-8K-0725",
@@ -501,6 +526,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 learning_rate=(0.00003, 0.001),
             ),
         },
+        deprecated=True,
     ),
     "ERNIE-Bot-turbo-0704": ModelInfo(
         model="ERNIE-Lite-8K-0704",
@@ -521,6 +547,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
                 learning_rate=(0.00003, 0.001),
             ),
         },
+        deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-7B": ModelInfo(
         short_name="Llama2_7b",

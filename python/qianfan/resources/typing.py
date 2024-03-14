@@ -201,6 +201,7 @@ class QfLLMInfo:
     optional_keys: Set[str] = default_field(set())
     max_input_chars: Optional[int] = default_field(None)
     max_input_tokens: Optional[int] = default_field(None)
+    depracated: bool = default_field(False)
 
 
 class QfRole(Enum):

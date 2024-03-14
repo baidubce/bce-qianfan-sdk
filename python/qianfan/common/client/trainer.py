@@ -242,7 +242,9 @@ def list_train_type(
                 for model in sorted(models):
                     info = model_list[model]
                     if info.deprecated:
-                        console.print(f"    [s]{model}[dim] (deprecated)[/]", highlight=False)
+                        console.print(
+                            f"    [s]{model}[dim] (deprecated)[/]", highlight=False
+                        )
                     else:
                         console.print(f"    {model}", highlight=False)
 

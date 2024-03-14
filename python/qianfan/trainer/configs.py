@@ -406,7 +406,7 @@ def _parse_model_info_list(
                     field_name = camel_to_snake(params["key"])
                     train_limit[field_name] = params["checkValue"]
                 m.specific_peft_types_params_limit[param_scale_peft] = train_limit  # type: ignore
-        if has_train_mode:    
+        if has_train_mode:
             model_info_mapping[model] = m
     return model_info_mapping
 

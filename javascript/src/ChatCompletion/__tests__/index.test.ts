@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import {ChatBody, RespBase} from '../../interface';
-import ChatCompletion from '../index';
+import {ChatCompletion, setEnvVariable} from '../../index';
+
+setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_ACCESS_KEY', '123');
+setEnvVariable('QIANFAN_SECRET_KEY', '456');
 
 describe('ChatCompletion', () => {
     const client = new ChatCompletion();

@@ -27,8 +27,9 @@ dotenv.config();
  * @param QIANFAN_SK 百度云SK
  * @returns 返回访问令牌的URL地址
  */
-export function getAccessTokenUrl(QIANFAN_AK: string, QIANFAN_SK: string): string {
-    return `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${QIANFAN_AK}&client_secret=${QIANFAN_SK}`;
+export function getAccessTokenUrl(qianfanAk: string, qianfanSk: string, qianfanBaseUrl: string): string {
+    // eslint-disable-next-line max-len
+    return `${qianfanBaseUrl}/oauth/2.0/token?grant_type=client_credentials&client_id=${qianfanAk}&client_secret=${qianfanSk}`;
 }
 
 export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig {

@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./javascript
-        run: 
+        run: |
           yarn install --frozen-lockfile
           make install
       - name: Run mock

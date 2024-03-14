@@ -91,7 +91,7 @@ def json_response(data, request_id=None, status_code=200):
     request_body = request.get_data().decode("utf-8")
     try:
         request_body = request.json
-    except:
+    except Exception:
         pass
     resp = flask.Response(
         json.dumps(

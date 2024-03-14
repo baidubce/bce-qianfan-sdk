@@ -56,6 +56,7 @@ class BosDataSource(DataSource, BaseModel):
         table: Table,
         should_save_as_zip_file: bool = False,
         should_overwrite_existed_file: bool = False,
+        should_use_qianfan_special_jsonl_format: bool = False,
         **kwargs: Any,
     ) -> bool:
         """
@@ -73,12 +74,24 @@ class BosDataSource(DataSource, BaseModel):
             should_overwrite_existed_file (bool):
                 should bos data source overwrite existed file when save data,
                 default to False
+            should_use_qianfan_special_jsonl_format (bool):
+                whether bos should use the special format for uploaded
+                jsonl file, default to False, only available when file format is jsonl.
+                if you want to use uploaded file as training set, please set
+                this bool value.
             **kwargs (Any):
                 optional arguments
 
         Returns:
             bool: is saving successful
         """
+        # 特判一下，防止用户手滑设置了出现意外情况
+        if (
+            should_use_qianfan_special_jsonl_format
+            and self.format_type() != FormatType.Jsonl
+        ):
+            should_use_qianfan_special_jsonl_format = False
+
         assert self.ak
         assert self.sk
         assert self.file_format
@@ -125,11 +138,20 @@ class BosDataSource(DataSource, BaseModel):
             self._get_specific_uploading_cache_path(),
             os.path.split(final_bos_file_path)[1],
         )
+
+        # 在特定情况下修改格式
+        if table.is_dataset_grouped() and should_use_qianfan_special_jsonl_format:
+            table.pack()
+
         FileDataSource(
             path=local_file_path,
             file_format=self.format_type(),
             save_as_folder=should_save_as_zip_file,
-        ).save(table)
+        ).save(
+            table,
+            use_qianfan_special_jsonl_format=should_use_qianfan_special_jsonl_format,
+            **kwargs,
+        )
 
         # 打压缩包
         if should_save_as_zip_file:

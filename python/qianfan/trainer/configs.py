@@ -1166,11 +1166,15 @@ def update_all_train_configs() -> None:
         **ppt_model_info,
     }
     global DefaultTrainConfigMapping
-    DefaultTrainConfigMapping = default_configs_mapping[console_consts.TrainMode.SFT]
+    DefaultTrainConfigMapping = {
+        **DefaultTrainConfigMapping,
+        **default_configs_mapping[console_consts.TrainMode.SFT],
+    }
     global DefaultPostPretrainTrainConfigMapping
-    DefaultPostPretrainTrainConfigMapping = default_configs_mapping[
-        console_consts.TrainMode.PostPretrain
-    ]
+    DefaultPostPretrainTrainConfigMapping = {
+        **DefaultPostPretrainTrainConfigMapping,
+        **default_configs_mapping[console_consts.TrainMode.PostPretrain],
+    }
 
 
 update_all_train_configs()

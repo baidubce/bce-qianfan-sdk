@@ -708,6 +708,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             )
 
             self.result = {
+                **input,
                 "task_id": self.task_id,
                 "job_id": self.job_id,
                 "model_id": self.model.id,

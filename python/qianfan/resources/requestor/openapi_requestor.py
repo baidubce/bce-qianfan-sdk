@@ -264,6 +264,11 @@ class QfAPIRequestor(BaseAPIRequestor):
             if token_usage:
                 self._token_limiter.compensate(token_count - token_usage)
 
+            if "X-Ratelimit-Limit-Tokens" in resp.headers:
+                self._token_limiter.reset_once(
+                    int(resp.headers["X-Ratelimit-Limit-Tokens"])
+                )
+
             return resp
 
     def _compensate_token_usage_stream(
@@ -272,6 +277,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         if isinstance(resp, Iterator):
             token_usage = 0
             for res in resp:
+                if "X-Ratelimit-Limit-Tokens" in res.headers:
+                    self._token_limiter.reset_once(
+                        int(res.headers["X-Ratelimit-Limit-Tokens"])
+                    )
+
                 token_usage = res.body.get("usage", {}).get("total_tokens", 0)
                 yield res
 
@@ -286,6 +296,11 @@ class QfAPIRequestor(BaseAPIRequestor):
             if token_usage:
                 await self._async_token_limiter.compensate(token_count - token_usage)
 
+            if "X-Ratelimit-Limit-Tokens" in resp.headers:
+                await self._async_token_limiter.reset_once(
+                    int(resp.headers["X-Ratelimit-Limit-Tokens"])
+                )
+
             return resp
 
     async def _async_compensate_token_usage_stream(
@@ -294,6 +309,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         if isinstance(resp, AsyncIterator):
             token_usage = 0
             async for res in resp:
+                if "X-Ratelimit-Limit-Tokens" in res.headers:
+                    await self._async_token_limiter.reset_once(
+                        int(res.headers["X-Ratelimit-Limit-Tokens"])
+                    )
+
                 token_usage = res.body.get("usage", {}).get("total_tokens", 0)
                 yield res
 

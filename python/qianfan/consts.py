@@ -115,7 +115,7 @@ class DefaultValue:
     IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
     AccessTokenRefreshMinInterval: float = 3600
-    RetryCount: int = 1
+    RetryCount: int = 3
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1
@@ -247,6 +247,12 @@ class Consts:
     PromptEvaluationSummaryAPI: str = "/wenxinworkshop/prompt/evaluate/summary"
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
+
+    ChargeAPI: str = "/v2/charge"
+    ChargePurchaseQueryParam: str = "PurchaseTPMResource"
+    ChargeInfoQueryParam: str = "DescribeTPMResource"
+    ChargeStopQueryParam: str = "ReleaseTPMResource"
+
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
     XRequestID: str = "Request_id"

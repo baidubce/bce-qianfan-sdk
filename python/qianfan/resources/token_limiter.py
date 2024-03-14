@@ -84,7 +84,7 @@ class _MiniLocalTokenizer:
         )
 
 
-class BaseTokenLimiter:
+class _BaseTokenLimiter:
     """Common base function collection of Token Limiter"""
 
     tokenizer = _MiniLocalTokenizer()
@@ -127,7 +127,7 @@ class BaseTokenLimiter:
         self._last_check_timestamp = current_time
 
 
-class TokenLimiter(BaseTokenLimiter):
+class TokenLimiter(_BaseTokenLimiter):
     """Synchronous Token Limiter implementation"""
 
     def __init__(
@@ -209,7 +209,7 @@ class TokenLimiter(BaseTokenLimiter):
         self._lock.release()
 
 
-class AsyncTokenLimiter(BaseTokenLimiter):
+class AsyncTokenLimiter(_BaseTokenLimiter):
     """Asynchronous Token Limiter implementation"""
 
     def __init__(

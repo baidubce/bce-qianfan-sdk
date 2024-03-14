@@ -53,14 +53,14 @@ chat_comp = qianfan.ChatCompletion()
   
   上述两种参数只能同时使用一个
 + 文字总量类：
-  + `token_limit_per_minute` : 设置每分钟内可以消耗的 Token 总数，为正整数
+  + `token_per_minute` : 设置一个 TPM 限制，代表每分钟内可以消耗的 Token 总数，为正整数
 
 用户可以在创建相关请求对象时，传入上述参数来设置限流配置，如：
 ```python
 import qianfan
 chat_comp = qianfan.ChatCompletion(
     request_per_minute=300,
-    token_limit_per_minute=300000,
+    token_per_minute=300000,
 )
 ```
 
@@ -70,7 +70,7 @@ import os
 
 os.environ["QIANFAN_RPM_LIMIT"] = "300"
 os.environ["QIANFAN_QPS_LIMIT"] = "1"
-os.environ["QIANFAN_TOKEN_LIMIT"] = "30000"
+os.environ["QIANFAN_TPM_LIMIT"] = "30000"
 ```
 
 ### request_id

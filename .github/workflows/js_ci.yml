@@ -17,7 +17,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          cd python && poetry lock
+      - name: Setup Python Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+          cache: "poetry"
       - name: Install Rollup globally
         run: npm install --global rollup
 
@@ -26,7 +39,16 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./javascript
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          cd ../ && make install
+      - name: Run mock
+        run: 
+          make mock
+      - name: Run test
+        working-directory: ./javascript
+        run: 
+           yarn test
 
       - name: Build package with Rollup
         working-directory: ./javascript

@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {CompletionBody, RespBase} from '../../interface';
-import Completions from '../index';
+import {Completions, setEnvVariable} from '../../index';
+
+setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_ACCESS_KEY', '123');
+setEnvVariable('QIANFAN_SECRET_KEY', '456');
 
 describe('Completions', () => {
     const client = new Completions();

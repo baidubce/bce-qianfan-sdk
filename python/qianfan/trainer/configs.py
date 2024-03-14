@@ -382,6 +382,7 @@ def _parse_model_info_list(
         m = ModelInfo(
             model=model,
             short_name=f"model{model_hash}",
+            base_model_type=info.get("baseModel", ""),
             support_peft_types=[],
             specific_peft_types_params_limit={},
             model_type=console_consts.FinetuneSupportModelType(
@@ -391,9 +392,11 @@ def _parse_model_info_list(
         if m.model_type == console_consts.FinetuneSupportModelType.Text2Image:
             # 暂时不支持text2image训练
             continue
+        has_train_mode = False
         for train_mode_info in info["supportTrainMode"]:
             if train_mode.value != train_mode_info.get("trainMode"):
                 continue
+            has_train_mode = True
             for param_scale in train_mode_info["supportParameterScale"]:
                 train_limit = TrainLimit()
                 param_scale_peft = param_scale["parameterScale"]
@@ -403,7 +406,8 @@ def _parse_model_info_list(
                     field_name = camel_to_snake(params["key"])
                     train_limit[field_name] = params["checkValue"]
                 m.specific_peft_types_params_limit[param_scale_peft] = train_limit  # type: ignore
-        model_info_mapping[model] = m
+        if has_train_mode:    
+            model_info_mapping[model] = m
     return model_info_mapping
 
 
@@ -424,6 +428,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
         deprecated=True,
     ),
     "ERNIE-Bot-turbo-0922": ModelInfo(
+        model="ERNIE-Lite-8K-0922",
         short_name="turbo_0922",
         base_model_type="ERNIE-Bot-turbo",
         support_peft_types=[PeftType.ALL],

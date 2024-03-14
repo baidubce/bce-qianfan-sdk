@@ -235,7 +235,7 @@ def test_batch_run_on_qianfan():
     origin_dataset = Dataset.load(source)
 
     model = Model("1", "2")
-    result_dataset = model.batch_inference(origin_dataset)
+    result_dataset = model.batch_inference(origin_dataset, output_prettified=False)
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)

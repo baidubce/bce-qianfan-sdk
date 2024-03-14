@@ -216,7 +216,7 @@ class ChatCompletion(BaseResource):
                 max_input_tokens=7168,
             ),
             "ERNIE-Speed-128k": QfLLMInfo(
-                endpoint="/chat/ernie_speed_128k",
+                endpoint="/chat/ernie-speed-128k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

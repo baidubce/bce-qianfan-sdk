@@ -88,12 +88,16 @@ def json_response(data, request_id=None, status_code=200):
     """
     wrapper of the response
     """
-
+    request_body = request.get_data().decode("utf-8")
+    try:
+        request_body = request.json
+    except Exception:
+        pass
     resp = flask.Response(
         json.dumps(
             {
                 **data,
-                "_request": request.json,
+                "_request": request_body,
                 "_params": request.args,
                 "_header": dict(request.headers),
             }

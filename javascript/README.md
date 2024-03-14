@@ -360,7 +360,7 @@ async function yiYanImageAIMain() {
     });
 }
 
-// yiYanImageAIMain()
+yiYanImageAIMain()
 
 // ChatFile测试
 async function yiYanChatFileMain() {

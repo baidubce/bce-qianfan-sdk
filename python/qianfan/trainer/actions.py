@@ -510,14 +510,20 @@ class TrainAction(
         log_debug(f"[train_action] create {self.train_mode} train task: {self.task_id}")
 
         # 获取job状态，是否训练完成
-        self._wait_model_trained(**kwargs)
-        self.result = {**input, "task_id": self.task_id, "job_id": self.job_id}
+        train_metrics = self._wait_model_trained(**kwargs)
+        self.result = {
+            **input,
+            "task_id": self.task_id,
+            "job_id": self.job_id,
+            **train_metrics,
+        }
         assert self.result is not None
         return self.result
 
-    def _wait_model_trained(self, **kwargs: Dict) -> None:
+    def _wait_model_trained(self, **kwargs: Dict) -> Dict[str, Any]:
         if self.task_id is None:
             raise InvalidArgumentError("task_id must not be None")
+        output = {}
         while True:
             task_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
@@ -528,10 +534,8 @@ class TrainAction(
 
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
-                log_info(
-                    "[train_action] training task metrics:"
-                    f" {task_status_resp.get('metrics', {})}"
-                )
+                output["metrics"] = task_status_result.get("metrics", {})
+                log_info(f"[train_action] training task metrics: {output['metrics']}")
                 break
             elif task_status in [
                 console_consts.TrainStatus.Fail,
@@ -574,6 +578,7 @@ class TrainAction(
             "[train_action] training job has ended:"
             f" {self.job_id}/{self.task_id} with status: {task_status}"
         )
+        return output
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
@@ -593,8 +598,12 @@ class TrainAction(
             log_info(
                 f"[train_action] resume from created job {self.task_id}/{self.job_id}"
             )
-            self._wait_model_trained(**kwargs)
-            self.result = {"task_id": self.task_id, "job_id": self.job_id}
+            train_metrics = self._wait_model_trained(**kwargs)
+            self.result = {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+                **train_metrics,
+            }
             return self.result
         else:
             if self._input is None:

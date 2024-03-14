@@ -227,7 +227,7 @@ def list_train_type(
             )
             raise typer.Exit(1)
 
-        model_type_map: Dict[FinetuneSupportModelType, List[str]] = {}
+        model_type_map: Dict[FinetuneSupportModelType, Dict[str, List]] = {}
         for model, info in model_list.items():
             if info.model_type not in model_type_map:
                 model_type_map[info.model_type] = {}

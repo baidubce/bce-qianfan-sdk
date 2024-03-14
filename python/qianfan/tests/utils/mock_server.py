@@ -3860,7 +3860,7 @@ def prompt_evaluate_summary():
     )
 
 
-@app.route(Consts.RPMChargeAPI, methods=["POST"])
+@app.route(Consts.ChargeAPI, methods=["POST"])
 @iam_auth_checker
 def rpm_related_api():
     """

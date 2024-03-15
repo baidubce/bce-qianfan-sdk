@@ -15,7 +15,7 @@
 
 import copy
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Union
 
 from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel, DefaultValue
@@ -938,7 +938,7 @@ class ChatCompletion(BaseResource):
 
     async def abatch_do(
         self,
-        messages_list: List[Union[List[Dict], QfMessages]],
+        messages_list: Sequence[Union[List[Dict], QfMessages]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:

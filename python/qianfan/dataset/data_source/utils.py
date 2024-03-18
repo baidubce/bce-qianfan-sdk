@@ -21,9 +21,10 @@ import os
 import shutil
 import uuid
 import zipfile
+from enum import Enum
 from pathlib import Path
 from time import sleep
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import dateutil.parser
 import pyarrow
@@ -36,6 +37,8 @@ from qianfan.dataset.consts import (
     QianfanDatasetMetaInfoExtensionName,
     QianfanDatasetPackColumnName,
     QianfanMapperCacheDir,
+    Text2ImageAnnotationColumnName,
+    Text2ImagePathColumnName,
 )
 from qianfan.dataset.data_source.base import FormatType
 from qianfan.dataset.data_source.chunk_reader import (
@@ -62,6 +65,96 @@ from qianfan.resources.console.consts import (
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
 from qianfan.utils.pydantic import BaseModel
+
+
+class ImageExtensionName(Enum):
+    """Enum for image extension name"""
+
+    Jpg = "jpg"
+    Jpeg = "jpeg"
+    Png = "png"
+    Bmp = "bmp"
+
+
+def _get_annotation_file_name(file_name: str) -> str:
+    return file_name[: file_name.rfind(".")] + ".json"
+
+
+def _get_all_image_files_and_annotations_from_root(
+    root: str, files: List[str]
+) -> Tuple[List[str], List[Optional[Dict]]]:
+    image_extension_name_tuple = tuple([name.value for name in ImageExtensionName])
+
+    result_image_path_list: List[str] = []
+    result_annotation_path_list: List[Optional[Dict]] = []
+
+    for file_name in files:
+        if not file_name.endswith(image_extension_name_tuple):
+            continue
+
+        file_path = os.path.join(root, file_name)
+        result_image_path_list.append(file_path)
+
+        annotation_file_path = _get_annotation_file_name(file_path)
+        if os.path.exists(annotation_file_path):
+            with open(annotation_file_path, encoding=encoding()) as f:
+                result_annotation_path_list.append(json.load(f))
+        else:
+            result_annotation_path_list.append(None)
+
+    return result_image_path_list, result_annotation_path_list
+
+
+def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
+    table_list: List[pyarrow.Table] = []
+
+    for root, dirs, files in os.walk(path):
+        result = _get_all_image_files_and_annotations_from_root(root, files)
+        table_list.append(
+            pyarrow.Table.from_pydict(
+                {
+                    Text2ImagePathColumnName: result[0],
+                    Text2ImageAnnotationColumnName: result[1],
+                }
+            )
+        )
+
+    return pyarrow.concat_tables(table_list)
+
+
+def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
+    """从压缩包中读取所有的文件"""
+    tmp_folder_path = "tmp_folder_path"
+    try:
+        with zipfile.ZipFile(path) as zip_file:
+            zip_file.extractall(tmp_folder_path)
+        return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)
+    finally:
+        shutil.rmtree(tmp_folder_path, ignore_errors=True)
+
+
+def _collect_all_images_and_annotations_in_one_folder(
+    table: pyarrow.Table, target_folder_path: str
+) -> None:
+    os.makedirs(target_folder_path, exist_ok=True)
+    for entry in table.to_pylist():
+        file_path = entry[Text2ImagePathColumnName]
+        annotation_info = entry[Text2ImageAnnotationColumnName]
+
+        # 构建目标文件路径
+        target_file_path = os.path.join(target_folder_path, os.path.split(file_path)[1])
+
+        # 拷贝文件
+        shutil.copyfile(file_path, target_file_path)
+
+        # 如果附带标注信息，则创建标注信息
+        if annotation_info:
+            with open(
+                _get_annotation_file_name(target_file_path),
+                mode="w",
+                encoding=encoding(),
+            ) as f:
+                json.dump(annotation_info, f)
 
 
 class _DatasetCacheMetaInfo(BaseModel):
@@ -363,6 +456,8 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
         return FormatType.Jsonl
     elif template_type == DataTemplateType.GenericText:
         return FormatType.Text
+    elif template_type == DataTemplateType.Text2Image:
+        return FormatType.Text2Image
     return FormatType.Json
 
 

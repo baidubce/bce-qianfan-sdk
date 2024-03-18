@@ -10,6 +10,7 @@ function get_config()
 
 func_call=$1
 root_dir=$(dirname $0)/../..
+root_dir=$(realpath "$root_dir")
 env_file="$root_dir/.env"
 
 QIANFAN_ACCESS_KEY=$(get_config QIANFAN_ACCESS_KEY)

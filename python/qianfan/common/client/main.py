@@ -50,11 +50,36 @@ _enable_traceback = False
 @app.command(name="openai")
 def openai(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8001)) -> None:
     """
-    Openai wrapper server
+    Create an openai wrapper server.
     """
+    import socket
+
+    import rich
+    from gevent.pywsgi import WSGIServer
+    from rich.markdown import Markdown
+    from werkzeug.serving import get_interface_ip
+
     from qianfan.common.client.openai_adapter import app as openai_apps
 
-    openai_apps.run(host=host, port=port)
+    http_server = WSGIServer((host, port), openai_apps)
+
+    messages = ["OpenAI wrapper server is running at"]
+    messages.append(f"- http://127.0.0.1:{port}")
+    display_host = host
+    if display_host == "0.0.0.0":
+        display_host = get_interface_ip(socket.AddressFamily.AF_INET)
+    messages.append(f"- http://{display_host}:{port}")
+
+    messages.append("\nRemember to set the environment:")
+    messages.append(f"""```shell
+    export OPENAI_API_KEY='any-content-you-want'
+    export OPENAI_BASE_URL='http://{display_host}:{port}/v1'
+    """)
+
+    rich.print(Markdown("\n".join(messages)))
+    rich.print()
+
+    http_server.serve_forever()
 
 
 def version_callback(value: bool) -> None:

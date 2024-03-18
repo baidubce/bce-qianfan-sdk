@@ -453,6 +453,8 @@ class CookbookExecutor:
         """
         notebooks = glob(pathname=f'{self.const_dir["root_dir"]}/{self.const_dir["cookbook_dir"]}/{file_reg}',
                          recursive=True)
+        if len(notebooks) == 0:
+            logging.warning(f'没有找到匹配的Cookbook文件: {file_reg}')
         params = {**params_dict}
         params.update(json.loads(os.environ.get('KEYWORDS_DICT', '{}')))
         for cpath in notebooks:

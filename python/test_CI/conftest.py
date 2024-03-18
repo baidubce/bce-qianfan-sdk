@@ -48,9 +48,9 @@ def env_set(request):
 
     """
     if request.config.getoption('--ak') != '':
-        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--ak")
+        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--ak").replace('"', '').replace("'", '')
     if request.config.getoption('--sk') != '':
-        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--sk")
+        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--sk").replace('"', '').replace("'", '')
     if request.config.getoption('--keywords') != '{}':
         os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
     if request.config.getoption('--root-dir') != '':

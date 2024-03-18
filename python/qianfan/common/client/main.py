@@ -52,9 +52,9 @@ def openai(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8001)) 
     """
     Openai wrapper server
     """
-    import uvicorn
+    from qianfan.common.client.openai_adapter import app as openai_apps
 
-    uvicorn.run("qianfan.common.client.openai_adapter:app", host=host, port=port)
+    openai_apps.run(host=host, port=port)
 
 
 def version_callback(value: bool) -> None:

@@ -16,11 +16,11 @@
 
 package com.baidubce.qianfan;
 
+import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.ApiErrorResponse;
 import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelEndpoint;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
@@ -35,6 +35,7 @@ import java.util.Iterator;
 
 class QianfanClient {
     private static final String SDK_VERSION = "0.0.1";
+    private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
@@ -91,7 +92,7 @@ class QianfanClient {
         }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
         HttpRequest request = HttpClient.request()
-                .post(ModelEndpoint.getUrl(baseRequest.getEndpoint()))
+                .post(String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), baseRequest.getEndpoint()))
                 .body(baseRequest);
         return auth.signRequest(request);
     }

@@ -20,6 +20,7 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -109,7 +110,7 @@ func (s *ModelResponseStream) checkResponseError() error {
 	// LLMRetryCount 为 0 时表示不限制重试次数
 	for retryCount := 0; retryCount < s.Options.LLMRetryCount || s.Options.LLMRetryCount == 0; retryCount++ {
 		contentType := s.httpResponse.Header.Get("Content-Type")
-		if contentType == "application/json" {
+		if strings.Contains(contentType, "application/json") {
 			// 遇到错误
 			var resp ModelResponse
 			content, err := io.ReadAll(s.httpResponse.Body)

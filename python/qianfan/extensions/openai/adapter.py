@@ -352,7 +352,6 @@ class OpenAIApdater(object):
         stream = request.get("stream", False)
         qianfan_request = self.openai_completion_request_to_qianfan(request)
         n = request.get("n", 1)
-        print(qianfan_request)
         if stream:
             return self._completion_stream(n, request, qianfan_request)
 

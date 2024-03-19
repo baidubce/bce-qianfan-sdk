@@ -15,6 +15,7 @@
 from typing import Optional
 
 import click
+import rich.markup
 import typer
 from typer.completion import completion_init, install_callback, show_callback
 
@@ -48,38 +49,22 @@ _enable_traceback = False
 
 
 @app.command(name="openai")
-def openai(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8001)) -> None:
+def openai(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
+    port: int = typer.Option(8001, "--port", "-p", help="Port of the server."),
+    detach: bool = typer.Option(
+        False,
+        "--detach",
+        "-d",
+        help="Run the server in background.",
+    ),
+) -> None:
     """
     Create an openai wrapper server.
     """
-    import socket
+    from qianfan.common.client.openai_adapter import entry as openai_entry
 
-    import rich
-    from gevent.pywsgi import WSGIServer
-    from rich.markdown import Markdown
-    from werkzeug.serving import get_interface_ip
-
-    from qianfan.common.client.openai_adapter import app as openai_apps
-
-    http_server = WSGIServer((host, port), openai_apps)
-
-    messages = ["OpenAI wrapper server is running at"]
-    messages.append(f"- http://127.0.0.1:{port}")
-    display_host = host
-    if display_host == "0.0.0.0":
-        display_host = get_interface_ip(socket.AddressFamily.AF_INET)
-    messages.append(f"- http://{display_host}:{port}")
-
-    messages.append("\nRemember to set the environment:")
-    messages.append(f"""```shell
-    export OPENAI_API_KEY='any-content-you-want'
-    export OPENAI_BASE_URL='http://{display_host}:{port}/v1'
-    """)
-
-    rich.print(Markdown("\n".join(messages)))
-    rich.print()
-
-    http_server.serve_forever()
+    openai_entry(host=host, port=port, detach=detach)
 
 
 def version_callback(value: bool) -> None:
@@ -116,7 +101,7 @@ def main() -> None:
         if _enable_traceback:
             raise
         else:
-            print_error_msg(str(e))
+            print_error_msg(rich.markup.escape(str(e)))
 
 
 @app.callback()

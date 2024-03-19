@@ -18,7 +18,9 @@ from typing import Any, AsyncIterator, Iterator
 
 from flask import Flask, Response, jsonify, request
 
+from qianfan.config import encoding
 from qianfan.extensions.openai.adapter import OpenAIApdater
+from qianfan.utils.utils import check_dependency
 
 app = Flask(__name__)
 
@@ -73,3 +75,51 @@ async def embedding() -> Response:
     resp = await adapter.embedding(openai_params)
 
     return jsonify(resp)
+
+
+def entry(host: str, port: int, detach: bool) -> None:
+    check_dependency("openai", ["flask", "gevent", "werkzeug"])
+    import socket
+
+    import rich
+    from gevent.pywsgi import WSGIServer
+    from rich.markdown import Markdown
+    from werkzeug.serving import get_interface_ip
+
+    from qianfan.common.client.openai_adapter import app as openai_apps
+
+    http_server = WSGIServer((host, port), openai_apps)
+
+    messages = ["OpenAI wrapper server is running at"]
+    messages.append(f"- http://127.0.0.1:{port}")
+    display_host = host
+    if display_host == "0.0.0.0":
+        display_host = get_interface_ip(socket.AddressFamily.AF_INET)
+    messages.append(f"- http://{display_host}:{port}")
+
+    messages.append("\nRemember to set the environment:")
+    messages.append(f"""```shell
+    export OPENAI_API_KEY='any-content-you-want'
+    export OPENAI_BASE_URL='http://{display_host}:{port}/v1'
+    """)
+
+    rich.print(Markdown("\n".join(messages)))
+    rich.print()
+
+    if detach:
+        import os
+        import sys
+
+        pid = os.fork()
+        if pid > 0:
+            rich.print(
+                f"OpenAI wrapper server is running in background with PID {pid}."
+            )
+            return
+        os.setsid()
+        f = open("/dev/null", "w", encoding=encoding())
+        sys.stdout = f
+        sys.stderr = f
+        http_server.log = None
+
+    http_server.serve_forever()

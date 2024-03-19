@@ -53,7 +53,7 @@ def test_async_case_limiter():
 
     for i in range(5):
         t = _inner_coroutine_working_function()
-        awaitable_list.append(t)
+        awaitable_list.append(asyncio.create_task(t))
 
     asyncio.run(asyncio.wait(awaitable_list))
     end_timestamp = time.time()
@@ -103,7 +103,7 @@ def test_reset_once_async():
     awaitable_list = []
 
     for i in range(5):
-        awaitable_list.append(tpm_rl.reset_once(200))
+        awaitable_list.append(asyncio.create_task(tpm_rl.reset_once(200)))
 
     asyncio.run(asyncio.wait(awaitable_list))
 

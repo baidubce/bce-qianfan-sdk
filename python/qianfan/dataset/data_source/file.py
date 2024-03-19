@@ -31,7 +31,7 @@ from qianfan.dataset.data_source.utils import (
     _read_all_file_from_zip,
     _read_all_image_from_zip,
     _read_all_image_in_an_folder,
-    zip_file_or_folder,
+    zip_file_or_folder, _collect_all_images_and_annotations_in_one_folder,
 )
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
@@ -150,6 +150,10 @@ class FileDataSource(DataSource, BaseModel):
         """
         if self.save_as_folder and self.file_format == FormatType.Text:
             return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+
+        if self.file_format == FormatType.Text2Image:
+            _collect_all_images_and_annotations_in_one_folder(table.inner_table, self.path)
+            return True
 
         # 有可能文件路径的父文件夹不存在，得先创建
         os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)

@@ -38,7 +38,7 @@ from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,
     QianfanMapperCacheDir,
     Text2ImageAnnotationColumnName,
-    Text2ImagePathColumnName,
+    Text2ImagePathColumnName, QianfanDatasetText2ImageUnzipCacheDir,
 )
 from qianfan.dataset.data_source.base import FormatType
 from qianfan.dataset.data_source.chunk_reader import (
@@ -92,7 +92,7 @@ def _get_all_image_files_and_annotations_from_root(
         if not file_name.endswith(image_extension_name_tuple):
             continue
 
-        file_path = os.path.join(root, file_name)
+        file_path = os.path.abspath(os.path.join(root, file_name))
         result_image_path_list.append(file_path)
 
         annotation_file_path = _get_annotation_file_name(file_path)
@@ -124,13 +124,10 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
 
 def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
-    tmp_folder_path = "tmp_folder_path"
-    try:
-        with zipfile.ZipFile(path) as zip_file:
-            zip_file.extractall(tmp_folder_path)
-        return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)
-    finally:
-        shutil.rmtree(tmp_folder_path, ignore_errors=True)
+    tmp_folder_path = os.path.join(QianfanDatasetText2ImageUnzipCacheDir, f"image_dataset_folder_{uuid.uuid4()}")
+    with zipfile.ZipFile(path) as zip_file:
+        zip_file.extractall(tmp_folder_path)
+    return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)
 
 
 def _collect_all_images_and_annotations_in_one_folder(
@@ -145,7 +142,7 @@ def _collect_all_images_and_annotations_in_one_folder(
         target_file_path = os.path.join(target_folder_path, os.path.split(file_path)[1])
 
         # 拷贝文件
-        shutil.copyfile(file_path, target_file_path)
+        shutil.copy(file_path, target_file_path)
 
         # 如果附带标注信息，则创建标注信息
         if annotation_info:
@@ -430,11 +427,11 @@ def zip_file_or_folder(path: str) -> str:
         # 去除文件内的后缀名
         folder_name = folder_name[0 : folder_name.rfind(".")]
         # 去除文件前的英文句号
-        folder_name.strip(".")
+        folder_name = folder_name.strip(".")
 
     # 如果是文件夹，则直接调用对应的函数处理
     if os.path.isdir(path):
-        return shutil.make_archive(folder_name, "zip", base_dir=path)
+        return shutil.make_archive(folder_name, "zip", root_dir=path)
 
     # 不然得要手动处理文件
     zip_file_name = f"{folder_name}.zip"

@@ -20,6 +20,8 @@ import functools
 import threading
 import time
 
+import pytest
+
 from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
 
 
@@ -43,7 +45,8 @@ def test_multi_thread_case_token_limiter():
     assert end_timestamp - start_timestamp <= 2
 
 
-def test_async_case_limiter():
+@pytest.mark.asyncio
+async def test_async_case_limiter():
     start_timestamp = time.time()
     tpm_rl = AsyncTokenLimiter(token_per_minute=500)
     awaitable_list = []
@@ -55,7 +58,7 @@ def test_async_case_limiter():
         t = _inner_coroutine_working_function()
         awaitable_list.append(asyncio.create_task(t))
 
-    asyncio.run(asyncio.wait(awaitable_list))
+    await asyncio.wait(awaitable_list)
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp <= 2
 
@@ -73,8 +76,12 @@ def test_token_limit_in_thread():
 
 def test_token_limit_in_thread_async():
     t_list = []
+
+    def _async_run():
+        asyncio.run(test_async_case_limiter())
+
     for i in range(5):
-        t = threading.Thread(target=test_async_case_limiter)
+        t = threading.Thread(target=_async_run)
         t.start()
         t_list.append(t)
 
@@ -98,14 +105,15 @@ def test_reset_once():
     assert tpm_rl._has_been_reset
 
 
-def test_reset_once_async():
+@pytest.mark.asyncio
+async def test_reset_once_async():
     tpm_rl = AsyncTokenLimiter(token_per_minute=500)
     awaitable_list = []
 
     for i in range(5):
         awaitable_list.append(asyncio.create_task(tpm_rl.reset_once(200)))
 
-    asyncio.run(asyncio.wait(awaitable_list))
+    await asyncio.wait(awaitable_list)
 
     assert tpm_rl._token_limit_per_minute == 180
     assert tpm_rl._has_been_reset

@@ -16,6 +16,7 @@
     Unit test for VersatileRateLimiter
 """
 import asyncio
+import threading
 import time
 
 import pytest
@@ -155,3 +156,106 @@ def test_set_rpm_limiter_function():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 2
+
+
+def test_multi_thread_case_limiter():
+    start_timestamp = time.time()
+    rpm_rl = VersatileRateLimiter(query_per_second=5)
+    t_list = []
+
+    def _inner_thread_working_function():
+        with rpm_rl:
+            ...
+
+    for i in range(5):
+        t = threading.Thread(target=_inner_thread_working_function)
+        t.start()
+        t_list.append(t)
+
+    for t in t_list:
+        t.join()
+
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp <= 2
+
+
+def test_async_case_limiter():
+    start_timestamp = time.time()
+    rpm_rl = VersatileRateLimiter(query_per_second=5)
+    awaitable_list = []
+
+    async def _inner_coroutine_working_function():
+        async with rpm_rl:
+            ...
+
+    for i in range(5):
+        t = _inner_coroutine_working_function()
+        awaitable_list.append(t)
+
+    asyncio.run(asyncio.wait(awaitable_list))
+    end_timestamp = time.time()
+    assert end_timestamp - start_timestamp <= 2
+
+
+def test_limit_in_thread():
+    t_list = []
+    for i in range(5):
+        t = threading.Thread(target=test_multi_thread_case_limiter)
+        t.start()
+        t_list.append(t)
+
+    for t in t_list:
+        t.join()
+
+
+def test_limit_in_thread_async():
+    t_list = []
+    for i in range(5):
+        t = threading.Thread(target=test_async_case_limiter)
+        t.start()
+        t_list.append(t)
+
+    for t in t_list:
+        t.join()
+
+
+def test_reset_once():
+    rpm_rl = VersatileRateLimiter(query_per_second=5)
+
+    assert not rpm_rl._is_rpm
+    assert rpm_rl._internal_qps_rate_limiter._query_per_period == 4.5
+
+    def _reset_once():
+        rpm_rl.reset_once(200)
+
+    t_list = []
+    for i in range(5):
+        t = threading.Thread(target=_reset_once)
+        t.start()
+        t_list.append(t)
+
+    for t in t_list:
+        t.join()
+
+    assert rpm_rl._has_been_reset
+    assert not rpm_rl._is_rpm
+    assert rpm_rl._new_query_per_second == 200 / 60
+    assert rpm_rl._internal_qps_rate_limiter._query_per_period == 3
+
+
+def test_reset_once_async():
+    rpm_rl = VersatileRateLimiter(request_per_minute=300)
+
+    assert rpm_rl._is_rpm
+    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 270
+
+    awaitable_list = []
+    for i in range(5):
+        awaitable_list.append(rpm_rl.async_reset_once(200))
+
+    asyncio.run(asyncio.wait(awaitable_list))
+
+    assert rpm_rl._has_been_reset
+    assert rpm_rl._is_rpm
+    assert rpm_rl._new_request_per_minute == 200
+    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180

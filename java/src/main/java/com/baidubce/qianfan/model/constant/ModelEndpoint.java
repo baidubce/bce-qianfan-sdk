@@ -35,8 +35,6 @@ public class ModelEndpoint {
 
     private static final String DEFAULT_EMBEDDING_MODEL = "Embedding-V1";
 
-    private static final String QIANFAN_URL_PREFIX = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop";
-
     private static final Map<String, String> CHAT_MODEL_ENDPOINTS = new HashMap<>();
 
     private static final Map<String, String> COMPLETION_MODEL_ENDPOINTS = new HashMap<>();
@@ -78,10 +76,6 @@ public class ModelEndpoint {
     }
 
     private ModelEndpoint() {
-    }
-
-    public static String getUrl(String endpoint) {
-        return QIANFAN_URL_PREFIX + endpoint;
     }
 
     public static String getEndpoint(String type, String model) {

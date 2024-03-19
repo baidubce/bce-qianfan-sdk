@@ -18,7 +18,6 @@ from typing import Any, AsyncIterator, Iterator
 
 from flask import Flask, Response, jsonify, request
 
-from qianfan.config import encoding
 from qianfan.extensions.openai.adapter import OpenAIApdater
 from qianfan.utils.utils import check_dependency
 
@@ -108,18 +107,14 @@ def entry(host: str, port: int, detach: bool) -> None:
 
     if detach:
         import os
-        import sys
+        from multiprocessing import Process
 
-        pid = os.fork()
-        if pid > 0:
-            rich.print(
-                f"OpenAI wrapper server is running in background with PID {pid}."
-            )
-            return
-        os.setsid()
-        f = open("/dev/null", "w", encoding=encoding())
-        sys.stdout = f
-        sys.stderr = f
-        http_server.log = None
+        process = Process(target=http_server.serve_forever)
+        process.start()
+
+        rich.print(
+            f"OpenAI wrapper server is running in background with PID {process.pid}."
+        )
+        os._exit(0)
 
     http_server.serve_forever()

@@ -36,9 +36,10 @@ from qianfan.dataset.consts import (
     QianfanDatasetLocalCacheDir,
     QianfanDatasetMetaInfoExtensionName,
     QianfanDatasetPackColumnName,
+    QianfanDatasetText2ImageUnzipCacheDir,
     QianfanMapperCacheDir,
     Text2ImageAnnotationColumnName,
-    Text2ImagePathColumnName, QianfanDatasetText2ImageUnzipCacheDir,
+    Text2ImagePathColumnName,
 )
 from qianfan.dataset.data_source.base import FormatType
 from qianfan.dataset.data_source.chunk_reader import (
@@ -124,7 +125,9 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
 
 def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
-    tmp_folder_path = os.path.join(QianfanDatasetText2ImageUnzipCacheDir, f"image_dataset_folder_{uuid.uuid4()}")
+    tmp_folder_path = os.path.join(
+        QianfanDatasetText2ImageUnzipCacheDir, f"image_dataset_folder_{uuid.uuid4()}"
+    )
     with zipfile.ZipFile(path) as zip_file:
         zip_file.extractall(tmp_folder_path)
     return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)

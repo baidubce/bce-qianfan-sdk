@@ -26,12 +26,13 @@ import pyarrow
 from qianfan.config import encoding
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
+    _collect_all_images_and_annotations_in_one_folder,
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
     _read_all_image_from_zip,
     _read_all_image_in_an_folder,
-    zip_file_or_folder, _collect_all_images_and_annotations_in_one_folder,
+    zip_file_or_folder,
 )
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
@@ -152,7 +153,9 @@ class FileDataSource(DataSource, BaseModel):
             return self._save_generic_text_into_folder(table, batch_size, **kwargs)
 
         if self.file_format == FormatType.Text2Image:
-            _collect_all_images_and_annotations_in_one_folder(table.inner_table, self.path)
+            _collect_all_images_and_annotations_in_one_folder(
+                table.inner_table, self.path
+            )
             return True
 
         # 有可能文件路径的父文件夹不存在，得先创建

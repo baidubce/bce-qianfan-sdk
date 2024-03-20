@@ -14,6 +14,8 @@
 """
     Unit test config for cookbook
 """
+import json
+import logging
 import os
 import pytest
 from utils.cookbook_operate import CookbookExecutor
@@ -34,6 +36,8 @@ def pytest_addoption(parser):
     parser.addoption("--sk", default="")
     parser.addoption("--root-dir", default="")
     parser.addoption("--keywords", default="{}")
+    parser.addoption("--reg", default="")
+    parser.addoption("--params", default="{}")
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -74,6 +78,44 @@ def env_set(request):
     for key, value in other_env:
         if key in os.environ:
             del os.environ[key]
+
+
+@pytest.fixture(scope="function")
+def cli_reg(request):
+    """
+    设置临时测试文件路径
+    Args:
+        request (object): Flask请求对象，其中包含了命令行参数信息。
+    Returns:
+        cli_reg (str): 测试文件路径通配符，为相对路径，以目录cookbook为起始。
+    """
+    if request.config.getoption('--reg') != '':
+        return request.config.getoption("--reg").replace('"', '').replace("'", '')
+    else:
+        return ""
+
+@pytest.fixture(scope="function")
+def cli_params(request):
+    """
+    设置临时测试的参数，json格式字符串。
+    Args:
+        request (object): Flask请求对象，其中包含了命令行参数信息。
+    Returns:
+        cli_params (dict): 测试的参数，json格式字符串转字典。
+    """
+    params_dict = {}
+    if request.config.getoption('--params') != '':
+        try:
+            params_dict = json.loads(request.config.getoption("--params"))
+        except json.decoder.JSONDecodeError:
+            logging.error(f"params json format error {request.config.getoption('--params')}")
+            params_dict = {}
+        except Exception as e:
+            logging.error(f'params unknown error {e}')
+            params_dict = {}
+        return params_dict
+    else:
+        return params_dict
 
 
 @pytest.fixture(scope="function")

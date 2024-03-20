@@ -406,9 +406,12 @@ class Model(object):
     def preset_list(
         self,
         name_filter: Optional[str] = None,
-        model_type: Optional[str] = None,
+        model_type: Optional[List[int]] = None,
         model_version_vendor: Optional[List[str]] = None,
-        model_advantage: Optional[List[str]] = None,
+        ctx_length: Optional[List[str]] = None,
+        language_support: Optional[List[str]] = None,
+        expansion: Optional[List[str]] = None,
+        order_by: Optional[str] = None,
         page_no: int = 1,
         page_size: int = 20,
         **kwargs: Any,
@@ -419,12 +422,18 @@ class Model(object):
         Parameters:
             name_filter (Optional[str]):
                 name filter to filter preset models
-            model_type (Optional[str]):
+            model_type (Optional[list[int]]):
                 model type to filter preset models
             model_version_vendor (Optional[List[str]]):
                 model version vendor to filter preset models
-            model_advantage (Optional[List[str]]):
-                model advantage to filter preset models
+            ctx_length (Optional[list[str]]):
+                context length to filter preset models
+            language_support (Optional[list[str]]):
+                language support to filter preset models
+            expansion (Optional[list[str]]):
+                expansion to filter preset models
+            order_by (Optional[str]):
+                order to filter preset models
             page_no (int):
                 page number default is 1, start from 1
             page_size (int):
@@ -445,8 +454,14 @@ class Model(object):
             req.json_body["modelType"] = model_type
         if model_version_vendor:
             req.json_body["modelVersionVendor"] = model_version_vendor
-        if model_advantage:
-            req.json_body["modelAdvantage"] = model_advantage
+        if ctx_length:
+            req.json_body["ctxLength"] = ctx_length
+        if language_support:
+            req.json_body["languageSupport"] = language_support
+        if expansion:
+            req.json_body["expansion"] = expansion
+        if order_by:
+            req.json_body["orderBy"] = order_by
 
         return req
 

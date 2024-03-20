@@ -47,36 +47,47 @@ public class ModelEndpoint {
     private static final Map<String, String> TEXT_2_IMAGE_MODEL_ENDPOINTS = new HashMap<>();
 
     static {
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-4.0-8K", "completions_pro");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-3.5-8K", "completions");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-3.5-8K-0205", "ernie-3.5-8k-0205");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-3.5-8K-1222", "ernie-3.5-8k-1222");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-8K", "ernie_bot_8k");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-3.5-4K-0205", "ernie-3.5-4k-0205");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed-8K", "ernie_speed");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed-128K", "ernie-speed-128k");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Lite-8K-0922", "eb-instant");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE-Lite-8K-0308", "ernie-lite-8k");
+        CHAT_MODEL_ENDPOINTS.put("ERNIE Speed-AppBuilder", "ai_apaas");
+        CHAT_MODEL_ENDPOINTS.put("Gemma-7B-it", "gemma_7b_it");
+        CHAT_MODEL_ENDPOINTS.put("Yi-34B-Chat", "yi_34b_chat");
+        CHAT_MODEL_ENDPOINTS.put("BLOOMZ-7B", "bloomz_7b1");
+        CHAT_MODEL_ENDPOINTS.put("Qianfan-BLOOMZ-7B-compressed", "qianfan_bloomz_7b_compressed");
+        CHAT_MODEL_ENDPOINTS.put("Mixtral-8x7B-Instruct", "mixtral_8x7b_instruct");
+        CHAT_MODEL_ENDPOINTS.put("Llama-2-7b-chat", "llama_2_7b");
+        CHAT_MODEL_ENDPOINTS.put("Llama-2-13b-chat", "llama_2_13b");
+        CHAT_MODEL_ENDPOINTS.put("Llama-2-70b-chat", "llama_2_70b");
+        CHAT_MODEL_ENDPOINTS.put("Qianfan-Chinese-Llama-2-7B", "qianfan_chinese_llama_2_7b");
+        CHAT_MODEL_ENDPOINTS.put("Qianfan-Chinese-Llama-2-13B", "qianfan_chinese_llama_2_13b");
+        CHAT_MODEL_ENDPOINTS.put("ChatGLM2-6B-32K", "chatglm2_6b_32k");
+        CHAT_MODEL_ENDPOINTS.put("XuanYuan-70B-Chat-4bit", "xuanyuan_70b_chat");
+        CHAT_MODEL_ENDPOINTS.put("ChatLaw", "chatlaw");
+        CHAT_MODEL_ENDPOINTS.put("AquilaChat-7B", "aquilachat_7b");
+        // Compatibility for old model names
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-turbo", "eb-instant");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot", "completions");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-4", "completions_pro");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-8k", "ernie_bot_8k");
-        CHAT_MODEL_ENDPOINTS.put("ernie-3.5-4k-0205", "ernie-3.5-4k-0205");
-        CHAT_MODEL_ENDPOINTS.put("ernie-3.5-8k-0205", "ernie-3.5-8k-0205");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed", "ernie_speed");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Speed-128k", "ernie_speed");
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-turbo-AI", "ai_apaas");
         CHAT_MODEL_ENDPOINTS.put("EB-turbo-AppBuilder", "ai_apaas");
-        CHAT_MODEL_ENDPOINTS.put("BLOOMZ-7B", "bloomz_7b1");
-        CHAT_MODEL_ENDPOINTS.put("Llama-2-7b-chat", "llama_2_7b");
-        CHAT_MODEL_ENDPOINTS.put("Llama-2-13b-chat", "llama_2_13b");
-        CHAT_MODEL_ENDPOINTS.put("Llama-2-70b-chat", "llama_2_70b");
-        CHAT_MODEL_ENDPOINTS.put("Qianfan-BLOOMZ-7B-compressed", "qianfan_bloomz_7b_compressed");
-        CHAT_MODEL_ENDPOINTS.put("Qianfan-Chinese-Llama-2-7B", "qianfan_chinese_llama_2_7b");
-        CHAT_MODEL_ENDPOINTS.put("ChatGLM2-6B-32K", "chatglm2_6b_32k");
-        CHAT_MODEL_ENDPOINTS.put("AquilaChat-7B", "aquilachat_7b");
-        CHAT_MODEL_ENDPOINTS.put("XuanYuan-70B-Chat-4bit", "xuanyuan_70b_chat");
-        CHAT_MODEL_ENDPOINTS.put("Qianfan-Chinese-Llama-2-13B", "qianfan_chinese_llama_2_13b");
-        CHAT_MODEL_ENDPOINTS.put("ChatLaw", "chatlaw");
-        CHAT_MODEL_ENDPOINTS.put("Yi-34B-Chat", "yi_34b_chat");
-        CHAT_MODEL_ENDPOINTS.put("Mixtral-8x7B-Instruct", "mixtral_8x7b_instruct");
 
         COMPLETION_MODEL_ENDPOINTS.put("SQLCoder-7B", "sqlcoder_7b");
         COMPLETION_MODEL_ENDPOINTS.put("CodeLlama-7b-Instruct", "codellama_7b_instruct");
 
         EMBEDDING_MODEL_ENDPOINTS.put("Embedding-V1", "embedding-v1");
-        EMBEDDING_MODEL_ENDPOINTS.put("bge-large-en", "bge_large_en");
         EMBEDDING_MODEL_ENDPOINTS.put("bge-large-zh", "bge_large_zh");
+        EMBEDDING_MODEL_ENDPOINTS.put("bge-large-en", "bge_large_en");
         EMBEDDING_MODEL_ENDPOINTS.put("tao-8k", "tao_8k");
 
         TEXT_2_IMAGE_MODEL_ENDPOINTS.put("Stable-Diffusion-XL", "sd_xl");

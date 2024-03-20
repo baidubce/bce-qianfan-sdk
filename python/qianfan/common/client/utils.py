@@ -155,8 +155,8 @@ def list_model_callback(
         models = t.models()
         for m in sorted(models):
             info = t.get_model_info(m)
-            if info.depracated:
-                console.print(f"[s]{m} [dim](depracated)[/]", highlight=False)
+            if info.deprecated:
+                console.print(f"[s]{m} [dim](deprecated)[/]", highlight=False)
             else:
                 console.print(m, highlight=False)
         raise typer.Exit()

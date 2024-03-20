@@ -471,6 +471,14 @@ class ChatCompletion(BaseResource):
                 optional_keys=set(),
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
         alias = {
             "ERNIE-Speed": "ERNIE-Speed-8K",
             "ERNIE Speed": "ERNIE-Speed-8K",
@@ -479,18 +487,28 @@ class ChatCompletion(BaseResource):
         for src, target in alias.items():
             info_list[src] = info_list[target]
 
-        depracated_alias = {
+        deprecated_alias = {
             "ERNIE-Bot-4": "ERNIE-4.0-8K",
             "ERNIE-Bot": "ERNIE-3.5-8K",
             "ERNIE-Bot-turbo": "ERNIE-Lite-8K-0922",
             "EB-turbo-AppBuilder": "ERNIE Speed-AppBuilder",
             "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
         }
-        for src, target in depracated_alias.items():
+
+        for m in info_list:
+            if m not in latest_models_list.keys():
+                info_list[m].deprecated = True
+
+        for src, target in deprecated_alias.items():
             info = copy.deepcopy(info_list[target])
-            info.depracated = True
+            info.deprecated = True
             info_list[src] = info
+
         return info_list
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "chat"
 
     @classmethod
     def _default_model(cls) -> str:

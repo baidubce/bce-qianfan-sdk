@@ -87,11 +87,29 @@ class Completion(BaseResource):
                 optional_keys=set(),
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        for m in info_list:
+            if m not in latest_models_list:
+                info_list[m].deprecated = True
+
+        # chat兼容
         chat_model_info = ChatCompletion._supported_models()
         for model, info in chat_model_info.items():
             if model not in info_list:
                 info_list[model] = info
         return info_list
+      
+    @classmethod
+    def api_type(cls) -> str:
+        return "completions"
 
     @classmethod
     def _default_model(cls) -> str:

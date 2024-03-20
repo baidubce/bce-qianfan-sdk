@@ -46,7 +46,7 @@ class Embedding(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return {
+        info_list = {
             "Embedding-V1": QfLLMInfo(
                 endpoint="/embeddings/embedding-v1",
                 required_keys={"input"},
@@ -71,6 +71,24 @@ class Embedding(BaseResource):
                 endpoint="", required_keys={"input"}, optional_keys=set()
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        for m in info_list:
+            if m not in latest_models_list:
+                info_list[m].deprecated = True
+        
+        return info_list
+      
+    @classmethod
+    def api_type(cls) -> str:
+        return "embeddings"
 
     @classmethod
     def _default_model(cls) -> str:

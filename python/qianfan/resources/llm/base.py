@@ -19,6 +19,7 @@ import concurrent.futures
 import copy
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import MINYEAR, datetime
 from typing import (
     Any,
     AsyncIterator,
@@ -37,6 +38,7 @@ from typing import (
 import qianfan.errors as errors
 from qianfan import get_config
 from qianfan.consts import Consts, DefaultValue
+from qianfan.resources.console.service import Service
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn, utils
@@ -173,7 +175,7 @@ class BaseResource(object):
             endpoint = self._endpoint
         if endpoint is None:
             model_name = self._default_model() if model is None else model
-            model_info = self._supported_models().get(model_name, None)
+            model_info = self.get_model_info(model_name)
             if model_info is None:
                 raise errors.InvalidArgumentError(
                     f"The provided model `{model}` is not in the list of supported"
@@ -372,6 +374,10 @@ class BaseResource(object):
             log_warn("retry is not available when stream is enabled")
 
     @classmethod
+    def api_type(cls) -> str:
+        return ""
+
+    @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
         preset model list
@@ -383,7 +389,11 @@ class BaseResource(object):
             a dict which key is preset model and value is the endpoint
 
         """
-        raise NotImplementedError
+        # raise NotImplementedError
+        if cls.api_type == "":
+            return {}
+        else:
+            return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
     def _default_model(cls) -> str:
@@ -411,6 +421,7 @@ class BaseResource(object):
         """
         model_info = cls._supported_models().get(model)
         if model_info is None:
+            # 拿不到的话
             raise errors.InvalidArgumentError(
                 f"The provided model `{model}` is not in the list of supported models."
                 " If this is a recently added model, try using the `endpoint`"
@@ -602,3 +613,65 @@ class BaseResource(object):
             *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
             return_exceptions=True,
         )
+
+
+# {api_type: {model_name: QfLLMInfo}}
+_runtime_models_info: Dict[str, Dict[str, QfLLMInfo]] = {}
+_last_update_time: datetime = datetime(MINYEAR, 1, 1)
+_update_intervals_seconds: int = 5 * 60
+_model_infos_access_lock: threading.Lock = threading.Lock()
+
+
+def trim_prefix(s: str, prefix: str) -> str:
+    if s.startswith(prefix):
+        return s[len(prefix) :]
+    else:
+        return s
+
+
+def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
+    """
+    fetch supported models from server
+    and update the `_runtime_models_info`
+    """
+
+    if get_config().ENABLE_PRIVATE:
+        # 私有化直接跳过
+        return {}
+    global _last_update_time
+    global _runtime_models_info
+    if (datetime.now() - _last_update_time).total_seconds() > _update_intervals_seconds:
+        _model_infos_access_lock.acquire()
+        if (
+            datetime.now() - _last_update_time
+        ).total_seconds() < _update_intervals_seconds:
+            _model_infos_access_lock.release()
+            return _runtime_models_info
+        try:
+            svc_list = Service.list()["result"]["common"]
+        except Exception as e:
+            log_warn(f"fetch_supported_models failed: {e}")
+            _model_infos_access_lock.release()
+            return _runtime_models_info
+
+        # get preset services:
+        for s in svc_list:
+            [api_type, model_endpoint] = trim_prefix(
+                s["url"],
+                "{}{}/".format(
+                    get_config().BASE_URL,
+                    Consts.ModelAPIPrefix,
+                ),
+            ).split("/")
+            if _runtime_models_info.get(api_type) is None:
+                _runtime_models_info[api_type] = {}
+            _runtime_models_info.get(api_type)[s["name"]] = QfLLMInfo(
+                endpoint=model_endpoint,
+                api_type=api_type,
+            )
+            _last_update_time = datetime.now()
+        _model_infos_access_lock.release()
+    return _runtime_models_info
+
+
+get_latest_supported_models()

@@ -26,6 +26,7 @@ public class ModelEndpoint {
     public static final String CHAT = "chat";
     public static final String COMPLETIONS = "completions";
     public static final String EMBEDDINGS = "embeddings";
+    public static final String TEXT_2_IMAGE = "text2image";
 
     private static final String ENDPOINT_TEMPLATE = "/%s/%s";
 
@@ -35,11 +36,15 @@ public class ModelEndpoint {
 
     private static final String DEFAULT_EMBEDDING_MODEL = "Embedding-V1";
 
+    private static final String DEFAULT_TEXT_2_IMAGE_MODEL = "Stable-Diffusion-XL";
+
     private static final Map<String, String> CHAT_MODEL_ENDPOINTS = new HashMap<>();
 
     private static final Map<String, String> COMPLETION_MODEL_ENDPOINTS = new HashMap<>();
 
     private static final Map<String, String> EMBEDDING_MODEL_ENDPOINTS = new HashMap<>();
+
+    private static final Map<String, String> TEXT_2_IMAGE_MODEL_ENDPOINTS = new HashMap<>();
 
     static {
         CHAT_MODEL_ENDPOINTS.put("ERNIE-Bot-turbo", "eb-instant");
@@ -73,6 +78,8 @@ public class ModelEndpoint {
         EMBEDDING_MODEL_ENDPOINTS.put("bge-large-en", "bge_large_en");
         EMBEDDING_MODEL_ENDPOINTS.put("bge-large-zh", "bge_large_zh");
         EMBEDDING_MODEL_ENDPOINTS.put("tao-8k", "tao_8k");
+
+        TEXT_2_IMAGE_MODEL_ENDPOINTS.put("Stable-Diffusion-XL", "sd_xl");
     }
 
     private ModelEndpoint() {
@@ -110,6 +117,8 @@ public class ModelEndpoint {
                 return new Pair<>(COMPLETION_MODEL_ENDPOINTS, DEFAULT_COMPLETION_MODEL);
             case EMBEDDINGS:
                 return new Pair<>(EMBEDDING_MODEL_ENDPOINTS, DEFAULT_EMBEDDING_MODEL);
+            case TEXT_2_IMAGE:
+                return new Pair<>(TEXT_2_IMAGE_MODEL_ENDPOINTS, DEFAULT_TEXT_2_IMAGE_MODEL);
             default:
                 throw new IllegalArgumentException("Unknown model type: " + type);
         }

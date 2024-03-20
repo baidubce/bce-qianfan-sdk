@@ -107,7 +107,7 @@ def entry(host: str, port: int, detach: bool) -> None:
 
     if detach:
         import os
-        from multiprocessing import Process
+        from multiprocess import Process
 
         process = Process(target=http_server.serve_forever)
         process.start()

@@ -85,9 +85,13 @@ def entry(host: str, port: int, detach: bool) -> None:
     from rich.markdown import Markdown
     from werkzeug.serving import get_interface_ip
 
+    import qianfan
     from qianfan.common.client.openai_adapter import app as openai_apps
+    from qianfan.utils.logging import logger
 
-    http_server = WSGIServer((host, port), openai_apps)
+    qianfan.enable_log("INFO")
+
+    http_server = WSGIServer((host, port), openai_apps, log=logger._logger)
 
     messages = ["OpenAI wrapper server is running at"]
     messages.append(f"- http://127.0.0.1:{port}")
@@ -96,7 +100,7 @@ def entry(host: str, port: int, detach: bool) -> None:
         display_host = get_interface_ip(socket.AddressFamily.AF_INET)
     messages.append(f"- http://{display_host}:{port}")
 
-    messages.append("\nRemember to set the environment:")
+    messages.append("\nRemember to set the environment variables:")
     messages.append(f"""```shell
     export OPENAI_API_KEY='any-content-you-want'
     export OPENAI_BASE_URL='http://{display_host}:{port}/v1'
@@ -107,6 +111,7 @@ def entry(host: str, port: int, detach: bool) -> None:
 
     if detach:
         import os
+
         from multiprocess import Process
 
         process = Process(target=http_server.serve_forever)

@@ -219,7 +219,7 @@ class CookbookProcessor(BaseModel):
         random_params_list = [x.replace('random_', '') for x in cell_tags if x.startswith('random_')]
         # params_list = [x.replace('parameter_', '') for x in cell_tags if x.startswith('parameter_')]
 
-        random_str = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        random_str = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
         params = {param: value for param, value in params_dict.items()}
         random_params = {random_param: f'{random_param}_{random_str}' for random_param in random_params_list}
         params.update(random_params)
@@ -272,7 +272,7 @@ class CookbookProcessor(BaseModel):
             """
             re_str1 = r'random_([^\'\"\s\[\]\(\)]+)\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
             re_str2 = r'[\'\"]\s*random_([^\'\"\s]+)\s*[\'\"]'  # 字符串格式的参数： "参数"
-            random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
             new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}_"', text, flags=re.M)
             new_text = re.sub(re_str2, f'"\g<1>_{random_str}_"', new_text, flags=re.M)
             return new_text
@@ -404,7 +404,7 @@ class CookbookExecutor:
 
         """
         for path in [self.const_dir['temp_dir'], self.const_dir['output_dir']]:
-            if not self.debug:
+            if not (self.debug and path == self.const_dir['output_dir']):
                 self.rm_dir(path)
 
     def rm_dir(self, path: str, mkdir: bool = False):
@@ -454,7 +454,7 @@ class CookbookExecutor:
         notebooks = glob(pathname=f'{self.const_dir["root_dir"]}/{self.const_dir["cookbook_dir"]}/{file_reg}',
                          recursive=True)
         if len(notebooks) == 0:
-            logging.warning(f'没有找到匹配的Cookbook文件: {file_reg}')
+            logging.warning(f'没有找到匹配的Cookbook文件: {self.const_dir["root_dir"]}/{self.const_dir["cookbook_dir"]}/{file_reg}')
         params = {**params_dict}
         params.update(json.loads(os.environ.get('KEYWORDS_DICT', '{}')))
         for cpath in notebooks:

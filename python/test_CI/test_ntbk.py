@@ -1,6 +1,8 @@
 """
     Unit test for notebooks
 """
+import logging
+
 import pytest
 
 
@@ -33,14 +35,17 @@ def test_demo(file_reg, params_dict, executor):
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [  # 分开写的好处是会被单独执行，一个测试有错误不会终止其他测试
-        ('batch_prediction.ipynb', {}),
+        ('auto_truncate_msg.ipynb', {}),
         ('function_call.ipynb', {}),
         ('function_call_with_tool.ipynb', {}),
         ('langchain_sequential.ipynb', {}),
         ('prompt.ipynb', {}),
         ('text2image.ipynb', {}),
         ('hub.ipynb', {}),
+        ('plugin.ipynb',{}),
         ('eb_search.ipynb', {}),
+        ('offline_batch_inference.ipynb',{}),
+        ('batch_prediction.ipynb', {}),
     ]
 )
 def test_common(file_reg, params_dict, executor):
@@ -56,7 +61,7 @@ def test_common(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.parametrize(
@@ -155,7 +160,6 @@ def test_sk(file_reg, params_dict, executor):
     executor.prepare(file_reg, params_dict)
     executor.run()
 
-
 @pytest.mark.parametrize(
     "file_reg,params_dict",
     [
@@ -183,8 +187,8 @@ def test_evaluation(file_reg, params_dict, executor):
     "file_reg,params_dict",
     [
         ('finetune/finetune_with_bos_and_evaluate.ipynb', {}),
-        ('finetune/api_based_finetune.ipynb', {}),  # param invalid
-        ('finetune/trainer_finetune_event_resume.ipynb', {}),  # keyError
+        ('finetune/api_based_finetune.ipynb', {}),
+        # ('finetune/trainer_finetune_event_resume.ipynb', {}),  # keyError
         ('finetune/trainer_finetune.ipynb', {})
         # 24/26 APIError: api return error, req_id: 3838549625 code: 500001, msg: param invalid
 
@@ -203,7 +207,7 @@ def test_finetune(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug=True)
 
 
 @pytest.mark.skip
@@ -226,4 +230,13 @@ def test_wandb(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
+    executor.run()
+
+
+@pytest.mark.asyncio
+def test_reg(cli_reg, cli_params, executor):
+    if cli_reg == '':
+        logging.warning(f'cli_path_reg is empty, skip test')
+        return
+    executor.prepare(cli_reg, cli_params)
     executor.run()

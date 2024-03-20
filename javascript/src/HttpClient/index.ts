@@ -17,7 +17,6 @@ import * as http from 'http';
 import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import * as u from 'underscore';
-import * as Q from 'q';
 import {URL} from 'url';
 import createDebug from 'debug';
 import * as packageJson from '../../package.json';
@@ -54,14 +53,21 @@ class HttpClient extends EventEmitter {
     };
     constructor(
         private config: any,
-        fetchConfig: FetchConfig
+        fetchConfig?: FetchConfig
     ) {
         super();
         this.controller = new AbortController();
         this.fetchInstance = new Fetch(fetchConfig);
     }
-    sendRequest(config: RequestConfig): Q.Promise<any> {
-        const {httpMethod, path, body, headers, outputStream, params, signFunction} = config;
+
+    /**
+     * 获取签名
+     *
+     * @param config 请求配置对象
+     * @returns 返回包含签名信息的 fetchOptions 对象
+     */
+    async getSignature(config): Promise<any> {
+        const {httpMethod, path, body, headers, params, signFunction} = config;
         const method = httpMethod.toUpperCase();
         const requestUrl = this._getRequestUrl(path, params);
         const _headers = u.extend({}, this.defaultHeaders, headers);
@@ -73,19 +79,21 @@ class HttpClient extends EventEmitter {
                 _headers[H.CONTENT_LENGTH] = contentLength;
             }
         }
-        const client = this;
         const url = new URL(requestUrl) as any;
         _headers[H.HOST] = url.host;
         const options = urlObjectToPlainObject(url, method, _headers);
-        return this.setAuthorizationHeader(signFunction, _headers, options).then(() => {
-            debug('options = %j', options);
-            const fetchOptions = {
-                method: options.method,
-                headers: _headers,
-                body,
-            };
-            return client._doRequest(options.href, fetchOptions, outputStream);
-        });
+        const reqHeaders = await this.setAuthorizationHeader(signFunction, _headers, options);
+        const fetchOptions = {
+            url: options.href,
+            method: options.method,
+            headers: reqHeaders,
+            body,
+        };
+        return fetchOptions;
+    }
+    async sendRequest(config: RequestConfig): Promise<any> {
+        const fetchOptions = await this.getSignature(config);
+        return this._doRequest(fetchOptions.url, fetchOptions as any, config.outputStream);
     }
 
     private async _doRequest(
@@ -127,28 +135,27 @@ class HttpClient extends EventEmitter {
         }
     }
 
-    private setAuthorizationHeader(
+    private async setAuthorizationHeader(
         signFunction:
             | ((credentials: any, method: any, path: any, headers: any) => [string, string] | string)
             | undefined,
         headers: Record<string, any>,
         options: http.RequestOptions
-    ): Q.Promise<any> {
+    ): Promise<Record<string, any>> {
         if (typeof signFunction === 'function') {
-            const promise = signFunction(this.config.credentials, options.method!, options.path!, options.headers!);
-            if (this.isPromise(promise)) {
-                return promise.then(([authorization, xbceDate]: [string, string]) => {
-                    headers[H.AUTHORIZATION] = authorization;
-                    if (xbceDate) {
-                        headers[H.X_BCE_DATE] = xbceDate;
-                    }
-                });
+            const result = signFunction(this.config.credentials, options.method!, options.path!, headers);
+            if (result instanceof Promise) {
+                const [authorization, xbceDate] = await result;
+                headers[H.AUTHORIZATION] = authorization;
+                if (xbceDate) {
+                    headers[H.X_BCE_DATE] = xbceDate;
+                }
             }
-            else if (typeof promise === 'string') {
-                headers[H.AUTHORIZATION] = promise;
+            else if (typeof result === 'string') {
+                headers[H.AUTHORIZATION] = result;
             }
             else {
-                throw new Error(`Invalid signature = (${promise})`);
+                throw new Error(`Invalid signature = (${result})`);
             }
         }
         else {
@@ -156,10 +163,10 @@ class HttpClient extends EventEmitter {
                 this.config.credentials,
                 options.method!,
                 options.path!,
-                options.headers!
+                headers
             );
         }
-        return Q.resolve(); // Return a resolved promise for consistency
+        return headers;
     }
 
     private _getRequestUrl(path: string, params: Record<string, any>): string {
@@ -219,10 +226,6 @@ class HttpClient extends EventEmitter {
         }
 
         throw new Error('No Content-Length is specified.');
-    }
-
-    private isPromise(obj: any): obj is Q.Promise<any> {
-        return obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
     }
 
     private createSignature(credentials: any, httpMethod: string, path: string, headers: Record<string, any>): string {

@@ -108,18 +108,22 @@ export class BaseClient {
         requestBody: string,
         stream = false
     ): Promise<Resp | AsyncIterableType> {
+        // 检查鉴权信息
+        if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
+            throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+        }
+
+        let fetchOptions;
         // IAM鉴权
         if (this.qianfanAccessKey && this.qianfanSecretKey) {
             const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
-            const client = new HttpClient(config, this.fetchConfig);
-            const response = await client.sendRequest({
+            const client = new HttpClient(config);
+            fetchOptions = await client.getSignature({
                 httpMethod: 'POST',
                 path: IAMpath,
                 body: requestBody,
                 headers: this.headers,
-                outputStream: stream,
             });
-            return response as Resp;
         }
         // AK/SK鉴权
         if (this.qianfanAk && this.qianfanSk) {
@@ -127,35 +131,36 @@ export class BaseClient {
                 await this.getAccessToken();
             }
             const url = `${AKPath}?access_token=${this.access_token}`;
-            const fetchOptions = {
+            fetchOptions = {
+                url: url,
                 method: 'POST',
                 headers: this.headers,
                 body: requestBody,
             };
-            // 流式处理
-            if (stream) {
-                try {
-                    const sseStream: AsyncIterable<Resp> = Stream.fromSSEResponse(
-                        await this.fetchInstance.fetchWithRetry(url, fetchOptions),
-                        this.controller
-                    ) as any;
-                    return sseStream as AsyncIterableType;
-                }
-                catch (error) {
-                    throw new Error(error);
-                }
+        }
+
+        // 流式处理
+        if (stream) {
+            try {
+                const sseStream: AsyncIterable<Resp> = Stream.fromSSEResponse(
+                    await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions),
+                    this.controller
+                ) as any;
+                return sseStream as AsyncIterableType;
             }
-            else {
-                try {
-                    const resp = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
-                    const data = await resp.json();
-                    return data as any;
-                }
-                catch (error) {
-                    throw new Error(`Request failed: ${error.message}`);
-                }
+            catch (error) {
+                throw new Error(error);
             }
         }
-        throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+        else {
+            try {
+                const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
+                const data = await resp.json();
+                return data as any;
+            }
+            catch (error) {
+                throw new Error(`Request failed: ${error.message}`);
+            }
+        }
     }
 }

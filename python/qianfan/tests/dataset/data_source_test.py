@@ -14,10 +14,13 @@
 """
 test for data source
 """
+import json
 import os
 import shutil
+from typing import List
 from unittest.mock import patch
 
+import clevercsv
 import pytest
 from pytest_mock import MockerFixture
 
@@ -267,3 +270,104 @@ def test_qianfan_data_source_load():
     content = Dataset(inner_table=ds.fetch()).list()
     print(content)
     assert content[0][0]["response"] == [["no response"]]
+
+
+def test_save_to_file_data_source_json():
+    test_json_file = "test_file.json"
+
+    fake_data = [
+        {"test_column1": 1, "test_column2": "2"},
+        {"test_column1": 1, "test_column2": "2"},
+    ]
+    ds = Dataset.create_from_pyobj(fake_data)
+
+    ds.save(data_file=test_json_file)
+    with open(test_json_file, mode="r") as f:
+        data = json.load(f)
+        assert data == fake_data
+
+    try:
+        os.remove(test_json_file)
+    except Exception:
+        ...
+
+
+def test_save_to_file_data_source_jsonl():
+    test_jsonl_file = "test_file.jsonl"
+
+    fake_data1 = [
+        {"test_column1": 1, "test_column2": "2"},
+        {"test_column1": 1, "test_column2": "2"},
+    ]
+    fake_data2 = [
+        [
+            {"test_column1": 1, "test_column2": "2"},
+            {"test_column1": 1, "test_column2": "2"},
+        ],
+        [
+            {"test_column1": 1, "test_column2": "2"},
+            {"test_column1": 1, "test_column2": "2"},
+        ],
+    ]
+
+    def read_jsonline_file(path) -> List:
+        result = []
+        with open(path, mode="r") as f:
+            line = f.readline()
+            while line:
+                result.append(json.loads(line))
+                line = f.readline()
+
+        return result
+
+    # 测试不用千帆格式写字典列表
+    ds = Dataset.create_from_pyobj(fake_data1)
+
+    ds.save(data_file=test_jsonl_file)
+    result = read_jsonline_file(test_jsonl_file)
+    assert result == fake_data1
+
+    # 测试用千帆格式写字典列表
+    ds.save(data_file=test_jsonl_file, use_qianfan_special_jsonl_format=True)
+    result = read_jsonline_file(test_jsonl_file)
+    assert isinstance(result[0], list)
+    assert result[0][0] == fake_data1[0] and result[1][0] == fake_data1[1]
+
+    # 测试用符合千帆的数据集写格式
+    ds = Dataset.create_from_pyobj(fake_data2)
+
+    ds.save(data_file=test_jsonl_file)
+    result = read_jsonline_file(test_jsonl_file)
+    assert result == fake_data2
+
+    # 测试用千帆格式再加参数写列表
+    ds = Dataset.create_from_pyobj(fake_data2)
+
+    ds.save(data_file=test_jsonl_file, use_qianfan_special_jsonl_format=True)
+    result = read_jsonline_file(test_jsonl_file)
+    assert result == fake_data2
+
+    try:
+        os.remove(test_jsonl_file)
+    except Exception:
+        ...
+
+
+def test_save_to_file_data_source_csv():
+    test_csv_file = "test_file.csv"
+    fake_data = [
+        {"test_column1": "1", "test_column2": "n2"},
+        {"test_column1": "1", "test_column2": "n2"},
+    ]
+
+    ds = Dataset.create_from_pyobj(fake_data)
+
+    ds.save(data_file=test_csv_file)
+    result = [dict(entry) for entry in clevercsv.read_dicts(test_csv_file)]
+
+    assert result == fake_data
+
+    try:
+        os.remove(test_csv_file)
+    except Exception:
+        ...

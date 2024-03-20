@@ -77,8 +77,8 @@ class VersatileRateLimiter:
         self._og_query_per_second = query_per_second
         self._buffer_ratio = buffer_ratio
         self._has_been_reset = False
-        self._reset_once_lock = threading.Lock()
-        self._async_reset_once_lock = asyncio.Lock()
+        self._inner_reset_once_lock = threading.Lock()
+        self._inner_async_reset_once_lock: Optional[asyncio.Lock] = None
 
         self.is_closed = request_per_minute <= 0 and query_per_second <= 0
         if self.is_closed:
@@ -96,6 +96,16 @@ class VersatileRateLimiter:
             self._is_rpm = False
             self._internal_qps_rate_limiter = RateLimiter(query_per_second)
 
+    @property
+    def _reset_once_lock(self) -> threading.Lock:
+        return self._inner_reset_once_lock
+
+    @property
+    def _async_reset_once_lock(self) -> asyncio.Lock:
+        if not self._inner_async_reset_once_lock:
+            self._inner_async_reset_once_lock = asyncio.Lock()
+        return self._inner_async_reset_once_lock
+
     async def async_reset_once(self, rpm: float) -> None:
         # 检查是否已经重置过，如是，则直接返回
         if self._has_been_reset:
@@ -111,7 +121,7 @@ class VersatileRateLimiter:
         og_rpm = max(
             (
                 self._og_request_per_minute
-                if self._og_request_per_minute <= 0
+                if self._is_rpm
                 else self._og_query_per_second * 60
             ),
             0,
@@ -155,7 +165,7 @@ class VersatileRateLimiter:
         og_rpm = max(
             (
                 self._og_request_per_minute
-                if self._og_request_per_minute <= 0
+                if self._is_rpm
                 else self._og_query_per_second * 60
             ),
             0,
@@ -185,12 +195,6 @@ class VersatileRateLimiter:
         self._reset_once_lock.release()
 
     def _reset_internal_rate_limiter(self, rpm: float) -> None:
-        self._is_rpm = (
-            True
-            if self.is_closed
-            else (True if self._og_request_per_minute > 0 else False)
-        )
-
         # 记录一下新值
         if self._is_rpm:
             self._new_request_per_minute = rpm
@@ -198,7 +202,7 @@ class VersatileRateLimiter:
             self._new_query_per_second = rpm / 60
 
         # 重置
-        rpm *= self._buffer_ratio
+        rpm *= 1 - self._buffer_ratio
 
         if self._is_rpm:
             self._internal_qp10s_rate_limiter = RateLimiter(rpm / 6, 10)

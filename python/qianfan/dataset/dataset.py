@@ -281,7 +281,7 @@ class Dataset(Table):
                 "construct a new qianfan data source from bos loading:"
                 f" {bos_load_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_from_bos_file(**bos_load_args)
+            return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
             return BosDataSource(**bos_source_args, **kwargs)

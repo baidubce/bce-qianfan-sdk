@@ -185,7 +185,7 @@ def test_create_bare_qianfan_data_source():
     )
     assert datasource_2.storage_id == "a"
     assert datasource_2.storage_region == "bj"
-    assert datasource_2.format_type() == FormatType.Json
+    assert datasource_2.format_type() == FormatType.Text2Image
 
 
 def test_create_qianfan_data_source_from_existed():

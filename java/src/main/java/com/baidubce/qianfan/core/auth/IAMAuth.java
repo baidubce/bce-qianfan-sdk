@@ -16,6 +16,7 @@
 
 package com.baidubce.qianfan.core.auth;
 
+import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.model.exception.AuthException;
 import com.baidubce.qianfan.util.Pair;
 import com.baidubce.qianfan.util.StringUtils;
@@ -34,7 +35,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class IAMAuth implements IAuth {
-    private static final int EXPIRATION_IN_SECONDS = 1800;
     private static final String HMAC_SHA256 = "HmacSHA256";
     private static final List<String> HEADER_TO_SIGN = Arrays.asList("host", "x-bce-date");
     private static final String SESSION_KEY_TEMPLATE = "bce-auth-v1/%s/%s/%s";
@@ -61,7 +61,8 @@ public class IAMAuth implements IAuth {
     }
 
     private String sign(String method, String url) {
-        String rawSessionKey = String.format(SESSION_KEY_TEMPLATE, accessKey, getTimestamp(), EXPIRATION_IN_SECONDS);
+        int expirationInSeconds = QianfanConfig.getIamSignExpirationSec();
+        String rawSessionKey = String.format(SESSION_KEY_TEMPLATE, accessKey, getTimestamp(), expirationInSeconds);
         String sessionKey = hash(rawSessionKey, secretKey);
 
         URI uri = URI.create(url);

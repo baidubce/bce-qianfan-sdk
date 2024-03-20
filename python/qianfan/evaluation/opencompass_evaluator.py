@@ -50,7 +50,7 @@ try:
         def evaluate(
             self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
         ) -> Dict[str, Any]:
-            return self.open_compass_evaluator.score([output], [reference])  # type: ignore
+            return self.open_compass_evaluator.score(predictions=[output], references=[reference])  # type: ignore
 
 except ModuleNotFoundError:
 

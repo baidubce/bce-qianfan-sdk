@@ -122,7 +122,7 @@ class _BaseTokenLimiter:
     def _refresh_time_and_token(self) -> None:
         current_time = datetime.datetime.utcnow()
         if (
-            self._last_check_timestamp.minute != current_time
+            self._last_check_timestamp.minute != current_time.minute
             or current_time - self._last_check_timestamp >= _MINUTE_DEAD
         ):
             self._token_current = self._token_limit_per_minute

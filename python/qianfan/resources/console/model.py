@@ -24,6 +24,8 @@ from qianfan.resources.console.consts import (
     EvaluationResultExportDestinationType,
     EvaluationResultExportField,
     EvaluationResultExportRange,
+    ModelTypePreset,
+    ModelTypeUser,
 )
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
@@ -406,7 +408,7 @@ class Model(object):
     def preset_list(
         self,
         name_filter: Optional[str] = None,
-        model_type: Optional[List[int]] = None,
+        model_type: Optional[List[ModelTypePreset]] = None,
         model_version_vendor: Optional[List[str]] = None,
         ctx_length: Optional[List[str]] = None,
         language_support: Optional[List[str]] = None,
@@ -422,15 +424,15 @@ class Model(object):
         Parameters:
             name_filter (Optional[str]):
                 name filter to filter preset models
-            model_type (Optional[list[int]]):
+            model_type (Optional[List[ModelTypePreset]]):
                 model type to filter preset models
             model_version_vendor (Optional[List[str]]):
                 model version vendor to filter preset models
-            ctx_length (Optional[list[str]]):
+            ctx_length (Optional[List[str]]):
                 context length to filter preset models
-            language_support (Optional[list[str]]):
+            language_support (Optional[List[str]]):
                 language support to filter preset models
-            expansion (Optional[list[str]]):
+            expansion (Optional[List[str]]):
                 expansion to filter preset models
             order_by (Optional[str]):
                 order to filter preset models
@@ -470,7 +472,7 @@ class Model(object):
     def user_list(
         cls,
         name_filter: Optional[str] = None,
-        model_type: Optional[str] = None,
+        model_type: Optional[List[ModelTypeUser]] = None,
         order_by: Optional[str] = None,
         order: Optional[str] = None,
         page_no: int = 1,
@@ -483,7 +485,7 @@ class Model(object):
         Parameters:
             name_filter (Optional[str]):
                 name filter to filter preset models
-            model_type (Optional[str]):
+            model_type (Optional[List[ModelTypeUser]]):
                 model type to filter preset models
             order_by (Optional[str]):
                 order condition, such as `create_time`
@@ -518,14 +520,14 @@ class Model(object):
     @console_api_request
     def batch_delete_model(
         cls,
-        model_ids: List[Any],
+        model_ids: Union[List[int], List[str]],
         **kwargs: Any,
     ) -> QfRequest:
         """
         batch delete model by ids
 
         Parameters:
-            model_ids (List[Any]):
+            model_ids (Union[List[int], List[str]]):
                 model ids to delete
             **kwargs (Any):
                 arbitrary arguments
@@ -544,14 +546,14 @@ class Model(object):
     @console_api_request
     def batch_delete_model_version(
         cls,
-        model_version_ids: List[Any],
+        model_version_ids: Union[List[int], List[str]],
         **kwargs: Any,
     ) -> QfRequest:
         """
         batch delete model version by ids
 
         Parameters:
-            model_version_ids (List[Any]):
+            model_version_ids (Union[List[int], List[str]]):
                 model version ids to delete
             **kwargs (Any):
                 arbitrary arguments
@@ -583,4 +585,102 @@ class Model(object):
         """
 
         req = QfRequest(method="POST", url=Consts.ModelEvaluableModelListAPI)
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_evaluation_result_list(
+        cls,
+        id: Union[str, int],
+        bleu4: Optional[float] = None,
+        rouge_1: Optional[float] = None,
+        rouge_2: Optional[float] = None,
+        rouge_l: Optional[float] = None,
+        judge_score: Optional[int] = None,
+        model_version_ids: Optional[List[int]] = None,
+        order_by: Optional[str] = None,
+        order: Optional[str] = None,
+        page_no: int = 1,
+        page_size: int = 20,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get the list of user models
+
+        Parameters:
+            id (Union[str, int]):
+                evaluation id
+            bleu4 (Optional[float]):
+                bleu4 score, range in 0.0 to 1.0
+            rouge_1 (Optional[float]):
+                rouge_1 score, range in 0.0 to 1.0
+            rouge_2 (Optional[float]):
+                rouge_2 score, range in 0.0 to 1.0
+            rouge_l (Optional[float]):
+                rouge_l score, range in 0.0 to 1.0
+            judge_score (Optional[int]):
+                judge score, min is -1
+            model_version_ids (Optional[List[int]]):
+                model version ids
+            order_by (Optional[str]):
+                order condition, such as `bleu4`
+            order (Optional[str]):
+                order type, including: `asc` and `desc`
+            page_no (int):
+                page number default is 1, start from 1
+            page_size (int):
+                page size default is 20
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalResultListAPI)
+        req.json_body = {"id": id, "pageNo": page_no, "pageSize": page_size}
+        if bleu4:
+            req.json_body["bleu4"] = bleu4
+        if rouge_1:
+            req.json_body["rouge_1"] = rouge_1
+        if rouge_2:
+            req.json_body["rouge_2"] = rouge_2
+        if rouge_l:
+            req.json_body["rouge_l"] = rouge_l
+        if judge_score:
+            req.json_body["judgeScore"] = judge_score
+        if model_version_ids:
+            req.json_body["modelVersionIds"] = model_version_ids
+        if order_by:
+            req.json_body["orderBy"] = order_by
+        if order:
+            req.json_body["order"] = order
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def batch_delete_evaluation_result(
+        cls,
+        eval_ids: Union[List[str], List[int]],
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Get the list of user models
+
+        Parameters:
+            eval_ids (Union[List[str], List[int]]):
+                evaluation result ids to delete
+            **kwargs (Any):
+                arbitrary arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        """
+        req = QfRequest(method="POST", url=Consts.ModelEvalResultBatchDeleteAPI)
+        req.json_body = {"evalIds": eval_ids}
+
         return req

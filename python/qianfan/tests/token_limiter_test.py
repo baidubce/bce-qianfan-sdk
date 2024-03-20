@@ -27,7 +27,7 @@ from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
 
 def test_multi_thread_case_token_limiter():
     start_timestamp = time.time()
-    tpm_rl = TokenLimiter(token_per_minute=500)
+    tpm_rl = TokenLimiter(token_per_minute=500, buffer_ratio=0)
     t_list = []
 
     def _inner_thread_working_function():
@@ -48,7 +48,7 @@ def test_multi_thread_case_token_limiter():
 @pytest.mark.asyncio
 async def test_async_case_limiter():
     start_timestamp = time.time()
-    tpm_rl = AsyncTokenLimiter(token_per_minute=500)
+    tpm_rl = AsyncTokenLimiter(token_per_minute=500, buffer_ratio=0)
     awaitable_list = []
 
     async def _inner_coroutine_working_function():

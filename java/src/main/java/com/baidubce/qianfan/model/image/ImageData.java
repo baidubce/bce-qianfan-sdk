@@ -16,6 +16,8 @@
 
 package com.baidubce.qianfan.model.image;
 
+import java.util.Base64;
+
 public class ImageData {
     /**
      * 固定值 "image"
@@ -31,6 +33,10 @@ public class ImageData {
      * 序号
      */
     private Integer index;
+
+    public byte[] getImage() {
+        return Base64.getDecoder().decode(b64Image);
+    }
 
     public String getObject() {
         return object;

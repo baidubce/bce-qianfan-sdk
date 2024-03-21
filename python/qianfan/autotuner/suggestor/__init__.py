@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.autotuner.suggestor.base import Suggestor, RandomSuggestor
+from qianfan.autotuner.suggestor.base import RandomSuggestor, Suggestor
 
 __all__ = [
     "Suggestor",

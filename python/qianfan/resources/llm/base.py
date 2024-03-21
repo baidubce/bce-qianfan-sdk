@@ -627,7 +627,6 @@ class BaseResource(object):
 # {api_type: {model_name: QfLLMInfo}}
 _runtime_models_info: Dict[str, Dict[str, QfLLMInfo]] = {}
 _last_update_time: datetime = datetime(MINYEAR, 1, 1)
-_update_intervals_seconds: int = 5 * 60
 _model_infos_access_lock: threading.Lock = threading.Lock()
 
 
@@ -643,6 +642,8 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
     fetch supported models from server
     and update the `_runtime_models_info`
     """
+    if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
+        return {}
 
     if get_config().ENABLE_PRIVATE:
         # 私有化直接跳过
@@ -650,11 +651,13 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
 
     global _last_update_time
     global _runtime_models_info
-    if (datetime.now() - _last_update_time).total_seconds() > _update_intervals_seconds:
+    if (
+        datetime.now() - _last_update_time
+    ).total_seconds() > get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
         _model_infos_access_lock.acquire()
         if (
             datetime.now() - _last_update_time
-        ).total_seconds() < _update_intervals_seconds:
+        ).total_seconds() < get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
             _model_infos_access_lock.release()
             return _runtime_models_info
         try:
@@ -662,6 +665,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
         except Exception as e:
             log_warn(f"fetch_supported_models failed: {e}")
             _model_infos_access_lock.release()
+            _last_update_time = datetime.now()
             return _runtime_models_info
 
         # get preset services:

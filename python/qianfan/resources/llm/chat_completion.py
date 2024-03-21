@@ -119,7 +119,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Bot-8k": QfLLMInfo(
+            "ERNIE-Bot-8K": QfLLMInfo(
                 endpoint="/chat/ernie_bot_8k",
                 required_keys={"messages"},
                 optional_keys={
@@ -215,7 +215,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=11200,
                 max_input_tokens=7168,
             ),
-            "ERNIE-Speed-128k": QfLLMInfo(
+            "ERNIE-Speed-128K": QfLLMInfo(
                 endpoint="/chat/ernie-speed-128k",
                 required_keys={"messages"},
                 optional_keys={
@@ -264,7 +264,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-7b-chat": QfLLMInfo(
+            "Llama-2-7B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_7b",
                 required_keys={"messages"},
                 optional_keys={
@@ -281,7 +281,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-13b-chat": QfLLMInfo(
+            "Llama-2-13B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_13b",
                 required_keys={"messages"},
                 optional_keys={
@@ -298,7 +298,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-70b-chat": QfLLMInfo(
+            "Llama-2-70B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_70b",
                 required_keys={"messages"},
                 optional_keys={

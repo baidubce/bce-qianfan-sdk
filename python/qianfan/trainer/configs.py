@@ -411,7 +411,7 @@ def _parse_model_info_list(
 PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
         model="ERNIE-Speed-8K",
-        short_name="ERNIE_Speed",
+        short_name="ERNIE Speed",
         base_model_type="ERNIE-Speed",
         support_peft_types=[PeftType.ALL],
         common_params_limit=TrainLimit(),

@@ -81,10 +81,6 @@ class Text2Image(BaseResource):
                 # 更新endpoint
                 info_list[m].endpoint = latest_models_list[m].endpoint
 
-        for m in info_list:
-            if m not in latest_models_list.keys():
-                info_list[m].deprecated = True
-
         return info_list
 
     @classmethod

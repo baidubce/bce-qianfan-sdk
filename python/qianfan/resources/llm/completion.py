@@ -96,10 +96,6 @@ class Completion(BaseResource):
                 # 更新endpoint
                 info_list[m].endpoint = latest_models_list[m].endpoint
 
-        for m in info_list:
-            if m not in latest_models_list:
-                info_list[m].deprecated = True
-
         # chat兼容
         chat_model_info = ChatCompletion._supported_models()
         for model, info in chat_model_info.items():

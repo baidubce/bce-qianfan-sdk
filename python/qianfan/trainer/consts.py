@@ -105,8 +105,3 @@ class ServiceType(str, Enum):
     """Corresponding to the `Embedding`"""
     Text2Image = "Text2Image"
     """Corresponding to the `Text2Image"""
-
-
-StopMessage = "STOP"
-# trainer 本地缓存
-QianfanTrainerLocalCacheDir = ".qianfan_trainer_cache"

@@ -42,7 +42,7 @@ from qianfan.trainer.consts import (
 )
 
 
-class LLMFinetune(Trainer):
+class Finetune(Trainer):
     """
     Class implements the SFT training pipeline with several actions.
     Use `run()` to synchronously run the training pipeline until the
@@ -121,7 +121,6 @@ class LLMFinetune(Trainer):
         if dataset is not None:
             self.load_data_action = LoadDataSetAction(
                 dataset=dataset,
-                dataset_template=console_consts.DataTemplateType.NonSortedConversation,
                 event_handler=event_handler,
                 **kwargs,
             )
@@ -245,34 +244,6 @@ class LLMFinetune(Trainer):
             action.state, TrainStatus.Unknown
         )
 
-    def stop(self, **kwargs: Dict) -> Trainer:
-        """
-        stop method of LLMFinetune. LLMFinetune will stop
-        all actions in pipeline. In fact, LLMFinetune only take one
-        pipeline, so it will be equal to stop first of `ppls`.
-
-        Returns:
-            Trainer:
-                self, for chain invocation.
-        """
-        # 后台运行的任务
-        if self.process:
-            return super().stop(**kwargs)
-        else:
-            for ppl in self.ppls:
-                ppl.stop()
-            return self
-
-    def resume(self, **kwargs: Dict) -> "LLMFinetune":
-        """
-        LLMFinetune resume method.
-
-        Returns:
-            LLMFinetune:
-        """
-        self.result[0] = self.ppls[0].resume(**kwargs)
-        return self
-
     @property
     def output(self) -> Any:
         return self.result[0]
@@ -280,3 +251,6 @@ class LLMFinetune(Trainer):
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
         return ModelInfoMapping
+
+
+LLMFinetune = Finetune

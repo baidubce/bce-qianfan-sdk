@@ -207,6 +207,26 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)
 
+    def persist(self) -> bytes:
+        if isinstance(self.dataset, str):
+            qf_ds = self.dataset
+        else:
+            qf_ds = self.dataset.inner_data_source_cache.id
+        meta = {
+            "id": self.id,
+            "ds": qf_ds,
+        }
+        return self.serialize_helper().serialize(meta)
+
+    @classmethod
+    def load(cls, b: bytes) -> "LoadDataSetAction":
+        meta = cls.serialize_helper().deserialize(b)
+        assert isinstance(meta, dict)
+        return cls(
+            id=meta.get("id"),
+            dataset=meta.get("ds_id"),
+        )
+
 
 class TrainAction(
     BaseAction[Dict[str, Any], Dict[str, Any]],
@@ -275,7 +295,7 @@ class TrainAction(
         train_config: Optional[TrainConfig] = None,
         task_id: Optional[str] = None,
         job_id: Optional[str] = None,
-        peft_type: PeftType = PeftType.ALL,
+        peft_type: Optional[PeftType] = None,
         job_name: Optional[str] = None,
         task_description: Optional[str] = None,
         job_description: Optional[str] = None,
@@ -367,6 +387,7 @@ class TrainAction(
         else:
             assert self.train_type
             train_type_model_info = get_model_info(self.train_mode, self.train_type)
+            print("train_type_mode_inf######", train_type_model_info)
             if train_type_model_info is None:
                 return
             if (
@@ -419,6 +440,7 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
+        print("train_limit===>", train_limit)
         return self.train_config.validate_config(train_limit)
 
     @with_event
@@ -610,7 +632,7 @@ class TrainAction(
                 self._input = {}
             return self._exec(self._input, **kwargs)
 
-    def stop(self, **kwargs: Dict) -> None:
+    def stop(self, **kwargs: Dict) -> "BaseAction":
         """
         stop method for train action
 
@@ -620,15 +642,19 @@ class TrainAction(
         """
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
-            return
+            return self
         resp = api.FineTune.V2.stop_task(self.task_id)
         if resp.get("result"):
             log_debug(f"train task {self.task_id}/{self.job_id} stopped successfully")
         else:
             log_debug(f"train task {self.task_id}/{self.job_id} stopped failed")
+        return self
 
     def get_default_train_config(
-        self, model_type: str, train_mode: console_consts.TrainMode, peft_type: PeftType
+        self,
+        model_type: str,
+        train_mode: console_consts.TrainMode,
+        peft_type: Optional[PeftType] = None,
     ) -> TrainConfig:
         if train_mode == console_consts.TrainMode.PostPretrain:
             model_info = DefaultPostPretrainTrainConfigMapping.get(
@@ -640,13 +666,43 @@ class TrainAction(
                 model_type,
                 # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
             )
-        if model_info is None:
-            raise InvalidArgumentError(
-                f"can not find default config for {model_type} in {peft_type}"
-            )
+        if model_info is None or len(model_info) == 0:
+            raise InvalidArgumentError(f"can not find default config for {model_type}")
+        if peft_type is None:
+            peft_type = sorted(model_info.keys())[0]
         train_config = model_info[peft_type]
         train_config.peft_type = peft_type
         return train_config
+
+    def persist(self) -> bytes:
+        meta = {
+            "id": self.id,
+            "init_params": {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+                "train_type": self.train_type,
+                "is_incr": self.is_incr,
+                "train_config": self.train_config.dict(),
+                "train_mode": self.train_mode,
+                "job_name": self.job_name,
+                "task_description": self.task_description,
+                "job_description": self.job_description,
+            },
+            "input": self._input,
+            "result": self.result,
+        }
+        return self.serialize_helper().serialize(meta)
+
+    @classmethod
+    def load(cls, b: bytes) -> "TrainAction":
+        metas = cls.serialize_helper().deserialize(b)
+        assert isinstance(metas, dict)
+        action = cls(
+            **metas.get("init_params"),
+        )
+        action._input = metas.get("input")
+        action.result = metas.get("result")
+        return action
 
 
 class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):

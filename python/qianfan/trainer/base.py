@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
-import datetime
-import os
 import pickle
-import platform
-import sys
-import threading
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import (
@@ -31,20 +26,19 @@ from typing import (
     Union,
 )
 
-import multiprocess as multiprocessing
-
+from qianfan.common.persister.base import Persistent
+from qianfan.common.persister.persist import FilePersister
 from qianfan.common.runnable.base import ExecuteSerializable
-from qianfan.config import encoding
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.trainer.consts import ActionState, QianfanTrainerLocalCacheDir, StopMessage
+from qianfan.trainer.consts import ActionState
 from qianfan.trainer.event import Event, EventHandler, dispatch_event
-from qianfan.utils import log_debug, log_error, log_info, utils
+from qianfan.utils import log_debug, log_error, utils
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
 
 
-class BaseAction(ExecuteSerializable[Input, Output], ABC):
+class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
     """
     BaseAction is a reusable, atomic operation components that can be
     freely orchestrated for use in Pipelines.
@@ -73,26 +67,30 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         self.state = ActionState.Preceding
         self.event_dispatcher = event_handler
 
-    def dumps(self) -> Optional[bytes]:
-        """
-        dumps action input bytes
+    def persist(self) -> bytes:
+        # meta = {
+        #     "id": self.id,
+        #     "actions": [],
+        #     "process_id": self.process
+        # }
+        # for action_id in self.seq:
+        #     action_meta = self.actions[action_id].persist()
+        #     meta["actions"].append({
+        #         "id": action_id,
+        #         "type": self.actions[action_id].__class__,
+        #         "meta": action_meta,
+        #     })
 
-        Returns:
-            serialized bytes action data
-        """
-        return pickle.dumps(self)
+        return self.serialize_helper.serialize(self)
 
-    def loads(self, data: bytes) -> Any:
-        """
-        loads
+    @classmethod
+    def load(cls, b: bytes) -> Persistent:
+        # metas = self.serialize_helper.deserialize(b)
+        # for action_meta in metas.get("actions", []):
+        #     action_type = action_meta.get("type")
 
-        Parameters:
-            data (bytes): load
-
-        Returns:
-            Any: action instance
-        """
-        return pickle.loads(data)
+        #     action.load(action_meta.get("meta"))
+        return pickle.loads(b)
 
     @abstractmethod
     def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
@@ -117,12 +115,14 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
         """
         ...
 
-    def stop(self, **kwargs: Dict) -> None:
+    def stop(self, **kwargs: Dict) -> "BaseAction":
         """
         Action stop method, sub-class should implement this method
         with their own stop logic.
         """
+        super().stop()
         self.action_event(ActionState.Stopped)
+        return self
 
     def action_error_event(self, e: Exception) -> None:
         """
@@ -171,6 +171,13 @@ class BaseAction(ExecuteSerializable[Input, Output], ABC):
     @classmethod
     def action_type(cls) -> str:
         return "base"
+
+    @classmethod
+    def _space(cls) -> str:
+        return "action"
+
+    def _identity(self) -> str:
+        return self.id
 
 
 def with_event(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -248,6 +255,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self._sync_lock = Lock()
         self._stop: bool = False
         self._last_output: Optional[Dict[str, Any]] = None
+        self.persister: FilePersister = FilePersister()
 
     @with_event
     def exec(
@@ -276,6 +284,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError(
                 "pipeline start must be index of sequence or key of action"
             )
+        self.persister.save(self)
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for i, k in enumerate(self.seq):
             if self._stop:
@@ -288,6 +297,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 )
             self.current_action = k
             output = self.actions[k].exec(input=output, **kwargs)
+            self.persister.save(self)
             err = output.get("error")
             if err is not None:
                 if isinstance(err, BaseException):
@@ -326,7 +336,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         idx = self.seq.index(self.current_action) + 1
         return self.exec_from(last_output, idx, **kwargs)
 
-    def stop(self, **kwargs: Dict) -> None:
+    def stop(self, **kwargs: Dict) -> "BaseAction":
         """
         stop pipeline running, only stop the actions not running.
         """
@@ -354,6 +364,10 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             else:
                 action.event_dispatcher = event_handler
 
+    @classmethod
+    def _space(cls) -> str:
+        return "pipeline"
+
 
 class Trainer(ABC):
     """
@@ -375,7 +389,6 @@ class Trainer(ABC):
     """
     result: List[Any] = []
     """pipeline running results, which may be an error or an object"""
-    process: Optional[multiprocessing.Process] = None
 
     @abstractmethod
     def run(self, **kwargs: Dict) -> "Trainer":
@@ -387,22 +400,6 @@ class Trainer(ABC):
         """
         ...
 
-    def _get_specific_cache_path(self) -> str:
-        cache_path = os.path.join(
-            QianfanTrainerLocalCacheDir,
-            self.name or utils.generate_letter_num_random_id(8),
-        )
-        if not os.path.exists(cache_path):
-            os.makedirs(cache_path)
-
-        return cache_path
-
-    def _get_log_path(self) -> str:
-        current_date = datetime.datetime.now()
-        date_str = current_date.strftime("%Y-%m-%d")
-
-        return os.path.join(self._get_specific_cache_path(), f"{date_str}.log")
-
     def start(self, join_on_exited: bool = False, **kwargs: Dict) -> "Trainer":
         """
         Trainer start method to start a training process in background.
@@ -413,71 +410,34 @@ class Trainer(ABC):
             Trainer: Trainer instance
         """
 
-        def run_subprocess(pipe: multiprocessing.Pipe) -> None:
-            if platform.system() != "Windows":
-                os.setsid()  # type: ignore[attr-defined]
-            # redirect output
-            log_path = self._get_log_path()
-            with open(log_path, "a", encoding=encoding()) as f:
-                log_info(f"check trainer running log in {log_path}")
-                sys.stdout = f
-                from qianfan.utils.logging import redirect_log_to_file
-
-                redirect_log_to_file(log_path)
-
-            # start a thread for run
-            main_t = threading.Thread(target=self.run)
-            main_t.start()
-
-            import time
-
-            while True:
-                time.sleep(1)
-                msg = pipe.recv()  # 接收消息
-                if msg == StopMessage:
-                    log_debug("Child process received STOP signal, exiting...")
-                    self.stop()
-                    break
-            log_info("trainer subprocess exited")
-
-        parent_pipe, child_pipe = multiprocessing.Pipe()
-        p = multiprocessing.Process(target=run_subprocess, args=(child_pipe,))
-        p.start()
-        if not join_on_exited:
-            self.join = p.join
-            # multiprocess 在atexit注册自动join
-            p.join = lambda: None
-        self.parent_pipe = parent_pipe
-        self.process = p
+        self.ppls[0].start(join_on_exited=join_on_exited, **kwargs)
         return self
 
     def wait(self, **kwargs: Dict) -> "Trainer":
         """
         Trainer wait method. Wait for the training process to finish.
         """
-        if self.process and self.join:
-            self.join()
+        self.ppls[0].wait(**kwargs)
         return self
 
     def stop(self, **kwargs: Dict) -> "Trainer":
         """
-        Trainer abstract method. Subclasses implement it to support an
+        Trainer  method. Subclasses implement it to support an
         more controllable usage in the concrete situations.
         Returns:
             Trainer: Trainer instance
         """
-        if self.process:
-            self.parent_pipe.send(StopMessage)
+        self.ppls[0].stop(**kwargs)
         return self
 
-    @abstractmethod
     def resume(self, **kwargs: Dict) -> "Trainer":
         """
-        Counter to stop method. User can resume the training process by
-        calling resume() method.
+        Trainer resume method.
+
         Returns:
-            Trainer: Trainer instance
+            PostPreTrain:
         """
+        self.result[0] = self.ppls[0].resume(**kwargs)
         return self
 
     @property

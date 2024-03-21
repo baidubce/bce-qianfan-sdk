@@ -610,7 +610,7 @@ class TrainAction(
                 self._input = {}
             return self._exec(self._input, **kwargs)
 
-    def stop(self, **kwargs: Dict) -> None:
+    def stop(self, **kwargs: Dict) -> "BaseAction":
         """
         stop method for train action
 
@@ -620,12 +620,13 @@ class TrainAction(
         """
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
-            return
+            return self
         resp = api.FineTune.V2.stop_task(self.task_id)
         if resp.get("result"):
             log_debug(f"train task {self.task_id}/{self.job_id} stopped successfully")
         else:
             log_debug(f"train task {self.task_id}/{self.job_id} stopped failed")
+        return self
 
     def get_default_train_config(
         self,

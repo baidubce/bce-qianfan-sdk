@@ -244,34 +244,6 @@ class Finetune(Trainer):
             action.state, TrainStatus.Unknown
         )
 
-    def stop(self, **kwargs: Dict) -> Trainer:
-        """
-        stop method of LLMFinetune. LLMFinetune will stop
-        all actions in pipeline. In fact, LLMFinetune only take one
-        pipeline, so it will be equal to stop first of `ppls`.
-
-        Returns:
-            Trainer:
-                self, for chain invocation.
-        """
-        # 后台运行的任务
-        if self.process:
-            return super().stop(**kwargs)
-        else:
-            for ppl in self.ppls:
-                ppl.stop()
-            return self
-
-    def resume(self, **kwargs: Dict) -> "LLMFinetune":
-        """
-        LLMFinetune resume method.
-
-        Returns:
-            LLMFinetune:
-        """
-        self.result[0] = self.ppls[0].resume(**kwargs)
-        return self
-
     @property
     def output(self) -> Any:
         return self.result[0]

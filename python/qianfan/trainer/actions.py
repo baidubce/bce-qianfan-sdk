@@ -275,7 +275,7 @@ class TrainAction(
         train_config: Optional[TrainConfig] = None,
         task_id: Optional[str] = None,
         job_id: Optional[str] = None,
-        peft_type: PeftType = PeftType.ALL,
+        peft_type: Optional[PeftType] = None,
         job_name: Optional[str] = None,
         task_description: Optional[str] = None,
         job_description: Optional[str] = None,
@@ -628,7 +628,10 @@ class TrainAction(
             log_debug(f"train task {self.task_id}/{self.job_id} stopped failed")
 
     def get_default_train_config(
-        self, model_type: str, train_mode: console_consts.TrainMode, peft_type: PeftType
+        self,
+        model_type: str,
+        train_mode: console_consts.TrainMode,
+        peft_type: Optional[PeftType] = None,
     ) -> TrainConfig:
         if train_mode == console_consts.TrainMode.PostPretrain:
             model_info = DefaultPostPretrainTrainConfigMapping.get(
@@ -640,10 +643,10 @@ class TrainAction(
                 model_type,
                 # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
             )
-        if model_info is None:
-            raise InvalidArgumentError(
-                f"can not find default config for {model_type} in {peft_type}"
-            )
+        if model_info is None or len(model_info) == 0:
+            raise InvalidArgumentError(f"can not find default config for {model_type}")
+        if peft_type is None:
+            peft_type = sorted(model_info.keys())[0]
         train_config = model_info[peft_type]
         train_config.peft_type = peft_type
         return train_config

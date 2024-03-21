@@ -663,12 +663,14 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
                     Consts.ModelAPIPrefix,
                 ),
             ).split("/")
-            if _runtime_models_info.get(api_type) is None:
-                _runtime_models_info[api_type] = {}
-            _runtime_models_info.get(api_type)[s["name"]] = QfLLMInfo(
+            model_info = _runtime_models_info.get(api_type)
+            if model_info is None:
+                model_info = {}
+            model_info[s["name"]] = QfLLMInfo(
                 endpoint=model_endpoint,
                 api_type=api_type,
             )
+            _runtime_models_info[api_type] = model_info
             _last_update_time = datetime.now()
         _model_infos_access_lock.release()
     return _runtime_models_info

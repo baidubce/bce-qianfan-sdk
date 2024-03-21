@@ -106,7 +106,7 @@ class Completion(BaseResource):
             if model not in info_list:
                 info_list[model] = info
         return info_list
-      
+
     @classmethod
     def api_type(cls) -> str:
         return "completions"

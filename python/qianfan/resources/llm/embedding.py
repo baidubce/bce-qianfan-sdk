@@ -83,9 +83,9 @@ class Embedding(BaseResource):
         for m in info_list:
             if m not in latest_models_list:
                 info_list[m].deprecated = True
-        
+
         return info_list
-      
+
     @classmethod
     def api_type(cls) -> str:
         return "embeddings"

@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TypeVar, Union
 
 import qianfan
@@ -163,6 +164,19 @@ class OpenAIApdater(object):
         if messages[0]["role"] == "system":
             qianfan_request["system"] = messages[0]["content"]
             messages = messages[1:]
+
+        for item in messages:
+            if item["role"] == "tool":
+                item["role"] = "function"
+                # json 格式的 function 结果模型才能正常处理，所以这里转一下
+                item["content"] = json.dumps(
+                    {"result": item["content"]}, ensure_ascii=False
+                )
+
+            if item["content"] is not None and item["content"].strip() == "":
+                item["content"] = "/"
+            if "tool_calls" in item:
+                item["function_call"] = item["tool_calls"][0]["function"]
         qianfan_request["messages"] = messages
         return qianfan_request
 
@@ -415,7 +429,7 @@ class OpenAIApdater(object):
                         ],
                         **base,
                     }
-            choices = [
+            choices: List[Dict] = [
                 {
                     "index": i,
                     "delta": {"content": res["result"]},
@@ -425,6 +439,17 @@ class OpenAIApdater(object):
                     ),
                 }
             ]
+            if "function_call" in res:
+                if "function_call" in openai_request:
+                    choices[0]["delta"]["function_call"] = res["function_call"]
+                if "tools" in openai_request:
+                    choices[0]["delta"]["tool_calls"] = [
+                        {
+                            "id": res["function_call"]["name"],
+                            "type": "function",
+                            "function": res["function_call"],
+                        }
+                    ]
 
             yield {
                 "choices": choices,

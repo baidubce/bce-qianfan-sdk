@@ -419,7 +419,8 @@ class BaseResource(object):
         Return:
             Information of the model
         """
-        model_info = cls._supported_models().get(model)
+        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
+        model_info = model_info_list.get(model.lower())
         if model_info is None:
             # 拿不到的话
             raise errors.InvalidArgumentError(
@@ -444,16 +445,14 @@ class BaseResource(object):
         Raises:
             QianfanError: if the input is not in self._supported_models()
         """
-        if model not in self._supported_models():
+        try:
+            model_info = self.get_model_info(model)
+        except errors.InvalidArgumentError:
             if self._endpoint is not None:
                 return QfLLMInfo(endpoint=self._endpoint)
-            raise errors.InvalidArgumentError(
-                f"The provided model `{model}` is not in the list of supported models."
-                " If this is a recently added model, try using the `endpoint`"
-                " arguments and create an issue to tell us. Supported models:"
-                f" {self.models()}"
-            )
-        return self._supported_models()[model]
+            else:
+                raise
+        return model_info
 
     def _get_endpoint_from_dict(
         self, model: Optional[str], endpoint: Optional[str], stream: bool, **kwargs: Any
@@ -514,25 +513,35 @@ class BaseResource(object):
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]
-        if model is not None and model in self._supported_models():
-            model_info = self._supported_models()[model]
-            # warn if user provide unexpected arguments
-            for key in kwargs:
-                if (
-                    key not in model_info.required_keys
-                    and key not in model_info.optional_keys
-                ):
-                    log_warn(
-                        f"This key `{key}` does not seem to be a parameter that the"
-                        f" model `{model}` will accept"
-                    )
-        else:
-            default_model_info = self._supported_models()[self._default_model()]
-            if endpoint == default_model_info.endpoint:
-                model_info = default_model_info
-            else:
-                model_info = self._supported_models()[UNSPECIFIED_MODEL]
-
+        model_info: Optional[QfLLMInfo] = None
+        if model is not None:
+            try:
+                model_info = self.get_model_info(model)
+                # warn if user provide unexpected arguments
+                for key in kwargs:
+                    if (
+                        key not in model_info.required_keys
+                        and key not in model_info.optional_keys
+                    ):
+                        log_warn(
+                            f"This key `{key}` does not seem to be a parameter that the"
+                            f" model `{model}` will accept"
+                        )
+            except errors.InvalidArgumentError:
+                ...
+                
+        if model_info is None:
+            # 使用默认模型
+            try:
+                default_model_info = self.get_model_info(self._default_model())
+                if default_model_info.endpoint == endpoint:
+                    model_info = default_model_info
+            except errors.InvalidArgumentError:
+                ...
+                
+        # 非默认模型
+        if model_info is None:
+            model_info = self._supported_models()[UNSPECIFIED_MODEL]
         for key in model_info.required_keys:
             if key not in kwargs:
                 raise errors.ArgumentNotFoundError(
@@ -638,6 +647,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
     if get_config().ENABLE_PRIVATE:
         # 私有化直接跳过
         return {}
+    
     global _last_update_time
     global _runtime_models_info
     if (datetime.now() - _last_update_time).total_seconds() > _update_intervals_seconds:
@@ -659,7 +669,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
             [api_type, model_endpoint] = trim_prefix(
                 s["url"],
                 "{}{}/".format(
-                    get_config().BASE_URL,
+                    DefaultValue.BaseURL,
                     Consts.ModelAPIPrefix,
                 ),
             ).split("/")
@@ -667,7 +677,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
             if model_info is None:
                 model_info = {}
             model_info[s["name"]] = QfLLMInfo(
-                endpoint=model_endpoint,
+                endpoint="/{}/{}".format(api_type, model_endpoint),
                 api_type=api_type,
             )
             _runtime_models_info[api_type] = model_info

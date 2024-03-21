@@ -35,6 +35,7 @@ $ qianfan [OPTIONS] COMMAND [ARGS]...
 * `plugin` 插件
 * `dataset` 数据集
 * `evalutaion` 评估
+* `openai` OpenAI 接口模拟
 
 ### chat 对话
 
@@ -402,3 +403,29 @@ $ qianfan evaluation list-evaluable-models [OPTIONS]
 * `--name`: 过滤模型名称，可以通过 `,` 分隔多个名称
 * `--help`: 展示帮助信息
 
+### OpenAI 接口模拟
+
+对于已经适配 OpenAI 而千帆 SDK 尚未适配的第三方库，可以通过该功能模拟出 OpenAI 格式的接口，从而实现快速接入千帆功能。
+
+**用法**:
+
+```console
+$ qianfan openai [OPTIONS]
+```
+
+运行后会启动一个模拟 OpenAI 接口的服务，默认监听在 `http://0.0.0.0:8001`，可以设置如下环境变量使得 OpenAI SDK 会请求该模拟接口：
+
+```shell
+export OPENAI_API_KEY='any-content-you-want'   # 任意内容，仅为了绕过 OpenAI SDK 验证
+export OPENAI_BASE_URL='http://127.0.0.1:8001/v1'  # 模拟 OpenAI 接口的地址
+```
+
+不同第三方库可能会有不同方式设置 `BASE_URL`，请参考各库的文档。
+
+**Options 选项**:
+
+* `--host / -h`: 绑定的 host 地址，默认为 [default：0.0.0.0]
+* `--port / -p`: 绑定的端口，默认为 [default：8001]
+* `--detach / -d`: 后台运行
+* `--log-file`: 日志文件路径，默认不输出至文件
+* `--help`: 展示帮助信息

@@ -495,9 +495,9 @@ class ChatCompletion(BaseResource):
             "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
         }
 
-        for m in info_list:
-            if m not in latest_models_list.keys():
-                info_list[m].deprecated = True
+        # for m in info_list:
+        #     if m not in latest_models_list.keys():
+        #         info_list[m].deprecated = True
 
         for src, target in deprecated_alias.items():
             info = copy.deepcopy(info_list[target])

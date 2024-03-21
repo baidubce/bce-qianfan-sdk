@@ -204,6 +204,8 @@ class Consts:
     )
     ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
     ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
+    ModelEvalResultListAPI: str = "/wenxinworkshop/modelrepo/eval/result/list"
+    ModelEvalResultBatchDeleteAPI: str = "/wenxinworkshop/modelrepo/eval/delete"
     ModelEvalResultExportStatusAPI: str = (
         "/wenxinworkshop/modelrepo/eval/result/export/info"
     )

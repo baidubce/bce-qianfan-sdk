@@ -1872,6 +1872,14 @@ def list_service():
     """
     services = [
         {
+            "name": "ERNIE-99",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb99",
+            "apiType": "chat",
+            
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
+        {
             "name": "ERNIE-Bot 4.0",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
             "apiType": "chat",

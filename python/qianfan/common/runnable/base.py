@@ -26,6 +26,7 @@ from typing import (
     TypeVar,
 )
 
+import dill
 import multiprocess as multiprocessing
 
 from qianfan.config import encoding
@@ -107,6 +108,18 @@ StopMessage = "STOP"
 QianfanTrainerLocalCacheDir = ".qianfan_exec_cache"
 
 
+class DillSerializeHelper(SerializeHelper):
+    """
+    dill serialize helper.
+    """
+
+    def serialize(self, obj: Any) -> bytes:
+        return dill.dumps(obj)
+
+    def deserialize(self, data: bytes) -> Any:
+        return dill.loads(data)
+
+
 class ExecuteSerializable(Executable[Input, Output], Serializable):
     """
     set of executable and serializable. subclass implement it to support
@@ -116,7 +129,7 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
     process_id: str = ""
     process: Optional[multiprocessing.Process] = None
 
-    serialize_helper: SerializeHelper = PickleSerializeHelper()
+    serialize_helper: SerializeHelper = DillSerializeHelper()
 
     def _get_specific_cache_path(self) -> str:
         cache_path = os.path.join(

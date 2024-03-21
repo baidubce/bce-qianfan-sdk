@@ -1,9 +1,10 @@
 import glob
 from abc import ABC, abstractmethod
-from os import path
+from os import makedirs, path
 from typing import List, TypeVar
 
 from qianfan.common.persister.base import Persistent
+from qianfan.utils.logging import log_info
 
 _T = TypeVar("_T", bound=Persistent)
 
@@ -32,7 +33,12 @@ class FilePersister(Persister):
     @classmethod
     def save(cls, p: Persistent) -> None:
         b = p.persist()
-        with open(path.join(FileTmpPath, p._space(), str(p._identity())), "wb") as f:
+        f_path_dir = path.join(FileTmpPath, p._space())
+        if not path.exists(f_path_dir):
+            makedirs(f_path_dir)
+        f_path = path.join(FileTmpPath, p._space(), p._identity())
+        log_info(f"save to {f_path}")
+        with open(f_path, "wb") as f:
             f.write(b)
 
     @classmethod

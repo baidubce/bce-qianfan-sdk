@@ -80,7 +80,7 @@ setuptools = "*"
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
 openai = ["flask", "gevent"]
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
 
 [tool.ruff]
 select = [

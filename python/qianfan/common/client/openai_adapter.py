@@ -14,7 +14,7 @@
 
 import asyncio
 import json
-from typing import Any, AsyncIterator, Iterator
+from typing import Any, AsyncIterator, Iterator, Optional
 
 from flask import Flask, Response, jsonify, request
 
@@ -76,8 +76,9 @@ async def embedding() -> Response:
     return jsonify(resp)
 
 
-def entry(host: str, port: int, detach: bool) -> None:
+def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     check_dependency("openai", ["flask", "gevent", "werkzeug"])
+    import logging
     import socket
 
     import rich
@@ -90,6 +91,8 @@ def entry(host: str, port: int, detach: bool) -> None:
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("INFO")
+    if log_file is not None:
+        logger._logger.addHandler(logging.FileHandler(log_file))
 
     http_server = WSGIServer((host, port), openai_apps, log=logger._logger)
 
@@ -114,6 +117,8 @@ def entry(host: str, port: int, detach: bool) -> None:
 
         from multiprocess import Process
 
+        # close stderr output
+        logger._logger.removeHandler(logger.handler)
         process = Process(target=http_server.serve_forever)
         process.start()
 

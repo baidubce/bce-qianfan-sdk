@@ -28,7 +28,7 @@ from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import print_error_msg
+from qianfan.common.client.utils import credential_required, print_error_msg
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -49,6 +49,7 @@ _enable_traceback = False
 
 
 @app.command(name="openai")
+@credential_required
 def openai(
     host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
     port: int = typer.Option(8001, "--port", "-p", help="Port of the server."),
@@ -58,13 +59,14 @@ def openai(
         "-d",
         help="Run the server in background.",
     ),
+    log_file: Optional[str] = typer.Option(None, help="Log file path."),
 ) -> None:
     """
     Create an openai wrapper server.
     """
     from qianfan.common.client.openai_adapter import entry as openai_entry
 
-    openai_entry(host=host, port=port, detach=detach)
+    openai_entry(host=host, port=port, detach=detach, log_file=log_file)
 
 
 def version_callback(value: bool) -> None:

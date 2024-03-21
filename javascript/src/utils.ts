@@ -218,3 +218,14 @@ export function calculateRetryDelay(
 ): number {
     return Math.min(retry_max_wait_interval, backoff_factor * Math.pow(2, attempt));
 }
+
+/**
+ * 检查是否满足打开TPM的条件。
+ * 条件包括：环境变量 `QIANFAN_TPM_LIMIT` 设定的限制值（如果存在）和header的 `val` 都必须大于0。
+ * @param {number} val - 用于检查的值，预期为正数。
+ * @returns {boolean} - 如果满足条件则返回true，否则返回false。
+ */
+export function isOpenTpm(val): boolean {
+    const envToken = Number(readEnvVariable('QIANFAN_TPM_LIMIT')) ?? 0;
+    return envToken > 0 || val > 0;
+}

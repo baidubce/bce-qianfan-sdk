@@ -14,8 +14,9 @@
 
 import HttpClient from '../HttpClient';
 import {Fetch, FetchConfig} from '../Fetch';
+import {TokenLimiter} from '../Limiter';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay, isOpenTpm} from '../utils';
 import {Stream} from '../streaming';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 
@@ -34,6 +35,7 @@ export class BaseClient {
     protected headers = DEFAULT_HEADERS;
     protected fetchInstance: Fetch;
     protected fetchConfig: FetchConfig;
+    private tokenLimiter: TokenLimiter;
     access_token = '';
     expires_in = 0;
 
@@ -74,6 +76,7 @@ export class BaseClient {
                 ),
         };
         this.fetchInstance = new Fetch(this.fetchConfig);
+        this.tokenLimiter = new TokenLimiter();
     }
 
     /**
@@ -139,28 +142,62 @@ export class BaseClient {
             };
         }
 
-        // 流式处理
-        if (stream) {
+        // 计算请求token
+        const tokens = this.tokenLimiter.calculateTokens(requestBody);
+        const hasToken = this.tokenLimiter.acquireTokens(tokens);
+        // 满足token限制
+        if (hasToken) {
             try {
-                const sseStream: AsyncIterable<Resp> = Stream.fromSSEResponse(
-                    await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions),
-                    this.controller
-                ) as any;
-                return sseStream as AsyncIterableType;
+                const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
+                const val = this.getTpmHeader(resp.headers);
+                if (stream) {
+                    let usedTokens = 0;
+                    const sseStream = Stream.fromSSEResponse(resp, this.controller);
+                    if (isOpenTpm(val)) {
+                        setTimeout(() => {
+                            sseStream.on('data', data => {
+                                if (data.is_end) {
+                                    usedTokens = data?.usage?.total_tokens;
+                                    // 数据流结束后更新token
+                                    this.tokenLimiter.acquireTokens(usedTokens - tokens).catch(console.error);
+                                }
+                            });
+                        }, 0);
+                    }
+                    return sseStream as AsyncIterableType;
+                }
+                const data = await resp.json();
+                const total_tokens = this.getUsedTokens(data);
+                await this.tokenLimiter.acquireTokens(total_tokens - tokens);
+                return data as any;
+
             }
             catch (error) {
-                throw new Error(error);
+                throw error;
             }
         }
         else {
-            try {
-                const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
-                const data = await resp.json();
-                return data as any;
-            }
-            catch (error) {
-                throw new Error(`Request failed: ${error.message}`);
+            throw new Error('Token limit exceeded');
+        }
+    }
+
+    getTpmHeader(headers: any): void {
+        const val = headers.get('x-ratelimit-limit-tokens') ?? '0';
+        this.tokenLimiter.resetTokens(val);
+        return val;
+    }
+
+    async getStreamUsedTokens(data: AsyncIterableType): Promise<number> {
+        let usedTokens = 0;
+        for await (const chunk of data as AsyncIterableType) {
+            if (chunk.is_end) {
+                usedTokens = chunk?.usage?.total_tokens;
             }
         }
+        return usedTokens ?? 0;
+    }
+    getUsedTokens(data: Resp): number {
+        const usage = data?.usage?.total_tokens;
+        return usage ?? 0;
     }
 }

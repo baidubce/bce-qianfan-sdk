@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+import {EventEmitter} from 'events';
 import {OpenAIError, APIError} from './error';
 
 type Bytes = string | ArrayBuffer | Uint8Array | Buffer | null | undefined;
@@ -189,14 +191,13 @@ class LineDecoder {
     }
 }
 
-export class Stream<Item> implements AsyncIterable<Item> {
-    controller: AbortController;
+export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
 
     constructor(
-    private iterator: () => AsyncIterator<Item>,
-    controller: AbortController
+        private iterator: () => AsyncIterator<Item>,
+        private controller: AbortController
     ) {
-        this.controller = controller;
+        super();
     }
 
     static fromSSEResponse<Item>(response: any, controller: AbortController) {
@@ -250,6 +251,7 @@ export class Stream<Item> implements AsyncIterable<Item> {
                         let data;
                         try {
                             data = JSON.parse(sse.data);
+                            this.emit('data', data);
                         }
                         catch (e) {
                             console.error('Could not parse message into JSON:', sse.data);

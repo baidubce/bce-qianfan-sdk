@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import RateLimiter from '../RateLimiter';
+import {RateLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
 
 type RetryOnFunction = (attempt: number, error: Error | null, response: Response | null) => boolean;
@@ -104,10 +104,9 @@ export class Fetch {
                     const response = await this.rateLimiter.schedule(() =>
                         fetchWithTimeout(url, {...options, timeout: this.timeout})
                     );
-                    const rpm = response.headers.get('X-Ratelimit-Limit-Requests');
-                    const tpm = response.headers.get('X-Ratelimit-Limit-Tokens');
-                    if (rpm || tpm) {
-                        this.rateLimiter.updateLimits(undefined, Number(rpm), Number(tpm));
+                    const rpm = response.headers.get('x-ratelimit-limit-requests');
+                    if (rpm) {
+                        this.rateLimiter.updateLimits(Number(rpm));
                     }
                     // 注意：现在 shouldRetry 可能会直接抛出异常
                     const retry = await shouldRetry(response);

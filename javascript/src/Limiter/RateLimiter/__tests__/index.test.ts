@@ -24,12 +24,12 @@ describe('RateLimiter', () => {
         await rateLimiter.schedule(() => Promise.resolve('second'));
 
         const end = Date.now();
-        expect(end - start).toBeGreaterThanOrEqual(1000); // Should take at least 1 second due to rate limiting
+        expect(end - start).toBeGreaterThanOrEqual(1000);
     });
 
     it('should update limits correctly', async () => {
         const rateLimiter = new RateLimiter(1);
-        rateLimiter.updateLimits(2); // Update to 2 QPS
+        rateLimiter.updateLimits(2);
 
         const start = Date.now();
 
@@ -37,6 +37,6 @@ describe('RateLimiter', () => {
         await rateLimiter.schedule(() => Promise.resolve('second'));
 
         const end = Date.now();
-        expect(end - start).toBeLessThan(1500); // Should take less than 1.5 seconds due to updated rate limiting
+        expect(end - start).toBeLessThan(1500);
     });
 });

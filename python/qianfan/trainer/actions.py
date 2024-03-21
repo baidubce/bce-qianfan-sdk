@@ -207,6 +207,26 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)
 
+    def persist(self) -> bytes:
+        if isinstance(self.dataset, str):
+            qf_ds = self.dataset
+        else:
+            qf_ds = self.dataset.inner_data_source_cache.id
+        meta = {
+            "id": self.id,
+            "ds": qf_ds,
+        }
+        return self.serialize_helper().serialize(meta)
+
+    @classmethod
+    def load(cls, b: bytes) -> "LoadDataSetAction":
+        meta = cls.serialize_helper().deserialize(b)
+        assert isinstance(meta, dict)
+        return cls(
+            id=meta.get("id"),
+            dataset=meta.get("ds_id"),
+        )
+
 
 class TrainAction(
     BaseAction[Dict[str, Any], Dict[str, Any]],
@@ -367,6 +387,7 @@ class TrainAction(
         else:
             assert self.train_type
             train_type_model_info = get_model_info(self.train_mode, self.train_type)
+            print("train_type_mode_inf######", train_type_model_info)
             if train_type_model_info is None:
                 return
             if (
@@ -419,6 +440,7 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
+        print("train_limit===>", train_limit)
         return self.train_config.validate_config(train_limit)
 
     @with_event
@@ -651,6 +673,36 @@ class TrainAction(
         train_config = model_info[peft_type]
         train_config.peft_type = peft_type
         return train_config
+
+    def persist(self) -> bytes:
+        meta = {
+            "id": self.id,
+            "init_params": {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+                "train_type": self.train_type,
+                "is_incr": self.is_incr,
+                "train_config": self.train_config.dict(),
+                "train_mode": self.train_mode,
+                "job_name": self.job_name,
+                "task_description": self.task_description,
+                "job_description": self.job_description,
+            },
+            "input": self._input,
+            "result": self.result,
+        }
+        return self.serialize_helper().serialize(meta)
+
+    @classmethod
+    def load(cls, b: bytes) -> "TrainAction":
+        metas = cls.serialize_helper().deserialize(b)
+        assert isinstance(metas, dict)
+        action = cls(
+            **metas.get("init_params"),
+        )
+        action._input = metas.get("input")
+        action.result = metas.get("result")
+        return action
 
 
 class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):

@@ -47,6 +47,7 @@ class BaseTrainConfig(BaseModel):
     def validate_config(self, train_limit: "TrainLimit") -> bool:
         schema = self.schema()
         res = True
+        print("validate ", schema)
         for k, v in schema["properties"].items():
             limit_type = v.get("limit_type")
             if limit_type is None:
@@ -90,6 +91,8 @@ class BaseTrainConfig(BaseModel):
             return True
         if limit_ranges is None:
             return True
+        if len(limit_ranges) == 1:
+            limit_ranges = [limit_ranges[0], limit_ranges[0]]
         if limit_ranges[0] > value or limit_ranges[1] < value:
             log_warn(
                 f"train_config current {field_name} is {value}:"
@@ -605,7 +608,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
         common_params_limit=TrainLimit(
-            batch_size=(1, 1),
+            batch_size=[1, 1],
             max_seq_len=[4096, 8192, 16384, 32768],
             epoch=(1, 50),
             learning_rate=(0.0000000001, 0.0002),
@@ -1142,6 +1145,7 @@ def update_all_train_configs() -> None:
         # 获取最新支持的配置：
         model_info_list = FineTune.V2.supported_models()["result"]
         # 更新训练config
+        print("### try update", TrainConfig.load)
         _update_train_config(model_info_list=model_info_list)
         # 更新模型的类型和校验参数
         sft_model_info = _get_online_supported_model_info_mapping(

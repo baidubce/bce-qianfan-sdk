@@ -68,29 +68,11 @@ class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
         self.event_dispatcher = event_handler
 
     def persist(self) -> bytes:
-        # meta = {
-        #     "id": self.id,
-        #     "actions": [],
-        #     "process_id": self.process
-        # }
-        # for action_id in self.seq:
-        #     action_meta = self.actions[action_id].persist()
-        #     meta["actions"].append({
-        #         "id": action_id,
-        #         "type": self.actions[action_id].__class__,
-        #         "meta": action_meta,
-        #     })
-
-        return self.serialize_helper.serialize(self)
+        return self.serialize_helper().serialize()
 
     @classmethod
     def load(cls, b: bytes) -> Persistent:
-        # metas = self.serialize_helper.deserialize(b)
-        # for action_meta in metas.get("actions", []):
-        #     action_type = action_meta.get("type")
-
-        #     action.load(action_meta.get("meta"))
-        return pickle.loads(b)
+        return cls.serialize_helper().deserialize(b)
 
     @abstractmethod
     def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
@@ -368,6 +350,39 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _space(cls) -> str:
         return "pipeline"
 
+    def persist(self) -> bytes:
+        meta = {
+            "id": self.id,
+            "actions": [],
+            "process_id": self.process,
+            "current_action": self.current_action,
+            "_last_output": self._last_output,
+        }
+        for action_id in self.seq:
+            action_meta = self.actions[action_id].persist()
+            meta["actions"].append(
+                {
+                    "id": action_id,
+                    "type": self.actions[action_id].action_type(),
+                    "meta": action_meta,
+                }
+            )
+        return self.serialize_helper().serialize(meta)
+
+    @classmethod
+    def load(cls, b: bytes) -> Persistent:
+        metas = cls.serialize_helper.deserialize(b)
+        actions = []
+        for action_meta in metas.get("actions", []):
+            action_type = action_meta.get("type")
+            actions.append(cls.load_action(action_type, action_meta.get("meta")))
+        return Pipeline(actions=actions)
+            
+    @staticmethod
+    def load_action(action_type: str, meta: bytes) -> BaseAction:
+        if action_type == "train_action":
+            
+        
 
 class Trainer(ABC):
     """

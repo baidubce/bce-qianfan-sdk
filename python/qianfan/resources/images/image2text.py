@@ -44,7 +44,7 @@ class Image2Text(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return {
+        info_list = {
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 # the key of api is "query", which is conflict with query in params
@@ -55,6 +55,20 @@ class Image2Text(BaseResource):
                 },
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        return info_list
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "image2text"
 
     @classmethod
     def _default_model(self) -> str:
@@ -87,30 +101,34 @@ class Image2Text(BaseResource):
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]
-        if model is not None and model in self._supported_models():
-            model_info = self._supported_models()[model]
+        if model is not None and self.get_model_info(model):
+            model_info = self.get_model_info(model)
             # warn if user provide unexpected arguments
-            for key in kwargs:
-                if (
-                    key not in model_info.required_keys
-                    and key not in model_info.optional_keys
-                ):
-                    log_warn(
-                        f"This key `{key}` does not seem to be a parameter that the"
-                        f" model `{model}` will accept"
-                    )
+            if model_info.deprecated:
+                # 动态获取的模型暂时不做字段校验：
+                for key in kwargs:
+                    if (
+                        key not in model_info.required_keys
+                        and key not in model_info.optional_keys
+                    ):
+                        log_warn(
+                            f"This key `{key}` does not seem to be a parameter that the"
+                            f" model `{model}` will accept"
+                        )
         else:
-            default_model_info = self._supported_models()[self._default_model()]
+            default_model_info = self.get_model_info(self._default_model())
             if endpoint == default_model_info.endpoint:
                 model_info = default_model_info
             else:
                 model_info = self._supported_models()[UNSPECIFIED_MODEL]
 
-        for key in model_info.required_keys:
-            if key not in kwargs:
-                raise errors.ArgumentNotFoundError(
-                    f"The required key `{key}` is not provided."
-                )
+        if model_info.deprecated:
+            # 动态获取的模型暂时不做字段校验：
+            for key in model_info.required_keys:
+                if key not in kwargs:
+                    raise errors.ArgumentNotFoundError(
+                        f"The required key `{key}` is not provided."
+                    )
         if stream is True:
             kwargs["stream"] = True
         return kwargs

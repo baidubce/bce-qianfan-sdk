@@ -46,7 +46,7 @@ class Text2Image(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return {
+        info_list = {
             "Stable-Diffusion-XL": QfLLMInfo(
                 endpoint="/text2image/sd_xl",
                 required_keys={"prompt"},
@@ -72,6 +72,20 @@ class Text2Image(BaseResource):
                 },
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        return info_list
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "text2image"
 
     @classmethod
     def _default_model(self) -> str:

@@ -44,6 +44,9 @@ class GlobalConfig(BaseSettings):
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float = Field(
         default=DefaultValue.AccessTokenRefreshMinInterval
     )
+    INFER_RESOURCE_REFRESH_INTERVAL: float = Field(
+        default=DefaultValue.InferResourceRefreshMinInterval
+    )
     QPS_LIMIT: float = Field(default=DefaultValue.QpsLimit)
     RPM_LIMIT: float = Field(default=DefaultValue.RpmLimit)
     TPM_LIMIT: int = Field(default=DefaultValue.TpmLimit)

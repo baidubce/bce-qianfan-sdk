@@ -739,9 +739,9 @@ def test_truncated_message():
     assert req_messages[0]["content"] == "s3"
     assert req_messages[2]["content"] == "s5"
 
+
 def test_auto_model_list():
     model_list = qianfan.ChatCompletion._supported_models()
-    
+
     assert model_list.get("ERNIE-99")
     assert qianfan.ChatCompletion.get_model_info("ernie-99")
-    

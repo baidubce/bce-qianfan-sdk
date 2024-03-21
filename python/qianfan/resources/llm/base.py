@@ -529,7 +529,7 @@ class BaseResource(object):
                         )
             except errors.InvalidArgumentError:
                 ...
-                
+
         if model_info is None:
             # 使用默认模型
             try:
@@ -538,7 +538,7 @@ class BaseResource(object):
                     model_info = default_model_info
             except errors.InvalidArgumentError:
                 ...
-                
+
         # 非默认模型
         if model_info is None:
             model_info = self._supported_models()[UNSPECIFIED_MODEL]
@@ -647,7 +647,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
     if get_config().ENABLE_PRIVATE:
         # 私有化直接跳过
         return {}
-    
+
     global _last_update_time
     global _runtime_models_info
     if (datetime.now() - _last_update_time).total_seconds() > _update_intervals_seconds:

@@ -104,9 +104,9 @@ class Completion(BaseResource):
         chat_model_info = ChatCompletion._supported_models()
         for model, info in chat_model_info.items():
             if model not in info_list:
-              info.required_keys.discard("messages")
-              # info.required_keys.add("prompt")
-              info_list[model] = info
+                info.required_keys.discard("messages")
+                # info.required_keys.add("prompt")
+                info_list[model] = info
         return info_list
 
     @classmethod

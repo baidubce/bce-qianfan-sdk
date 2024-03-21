@@ -389,9 +389,6 @@ def _parse_model_info_list(
                 info.get("modelType", console_consts.FinetuneSupportModelType.Text2Text)
             ),
         )
-        if m.model_type == console_consts.FinetuneSupportModelType.Text2Image:
-            # 暂时不支持text2image训练
-            continue
         has_train_mode = False
         for train_mode_info in info["supportTrainMode"]:
             if train_mode.value != train_mode_info.get("trainMode"):

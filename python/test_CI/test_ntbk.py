@@ -42,9 +42,9 @@ def test_demo(file_reg, params_dict, executor):
         ('prompt.ipynb', {}),
         ('text2image.ipynb', {}),
         ('hub.ipynb', {}),
-        ('plugin.ipynb',{}),
+        ('plugin.ipynb', {}),
         ('eb_search.ipynb', {}),
-        ('offline_batch_inference.ipynb',{}),
+        ('offline_batch_inference.ipynb', {}),
         ('batch_prediction.ipynb', {}),
     ]
 )
@@ -159,6 +159,7 @@ def test_sk(file_reg, params_dict, executor):
     """
     executor.prepare(file_reg, params_dict)
     executor.run()
+
 
 @pytest.mark.parametrize(
     "file_reg,params_dict",

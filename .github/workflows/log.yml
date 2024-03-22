@@ -1,0 +1,29 @@
+# workflow for log pull request between two tags
+name: Python Release
+
+on:
+  push:
+    paths:
+      - '.github'
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./python
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: log out diff between tags
+        run: |
+          git log --pretty=oneline py/v0.3.5...py/v0.3.4 > log.txt
+          echo "::set-output name=log_file::$(pwd)/log.txt"
+        id: log
+        shell: bash
+      - name: show log
+        run: |
+          cat ${{ steps.log.outputs.log_file }}

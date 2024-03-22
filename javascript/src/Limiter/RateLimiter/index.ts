@@ -89,9 +89,6 @@ class RateLimiter {
             if (this.hasReset) {
                 return;
             }
-            if (this.hasReset) {
-                return;
-            }
             if (requestPerMinute <= 0) {
                 throw new Error('请求次数必须为正数');
             }

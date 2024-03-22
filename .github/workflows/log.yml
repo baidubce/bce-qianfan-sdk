@@ -21,6 +21,7 @@ jobs:
         run: |
           git log --pretty=oneline py/v0.3.5...py/v0.3.4 > log.txt
           cat log.txt
+          echo "test"
 #          echo "::set-output name=log_file::$(pwd)/log.txt"
 #        id: log
 #        shell: bash

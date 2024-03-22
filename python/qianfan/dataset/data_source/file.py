@@ -26,9 +26,12 @@ import pyarrow
 from qianfan.config import encoding
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
+    _collect_all_images_and_annotations_in_one_folder,
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
+    _read_all_image_from_zip,
+    _read_all_image_in_an_folder,
     zip_file_or_folder,
 )
 from qianfan.dataset.table import Table
@@ -53,15 +56,31 @@ class FileDataSource(DataSource, BaseModel):
         fd: TextIO,
         data: Union[List[Dict[str, Any]], List[List[Dict[str, Any]]], List[str]],
         index: int,
+        use_qianfan_special_jsonl_format: bool,
     ) -> None:
-        if self.file_format == FormatType.Jsonl or self.file_format == FormatType.Json:
-            lines: List[str] = []
+        lines: List[str] = []
+        if self.file_format == FormatType.Json:
             if index != 0:
-                lines.append(",\n" if self.file_format is FormatType.Json else "\n")
+                lines.append(",\n")
             for i in range(len(data)):
                 lines.append(json.dumps(data[i], ensure_ascii=False))
                 if i != len(data) - 1:
-                    lines.append(",\n" if self.file_format is FormatType.Json else "\n")
+                    lines.append(",\n")
+
+            fd.writelines(lines)
+
+        elif self.file_format == FormatType.Jsonl:
+            if index != 0:
+                lines.append("\n")
+
+            is_list = True if data and isinstance(data[0], list) else False
+            for i in range(len(data)):
+                if use_qianfan_special_jsonl_format and not is_list:
+                    lines.append(f"[{json.dumps(data[i], ensure_ascii=False)}]")
+                else:
+                    lines.append(json.dumps(data[i], ensure_ascii=False))
+                if i != len(data) - 1:
+                    lines.append("\n")
 
             fd.writelines(lines)
 
@@ -106,7 +125,13 @@ class FileDataSource(DataSource, BaseModel):
 
         return True
 
-    def save(self, table: Table, batch_size: int = 10000, **kwargs: Any) -> bool:
+    def save(
+        self,
+        table: Table,
+        batch_size: int = 10000,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
+    ) -> bool:
         """
         Write data to file。
 
@@ -116,6 +141,9 @@ class FileDataSource(DataSource, BaseModel):
             batch_size (int):
                 the batch size used when
                 writing entry to file in batch
+            use_qianfan_special_jsonl_format (bool):
+                whether writer use qianfan special format
+                when write jsonline data, default to False
             **kwargs (Any): optional arguments。
 
         Returns:
@@ -123,6 +151,12 @@ class FileDataSource(DataSource, BaseModel):
         """
         if self.save_as_folder and self.file_format == FormatType.Text:
             return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+
+        if self.file_format == FormatType.Text2Image:
+            _collect_all_images_and_annotations_in_one_folder(
+                table.inner_table, self.path
+            )
+            return True
 
         # 有可能文件路径的父文件夹不存在，得先创建
         os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
@@ -137,7 +171,12 @@ class FileDataSource(DataSource, BaseModel):
                 f.write("[\n")
 
             for i in range(0, table.row_number(), batch_size):
-                self._write_as_format(f, table.list(slice(i, i + batch_size - 1)), i)
+                self._write_as_format(
+                    f,
+                    table.list(slice(i, i + batch_size - 1)),
+                    i,
+                    use_qianfan_special_jsonl_format,
+                )
 
             # Json 格式的时候需要特判
             if self.file_format == FormatType.Json:
@@ -173,9 +212,16 @@ class FileDataSource(DataSource, BaseModel):
             Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
         """
 
-        # 如果是单个文件，直接读取
         assert isinstance(self.file_format, FormatType)
 
+        # 特判文生图
+        if self.file_format is FormatType.Text2Image:
+            if zipfile.is_zipfile(self.path):
+                return _read_all_image_from_zip(self.path, **kwargs)
+
+            return _read_all_image_in_an_folder(self.path, **kwargs)
+
+        # 如果是单个文件，直接读取
         if not os.path.isdir(self.path):
             return _get_a_memory_mapped_pyarrow_table(
                 self.path, self.file_format, **kwargs

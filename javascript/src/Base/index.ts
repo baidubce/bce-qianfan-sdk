@@ -82,9 +82,9 @@ export class BaseClient {
      */
 
     private async getAccessToken(): Promise<AccessTokenResp> {
-        const url = getAccessTokenUrl(this.qianfanAk, this.qianfanSk);
+        const url = getAccessTokenUrl(this.qianfanAk, this.qianfanSk, this.qianfanBaseUrl);
         try {
-            const resp = await this.fetchInstance.fetchWithRetry(url, {headers: this.headers});
+            const resp = await this.fetchInstance.fetchWithRetry(url, {headers: this.headers, method: 'POST'});
             const data = (await resp.json()) as AccessTokenResp;
             if (data?.error) {
                 throw new Error(data?.error_description || 'Failed to get access token');

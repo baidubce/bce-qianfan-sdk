@@ -16,28 +16,26 @@
 
 package com.baidubce.qianfan.core.auth;
 
+import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.model.exception.ValidationException;
 import com.baidubce.qianfan.util.StringUtils;
 
 public class Auth {
     public static final String TYPE_IAM = "IAM";
     public static final String TYPE_OAUTH = "OAuth";
-    public static final String ENV_ACCESS_KEY = "QIANFAN_ACCESS_KEY";
-    public static final String ENV_SECRET_KEY = "QIANFAN_SECRET_KEY";
-    public static final String ENV_QIANFAN_AK = "QIANFAN_AK";
-    public static final String ENV_QIANFAN_SK = "QIANFAN_SK";
 
     private Auth() {
     }
 
     public static IAuth create() {
-        String accessKey = System.getenv(ENV_ACCESS_KEY);
-        String secretKey = System.getenv(ENV_SECRET_KEY);
+        // Prefer IAM
+        String accessKey = QianfanConfig.getQianfanAccessKey();
+        String secretKey = QianfanConfig.getQianfanSecretKey();
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
             return create(TYPE_IAM, accessKey, secretKey);
         }
-        String qianfanAK = System.getenv(ENV_QIANFAN_AK);
-        String qianfanSK = System.getenv(ENV_QIANFAN_SK);
+        String qianfanAK = QianfanConfig.getQianfanAk();
+        String qianfanSK = QianfanConfig.getQianfanSk();
         if (StringUtils.isNotEmpty(qianfanAK) && StringUtils.isNotEmpty(qianfanSK)) {
             return create(TYPE_OAUTH, qianfanAK, qianfanSK);
         }

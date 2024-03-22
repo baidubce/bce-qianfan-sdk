@@ -29,8 +29,8 @@ const client = new Image2Text({Endpoint: '***'});
 // AK/SK 测试
 async function main() {
     const resp = await client.image2Text({
-        prompt:"分析一下图片画了什么",
-        image: '图片的base64编码'
+        prompt: '分析一下图片画了什么',
+        image: '图片的base64编码',
     });
     console.log(resp);
 }

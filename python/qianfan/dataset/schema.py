@@ -268,7 +268,7 @@ class QianfanText2Image(QianfanSchema):
         Returns:
             bool:whether table is valid
         """
-        return False
+        return True
 
 
 class EvaluationSchema(Schema):

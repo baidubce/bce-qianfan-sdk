@@ -30,6 +30,8 @@ implementation("com.baidubce:qianfan:0.0.1")
 implementation 'com.baidubce:qianfan:0.0.1'
 ```
 
+> 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
+
 ## 如何使用
 
 ### 鉴权

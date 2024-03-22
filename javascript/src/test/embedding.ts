@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Eembedding, setEnvVariable} from '../index';
+import {Embedding, setEnvVariable} from '../index';
 
 // 修改env文件
 // setEnvVariable('QIANFAN_AK','***');
 // setEnvVariable('QIANFAN_SK','***');
 
 // 直接读取env
-const client = new Eembedding();
+const client = new Embedding();
 
 // 手动传AK/SK 测试
-// const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+// const client = new Embedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
 // 手动传ACCESS_KEY/ SECRET_KEY测试
-// const client = new Eembedding({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
+// const client = new Embedding({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
 
 // AK/SK 测试
 async function main() {

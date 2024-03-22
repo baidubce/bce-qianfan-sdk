@@ -141,6 +141,7 @@ class Plugin(BaseResource):
         Plugin needs to transform body (`_query` -> `query`)
         """
         if model is None:
+            print("mode", model, endpoint)
             body = super()._generate_body(model, endpoint, stream, **kwargs)
             # "query" is conflict with QfRequest.query in params, so "_query" is
             # the argument in SDK so we need to change "_query" back to "query" here

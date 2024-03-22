@@ -73,6 +73,13 @@ class VersatileRateLimiter:
             log_error(err_msg)
             raise ValueError(err_msg)
 
+        self._og_request_per_minute = request_per_minute
+        self._og_query_per_second = query_per_second
+        self._buffer_ratio = buffer_ratio
+        self._has_been_reset = False
+        self._inner_reset_once_lock = threading.Lock()
+        self._inner_async_reset_once_lock: Optional[asyncio.Lock] = None
+
         self.is_closed = request_per_minute <= 0 and query_per_second <= 0
         if self.is_closed:
             return
@@ -89,17 +96,139 @@ class VersatileRateLimiter:
             self._is_rpm = False
             self._internal_qps_rate_limiter = RateLimiter(query_per_second)
 
+    @property
+    def _reset_once_lock(self) -> threading.Lock:
+        return self._inner_reset_once_lock
+
+    @property
+    def _async_reset_once_lock(self) -> asyncio.Lock:
+        if not self._inner_async_reset_once_lock:
+            self._inner_async_reset_once_lock = asyncio.Lock()
+        return self._inner_async_reset_once_lock
+
+    async def async_reset_once(self, rpm: float) -> None:
+        # 检查是否已经重置过，如是，则直接返回
+        if self._has_been_reset:
+            return
+
+        # 拿锁
+        await self._async_reset_once_lock.acquire()
+        # 检查是否在等待锁的时候被其它 worker 重置了，如是则返回
+        if self._has_been_reset:
+            self._async_reset_once_lock.release()
+            return
+
+        og_rpm = max(
+            (
+                self._og_request_per_minute
+                if self._is_rpm
+                else self._og_query_per_second * 60
+            ),
+            0,
+        )
+
+        # 如果新旧值一致则不需要操作
+        if og_rpm == rpm:
+            self._has_been_reset = True
+            self._async_reset_once_lock.release()
+            return
+
+        # 取最小的那个，如果是关闭的则直接取重置的
+        rpm = min(rpm, og_rpm) if not self.is_closed else rpm
+        rpm = max(rpm, 0)
+
+        # 如果重置为 0 则直接关闭
+        if rpm == 0:
+            self.is_closed = True
+            self._has_been_reset = True
+            self._async_reset_once_lock.release()
+            return
+
+        # 重置
+        self._reset_internal_rate_limiter(rpm)
+
+        self._has_been_reset = True
+        self._async_reset_once_lock.release()
+
+    def reset_once(self, rpm: float) -> None:
+        # 检查是否已经重置过，如是，则直接返回
+        if self._has_been_reset:
+            return
+
+        # 拿锁
+        self._reset_once_lock.acquire()
+        # 检查是否在等待锁的时候被其它 worker 重置了，如是则返回
+        if self._has_been_reset:
+            self._reset_once_lock.release()
+            return
+
+        og_rpm = max(
+            (
+                self._og_request_per_minute
+                if self._is_rpm
+                else self._og_query_per_second * 60
+            ),
+            0,
+        )
+
+        # 如果新旧值一致则不需要操作
+        if og_rpm == rpm:
+            self._has_been_reset = True
+            self._reset_once_lock.release()
+            return
+
+        # 取最小的那个，如果是关闭的则直接取重置的
+        rpm = min(rpm, og_rpm) if not self.is_closed else rpm
+        rpm = max(rpm, 0)
+
+        # 如果重置为 0 则直接关闭
+        if rpm == 0:
+            self.is_closed = True
+            self._has_been_reset = True
+            self._reset_once_lock.release()
+            return
+
+        # 重置
+        self._reset_internal_rate_limiter(rpm)
+
+        self._has_been_reset = True
+        self._reset_once_lock.release()
+
+    def _reset_internal_rate_limiter(self, rpm: float) -> None:
+        # 记录一下新值
+        if self._is_rpm:
+            self._new_request_per_minute = rpm
+        else:
+            self._new_query_per_second = rpm / 60
+
+        # 重置
+        rpm *= 1 - self._buffer_ratio
+
+        if self._is_rpm:
+            self._internal_qp10s_rate_limiter = RateLimiter(rpm / 6, 10)
+            self._internal_rpm_rate_limiter = RateLimiter(rpm, 60)
+        else:
+            self._internal_qps_rate_limiter = RateLimiter(rpm / 60)
+
     def __enter__(self) -> None:
         if self.is_closed:
             return
 
+        if not self._has_been_reset:
+            self._reset_once_lock.acquire()
+            if self._has_been_reset:
+                self._reset_once_lock.release()
+
         if self._is_rpm:
             with self._internal_rpm_rate_limiter:
                 with self._internal_qp10s_rate_limiter:
-                    return
+                    ...
         else:
             with self._internal_qps_rate_limiter:
-                return
+                ...
+
+        if not self._has_been_reset:
+            self._reset_once_lock.release()
 
     def __exit__(
         self,
@@ -113,13 +242,21 @@ class VersatileRateLimiter:
         if self.is_closed:
             return
 
+        if not self._has_been_reset:
+            await self._async_reset_once_lock.acquire()
+            if self._has_been_reset:
+                self._async_reset_once_lock.release()
+
         if self._is_rpm:
             async with self._internal_rpm_rate_limiter:
                 async with self._internal_qp10s_rate_limiter:
-                    return
+                    ...
         else:
             async with self._internal_qps_rate_limiter:
-                return
+                ...
+
+        if not self._has_been_reset:
+            self._async_reset_once_lock.release()
 
     async def __aexit__(
         self,
@@ -176,17 +313,23 @@ class RateLimiter:
                 self._token_count + delta * self._query_per_second,
             )
 
+        def acquire(self, amount: float = 1) -> None:
+            if amount > self._query_per_period:
+                raise ValueError("Can't acquire more than the maximum capacity")
+
+            with self._sync_lock:
+                while True:
+                    self._leak()
+                    if self._token_count >= amount:
+                        self._token_count -= amount
+                        return
+                    time.sleep((amount - self._token_count) / self._query_per_second)
+
         def __enter__(self) -> None:
             """
             synchronous entrance of rate limiter
             """
-            with self._sync_lock:
-                while True:
-                    self._leak()
-                    if self._token_count >= 1:
-                        self._token_count -= 1
-                        return
-                    time.sleep((1 - self._token_count) / self._query_per_second)
+            self.acquire()
 
         def __exit__(
             self,
@@ -230,6 +373,9 @@ class RateLimiter:
         self._async_limiter = AsyncLimiter(query_per_period, period_in_second)
         self._sync_limiter = self._SyncLimiter(query_per_period, period_in_second)
 
+        self._query_per_period = query_per_period
+        self._period_in_second = period_in_second
+
         # 必要的 warmup 环节，清空 bucket 中的 token，勿删以下片段
         def _warmup_procedure() -> None:
             loop = asyncio.new_event_loop()
@@ -239,6 +385,18 @@ class RateLimiter:
         warmup_thread = threading.Thread(target=_warmup_procedure)
         warmup_thread.start()
         warmup_thread.join()
+
+    def acquire(self, amount: float) -> None:
+        if self._check_is_closed():
+            return
+
+        self._sync_limiter.acquire(amount)
+
+    async def async_acquire(self, amount: float) -> None:
+        if self._check_is_closed():
+            return
+
+        await self._async_limiter.acquire(amount)
 
     def __enter__(self) -> None:
         """

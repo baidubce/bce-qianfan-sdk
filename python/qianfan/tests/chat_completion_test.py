@@ -32,9 +32,9 @@ QIANFAN_SUPPORT_CHAT_MODEL = {
     "ERNIE-Bot-turbo",
     "BLOOMZ-7B",
     "Qianfan-BLOOMZ-7B-compressed",
-    "Llama-2-7b-chat",
-    "Llama-2-13b-chat",
-    "Llama-2-70b-chat",
+    "Llama-2-7B-Chat",
+    "Llama-2-13B-Chat",
+    "Llama-2-70B-Chat",
     "Qianfan-Chinese-Llama-2-7B",
     "ChatGLM2-6B-32K",
     "AquilaChat-7B",
@@ -738,3 +738,10 @@ def test_truncated_message():
     assert len(req_messages) == 3
     assert req_messages[0]["content"] == "s3"
     assert req_messages[2]["content"] == "s5"
+
+
+def test_auto_model_list():
+    model_list = qianfan.ChatCompletion._supported_models()
+
+    assert model_list.get("ERNIE-99")
+    assert qianfan.ChatCompletion.get_model_info("ernie-99")

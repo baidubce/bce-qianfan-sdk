@@ -214,3 +214,12 @@ async def async_to_thread(func, /, *args, **kwargs):
     ctx = contextvars.copy_context()
     func_call = functools.partial(ctx.run, func, *args, **kwargs)
     return await loop.run_in_executor(None, func_call)
+
+
+def check_dependency(module_name: str, dependency_list: List[str]) -> None:
+    for dependency in dependency_list:
+        if not check_package_installed(dependency):
+            raise ImportError(
+                f"`{dependency}` is required for `{module_name}` module, please install"
+                f" it using `pip install qianfan[{module_name}]`"
+            )

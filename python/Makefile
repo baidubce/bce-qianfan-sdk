@@ -29,6 +29,6 @@ test: clean install
 	cd . && bash scripts/run_test.sh
 
 test_ntbk: clean install
-	cd . && bash scripts/run_test_ntbk.sh $(func_call)
+	cd . && bash scripts/run_test_ntbk.sh -f "$(func_call)" -r "$(reg)" -p "$(params)"
 
 .PHONY: build install uninstall clean 

@@ -98,20 +98,19 @@ export const getPath = ({
     endpoint?: string,
     type?: string,
 }): string => {
-    if (model && modelInfoMap && modelInfoMap[model]) {
+    if (endpoint && type) {
+        const boundary = type === 'plugin' ? '/' : '';
+        return Authentication === 'IAM'
+            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
+            : `${api_base}/${type}/${endpoint}${boundary}`;
+    }
+    else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);
         return Authentication === 'IAM'
             ? `${BASE_PATH}${modelEndpoint}`
             : `${api_base}${modelEndpoint}`;
     }
-    else if (endpoint && type) {
-        const boundary = type === 'plugin' ? '/' : ''; // 考虑将 '/' 的逻辑处理更明确化
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
-            : `${api_base}/${type}/${endpoint}${boundary}`;
-    }
-    throw new Error('Path not found');
-
+    throw new Error('invalid model or endpoint');
 };
 
 
@@ -228,4 +227,40 @@ export function calculateRetryDelay(
 export function isOpenTpm(val): boolean {
     const envToken = Number(readEnvVariable('QIANFAN_TPM_LIMIT')) ?? 0;
     return envToken > 0 || val > 0;
+}
+
+/**
+ * 将对象的键名转换为大写形式
+ *
+ * @param obj 需要转换键名的对象
+ * @returns 返回键名已转换为大写形式的新对象
+ */
+export function convertKeysToUppercase(obj) {
+    return Object.keys(obj).reduce((acc, key) => {
+        const uppercaseKey = key.toUpperCase();
+        acc[uppercaseKey] = obj[key];
+        return acc;
+    }, {});
+}
+
+/**
+ * 将给定的 model 字符串转换为大写，并将给定的 modelMap 中的键转换为大写形式
+ *
+ * @param model 需要转换为大写的字符串
+ * @param modelMap 可选的 QfLLMInfoMap 类型对象，用于转换键为大写形式
+ * @returns 返回包含转换后大写 model 字符串和转换后大写键的 modelMap 对象的对象
+ */
+export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfoMap) {
+    if (typeof model !== 'string' || model.trim() === '') {
+        return {
+            modelInfoMapUppercase: modelMap,
+            modelUppercase: '',
+        };
+    }
+    const modelInfoMapUppercase = convertKeysToUppercase(modelMap);
+    const modelUppercase = model.toUpperCase();
+    return {
+        modelInfoMapUppercase,
+        modelUppercase,
+    };
 }

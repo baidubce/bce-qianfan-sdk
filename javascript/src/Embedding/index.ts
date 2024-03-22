@@ -14,8 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {EmbeddingBody, EmbeddingResp} from '../interface';
-import {modelInfoMap, EmbeddingModel} from './utils';
-import {getPathAndBody} from '../utils';
+import {modelInfoMap} from './utils';
+import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class Eembedding extends BaseClient {
     /**
@@ -24,10 +24,11 @@ class Eembedding extends BaseClient {
      * @param model 向量化模型，默认为'Embedding-V1'
      * @returns Promise<Resp | AsyncIterable<Resp>>
      */
-    public async embedding(body: EmbeddingBody, model: EmbeddingModel = 'Embedding-V1'): Promise<EmbeddingResp> {
+    public async embedding(body: EmbeddingBody, model = 'Embedding-V1'): Promise<EmbeddingResp> {
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
+            model: modelUppercase,
+            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,

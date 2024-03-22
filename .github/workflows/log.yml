@@ -1,10 +1,9 @@
 # workflow for log pull request between two tags
-name: Python Release
+name: Python log
 
 on:
   push:
-    paths:
-      - '.github'
+  workflow_dispatch:
 
 defaults:
   run:

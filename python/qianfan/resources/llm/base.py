@@ -19,6 +19,7 @@ import concurrent.futures
 import copy
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import MINYEAR, datetime
 from typing import (
     Any,
     AsyncIterator,
@@ -37,6 +38,7 @@ from typing import (
 import qianfan.errors as errors
 from qianfan import get_config
 from qianfan.consts import Consts, DefaultValue
+from qianfan.resources.console.service import Service
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn, utils
@@ -173,7 +175,7 @@ class BaseResource(object):
             endpoint = self._endpoint
         if endpoint is None:
             model_name = self._default_model() if model is None else model
-            model_info = self._supported_models().get(model_name, None)
+            model_info = self.get_model_info(model_name)
             if model_info is None:
                 raise errors.InvalidArgumentError(
                     f"The provided model `{model}` is not in the list of supported"
@@ -369,9 +371,11 @@ class BaseResource(object):
         check user provide params
         """
         if stream is True and retry_count != 1:
-            raise errors.InvalidArgumentError(
-                "retry is not available when stream is enabled"
-            )
+            log_warn("retry is not available when stream is enabled")
+
+    @classmethod
+    def api_type(cls) -> str:
+        return ""
 
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
@@ -385,7 +389,11 @@ class BaseResource(object):
             a dict which key is preset model and value is the endpoint
 
         """
-        raise NotImplementedError
+        # raise NotImplementedError
+        if cls.api_type == "":
+            return {}
+        else:
+            return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
     def _default_model(cls) -> str:
@@ -411,8 +419,10 @@ class BaseResource(object):
         Return:
             Information of the model
         """
-        model_info = cls._supported_models().get(model)
+        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
+        model_info = model_info_list.get(model.lower())
         if model_info is None:
+            # 拿不到的话
             raise errors.InvalidArgumentError(
                 f"The provided model `{model}` is not in the list of supported models."
                 " If this is a recently added model, try using the `endpoint`"
@@ -435,16 +445,14 @@ class BaseResource(object):
         Raises:
             QianfanError: if the input is not in self._supported_models()
         """
-        if model not in self._supported_models():
+        try:
+            model_info = self.get_model_info(model)
+        except errors.InvalidArgumentError:
             if self._endpoint is not None:
                 return QfLLMInfo(endpoint=self._endpoint)
-            raise errors.InvalidArgumentError(
-                f"The provided model `{model}` is not in the list of supported models."
-                " If this is a recently added model, try using the `endpoint`"
-                " arguments and create an issue to tell us. Supported models:"
-                f" {self.models()}"
-            )
-        return self._supported_models()[model]
+            else:
+                raise
+        return model_info
 
     def _get_endpoint_from_dict(
         self, model: Optional[str], endpoint: Optional[str], stream: bool, **kwargs: Any
@@ -505,25 +513,35 @@ class BaseResource(object):
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]
-        if model is not None and model in self._supported_models():
-            model_info = self._supported_models()[model]
-            # warn if user provide unexpected arguments
-            for key in kwargs:
-                if (
-                    key not in model_info.required_keys
-                    and key not in model_info.optional_keys
-                ):
-                    log_warn(
-                        f"This key `{key}` does not seem to be a parameter that the"
-                        f" model `{model}` will accept"
-                    )
-        else:
-            default_model_info = self._supported_models()[self._default_model()]
-            if endpoint == default_model_info.endpoint:
-                model_info = default_model_info
-            else:
-                model_info = self._supported_models()[UNSPECIFIED_MODEL]
+        model_info: Optional[QfLLMInfo] = None
+        if model is not None:
+            try:
+                model_info = self.get_model_info(model)
+                # warn if user provide unexpected arguments
+                for key in kwargs:
+                    if (
+                        key not in model_info.required_keys
+                        and key not in model_info.optional_keys
+                    ):
+                        log_warn(
+                            f"This key `{key}` does not seem to be a parameter that the"
+                            f" model `{model}` will accept"
+                        )
+            except errors.InvalidArgumentError:
+                ...
 
+        if model_info is None:
+            # 使用默认模型
+            try:
+                default_model_info = self.get_model_info(self._default_model())
+                if default_model_info.endpoint == endpoint:
+                    model_info = default_model_info
+            except errors.InvalidArgumentError:
+                ...
+
+        # 非默认模型
+        if model_info is None:
+            model_info = self._supported_models()[UNSPECIFIED_MODEL]
         for key in model_info.required_keys:
             if key not in kwargs:
                 raise errors.ArgumentNotFoundError(
@@ -604,3 +622,72 @@ class BaseResource(object):
             *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
             return_exceptions=True,
         )
+
+
+# {api_type: {model_name: QfLLMInfo}}
+_runtime_models_info: Dict[str, Dict[str, QfLLMInfo]] = {}
+_last_update_time: datetime = datetime(MINYEAR, 1, 1)
+_model_infos_access_lock: threading.Lock = threading.Lock()
+
+
+def trim_prefix(s: str, prefix: str) -> str:
+    if s.startswith(prefix):
+        return s[len(prefix) :]
+    else:
+        return s
+
+
+def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
+    """
+    fetch supported models from server
+    and update the `_runtime_models_info`
+    """
+    if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
+        return {}
+
+    if get_config().ENABLE_PRIVATE:
+        # 私有化直接跳过
+        return {}
+
+    global _last_update_time
+    global _runtime_models_info
+    if (
+        datetime.now() - _last_update_time
+    ).total_seconds() > get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
+        _model_infos_access_lock.acquire()
+        if (
+            datetime.now() - _last_update_time
+        ).total_seconds() < get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
+            _model_infos_access_lock.release()
+            return _runtime_models_info
+        try:
+            svc_list = Service.list()["result"]["common"]
+        except Exception as e:
+            log_warn(f"fetch_supported_models failed: {e}")
+            _model_infos_access_lock.release()
+            _last_update_time = datetime.now()
+            return _runtime_models_info
+
+        # get preset services:
+        for s in svc_list:
+            [api_type, model_endpoint] = trim_prefix(
+                s["url"],
+                "{}{}/".format(
+                    DefaultValue.BaseURL,
+                    Consts.ModelAPIPrefix,
+                ),
+            ).split("/")
+            model_info = _runtime_models_info.get(api_type)
+            if model_info is None:
+                model_info = {}
+            model_info[s["name"]] = QfLLMInfo(
+                endpoint="/{}/{}".format(api_type, model_endpoint),
+                api_type=api_type,
+            )
+            _runtime_models_info[api_type] = model_info
+            _last_update_time = datetime.now()
+        _model_infos_access_lock.release()
+    return _runtime_models_info
+
+
+get_latest_supported_models()

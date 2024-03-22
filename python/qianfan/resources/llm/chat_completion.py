@@ -46,8 +46,8 @@ class ChatCompletion(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return {
-            "ERNIE-Bot-turbo": QfLLMInfo(
+        info_list = {
+            "ERNIE-Lite-8K-0922": QfLLMInfo(
                 endpoint="/chat/eb-instant",
                 required_keys={"messages"},
                 optional_keys={
@@ -63,7 +63,21 @@ class ChatCompletion(BaseResource):
                 max_input_chars=11200,
                 max_input_tokens=7168,
             ),
-            "ERNIE-Bot": QfLLMInfo(
+            "ERNIE-Lite-8K-0308": QfLLMInfo(
+                endpoint="/chat/ernie-lite-8k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                },
+                max_input_chars=11200,
+                max_input_tokens=7168,
+            ),
+            "ERNIE-3.5-8K": QfLLMInfo(
                 endpoint="/chat/completions",
                 required_keys={"messages"},
                 optional_keys={
@@ -85,7 +99,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Bot-4": QfLLMInfo(
+            "ERNIE-4.0-8K": QfLLMInfo(
                 endpoint="/chat/completions_pro",
                 required_keys={"messages"},
                 optional_keys={
@@ -105,7 +119,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Bot-8k": QfLLMInfo(
+            "ERNIE-Bot-8K": QfLLMInfo(
                 endpoint="/chat/ernie_bot_8k",
                 required_keys={"messages"},
                 optional_keys={
@@ -185,7 +199,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=20000,
                 max_input_tokens=5120,
             ),
-            "ERNIE-Speed": QfLLMInfo(
+            "ERNIE-Speed-8K": QfLLMInfo(
                 endpoint="/chat/ernie_speed",
                 required_keys={"messages"},
                 optional_keys={
@@ -201,8 +215,8 @@ class ChatCompletion(BaseResource):
                 max_input_chars=11200,
                 max_input_tokens=7168,
             ),
-            "ERNIE-Speed-128k": QfLLMInfo(
-                endpoint="/chat/ernie_speed",
+            "ERNIE-Speed-128K": QfLLMInfo(
+                endpoint="/chat/ernie-speed-128k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -217,23 +231,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=507904,
                 max_input_tokens=126976,
             ),
-            "ERNIE-Bot-turbo-AI": QfLLMInfo(
-                endpoint="/chat/ai_apaas",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "system",
-                    "user_id",
-                    "tools",
-                    "tool_choice",
-                },
-                max_input_chars=11200,
-                max_input_tokens=7168,
-            ),
-            "EB-turbo-AppBuilder": QfLLMInfo(
+            "ERNIE Speed-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
                 required_keys={"messages"},
                 optional_keys={
@@ -266,7 +264,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-7b-chat": QfLLMInfo(
+            "Llama-2-7B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_7b",
                 required_keys={"messages"},
                 optional_keys={
@@ -283,7 +281,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-13b-chat": QfLLMInfo(
+            "Llama-2-13B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_13b",
                 required_keys={"messages"},
                 optional_keys={
@@ -300,7 +298,7 @@ class ChatCompletion(BaseResource):
                 max_input_chars=4800,
                 max_input_tokens=None,
             ),
-            "Llama-2-70b-chat": QfLLMInfo(
+            "Llama-2-70B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_70b",
                 required_keys={"messages"},
                 optional_keys={
@@ -473,6 +471,44 @@ class ChatCompletion(BaseResource):
                 optional_keys=set(),
             ),
         }
+        # 获取最新的模型列表
+        latest_models_list = super()._supported_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+        alias = {
+            "ERNIE-Speed": "ERNIE-Speed-8K",
+            "ERNIE Speed": "ERNIE-Speed-8K",
+            "ERNIE 3.5": "ERNIE-3.5-8K",
+        }
+        for src, target in alias.items():
+            info_list[src] = info_list[target]
+
+        deprecated_alias = {
+            "ERNIE-Bot-4": "ERNIE-4.0-8K",
+            "ERNIE-Bot": "ERNIE-3.5-8K",
+            "ERNIE-Bot-turbo": "ERNIE-Lite-8K-0922",
+            "EB-turbo-AppBuilder": "ERNIE Speed-AppBuilder",
+            "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
+        }
+
+        # for m in info_list:
+        #     if m not in latest_models_list.keys():
+        #         info_list[m].deprecated = True
+
+        for src, target in deprecated_alias.items():
+            info = copy.deepcopy(info_list[target])
+            info.deprecated = True
+            info_list[src] = info
+
+        return info_list
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "chat"
 
     @classmethod
     def _default_model(cls) -> str:

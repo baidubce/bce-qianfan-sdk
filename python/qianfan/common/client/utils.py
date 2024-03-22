@@ -146,6 +146,7 @@ def list_model_callback(
     Print models of ChatCompletion and exit.
     """
     if value:
+        console = replace_logger_handler()
         cmd = ctx.command
         if cmd.name is None:
             print_error_msg("No command is specified.")
@@ -153,7 +154,13 @@ def list_model_callback(
         t = command_to_resource_type[cmd.name]
         models = t.models()
         for m in sorted(models):
-            print(m)
+            info = t.get_model_info(m)
+            if not info.deprecated:
+                console.print(m, highlight=False)
+        for m in sorted(models):
+            info = t.get_model_info(m)
+            if info.deprecated:
+                console.print(f"[s]{m} [dim](deprecated)[/]", highlight=False)
         raise typer.Exit()
 
 

@@ -19,6 +19,7 @@ package com.baidubce.qianfan;
 import com.baidubce.qianfan.core.builder.ChatBuilder;
 import com.baidubce.qianfan.core.builder.CompletionBuilder;
 import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
+import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
 import com.baidubce.qianfan.model.BaseRequest;
 import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
@@ -26,6 +27,8 @@ import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
 import com.baidubce.qianfan.model.embedding.EmbeddingRequest;
 import com.baidubce.qianfan.model.embedding.EmbeddingResponse;
+import com.baidubce.qianfan.model.image.Text2ImageRequest;
+import com.baidubce.qianfan.model.image.Text2ImageResponse;
 
 import java.util.Iterator;
 
@@ -76,6 +79,14 @@ public class Qianfan {
 
     public EmbeddingResponse embedding(EmbeddingRequest request) {
         return request(request, EmbeddingResponse.class);
+    }
+
+    public Text2ImageBuilder text2Image() {
+        return new Text2ImageBuilder(this);
+    }
+
+    public Text2ImageResponse text2Image(Text2ImageRequest request) {
+        return request(request, Text2ImageResponse.class);
     }
 
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {

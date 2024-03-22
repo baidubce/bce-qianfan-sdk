@@ -298,3 +298,31 @@ class FinetuneSupportHyperParameterCheckType(str, Enum):
     """choice type"""
     MultipleChoice: str = "mult_choice"
     """multiple choice type"""
+
+
+class ModelTypePreset(int, Enum):
+    TextGC: int = 0
+    """文本生成"""
+    ImageGC: int = 1
+    """图像生成"""
+    VectorModel: int = 4
+    """向量表示模型"""
+    Image2Text: int = 5
+    """图像理解模型"""
+    IndustryModel: int = 6
+    """行业大模型"""
+
+
+class ModelTypeUser(int, Enum):
+    LargeLanguageModel: int = 0
+    """大语言模型"""
+    Text2Image: int = 1
+    """文生图大模型"""
+    IndustrySearchModel: int = 2
+    """产业级搜索模型"""
+    TextRepresentationModel: int = 3
+    """文本表示模型"""
+    VectorModel: int = 4
+    """向量表示模型"""
+    Image2Text: int = 5
+    """图像理解模型"""

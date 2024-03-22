@@ -33,6 +33,7 @@
 # AI 原生应用相关
 
 - [Prompt 模版](./prompt.ipynb)：展示了如何使用 SDK 管理和使用 Prompt。
+- [OpenAI 适配器](./openai_adapter.ipynb)：展示了如何使用 SDK 提供的 OpenAI 适配器快速接入已经支持 OpenAI 接口的第三方库。
 
 ## Agent
 

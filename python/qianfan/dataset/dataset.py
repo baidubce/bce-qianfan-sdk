@@ -281,7 +281,7 @@ class Dataset(Table):
                 "construct a new qianfan data source from bos loading:"
                 f" {bos_load_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_from_bos_file(**bos_load_args)
+            return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
             return BosDataSource(**bos_source_args, **kwargs)
@@ -524,7 +524,9 @@ class Dataset(Table):
     @classmethod
     def create_from_pyobj(
         cls,
-        data: Union[List[Dict[str, Any]], Dict[str, List]],
+        data: Union[
+            List[Dict[str, Any]], List[List[Dict[str, Any]]], List[str], Dict[str, List]
+        ],
         schema: Optional[Schema] = None,
         **kwargs: Any,
     ) -> "Dataset":
@@ -532,7 +534,8 @@ class Dataset(Table):
         create a dataset from python dict or list
 
         Args:
-            data (Union[List[Dict[str, Any]], Dict[str, List]]):
+            data (Union[List[Dict[str, Any]],
+                List[List[Dict[str, Any]]], List[str], Dict[str, List]]):
                 python object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None
@@ -1136,10 +1139,11 @@ class Dataset(Table):
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
         does_show_latency: bool = True,
+        output_prettified: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
-        using arguments to init an llm instance
+        using arguments to init a llm instance
         and get output on current dataset from it
         set only model arguments our service arguments to instantiating
 
@@ -1160,6 +1164,11 @@ class Dataset(Table):
                 it will contains request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
                 Default to True
+            output_prettified (bool):
+                whether the result dataset should be prettified before return.
+                Note: after set this arguments True, the function will
+                return a Dataset which is saved on disk.
+                Default to True, this default value makes function backward-compatible.
             **kwargs (Any):
                 optional argument dict
 
@@ -1168,7 +1177,9 @@ class Dataset(Table):
         """
 
         if model_version_id:
-            return self._batch_inference_on_model(model_version_id, **kwargs)
+            return self._batch_inference_on_model(
+                model_version_id, output_prettified, **kwargs
+            )
         elif service_model or service_endpoint:
             return self._batch_inference_on_service(
                 service_model,
@@ -1189,10 +1200,11 @@ class Dataset(Table):
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
         does_show_latency: bool = True,
+        output_prettified: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
         """
-        using arguments to init an llm instance
+        using arguments to init a llm instance
         and get output on current dataset from it asynchronously
         set only model arguments our service arguments to instantiating
 
@@ -1213,6 +1225,11 @@ class Dataset(Table):
                 it will contains request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
                 Default to True
+            output_prettified (bool):
+                whether the result dataset should be prettified before return.
+                Note: after set this arguments True, the function will
+                return a Dataset which is saved on disk.
+                Default to True, this default value makes function backward-compatible.
             **kwargs (Any):
                 optional argument dict
 
@@ -1221,7 +1238,9 @@ class Dataset(Table):
         """
 
         if model_version_id:
-            return self._batch_inference_on_model(model_version_id, **kwargs)
+            return self._batch_inference_on_model(
+                model_version_id, output_prettified, **kwargs
+            )
         elif service_model or service_endpoint:
             return await self._async_batch_inference_on_service(
                 service_model,
@@ -1236,7 +1255,7 @@ class Dataset(Table):
             raise ValueError(err_msg)
 
     def _batch_inference_on_model(
-        self, model_version_id: str, **kwargs: Any
+        self, model_version_id: str, output_prettified: bool, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
@@ -1245,6 +1264,8 @@ class Dataset(Table):
         Parameters:
             model_version_id (str):
                 version id of your own model, default to None
+            output_prettified (bool):
+                whether prettified output dataset content
             **kwargs (Any):
                 Arbitrary keyword arguments
 
@@ -1269,7 +1290,7 @@ class Dataset(Table):
         )
 
         result_dataset = Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
-        if result_dataset.is_dataset_located_in_qianfan():
+        if not output_prettified and result_dataset.is_dataset_located_in_qianfan():
             return result_dataset
 
         result_dataset.unpack()

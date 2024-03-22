@@ -30,6 +30,8 @@ implementation("com.baidubce:qianfan:0.0.1")
 implementation 'com.baidubce:qianfan:0.0.1'
 ```
 
+> 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
+
 ## 如何使用
 
 ### 鉴权
@@ -135,4 +137,15 @@ response.getData().forEach(data -> {
     System.out.println(inputs.get(data.getIndex()));
     System.out.println(data.getEmbedding());
 });
+```
+
+### 文生图
+
+千帆 SDK 支持调用文生图模型，将输入文本转化为图片。
+
+```java
+Text2ImageResponse response = new Qianfan().text2Image()
+        .prompt("cute cat")
+        .execute();
+System.out.println(response.getData().get(0).getB64Image());
 ```

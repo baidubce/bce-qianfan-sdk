@@ -88,12 +88,16 @@ def json_response(data, request_id=None, status_code=200):
     """
     wrapper of the response
     """
-
+    request_body = request.get_data().decode("utf-8")
+    try:
+        request_body = request.json
+    except Exception:
+        pass
     resp = flask.Response(
         json.dumps(
             {
                 **data,
-                "_request": request.json,
+                "_request": request_body,
                 "_params": request.args,
                 "_header": dict(request.headers),
             }
@@ -1867,6 +1871,15 @@ def list_service():
     mock create service api
     """
     services = [
+        {
+            "name": "ERNIE-99",
+            "url": (
+                "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb99"
+            ),
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
         {
             "name": "ERNIE-Bot 4.0",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
@@ -3858,6 +3871,48 @@ def prompt_evaluate_summary():
             "success": True,
         }
     )
+
+
+@app.route(Consts.ChargeAPI, methods=["POST"])
+@iam_auth_checker
+def rpm_related_api():
+    """
+    process all query of rpm related
+    """
+
+    action = request.args["Action"]
+    if action == "PurchaseTPMResource":
+        return json_response(
+            {
+                "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+                "result": {"instanceId": "44961088f5xxxxx79f5daf"},
+            }
+        )
+
+    if action == "DescribeTPMResource":
+        return json_response(
+            {
+                "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+                "result": {
+                    "instances": [
+                        {
+                            "instanceId": "a0085162fxxxx0ad19e58e",
+                            "paymentTiming": "Postpaid",
+                            "rpm": 33,
+                            "tpm": 10000,
+                            "status": "Running",
+                            "startTime": "2024-02-26T10:00:00Z",
+                            "expiredTime": "-",
+                        }
+                    ]
+                },
+            }
+        )
+
+    if action == "ReleaseTPMResource":
+        return json_response(
+            {"requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4", "result": True}
+        )
 
 
 def _start_mock_server():

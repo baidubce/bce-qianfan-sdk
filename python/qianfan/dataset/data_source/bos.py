@@ -17,6 +17,7 @@ bos data source implementation including uploading / downloading
 
 import json
 import os
+import shutil
 from typing import Any, Dict, Optional
 
 import dateutil.parser
@@ -31,8 +32,10 @@ from qianfan.dataset.consts import (
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
+    _collect_all_images_and_annotations_in_one_folder,
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_from_zip,
+    _read_all_image_from_zip,
     zip_file_or_folder,
 )
 from qianfan.dataset.table import Table
@@ -56,6 +59,7 @@ class BosDataSource(DataSource, BaseModel):
         table: Table,
         should_save_as_zip_file: bool = False,
         should_overwrite_existed_file: bool = False,
+        should_use_qianfan_special_jsonl_format: bool = False,
         **kwargs: Any,
     ) -> bool:
         """
@@ -73,12 +77,28 @@ class BosDataSource(DataSource, BaseModel):
             should_overwrite_existed_file (bool):
                 should bos data source overwrite existed file when save data,
                 default to False
+            should_use_qianfan_special_jsonl_format (bool):
+                whether bos should use the special format for uploaded
+                jsonl file, default to False, only available when file format is jsonl.
+                if you want to use uploaded file as training set, please set
+                this bool value.
             **kwargs (Any):
                 optional arguments
 
         Returns:
             bool: is saving successful
         """
+        # 特判一下，防止用户手滑设置了出现意外情况
+        if (
+            should_use_qianfan_special_jsonl_format
+            and self.format_type() != FormatType.Jsonl
+        ):
+            should_use_qianfan_special_jsonl_format = False
+
+        # 如果是文生图，则需要强制上压缩包
+        if self.format_type() == FormatType.Text2Image:
+            should_save_as_zip_file = True
+
         assert self.ak
         assert self.sk
         assert self.file_format
@@ -125,11 +145,29 @@ class BosDataSource(DataSource, BaseModel):
             self._get_specific_uploading_cache_path(),
             os.path.split(final_bos_file_path)[1],
         )
-        FileDataSource(
-            path=local_file_path,
-            file_format=self.format_type(),
-            save_as_folder=should_save_as_zip_file,
-        ).save(table)
+
+        # 在特定情况下修改格式
+        if table.is_dataset_grouped() and should_use_qianfan_special_jsonl_format:
+            table.pack()
+
+        if self.format_type() != FormatType.Text2Image:
+            FileDataSource(
+                path=local_file_path,
+                file_format=self.format_type(),
+                save_as_folder=should_save_as_zip_file,
+            ).save(
+                table,
+                use_qianfan_special_jsonl_format=should_use_qianfan_special_jsonl_format,
+                **kwargs,
+            )
+        else:
+            # 不同于千帆数据源会随机生成一个 UUID 拼接在文件名中
+            # 这里需要手动删除上一次的中转文件夹
+            # 避免重名带来的影响
+            shutil.rmtree(local_file_path, ignore_errors=True)
+            _collect_all_images_and_annotations_in_one_folder(
+                table.inner_table, local_file_path
+            )
 
         # 打压缩包
         if should_save_as_zip_file:
@@ -174,10 +212,16 @@ class BosDataSource(DataSource, BaseModel):
 
         return cache_path
 
-    def _check_bos_file_cache(self, bos_helper: BosHelper) -> bool:
+    def _get_downloaded_content_cache_path(self) -> str:
         cache_path = self._get_specific_downloading_cache_path()
+        return os.path.join(cache_path, "content")
 
-        meta_info_path = os.path.join(cache_path, "info.json")
+    def _get_downloaded_content_metainfo_path(self) -> str:
+        cache_path = self._get_specific_downloading_cache_path()
+        return os.path.join(cache_path, "info.json")
+
+    def _check_bos_file_cache(self, bos_helper: BosHelper) -> bool:
+        meta_info_path = self._get_downloaded_content_metainfo_path()
         if not os.path.exists(meta_info_path):
             return False
 
@@ -196,9 +240,8 @@ class BosDataSource(DataSource, BaseModel):
         return cache_last_modified_time >= new_last_modified_time
 
     def _update_file_cache(self, bos_helper: BosHelper) -> None:
-        cache_path = self._get_specific_downloading_cache_path()
-        cache_content_path = os.path.join(cache_path, "content")
-        cache_meta_info_path = os.path.join(cache_path, "info.json")
+        cache_content_path = self._get_downloaded_content_cache_path()
+        cache_meta_info_path = self._get_downloaded_content_metainfo_path()
 
         bos_helper.get_object_as_file(
             self.bucket, self.bos_file_path, cache_content_path
@@ -211,8 +254,10 @@ class BosDataSource(DataSource, BaseModel):
         return
 
     def _read_from_cache(self, is_read_from_zip: bool, **kwargs: Any) -> pyarrow.Table:
-        cache_path = self._get_specific_downloading_cache_path()
-        cache_content_path = os.path.join(cache_path, "content")
+        cache_content_path = self._get_downloaded_content_cache_path()
+
+        if self.format_type() == FormatType.Text2Image:
+            return _read_all_image_from_zip(cache_content_path)
 
         if is_read_from_zip:
             return _read_all_file_from_zip(

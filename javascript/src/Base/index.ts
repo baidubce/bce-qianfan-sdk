@@ -144,22 +144,20 @@ export class BaseClient {
 
         // 计算请求token
         const tokens = this.tokenLimiter.calculateTokens(requestBody);
-        const hasToken = this.tokenLimiter.acquireTokens(tokens);
+        const hasToken = await this.tokenLimiter.acquireTokens(tokens);
         // 满足token限制
         if (hasToken) {
             try {
                 const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
                 const val = this.getTpmHeader(resp.headers);
+                let usedTokens = 0;
                 if (stream) {
-                    let usedTokens = 0;
                     const sseStream = Stream.fromSSEResponse(resp, this.controller);
                     if (isOpenTpm(val)) {
                         setTimeout(() => {
                             sseStream.on('data', data => {
                                 if (data.is_end) {
                                     usedTokens = data?.usage?.total_tokens;
-                                    // 数据流结束后更新token
-                                    this.tokenLimiter.acquireTokens(usedTokens - tokens).catch(console.error);
                                 }
                             });
                         }, 0);
@@ -167,8 +165,8 @@ export class BaseClient {
                     return sseStream as AsyncIterableType;
                 }
                 const data = await resp.json();
-                const total_tokens = this.getUsedTokens(data);
-                await this.tokenLimiter.acquireTokens(total_tokens - tokens);
+                usedTokens = this.getUsedTokens(data);
+                await this.tokenLimiter.acquireTokens(usedTokens - tokens);
                 return data as any;
 
             }

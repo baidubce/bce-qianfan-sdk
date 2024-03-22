@@ -26,25 +26,38 @@ class RateLimiter {
             = this.safeParseInt(queryPerSecond) ?? Number(readEnvVariable('QIANFAN_QPS_LIMIT'));
         this.rpm
             = this.safeParseInt(requestPerMinute) ?? Number(readEnvVariable('QIANFAN_RPM_LIMIT'));
-        this.bufferRatio = bufferRatio;
+        this.bufferRatio = Math.min(Math.max(bufferRatio, 0), 1); // 保证bufferRatio在[0, 1]范围内
 
         this.initializeLimiter();
     }
 
     private initializeLimiter(): void {
-        let minTime = Infinity; // 初始化为Infinity以确保能被后续计算正确更新
-
-        if (this.qps) {
-            minTime = Math.min(minTime, 1000 / (this.qps * (1 - this.bufferRatio)));
+        // 如果两者都未设置，则不应用限流
+        if (!this.qps && !this.rpm) {
+            this.limiter = new Bottleneck({
+                minTime: 0,
+                highWater: -1,
+                strategy: Bottleneck.strategy.OVERFLOW,
+            });
+            return;
         }
-        if (this.rpm) {
-            minTime = Math.min(minTime, 60000 / (this.rpm * (1 - this.bufferRatio)));
+        let minTime = Number.MAX_SAFE_INTEGER;
+        if (this.qps > 0) {
+            minTime = Math.min(minTime, 1000 / this.qps);
         }
+        if (this.rpm > 0) {
+            minTime = Math.min(minTime, 60000 / this.rpm);
+        }
+        // 确保 minTime 是一个合理的值
+        minTime = Math.max(minTime, 0);
 
         this.limiter = new Bottleneck({
             minTime: minTime,
+            highWater: -1,
+            strategy: Bottleneck.strategy.OVERFLOW,
         });
     }
+
 
     /**
      * 使用限流器调度函数执行
@@ -78,12 +91,8 @@ class RateLimiter {
             return;
         }
         const parsedValue = Number.parseInt(String(value), 10);
-        if (isNaN(parsedValue)) {
+        if (isNaN(parsedValue) || parsedValue < 0) {
             console.warn(`Invalid value for ${envVarName}: ${value}. Using undefined.`);
-            return undefined;
-        }
-        if (parsedValue < 0) {
-            console.warn(`Negative value for ${envVarName}: ${value}. Using undefined.`);
             return undefined;
         }
         return parsedValue;

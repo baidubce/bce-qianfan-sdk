@@ -110,38 +110,37 @@ class TokenLimiter {
      */
     public async resetTokens(totalTokens: number): Promise<void> {
         let unlock: () => void;
-        if (this.hasReset) {
-            return;
-        }
-
-        unlock = await this.mutex.lock();
-
-        if (this.hasReset) {
-            unlock();
-            return;
-        }
-
-        const originalTokenLimitPerMinute = this.maxTokens || 0;
-
-        if (originalTokenLimitPerMinute === totalTokens) {
+        try {
+            unlock = await this.mutex.lock();
+            if (this.hasReset) {
+                unlock();
+                return;
+            }
+            // 检查如果传入的totalTokens与当前最大令牌数一致，则不做改变
+            if (this.maxTokens === totalTokens) {
+                return;
+            }
+            // 之前未设置过token
+            if (this.maxTokens > 0) {
+                totalTokens = Math.min(this.maxTokens, totalTokens);
+            }
+            const originalTokenCurrent = this.tokens;
+            const originalTokenMax = this.maxTokens;
+            const diff = originalTokenMax - originalTokenCurrent;
+            // 重新设置最大令牌数，同时考虑缓冲区比率
+            this.maxTokens = Math.floor(totalTokens * (1 - this.bufferRatio));
+            this.tokens = Math.max(this.maxTokens - diff, 0);
+            this.lastRefreshTime = new Date();
             this.hasReset = true;
-            unlock();
-            return;
         }
-
-        totalTokens = Math.min(originalTokenLimitPerMinute, totalTokens);
-        totalTokens = Math.max(totalTokens, 0);
-
-        const originalTokenCurrent = this.tokens;
-        const originalTokenMax = this.maxTokens;
-
-        const diff = originalTokenMax - originalTokenCurrent;
-
-        this.maxTokens = Math.floor(totalTokens * (1 - this.bufferRatio));
-        this.tokens = Math.max(this.maxTokens - diff, 0);
-
-        this.hasReset = true;
-        unlock();
+        catch (error) {
+            console.error('Error resetting tokens:', error);
+        }
+        finally {
+            if (unlock) {
+                unlock();
+            }
+        }
     }
 
     /**

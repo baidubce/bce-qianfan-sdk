@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {APIErrorCode} from './enum';
+import {DefaultConfig} from './interface';
 
 export const BASE_PATH = '/rpc/2.0/ai_custom/v1/wenxinworkshop';
 export const DEFAULT_HEADERS = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
 };
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: DefaultConfig = {
     QIANFAN_AK: '',
     QIANFAN_SK: '',
     QIANFAN_ACCESS_KEY: '',
@@ -28,6 +29,9 @@ export const DEFAULT_CONFIG = {
     QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: '0',
     QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: '120000',
     QIANFAN_LLM_API_RETRY_COUNT: '1',
+    QIANFAN_QPS_LIMIT: '',
+    QIANFAN_RPM_LIMIT: '',
+    QIANFAN_TPM_LIMIT: '',
 };
 
 export const RETRY_CODE = [

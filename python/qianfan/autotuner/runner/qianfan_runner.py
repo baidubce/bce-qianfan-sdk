@@ -22,6 +22,7 @@ from qianfan.autotuner.runner.base import InferRunner
 from qianfan.common.prompt.prompt import Prompt
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
+from qianfan.utils.utils import async_to_thread
 
 price_list = {
     "ERNIE-Bot-turbo": (0.008, 0.008),
@@ -98,7 +99,7 @@ class QianfanRunner(InferRunner):
             input = res["input"]
             output = res["output"]
             expect = res["expect"]
-            eval_metrics = await asyncio.to_thread(
+            eval_metrics = await async_to_thread(
                 self.evaluator.evaluate, input, expect, output
             )
 

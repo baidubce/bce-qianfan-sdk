@@ -198,3 +198,19 @@ def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
         if name.endswith(suffix):
             return name[: -len(suffix)]
     return name
+
+
+async def async_to_thread(func, /, *args, **kwargs):
+    """Asynchronously run function *func* in a separate thread.
+
+    This is copy of asyncio.to_thread, since this function is only available after
+    python 3.9.
+    """
+    import asyncio
+    import contextvars
+    import functools
+
+    loop = asyncio.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(None, func_call)

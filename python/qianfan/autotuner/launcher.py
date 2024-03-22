@@ -17,6 +17,7 @@ import asyncio
 from qianfan.autotuner.context import Context
 from qianfan.autotuner.runner.base import Runner
 from qianfan.autotuner.suggestor.base import Suggestor
+from qianfan.utils.logging import log_info
 
 
 class Launcher(object):
@@ -27,11 +28,17 @@ class Launcher(object):
         context = Context()
 
         while True:
+            log_info(f"turn {context.current_turn} started...")
+
             is_end, config_list = await suggestor.next(context)
             if is_end:
+                log_info("tuning finished!")
                 best_config = await suggestor.best(context)
+                log_info(f"best config: {best_config}")
                 context.set_best_result(best_config)
+
                 break
+            log_info(f"suggested config list: {config_list}")
             task_list = [runner.run(config, context) for config in config_list]
 
             res = await asyncio.gather(*task_list)

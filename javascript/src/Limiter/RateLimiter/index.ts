@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Bottleneck from 'bottleneck';
+import Mutex from 'await-mutex';
 import {readEnvVariable} from '../../utils';
 
 class RateLimiter {
@@ -20,6 +21,8 @@ class RateLimiter {
     protected qps?: number;
     protected rpm?: number;
     protected bufferRatio: number;
+    private hasReset: boolean;
+    private mutex: Mutex;
 
     constructor(queryPerSecond?: number, requestPerMinute?: number, bufferRatio: number = 0.1) {
         this.qps
@@ -27,7 +30,8 @@ class RateLimiter {
         this.rpm
             = this.safeParseInt(requestPerMinute) ?? Number(readEnvVariable('QIANFAN_RPM_LIMIT'));
         this.bufferRatio = Math.min(Math.max(bufferRatio, 0), 1); // 保证bufferRatio在[0, 1]范围内
-
+        this.mutex = new Mutex();
+        this.hasReset = false;
         this.initializeLimiter();
     }
 
@@ -74,9 +78,28 @@ class RateLimiter {
      *
      * @param requestPerMinute 每分钟请求次数，可选参数
      */
-    updateLimits(requestPerMinute: number): void {
-        this.rpm = this.safeParseInt(requestPerMinute, 'QIANFAN_RPM_LIMIT') ?? this.rpm;
-        this.initializeLimiter();
+    async updateLimits(requestPerMinute: number): Promise<void> {
+        let unlock: () => void;
+        try {
+            if (this.hasReset) {
+                return;
+            }
+            unlock = await this.mutex.lock();
+            if (requestPerMinute <= 0) {
+                throw new Error('请求次数必须为正数');
+            }
+            this.rpm = this.safeParseInt(requestPerMinute, 'QIANFAN_RPM_LIMIT') ?? this.rpm;
+            this.initializeLimiter();
+            this.hasReset = true;
+        }
+        catch (error) {
+            console.error('更新限制失败:', error);
+        }
+        finally {
+            if (unlock) {
+                unlock();
+            }
+        }
     }
 
     /**

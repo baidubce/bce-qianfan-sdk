@@ -18,7 +18,7 @@ import {TokenLimiter} from '../Limiter';
 import {DEFAULT_HEADERS} from '../constant';
 import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay, isOpenTpm} from '../utils';
 import {Stream} from '../streaming';
-import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
+import {Resp, AsyncIterableType, AccessTokenResp, RespBase} from '../interface';
 
 export class BaseClient {
     protected controller: AbortController;
@@ -153,22 +153,28 @@ export class BaseClient {
                 let usedTokens = 0;
                 if (stream) {
                     const sseStream = Stream.fromSSEResponse(resp, this.controller);
+                    const [stream1, stream2] = sseStream.tee();
                     if (isOpenTpm(val)) {
-                        setTimeout(() => {
-                            sseStream.on('data', data => {
-                                if (data.is_end) {
-                                    usedTokens = data?.usage?.total_tokens;
+                        const updateTokensAsync = async () => {
+                            for await (const data of stream1) {
+                                const typedData = data as RespBase;
+                                if (typedData.is_end) {
+                                    usedTokens = typedData?.usage?.total_tokens;
+                                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
+                                    break;
                                 }
-                            });
-                        }, 0);
+                            }
+                        };
+                        setTimeout(updateTokensAsync, 0);
                     }
-                    return sseStream as AsyncIterableType;
+                    return stream2 as AsyncIterableType;
                 }
                 const data = await resp.json();
-                usedTokens = this.getUsedTokens(data);
-                await this.tokenLimiter.acquireTokens(usedTokens - tokens);
+                setTimeout(async () => {
+                    usedTokens = this.getUsedTokens(data);
+                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
+                }, 0);
                 return data as any;
-
             }
             catch (error) {
                 throw error;

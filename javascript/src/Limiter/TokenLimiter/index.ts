@@ -21,38 +21,46 @@ class TokenLimiter {
     private lastRefreshTime: Date;
     private mutex: Mutex;
     private bufferRatio: number;
-    private envMaxTokens: number;
+    private initialMaxTokens: number;
     private hasReset: boolean;
     private readonly currentTime: () => Date = () => new Date();
 
     constructor(maxTokensPerMinute?: number, bufferRatio: number = 0.1) {
-        this.bufferRatio = bufferRatio;
+        this.bufferRatio = Math.min(Math.max(bufferRatio, 0), 1); // 保证bufferRatio在[0, 1]范围内
         // 使用局部变量缓存环境变量读取结果，避免多次读取
-        this.envMaxTokens = Number(readEnvVariable('QIANFAN_TPM_LIMIT')) || 0;
-        const initialMaxTokens = maxTokensPerMinute ?? this.envMaxTokens;
+        const envMaxTokens = Number(readEnvVariable('QIANFAN_TPM_LIMIT')) || 0;
+        this.initialMaxTokens = maxTokensPerMinute ?? envMaxTokens;
         // 如果未指定最大令牌数且环境变量也未定义，则不执行令牌限制
-        if (!initialMaxTokens) {
+        if (!this.initialMaxTokens) {
             this.maxTokens = 0; // 设置为0表示无限制
         }
         else {
             // 使用缓冲区比率调整最大令牌数
-            this.maxTokens = Math.floor(initialMaxTokens * (1 - this.bufferRatio));
+            this.maxTokens = Math.floor(this.initialMaxTokens * (1 - this.bufferRatio));
         }
         this.tokens = this.maxTokens;
         this.lastRefreshTime = new Date();
+        this.hasReset = false;
         this.mutex = new Mutex();
     }
 
     /**
-     * 刷新令牌
-     * 检查是否过了一分钟，并在需要时刷新令牌。
+     * 获取当前时间所在分钟的开始时间戳
+     * @returns {number} 返回当前时间所在分钟的开始时间戳（毫秒）
+     */
+    private getTimeAtLastMinute(): number {
+        return Math.floor(this.currentTime().getTime() / 60000) * 60000;
+    }
+
+    /**
+     * 整分刷新令牌
      * @returns Promise<void>
      */
     private async refreshTokens(): Promise<void> {
-        const now = this.currentTime();
-        if (now.getTime() - this.lastRefreshTime.getTime() >= 60000) {
+        const nowAtMinute = this.getTimeAtLastMinute();
+        if (nowAtMinute !== this.lastRefreshTime.getTime()) {
             this.tokens = this.maxTokens;
-            this.lastRefreshTime = now;
+            this.lastRefreshTime = new Date(nowAtMinute);
         }
     }
 
@@ -111,16 +119,15 @@ class TokenLimiter {
     public async resetTokens(totalTokens: number): Promise<void> {
         let unlock: () => void;
         try {
-            unlock = await this.mutex.lock();
             if (this.hasReset) {
-                unlock();
                 return;
             }
+            unlock = await this.mutex.lock();
             // 检查如果传入的totalTokens与当前最大令牌数一致，则不做改变
-            if (this.maxTokens === totalTokens) {
+            if (this.initialMaxTokens === totalTokens) {
                 return;
             }
-            // 之前未设置过token
+            // 之前设置过token
             if (this.maxTokens > 0) {
                 totalTokens = Math.min(this.maxTokens, totalTokens);
             }

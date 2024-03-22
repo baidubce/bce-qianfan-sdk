@@ -460,7 +460,7 @@ ModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
         model="ERNIE-Speed-8K",
         short_name="ERNIE_Speed",
-        base_model_type="ERNIE-Speed",
+        base_model_type="ERNIE Speed",
         support_peft_types=[PeftType.ALL, PeftType.LoRA],
         common_params_limit=TrainLimit(
             batch_size=(1, 4),

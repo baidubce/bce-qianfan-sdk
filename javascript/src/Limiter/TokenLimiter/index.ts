@@ -123,6 +123,9 @@ class TokenLimiter {
                 return;
             }
             unlock = await this.mutex.lock();
+            if (this.hasReset) {
+                return;
+            }
             // 检查如果传入的totalTokens与当前最大令牌数一致，则不做改变
             if (this.initialMaxTokens === totalTokens) {
                 return;

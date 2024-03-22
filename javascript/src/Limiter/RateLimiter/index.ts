@@ -85,6 +85,13 @@ class RateLimiter {
                 return;
             }
             unlock = await this.mutex.lock();
+            // 防止多个任务同时更新限制
+            if (this.hasReset) {
+                return;
+            }
+            if (this.hasReset) {
+                return;
+            }
             if (requestPerMinute <= 0) {
                 throw new Error('请求次数必须为正数');
             }

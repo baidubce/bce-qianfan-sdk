@@ -688,6 +688,3 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
             _last_update_time = datetime.now()
         _model_infos_access_lock.release()
     return _runtime_models_info
-
-
-get_latest_supported_models()

@@ -211,7 +211,6 @@ async def async_to_thread(func: Callable[..., _T], /, *args: Any, **kwargs: Any)
     import contextvars
     import functools
 
-    asyncio.to_thread
     loop = asyncio.get_running_loop()
     ctx = contextvars.copy_context()
     func_call = functools.partial(ctx.run, func, *args, **kwargs)

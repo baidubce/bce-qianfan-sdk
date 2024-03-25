@@ -13,9 +13,9 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {modelInfoMap, Image2TextModel} from './utilts';
+import {modelInfoMap} from './utilts';
 import {PluginsBody, PluginsResp, YiYanPluginBody} from '../interface';
-import {getPathAndBody} from '../utils';
+import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class Plugin extends BaseClient {
     /**
@@ -26,12 +26,13 @@ class Plugin extends BaseClient {
      */
     public async plugins(
         body: PluginsBody | YiYanPluginBody,
-        model: Image2TextModel = 'EBPluginV2',
+        model = 'EBPluginV2'
     ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
         const stream = body.stream ?? false;
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
+            model: modelUppercase,
+            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,

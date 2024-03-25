@@ -18,6 +18,17 @@ import {QfLLMInfoMap} from '../interface';
  * 对话请求公共服务模型列表
  */
 export type ChatModel =
+    | 'ERNIE-4.0-8K'
+    | 'ERNIE-3.5-8K'
+    | 'ERNIE-3.5-8K-0205'
+    | 'ERNIE-3.5-8K-1222'
+    | 'ERNIE-3.5-4K-0205'
+    | 'ERNIE-Speed-128K'
+    | 'ERNIE-Lite-8K-0922'
+    | 'ERNIE-Lite-8K-0308'
+    | 'ERNIE Speed-AppBuilder'
+    | 'Gemma-7B-it'
+    | 'Mixtral-8x7B-Instruct'
     | 'ERNIE-Bot-turbo'
     | 'ERNIE-Bot'
     | 'ERNIE-Bot-4'
@@ -40,8 +51,176 @@ export type ChatModel =
     | 'Yi-34B-Chat'
 
 export const modelInfoMap: QfLLMInfoMap = {
+    'ERNIE-4.0-8K': {
+        endpoint: '/chat/completions_pro',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-3.5-8K': {
+        endpoint: '/chat/completions',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-3.5-8K-0205': {
+        endpoint: '/chat/ERNIE-3.5-8K-0205',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-3.5-8K-1222': {
+        endpoint: '/chat/ernie-3.5-8k-1222',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-3.5-4K-0205': {
+        endpoint: '/chat/ernie-3.5-4k-0205',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE Speed-AppBuilder': {
+        endpoint: '/chat/ai_apaas',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'Gemma-7B-it': {
+        endpoint: '/chat/gemma_7b_it',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
     'ERNIE-Bot-turbo': {
         endpoint: '/chat/eb-instant',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-Speed-8K': {
+        endpoint: '/chat/ernie_speed',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-Speed-128K': {
+        endpoint: '/chat/ernie-speed-128k',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-Lite-8K-0922': {
+        endpoint: '/chat/eb-instant',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'ERNIE-Lite-8K-0308': {
+        endpoint: '/chat/ernie-lite-8k',
+        required_keys: ['messages'],
+        optional_keys: [
+            'stream',
+            'temperature',
+            'top_p',
+            'penalty_score',
+            'user_id',
+            'tools',
+            'tool_choice',
+            'system',
+        ],
+    },
+    'Mixtral-8x7B-Instruct': {
+        endpoint: '/chat/mixtral_8x7b_instruct',
         required_keys: ['messages'],
         optional_keys: [
             'stream',

@@ -265,3 +265,44 @@ async def test_reset_once_async():
     assert rpm_rl._is_rpm
     assert rpm_rl._new_request_per_minute == 200
     assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180
+
+
+def test_reset_once_from_closed():
+    rpm_rl = VersatileRateLimiter()
+
+    assert rpm_rl.is_closed
+
+    def _reset_once():
+        rpm_rl.reset_once(200)
+
+    t_list = []
+    for i in range(5):
+        t = threading.Thread(target=_reset_once)
+        t.start()
+        t_list.append(t)
+
+    for t in t_list:
+        t.join()
+
+    assert rpm_rl._has_been_reset
+    assert rpm_rl._is_rpm
+    assert rpm_rl._new_request_per_minute == 200
+    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180
+
+
+@pytest.mark.asyncio
+async def test_reset_once_async_from_closed():
+    rpm_rl = VersatileRateLimiter()
+
+    assert rpm_rl.is_closed
+
+    awaitable_list = []
+    for i in range(5):
+        awaitable_list.append(asyncio.create_task(rpm_rl.async_reset_once(200)))
+
+    await asyncio.wait(awaitable_list)
+
+    assert rpm_rl._has_been_reset
+    assert rpm_rl._is_rpm
+    assert rpm_rl._new_request_per_minute == 200
+    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180

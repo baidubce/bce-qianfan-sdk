@@ -26,6 +26,7 @@ jobs:
           REPO: ${{ github.repository }}
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
-          bash ./scripts/release_note.sh python
-          echo "::set-output name=pr_collection::$(cat ./scripts/release_note.txt)"
+          cd ./scripts
+          bash ./release_note.sh python
+          echo "::set-output name=pr_collection::$(cat release_note.txt)"
           

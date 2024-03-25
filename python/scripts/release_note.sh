@@ -108,6 +108,7 @@ for i in $(cat g.txt | sort | uniq); do
 done
 
 echo "$(pwd)"
+echo "$(ls)"
 
 #release_note=$(cat release_note.txt)
 

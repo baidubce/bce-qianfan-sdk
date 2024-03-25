@@ -21,10 +21,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: get pr collection
-        id: pr_collection
         run: |
-          bash ./scripts/release_note.sh python
-          echo "::set-output name=pr_collection::$(cat ./scripts/release_note.txt)"
-      - name: show log
-        run: |
-          echo ${{ steps.pr_collection.outputs.pr_collection }}
+          echo ${{ github.repository }}
+#      - name: get pr collection
+#        id: pr_collection
+#        env:
+#          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
+#        run: |
+#          bash ./scripts/release_note.sh python
+#          echo "::set-output name=pr_collection::$(cat ./scripts/release_note.txt)"
+          

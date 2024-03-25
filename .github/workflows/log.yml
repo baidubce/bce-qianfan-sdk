@@ -37,10 +37,11 @@ jobs:
             https://api.github.com/repos/baidubce/bce-qianfan-sdk/pulls > pr.json
             echo "::set-output name=log_file::$(pwd)/pr.json"
       - name: show log
-        run: |  # 打印json格式的log_file的labels属性
+        run: |
             echo "${{ steps.label.outputs.log_file }}"
             echo "${{ fromJson(steps.label.outputs.log_file) }}"
             echo "${{ fromJson(steps.label.outputs.log_file)[0].labels[0].name }}"
+# 打印json格式的log_file的labels属性
 #          echo "::set-output name=log_file::$(pwd)/log.txt"
 #        id: log
 #        shell: bash

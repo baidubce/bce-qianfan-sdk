@@ -38,7 +38,9 @@ jobs:
             echo "::set-output name=log_file::$(pwd)/pr.json"
       - name: show log
         run: |  # 打印json格式的log_file的labels属性
-          echo ${{ fromJson(steps.label.outputs.log_file)[0].labels[0].name }}
+            echo "${{ steps.label.outputs.log_file }}"
+            echo "${{ fromJson(steps.label.outputs.log_file) }}"
+            echo "${{ fromJson(steps.label.outputs.log_file)[0].labels[0].name }}"
 #          echo "::set-output name=log_file::$(pwd)/log.txt"
 #        id: log
 #        shell: bash

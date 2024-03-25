@@ -198,3 +198,12 @@ def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
         if name.endswith(suffix):
             return name[: -len(suffix)]
     return name
+
+
+def check_dependency(module_name: str, dependency_list: List[str]) -> None:
+    for dependency in dependency_list:
+        if not check_package_installed(dependency):
+            raise ImportError(
+                f"`{dependency}` is required for `{module_name}` module, please install"
+                f" it using `pip install qianfan[{module_name}]`"
+            )

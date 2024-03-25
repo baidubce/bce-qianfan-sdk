@@ -19,7 +19,7 @@ from semantic_kernel.connectors.ai.ai_request_settings import AIRequestSettings
 
 class QianfanRequestSettings(AIRequestSettings):
     ai_model_id: Optional[str] = Field(None, serialization_alias="model")
-    temperature: float = Field(0.95, g=0.0, le=1.0)
+    temperature: float = Field(0.95, gt=0.0, le=1.0)
     top_p: Optional[float] = None
     top_k: Optional[int] = None
     stream: Optional[bool] = None

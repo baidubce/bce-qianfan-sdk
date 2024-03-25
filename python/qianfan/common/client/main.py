@@ -15,6 +15,7 @@
 from typing import Optional
 
 import click
+import rich.markup
 import typer
 from typer.completion import completion_init, install_callback, show_callback
 
@@ -27,7 +28,7 @@ from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import print_error_msg
+from qianfan.common.client.utils import credential_required, print_error_msg
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -45,6 +46,27 @@ app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")
 
 _enable_traceback = False
+
+
+@app.command(name="openai")
+@credential_required
+def openai(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
+    port: int = typer.Option(8001, "--port", "-p", help="Port of the server."),
+    detach: bool = typer.Option(
+        False,
+        "--detach",
+        "-d",
+        help="Run the server in background.",
+    ),
+    log_file: Optional[str] = typer.Option(None, help="Log file path."),
+) -> None:
+    """
+    Create an openai wrapper server.
+    """
+    from qianfan.common.client.openai_adapter import entry as openai_entry
+
+    openai_entry(host=host, port=port, detach=detach, log_file=log_file)
 
 
 def version_callback(value: bool) -> None:
@@ -81,7 +103,7 @@ def main() -> None:
         if _enable_traceback:
             raise
         else:
-            print_error_msg(str(e))
+            print_error_msg(rich.markup.escape(str(e)))
 
 
 @app.callback()

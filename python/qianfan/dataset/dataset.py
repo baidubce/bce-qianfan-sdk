@@ -281,7 +281,7 @@ class Dataset(Table):
                 "construct a new qianfan data source from bos loading:"
                 f" {bos_load_args}, with args: {kwargs}"
             )
-            return QianfanDataSource.create_from_bos_file(**bos_load_args)
+            return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
             return BosDataSource(**bos_source_args, **kwargs)
@@ -524,7 +524,9 @@ class Dataset(Table):
     @classmethod
     def create_from_pyobj(
         cls,
-        data: Union[List[Dict[str, Any]], Dict[str, List]],
+        data: Union[
+            List[Dict[str, Any]], List[List[Dict[str, Any]]], List[str], Dict[str, List]
+        ],
         schema: Optional[Schema] = None,
         **kwargs: Any,
     ) -> "Dataset":
@@ -532,7 +534,8 @@ class Dataset(Table):
         create a dataset from python dict or list
 
         Args:
-            data (Union[List[Dict[str, Any]], Dict[str, List]]):
+            data (Union[List[Dict[str, Any]],
+                List[List[Dict[str, Any]]], List[str], Dict[str, List]]):
                 python object used to create dataset。
             schema (Optional[Schema]):
                 schema used to validate before exporting data, default to None

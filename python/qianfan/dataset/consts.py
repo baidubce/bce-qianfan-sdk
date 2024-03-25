@@ -38,6 +38,9 @@ QianfanDatasetBosUploadingCacheDir = QianfanDatasetBosCacheDir / "uploading"
 # Bos 数据源使用的下载目录
 QianfanDatasetBosDownloadingCacheDir = QianfanDatasetBosCacheDir / "downloading"
 
+# 用于保存文生图数据集的压缩包的缓存的目录
+QianfanDatasetText2ImageUnzipCacheDir = QianfanDatasetLocalCacheDir / ".unzip_text2img"
+
 # 本地缓存中，元数据的后缀名
 QianfanDatasetMetaInfoExtensionName = ".meta"
 
@@ -70,3 +73,9 @@ FirstTokenLatencyColumnName = "first_token_latency"
 
 # 批量推理结果中，用于标注不同模型结果的列名
 LLMTagColumnName = "llm_tag"
+
+# 文生图数据集中，图片路径的列名
+Text2ImagePathColumnName = "image_path"
+
+# 文生图数据集中，标注信息的列名
+Text2ImageAnnotationColumnName = "annotation"

@@ -32,6 +32,7 @@ from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
     _check_is_any_data_existed_in_dataset,
+    _collect_all_images_and_annotations_in_one_folder,
     _create_export_data_task_and_wait_for_success,
     _create_import_data_task_and_wait_for_success,
     _create_release_data_task_and_wait_for_success,
@@ -42,6 +43,7 @@ from qianfan.dataset.data_source.utils import (
     _get_latest_export_record,
     _get_qianfan_dataset_type_tuple,
     _read_all_file_content_in_an_folder,
+    _read_all_image_in_an_folder,
     upload_data_from_bos_to_qianfan,
     zip_file_or_folder,
 )
@@ -182,8 +184,11 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been uploaded successfully
         """
-        # 如果是泛文本，则需要保存为压缩包格式
-        should_save_as_zip_file = self.template_type == DataTemplateType.GenericText
+        # 如果是泛文本或者文生图，则需要保存为压缩包格式
+        should_save_as_zip_file = self.template_type in [
+            DataTemplateType.GenericText,
+            DataTemplateType.Text2Image,
+        ]
 
         # 获取存储信息和鉴权信息
         storage_id, storage_path, storage_region = self._get_transmission_bos_info(
@@ -195,7 +200,7 @@ class QianfanDataSource(DataSource, BaseModel):
         if not should_save_as_zip_file:
             file_name = f"data_{uuid.uuid4()}.{self.format_type().value}"
             remote_file_path = f"{storage_path}{file_name}"
-        # 因为泛文本需要打包成压缩包，所以单独处理
+        # 因为泛文本和文生图需要打包成压缩包，所以单独处理
         else:
             file_name = f"data_{uuid.uuid4()}"
             remote_file_path = f"{storage_path}{file_name}.zip"
@@ -204,17 +209,26 @@ class QianfanDataSource(DataSource, BaseModel):
         if table.is_dataset_grouped() and not should_save_as_zip_file:
             table.pack()
 
-        # 构造本地路径并且保存数据到缓存文件
+        # 构造本地路径
         local_file_path = os.path.join(self._get_cache_folder_path(), file_name)
-        FileDataSource(
-            path=local_file_path,
-            file_format=self.format_type(),
-            save_as_folder=should_save_as_zip_file,
-        ).save(
-            table,
-            use_qianfan_special_jsonl_format=not should_save_as_zip_file,
-            **kwargs,
-        )
+
+        # 如果不是文生图，则把数据转存一份到本地
+        if self.template_type != DataTemplateType.Text2Image:
+            FileDataSource(
+                path=local_file_path,
+                file_format=self.format_type(),
+                save_as_folder=should_save_as_zip_file,
+            ).save(
+                table,
+                use_qianfan_special_jsonl_format=not should_save_as_zip_file,
+                **kwargs,
+            )
+
+        # 否则直接保存
+        else:
+            _collect_all_images_and_annotations_in_one_folder(
+                table.inner_table, local_file_path
+            )
 
         # 如果是泛文本还需要打压缩包
         if should_save_as_zip_file:
@@ -324,7 +338,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         info_path = os.path.join(cache_dir, "info.json")
         bin_path = os.path.join(cache_dir, "bin.zip")
-        content_path = os.path.join(cache_dir, "content")
+        content_path = self.get_cache_content()
 
         # 如果不存在缓存文件，则创建缓存文件
         if not os.path.exists(info_path) or not os.path.exists(content_path):
@@ -353,6 +367,9 @@ class QianfanDataSource(DataSource, BaseModel):
             # 如果异常，则抛出，日后看下怎么加兜底逻辑
             log_error(f"an error occurred in fetch cache: {str(e)}")
             raise
+
+        if self.format_type() == FormatType.Text2Image:
+            return _read_all_image_in_an_folder(content_path)
 
         if os.path.isfile(content_path):
             return _get_a_memory_mapped_pyarrow_table(content_path, self.format_type())

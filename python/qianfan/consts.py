@@ -73,6 +73,7 @@ class Env:
     IAMSignExpirationSeconds: str = "QIANFAN_IAM_SIGN_EXPIRATION_SEC"
     ConsoleAPIBaseURL: str = "QIANFAN_CONSOLE_API_BASE_URL"
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
+    InferResourceRefreshMinInterval: str = "QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
     AccessCode: str = "QIANFAN_PRIVATE_ACCESS_CODE"
     QpsLimit: str = "QIANFAN_QPS_LIMIT"
@@ -115,6 +116,7 @@ class DefaultValue:
     IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
     AccessTokenRefreshMinInterval: float = 3600
+    InferResourceRefreshMinInterval: float = 600
     RetryCount: int = 3
     RetryTimeout: float = 60
     RetryBackoffFactor: float = 1
@@ -204,6 +206,8 @@ class Consts:
     )
     ModelUserListAPI: str = "/wenxinworkshop/modelrepo/model/user/list"
     ModelEvalResultExportAPI: str = "/wenxinworkshop/modelrepo/eval/result/export"
+    ModelEvalResultListAPI: str = "/wenxinworkshop/modelrepo/eval/result/list"
+    ModelEvalResultBatchDeleteAPI: str = "/wenxinworkshop/modelrepo/eval/delete"
     ModelEvalResultExportStatusAPI: str = (
         "/wenxinworkshop/modelrepo/eval/result/export/info"
     )

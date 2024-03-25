@@ -38,8 +38,7 @@ class CookbookProcessor(BaseModel):
     """
     ntbk_branches: Dict[str, nbf.NotebookNode] = Field(default={})
     kernel_spec: Dict[str, str] = Field(default={})
-    cpath: str = Field(default=...)
-    save_path: str = Field(default=...)
+    ntbk: nbf.NotebookNode = Field(default=...)
 
     class Config:
         """
@@ -52,16 +51,15 @@ class CookbookProcessor(BaseModel):
         处理分支代码块。
 
         Args:
-            None
+            self (CookbookProcessor): 当前CookbookProcessor对象。
 
         Returns:
             None
 
         """
-        ntbk = nbf.read(self.cpath, nbf.NO_CONVERT)
-        self.kernel_spec.update(ntbk.metadata.get('kernelspec', {}))
+        self.kernel_spec.update(self.ntbk.metadata.get('kernelspec', {}))
 
-        for cell in ntbk.cells:
+        for cell in self.ntbk.cells:
             self.clean_env(cell)
             self.check_cells(cell)
 
@@ -219,7 +217,7 @@ class CookbookProcessor(BaseModel):
         random_params_list = [x.replace('random_', '') for x in cell_tags if x.startswith('random_')]
         # params_list = [x.replace('parameter_', '') for x in cell_tags if x.startswith('parameter_')]
 
-        random_str = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        random_str = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
         params = {param: value for param, value in params_dict.items()}
         random_params = {random_param: f'{random_param}_{random_str}' for random_param in random_params_list}
         params.update(random_params)
@@ -272,7 +270,7 @@ class CookbookProcessor(BaseModel):
             """
             re_str1 = r'random_([^\'\"\s\[\]\(\)]+)\s*=\s*\S+'  # 赋值表达式的参数： 参数 = "参数值"
             re_str2 = r'[\'\"]\s*random_([^\'\"\s]+)\s*[\'\"]'  # 字符串格式的参数： "参数"
-            random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
             new_text = re.sub(re_str1, f'random_\g<1> = "\g<1>_{random_str}_"', text, flags=re.M)
             new_text = re.sub(re_str2, f'"\g<1>_{random_str}_"', new_text, flags=re.M)
             return new_text
@@ -296,7 +294,7 @@ class CookbookProcessor(BaseModel):
         Returns:
             None
         """
-        if cell.cell_type == 'code' and cell.get('source'):
+        if cell['cell_type'] == 'code' and cell.get('source'):
             pat_group = '|'.join(
                 ['QIANFAN_ACCESS_KEY', 'QIANFAN_SECRET_KEY', "KEYWORDS_DICT", "ROOT_DIR", "QIANFAN_AK", "QIANFAN_SK"])
             source = cell['source']
@@ -305,44 +303,66 @@ class CookbookProcessor(BaseModel):
             pat_str = pat_l + f'((?:{pat_group}))' + pat_r
             re_str = r'\g<1>\g<2>\g<3>'
 
-            source = re.sub(f'^#[ ]*{pat_str}', re_str, source, flags=re.M)
+            source = re.sub(f'^# *{pat_str}', re_str, source, flags=re.M)
             source = re.sub(f'^{pat_str}', f'# {re_str}', source, flags=re.M)
             cell['source'] = source
+
+
+class CookbookManager:
+    """
+    管理cookbook路径保存的类
+    """
+    cpath: str
+    save_path: str
+    processor: CookbookProcessor
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, cpath: str, save_path: str):
+        self.cpath = cpath
+        self.save_path = save_path
+        self.processor = CookbookProcessor(
+            ntbk=nbf.read(self.cpath, nbf.NO_CONVERT)
+        )
+        self.process_branches = self.processor.process_branches
+        self.process_params = self.processor.process_params
 
     def save(self):
         """
         保存所有分支的notebook
 
         Args:
-            None
+            self (CookbookManager): CookbookManager对象。
 
         Returns:
             None
 
         """
-        for branch, branch_bn in self.ntbk_branches.items():
-            with open(self.get_save_path(branch), 'w') as f:
+        path_map = {}
+        work_dir = os.path.dirname(self.cpath)
+        for branch, branch_bn in self.processor.ntbk_branches.items():
+            branch_path = self.get_save_path(branch)
+            branch_name = os.path.basename(branch_path)
+            path_map[branch_name] = work_dir
+            with open(branch_path, 'w') as f:
                 nbf.write(branch_bn, fp=f)
+        return path_map
 
-    def get_save_path(self, branch):
+    def get_save_path(self, branch_name: str):
         """
         获取分支保存路径。
 
         Args:
-            branch (str): 分支名称。
+            branch_name (str): 分支名称。
 
         Returns:
             str: 分支保存路径。
 
         """
         logging.info(f'save to {self.save_path}')
-
-        save_dir = os.path.dirname(self.save_path)
-        os.makedirs(save_dir, exist_ok=True)
-
         origin_basename = os.path.basename(self.cpath)
-        branch_save_path = self.save_path.replace(origin_basename, f'{branch}_{origin_basename}')
-        return branch_save_path
+        return f'{self.save_path}/{branch_name}_{origin_basename}'
 
 
 class CookbookExecutor:
@@ -351,29 +371,41 @@ class CookbookExecutor:
     """
     debug: bool = False
     const_dir: Dict[str, str] = {}
+    path_map: Dict[str, str] = {}
 
-    def __init__(self, temp_dir: str = 'test/_temp', output_dir: str = 'test/_output',
-                 cookbook_dir: str = 'cookbook', root_dir: str = None):
+    def __init__(self, root_dir: str):
         """
         Args:
-            temp_dir (str, optional): 临时文件夹路径，用于存储测试过程中的临时文件，默认为'test/_temp'。
-            output_dir (str, optional): 输出文件夹路径，用于存储测试结果，默认为'test/_output'。
-            cookbook_dir (str, optional): cookbook文件夹路径，默认为'cookbook'。
             root_dir (str, optional): 根目录路径，默认为None。
 
         Returns:
             None
 
         """
-        # 生成运行日期时间字符串，用于区分不同测试用例
+        root_dir = os.path.abspath(root_dir)
+        temp_dir = f'{root_dir}/test/temp'
+        output_dir = f'{root_dir}/test/output'
+        cookbook_dir = f'{root_dir}/cookbook'
+
+        self.const_dir = {
+            'root_dir': root_dir,
+            'temp_dir': self.time_dir(temp_dir),
+            'output_dir': self.time_dir(output_dir),
+            'cookbook_dir': cookbook_dir,
+        }
+
+    @staticmethod
+    def time_dir(prefix):
+        """
+        获取当前时间字符串，用于区分不同测试用例。
+        Args:
+            prefix (str): 附加的前缀。
+        Returns:
+            str: 时间字符串。
+        """
         time.sleep(1)
         time_str = time.strftime("%Y%m%d_%H:%M:%S", time.localtime())
-        self.const_dir = {
-            'temp_dir': f'{temp_dir}={time_str}',
-            'output_dir': f'{output_dir}={time_str}',
-            'cookbook_dir': cookbook_dir,
-            'root_dir': os.environ['ROOT_DIR'] if root_dir is None else root_dir
-        }
+        return f'{prefix}={time_str}'
 
     def __enter__(self):
         """
@@ -386,8 +418,8 @@ class CookbookExecutor:
             self: 返回当前对象本身。
 
         """
-        for path in [self.const_dir['temp_dir'], self.const_dir['output_dir']]:
-            self.rm_dir(path, mkdir=True)
+        self.rm_dir(self.const_dir['temp_dir'], mkdir=True)
+        self.rm_dir(self.const_dir['output_dir'], mkdir=True)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -403,9 +435,11 @@ class CookbookExecutor:
             None
 
         """
-        for path in [self.const_dir['temp_dir'], self.const_dir['output_dir']]:
-            if not self.debug:
-                self.rm_dir(path)
+
+        self.rm_dir(self.const_dir['temp_dir'])
+        if not self.debug:
+            self.rm_dir(self.const_dir['output_dir'])
+            self.rm_dir(f'{self.const_dir["root_dir"]}/test')
 
     def rm_dir(self, path: str, mkdir: bool = False):
         """
@@ -418,11 +452,10 @@ class CookbookExecutor:
         Returns:
             None
         """
-        root_path = f'{self.const_dir["root_dir"]}/{path}'
-        if os.path.exists(root_path):
-            shutil.rmtree(root_path)
+        if os.path.exists(path):
+            shutil.rmtree(path)
         if mkdir:
-            os.makedirs(root_path, exist_ok=True)
+            os.makedirs(path, exist_ok=True)
 
     def run(self, debug=False):
         """
@@ -437,33 +470,55 @@ class CookbookExecutor:
         self.debug = debug
         # 执行notebook
         for tpath, opath, wkdir in self.prepare_dir():
-            print(f'执行notebook: {tpath}')
+            print(f'\nworking: \n    {tpath}\n -> {opath}\n in {wkdir}\n')
             pm.execute_notebook(tpath, opath, log_output=True, cwd=wkdir)
 
-    def prepare(self, file_reg, params_dict):
+    def find(self, file_reg, default_fd) -> List[str]:
+        """
+        查找指定文件路径。
+        Args:
+            file_reg (str):
+                文件模式，用于匹配所有需要处理的Cookbook文件。
+                支持单文件、单文件夹、unix通配符
+            default_fd (bool): True表示使用项目根目录相对路径，False则为当前目录相对路径
+        Returns:
+            list: 文件路径列表。
+        """
+        find_dir = self.const_dir['cookbook_dir'] if default_fd else os.getcwd()
+
+        if file_reg.endswith('/'):
+            file_reg = file_reg[:-1]
+        if not os.path.isabs(file_reg):
+            file_reg = f'{find_dir}/{file_reg}'
+        if os.path.isdir(file_reg):
+            file_reg = f'{file_reg}/**/*.ipynb'
+        file_list = glob(pathname=file_reg, recursive=True)
+        file_list = [file for file in file_list if file.endswith('.ipynb')]
+        if len(file_list) == 0:
+            logging.warning(f'没有找到匹配的Cookbook文件: {file_reg}')
+        return file_list
+
+    def prepare(self, file_reg, params_dict, default_fd=True):
         """
         准备函数，用于处理Cookbook。
 
         Args:
             file_reg (str): 文件模式，用于匹配所有需要处理的Cookbook文件。
             params_dict (dict): 参数字典，用于更新全局参数。
+            default_fd (bool): True表示使用项目根目录相对路径，False则为当前目录相对路径
 
         Returns:
             None
         """
-        notebooks = glob(pathname=f'{self.const_dir["root_dir"]}/{self.const_dir["cookbook_dir"]}/{file_reg}',
-                         recursive=True)
-        if len(notebooks) == 0:
-            logging.warning(f'没有找到匹配的Cookbook文件: {file_reg}')
         params = {**params_dict}
         params.update(json.loads(os.environ.get('KEYWORDS_DICT', '{}')))
-        for cpath in notebooks:
-            save_path = cpath.replace(f'/{self.const_dir["cookbook_dir"]}/', f'/{self.const_dir["temp_dir"]}/')
+        for cpath in self.find(file_reg, default_fd):
+            save_path = self.const_dir['temp_dir']
 
-            processor = CookbookProcessor(cpath=cpath, save_path=save_path)
-            processor.process_branches()
-            processor.process_params(params_dict=params)
-            processor.save()
+            manager = CookbookManager(cpath=cpath, save_path=save_path)
+            manager.process_branches()
+            manager.process_params(params_dict=params)
+            self.path_map.update(manager.save())
 
     def prepare_dir(self):
         """
@@ -477,20 +532,13 @@ class CookbookExecutor:
             output_path (list): 输出文件路径列表。
             work_directory (list): 工作目录列表。
         """
-        temp_path = glob(f'{self.const_dir["root_dir"]}/{self.const_dir["temp_dir"]}/**/*.ipynb', recursive=True)
+        temp_path = glob(f'{self.const_dir["temp_dir"]}/*.ipynb', recursive=True)
+
         output_path, work_directory = [], []
-
         for tpath in temp_path:
-            output_path.append(tpath.replace(self.const_dir["temp_dir"], self.const_dir["output_dir"]))
-            work_directory.append(
-                os.path.dirname(tpath).replace(
-                    self.const_dir["temp_dir"], self.const_dir["cookbook_dir"]
-                )
-            )
+            file_name = os.path.basename(tpath)
+            output_path.append(os.path.join(self.const_dir["output_dir"], file_name))
+            work_directory.append(self.path_map[file_name])
 
-        for tpath, opath, wkdir in zip(temp_path, output_path, work_directory):
-            os.makedirs(os.path.dirname(tpath), exist_ok=True)
-            os.makedirs(os.path.dirname(opath), exist_ok=True)
-            os.makedirs(wkdir, exist_ok=True)
-
-        return zip(temp_path, output_path, work_directory)
+        path_zip = zip(temp_path, output_path, work_directory)
+        return path_zip

@@ -44,11 +44,15 @@ class QianfanRunner(InferRunner):
         dataset: Dataset,
         evaluator: Evaluator,
         prompt: Optional[Prompt] = None,
+        client: Optional[qianfan.ChatCompletion] = None,
         **kwargs: Any
     ):
         super().__init__(dataset=dataset, price_list=price_list, **kwargs)
         self.evaluator = evaluator
-        self._client = qianfan.ChatCompletion()
+        if client is None:
+            self._client = qianfan.ChatCompletion()
+        else:
+            self._client = client
         self.prompt = prompt
 
     async def _format_prompt(
@@ -72,6 +76,15 @@ class QianfanRunner(InferRunner):
         res = await self._client.abatch_do(input_list, **config)
         ret = []
         for r, input, reference in zip(res, input_list, reference_list):
+            if isinstance(r, Exception):
+                ret.append(
+                    {
+                        "input": input,
+                        "expect": reference,
+                        "output": None,
+                        "stat": {"exception": repr(r)},
+                    }
+                )
             assert isinstance(r, QfResponse)
             ret.append(
                 {
@@ -99,6 +112,9 @@ class QianfanRunner(InferRunner):
             input = res["input"]
             output = res["output"]
             expect = res["expect"]
+            if output is None:
+                res["metrics"] = {}
+                return
             eval_metrics = await async_to_thread(
                 self.evaluator.evaluate, input, expect, output
             )
@@ -122,10 +138,13 @@ class QianfanRunner(InferRunner):
             for k in sample_metrics
             if isinstance(sample_metrics[k], (float, int))
         }
+        success_count = 0
         for item in result_list:
+            if item["output"] is None:
+                continue
+            success_count += 1
             for k in total_metrics:
                 total_metrics[k] += item["metrics"][k]
         for k, v in total_metrics.items():
-            total_metrics[k] = v / len(result_list)
-
+            total_metrics[k] = v / success_count
         return total_metrics

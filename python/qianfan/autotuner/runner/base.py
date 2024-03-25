@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from qianfan.autotuner.context import Context
 from qianfan.autotuner.utils import Config, Metrics
@@ -56,28 +56,6 @@ class InferRunner(Runner):
     ) -> Metrics:
         raise NotImplementedError()
 
-    async def _calc_cost(
-        self,
-        config: Dict[str, Any],
-        result_list: List[Dict[str, Any]],
-        context: Context,
-    ) -> Optional[float]:
-        res_sample = result_list[0]
-        if (
-            self.completion_token_usage_key in res_sample
-            and self.prompt_token_usage_key in res_sample
-        ):
-            cost = 0
-            model = config["model"]
-            prompt_price, completion_price = self.price_list[model]
-            for res in result_list:
-                cost += (
-                    res[self.completion_token_usage_key] * completion_price
-                    + res[self.prompt_token_usage_key] * prompt_price
-                )
-            return cost / len(result_list)
-        return None
-
     async def _update_metrics(
         self,
         config: Dict[str, Any],
@@ -93,7 +71,7 @@ class InferRunner(Runner):
         model = config["model"]
         prompt_price, completion_price = self.price_list[model]
         for res in result_list:
-            if res["output"] == "":
+            if res["output"] in ["", None]:
                 continue
             count += 1
             stat = res["metrics"]
@@ -119,6 +97,7 @@ class InferRunner(Runner):
             ) / total_req_latency,
             "avg_cost": total_cost / count,
             "total_cost": total_cost,
+            "success_rate": 1.0 * count / len(result_list),
         }
         return metrics
 

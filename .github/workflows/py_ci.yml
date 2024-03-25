@@ -56,7 +56,9 @@ jobs:
         run: |
           make install
       - name: run lint
-        run: make lint
+        run: |
+          mkdir -p ./python/.mypy_cache
+          make lint
       - name: Disable ntp on MacOS
         if: runner.os == 'macOS'
         run: |

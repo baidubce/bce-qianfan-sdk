@@ -25,7 +25,6 @@ jobs:
           git log --oneline --grep=#\[0-9\] py/v0.3.4...py/v0.3.5 > diff.txt
           cat diff.txt
           echo "test"
-          $(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: curl label
         id: label
         env:

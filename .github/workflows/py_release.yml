@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -45,6 +47,13 @@ jobs:
         run: |
           zip -r ./output/docs.zip ./output/docs/_build/html
           rm -rf ./output/docs
+      - name: get pr collection
+        env:
+          REPO: ${{ github.repository }}
+          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
+        run: |
+          cd ./scripts
+          bash ./release_note.sh python
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -52,6 +61,7 @@ jobs:
           artifacts: "output/*"
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
+          bodyFile: "./body.md"
           generateReleaseNotes: true
           tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}

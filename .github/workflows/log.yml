@@ -10,25 +10,21 @@ defaults:
     shell: bash
     working-directory: ./python
 
-permissions:
-  pull-requests: write
 
 jobs:
   log:
+    permissions:
+      contents: write
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: get pr collection
-        id: pr_collection
         env:
           REPO: ${{ github.repository }}
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
           cd ./scripts
           bash ./release_note.sh python
-          echo "release_note="$(cat release_note.txt) >> $GITHUB_OUTPUT
-      - name: show pr collection
-        run: |
-          echo ${{ steps.pr_collection.outputs.release_note }}

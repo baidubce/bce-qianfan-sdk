@@ -35,7 +35,7 @@ echo "old_tag: $old_tag"
 
 log_json=$(
     git log \
-    --pretty=format:'{%n "title": "%s" %n},' \
+    --pretty=format:'{%n "title": "%s",%n "author": "%an" %n},' \
     "$old_tag..." | \
     perl -pe 'BEGIN{print "["}; END{print "]\n"}' | \
     perl -pe 's/},]/}]/'
@@ -87,12 +87,12 @@ while true; do
 #结束
 done
 
-if [ -f release_note.txt ]; then
-    rm release_note.txt
-    echo "remove release_note.txt"
+if [ -f release_note.md ]; then
+    rm release_note.md
+    echo "remove release_note.md"
 fi
 
-touch release_note.txt
+touch release_note.md
 
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat g.txt | sort | uniq); do
@@ -103,9 +103,13 @@ for i in $(cat g.txt | sort | uniq); do
         echo "$log_json" | \
         jq ".[] | if (.title|contains(\"#$i\")) then .title else empty end"
     )
+    author=$(
+        echo "$log_json" | \
+        jq ".[] | if (.title|contains(\"#$i\")) then .author else empty end"
+    )
     # 判断title非空白字符,去除 \"
     if [ -n "$title" ]; then
-        echo "$title" | sed 's/\"//g' >> release_note.txt
+        echo "* $title  @$author" | sed 's/\"//g' >> release_note.md
     fi
 done
 rm g.txt

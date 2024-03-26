@@ -1672,11 +1672,6 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/q@^1.5.8":
-  version "1.5.8"
-  resolved "https://registry.npmjs.org/@types/q/-/q-1.5.8.tgz"
-  integrity sha512-hroOstUScF6zhIi+5+x0dzqrHA1EJi+Irri6b1fxolMTqqHIV/Cg77EtnQcZqZCu8hR3mX2BzIxN4/GzI68Kfw==
-
 "@types/resolve@1.20.2":
   version "1.20.2"
   resolved "https://registry.yarnpkg.com/@types/resolve/-/resolve-1.20.2.tgz#97d26e00cd4a0423b4af620abecf3e6f442b7975"
@@ -1841,12 +1836,12 @@ array-union@^2.1.0:
   resolved "https://registry.yarnpkg.com/array-union/-/array-union-2.1.0.tgz#b798420adbeb1de828d84acd8a2e23d3efe85e8d"
   integrity sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==
 
-await-mutex@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/await-mutex/-/await-mutex-1.0.2.tgz#0b2428e58f4a39415f461f9298fb47d94d0b9991"
-  integrity sha512-ZuUEsG60oA2EstXMWT1VnXksdoia+C8hhwl0bvKRKstb9v25pf1CmYj6FwOkmSKjY2gLRSt/yJ5hqGlSzWxucQ==
+async-mutex@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.5.0.tgz#353c69a0b9e75250971a64ac203b0ebfddd75482"
+  integrity sha512-1A94B18jkJ3DYq284ohPxoXbfTA5HsQ7/Mf4DEhcyLx3Bz27Rh59iScbB6EPiP+B+joue6YCxcMXSbFC1tZKwA==
   dependencies:
-    babel-runtime "~6.3.0"
+    tslib "^2.4.0"
 
 babel-jest@^29.7.0:
   version "29.7.0"
@@ -1931,13 +1926,6 @@ babel-preset-jest@^29.6.3:
   dependencies:
     babel-plugin-jest-hoist "^29.6.3"
     babel-preset-current-node-syntax "^1.0.0"
-
-babel-runtime@~6.3.0:
-  version "6.3.19"
-  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.3.19.tgz#f2db696c3c8c379881e2a53665e02187074dc681"
-  integrity sha512-tU4y05h5o3iFThxYfmkDwXzCgeit4TXGK0wDBPmq8DqXTFDm9HRBACxxGM9neF7Zh3lVnjfIzqZ3wtcA83uMFg==
-  dependencies:
-    core-js "^1.2.0"
 
 balanced-match@^1.0.0:
   version "1.0.2"
@@ -2114,11 +2102,6 @@ core-js-compat@^3.31.0, core-js-compat@^3.34.0:
   integrity sha512-sftHa5qUJY3rs9Zht1WEnmkvXputCyDBczPnr7QDgL8n3qrF3CMXY4VPSYtOLLiOUJcah2WNXREd48iOl6mQIw==
   dependencies:
     browserslist "^4.22.2"
-
-core-js@^1.2.0:
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-1.2.7.tgz#652294c14651db28fa93bd2d5ff2983a4f08c636"
-  integrity sha512-ZiPp9pZlgxpWRu0M+YWbm6+aQ84XEfH1JRXvfOc/fILWI0VKhLC2LX13X1NYq4fULzLMq7Hfh43CSo2/aIaUPA==
 
 create-jest@^29.7.0:
   version "29.7.0"
@@ -3538,11 +3521,6 @@ pure-rand@^6.0.0:
   resolved "https://registry.npmjs.org/pure-rand/-/pure-rand-6.0.4.tgz"
   integrity sha512-LA0Y9kxMYv47GIPJy6MI84fqTd2HmYZI83W/kM/SkKfDlajnZYfmXFTxkbY+xSBPkLJxltMa9hIkmdc29eguMA==
 
-q@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.npmjs.org/q/-/q-1.5.1.tgz"
-  integrity sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==
-
 queue-microtask@^1.2.2:
   version "1.2.3"
   resolved "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
@@ -3862,9 +3840,9 @@ ts-node@^10.9.2:
     v8-compile-cache-lib "^3.0.1"
     yn "3.1.1"
 
-tslib@^2.6.2:
+tslib@^2.4.0, tslib@^2.6.2:
   version "2.6.2"
-  resolved "https://registry.npmjs.org/tslib/-/tslib-2.6.2.tgz"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.2.tgz#703ac29425e7b37cd6fd456e92404d46d1f3e4ae"
   integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
 
 type-check@^0.4.0, type-check@~0.4.0:

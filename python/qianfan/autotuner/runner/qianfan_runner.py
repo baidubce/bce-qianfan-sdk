@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 import qianfan
 from qianfan import QfResponse
 from qianfan.autotuner.context import Config, Context, Metrics
-from qianfan.autotuner.runner.base import InferRunner
+from qianfan.autotuner.runner.infer_runner import InferRunner
 from qianfan.common.prompt.prompt import Prompt
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
@@ -45,6 +45,7 @@ class QianfanRunner(InferRunner):
         evaluator: Evaluator,
         prompt: Optional[Prompt] = None,
         client: Optional[qianfan.ChatCompletion] = None,
+        repeat: int = 1,
         **kwargs: Any
     ):
         super().__init__(dataset=dataset, price_list=price_list, **kwargs)
@@ -54,6 +55,7 @@ class QianfanRunner(InferRunner):
         else:
             self._client = client
         self.prompt = prompt
+        self.repeat = repeat
 
     async def _format_prompt(
         self,
@@ -73,30 +75,35 @@ class QianfanRunner(InferRunner):
         input_list, reference_list = self.dataset._get_input_chat_list()
         input_list = await self._format_prompt(input_list, config, content)
 
-        res = await self._client.abatch_do(input_list, **config)
+        results_list = []
+        for _ in range(self.repeat):
+            results_list.append(await self._client.abatch_do(input_list, **config))
+
         ret = []
-        for r, input, reference in zip(res, input_list, reference_list):
-            if isinstance(r, Exception):
-                ret.append(
+        for i, (input, reference) in enumerate(zip(input_list, reference_list)):
+            results = []
+            for j in range(self.repeat):
+                r = results_list[j][i]
+
+                if isinstance(r, Exception):
+                    results.append(
+                        {
+                            "output": None,
+                            "stat": {"exception": repr(r)},
+                        }
+                    )
+                    continue
+                assert isinstance(r, QfResponse)
+                results.append(
                     {
-                        "input": input,
-                        "expect": reference,
-                        "output": None,
-                        "stat": {"exception": repr(r)},
+                        "output": r["result"],
+                        "stat": {
+                            **r["usage"],
+                            **r.statistic,
+                        },
                     }
                 )
-            assert isinstance(r, QfResponse)
-            ret.append(
-                {
-                    "input": input,
-                    "expect": reference,
-                    "output": r["result"],
-                    "stat": {
-                        **r["usage"],
-                        **r.statistic,
-                    },
-                }
-            )
+            ret.append({"input": input, "expect": reference, "results": results})
         return ret
 
     async def _evaluate(
@@ -110,26 +117,29 @@ class QianfanRunner(InferRunner):
         async def _eval(res: Dict[str, Any]) -> None:
             nonlocal sample_metrics
             input = res["input"]
-            output = res["output"]
             expect = res["expect"]
-            if output is None:
-                res["metrics"] = {}
-                return
-            eval_metrics = await async_to_thread(
-                self.evaluator.evaluate, input, expect, output
-            )
+            for result in res["results"]:
+                output = result["output"]
+                if output is None:
+                    result["metrics"] = {}
+                    continue
+                eval_metrics = await async_to_thread(
+                    self.evaluator.evaluate, input, expect, output
+                )
 
-            if sample_metrics == {}:
-                sample_metrics = eval_metrics
-            stat = res["stat"]
-            stat_metrics = {}
-            stat_metrics[self.completion_token_usage_key] = stat["completion_tokens"]
-            stat_metrics[self.prompt_token_usage_key] = stat["prompt_tokens"]
-            stat_metrics[self.latency_key] = stat["total_latency"]
-            res["metrics"] = {
-                **eval_metrics,
-                **stat_metrics,
-            }
+                if sample_metrics == {}:
+                    sample_metrics = eval_metrics
+                stat = result["stat"]
+                stat_metrics = {}
+                stat_metrics[self.completion_token_usage_key] = stat[
+                    "completion_tokens"
+                ]
+                stat_metrics[self.prompt_token_usage_key] = stat["prompt_tokens"]
+                stat_metrics[self.latency_key] = stat["total_latency"]
+                result["metrics"] = {
+                    **eval_metrics,
+                    **stat_metrics,
+                }
 
         await asyncio.gather(*[_eval(res) for res in result_list])
 
@@ -139,12 +149,13 @@ class QianfanRunner(InferRunner):
             if isinstance(sample_metrics[k], (float, int))
         }
         success_count = 0
-        for item in result_list:
-            if item["output"] is None:
-                continue
-            success_count += 1
-            for k in total_metrics:
-                total_metrics[k] += item["metrics"][k]
+        for result in result_list:
+            for item in result["results"]:
+                if item["output"] is None:
+                    continue
+                success_count += 1
+                for k in total_metrics:
+                    total_metrics[k] += item["metrics"][k]
         for k, v in total_metrics.items():
             total_metrics[k] = v / success_count
         return total_metrics

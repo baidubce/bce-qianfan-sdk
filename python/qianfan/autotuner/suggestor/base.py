@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 from qianfan.autotuner.context import Context, TrialResult
-from qianfan.autotuner.space import Categorical, Space, Uniform
+from qianfan.autotuner.space import Space
 from qianfan.autotuner.utils import Config, ConfigList
-from qianfan.resources.typing import Literal
 
 
 class Suggestor(object):
@@ -31,44 +29,6 @@ class Suggestor(object):
 
     async def next(self, context: Context) -> Tuple[bool, ConfigList]:
         raise NotImplementedError()
-
-    async def best(self, context: Context) -> Config:
-        raise NotImplementedError()
-
-
-class RandomSuggestor(Suggestor):
-    def __init__(
-        self,
-        search_space: Dict[str, Space],
-        metrics: str = "accuracy",
-        mode: Literal["min", "max"] = "max",
-        cost_budget: Optional[float] = None,
-        cost_key: str = "total_cost",
-    ) -> None:
-        super().__init__(search_space, metrics, mode)
-        self.cost_budget = cost_budget
-        self.cost_key = cost_key
-
-    async def next(self, context: Context) -> Tuple[bool, ConfigList]:
-        if self.cost_budget is not None:
-            total_cost = 0
-            for turn in context.history:
-                for trial in turn:
-                    total_cost += trial.metrics[self.cost_key]
-            if total_cost > self.cost_budget:
-                return True, []
-
-        config = {}
-        for k, space in self.search_space.items():
-            if isinstance(space, Uniform):
-                value = random.uniform(space.low, space.high)
-            elif isinstance(space, Categorical):
-                value = random.choice(space.choices)
-            else:
-                raise NotImplementedError("Unsupported space type")
-            config[k] = value
-
-        return False, [config]
 
     async def best(self, context: Context) -> Config:
         def compare(trial: TrialResult, best: TrialResult) -> bool:

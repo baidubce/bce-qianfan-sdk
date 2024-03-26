@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.autotuner.runner.base import InferRunner, Runner
+from qianfan.autotuner.runner.base import Runner
+from qianfan.autotuner.runner.infer_runner import InferRunner
 from qianfan.autotuner.runner.qianfan_runner import QianfanRunner
 
 __all__ = [

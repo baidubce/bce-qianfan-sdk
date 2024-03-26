@@ -166,6 +166,7 @@ def test_sk(file_reg, params_dict, executor):
     [
         ('evaluation/how_to_use_evaluation.ipynb', {}),
         ('evaluation/local_eval_with_qianfan.ipynb', {}),
+        ('evaluation/opencompass_evaluator.ipynb', {}),
     ]
 )
 def test_evaluation(file_reg, params_dict, executor):

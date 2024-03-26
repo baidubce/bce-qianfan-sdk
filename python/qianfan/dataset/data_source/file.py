@@ -20,7 +20,6 @@ import os
 import zipfile
 from typing import Any, Dict, List, Optional, TextIO, Union
 
-import clevercsv
 import pyarrow
 
 from qianfan.config import encoding
@@ -37,6 +36,11 @@ from qianfan.dataset.data_source.utils import (
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
+
+try:
+    import clevercsv
+except ImportError:
+    log_warn("clevercsv isn't installed, only online function can be used")
 
 
 class FileDataSource(DataSource, BaseModel):

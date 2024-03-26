@@ -31,7 +31,10 @@ from typing import (
     Union,
 )
 
-import multiprocess as multiprocessing
+try:
+    import multiprocess as multiprocessing
+except ImportError:
+    import multiprocessing
 
 from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.config import encoding

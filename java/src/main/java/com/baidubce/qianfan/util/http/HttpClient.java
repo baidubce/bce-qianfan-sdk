@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.util.http;
 
 import com.baidubce.qianfan.util.Json;
+import com.baidubce.qianfan.util.TypeRef;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -28,6 +29,7 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -52,12 +54,16 @@ public class HttpClient {
         return new HttpRequest();
     }
 
-    public static <T> HttpResponse<T> executeJson(ClassicHttpRequest request, Class<T> clazz) throws IOException {
+    public static <T> HttpResponse<T> executeJson(ClassicHttpRequest request, TypeRef<T> typeRef) throws IOException {
+        return executeJson(request, typeRef.getType());
+    }
+
+    public static <T> HttpResponse<T> executeJson(ClassicHttpRequest request, Type type) throws IOException {
         return execute(request, (body, resp) -> {
             String stringBody = EntityUtils.toString(body);
             return resp
                     .setStringBody(stringBody)
-                    .setBody(Json.deserialize(stringBody, clazz));
+                    .setBody(Json.deserialize(stringBody, type));
         });
     }
 

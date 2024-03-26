@@ -17,12 +17,21 @@
 package com.baidubce.qianfan.util;
 
 import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.lang.reflect.Type;
+
 public class Json {
     private static final Gson GSON = new GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .setFieldNamingStrategy(field -> {
+                JsonProp annotation = field.getAnnotation(JsonProp.class);
+                if (annotation != null) {
+                    return annotation.value();
+                }
+                return FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES.translateName(field);
+            })
             .create();
 
     private Json() {
@@ -32,7 +41,7 @@ public class Json {
         return GSON.toJson(object);
     }
 
-    public static <T> T deserialize(String json, Class<T> clazz) {
-        return GSON.fromJson(json, clazz);
+    public static <T> T deserialize(String json, Type type) {
+        return GSON.fromJson(json, type);
     }
 }

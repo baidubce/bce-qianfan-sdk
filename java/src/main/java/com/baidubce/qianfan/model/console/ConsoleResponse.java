@@ -14,30 +14,37 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
+package com.baidubce.qianfan.model.console;
 
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+import com.baidubce.qianfan.util.JsonProp;
 
-import java.util.List;
-
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
+public class ConsoleResponse<T> {
     /**
-     * 输入文本以获取embedding
+     * 请求ID
      */
-    private List<String> input;
+    @JsonProp("logId")
+    private String logId;
 
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
+    /**
+     * 请求结果
+     */
+    private T result;
+
+    public String getLogId() {
+        return logId;
     }
 
-    public List<String> getInput() {
-        return input;
+    public ConsoleResponse<T> setLogId(String logId) {
+        this.logId = logId;
+        return this;
     }
 
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
+    public T getResult() {
+        return result;
+    }
+
+    public ConsoleResponse<T> setResult(T result) {
+        this.result = result;
         return this;
     }
 }

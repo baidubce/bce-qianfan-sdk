@@ -14,30 +14,36 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
-
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+package com.baidubce.qianfan.model.console;
 
 import java.util.List;
 
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
+public class ListServiceResponse {
     /**
-     * 输入文本以获取embedding
+     * 预置服务
      */
-    private List<String> input;
+    private List<ServiceItem> common;
 
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
+    /**
+     * 自定义服务
+     */
+    private List<ServiceItem> custom;
+
+    public List<ServiceItem> getCommon() {
+        return common;
     }
 
-    public List<String> getInput() {
-        return input;
+    public ListServiceResponse setCommon(List<ServiceItem> common) {
+        this.common = common;
+        return this;
     }
 
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
+    public List<ServiceItem> getCustom() {
+        return custom;
+    }
+
+    public ListServiceResponse setCustom(List<ServiceItem> custom) {
+        this.custom = custom;
         return this;
     }
 }

@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
+package com.baidubce.qianfan.model.console;
 
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+import com.baidubce.qianfan.util.JsonProp;
 
 import java.util.List;
 
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
+public class ListServiceRequest {
     /**
-     * 输入文本以获取embedding
+     * 根据服务类型apiType筛选，可选值如下：
+     * · chat
+     * · completions
+     * · embeddings
+     * · text2image
+     * · image2text
      */
-    private List<String> input;
+    @JsonProp("apiTypefilter")
+    private List<String> apiTypeFilter;
 
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
+    public List<String> getApiTypeFilter() {
+        return apiTypeFilter;
     }
 
-    public List<String> getInput() {
-        return input;
-    }
-
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
+    public ListServiceRequest setApiTypeFilter(List<String> apiTypeFilter) {
+        this.apiTypeFilter = apiTypeFilter;
         return this;
     }
 }

@@ -16,7 +16,7 @@
 
 package com.baidubce.qianfan.model;
 
-public abstract class BaseResponse <T extends BaseResponse<T>> {
+public abstract class BaseResponse<T extends BaseResponse<T>> {
     /**
      * 请求的Id
      */

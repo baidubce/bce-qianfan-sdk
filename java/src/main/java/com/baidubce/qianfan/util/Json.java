@@ -17,7 +17,6 @@
 package com.baidubce.qianfan.util;
 
 import com.google.gson.FieldNamingPolicy;
-import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

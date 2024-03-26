@@ -92,6 +92,8 @@ if [ -f release_note.txt ]; then
     echo "remove release_note.txt"
 fi
 
+touch release_note.txt
+
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat g.txt | sort | uniq); do
     if [ -z $i ]; then
@@ -106,10 +108,4 @@ for i in $(cat g.txt | sort | uniq); do
         echo "$title" | sed 's/\"//g' >> release_note.txt
     fi
 done
-
-echo "$(pwd)"
-echo "$(ls)"
-
-#release_note=$(cat release_note.txt)
-
 rm g.txt

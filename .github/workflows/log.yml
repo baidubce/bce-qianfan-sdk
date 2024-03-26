@@ -10,6 +10,9 @@ defaults:
     shell: bash
     working-directory: ./python
 
+permissions:
+  pull-requests: write
+
 jobs:
   log:
     runs-on: ubuntu-latest
@@ -17,14 +20,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: log out diff between tags
+      - name: get pr collection
+        id: pr_collection
+        env:
+          REPO: ${{ github.repository }}
+          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
-          git log --pretty=oneline py/v0.3.5...py/v0.3.4 > log.txt
-          cat log.txt
-          echo "test"
-#          echo "::set-output name=log_file::$(pwd)/log.txt"
-#        id: log
-#        shell: bash
-#      - name: show log
-#        run: |
-#          cat ${{ steps.log.outputs.log_file }}
+          cd ./scripts
+          bash ./release_note.sh python
+          echo "::set-output name=pr_collection::$(cat release_note.txt)"
+          echo $(cat release_note.txt)
+          

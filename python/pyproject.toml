@@ -28,6 +28,7 @@ python-dotenv = [
     { version = ">=1.0", python = ">=3.8" }
 ]
 tenacity = "^8.2.3"
+multiprocess = "*"
 langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8", optional = true },
@@ -49,7 +50,6 @@ torch = [
 ltp = { version = "*", optional = true }
 emoji = { version = "*", optional = true }
 sentencepiece = { version = "*", optional = true }
-multiprocess =  { version = "*", optional = true }
 clevercsv = [
     { version = "<=0.8.0", python = "<3.8", optional = true },
     { version = "*", python = ">=3.8", optional = true }
@@ -77,12 +77,12 @@ types-protobuf = "4.24.0.4"
 setuptools = "*"
 
 [tool.poetry.extras]
-cli = ["multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit"]
-all_feature = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit"]
-langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain"]
-data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "flask", "gevent"]
-all_extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
+cli = ["pyyaml", "rich", "typer", "prompt-toolkit"]
+all_feature = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit"]
+langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain"]
+data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "flask", "gevent"]
+all_extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

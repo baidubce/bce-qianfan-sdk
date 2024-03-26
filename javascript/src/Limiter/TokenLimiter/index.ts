@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Mutex from 'await-mutex';
+import {Mutex} from 'async-mutex';
 import {readEnvVariable} from '../../utils';
 
 class TokenLimiter {
@@ -89,9 +89,9 @@ class TokenLimiter {
             return true;
         }
 
-        let unlock: () => void;
+        let release: () => void;
         try {
-            unlock = await this.mutex.lock();
+            release = await this.mutex.acquire();
             await this.refreshTokens();
             if (this.tokens >= tokenCount) {
                 this.tokens -= tokenCount;
@@ -105,8 +105,8 @@ class TokenLimiter {
             return false;
         }
         finally {
-            if (unlock) {
-                unlock();
+            if (release) {
+                release();
             }
         }
     }
@@ -117,12 +117,12 @@ class TokenLimiter {
      * @param totalTokens 总的令牌数量
      */
     public async resetTokens(totalTokens: number): Promise<void> {
-        let unlock: () => void;
+        let release: () => void;
         try {
             if (this.hasReset) {
                 return;
             }
-            unlock = await this.mutex.lock();
+            release = await this.mutex.acquire();
             if (this.hasReset) {
                 return;
             }
@@ -147,8 +147,8 @@ class TokenLimiter {
             console.error('Error resetting tokens:', error);
         }
         finally {
-            if (unlock) {
-                unlock();
+            if (release) {
+                release();
             }
         }
     }

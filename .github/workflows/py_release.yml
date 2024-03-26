@@ -61,7 +61,7 @@ jobs:
           artifacts: "output/*"
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
-          bodyFile: "./body.md"
+          bodyFile: "./scripts/body.md"
           generateReleaseNotes: true
           tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}

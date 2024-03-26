@@ -17,6 +17,7 @@ import copy
 from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
+import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
@@ -1017,14 +1018,25 @@ class ChatCompletion(BaseResource):
             return body
 
         # truncate the messages if the length is too long
-        if model is not None and model in self._supported_models():
-            model_info = self._supported_models()[model]
-        else:
-            default_model_info = self._supported_models()[self._default_model()]
-            if endpoint == default_model_info.endpoint:
-                model_info = default_model_info
-            else:
-                model_info = self._supported_models()[UNSPECIFIED_MODEL]
+        model_info: Optional[QfLLMInfo] = None
+        if model is not None:
+            try:
+                model_info = self.get_model_info(model)
+            except errors.InvalidArgumentError:
+                ...
+
+        if model_info is None:
+            # 使用默认模型
+            try:
+                default_model_info = self.get_model_info(self._default_model())
+                if default_model_info.endpoint == endpoint:
+                    model_info = default_model_info
+            except errors.InvalidArgumentError:
+                ...
+
+        # 非默认模型
+        if model_info is None:
+            model_info = self._supported_models()[UNSPECIFIED_MODEL]
 
         if model_info.max_input_chars is not None:
             chars_limit = model_info.max_input_chars

@@ -138,3 +138,14 @@ response.getData().forEach(data -> {
     System.out.println(data.getEmbedding());
 });
 ```
+
+### 文生图
+
+千帆 SDK 支持调用文生图模型，将输入文本转化为图片。
+
+```java
+Text2ImageResponse response = new Qianfan().text2Image()
+        .prompt("cute cat")
+        .execute();
+System.out.println(response.getData().get(0).getB64Image());
+```

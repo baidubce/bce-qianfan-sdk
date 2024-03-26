@@ -14,8 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {ChatBody, CompletionBody, Resp} from '../interface';
-import {modelInfoMap, CompletionModel, isCompletionBody} from './utils';
-import {getPathAndBody} from '../utils';
+import {modelInfoMap, isCompletionBody} from './utils';
+import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class Completions extends BaseClient {
     /**
@@ -26,11 +26,12 @@ class Completions extends BaseClient {
      */
     public async completions(
         body: CompletionBody,
-        model: CompletionModel = 'ERNIE-Bot-turbo'
+        model = 'ERNIE-Bot-turbo'
     ): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         // 兼容Chat模型
-        const required_keys = modelInfoMap[model]?.required_keys;
+        const required_keys = modelInfoMapUppercase[modelUppercase]?.required_keys;
         let reqBody: CompletionBody | ChatBody;
         if (required_keys.includes('messages') && isCompletionBody(body)) {
             const {prompt, ...restOfBody} = body;
@@ -48,8 +49,8 @@ class Completions extends BaseClient {
             reqBody = body;
         }
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
+            model: modelUppercase,
+            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body: reqBody,
             endpoint: this.Endpoint,

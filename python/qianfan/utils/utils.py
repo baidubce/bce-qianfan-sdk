@@ -201,7 +201,7 @@ def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
     return name
 
 
-async def async_to_thread(func: Callable[..., _T], /, *args: Any, **kwargs: Any) -> _T:
+async def async_to_thread(func: Callable[..., _T], *args: Any, **kwargs: Any) -> _T:
     """Asynchronously run function *func* in a separate thread.
 
     This is copy of asyncio.to_thread, since this function is only available after

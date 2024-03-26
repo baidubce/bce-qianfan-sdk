@@ -94,10 +94,7 @@ def _agent_validate_logical_core(values: dict) -> dict:
     """check if llm is valid"""
     if not isinstance(values["llm"], QianfanChatEndpoint):  # type: ignore
         raise ValueError("Only supported with QianfanChatEndpoint models.")
-    if not (values["llm"].model == "ERNIE-Bot" or values["llm"].model == "ERNIE-Bot-4"):
-        raise ValueError(
-            f"Model could only be ERNIE-Bot or ERNIE-Bot-4, not {values['llm'].model}"
-        )
+
     return values
 
 
@@ -211,7 +208,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
                 return_values={"output": result.content}, log=str(result)
             )
 
-        tool_json = result.additional_kwargs.get("function_call", {})
+        tool_json = result.response_metadata.get("function_call", {})
         if not tool_json:
             raise ValueError("empty function call value retrieved from service")
         tool_name = tool_json["name"]

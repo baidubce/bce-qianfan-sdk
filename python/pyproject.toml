@@ -77,7 +77,7 @@ types-protobuf = "4.24.0.4"
 setuptools = "*"
 
 [tool.poetry.extras]
-cli = ["pyyaml", "rich", "typer", "prompt-toolkit"]
+cli = ["multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit"]
 all_feature = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit"]
 langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain"]
 data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "multiprocess", "pyyaml", "rich", "typer", "prompt-toolkit", "ltp", "emoji", "sentencepiece", "torch"]

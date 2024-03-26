@@ -19,7 +19,7 @@ from copy import deepcopy
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-import pyarrow.json
+import pyarrow
 from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 

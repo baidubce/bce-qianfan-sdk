@@ -91,6 +91,7 @@ select = [
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
+exclude = ["qianfan/__init__.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = ["PLW1514"]
@@ -101,7 +102,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests", "qianfan/utils/pydantic"]
+exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py"]
 
 
 [build-system]

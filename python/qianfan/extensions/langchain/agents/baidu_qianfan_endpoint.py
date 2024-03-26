@@ -208,7 +208,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
                 return_values={"output": result.content}, log=str(result)
             )
 
-        tool_json = result.response_metadata.get("function_call", {})
+        if hasattr(result, "response_metadata"):
+            tool_json = result.response_metadata.get("function_call", {})  # noqa
+        else:
+            tool_json = result.additional_kwargs.get("function_call", {})
         if not tool_json:
             raise ValueError("empty function call value retrieved from service")
         tool_name = tool_json["name"]

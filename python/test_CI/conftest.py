@@ -54,14 +54,15 @@ def env_set(request):
     Returns:
 
     """
+    del_quote = lambda x: x.replace('"', '').replace("'", '')
     if request.config.getoption('--access-key') != '':
-        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--access-key")
+        os.environ['QIANFAN_ACCESS_KEY'] = del_quote(request.config.getoption("--access-key"))
     if request.config.getoption('--secret-key') != '':
-        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--secret-key")
+        os.environ['QIANFAN_SECRET_KEY'] = del_quote(request.config.getoption("--secret-key"))
     if request.config.getoption('--ak') != '':
-        os.environ['QIANFAN_AK'] = request.config.getoption("--ak")
+        os.environ['QIANFAN_AK'] = del_quote(request.config.getoption("--ak"))
     if request.config.getoption('--sk') != '':
-        os.environ['QIANFAN_SK'] = request.config.getoption("--sk")
+        os.environ['QIANFAN_SK'] = del_quote(request.config.getoption("--sk"))
     if request.config.getoption('--keywords') != '{}':
         os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
 

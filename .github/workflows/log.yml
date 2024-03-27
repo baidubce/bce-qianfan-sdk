@@ -28,7 +28,7 @@ jobs:
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
           bash ./scripts/release_note.sh python
-          echo "release note path:"
+          echo "release note path: "$(realpath ./release_note.md)
           echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
       - name: Create Release
         uses: ncipollo/release-action@v1

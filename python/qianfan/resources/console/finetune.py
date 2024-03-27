@@ -61,8 +61,6 @@ class FineTune(object):
     def create_task(
         cls,
         name: str,
-        base_train_type: str,
-        train_type: str,
         description: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
@@ -75,10 +73,6 @@ class FineTune(object):
         Parameters:
           name (str):
             The name of the fine-tuning task.
-          base_train_type (str):
-            The base training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo"
-          train_type (str):
-            The training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo-0922
           description (Optional[str]):
             An optional description for the fine-tuning task.
           kwargs (Any):
@@ -93,8 +87,6 @@ class FineTune(object):
         req = QfRequest(method="POST", url=Consts.FineTuneCreateTaskAPI)
         req.json_body = {
             "name": name,
-            "baseTrainType": base_train_type,
-            "trainType": train_type,
             **kwargs,
         }
         if description is not None:
@@ -174,6 +166,8 @@ class FineTune(object):
             cls,
             name: str,
             model: str,
+            params_scale: Optional[Union[str, console_consts.TrainParameterScale]],
+            hyper_params: Optional[Dict[str, Any]],
             train_mode: Union[str, console_consts.TrainMode],
             description: Optional[str] = None,
             **kwargs: Any,

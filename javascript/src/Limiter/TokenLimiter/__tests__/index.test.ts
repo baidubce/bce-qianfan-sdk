@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import TokenLimiter from '../index';
-import Mutex from 'await-mutex';
+import {Mutex} from 'async-mutex';
 
 describe('TokenLimiter', () => {
     let tokenLimiter: TokenLimiter;
@@ -61,7 +61,7 @@ describe('TokenLimiter', () => {
 
     it('should unlock mutex if hasReset becomes true during locking', async () => {
         tokenLimiter.setHasReset(false);
-        await mutex.lock();
+        await mutex.acquire();
         tokenLimiter.setHasReset(true);
         await tokenLimiter.resetTokens(500);
         expect(tokenLimiter.getTokens()).toBe(1000);

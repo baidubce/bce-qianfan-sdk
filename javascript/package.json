@@ -1,6 +1,6 @@
 {
     "name": "@baiducloud/qianfan",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"
@@ -22,7 +22,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "await-mutex": "^1.0.2",
+        "async-mutex": "^0.5.0",
         "bottleneck": "^2.19.5",
         "debug": "^3.1.0",
         "dotenv": "^16.4.1",

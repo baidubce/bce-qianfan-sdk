@@ -22,9 +22,21 @@ jobs:
         with:
           fetch-depth: 0
       - name: get pr collection
+        id: get-pr
         env:
           REPO: ${{ github.repository }}
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
-          cd ./scripts
-          bash ./release_note.sh python
+          bash ./scripts/release_note.sh python
+          echo "release note path:"
+          echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: "test"
+          token: ${{ secrets.QF_GITHUB_TOKEN }}
+          draft: false
+          bodyFile: ${{ steps.get-pr.outputs.body_path }}
+#          generateReleaseNotes: true
+          tag: "py/v0.3.6"
+          prerelease: false

@@ -237,17 +237,42 @@ def test_wandb(file_reg, params_dict, executor):
     executor.run(debug_mode)
 
 
-@pytest.mark.asyncio
-def test_reg(cli_reg, cli_params, executor):
-    if cli_reg == '':
-        logging.warning(f'cli_path_reg is empty, skip test')
-        return
-    executor.prepare(cli_reg, cli_params)
+@pytest.mark.skip
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('openai_adapter.ipynb', {}),  # 未通过
+    ]
+)
+def test_openai_adapter(file_reg, params_dict, executor):
+    """
+    测试用例 openai_adapter文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
+    executor.prepare(file_reg, params_dict)
     executor.run(debug_mode)
 
 
 @pytest.mark.asyncio
 def test_reg(cli_reg, cli_params, executor):
+    """
+    自定义测试用例
+
+    Args:
+        cli_reg (str): 测试文件unix路径
+        cli_params (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     if cli_reg == '':
         logging.warning(f'cli_path_reg is empty, skip test')
         return

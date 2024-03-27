@@ -6,10 +6,7 @@ declare reg=
 declare params=
 declare root_dir=
 declare env_file=
-declare QIANFAN_ACCESS_KEY=
-declare QIANFAN_SECRET_KEY=
-declare QIANFAN_AK=
-declare QIANFAN_SK=
+declare ENV_DICT=
 declare KEYWORDS_DICT=
 
 
@@ -76,8 +73,8 @@ function parse_param() {
             ;;
         esac
     done
-    if  [[ -z "$QIANFAN_ACCESS_KEY"  ||  -z "$QIANFAN_SECRET_KEY"  || -z "$KEYWORDS_DICT" ]]; then
-      echo "QIANFAN_ACCESS_KEY QIANFAN_SECRET_KEY or KEYWORDS_DICT isn't set"
+    if  [[ -z "$ENV_DICT"  || -z "$KEYWORDS_DICT" ]]; then
+      echo "ENV_DICT or KEYWORDS_DICT isn't set"
       exit 1
     fi
 
@@ -100,10 +97,7 @@ function parse_param() {
 }
 
 function load_env(){
-  QIANFAN_ACCESS_KEY=$(get_config QIANFAN_ACCESS_KEY)
-  QIANFAN_SECRET_KEY=$(get_config QIANFAN_SECRET_KEY)
-  QIANFAN_AK=$(get_config QIANFAN_AK)
-  QIANFAN_SK=$(get_config QIANFAN_SK)
+  ENV_DICT=$(get_config ENV_DICT)
   KEYWORDS_DICT=$(get_config KEYWORDS_DICT)
 }
 
@@ -119,4 +113,4 @@ load_env
 parse_param "$@"
 
 cd "$root_dir"/python/test_CI || exit 1
-poetry run coverage run -m  pytest  -o log_cli=true -o log_cli_level=INFO -v -r A --full-trace  test_ntbk.py"$func_call" --access-key "$QIANFAN_ACCESS_KEY" --secret-key "$QIANFAN_SECRET_KEY" --ak "$QIANFAN_AK" --sk "$QIANFAN_SK" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"
+poetry run coverage run -m  pytest  -o log_cli=true -o log_cli_level=INFO -v -r A --full-trace  test_ntbk.py"$func_call" --env "$ENV_DICT" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"

@@ -34,10 +34,7 @@ def pytest_addoption(parser):
         None
 
     """
-    parser.addoption("--ak", default="")
-    parser.addoption("--sk", default="")
-    parser.addoption("--access-key", default="")
-    parser.addoption("--secret-key", default="")
+    parser.addoption("--env", default="{}")
     parser.addoption("--root-dir", default="")
     parser.addoption("--keywords", default="{}")
     parser.addoption("--reg", default="")
@@ -57,33 +54,25 @@ def env_set(request):
 
     """
     del_quote = lambda x: x.replace('"', '').replace("'", '')
-    if request.config.getoption('--access-key') != '':
-        os.environ['QIANFAN_ACCESS_KEY'] = del_quote(request.config.getoption("--access-key"))
-    if request.config.getoption('--secret-key') != '':
-        os.environ['QIANFAN_SECRET_KEY'] = del_quote(request.config.getoption("--secret-key"))
-    if request.config.getoption('--ak') != '':
-        os.environ['QIANFAN_AK'] = del_quote(request.config.getoption("--ak"))
-    if request.config.getoption('--sk') != '':
-        os.environ['QIANFAN_SK'] = del_quote(request.config.getoption("--sk"))
+    env_dict = {}
+    if request.config.getoption('--env') != '{}':
+        env_dict.update(json.loads(request.config.getoption("--env")))
     if request.config.getoption('--keywords') != '{}':
         os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
 
-    other_env = [('RetryCount', '3'), ('QIANFAN_QPS_LIMIT', '1'), ('QIANFAN_LLM_API_RETRY_COUNT', '3')]
-    for key, value in other_env:
-        os.environ[key] = value
+    other_env = {'RetryCount': '3', 'QIANFAN_QPS_LIMIT': '1', 'QIANFAN_LLM_API_RETRY_COUNT': '3'}
+    for key, value in env_dict.items():
+        os.environ[key] = del_quote(value)
+    for key, value in other_env.items():
+        os.environ[key] = del_quote(value)
 
     yield
-    if os.environ.get('QIANFAN_ACCESS_KEY'):
-        del os.environ['QIANFAN_ACCESS_KEY']
-    if os.environ.get('QIANFAN_SECRET_KEY'):
-        del os.environ['QIANFAN_SECRET_KEY']
-    if os.environ.get('QIANFAN_AK'):
-        del os.environ['QIANFAN_AK']
-    if os.environ.get('QIANFAN_SK'):
-        del os.environ['QIANFAN_SK']
+    for key in env_dict:
+        if key in os.environ:
+            del os.environ[key]
     if os.environ.get('KEYWORDS_DICT'):
         del os.environ['KEYWORDS_DICT']
-    for key, value in other_env:
+    for key in other_env:
         if key in os.environ:
             del os.environ[key]
 

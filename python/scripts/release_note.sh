@@ -27,7 +27,7 @@ fi
 
 OLD_TAG=$(
     echo "$tag_json" | \
-    jq ".[1].name" | \
+    jq ".[0].name" | \
     sed 's/\"//g'
 )
 
@@ -112,5 +112,6 @@ for i in $(cat g.txt | sort | uniq); do
         echo "* $title  @$author" | sed 's/\"//g' >> release_note.md
     fi
 done
+echo "" >> release_note.md
 echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$OLD_TAG...$NEW_TAG" >> release_note.md
 rm g.txt

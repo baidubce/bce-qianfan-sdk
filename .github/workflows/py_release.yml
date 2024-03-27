@@ -53,7 +53,7 @@ jobs:
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
           bash ./scripts/release_note.sh python
-          echo $(ls ./scripts)
+          echo $(ls -R .)
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:

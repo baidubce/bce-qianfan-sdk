@@ -14,22 +14,31 @@ tag_json=$(
 )
 
 if [ "$1" == "python" ] ; then
-    tag_json=$(
+    tag_filter=$(
         echo "$tag_json" | \
         jq '[.[] | select(.name|startswith("py"))]'
     )
 else
-    tag_json=$(
+    tag_filter=$(
         echo "$tag_json" | \
         jq "[.[] | select(.name|startswith(\"$1\"))]"
     )
 fi
 
-OLD_TAG=$(
-    echo "$tag_json" | \
-    jq ".[0].name" | \
-    sed 's/\"//g'
-)
+if [ "$tag_filter" == "[]" ]; then
+  echo "old_tag not find"
+  OLD_TAG=$(
+      echo "$tag_json" | \
+      jq ".[] | .[0].name" | \
+      sed 's/\"//g'
+  )
+else
+  OLD_TAG=$(
+      echo "$tag_filter" | \
+      jq ".[0].name" | \
+      sed 's/\"//g'
+  )
+fi
 
 
 log_json=$(

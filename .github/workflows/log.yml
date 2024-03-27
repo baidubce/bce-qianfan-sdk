@@ -30,7 +30,7 @@ jobs:
           bash ./scripts/release_note.sh python
           echo "release note path: "$(realpath ./release_note.md)
           echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
-          cat ./release_note.md
+          cat realpath ./release_note.md
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:

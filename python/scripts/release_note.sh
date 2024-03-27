@@ -25,18 +25,17 @@ else
     )
 fi
 
-old_tag=$(
+OLD_TAG=$(
     echo "$tag_json" | \
     jq ".[1].name" | \
     sed 's/\"//g'
 )
 
-echo "old_tag: $old_tag"
 
 log_json=$(
     git log \
     --pretty=format:'{%n "title": "%s",%n "author": "%an" %n},' \
-    "$old_tag..." | \
+    "$OLD_TAG..." | \
     perl -pe 'BEGIN{print "["}; END{print "]\n"}' | \
     perl -pe 's/},]/}]/'
     )
@@ -113,5 +112,5 @@ for i in $(cat g.txt | sort | uniq); do
         echo "* $title  @$author" | sed 's/\"//g' >> release_note.md
     fi
 done
-echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$old_tag..." >> release_note.md
+echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$OLD_TAG...$NEW_TAG" >> release_note.md
 rm g.txt

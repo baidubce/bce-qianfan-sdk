@@ -252,4 +252,4 @@ def test_reg(cli_reg, cli_params, executor):
         logging.warning(f'cli_path_reg is empty, skip test')
         return
     executor.prepare(cli_reg, cli_params)
-    executor.run()
+    executor.run(debug_mode)

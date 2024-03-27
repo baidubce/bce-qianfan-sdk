@@ -20,7 +20,7 @@ class Image2Text extends BaseClient {
     /**
      * 图生文
      * @param body 请求体
-     * @returns 返回文本转图像响应
+     * @returns 返回图像转文本
      */
     public async image2Text(
         body: Image2TextBody

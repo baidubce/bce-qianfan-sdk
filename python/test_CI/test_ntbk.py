@@ -5,6 +5,7 @@ import logging
 
 import pytest
 
+debug_mode = True
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
@@ -29,7 +30,7 @@ def test_demo(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -61,7 +62,7 @@ def test_common(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run(debug=True)
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -84,7 +85,7 @@ def test_agents(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.asyncio
@@ -109,7 +110,7 @@ def test_datasets(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -134,7 +135,7 @@ def test_rag(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -158,7 +159,7 @@ def test_sk(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +183,7 @@ def test_evaluation(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -209,7 +210,7 @@ def test_finetune(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run(debug=True)
+    executor.run(debug_mode)
 
 
 @pytest.mark.skip
@@ -232,7 +233,16 @@ def test_wandb(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
+
+
+@pytest.mark.asyncio
+def test_reg(cli_reg, cli_params, executor):
+    if cli_reg == '':
+        logging.warning(f'cli_path_reg is empty, skip test')
+        return
+    executor.prepare(cli_reg, cli_params)
+    executor.run(debug_mode)
 
 
 @pytest.mark.asyncio

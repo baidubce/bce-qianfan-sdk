@@ -34,6 +34,8 @@ def pytest_addoption(parser):
     """
     parser.addoption("--ak", default="")
     parser.addoption("--sk", default="")
+    parser.addoption("--access-key", default="")
+    parser.addoption("--secret-key", default="")
     parser.addoption("--root-dir", default="")
     parser.addoption("--keywords", default="{}")
     parser.addoption("--reg", default="")
@@ -52,10 +54,14 @@ def env_set(request):
     Returns:
 
     """
+    if request.config.getoption('--access-key') != '':
+        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--access-key")
+    if request.config.getoption('--secret-key') != '':
+        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--secret-key")
     if request.config.getoption('--ak') != '':
-        os.environ['QIANFAN_ACCESS_KEY'] = request.config.getoption("--ak").replace('"', '').replace("'", '')
+        os.environ['QIANFAN_AK'] = request.config.getoption("--ak")
     if request.config.getoption('--sk') != '':
-        os.environ['QIANFAN_SECRET_KEY'] = request.config.getoption("--sk").replace('"', '').replace("'", '')
+        os.environ['QIANFAN_SK'] = request.config.getoption("--sk")
     if request.config.getoption('--keywords') != '{}':
         os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
 
@@ -68,6 +74,10 @@ def env_set(request):
         del os.environ['QIANFAN_ACCESS_KEY']
     if os.environ.get('QIANFAN_SECRET_KEY'):
         del os.environ['QIANFAN_SECRET_KEY']
+    if os.environ.get('QIANFAN_AK'):
+        del os.environ['QIANFAN_AK']
+    if os.environ.get('QIANFAN_SK'):
+        del os.environ['QIANFAN_SK']
     if os.environ.get('KEYWORDS_DICT'):
         del os.environ['KEYWORDS_DICT']
     for key, value in other_env:

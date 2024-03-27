@@ -439,7 +439,8 @@ class CookbookExecutor:
         self.rm_dir(self.const_dir['temp_dir'])
         if not self.debug:
             self.rm_dir(self.const_dir['output_dir'])
-            self.rm_dir(f'{self.const_dir["root_dir"]}/test')
+        if len(os.listdir(f'{self.const_dir["root_dir"]}/test')) == 0:
+            os.rmdir(f'{self.const_dir["root_dir"]}/test')
 
     def rm_dir(self, path: str, mkdir: bool = False):
         """

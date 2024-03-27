@@ -8,6 +8,8 @@ declare root_dir=
 declare env_file=
 declare QIANFAN_ACCESS_KEY=
 declare QIANFAN_SECRET_KEY=
+declare QIANFAN_AK=
+declare QIANFAN_SK=
 declare KEYWORDS_DICT=
 
 
@@ -100,6 +102,8 @@ function parse_param() {
 function load_env(){
   QIANFAN_ACCESS_KEY=$(get_config QIANFAN_ACCESS_KEY)
   QIANFAN_SECRET_KEY=$(get_config QIANFAN_SECRET_KEY)
+  QIANFAN_AK=$(get_config QIANFAN_AK)
+  QIANFAN_SK=$(get_config QIANFAN_SK)
   KEYWORDS_DICT=$(get_config KEYWORDS_DICT)
 }
 
@@ -115,4 +119,4 @@ load_env
 parse_param "$@"
 
 cd "$root_dir"/python/test_CI || exit 1
-poetry run coverage run -m  pytest -v -r A --full-trace  test_ntbk.py"$func_call" --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"
+poetry run coverage run -m  pytest  -o log_cli=true -o log_cli_level=INFO -v -r A --full-trace  test_ntbk.py"$func_call" --access-key "$QIANFAN_ACCESS_KEY" --secret-key "$QIANFAN_SECRET_KEY" --ak "$QIANFAN_AK" --sk "$QIANFAN_SK" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"

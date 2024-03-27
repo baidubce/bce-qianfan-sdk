@@ -39,10 +39,10 @@ pyarrow = [
     { version = "<=12.0.1", python = ">=3.7 <3.8", optional = true }
 ]
 python-dateutil = { version = "^2.8.2", optional = true }
-rich = { version = ">=13.0.0", optional = true }
-typer = { version = ">=0.9.0", optional = true }
-pyyaml = { version = "^6.0.1", optional = true }
-prompt-toolkit = { version = ">=3.0.38", optional = true }
+rich = ">=13.0.0"
+typer = ">=0.9.0"
+pyyaml = "^6.0.1"
+prompt-toolkit = ">=3.0.38"
 torch = [
     { version = "<=1.13.1", python = "<3.8", optional = true},
     { version = "*", python = ">=3.8", optional = true }
@@ -77,12 +77,11 @@ types-protobuf = "4.24.0.4"
 setuptools = "*"
 
 [tool.poetry.extras]
-cli = ["pyyaml", "rich", "typer", "prompt-toolkit"]
-all_feature = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit"]
-langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain"]
-data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "flask", "gevent"]
-all_extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "pyyaml", "rich", "typer", "prompt-toolkit", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
+all = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
+langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
+data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "flask", "gevent"]
+all_extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

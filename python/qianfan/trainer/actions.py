@@ -959,7 +959,7 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         assert isinstance(llm, (Model, Service))
         return llm
 
-    def _exec(self, llm: Union[Model, Service], **kwargs: Dict) -> Any:
+    def _exec(self, llm: Union[Model, Service], **kwargs: Any) -> Any:
         """
         accept a llm model/service to do evaluation
 

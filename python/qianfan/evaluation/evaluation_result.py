@@ -27,15 +27,15 @@ class EvaluationResult:
 
     def __init__(
         self,
-        result_dataset: Dataset,
+        result_dataset: Optional[Dataset] = None,
         metrics: Optional[Dict[str, Dict[str, Any]]] = None,
     ):
         """
         instantiate an evaluation result
 
         Args:
-            result_dataset (Dataset):
-                a dataset containing evaluation result
+            result_dataset (Optional[Dataset]):
+                a dataset containing evaluation result, default to None
             metrics (Optional[Dict[str, Dict[str, Any]]]):
                 overall evaluation metric collections, default to None
         """

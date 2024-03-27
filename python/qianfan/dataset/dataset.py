@@ -1289,7 +1289,12 @@ class Dataset(Table):
             self.inner_data_source_cache, model_id, model_version_id
         )
 
-        result_dataset = Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        result_dataset = Dataset.load(
+            qianfan_dataset_id=result_dataset_id,
+            download_when_init=output_prettified,
+            **kwargs,
+        )
+
         if not output_prettified and result_dataset.is_dataset_located_in_qianfan():
             return result_dataset
 

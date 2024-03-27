@@ -53,7 +53,7 @@ jobs:
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
         run: |
           bash ./scripts/release_note.sh python
-          echo $(ls -R .)
+          echo $(ls .)
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -61,7 +61,7 @@ jobs:
           artifacts: "output/*"
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
-          bodyFile: "release_note.md"
+          bodyFile: "./release_note.md"
           generateReleaseNotes: true
           tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}

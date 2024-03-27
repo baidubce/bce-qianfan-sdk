@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.6.1"
+version = "0.3.6.2"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"

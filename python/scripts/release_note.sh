@@ -93,6 +93,7 @@ if [ -f release_note.md ]; then
 fi
 
 touch release_note.md
+echo "## What's Changed" >> release_note.md
 
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat g.txt | sort | uniq); do
@@ -112,4 +113,5 @@ for i in $(cat g.txt | sort | uniq); do
         echo "* $title  @$author" | sed 's/\"//g' >> release_note.md
     fi
 done
+echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$old_tag..." >> release_note.md
 rm g.txt

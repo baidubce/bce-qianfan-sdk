@@ -64,7 +64,7 @@ jobs:
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
           bodyFile: ${{ steps.get-pr.outputs.body_path }}
-          generateReleaseNotes: true
+          generateReleaseNotes: false
           tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main

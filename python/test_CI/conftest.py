@@ -17,7 +17,9 @@
 import json
 import logging
 import os
+
 import pytest
+
 from utils.cookbook_operate import CookbookExecutor
 
 
@@ -85,6 +87,7 @@ def env_set(request):
         if key in os.environ:
             del os.environ[key]
 
+
 @pytest.fixture(scope="function")
 def default_df(request):
     """
@@ -110,6 +113,7 @@ def cli_reg(request):
         return request.config.getoption("--reg").replace('"', '').replace("'", '')
     else:
         return ""
+
 
 @pytest.fixture(scope="function")
 def cli_params(request):

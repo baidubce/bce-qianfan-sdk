@@ -7,6 +7,7 @@ import pytest
 
 debug_mode = True
 
+
 @pytest.mark.skip
 @pytest.mark.parametrize(
     "file_reg,params_dict",

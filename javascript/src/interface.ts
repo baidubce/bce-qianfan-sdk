@@ -12,6 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+export interface DefaultConfig {
+    QIANFAN_AK: string;
+    QIANFAN_SK: string;
+    QIANFAN_ACCESS_KEY: string;
+    QIANFAN_SECRET_KEY: string;
+    QIANFAN_BASE_URL: string;
+    QIANFAN_LLM_API_RETRY_TIMEOUT: string;
+    QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: string;
+    QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: string;
+    QIANFAN_LLM_API_RETRY_COUNT: string;
+    QIANFAN_QPS_LIMIT: string;
+    QIANFAN_RPM_LIMIT: string;
+    QIANFAN_TPM_LIMIT: string;
+}
+
 /**
  * 公共服务模型信息
  */

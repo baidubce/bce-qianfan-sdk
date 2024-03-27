@@ -14,8 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {ChatBody, Resp} from '../interface';
-import {modelInfoMap, ChatModel} from './utils';
-import {getPathAndBody} from '../utils';
+import {modelInfoMap} from './utils';
+import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class ChatCompletion extends BaseClient {
     /**
@@ -25,11 +25,12 @@ class ChatCompletion extends BaseClient {
      * @param stream 是否开启流模式，默认为 false
      * @returns Promise<ChatResp | AsyncIterable<ChatResp>>
      */
-    public async chat(body: ChatBody, model: ChatModel = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
+    public async chat(body: ChatBody, model = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
-            model,
-            modelInfoMap,
+            model: modelUppercase,
+            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,

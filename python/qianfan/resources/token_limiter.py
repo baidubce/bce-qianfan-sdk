@@ -98,7 +98,9 @@ class _BaseTokenLimiter:
 
         self._og_token_limit_per_minute: int = self._token_limit_per_minute
         self._buffer_ratio: float = buffer_ratio
-        self._token_limit_per_minute = int(self._token_limit_per_minute * buffer_ratio)
+        self._token_limit_per_minute = int(
+            self._token_limit_per_minute * (1 - buffer_ratio)
+        )
 
         self._has_been_reset = False
 
@@ -120,7 +122,7 @@ class _BaseTokenLimiter:
     def _refresh_time_and_token(self) -> None:
         current_time = datetime.datetime.utcnow()
         if (
-            self._last_check_timestamp.minute != current_time
+            self._last_check_timestamp.minute != current_time.minute
             or current_time - self._last_check_timestamp >= _MINUTE_DEAD
         ):
             self._token_current = self._token_limit_per_minute
@@ -202,7 +204,7 @@ class TokenLimiter(_BaseTokenLimiter):
         og_token_current = self._token_current
         og_token_max = self._token_limit_per_minute
         diff = og_token_max - og_token_current
-        self._token_limit_per_minute = int(tpm * self._buffer_ratio)
+        self._token_limit_per_minute = int(tpm * (1 - self._buffer_ratio))
         self._token_current = max(self._token_limit_per_minute - diff, 0)
 
         self._has_been_reset = True
@@ -291,7 +293,7 @@ class AsyncTokenLimiter(_BaseTokenLimiter):
         og_token_current = self._token_current
         og_token_max = self._token_limit_per_minute
         diff = og_token_max - og_token_current
-        self._token_limit_per_minute = int(tpm * self._buffer_ratio)
+        self._token_limit_per_minute = int(tpm * (1 - self._buffer_ratio))
         self._token_current = max(self._token_limit_per_minute - diff, 0)
 
         self._has_been_reset = True

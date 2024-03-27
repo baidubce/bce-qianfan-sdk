@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.5"
+version = "0.3.6.1"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -55,6 +55,8 @@ clevercsv = [
     { version = "*", python = ">=3.8" }
 ]
 ijson = "*"
+flask = { version = "*", optional = true}
+gevent = { version = "*", optional = true}
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -77,7 +79,8 @@ setuptools = "*"
 [tool.poetry.extras]
 langchain = ["langchain"]
 data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["flask", "gevent"]
+all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

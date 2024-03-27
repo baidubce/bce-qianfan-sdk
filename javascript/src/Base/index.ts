@@ -14,10 +14,11 @@
 
 import HttpClient from '../HttpClient';
 import {Fetch, FetchConfig} from '../Fetch';
+import {TokenLimiter} from '../Limiter';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay, isOpenTpm} from '../utils';
 import {Stream} from '../streaming';
-import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
+import {Resp, AsyncIterableType, AccessTokenResp, RespBase} from '../interface';
 
 export class BaseClient {
     protected controller: AbortController;
@@ -34,6 +35,7 @@ export class BaseClient {
     protected headers = DEFAULT_HEADERS;
     protected fetchInstance: Fetch;
     protected fetchConfig: FetchConfig;
+    private tokenLimiter: TokenLimiter;
     access_token = '';
     expires_in = 0;
 
@@ -74,6 +76,7 @@ export class BaseClient {
                 ),
         };
         this.fetchInstance = new Fetch(this.fetchConfig);
+        this.tokenLimiter = new TokenLimiter();
     }
 
     /**
@@ -108,18 +111,22 @@ export class BaseClient {
         requestBody: string,
         stream = false
     ): Promise<Resp | AsyncIterableType> {
+        // 检查鉴权信息
+        if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
+            throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+        }
+
+        let fetchOptions;
         // IAM鉴权
         if (this.qianfanAccessKey && this.qianfanSecretKey) {
             const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
-            const client = new HttpClient(config, this.fetchConfig);
-            const response = await client.sendRequest({
+            const client = new HttpClient(config);
+            fetchOptions = await client.getSignature({
                 httpMethod: 'POST',
                 path: IAMpath,
                 body: requestBody,
                 headers: this.headers,
-                outputStream: stream,
             });
-            return response as Resp;
         }
         // AK/SK鉴权
         if (this.qianfanAk && this.qianfanSk) {
@@ -127,35 +134,74 @@ export class BaseClient {
                 await this.getAccessToken();
             }
             const url = `${AKPath}?access_token=${this.access_token}`;
-            const fetchOptions = {
+            fetchOptions = {
+                url: url,
                 method: 'POST',
                 headers: this.headers,
                 body: requestBody,
             };
-            // 流式处理
-            if (stream) {
-                try {
-                    const sseStream: AsyncIterable<Resp> = Stream.fromSSEResponse(
-                        await this.fetchInstance.fetchWithRetry(url, fetchOptions),
-                        this.controller
-                    ) as any;
-                    return sseStream as AsyncIterableType;
+        }
+
+        // 计算请求token
+        const tokens = this.tokenLimiter.calculateTokens(requestBody);
+        const hasToken = await this.tokenLimiter.acquireTokens(tokens);
+        // 满足token限制
+        if (hasToken) {
+            try {
+                const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
+                const val = this.getTpmHeader(resp.headers);
+                let usedTokens = 0;
+                if (stream) {
+                    const sseStream = Stream.fromSSEResponse(resp, this.controller);
+                    const [stream1, stream2] = sseStream.tee();
+                    if (isOpenTpm(val)) {
+                        const updateTokensAsync = async () => {
+                            for await (const data of stream1) {
+                                const typedData = data as RespBase;
+                                if (typedData.is_end) {
+                                    usedTokens = typedData?.usage?.total_tokens;
+                                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
+                                    break;
+                                }
+                            }
+                        };
+                        setTimeout(updateTokensAsync, 0);
+                    }
+                    return stream2 as AsyncIterableType;
                 }
-                catch (error) {
-                    throw new Error(error);
-                }
+                const data = await resp.json();
+                setTimeout(async () => {
+                    usedTokens = this.getUsedTokens(data);
+                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
+                }, 0);
+                return data as any;
             }
-            else {
-                try {
-                    const resp = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
-                    const data = await resp.json();
-                    return data as any;
-                }
-                catch (error) {
-                    throw new Error(`Request failed: ${error.message}`);
-                }
+            catch (error) {
+                throw error;
             }
         }
-        throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+        else {
+            throw new Error('Token limit exceeded');
+        }
+    }
+
+    getTpmHeader(headers: any): void {
+        const val = headers.get('x-ratelimit-limit-tokens') ?? '0';
+        this.tokenLimiter.resetTokens(val);
+        return val;
+    }
+
+    async getStreamUsedTokens(data: AsyncIterableType): Promise<number> {
+        let usedTokens = 0;
+        for await (const chunk of data as AsyncIterableType) {
+            if (chunk.is_end) {
+                usedTokens = chunk?.usage?.total_tokens;
+            }
+        }
+        return usedTokens ?? 0;
+    }
+    getUsedTokens(data: Resp): number {
+        const usage = data?.usage?.total_tokens;
+        return usage ?? 0;
     }
 }

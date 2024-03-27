@@ -1,8 +1,6 @@
 import json
 from typing import Any, Dict, List, Union
 
-from evaluator import LocalEvaluator
-
 import qianfan
 from qianfan import ChatCompletion, Completion, QfResponse
 from qianfan.common import Prompt
@@ -12,6 +10,7 @@ from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMetrics,
     QianfanRefereeEvaluatorDefaultSteps,
 )
+from qianfan.evaluation.evaluator import LocalEvaluator
 from qianfan.utils.pydantic import Field
 
 
@@ -21,6 +20,8 @@ class LocalJudgeEvaluator(LocalEvaluator):
     model: Union[ChatCompletion, Completion] = Field(
         default=None, description="model object"
     )
+
+    metric_name: str = Field(default="", description="metric name for evaluation")
 
     model_kwargs: Dict[str, Any] = Field(default={}, description="parameters for model")
     evaluation_prompt: Prompt = Field(

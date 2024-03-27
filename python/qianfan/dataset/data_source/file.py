@@ -26,9 +26,12 @@ import pyarrow
 from qianfan.config import encoding
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
+    _collect_all_images_and_annotations_in_one_folder,
     _get_a_memory_mapped_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
+    _read_all_image_from_zip,
+    _read_all_image_in_an_folder,
     zip_file_or_folder,
 )
 from qianfan.dataset.table import Table
@@ -149,6 +152,12 @@ class FileDataSource(DataSource, BaseModel):
         if self.save_as_folder and self.file_format == FormatType.Text:
             return self._save_generic_text_into_folder(table, batch_size, **kwargs)
 
+        if self.file_format == FormatType.Text2Image:
+            _collect_all_images_and_annotations_in_one_folder(
+                table.inner_table, self.path
+            )
+            return True
+
         # 有可能文件路径的父文件夹不存在，得先创建
         os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
 
@@ -203,9 +212,16 @@ class FileDataSource(DataSource, BaseModel):
             Optional[pyarrow.Table]: A memory-mapped pyarrow.Table object or None
         """
 
-        # 如果是单个文件，直接读取
         assert isinstance(self.file_format, FormatType)
 
+        # 特判文生图
+        if self.file_format is FormatType.Text2Image:
+            if zipfile.is_zipfile(self.path):
+                return _read_all_image_from_zip(self.path, **kwargs)
+
+            return _read_all_image_in_an_folder(self.path, **kwargs)
+
+        # 如果是单个文件，直接读取
         if not os.path.isdir(self.path):
             return _get_a_memory_mapped_pyarrow_table(
                 self.path, self.file_format, **kwargs

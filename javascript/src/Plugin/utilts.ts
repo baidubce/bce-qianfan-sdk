@@ -26,7 +26,7 @@ export const modelInfoMap: QfLLMInfoMap = {
         required_keys: ['messages', 'plugins'],
         optional_keys: [
             'user_id',
-            'extra_data'
+            'extra_data',
         ],
     },
     UNSPECIFIED_MODEL: {

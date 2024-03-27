@@ -32,6 +32,10 @@ class FormatType(Enum):
     Csv = "csv"
     # 无格式导出，一行就是一条数据，类似 Jsonl，但是非格式化
     Text = "txt"
+    # 文生图格式，需要特判处理
+    # 用户如果需要使用文生图格式，需要显式指定
+    # SDK 本身不会做特定推导
+    Text2Image = "text2image"
 
 
 class DataSource(ABC):

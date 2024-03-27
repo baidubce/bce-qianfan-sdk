@@ -14,29 +14,37 @@ tag_json=$(
 )
 
 if [ "$1" == "python" ] ; then
-    tag_json=$(
+    tag_filter=$(
         echo "$tag_json" | \
         jq '[.[] | select(.name|startswith("py"))]'
     )
 else
-    tag_json=$(
+    tag_filter=$(
         echo "$tag_json" | \
         jq "[.[] | select(.name|startswith(\"$1\"))]"
     )
 fi
 
-old_tag=$(
-    echo "$tag_json" | \
-    jq ".[1].name" | \
-    sed 's/\"//g'
-)
+if [ "$tag_filter" == "[]" ]; then
+  echo "old_tag not find"
+  OLD_TAG=$(
+      echo "$tag_json" | \
+      jq ".[] | .[0].name" | \
+      sed 's/\"//g'
+  )
+else
+  OLD_TAG=$(
+      echo "$tag_filter" | \
+      jq ".[0].name" | \
+      sed 's/\"//g'
+  )
+fi
 
-echo "old_tag: $old_tag"
 
 log_json=$(
     git log \
-    --pretty=format:'{%n "title": "%s" %n},' \
-    "$old_tag..." | \
+    --pretty=format:'{%n "title": "%s",%n "author": "%an" %n},' \
+    "$OLD_TAG..." | \
     perl -pe 'BEGIN{print "["}; END{print "]\n"}' | \
     perl -pe 's/},]/}]/'
     )
@@ -87,12 +95,13 @@ while true; do
 #结束
 done
 
-if [ -f release_note.txt ]; then
-    rm release_note.txt
-    echo "remove release_note.txt"
+if [ -f release_note.md ]; then
+    rm release_note.md
+    echo "remove release_note.md"
 fi
 
-touch release_note.txt
+touch release_note.md
+echo "## What's Changed" >> release_note.md
 
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat g.txt | sort | uniq); do
@@ -103,9 +112,15 @@ for i in $(cat g.txt | sort | uniq); do
         echo "$log_json" | \
         jq ".[] | if (.title|contains(\"#$i\")) then .title else empty end"
     )
+    author=$(
+        echo "$log_json" | \
+        jq ".[] | if (.title|contains(\"#$i\")) then .author else empty end"
+    )
     # 判断title非空白字符,去除 \"
     if [ -n "$title" ]; then
-        echo "$title" | sed 's/\"//g' >> release_note.txt
+        echo "* $title  @$author" | sed 's/\"//g' >> release_note.md
     fi
 done
+echo "" >> release_note.md
+echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$OLD_TAG...$NEW_TAG" >> release_note.md
 rm g.txt

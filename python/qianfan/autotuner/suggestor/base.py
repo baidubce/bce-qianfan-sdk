@@ -20,18 +20,58 @@ from qianfan.autotuner.utils import Config, ConfigList
 
 
 class Suggestor(object):
+    """
+    Suggestor for generating configurations in an autotuning task based on a
+    search space and historical data..
+
+    This class is the base class for all suggestors.
+    """
+
     def __init__(
         self, search_space: Dict[str, Space], metrics: str = "score", mode: str = "max"
     ) -> None:
+        """
+        Args:
+          search_space (Dict[str, Space]):
+            A dictionary defining the search space for each parameter.
+          metrics (str):
+            The name of the metric used for optimization. Default is "score".
+          mode (str):
+            The optimization mode, either "max" (maximization) or "min" (minimization).
+            Default is "max".
+        """
         self.search_space = search_space
         self.metrics = metrics
         self.mode = mode
 
     async def next(self, context: Context) -> Tuple[bool, ConfigList]:
+        """
+        Generates the next set of configurations to evaluate.
+
+        Args:
+          context (Context): The context object containing the state of the
+          autotuning task.
+
+        Returns:
+          Tuple[bool, ConfigList]: A tuple indicating whether the search should stop
+          and the list of configurations to evaluate in the next turn.
+        """
         raise NotImplementedError()
 
     async def best(self, context: Context) -> Config:
+        """
+        Determines the best configuration found based on historical data.
+
+        Args:
+          context (Context):
+            The context object containing the state of the autotuning task.
+
+        Returns:
+          Config: The best configuration found.
+        """
+
         def compare(trial: TrialResult, best: TrialResult) -> bool:
+            """Compares two trial results based on the optimization mode."""
             if self.mode == "max":
                 return trial.metrics[self.metrics] > best.metrics[self.metrics]
             if self.mode == "min":

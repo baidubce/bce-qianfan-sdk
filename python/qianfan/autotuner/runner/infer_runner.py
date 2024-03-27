@@ -21,6 +21,17 @@ from qianfan.dataset import Dataset
 
 
 class InferRunner(Runner):
+    """
+    Base runner class for inference tasks.
+
+    This class is the base class of runner specifically tailored for inference tasks.
+    This class will automatically infer the dataset, evaluate the inference result and
+    calculate the metrics such as cost, latency and so on. The derived class only needs
+    to implment the `_infer` and `_evaluate` methods.
+
+
+    """
+
     def __init__(
         self,
         dataset: Dataset,
@@ -31,6 +42,26 @@ class InferRunner(Runner):
         latency_key: str = "latency",
         **kwargs: Any,
     ) -> None:
+        """
+        Args:
+          dataset (Dataset):
+            The dataset used for inference and evaluation.
+          price_list (Dict[str, Tuple[float, float]]):
+            A dictionary mapping model names to their corresponding price ranges.
+          cost_key (str):
+            The key to access the cost metric in the result of each output. Default
+            is "cost".
+          prompt_token_usage_key (str):
+            The key to access prompt token usage metric in the result of each output.
+            Default is "prompt_tokens".
+          completion_token_usage_key (str):
+            The key to access completion token usage metric in trial results. Default
+            is "completion_tokens".
+          latency_key (str):
+            The key to access the latency metric in trial results. Default is "latency".
+          **kwargs (Any):
+            Additional keyword arguments.
+        """
         super().__init__()
         self.dataset = dataset
         self.price_list = price_list
@@ -42,6 +73,9 @@ class InferRunner(Runner):
     async def _infer(
         self, config: Dict[str, Any], context: Context
     ) -> List[Dict[str, Any]]:
+        """
+        Infer the dataset using the given config.
+        """
         raise NotImplementedError()
 
     async def _evaluate(
@@ -50,6 +84,9 @@ class InferRunner(Runner):
         result_list: List[Dict[str, Any]],
         context: Context,
     ) -> Metrics:
+        """
+        Evaluate the inference result and return the metrics.
+        """
         raise NotImplementedError()
 
     async def _update_metrics(
@@ -59,6 +96,9 @@ class InferRunner(Runner):
         context: Context,
         metrics: Metrics,
     ) -> Metrics:
+        """
+        Calcuate the general metrics.
+        """
         total_prompt_tokens = 0
         total_completion_tokens = 0
         total_req_latency = 0
@@ -103,7 +143,14 @@ class InferRunner(Runner):
     async def run(
         self, config: Dict[str, Any], context: Context
     ) -> Tuple[Metrics, Any]:
+        """
+        Run the inference and evaluate the result.
+        """
+        # infer the whole dataset
         res_list = await self._infer(config, context)
+        # evaluate the result
         metrics = await self._evaluate(config, res_list, context)
+        # calcuate the general metrics
         metrics = await self._update_metrics(config, res_list, context, metrics)
+        # return the metrics and inference result
         return metrics, res_list

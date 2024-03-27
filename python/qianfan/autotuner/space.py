@@ -15,15 +15,37 @@ from typing import Any, List
 
 
 class Space(object):
+    """
+    Base class for all search spaces.
+    """
+
     pass
 
 
 class Categorical(Space):
+    """
+    Search space representing categorical classification types.
+    """
+
     def __init__(self, choices: List[Any]) -> None:
+        """
+        Args:
+          choices (List[Any]): A list of options from which to choose.
+        """
         self.choices = choices
 
 
 class Uniform(Space):
+    """
+    Search space representing a uniform distribution of continuous values
+    between a specified low and high range.
+    """
+
     def __init__(self, low: float, high: float) -> None:
+        """
+        Args:
+            low (float): The lower bound of the uniform distribution.
+            high (float): The upper bound of the uniform distribution.
+        """
         self.low = low
         self.high = high

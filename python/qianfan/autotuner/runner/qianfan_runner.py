@@ -24,6 +24,8 @@ from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.utils.utils import async_to_thread
 
+# the price list of preset model on qianfan platform
+# the unit is yuan per 1000 tokens of (input, output)
 price_list = {
     "ERNIE-Bot-turbo": (0.008, 0.008),
     "ERNIE-Bot": (0.012, 0.012),
@@ -39,6 +41,13 @@ price_list = {
 
 
 class QianfanRunner(InferRunner):
+    """
+    Runner designed for running inference using Qianfan SDK.
+
+    This class extends the InferRunner and is specifically tailored for running
+    inference task using the Qianfan SDK.
+    """
+
     def __init__(
         self,
         dataset: Dataset,
@@ -48,6 +57,22 @@ class QianfanRunner(InferRunner):
         repeat: int = 1,
         **kwargs: Any
     ):
+        """
+        Args:
+          dataset (Dataset):
+            The dataset used for inference.
+          evaluator (Evaluator):
+            The evaluator object responsible for evaluating model outputs.
+          prompt (Optional[Prompt]):
+            The prompt used for inference. Default is None.
+          client (Optional[qianfan.ChatCompletion]):
+            The client used for inference. Default is None which means the default
+            client will be used.
+          repeat (int):
+            The number of times to repeat inference for each input. Default is 1.
+          **kwargs (Any):
+            Additional keyword arguments.
+        """
         super().__init__(dataset=dataset, price_list=price_list, **kwargs)
         self.evaluator = evaluator
         if client is None:
@@ -63,6 +88,9 @@ class QianfanRunner(InferRunner):
         config: Config,
         context: Context,
     ) -> List[List[Dict[str, Any]]]:
+        """
+        Format the input using the prompt.
+        """
         if self.prompt is not None:
             for i in range(len(input_list)):
                 content = input_list[i][-1]["content"]
@@ -71,6 +99,9 @@ class QianfanRunner(InferRunner):
         return input_list
 
     async def _infer(self, config: Config, content: Context) -> List[Dict[str, Any]]:
+        """
+        Infer the whole dataset.
+        """
         # TODO: self.dataset.test_using_llm()
         input_list, reference_list = self.dataset._get_input_chat_list()
         input_list = await self._format_prompt(input_list, config, content)
@@ -112,6 +143,9 @@ class QianfanRunner(InferRunner):
         result_list: List[Dict[str, Any]],
         context: Context,
     ) -> Metrics:
+        """
+        Evaluates the results.
+        """
         sample_metrics: Dict[str, Any] = {}
 
         async def _eval(res: Dict[str, Any]) -> None:

@@ -23,6 +23,12 @@ from qianfan.resources.typing import Literal
 
 
 class RandomSuggestor(Suggestor):
+    """
+    Suggestor for generating configurations randomly.
+
+    This class randomly generates configurations within the defined search space.
+    """
+
     def __init__(
         self,
         search_space: Dict[str, Space],
@@ -31,11 +37,37 @@ class RandomSuggestor(Suggestor):
         cost_budget: Optional[float] = None,
         cost_key: str = "total_cost",
     ) -> None:
+        """
+        Args:
+          search_space (Dict[str, Space]):
+            A dictionary defining the search space for each parameter.
+          metrics (str):
+            The name of the metric used for optimization. Default is "accuracy".
+          mode (Literal["min", "max"]):
+            The optimization mode, either "min" (minimization) or "max" (maximization).
+            Default is "max".
+          cost_budget (Optional[float]):
+            The budget constraint on the total cost. Default is None which means the
+            cost budget will not be considered.
+          cost_key (str):
+            The key to access the cost metric in trial results. Default is "total_cost".
+        """
         super().__init__(search_space, metrics, mode)
         self.cost_budget = cost_budget
         self.cost_key = cost_key
 
     async def next(self, context: Context) -> Tuple[bool, ConfigList]:
+        """
+        Generates the next set of configurations to evaluate randomly.
+
+        Args:
+          context (Context): The context object containing the state of the autotuning
+          task.
+
+        Returns:
+          Tuple[bool, ConfigList]: A tuple indicating whether the search should stop
+          and the list of configurations to evaluate in the next turn.
+        """
         if self.cost_budget is not None:
             total_cost = 0
             for turn in context.history:

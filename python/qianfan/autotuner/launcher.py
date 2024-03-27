@@ -26,11 +26,23 @@ from qianfan.utils.utils import uuid
 
 
 class Launcher(object):
+    """
+    Launcher of an autotuning task.
+    """
+
     def __init__(
         self,
         log_dir: Optional[str] = None,
         log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "INFO",
     ) -> None:
+        """
+        Args:
+          log_dir (Optional[str]):
+            The directory to store logs. Default is None which means no log will
+            be stored.
+          log_level (Literal["DEBUG", "INFO", "WARN", "ERROR"]):
+            The logging level. Default is "INFO".
+        """
         self._id = uuid()
         self._logger = logging.getLogger(f"qianfan_autotuner_{self._id}")
         self._logger.setLevel(log_level)
@@ -47,6 +59,21 @@ class Launcher(object):
             self._logger.addHandler(file_handler)
 
     async def run(self, suggestor: Suggestor, runner: Runner) -> Context:
+        """
+        Runs the autotuning task asynchronously.
+
+        This method executes the autotuning task asynchronously using the provided
+        suggestor and runner.
+
+        Args:
+          suggestor (Suggestor):
+            The suggestor object responsible for generating configurations.
+          runner (Runner):
+            The runner object responsible for evaluating configurations.
+
+        Returns:
+            Context: The context object containing the results of the autotuning task.
+        """
         context = Context()
 
         while True:

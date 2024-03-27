@@ -19,5 +19,25 @@ from qianfan.autotuner.utils import Config, Metrics
 
 
 class Runner(object):
+    """
+    Runner for evaluating configurations in an autotuning task.
+
+    This class is the base class of runner which is responsible for evaluating
+    configurations and returning metrics.
+    """
+
     async def run(self, config: Config, context: Context) -> Tuple[Metrics, Any]:
+        """
+        Runs the evaluation for a given configuration.
+
+        Args:
+          config (Config):
+            The configuration to evaluate.
+          context (Context):
+            The context object containing the state of the autotuning task.
+
+        Returns:
+          Tuple[Metrics, Any]:
+            A tuple containing the evaluated metrics and any additional results.
+        """
         raise NotImplementedError()

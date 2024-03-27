@@ -14,6 +14,35 @@
 
 from typing import Any, Dict, List
 
+from qianfan.utils.pydantic import BaseModel
+
 Config = Dict[str, Any]
 ConfigList = List[Config]
 Metrics = Dict[str, Any]
+
+
+class TrialResult(BaseModel):
+    """
+    Result of each trial.
+    """
+
+    turn: int
+    """
+    Turn of this trial in the whole tuning process.
+    """
+    config: Config
+    """
+    Config of this trial which is suggested by the suggestor.
+    """
+    metrics: Metrics
+    """
+    The metrics of this config which is output by the runner.
+    """
+    custom_results: Any
+    """
+    Custom results of this trial.
+    
+    This is output by the runner and be used to store data such 
+    as model outputs that are not directly tied to the metrics 
+    but aid in observing the results.
+    """

@@ -157,6 +157,11 @@ class OpenAIApdater(object):
                     "type": "function",
                     "function": function_call,
                 }
+        if "response_format" in openai_request:
+            response_format = openai_request["response_format"]
+            if not isinstance(response_format, str):
+                response_format = response_format["type"]
+            qianfan_request["response_format"] = response_format
         return qianfan_request
 
     @classmethod

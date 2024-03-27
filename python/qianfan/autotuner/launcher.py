@@ -34,6 +34,7 @@ class Launcher(object):
         self,
         log_dir: Optional[str] = None,
         log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "INFO",
+        max_turn: Optional[int] = None,
     ) -> None:
         """
         Args:
@@ -44,6 +45,7 @@ class Launcher(object):
             The logging level. Default is "INFO".
         """
         self._id = uuid()
+        self._max_turn = max_turn
         self._logger = logging.getLogger(f"qianfan_autotuner_{self._id}")
         self._logger.setLevel(log_level)
         formatter = logging.Formatter(
@@ -77,7 +79,12 @@ class Launcher(object):
         context = Context()
 
         while True:
-            is_end, config_list = await suggestor.next(context)
+            is_end = False
+            if self._max_turn is not None and context.current_turn == self._max_turn:
+                self._logger.info(f"max turn reached: {self._max_turn}")
+                is_end = True
+            else:
+                is_end, config_list = await suggestor.next(context)
             if is_end:
                 self._logger.info("tuning finished!")
                 best_config = await suggestor.best(context)

@@ -17,6 +17,7 @@ Consts used in qianfan sdk
 """
 
 import enum
+from pathlib import Path
 from typing import Set
 
 from qianfan.version import VERSION
@@ -262,6 +263,9 @@ class Consts:
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
     QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"
+
+    QianfanCacheDir = Path.home() / ".qianfan_cache"
+    QianfanLLMModelsListCacheKey = "qianfan_llm_models"
 
 
 class DefaultLLMModel:

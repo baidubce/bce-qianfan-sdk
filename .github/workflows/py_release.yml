@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -45,6 +47,15 @@ jobs:
         run: |
           zip -r ./output/docs.zip ./output/docs/_build/html
           rm -rf ./output/docs
+      - name: get pr collection  # 获取tag之间的pr内容，输出为md文件的路径
+        id: get-pr
+        env:
+          REPO: ${{ github.repository }}
+          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
+          NEW_TAG: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
+        run: |
+          bash ./scripts/release_note.sh py
+          echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -52,7 +63,8 @@ jobs:
           artifacts: "output/*"
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
-          generateReleaseNotes: true
+          bodyFile: ${{ steps.get-pr.outputs.body_path }}  #  引入上文生成的release_note.md作为内容
+          generateReleaseNotes: false
           tag: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main

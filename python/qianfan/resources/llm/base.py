@@ -720,9 +720,9 @@ class BaseResource(object):
 
 
 # {api_type: {model_name: QfLLMInfo}}
-_runtime_models_info: Dict[str, Dict[str, QfLLMInfo]] = {}
-_last_update_time: datetime = datetime(1970, 1, 1, tzinfo=timezone.utc)
-_model_infos_access_lock: threading.Lock = threading.Lock()
+_runtime_models_info = {}  # type: ignore
+_last_update_time = datetime(1970, 1, 1, tzinfo=timezone.utc)  # type: ignore
+_model_infos_access_lock = threading.Lock()  # type: ignore
 
 
 def trim_prefix(s: str, prefix: str) -> str:

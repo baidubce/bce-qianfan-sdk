@@ -23,12 +23,13 @@ import threading
 import uuid as uuid_lib
 from threading import current_thread
 from types import TracebackType
-from typing import Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import log_info
 
 thread_local = threading.local()
+_T = TypeVar("_T")
 
 
 def _get_value_from_dict_or_var_or_env(
@@ -199,6 +200,22 @@ def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
         if name.endswith(suffix):
             return name[: -len(suffix)]
     return name
+
+
+async def async_to_thread(func: Callable[..., _T], *args: Any, **kwargs: Any) -> _T:
+    """Asynchronously run function *func* in a separate thread.
+
+    This is copy of asyncio.to_thread, since this function is only available after
+    python 3.9.
+    """
+    import asyncio
+    import contextvars
+    import functools
+
+    loop = asyncio.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(None, func_call)  # type: ignore
 
 
 def check_dependency(module_name: str, dependency_list: List[str]) -> None:

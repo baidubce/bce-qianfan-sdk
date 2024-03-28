@@ -15,7 +15,7 @@
 
 import copy
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Union
 
 import qianfan.errors as errors
 from qianfan.config import get_config
@@ -63,6 +63,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
+                input_price_per_1k_tokens=0.003,
+                output_price_per_1k_tokens=0.006,
             ),
             "ERNIE-Lite-8K-0308": QfLLMInfo(
                 endpoint="/chat/ernie-lite-8k",
@@ -77,6 +79,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
+                input_price_per_1k_tokens=0.003,
+                output_price_per_1k_tokens=0.006,
             ),
             "ERNIE-3.5-8K": QfLLMInfo(
                 endpoint="/chat/completions",
@@ -99,6 +103,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
+                input_price_per_1k_tokens=0.012,
+                output_price_per_1k_tokens=0.012,
             ),
             "ERNIE-4.0-8K": QfLLMInfo(
                 endpoint="/chat/completions_pro",
@@ -119,6 +125,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
+                input_price_per_1k_tokens=0.12,
+                output_price_per_1k_tokens=0.12,
             ),
             "ERNIE-Bot-8K": QfLLMInfo(
                 endpoint="/chat/ernie_bot_8k",
@@ -139,6 +147,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
+                input_price_per_1k_tokens=0.024,
+                output_price_per_1k_tokens=0.048,
             ),
             "ERNIE-3.5-4K-0205": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-4k-0205",
@@ -159,6 +169,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=8000,
                 max_input_tokens=2048,
+                input_price_per_1k_tokens=0.012,
+                output_price_per_1k_tokens=0.012,
             ),
             "ERNIE-3.5-8K-0205": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-0205",
@@ -179,6 +191,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
+                input_price_per_1k_tokens=0.024,
+                output_price_per_1k_tokens=0.048,
             ),
             "ERNIE-3.5-8K-1222": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-1222",
@@ -199,6 +213,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
+                input_price_per_1k_tokens=0.012,
+                output_price_per_1k_tokens=0.012,
             ),
             "ERNIE-Speed-8K": QfLLMInfo(
                 endpoint="/chat/ernie_speed",
@@ -215,6 +231,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.008,
             ),
             "ERNIE-Speed-128K": QfLLMInfo(
                 endpoint="/chat/ernie-speed-128k",
@@ -231,6 +249,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=507904,
                 max_input_tokens=126976,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.008,
             ),
             "ERNIE Speed-AppBuilder": QfLLMInfo(
                 endpoint="/chat/ai_apaas",
@@ -247,6 +267,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.008,
             ),
             "BLOOMZ-7B": QfLLMInfo(
                 endpoint="/chat/bloomz_7b1",
@@ -264,6 +286,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "Llama-2-7B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_7b",
@@ -281,6 +305,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "Llama-2-13B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_13b",
@@ -298,6 +324,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.006,
+                output_price_per_1k_tokens=0.006,
             ),
             "Llama-2-70B-Chat": QfLLMInfo(
                 endpoint="/chat/llama_2_70b",
@@ -315,6 +343,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.035,
+                output_price_per_1k_tokens=0.035,
             ),
             "Qianfan-BLOOMZ-7B-compressed": QfLLMInfo(
                 endpoint="/chat/qianfan_bloomz_7b_compressed",
@@ -332,6 +362,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "Qianfan-Chinese-Llama-2-7B": QfLLMInfo(
                 endpoint="/chat/qianfan_chinese_llama_2_7b",
@@ -349,6 +381,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "ChatGLM2-6B-32K": QfLLMInfo(
                 endpoint="/chat/chatglm2_6b_32k",
@@ -366,6 +400,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "AquilaChat-7B": QfLLMInfo(
                 endpoint="/chat/aquilachat_7b",
@@ -383,6 +419,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.004,
+                output_price_per_1k_tokens=0.004,
             ),
             "XuanYuan-70B-Chat-4bit": QfLLMInfo(
                 endpoint="/chat/xuanyuan_70b_chat",
@@ -400,6 +438,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.035,
+                output_price_per_1k_tokens=0.035,
             ),
             "Qianfan-Chinese-Llama-2-13B": QfLLMInfo(
                 endpoint="/chat/qianfan_chinese_llama_2_13b",
@@ -417,6 +457,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.006,
+                output_price_per_1k_tokens=0.006,
             ),
             "ChatLaw": QfLLMInfo(
                 endpoint="/chat/chatlaw",
@@ -431,6 +473,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.008,
+                output_price_per_1k_tokens=0.008,
             ),
             "Yi-34B-Chat": QfLLMInfo(
                 endpoint="/chat/yi_34b_chat",
@@ -448,6 +492,9 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                # 限时免费
+                input_price_per_1k_tokens=0,
+                output_price_per_1k_tokens=0,
             ),
             "Mixtral-8x7B-Instruct": QfLLMInfo(
                 endpoint="/chat/mixtral_8x7b_instruct",
@@ -465,6 +512,8 @@ class ChatCompletion(BaseResource):
                 },
                 max_input_chars=4800,
                 max_input_tokens=None,
+                input_price_per_1k_tokens=0.035,
+                output_price_per_1k_tokens=0.035,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
@@ -975,7 +1024,7 @@ class ChatCompletion(BaseResource):
 
     async def abatch_do(
         self,
-        messages_list: List[Union[List[Dict], QfMessages]],
+        messages_list: Sequence[Union[List[Dict], QfMessages]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:

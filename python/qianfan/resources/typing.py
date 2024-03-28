@@ -201,6 +201,8 @@ class QfLLMInfo:
     optional_keys: Set[str] = default_field(set())
     max_input_chars: Optional[int] = default_field(None)
     max_input_tokens: Optional[int] = default_field(None)
+    input_price_per_1k_tokens: float = default_field(0)
+    output_price_per_1k_tokens: float = default_field(0)
     deprecated: bool = default_field(False)
     api_type: str = default_field("")
 

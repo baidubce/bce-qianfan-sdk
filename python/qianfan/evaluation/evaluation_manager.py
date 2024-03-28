@@ -19,7 +19,9 @@ manager which manage whole procedure of evaluation
 import math
 import multiprocessing
 import os.path
+import shutil
 import time
+import zipfile
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
@@ -380,7 +382,11 @@ class EvaluationManager(BaseModel):
         return EvaluationResult(result_dataset=dataset.col_append(tmp_ds.col_list()))
 
     def eval(
-        self, llms: Sequence[Union[Model, Service]], dataset: Dataset, **kwargs: Any
+        self,
+        llms: Sequence[Union[Model, Service]],
+        dataset: Dataset,
+        download_when_doing_online: bool = True,
+        **kwargs: Any,
     ) -> Optional[EvaluationResult]:
         """
         Evaluate the performance of models on the dataset.
@@ -390,6 +396,9 @@ class EvaluationManager(BaseModel):
                 List of models or service to be evaluated.
             dataset (Dataset):
                 The dataset on which models will be evaluated.
+            download_when_doing_online (bool):
+                whether download result dataset when doing online evaluation.
+                default to True
             **kwargs (Any):
                 Other keyword arguments.
 
@@ -536,6 +545,9 @@ class EvaluationManager(BaseModel):
                 for result in result_list
             }
 
+            if not download_when_doing_online:
+                return EvaluationResult(metrics=metric_list)
+
             export_task_id = ResourceModel.create_evaluation_result_export_task(
                 self.task_id, **kwargs
             )["result"]["exportIDStr"]
@@ -573,15 +585,18 @@ class EvaluationManager(BaseModel):
             download_url = result["downloadUrl"]
             log_info(f"start to download evaluation result file from {download_url}")
 
-            local_cache_file_path = "tmp.csv"
+            local_cache_file_path = "tmp.zip"
+            unfold_zip_file_path = "tmp_folder"
+            data_jsonl_file_path = os.path.join(unfold_zip_file_path, "data.jsonl")
             try:
                 _download_file_from_url_streamly(download_url, local_cache_file_path)
+                with zipfile.ZipFile(local_cache_file_path) as zip_f:
+                    zip_f.extractall(unfold_zip_file_path)
 
                 # 返回指标信息
                 return EvaluationResult(
                     result_dataset=Dataset.load(
-                        FileDataSource(path=local_cache_file_path),
-                        dialect="excel",
+                        FileDataSource(path=data_jsonl_file_path)
                     ),
                     metrics=metric_list,
                 )
@@ -589,6 +604,11 @@ class EvaluationManager(BaseModel):
                 if os.path.exists(local_cache_file_path):
                     try:
                         os.remove(local_cache_file_path)
+                    except Exception:
+                        ...
+                if os.path.exists(unfold_zip_file_path):
+                    try:
+                        shutil.rmtree(unfold_zip_file_path)
                     except Exception:
                         ...
 

@@ -123,8 +123,8 @@ class OpenAIApdater(object):
         add_if_exist("stop")
         add_if_exist("stream")
         add_if_exist("functions")
-        add_if_exist("function_call", "tool_choice")
         add_if_exist("user", "user_id")
+        add_if_exist("tool_choice")
 
         model = openai_request["model"]
         qianfan_request["model"] = _convert_model(model)
@@ -150,6 +150,18 @@ class OpenAIApdater(object):
             for tool in tools:
                 if tool["type"] == "function":
                     qianfan_request["functions"].append(tool["function"])
+        if "function_call" in openai_request:
+            function_call = openai_request["function_call"]
+            if not isinstance(function_call, str):
+                qianfan_request["tool_choice"] = {
+                    "type": "function",
+                    "function": function_call,
+                }
+        if "response_format" in openai_request:
+            response_format = openai_request["response_format"]
+            if not isinstance(response_format, str):
+                response_format = response_format["type"]
+            qianfan_request["response_format"] = response_format
         return qianfan_request
 
     @classmethod

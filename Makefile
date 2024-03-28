@@ -33,7 +33,7 @@ test: clean install
 	$(MAKE) -C go test
 
 test_ntbk: clean install
-	$(MAKE) -C python test_ntbk func_call=$(func_call) reg=$(reg) params=$(params)
+	$(MAKE) -C python test_ntbk func_call=$(func_call) reg=$(reg) params=$(params) env_n=$(env_n) key_n=$(key_n)
 
 mock: 
 	bash ./python/scripts/run_mock_server.sh

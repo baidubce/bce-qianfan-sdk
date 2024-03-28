@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from typing import Any, Dict, List, Tuple
 
 from qianfan.autotuner.context import Context
@@ -146,6 +147,7 @@ class InferRunner(Runner):
         """
         Run the inference and evaluate the result.
         """
+        start_time = time.time()
         # infer the whole dataset
         res_list = await self._infer(config, context)
         # evaluate the result
@@ -153,4 +155,5 @@ class InferRunner(Runner):
         # calcuate the general metrics
         metrics = await self._update_metrics(config, res_list, context, metrics)
         # return the metrics and inference result
+        metrics["total_time"] = time.time() - start_time
         return metrics, res_list

@@ -58,6 +58,7 @@ class Launcher(object):
             file_handler = logging.FileHandler(
                 f"{log_dir}/qianfan_tune_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.log"
             )
+            file_handler.setFormatter(formatter)
             self._logger.addHandler(file_handler)
 
     async def run(self, suggestor: Suggestor, runner: Runner) -> Context:

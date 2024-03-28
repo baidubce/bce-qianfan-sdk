@@ -31,7 +31,10 @@ from langchain.schema import (
     SystemMessage,
 )
 from langchain.schema.language_model import BaseLanguageModel
-from langchain.tools import BaseTool, format_tool_to_openai_function
+from langchain.tools import BaseTool
+
+from langchain_core.runnables import RunnableConfig
+from langchain_core.utils.function_calling import convert_to_openai_function
 
 # langchain 新版本有部分逻辑迁移至 langchain_core
 # 为了兼容老版本而 try catch
@@ -159,8 +162,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = self.llm.predict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = self.llm.invoke(
+            messages, RunnableConfig(callbacks=callbacks), functions=self._wrapper_function, **kwargs
         )
         action = self._parse_message_to_action(result)
 
@@ -178,8 +183,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = await self.llm.apredict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = await self.llm.ainvoke(
+            messages, RunnableConfig(callbacks=callbacks), functions=self._wrapper_function, **kwargs
         )
         action = self._parse_message_to_action(result)
 
@@ -197,7 +204,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
 
     @property
     def _wrapper_function(self) -> List[dict]:
-        return [dict(format_tool_to_openai_function(t)) for t in self.tools]
+        return [dict(convert_to_openai_function(t)) for t in self.tools]
 
     @classmethod
     def _parse_message_to_action(

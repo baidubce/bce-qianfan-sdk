@@ -54,7 +54,7 @@ jobs:
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
           NEW_TAG: ${{ format('py/v{0}', steps.check-version.outputs.version) }}
         run: |
-          bash ./scripts/release_note.sh python
+          bash ./scripts/release_note.sh py
           echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
       - name: Create Release
         uses: ncipollo/release-action@v1

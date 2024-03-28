@@ -13,17 +13,11 @@ tag_json=$(
         --url "https://api.github.com/repos/$REPO/tags"
 )
 
-if [ "$1" == "python" ] ; then
-    tag_filter=$(
-        echo "$tag_json" | \
-        jq '[.[] | select(.name|startswith("py"))]'
-    )
-else
-    tag_filter=$(
-        echo "$tag_json" | \
-        jq "[.[] | select(.name|startswith(\"$1\"))]"
-    )
-fi
+tag_filter=$(
+    echo "$tag_json" | \
+    jq "[.[] | select(.name|startswith(\"$1\"))]"
+)
+
 
 if [ "$tag_filter" == "[]" ]; then
   echo "old_tag not find"
@@ -72,7 +66,7 @@ while true; do
         )
 
 
-    if [ "$1" == "python" ]; then
+    if [ "$1" == "py" ]; then
     infos=$(
         echo "$pr_info" | \
         jq '[.[] | {num:.number,title:.title,name:.labels[].name}]' | \

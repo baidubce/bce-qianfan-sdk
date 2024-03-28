@@ -20,7 +20,6 @@ import os
 import shutil
 from typing import Any, Dict, Optional
 
-import dateutil.parser
 import pyarrow
 
 from qianfan import get_config
@@ -42,6 +41,11 @@ from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
+
+try:
+    import dateutil.parser
+except ImportError:
+    log_warn("python-dateutil isn't installed, only online function can be used")
 
 
 class BosDataSource(DataSource, BaseModel):

@@ -5,6 +5,8 @@ import logging
 
 import pytest
 
+debug_mode = True
+
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
@@ -29,7 +31,7 @@ def test_demo(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -61,7 +63,7 @@ def test_common(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run(debug=True)
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -84,7 +86,7 @@ def test_agents(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.asyncio
@@ -109,7 +111,7 @@ def test_datasets(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -134,7 +136,7 @@ def test_rag(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -158,7 +160,7 @@ def test_sk(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -166,6 +168,7 @@ def test_sk(file_reg, params_dict, executor):
     [
         ('evaluation/how_to_use_evaluation.ipynb', {}),
         ('evaluation/local_eval_with_qianfan.ipynb', {}),
+        ('evaluation/opencompass_evaluator.ipynb', {}),
     ]
 )
 def test_evaluation(file_reg, params_dict, executor):
@@ -181,7 +184,7 @@ def test_evaluation(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
 
 
 @pytest.mark.parametrize(
@@ -208,7 +211,7 @@ def test_finetune(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run(debug=True)
+    executor.run(debug_mode)
 
 
 @pytest.mark.skip
@@ -231,13 +234,47 @@ def test_wandb(file_reg, params_dict, executor):
         None
     """
     executor.prepare(file_reg, params_dict)
-    executor.run()
+    executor.run(debug_mode)
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize(
+    "file_reg,params_dict",
+    [
+        ('openai_adapter.ipynb', {}),  # 未通过
+    ]
+)
+def test_openai_adapter(file_reg, params_dict, executor):
+    """
+    测试用例 openai_adapter文件
+
+    Args:
+        file_reg (str): 测试文件unix路径
+        params_dict (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
+    executor.prepare(file_reg, params_dict)
+    executor.run(debug_mode)
 
 
 @pytest.mark.asyncio
 def test_reg(cli_reg, cli_params, executor):
+    """
+    自定义测试用例
+
+    Args:
+        cli_reg (str): 测试文件unix路径
+        cli_params (dict): 参数字典
+        executor (object): 执行器对象（fixture）
+
+    Returns:
+        None
+    """
     if cli_reg == '':
         logging.warning(f'cli_path_reg is empty, skip test')
         return
     executor.prepare(cli_reg, cli_params)
-    executor.run()
+    executor.run(debug_mode)

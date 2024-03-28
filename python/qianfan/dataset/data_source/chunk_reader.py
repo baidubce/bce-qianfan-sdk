@@ -23,13 +23,17 @@ from abc import ABC, abstractmethod
 from queue import PriorityQueue, Queue
 from typing import Any, Callable, Dict, List, Optional
 
-import ijson
-from clevercsv import stream_table
 from typing_extensions import override
 
 from qianfan.config import encoding
 from qianfan.dataset.consts import QianfanDatasetPackColumnName
-from qianfan.utils import log_error
+from qianfan.utils import log_error, log_warn
+
+try:
+    import ijson
+    from clevercsv import stream_table
+except ImportError:
+    log_warn("ijson and clevercsv aren't installed, only online function can be used")
 
 
 class BaseReader(ABC):

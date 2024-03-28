@@ -6,30 +6,35 @@ declare reg=
 declare params=
 declare root_dir=
 declare env_file=
-declare QIANFAN_ACCESS_KEY=
-declare QIANFAN_SECRET_KEY=
+declare ENV_DICT=
 declare KEYWORDS_DICT=
 
 
 function usage() {
-    echo "sync github repo to iCode repo usage:"
+    echo "cookbook test usage:"
     echo "  $0 [-f <func_call>] [-r <path_reg>] [-p <param_dict>]"
     echo ""
     echo "options:"
     echo "  -f function_call"
     echo "  -r path_reg"
     echo "  -p param_dict"
-    echo "  -a QIANFAN_ACCESS_KEY"
-    echo "  -s QIANFAN_SECRET_KEY"
-    echo "  -k KEYWORDS_DICT"
+    echo "  -n ENV_DICT idx to use"
+    echo "  -k KEYWORDS_DICT idx to use"
     echo ""
     echo "Example:"
-    echo "  $0 -f test_reg -r datasets"
+    echo "  $0 -r datasets"
+    echo "  $0 -f test_datasets -n 2"
 }
 
 function get_config(){
   param=$1
-  value=$(sed -E '/^#.*|^ *$/d' "$env_file" | awk -F "${param}=" "/${param}=/{print \$2}" | tail -n1)
+  param_n=$2
+
+  if [[ -z "$param_n" ]]; then
+    param_n=1
+  fi
+
+  value=$(sed -E '/^#.*|^ *$/d' "$env_file" | awk -F "${param}=" "/${param}=/{print \$2}" | sed -n "${param_n}p")
   echo "$value"
 }
 
@@ -41,7 +46,7 @@ function check_param() {
 }
 
 function parse_param() {
-    while getopts :f:r:p:a:s:k:h opt; do
+    while getopts :f:r:p:n:k opt; do
         case $opt in
             f)
                 func_call="$OPTARG"
@@ -52,30 +57,20 @@ function parse_param() {
             p)
                 params="$OPTARG"
             ;;
-            a)
-                check_param "$OPTARG"
-                QIANFAN_ACCESS_KEY="$OPTARG"
-            ;;
-            s)
-                check_param "$OPTARG"
-                QIANFAN_SECRET_KEY="$OPTARG"
+            n)
+                  ENV_DICT=$(get_config ENV_DICT $OPTARG)
             ;;
             k)
-                check_param "$OPTARG"
-                KEYWORDS_DICT="$OPTARG"
-            ;;
-            \h)
-                usage
-                exit
+                  KEYWORDS_DICT=$(get_config KEYWORDS_DICT $OPTARG)
             ;;
             \?)
                 usage
-                exit
+                exit 1
             ;;
         esac
     done
-    if  [[ -z "$QIANFAN_ACCESS_KEY"  ||  -z "$QIANFAN_SECRET_KEY"  || -z "$KEYWORDS_DICT" ]]; then
-      echo "QIANFAN_ACCESS_KEY QIANFAN_SECRET_KEY or KEYWORDS_DICT isn't set"
+    if  [[ -z "$ENV_DICT"  || -z "$KEYWORDS_DICT" ]]; then
+      echo "ENV_DICT or KEYWORDS_DICT isn't set"
       exit 1
     fi
 
@@ -95,11 +90,11 @@ function parse_param() {
     if [ ! -z $func_call ]; then
       func_call="::$func_call"
     fi
+
 }
 
 function load_env(){
-  QIANFAN_ACCESS_KEY=$(get_config QIANFAN_ACCESS_KEY)
-  QIANFAN_SECRET_KEY=$(get_config QIANFAN_SECRET_KEY)
+  ENV_DICT=$(get_config ENV_DICT)
   KEYWORDS_DICT=$(get_config KEYWORDS_DICT)
 }
 
@@ -115,4 +110,4 @@ load_env
 parse_param "$@"
 
 cd "$root_dir"/python/test_CI || exit 1
-poetry run coverage run -m  pytest -v -r A --full-trace  test_ntbk.py"$func_call" --ak "$QIANFAN_ACCESS_KEY" --sk "$QIANFAN_SECRET_KEY" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"
+poetry run coverage run -m  pytest  -o log_cli=true -o log_cli_level=INFO -v -r A --full-trace  test_ntbk.py"$func_call" --env "$ENV_DICT" --keywords "$KEYWORDS_DICT" --root-dir "$root_dir" --reg "$reg" --params "$params"

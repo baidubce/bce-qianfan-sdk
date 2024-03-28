@@ -16,27 +16,22 @@
 
 package com.baidubce.qianfan.model.exception;
 
-import java.io.Serializable;
+import com.baidubce.qianfan.model.ApiErrorResponse;
 
 public class ApiException extends QianfanException {
-    private final Serializable errorResponse;
+    private final ApiErrorResponse errorResponse;
 
-    public ApiException(String message) {
-        super(message);
-        this.errorResponse = null;
-    }
-
-    public ApiException(String message, Throwable cause) {
-        super(message, cause);
-        this.errorResponse = null;
-    }
-
-    public ApiException(String message, Serializable errorResponse) {
+    public ApiException(String message, ApiErrorResponse errorResponse) {
         super(String.format("%s: %s", message, errorResponse));
         this.errorResponse = errorResponse;
     }
 
-    public Serializable getErrorResponse() {
+    public ApiException(String message, Throwable cause, ApiErrorResponse errorResponse) {
+        super(String.format("%s: %s", message, errorResponse), cause);
+        this.errorResponse = errorResponse;
+    }
+
+    public ApiErrorResponse getErrorResponse() {
         return errorResponse;
     }
 }

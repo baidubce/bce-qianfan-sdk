@@ -21,6 +21,7 @@ import com.baidubce.qianfan.core.builder.CompletionBuilder;
 import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
 import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
@@ -45,6 +46,11 @@ public class Qianfan {
 
     public Qianfan(String type, String accessKey, String secretKey) {
         this.client = new QianfanClient(type, accessKey, secretKey);
+    }
+
+    public Qianfan setRetryConfig(RetryConfig retryConfig) {
+        this.client.setRetryConfig(retryConfig);
+        return this;
     }
 
     public ChatBuilder chatCompletion() {

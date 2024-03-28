@@ -18,6 +18,7 @@ from qianfan.autotuner.context import Context
 from qianfan.autotuner.launcher import Launcher
 from qianfan.autotuner.runner.qianfan_runner import QianfanRunner
 from qianfan.autotuner.space import Space
+from qianfan.autotuner.suggestor.base import Suggestor
 from qianfan.autotuner.suggestor.random_suggestor import RandomSuggestor
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
@@ -28,6 +29,7 @@ async def run(
     search_space: Dict[str, Space],
     dataset: Dataset,
     evaluator: Evaluator,
+    suggestor: Literal["random"] = "random",
     cost_budget: Optional[float] = None,
     metrics: str = "score",
     mode: Literal["min", "max"] = "max",
@@ -36,17 +38,22 @@ async def run(
     log_dir: Optional[str] = None,
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "INFO",
 ) -> Context:
+    _suggestor: Suggestor
+    if suggestor == "random":
+        _suggestor = RandomSuggestor(
+            search_space=search_space,
+            cost_budget=cost_budget,  # 设定整个流程的预算
+            metrics=metrics,  # 设定评估指标字段，与 Evaluator 输出对应
+            mode=mode,  # 设定评估指标最大化还是最小化
+        )
+    else:
+        raise NotImplementedError(f"Unsupported suggestor: {suggestor}")
     return await Launcher(
         log_dir=log_dir,
         log_level=log_level,
         max_turn=max_turn,
     ).run(
-        suggestor=RandomSuggestor(
-            search_space=search_space,
-            cost_budget=cost_budget,  # 设定整个流程的预算
-            metrics=metrics,  # 设定评估指标字段，与 Evaluator 输出对应
-            mode=mode,  # 设定评估指标最大化还是最小化
-        ),
+        suggestor=_suggestor,
         runner=QianfanRunner(
             dataset=dataset,
             evaluator=evaluator,

@@ -106,6 +106,20 @@ class VersatileRateLimiter:
             self._inner_async_reset_once_lock = asyncio.Lock()
         return self._inner_async_reset_once_lock
 
+    def _get_og_rpm(self) -> float:
+        og_rpm: float = 0
+        if not self.is_closed:
+            og_rpm = max(
+                (
+                    self._og_request_per_minute
+                    if self._is_rpm
+                    else self._og_query_per_second * 60
+                ),
+                0,
+            )
+
+        return og_rpm
+
     async def async_reset_once(self, rpm: float) -> None:
         # 检查是否已经重置过，如是，则直接返回
         if self._has_been_reset:
@@ -118,14 +132,7 @@ class VersatileRateLimiter:
             self._async_reset_once_lock.release()
             return
 
-        og_rpm = max(
-            (
-                self._og_request_per_minute
-                if self._is_rpm
-                else self._og_query_per_second * 60
-            ),
-            0,
-        )
+        og_rpm = self._get_og_rpm()
 
         # 如果新旧值一致则不需要操作
         if og_rpm == rpm:
@@ -162,14 +169,7 @@ class VersatileRateLimiter:
             self._reset_once_lock.release()
             return
 
-        og_rpm = max(
-            (
-                self._og_request_per_minute
-                if self._is_rpm
-                else self._og_query_per_second * 60
-            ),
-            0,
-        )
+        og_rpm = self._get_og_rpm()
 
         # 如果新旧值一致则不需要操作
         if og_rpm == rpm:
@@ -196,10 +196,14 @@ class VersatileRateLimiter:
 
     def _reset_internal_rate_limiter(self, rpm: float) -> None:
         # 记录一下新值
-        if self._is_rpm:
+        if self.is_closed or self._is_rpm:
+            self._is_rpm = True
             self._new_request_per_minute = rpm
         else:
+            self._is_rpm = False
             self._new_query_per_second = rpm / 60
+
+        self.is_closed = False
 
         # 重置
         rpm *= 1 - self._buffer_ratio

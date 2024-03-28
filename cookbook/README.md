@@ -5,7 +5,7 @@
 # 大模型推理
 
 
-- [图生文示例](./text2image.ipynb)：展示了如何使用千帆 SDK 完成图生文任务。
+- [文生图示例](./text2image.ipynb)：展示了如何使用千帆 SDK 完成文生图任务。
 - [ERNIE Bot 搜索能力示例](./eb_search.ipynb)：展示了 ENRIE Bot 的搜索增强能力和使用方法。
 - [批量推理示例](./batch_prediction.ipynb)：展示了如何使用 SDK 批量对数据进行预测。
 - [离线批量推理](./offline_batch_inference.ipynb)：展示了如何使用 SDK 调用平台的离线批量功能。
@@ -33,6 +33,7 @@
 # AI 原生应用相关
 
 - [Prompt 模版](./prompt.ipynb)：展示了如何使用 SDK 管理和使用 Prompt。
+- [OpenAI 适配器](./openai_adapter.ipynb)：展示了如何使用 SDK 提供的 OpenAI 适配器快速接入已经支持 OpenAI 接口的第三方库。
 
 ## Agent
 

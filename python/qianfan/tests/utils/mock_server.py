@@ -102,9 +102,12 @@ def json_response(data, request_id=None, status_code=200):
                 "_header": dict(request.headers),
             }
         ),
+        headers={
+            "X-Ratelimit-Limit-Tokens": 300000,
+            "X-Ratelimit-Limit-Requests": 3000,
+        },
         mimetype="application/json",
         status=status_code,
-        # header=header
     )
     if request_id is not None:
         resp.headers[Consts.XResponseID] = request_id
@@ -1871,6 +1874,15 @@ def list_service():
     mock create service api
     """
     services = [
+        {
+            "name": "ERNIE-99",
+            "url": (
+                "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb99"
+            ),
+            "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
         {
             "name": "ERNIE-Bot 4.0",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",

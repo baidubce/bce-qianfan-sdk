@@ -335,9 +335,9 @@ class OpenAIApdater(object):
                     "embedding": data["embedding"],
                     "object": "embedding",
                 }
-            embed_list.append(embed)
+                embed_list.append(embed)
+                prompt_tokens += resp["usage"]["prompt_tokens"]
 
-            prompt_tokens += resp["usage"]["prompt_tokens"]
         resp = qianfan_response_list[0]
         result = {
             "id": resp["id"],

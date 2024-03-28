@@ -31,9 +31,8 @@ from langchain.schema import (
     SystemMessage,
 )
 from langchain.schema.language_model import BaseLanguageModel
-from langchain.tools import BaseTool
+from langchain.tools import BaseTool, format_tool_to_openai_function
 from langchain_core.runnables import RunnableConfig
-from langchain_core.utils.function_calling import convert_to_openai_function
 
 # langchain 新版本有部分逻辑迁移至 langchain_core
 # 为了兼容老版本而 try catch
@@ -209,7 +208,7 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
 
     @property
     def _wrapper_function(self) -> List[dict]:
-        return [dict(convert_to_openai_function(t)) for t in self.tools]
+        return [dict(format_tool_to_openai_function(t)) for t in self.tools]
 
     @classmethod
     def _parse_message_to_action(

@@ -21,7 +21,6 @@ import uuid
 import zipfile
 from typing import Any, Dict, Optional, Tuple
 
-import dateutil.parser
 import pyarrow
 
 from qianfan.config import encoding, get_config
@@ -59,6 +58,11 @@ from qianfan.resources.console.consts import (
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.pydantic import BaseModel, Field
+
+try:
+    import dateutil.parser
+except ImportError:
+    log_warn("python-dateutil not installed, only online function can be used")
 
 
 class QianfanDataSource(DataSource, BaseModel):

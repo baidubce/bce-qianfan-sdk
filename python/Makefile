@@ -2,7 +2,7 @@ build:
 	bash ./scripts/build.sh
 
 install:
-	poetry install -E all
+	poetry install -E extension
 
 # install_ntbk:
 # 	poetry install -E all

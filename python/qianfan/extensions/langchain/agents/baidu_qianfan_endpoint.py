@@ -282,8 +282,13 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = self.llm.predict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = self.llm.invoke(  # type: ignore
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
         assert isinstance(action, (list, AgentFinish))
@@ -300,8 +305,13 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = await self.llm.apredict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = await self.llm.ainvoke(
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
         assert isinstance(action, (list, AgentFinish))

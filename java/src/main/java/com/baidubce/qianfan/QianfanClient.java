@@ -22,6 +22,7 @@ import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.ApiErrorResponse;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
@@ -42,6 +43,7 @@ class QianfanClient {
 
     private final IAuth auth;
     private final ModelEndpointRetriever endpointRetriever;
+    private RetryConfig retryConfig;
 
     public QianfanClient() {
         this(Auth.create());
@@ -58,21 +60,58 @@ class QianfanClient {
     private QianfanClient(IAuth auth) {
         this.auth = auth;
         this.endpointRetriever = new ModelEndpointRetriever(auth);
+        this.retryConfig = QianfanConfig.getRetryConfig();
+    }
+
+    public void setRetryConfig(RetryConfig retryConfig) {
+        this.retryConfig = retryConfig;
     }
 
     @SuppressWarnings("unchecked")
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
-        return innerRequest(
+        return request(
                 () -> createHttpRequest(request).executeJson(responseClass),
                 resp -> (T) resp.getBody()
         );
     }
 
     public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
-        return innerRequest(
+        return request(
                 () -> createHttpRequest(request).executeSSE(),
                 resp -> new StreamIterator<>(resp.getBody(), responseClass)
         );
+    }
+
+    private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
+        String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
+        String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
+        baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
+        HttpRequest request = HttpClient.request()
+                .post(url)
+                .body(baseRequest);
+        return auth.signRequest(request);
+    }
+
+    private <T, R, E extends Exception> R request(ThrowingSupplier<HttpResponse<T>, E> respSupplier,
+                                                  ThrowingFunction<HttpResponse<T>, R, E> respProcessor) {
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < retryConfig.getRetryCount(); i++) {
+            try {
+                return innerRequest(respSupplier, respProcessor);
+            } catch (RuntimeException ex) {
+                if (ex instanceof ApiException) {
+                    Integer errorCode = ((ApiException) ex).getErrorResponse().getErrorCode();
+                    if (!retryConfig.getRetryErrCodes().contains(errorCode)) {
+                        throw ex;
+                    }
+                }
+                if (i == retryConfig.getRetryCount() - 1) {
+                    throw ex;
+                }
+                backoffSleep(i, retryConfig.getBackoffFactor(), startTime, retryConfig.getMaxWaitInterval());
+            }
+        }
+        throw new IllegalStateException("Request failed with unknown error");
     }
 
     private <T, R, E extends Exception> R innerRequest(ThrowingSupplier<HttpResponse<T>, E> respSupplier,
@@ -80,7 +119,7 @@ class QianfanClient {
         try {
             HttpResponse<T> resp = respSupplier.get();
             if (resp.getCode() != HttpStatus.SUCCESS) {
-                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
+                throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
             }
             String contentType = resp.getHeaders().getOrDefault(ContentType.HEADER, "");
             if (contentType.startsWith(ContentType.APPLICATION_JSON)) {
@@ -97,14 +136,16 @@ class QianfanClient {
         }
     }
 
-    private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
-        String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
-        String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
-        baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
-        HttpRequest request = HttpClient.request()
-                .post(url)
-                .body(baseRequest);
-        return auth.signRequest(request);
+    private void backoffSleep(int retryCount, double backoffFactor, long startTime, int totalRetryTimeout) throws RequestException {
+        try {
+            long baseDelay = (long) (Math.pow(2, retryCount) * backoffFactor * 1000);
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            long adjustedDelay = Math.min(baseDelay, (long) totalRetryTimeout * 1000 - elapsedTime);
+            Thread.sleep(adjustedDelay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RequestException("Request failed: retry delay interrupted", e);
+        }
     }
 
     private static class StreamIterator<T> implements Iterator<T> {

@@ -11,16 +11,15 @@ declare KEYWORDS_DICT=
 
 
 function usage() {
-    echo "sync github repo to iCode repo usage:"
+    echo "cookbook test usage:"
     echo "  $0 [-f <func_call>] [-r <path_reg>] [-p <param_dict>]"
     echo ""
     echo "options:"
     echo "  -f function_call"
     echo "  -r path_reg"
     echo "  -p param_dict"
-    echo "  -a QIANFAN_ACCESS_KEY"
-    echo "  -s QIANFAN_SECRET_KEY"
-    echo "  -k KEYWORDS_DICT"
+    echo "  -n ENV_DICT idx to use"
+    echo "  -k KEYWORDS_DICT idx to use"
     echo ""
     echo "Example:"
     echo "  $0 -f test_reg -r datasets"
@@ -28,7 +27,13 @@ function usage() {
 
 function get_config(){
   param=$1
-  value=$(sed -E '/^#.*|^ *$/d' "$env_file" | awk -F "${param}=" "/${param}=/{print \$2}" | tail -n1)
+  param_n=$2
+
+  if [[ -z "$param_n" ]]; then
+    param_n=1
+  fi
+
+  value=$(sed -E '/^#.*|^ *$/d' "$env_file" | awk -F "${param}=" "/${param}=/{print \$2}" | sed -n "${param_n}p")
   echo "$value"
 }
 
@@ -40,7 +45,7 @@ function check_param() {
 }
 
 function parse_param() {
-    while getopts :f:r:p:a:s:k:h opt; do
+    while getopts :f:r:p:n:h:k opt; do
         case $opt in
             f)
                 func_call="$OPTARG"
@@ -51,19 +56,13 @@ function parse_param() {
             p)
                 params="$OPTARG"
             ;;
-            a)
-                check_param "$OPTARG"
-                QIANFAN_ACCESS_KEY="$OPTARG"
-            ;;
-            s)
-                check_param "$OPTARG"
-                QIANFAN_SECRET_KEY="$OPTARG"
+            n)
+                  ENV_DICT=$(get_config ENV_DICT $OPTARG)
             ;;
             k)
-                check_param "$OPTARG"
-                KEYWORDS_DICT="$OPTARG"
+                  KEYWORDS_DICT=$(get_config KEYWORDS_DICT $OPTARG)
             ;;
-            \h)
+            h)
                 usage
                 exit
             ;;

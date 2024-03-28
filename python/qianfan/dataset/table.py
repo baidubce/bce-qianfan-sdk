@@ -80,8 +80,7 @@ def _create_new_table_for_add(
 
         if not isinstance(elem[0], dict):
             err_msg = (
-                "element in sequence-like "
-                "container cannot be instance of"
+                "element in sequence-like container cannot be instance of"
                 f" {type(elem[0])}"
             )
             log_error(err_msg)

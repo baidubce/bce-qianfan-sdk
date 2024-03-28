@@ -81,8 +81,8 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
     """
     if response.status_code != 200:
         failed_msg = (
-            f"http request url {response.url} failed "
-            f"with http status code {response.status_code}\n"
+            f"http request url {response.url} failed with http status code"
+            f" {response.status_code}\n"
         )
         if response.headers.get("X-Bce-Error-Code", ""):
             failed_msg += (

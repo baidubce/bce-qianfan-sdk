@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.util.http;
 
 import com.baidubce.qianfan.util.Json;
+import com.baidubce.qianfan.util.TypeRef;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
@@ -25,6 +26,7 @@ import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -106,8 +108,12 @@ public class HttpRequest {
         return this;
     }
 
-    public <T> HttpResponse<T> executeJson(Class<T> clazz) throws IOException {
-        return HttpClient.executeJson(toClassicHttpRequest(), clazz);
+    public <T> HttpResponse<T> executeJson(TypeRef<T> typeRef) throws IOException {
+        return HttpClient.executeJson(toClassicHttpRequest(), typeRef);
+    }
+
+    public <T> HttpResponse<T> executeJson(Type type) throws IOException {
+        return HttpClient.executeJson(toClassicHttpRequest(), type);
     }
 
     public HttpResponse<String> executeString() throws IOException {

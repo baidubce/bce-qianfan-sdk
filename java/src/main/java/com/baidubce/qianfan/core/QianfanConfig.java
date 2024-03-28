@@ -31,9 +31,11 @@ public class QianfanConfig {
     private static final String QIANFAN_IAM_SIGN_EXPIRATION_SEC = "QIANFAN_IAM_SIGN_EXPIRATION_SEC";
     private static final String QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL";
     private static final String QIANFAN_BASE_URL = "QIANFAN_BASE_URL";
+    private static final String QIANFAN_CONSOLE_API_BASE_URL = "QIANFAN_CONSOLE_API_BASE_URL";
     private static final int DEFAULT_IAM_SIGN_EXPIRATION_SEC = 1800;
     private static final int DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = 5;
     private static final String DEFAULT_BASE_URL = "https://aip.baidubce.com";
+    private static final String DEFAULT_CONSOLE_API_BASE_URL = "https://qianfan.baidubce.com";
     private static final String QIANFAN_DOT_ENV_CONFIG_FILE = "QIANFAN_DOT_ENV_CONFIG_FILE";
     private static final String DEFAULT_DOT_ENV_CONFIG_FILE = ".env";
     private static final Map<String, String> defaultConfigMap = new HashMap<>();
@@ -44,10 +46,11 @@ public class QianfanConfig {
             defaultConfigMap.put(QIANFAN_IAM_SIGN_EXPIRATION_SEC, String.valueOf(DEFAULT_IAM_SIGN_EXPIRATION_SEC));
             defaultConfigMap.put(QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL, String.valueOf(DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL));
             defaultConfigMap.put(QIANFAN_BASE_URL, DEFAULT_BASE_URL);
+            defaultConfigMap.put(QIANFAN_CONSOLE_API_BASE_URL, DEFAULT_CONSOLE_API_BASE_URL);
             String envConfigFile = System.getenv().getOrDefault(QIANFAN_DOT_ENV_CONFIG_FILE, DEFAULT_DOT_ENV_CONFIG_FILE);
             fileConfigMap.putAll(EnvParser.loadEnv(envConfigFile));
         } catch (FileNotFoundException e) {
-            // ignore
+            // ignored
         } catch (Exception e) {
             throw new ValidationException("Failed to load config from env file", e);
         }
@@ -82,6 +85,10 @@ public class QianfanConfig {
 
     public static String getBaseUrl() {
         return getString(QIANFAN_BASE_URL);
+    }
+
+    public static String getConsoleApiBaseUrl() {
+        return getString(QIANFAN_CONSOLE_API_BASE_URL);
     }
 
     public static Integer getInt(String key) {

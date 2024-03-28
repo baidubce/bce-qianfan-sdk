@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.model.completion;
 
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.constant.ModelType;
 
 import java.util.List;
 
@@ -55,6 +56,11 @@ public class CompletionRequest extends BaseRequest<CompletionRequest> {
      * 是否为流式请求
      */
     private Boolean stream;
+
+    @Override
+    public String getType() {
+        return ModelType.COMPLETIONS;
+    }
 
     public String getPrompt() {
         return prompt;

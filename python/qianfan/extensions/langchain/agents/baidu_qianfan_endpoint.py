@@ -32,7 +32,6 @@ from langchain.schema import (
 )
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.tools import BaseTool
-
 from langchain_core.runnables import RunnableConfig
 from langchain_core.utils.function_calling import convert_to_openai_function
 
@@ -164,8 +163,11 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         ).to_messages()
         if "input" in kwargs:
             kwargs.pop("input")
-        result: BaseMessage = self.llm.invoke(
-            messages, RunnableConfig(callbacks=callbacks), functions=self._wrapper_function, **kwargs
+        result: BaseMessage = self.llm.invoke(  # type: ignore
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
 
@@ -186,7 +188,10 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         if "input" in kwargs:
             kwargs.pop("input")
         result: BaseMessage = await self.llm.ainvoke(
-            messages, RunnableConfig(callbacks=callbacks), functions=self._wrapper_function, **kwargs
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
 

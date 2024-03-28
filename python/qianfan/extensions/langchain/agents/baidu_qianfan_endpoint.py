@@ -377,7 +377,12 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
                 return_values={"output": result.content}, log=str(result)
             )
 
-        arg_str = result.additional_kwargs.get("function_call", {}).get("arguments", "")
+        if hasattr(result, "response_metadata"):
+            tool_json = result.response_metadata.get("function_call", {})  # noqa
+        else:
+            tool_json = result.additional_kwargs.get("function_call", {})
+
+        arg_str = tool_json.get("arguments", "")
         if not arg_str:
             raise ValueError("arguments retrieved from service is empty")
         action_list = json.loads(arg_str)["actions"]

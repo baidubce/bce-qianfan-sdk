@@ -17,6 +17,7 @@ import importlib.util
 import os
 import re
 import secrets
+import socket
 import string
 import threading
 import uuid as uuid_lib
@@ -207,3 +208,17 @@ def check_dependency(module_name: str, dependency_list: List[str]) -> None:
                 f"`{dependency}` is required for `{module_name}` module, please install"
                 f" it using `pip install qianfan[{module_name}]`"
             )
+
+
+def get_ip_address() -> str:
+    """Get the IP address of interface."""
+    # arbitrary private address
+    host = "10.254.254.254"
+
+    with socket.socket(socket.AddressFamily.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect((host, 64512))
+        except OSError:
+            return "127.0.0.1"
+
+        return s.getsockname()[0]  # type: ignore

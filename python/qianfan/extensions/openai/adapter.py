@@ -33,7 +33,7 @@ def _convert_model(model: str) -> str:
     Convert OpenAI model name to Qianfan model name.
     """
     if model.lower().startswith("gpt-3.5"):
-        return "ERNIE-Bot"
+        return "ERNIE-3.5-8K"
     elif model.lower().startswith("gpt-4"):
         return "ERNIE-4.0-8K"
     elif model.lower().startswith("text-embedding"):
@@ -54,6 +54,7 @@ def merge_async_iters(*aiters: AsyncIterator[_T]) -> AsyncIterator[_T]:
         try:
             async for item in aiter:
                 await queue.put((False, item))
+            await queue.put((False, StopAsyncIteration()))
         except Exception as e:
             if not cancelling:
                 await queue.put((True, e))
@@ -70,7 +71,8 @@ def merge_async_iters(*aiters: AsyncIterator[_T]) -> AsyncIterator[_T]:
                     assert isinstance(next_item, Exception)
                     cancel_tasks()
                     raise next_item
-                assert not isinstance(next_item, Exception)
+                if isinstance(next_item, Exception):
+                    continue
                 yield next_item
         finally:
             cancel_tasks()
@@ -333,9 +335,9 @@ class OpenAIApdater(object):
                     "embedding": data["embedding"],
                     "object": "embedding",
                 }
-            embed_list.append(embed)
+                embed_list.append(embed)
+                prompt_tokens += resp["usage"]["prompt_tokens"]
 
-            prompt_tokens += resp["usage"]["prompt_tokens"]
         resp = qianfan_response_list[0]
         result = {
             "id": resp["id"],

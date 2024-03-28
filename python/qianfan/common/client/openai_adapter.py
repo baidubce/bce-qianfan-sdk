@@ -12,95 +12,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import json
-from typing import Any, AsyncIterator, Iterator, Optional
+from typing import Any, AsyncIterator, Optional
 
-from flask import Flask, Response, jsonify, request
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
 
 from qianfan.extensions.openai.adapter import OpenAIApdater
-from qianfan.utils.utils import check_dependency
+from qianfan.utils.utils import get_ip_address
 
-app = Flask(__name__)
+app = FastAPI()
 
 adapter = OpenAIApdater()
 
 
-def stream(resp: AsyncIterator[Any]) -> Iterator[str]:
+async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
     """
     Convert an async iterator to a stream.
-
-    The return value of OpenAIAdapter is an async iterator, but Response
-    of Flask only accepts sync iterator. Therefore, we need to convert
-    the async iterator to a sync iterator.
     """
-    loop = asyncio.new_event_loop()
-    while True:
-        try:
-            data = loop.run_until_complete(resp.__anext__())
-            yield "data: " + json.dumps(data) + "\n\n"
-        except StopAsyncIteration:
-            break
+    async for data in resp:
+        yield "data: " + json.dumps(data) + "\n\n"
 
 
 @app.post("/v1/chat/completions")
-async def chat_completion() -> Response:
-    openai_params = request.json
+async def chat_completion(request: Request) -> Response:
+    openai_params = await request.json()
     assert openai_params is not None
     resp = await adapter.chat(openai_params)
 
     if isinstance(resp, AsyncIterator):
-        return Response(stream(resp), mimetype="text/event-stream")
+        return StreamingResponse(stream(resp), media_type="text/event-stream")
 
-    return jsonify(resp)
+    return JSONResponse(resp)
 
 
 @app.post("/v1/completions")
-async def completion() -> Response:
-    openai_params = request.json
+async def completion(request: Request) -> Response:
+    openai_params = await request.json()
     assert openai_params is not None
     resp = await adapter.completion(openai_params)
 
     if isinstance(resp, AsyncIterator):
-        return Response(stream(resp), mimetype="text/event-stream")
+        return StreamingResponse(stream(resp), media_type="text/event-stream")
 
-    return jsonify(resp)
+    return JSONResponse(resp)
 
 
 @app.post("/v1/embeddings")
-async def embedding() -> Response:
-    openai_params = request.json
+async def embedding(request: Request) -> Response:
+    openai_params = await request.json()
     assert openai_params is not None
     resp = await adapter.embedding(openai_params)
 
-    return jsonify(resp)
+    return JSONResponse(resp)
 
 
 def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
-    check_dependency("openai", ["flask", "gevent", "werkzeug"])
-    import logging
-    import socket
-
     import rich
-    from gevent.pywsgi import WSGIServer
+    import uvicorn
+    import uvicorn.config
     from rich.markdown import Markdown
-    from werkzeug.serving import get_interface_ip
 
     import qianfan
     from qianfan.common.client.openai_adapter import app as openai_apps
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("INFO")
+    log_config = uvicorn.config.LOGGING_CONFIG
     if log_file is not None:
-        logger._logger.addHandler(logging.FileHandler(log_file))
-
-    http_server = WSGIServer((host, port), openai_apps, log=logger._logger)
+        log_config["handlers"]["file"] = {
+            "class": "logging.FileHandler",
+            "filename": log_file,
+            "mode": "a",
+            "encoding": "utf-8",
+        }
+        for key in log_config["loggers"]:
+            if "handlers" in log_config["loggers"][key]:
+                log_config["loggers"][key]["handlers"].append("file")
 
     messages = ["OpenAI wrapper server is running at"]
     messages.append(f"- http://127.0.0.1:{port}")
     display_host = host
     if display_host == "0.0.0.0":
-        display_host = get_interface_ip(socket.AddressFamily.AF_INET)
+        display_host = get_ip_address()
     messages.append(f"- http://{display_host}:{port}")
 
     messages.append("\nRemember to set the environment variables:")
@@ -112,6 +107,9 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     rich.print(Markdown("\n".join(messages)))
     rich.print()
 
+    def start_server() -> None:
+        uvicorn.run(openai_apps, host=host, port=port, log_config=log_config)
+
     if detach:
         import os
 
@@ -119,7 +117,10 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
 
         # close stderr output
         logger._logger.removeHandler(logger.handler)
-        process = Process(target=http_server.serve_forever)
+        log_config["loggers"]["uvicorn.access"]["handlers"].remove("access")
+        log_config["loggers"]["uvicorn"]["handlers"].remove("default")
+
+        process = Process(target=start_server)
         process.start()
 
         rich.print(
@@ -127,4 +128,4 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
         )
         os._exit(0)
 
-    http_server.serve_forever()
+    start_server()

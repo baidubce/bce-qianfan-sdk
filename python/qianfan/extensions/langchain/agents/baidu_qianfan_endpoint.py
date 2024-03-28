@@ -32,6 +32,7 @@ from langchain.schema import (
 )
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.tools import BaseTool, format_tool_to_openai_function
+from langchain_core.runnables import RunnableConfig
 
 # langchain 新版本有部分逻辑迁移至 langchain_core
 # 为了兼容老版本而 try catch
@@ -159,8 +160,13 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = self.llm.predict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = self.llm.invoke(  # type: ignore
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
 
@@ -178,8 +184,13 @@ class QianfanSingleActionAgent(BaseSingleActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = await self.llm.apredict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = await self.llm.ainvoke(
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
 
@@ -271,8 +282,13 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = self.llm.predict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = self.llm.invoke(  # type: ignore
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
         assert isinstance(action, (list, AgentFinish))
@@ -289,8 +305,13 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
         messages = self.prompt.format_prompt(
             history=tool_history, **kwargs
         ).to_messages()
-        result: BaseMessage = await self.llm.apredict_messages(
-            messages, callbacks=callbacks, functions=self._wrapper_function, **kwargs
+        if "input" in kwargs:
+            kwargs.pop("input")
+        result: BaseMessage = await self.llm.ainvoke(
+            messages,
+            RunnableConfig(callbacks=callbacks),
+            functions=self._wrapper_function,
+            **kwargs,
         )
         action = self._parse_message_to_action(result)
         assert isinstance(action, (list, AgentFinish))
@@ -356,7 +377,12 @@ class QianfanMultiActionAgent(BaseMultiActionAgent):
                 return_values={"output": result.content}, log=str(result)
             )
 
-        arg_str = result.additional_kwargs.get("function_call", {}).get("arguments", "")
+        if hasattr(result, "response_metadata"):
+            tool_json = result.response_metadata.get("function_call", {})  # noqa
+        else:
+            tool_json = result.additional_kwargs.get("function_call", {})
+
+        arg_str = tool_json.get("arguments", "")
         if not arg_str:
             raise ValueError("arguments retrieved from service is empty")
         action_list = json.loads(arg_str)["actions"]

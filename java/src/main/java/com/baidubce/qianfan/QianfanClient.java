@@ -27,11 +27,10 @@ import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.StringUtils;
-import com.baidubce.qianfan.util.http.HttpClient;
-import com.baidubce.qianfan.util.http.HttpRequest;
-import com.baidubce.qianfan.util.http.HttpResponse;
+import com.baidubce.qianfan.util.function.ThrowingFunction;
+import com.baidubce.qianfan.util.function.ThrowingSupplier;
+import com.baidubce.qianfan.util.http.*;
 
-import java.util.HashMap;
 import java.util.Iterator;
 
 class QianfanClient {
@@ -61,31 +60,36 @@ class QianfanClient {
         this.endpointRetriever = new ModelEndpointRetriever(auth);
     }
 
+    @SuppressWarnings("unchecked")
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
-        try {
-            HttpResponse<T> resp = createHttpRequest(request).executeJson(responseClass);
-            if (resp.getCode() != 200) {
-                throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
-            }
-            ApiErrorResponse errorResp = Json.deserialize(resp.getStringBody(), ApiErrorResponse.class);
-            if (StringUtils.isNotEmpty(errorResp.getErrorMsg())) {
-                throw new ApiException("Request failed with api error", errorResp);
-            }
-            return resp.getBody();
-        } catch (QianfanException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
-        }
+        return innerRequest(
+                () -> createHttpRequest(request).executeJson(responseClass),
+                resp -> (T) resp.getBody()
+        );
     }
 
     public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+        return innerRequest(
+                () -> createHttpRequest(request).executeSSE(),
+                resp -> new StreamIterator<>(resp.getBody(), responseClass)
+        );
+    }
+
+    private <T, R, E extends Exception> R innerRequest(ThrowingSupplier<HttpResponse<T>, E> respSupplier,
+                                                       ThrowingFunction<HttpResponse<T>, R, E> respProcessor) {
         try {
-            HttpResponse<Iterator<String>> resp = createHttpRequest(request).executeSSE();
-            if (resp.getCode() != 200) {
+            HttpResponse<T> resp = respSupplier.get();
+            if (resp.getCode() != HttpStatus.SUCCESS) {
                 throw new ApiException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
             }
-            return new StreamIterator<>(resp.getBody(), responseClass);
+            String contentType = resp.getHeaders().getOrDefault(ContentType.HEADER, "");
+            if (contentType.startsWith(ContentType.APPLICATION_JSON)) {
+                ApiErrorResponse errorResp = Json.deserialize(resp.getStringBody(), ApiErrorResponse.class);
+                if (StringUtils.isNotEmpty(errorResp.getErrorMsg())) {
+                    throw new ApiException("Request failed with api error", errorResp);
+                }
+            }
+            return respProcessor.apply(resp);
         } catch (QianfanException e) {
             throw e;
         } catch (Exception e) {
@@ -96,12 +100,9 @@ class QianfanClient {
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
         String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
         String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
-        if (baseRequest.getExtraParameters() == null) {
-            baseRequest.setExtraParameters(new HashMap<>());
-        }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
         HttpRequest request = HttpClient.request()
-                .post(String.format(url))
+                .post(url)
                 .body(baseRequest);
         return auth.signRequest(request);
     }

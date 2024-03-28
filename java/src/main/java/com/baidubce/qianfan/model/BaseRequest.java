@@ -16,6 +16,7 @@
 
 package com.baidubce.qianfan.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class BaseRequest<T extends BaseRequest<T>> {
@@ -37,7 +38,7 @@ public abstract class BaseRequest<T extends BaseRequest<T>> {
     /**
      * 请求的额外参数
      */
-    private Map<String, Object> extraParameters;
+    private Map<String, Object> extraParameters = new HashMap<>();
 
     public abstract String getType();
 

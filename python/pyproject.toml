@@ -54,9 +54,9 @@ clevercsv = [
     { version = "<=0.8.0", python = "<3.8", optional = true },
     { version = "*", python = ">=3.8", optional = true }
 ]
-ijson = "*"
-flask = { version = "*", optional = true}
-gevent = { version = "*", optional = true}
+ijson = { version = "*", optional = true }
+fastapi = { version = "*", optional = true }
+uvicorn = { version = "*", optional = true }
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"

@@ -77,11 +77,11 @@ types-protobuf = "4.24.0.4"
 setuptools = "*"
 
 [tool.poetry.extras]
-all = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
+dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
 langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
-data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
+local_data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
 openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "flask", "gevent"]
-all_extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
+extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

@@ -22,7 +22,8 @@ function usage() {
     echo "  -k KEYWORDS_DICT idx to use"
     echo ""
     echo "Example:"
-    echo "  $0 -f test_reg -r datasets"
+    echo "  $0 -r datasets"
+    echo "  $0 -f test_datasets -n 2"
 }
 
 function get_config(){
@@ -45,7 +46,7 @@ function check_param() {
 }
 
 function parse_param() {
-    while getopts :f:r:p:n:h:k opt; do
+    while getopts :f:r:p:n:k opt; do
         case $opt in
             f)
                 func_call="$OPTARG"
@@ -62,13 +63,9 @@ function parse_param() {
             k)
                   KEYWORDS_DICT=$(get_config KEYWORDS_DICT $OPTARG)
             ;;
-            h)
-                usage
-                exit
-            ;;
             \?)
                 usage
-                exit
+                exit 1
             ;;
         esac
     done
@@ -93,6 +90,7 @@ function parse_param() {
     if [ ! -z $func_call ]; then
       func_call="::$func_call"
     fi
+
 }
 
 function load_env(){

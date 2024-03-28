@@ -78,6 +78,8 @@ class Launcher(object):
             Context: The context object containing the results of the autotuning task.
         """
         context = Context()
+        suggestor._set_logger(self._logger)
+        runner._set_logger(self._logger)
 
         while True:
             is_end = False

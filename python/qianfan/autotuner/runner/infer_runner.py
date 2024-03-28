@@ -106,7 +106,9 @@ class InferRunner(Runner):
         total_cost = 0
         count = 0
         model = config["model"]
-        prompt_price, completion_price = self.price_list[model]
+        if model not in self.price_list:
+            self._logger.warn(f"{model} is not in the price list, 0 cost will be used.")
+        prompt_price, completion_price = self.price_list.get(model, (0, 0))
         for item in result_list:
             for res in item["results"]:
                 if res["output"] is None:

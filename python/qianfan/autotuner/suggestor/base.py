@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import Dict, Tuple
 
 from qianfan.autotuner.context import Context, TrialResult
@@ -43,6 +44,7 @@ class Suggestor(object):
         self.search_space = search_space
         self.metrics = metrics
         self.mode = mode
+        self._logger = logging.getLogger(__name__)
 
     async def next(self, context: Context) -> Tuple[bool, ConfigList]:
         """
@@ -86,3 +88,7 @@ class Suggestor(object):
         if best is None:
             raise RuntimeError("No trial history found.")
         return best.config
+
+    def _set_logger(self, logger: logging.Logger) -> None:
+        """Sets the logger for this suggestor."""
+        self._logger = logger

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import Any, Tuple
 
 from qianfan.autotuner.context import Context
@@ -25,6 +26,8 @@ class Runner(object):
     This class is the base class of runner which is responsible for evaluating
     configurations and returning metrics.
     """
+
+    _logger: logging.Logger = logging.getLogger(__name__)
 
     async def run(self, config: Config, context: Context) -> Tuple[Metrics, Any]:
         """
@@ -41,3 +44,7 @@ class Runner(object):
             A tuple containing the evaluated metrics and any additional results.
         """
         raise NotImplementedError()
+
+    def _set_logger(self, logger: logging.Logger) -> None:
+        """Sets the logger for this suggestor."""
+        self._logger = logger

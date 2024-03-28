@@ -24,21 +24,6 @@ from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.utils.utils import async_to_thread
 
-# the price list of preset model on qianfan platform
-# the unit is yuan per 1000 tokens of (input, output)
-price_list = {
-    "ERNIE-Bot-turbo": (0.008, 0.008),
-    "ERNIE-Bot": (0.012, 0.012),
-    "ERNIE-Bot-4": (0.12, 0.12),
-    "ERNIE-Speed": (0.004, 0.008),
-    "BLOOMZ-7B": (0.004, 0.004),
-    "Qianfan-Chinese-Llama-2-7B": (0.004, 0.004),
-    "ChatGLM2-6B-32K": (0.004, 0.004),
-    "Qianfan-Chinese-Llama-2-13B": (0.006, 0.006),
-    "Mixtral-8x7B-Instruct": (0.035, 0.035),
-    "Llama-2-13b-chat": (0.006, 0.006),
-}
-
 
 class QianfanRunner(InferRunner):
     """
@@ -73,6 +58,10 @@ class QianfanRunner(InferRunner):
           **kwargs (Any):
             Additional keyword arguments.
         """
+        price_list = {
+            model: (info.input_price_per_1k_tokens, info.output_price_per_1k_tokens)
+            for model, info in qianfan.ChatCompletion._supported_models().items()
+        }
         super().__init__(dataset=dataset, price_list=price_list, **kwargs)
         self.evaluator = evaluator
         if client is None:

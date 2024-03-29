@@ -16,6 +16,7 @@
 
 package com.baidubce.qianfan.core;
 
+import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.exception.ValidationException;
 import com.baidubce.qianfan.util.EnvParser;
@@ -39,6 +40,9 @@ public class QianfanConfig {
     private static final String QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL = "QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL";
     private static final String QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR = "QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR";
     private static final String QIANFAN_LLM_API_RETRY_ERR_CODES = "QIANFAN_LLM_API_RETRY_ERR_CODES";
+    private static final String QIANFAN_QPS_LIMIT = "QIANFAN_QPS_LIMIT";
+    private static final String QIANFAN_RPM_LIMIT = "QIANFAN_RPM_LIMIT";
+
     private static final int DEFAULT_IAM_SIGN_EXPIRATION_SEC = 1800;
     private static final int DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = 5;
     private static final String DEFAULT_BASE_URL = "https://aip.baidubce.com";
@@ -47,6 +51,9 @@ public class QianfanConfig {
     private static final String DEFAULT_LLM_API_RETRY_MAX_WAIT_INTERVAL = "120";
     private static final String DEFAULT_LLM_API_RETRY_BACKOFF_FACTOR = "0";
     private static final String DEFAULT_LLM_API_RETRY_ERR_CODES = "18,336100";
+    private static final String DEFAULT_QPS_LIMIT = "0";
+    private static final String DEFAULT_RPM_LIMIT = "0";
+
     private static final String QIANFAN_DOT_ENV_CONFIG_FILE = "QIANFAN_DOT_ENV_CONFIG_FILE";
     private static final String DEFAULT_DOT_ENV_CONFIG_FILE = ".env";
     private static final Map<String, String> defaultConfigMap = new HashMap<>();
@@ -62,6 +69,8 @@ public class QianfanConfig {
             defaultConfigMap.put(QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL, DEFAULT_LLM_API_RETRY_MAX_WAIT_INTERVAL);
             defaultConfigMap.put(QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR, DEFAULT_LLM_API_RETRY_BACKOFF_FACTOR);
             defaultConfigMap.put(QIANFAN_LLM_API_RETRY_ERR_CODES, DEFAULT_LLM_API_RETRY_ERR_CODES);
+            defaultConfigMap.put(QIANFAN_QPS_LIMIT, DEFAULT_QPS_LIMIT);
+            defaultConfigMap.put(QIANFAN_RPM_LIMIT, DEFAULT_RPM_LIMIT);
             String envConfigFile = System.getenv().getOrDefault(QIANFAN_DOT_ENV_CONFIG_FILE, DEFAULT_DOT_ENV_CONFIG_FILE);
             fileConfigMap.putAll(EnvParser.loadEnv(envConfigFile));
         } catch (FileNotFoundException e) {
@@ -117,6 +126,12 @@ public class QianfanConfig {
                 .setMaxWaitInterval(getInt(QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL))
                 .setBackoffFactor(getDouble(QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR))
                 .setRetryErrCodes(errCodeSet);
+    }
+
+    public static RateLimitConfig getRateLimitConfig() {
+        return new RateLimitConfig()
+                .setQpsLimit(getInt(QIANFAN_QPS_LIMIT))
+                .setRpmLimit(getInt(QIANFAN_RPM_LIMIT));
     }
 
     public static Integer getInt(String key) {

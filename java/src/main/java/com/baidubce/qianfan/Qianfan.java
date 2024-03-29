@@ -21,6 +21,7 @@ import com.baidubce.qianfan.core.builder.CompletionBuilder;
 import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
 import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
@@ -50,6 +51,11 @@ public class Qianfan {
 
     public Qianfan setRetryConfig(RetryConfig retryConfig) {
         this.client.setRetryConfig(retryConfig);
+        return this;
+    }
+
+    public Qianfan setRateLimitConfig(RateLimitConfig rateLimitConfig) {
+        this.client.setRateLimitConfig(rateLimitConfig);
         return this;
     }
 

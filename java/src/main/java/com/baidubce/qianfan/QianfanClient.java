@@ -18,10 +18,12 @@ package com.baidubce.qianfan;
 
 import com.baidubce.qianfan.core.ModelEndpointRetriever;
 import com.baidubce.qianfan.core.QianfanConfig;
+import com.baidubce.qianfan.core.RateLimiter;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.ApiErrorResponse;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
@@ -29,7 +31,6 @@ import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.StringUtils;
 import com.baidubce.qianfan.util.function.ThrowingFunction;
-import com.baidubce.qianfan.util.function.ThrowingSupplier;
 import com.baidubce.qianfan.util.http.*;
 
 import java.util.Iterator;
@@ -44,6 +45,7 @@ class QianfanClient {
     private final IAuth auth;
     private final ModelEndpointRetriever endpointRetriever;
     private RetryConfig retryConfig;
+    private RateLimiter rateLimiter;
 
     public QianfanClient() {
         this(Auth.create());
@@ -61,23 +63,30 @@ class QianfanClient {
         this.auth = auth;
         this.endpointRetriever = new ModelEndpointRetriever(auth);
         this.retryConfig = QianfanConfig.getRetryConfig();
+        this.rateLimiter = new RateLimiter(QianfanConfig.getRateLimitConfig());
     }
 
     public void setRetryConfig(RetryConfig retryConfig) {
         this.retryConfig = retryConfig;
     }
 
+    public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
+        this.rateLimiter = new RateLimiter(rateLimitConfig);
+    }
+
     @SuppressWarnings("unchecked")
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return request(
-                () -> createHttpRequest(request).executeJson(responseClass),
+                request,
+                req -> req.executeJson(responseClass),
                 resp -> (T) resp.getBody()
         );
     }
 
     public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return request(
-                () -> createHttpRequest(request).executeSSE(),
+                request,
+                HttpRequest::executeSSE,
                 resp -> new StreamIterator<>(resp.getBody(), responseClass)
         );
     }
@@ -92,12 +101,14 @@ class QianfanClient {
         return auth.signRequest(request);
     }
 
-    private <T, R, E extends Exception> R request(ThrowingSupplier<HttpResponse<T>, E> respSupplier,
-                                                  ThrowingFunction<HttpResponse<T>, R, E> respProcessor) {
+    private <T extends BaseRequest<T>, U, V, E extends Exception> V request(
+            BaseRequest<T> request,
+            ThrowingFunction<HttpRequest, HttpResponse<U>, E> reqProcessor,
+            ThrowingFunction<HttpResponse<U>, V, E> respProcessor) {
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < retryConfig.getRetryCount(); i++) {
             try {
-                return innerRequest(respSupplier, respProcessor);
+                return innerRequest(request, reqProcessor, respProcessor);
             } catch (RuntimeException ex) {
                 if (ex instanceof ApiException) {
                     Integer errorCode = ((ApiException) ex).getErrorResponse().getErrorCode();
@@ -114,10 +125,14 @@ class QianfanClient {
         throw new IllegalStateException("Request failed with unknown error");
     }
 
-    private <T, R, E extends Exception> R innerRequest(ThrowingSupplier<HttpResponse<T>, E> respSupplier,
-                                                       ThrowingFunction<HttpResponse<T>, R, E> respProcessor) {
+    private <T extends BaseRequest<T>, U, V, E extends Exception> V innerRequest(
+            BaseRequest<T> request,
+            ThrowingFunction<HttpRequest, HttpResponse<U>, E> reqProcessor,
+            ThrowingFunction<HttpResponse<U>, V, E> respProcessor) {
         try {
-            HttpResponse<T> resp = respSupplier.get();
+            HttpRequest httpRequest = createHttpRequest(request);
+            rateLimiter.acquire(httpRequest.getUrl());
+            HttpResponse<U> resp = reqProcessor.apply(httpRequest);
             if (resp.getCode() != HttpStatus.SUCCESS) {
                 throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
             }

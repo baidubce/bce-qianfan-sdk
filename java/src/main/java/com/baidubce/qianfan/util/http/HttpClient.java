@@ -22,10 +22,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
@@ -102,10 +99,26 @@ public class HttpClient {
             headers.put(header.getName(), header.getValue());
         }
 
+        Iterator<String> body = null;
+        String stringBody = null;
+
+        String contentType = headers.getOrDefault(ContentType.HEADER, "");
+        if (contentType.startsWith(ContentType.TEXT_EVENT_STREAM)) {
+            body = SSEWrapper.wrap(resp.getEntity().getContent(), resp);
+        } else {
+            try {
+                // If the response is not an SSE stream, read the whole body as a string
+                stringBody = EntityUtils.toString(resp.getEntity());
+            } catch (ParseException e) {
+                throw new IOException(e);
+            }
+        }
+
         return new HttpResponse<Iterator<String>>()
                 .setCode(resp.getCode())
                 .setHeaders(headers)
-                .setBody(SSEWrapper.wrap(resp.getEntity().getContent(), resp));
+                .setBody(body)
+                .setStringBody(stringBody);
     }
 
     @FunctionalInterface

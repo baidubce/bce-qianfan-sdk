@@ -14,38 +14,30 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.image;
+package com.baidubce.qianfan.model.console;
 
-import com.baidubce.qianfan.model.BaseResponse;
+import com.baidubce.qianfan.util.JsonProp;
 
 import java.util.List;
 
-public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
+public class ListServiceRequest {
     /**
-     * 生成图片结果
+     * 根据服务类型apiType筛选，可选值如下：
+     * · chat
+     * · completions
+     * · embeddings
+     * · text2image
+     * · image2text
      */
-    private List<ImageData> data;
+    @JsonProp("apiTypefilter")
+    private List<String> apiTypeFilter;
 
-    /**
-     * token统计信息
-     */
-    private ImageUsage usage;
-
-    public List<ImageData> getData() {
-        return data;
+    public List<String> getApiTypeFilter() {
+        return apiTypeFilter;
     }
 
-    public Text2ImageResponse setData(List<ImageData> data) {
-        this.data = data;
-        return this;
-    }
-
-    public ImageUsage getUsage() {
-        return usage;
-    }
-
-    public Text2ImageResponse setUsage(ImageUsage usage) {
-        this.usage = usage;
+    public ListServiceRequest setApiTypeFilter(List<String> apiTypeFilter) {
+        this.apiTypeFilter = apiTypeFilter;
         return this;
     }
 }

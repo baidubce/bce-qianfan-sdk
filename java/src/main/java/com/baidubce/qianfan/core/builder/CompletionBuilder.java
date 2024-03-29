@@ -19,7 +19,6 @@ package com.baidubce.qianfan.core.builder;
 import com.baidubce.qianfan.Qianfan;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
-import com.baidubce.qianfan.model.constant.ModelEndpoint;
 
 import java.util.Iterator;
 import java.util.List;
@@ -76,15 +75,15 @@ public class CompletionBuilder extends BaseBuilder<CompletionBuilder> {
     }
 
     public CompletionRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.COMPLETIONS, super.getModel(), super.getEndpoint());
         return new CompletionRequest()
-                .setEndpoint(finalEndpoint)
                 .setPrompt(prompt)
                 .setTemperature(temperature)
                 .setTopK(topK)
                 .setTopP(topP)
                 .setPenaltyScore(penaltyScore)
                 .setStop(stop)
+                .setModel(super.getModel())
+                .setEndpoint(super.getEndpoint())
                 .setUserId(super.getUserId())
                 .setExtraParameters(super.getExtraParameters());
     }

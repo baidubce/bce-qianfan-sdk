@@ -17,7 +17,6 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
-import com.baidubce.qianfan.model.constant.ModelEndpoint;
 import com.baidubce.qianfan.model.embedding.EmbeddingRequest;
 import com.baidubce.qianfan.model.embedding.EmbeddingResponse;
 
@@ -40,10 +39,10 @@ public class EmbeddingBuilder extends BaseBuilder<EmbeddingBuilder> {
     }
 
     public EmbeddingRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.EMBEDDINGS, super.getModel(), super.getEndpoint());
         return new EmbeddingRequest()
-                .setEndpoint(finalEndpoint)
                 .setInput(input)
+                .setModel(super.getModel())
+                .setEndpoint(super.getEndpoint())
                 .setUserId(super.getUserId())
                 .setExtraParameters(super.getExtraParameters());
     }

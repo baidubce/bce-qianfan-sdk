@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.model.chat;
 
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.constant.ModelType;
 
 import java.util.List;
 
@@ -85,6 +86,11 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
      * 是否为流式请求
      */
     private Boolean stream;
+
+    @Override
+    public String getType() {
+        return ModelType.CHAT;
+    }
 
     public List<Message> getMessages() {
         return messages;

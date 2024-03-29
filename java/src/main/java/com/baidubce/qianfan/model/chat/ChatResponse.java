@@ -16,22 +16,9 @@
 
 package com.baidubce.qianfan.model.chat;
 
-public class ChatResponse {
-    /**
-     * 本轮对话的id
-     */
-    private String id;
+import com.baidubce.qianfan.model.BaseResponse;
 
-    /**
-     * 回包类型
-     */
-    private String object;
-
-    /**
-     * 时间戳
-     */
-    private Integer created;
-
+public class ChatResponse extends BaseResponse<ChatResponse> {
     /**
      * 表示当前子句的序号。只有在流式接口模式下会返回该字段
      */
@@ -86,33 +73,6 @@ public class ChatResponse {
      * 当need_clear_history为true时，此字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round=-1
      */
     private Integer banRound;
-
-    public String getId() {
-        return id;
-    }
-
-    public ChatResponse setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getObject() {
-        return object;
-    }
-
-    public ChatResponse setObject(String object) {
-        this.object = object;
-        return this;
-    }
-
-    public Integer getCreated() {
-        return created;
-    }
-
-    public ChatResponse setCreated(Integer created) {
-        this.created = created;
-        return this;
-    }
 
     public Integer getSentenceId() {
         return sentenceId;

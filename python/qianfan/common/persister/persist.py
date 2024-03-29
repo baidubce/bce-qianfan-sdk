@@ -17,6 +17,7 @@ from os import makedirs, path
 from typing import List, Type, TypeVar
 
 from qianfan.common.persister.base import Persistent
+from qianfan.consts import Consts
 from qianfan.utils.logging import log_info
 
 _T = TypeVar("_T", bound=Type["Persistent"])
@@ -39,23 +40,30 @@ class Persister(ABC):
         ...
 
 
-FileTmpPath = "./qianfan_tmp/tasks/"
+FileTmpPath = Consts.QianfanCacheDir / "file_tmp/"
 
 
 class FilePersister(Persister):
+    def __init__(self) -> None:
+        if not path.exists(FileTmpPath):
+            makedirs(FileTmpPath)
+
     @classmethod
     def save(cls, p: Persistent) -> None:
         b = p.persist()
         f_path_dir = path.join(FileTmpPath, p._space())
         if not path.exists(f_path_dir):
             makedirs(f_path_dir)
-        f_path = path.join(FileTmpPath, p._space(), p._identity())
+        f_path = path.join(f_path_dir, p._identity())
         log_info(f"save to {f_path}")
         with open(f_path, "wb") as f:
             f.write(b)
 
     @classmethod
     def load(cls, id: str, t: _T) -> Persistent:
+        f_path_dir = path.join(FileTmpPath, t._space())
+        if not path.exists(f_path_dir):
+            makedirs(f_path_dir)
         with open(path.join(FileTmpPath, t._space(), id), "rb") as f:
             return t.load(f.read())
 
@@ -63,6 +71,8 @@ class FilePersister(Persister):
     def list(cls, t: _T) -> List[Persistent]:
         space_path = path.join(FileTmpPath, t._space())
         res = []
+        if not path.exists(space_path):
+            makedirs(space_path)
         for file_path in glob.glob(path.join(space_path, "*")):
             with open(file_path, "rb") as f:
                 res.append(t.load(f.read()))

@@ -124,13 +124,10 @@ class JsonSerializeHelper(SerializeHelper):
     """
 
     def serialize(self, obj: Any) -> bytes:
-        print("model=======>", obj)
         res = json.dumps(obj, skipkeys=True)
-        print("===> serilll", res)
         return res.encode(encoding=encoding())
 
     def deserialize(self, data: bytes) -> Any:
-        print("abc====>", data)
         return json.loads(data)
 
 
@@ -209,12 +206,14 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
         parent_pipe, child_pipe = multiprocessing.Pipe()
         p = multiprocessing.Process(target=run_subprocess, args=(child_pipe,))
         p.start()
+        log_info(f"trainer subprocess started, pid: {p.pid}")
         if not join_on_exited:
             self.join = p.join
             # multiprocess 在atexit注册自动join
             p.join = lambda: None
         self.parent_pipe = parent_pipe
         self.process = p
+        self.process_id = p.pid
         return self
 
     def stop(self, **kwargs: Any) -> "ExecuteSerializable":

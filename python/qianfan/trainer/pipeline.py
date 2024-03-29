@@ -198,8 +198,9 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta: Dict[str, Any] = {
             "id": self.id,
             "current_action": self.current_action,
-            "output": self._last_output,
+            # "output": self._last_output,
         }
+        # print("output:", self._last_output)
         if self.process_id:
             meta["process_id"] = self.process_id
         actions = []
@@ -209,6 +210,8 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta["actions"] = actions
         if self._case_init_params:
             meta["case_init_params"] = self._case_init_params
+        if self.process:
+            meta["process"] = self.process_id
         return meta
 
     @classmethod
@@ -227,7 +230,8 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             action_obj = Pipeline.load_action(action_type, action_meta)
             if action_obj is None:
                 log_error(f"action {action_type} load error, raw: {action_meta}")
-                raise InternalError(f"action {action_type} load error")
+                continue
+                # raise InternalError(f"action {action_type} load error")
             actions.append(action_obj)
         ppl = Pipeline(
             id=meta.get("id"),
@@ -248,6 +252,8 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             return ModelPublishAction._load_from_dict(meta)
         if action_type == DeployAction.__name__:
             return DeployAction._load_from_dict(meta)
+        # if action_type == EvaluateAction.__name__:
+        # return EvaluateAction._load_from_dict(meta)
         return None
 
     def __len__(self) -> int:

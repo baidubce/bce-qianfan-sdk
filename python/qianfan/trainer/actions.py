@@ -239,7 +239,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "dataset_bos": self.bos_path,
             "output": self.result,
         }
-        print("LOADATA.>>>>", meta)
         return meta
 
     @classmethod
@@ -354,7 +353,6 @@ class TrainAction(
             job_description (Optional[str], optional):
                 train job description. Defaults to None.
         """
-        print("locals=====>", locals())
         super().__init__(**kwargs)
         self.task_id = task_id
         self.job_id = job_id
@@ -418,7 +416,6 @@ class TrainAction(
         else:
             assert self.train_type
             train_type_model_info = get_model_info(self.train_mode, self.train_type)
-            print("train_type_mode_inf######", train_type_model_info)
             if train_type_model_info is None:
                 return
             if (
@@ -471,7 +468,6 @@ class TrainAction(
         """
         if self.train_config is None:
             raise InvalidArgumentError("validate train_config is none")
-        print("train_limit===>", train_limit)
         return self.train_config.validate_config(train_limit)
 
     @with_event
@@ -891,20 +887,21 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
     """
 
-    deploy_config: Optional[DeployConfig]
+    deploy_config: Optional[DeployConfig] = None
     """deploy config include replicas and so on"""
-    model_id: Optional[int]
+    model_id: Optional[int] = None
     """model id"""
-    model_id_str: Optional[str]
+    model_id_str: Optional[str] = None
     """model str id"""
-    model_version_id: Optional[int]
+    model_version_id: Optional[int] = None
     """model version id"""
-    model_version_id_str: Optional[str]
+    model_version_id_str: Optional[str] = None
     """model version str id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
     """result of action"""
+    model: Optional[Model] = None
 
     def __init__(self, deploy_config: Optional[DeployConfig] = None, **kwargs: Any):
         """
@@ -948,6 +945,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy_config must be set in deploy._exec")
+        assert self.model is not None
         log_debug(
             f"[deploy_action] try deploy model {self.model.id}_{self.model.version_id}"
         )
@@ -1005,9 +1003,16 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     self.deploy_config.dict() if self.deploy_config else None
                 ),
             },
-            "input": self._input,
-            "output": self.result,
+            "input": {
+                "model_id": self.model_id,
+                "model_version_id": self.model_version_id,
+            },
         }
+        if self.model is not None and self.model.service is not None:
+            meta["output"] = {
+                "service_id": self.model.service.id,
+                "service_endpoint": self.model.service.endpoint,
+            }
         return meta
 
     @classmethod

@@ -146,6 +146,7 @@ class Finetune(Trainer):
                     train_mode=console_consts.TrainMode.SFT,
                     job_name=name,
                     event_handler=event_handler,
+                    is_incr=True,
                     **kwargs,
                 )
             else:
@@ -159,6 +160,7 @@ class Finetune(Trainer):
                 train_mode=console_consts.TrainMode.SFT,
                 job_name=name,
                 event_handler=event_handler,
+                is_incr=True,
                 **kwargs,
             )
         else:
@@ -293,7 +295,6 @@ class Finetune(Trainer):
                     trainer_list.append(trainer_inst)
             except Exception as e:
                 raise e
-        print("ret: ", len(trainer_list))
         return trainer_list
 
     @staticmethod

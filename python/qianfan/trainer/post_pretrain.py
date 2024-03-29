@@ -201,7 +201,6 @@ class PostPreTrain(Trainer):
         trainer_list: List["Trainer"] = []
         for task_ppl in local_trainer_ppl:
             try:
-                print("task_ppl: ", type(task_ppl))
                 assert isinstance(task_ppl, Pipeline)
                 if (
                     task_ppl._case_init_params is not None

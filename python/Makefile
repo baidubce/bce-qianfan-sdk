@@ -5,7 +5,7 @@ install:
 	poetry install -E extension
 
 install_ntbk:
-	poetry install --with dev,cookbook
+	poetry install -E extension --with dev,cookbook
 
 uninstall:
 	pip uninstall -y qianfan

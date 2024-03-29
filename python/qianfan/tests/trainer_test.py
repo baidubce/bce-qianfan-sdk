@@ -35,7 +35,7 @@ from qianfan.trainer.actions import (
 from qianfan.trainer.configs import TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.finetune import Finetune, LLMFinetune
 from qianfan.trainer.post_pretrain import PostPreTrain
 
 
@@ -486,3 +486,31 @@ def test_increment_sft():
     assert res is not None
     assert isinstance(res, dict)
     assert "model_version_id" in res
+
+
+def test_persist():
+    train_config = TrainConfig(
+        epoch=1,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        trainset_rate=20,
+        peft_type=PeftType.ALL,
+    )
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+
+    trainer = LLMFinetune(
+        train_type="ERNIE-Speed",
+        dataset=ds,
+        train_config=train_config,
+    )
+    trainer.run()
+
+    trainers = Finetune.list()
+    assert len(trainers) >= 1
+
+    pre_id = trainers[0].id
+    sft = Finetune.load(pre_id)
+    assert sft.info().get("id") == pre_id

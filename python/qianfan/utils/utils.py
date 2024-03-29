@@ -17,17 +17,19 @@ import importlib.util
 import os
 import re
 import secrets
+import socket
 import string
 import threading
 import uuid as uuid_lib
 from threading import current_thread
 from types import TracebackType
-from typing import Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 from qianfan.errors import InvalidArgumentError
 from qianfan.utils import log_info
 
 thread_local = threading.local()
+_T = TypeVar("_T")
 
 
 def _get_value_from_dict_or_var_or_env(
@@ -200,6 +202,22 @@ def remove_suffix_list(name: str, suffix_list: List[str]) -> str:
     return name
 
 
+async def async_to_thread(func: Callable[..., _T], *args: Any, **kwargs: Any) -> _T:
+    """Asynchronously run function *func* in a separate thread.
+
+    This is copy of asyncio.to_thread, since this function is only available after
+    python 3.9.
+    """
+    import asyncio
+    import contextvars
+    import functools
+
+    loop = asyncio.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(None, func_call)  # type: ignore
+
+
 def check_dependency(module_name: str, dependency_list: List[str]) -> None:
     for dependency in dependency_list:
         if not check_package_installed(dependency):
@@ -207,3 +225,17 @@ def check_dependency(module_name: str, dependency_list: List[str]) -> None:
                 f"`{dependency}` is required for `{module_name}` module, please install"
                 f" it using `pip install qianfan[{module_name}]`"
             )
+
+
+def get_ip_address() -> str:
+    """Get the IP address of interface."""
+    # arbitrary private address
+    host = "10.254.254.254"
+
+    with socket.socket(socket.AddressFamily.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect((host, 64512))
+        except OSError:
+            return "127.0.0.1"
+
+        return s.getsockname()[0]  # type: ignore

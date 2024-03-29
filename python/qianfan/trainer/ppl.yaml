@@ -1,0 +1,76 @@
+name: finetune_char_ppl
+type: pipeline
+id: PomfIFE123f
+case_type: finetune # postpretrain
+current_action_idx: 0
+is_run_in_daemon: true
+process_id: 1233344444
+actions:
+  - type: LoadDatasetAction
+    id: Ac12fasd
+    state: Done
+    input:
+      dataset_id: ds-xxxx
+      dataset_bos: bos:/xxxx/
+    init_params:
+      dataset_id: ds-xxxx
+      dataset_bos: bos:/xxxx/
+    output:
+  - type: TrainAction
+    id: xxxxxx
+    state: Running
+    init_params:
+      train_type: ERNIE-Speed-8K
+      # train_config: "{\"epoch\": 1, \"batch_size\": 16, \"learning_rate\": 5e-4}"
+      train_config: 
+        epoch: 1,
+        batch_size: 32, 
+        learning_rate: 5e-4
+      is_incr: false
+      peft_type: LoRA
+      # pre_task_id: task-xxxx
+      # job_id: job-xxxx
+      # task_id: ta-xxxx
+    input:
+      datasets: 
+        sourceType: 2
+        versions: 
+        - versionBosUri: bos:/xxxx/
+    output: 
+      job_id: job-xxxx
+      task_id: ta-xxxx
+      model_id: m-xxxx
+      model_version: 1
+  - type: ModelPublishAction
+    id: xxxxx1
+    state: Preceding
+    input: 
+      job_id: job-xxxx
+      task_id: ta-xxxx
+    output:
+      job_id: job-xxxx
+      task_id: ta-xxxx
+      model_id: m-xxxx
+      model_version: 1
+  - type: DeployAction
+    id: xxxxx2
+    state: Preceding
+    init_params:
+      deploy_config:
+        replicas: 1
+        pool_type: 1
+        endpoint_prefix: finetune_char
+    input:
+      job_id: job-xxxx
+      task_id: ta-xxxx
+      model_id: m-xxxx
+      model_version: 1 
+    output:
+      job_id: job-xxxx
+      task_id: ta-xxxx
+      model_id: m-xxxx
+      model_version: 1
+      service_id: svc-xxx
+case_init_params:
+  id: xxx
+  train_type: axxx

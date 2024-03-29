@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import datetime
+import json
 import os
 import pickle
 import platform
@@ -28,6 +29,7 @@ from typing import (
 
 import dill
 import multiprocess as multiprocessing
+import yaml
 
 from qianfan.config import encoding
 from qianfan.utils import utils
@@ -108,6 +110,30 @@ StopMessage = "STOP"
 QianfanTrainerLocalCacheDir = ".qianfan_exec_cache"
 
 
+class YamlSerializeHelper(SerializeHelper):
+    def serialize(self, obj: Any) -> bytes:
+        return bytes(yaml.dump(obj, encoding=encoding()))
+
+    def deserialize(self, data: bytes) -> Any:
+        return yaml.safe_load(data)
+
+
+class JsonSerializeHelper(SerializeHelper):
+    """
+    json serialize helper.
+    """
+
+    def serialize(self, obj: Any) -> bytes:
+        print("model=======>", obj)
+        res = json.dumps(obj, skipkeys=True)
+        print("===> serilll", res)
+        return res.encode(encoding=encoding())
+
+    def deserialize(self, data: bytes) -> Any:
+        print("abc====>", data)
+        return json.loads(data)
+
+
 class DillSerializeHelper(SerializeHelper):
     """
     dill serialize helper.
@@ -129,7 +155,7 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
     process_id: str = ""
     process: Optional[multiprocessing.Process] = None
 
-    serialize_helper: SerializeHelper = DillSerializeHelper()
+    serialize_helper: SerializeHelper = JsonSerializeHelper()
 
     def _get_specific_cache_path(self) -> str:
         cache_path = os.path.join(

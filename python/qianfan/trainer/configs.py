@@ -13,7 +13,7 @@
 # limitations under the License.
 import copy
 import hashlib
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 from qianfan.config import encoding
 from qianfan.errors import InvalidArgumentError
@@ -47,7 +47,6 @@ class BaseTrainConfig(BaseModel):
     def validate_config(self, train_limit: "TrainLimit") -> bool:
         schema = self.schema()
         res = True
-        print("validate ", schema)
         for k, v in schema["properties"].items():
             limit_type = v.get("limit_type")
             if limit_type is None:
@@ -73,7 +72,7 @@ class BaseTrainConfig(BaseModel):
         return res
 
     def _validate_range(
-        self, value: Any, limit_ranges: Optional[Tuple[T, T]], field_name: str
+        self, value: Any, limit_ranges: Optional[List[T]], field_name: str
     ) -> bool:
         """
         return False if value is not in limit_ranges
@@ -1145,7 +1144,6 @@ def update_all_train_configs() -> None:
         # 获取最新支持的配置：
         model_info_list = FineTune.V2.supported_models()["result"]
         # 更新训练config
-        print("### try update", TrainConfig.load)
         _update_train_config(model_info_list=model_info_list)
         # 更新模型的类型和校验参数
         sft_model_info = _get_online_supported_model_info_mapping(
@@ -1156,8 +1154,7 @@ def update_all_train_configs() -> None:
         )
         # 更新模型默认配置：
         default_configs_mapping = _update_default_config(model_info_list)
-    except Exception as e:
-        log_warn(f"failed to get supported models: {e}")
+    except Exception:
         return
     global ModelInfoMapping
     ModelInfoMapping = {**ModelInfoMapping, **sft_model_info}

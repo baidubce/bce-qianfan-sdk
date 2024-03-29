@@ -19,10 +19,11 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune, Trainer
+from qianfan.trainer.finetune import Finetune, LLMFinetune, Trainer
 from qianfan.trainer.post_pretrain import PostPreTrain
 
 __all__ = [
+    "Finetune",
     "LLMFinetune",
     "BaseAction",
     "Trainer",

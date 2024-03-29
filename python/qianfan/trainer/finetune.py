@@ -13,6 +13,7 @@
 # limitations under the License.
 from typing import Any, Dict, List, Optional, Union
 
+from qianfan.common.persister.persist import g_persister
 from qianfan.config import get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
@@ -29,8 +30,6 @@ from qianfan.trainer.actions import (
 from qianfan.trainer.base import (
     BaseAction,
     EventHandler,
-    Pipeline,
-    Trainer,
 )
 from qianfan.trainer.configs import (
     ModelInfo,
@@ -40,6 +39,8 @@ from qianfan.trainer.configs import (
 from qianfan.trainer.consts import (
     TrainStatus,
 )
+from qianfan.trainer.pipeline import Pipeline
+from qianfan.trainer.trainer import Trainer
 
 
 class Finetune(Trainer):
@@ -110,6 +111,9 @@ class Finetune(Trainer):
         )
         ```
         """
+        if kwargs.get("pipeline") and isinstance(kwargs.get("pipeline"), Pipeline):
+            self.from_ppl(kwargs.get("pipeline"))
+            return
         # 设置name
         self.name = name
 
@@ -190,9 +194,31 @@ class Finetune(Trainer):
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
+            case_init_params={"case_type": Finetune.__name__},
         )
         self.ppls = [ppl]
         self.result = [None]
+
+    def from_ppl(self, ppl: Optional[Pipeline]) -> "Trainer":
+        """
+        create a trainer from pipeline.
+        Returns:
+            Trainer: self, for chain invocation.
+        """
+        if ppl is None:
+            raise ValueError("invalid pipeline to create trainer")
+        assert len(ppl) >= 2
+        for ac in ppl:
+            if isinstance(ac, LoadDataSetAction):
+                self.load_data_action = ac
+            elif isinstance(ac, TrainAction):
+                self.train_action = ac
+            elif isinstance(ac, ModelPublishAction):
+                self.model_publish = ac
+            elif isinstance(ac, DeployAction):
+                self.deploy_action = ac
+        self.ppls = [ppl]
+        return self
 
     def run(self, **kwargs: Any) -> Trainer:
         """
@@ -251,6 +277,43 @@ class Finetune(Trainer):
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
         return ModelInfoMapping
+
+    @staticmethod
+    def list() -> List["Trainer"]:
+        local_trainer_ppl = g_persister.list(Pipeline)
+        trainer_list: List["Trainer"] = []
+        for task_ppl in local_trainer_ppl:
+            try:
+                assert isinstance(task_ppl, Pipeline)
+                if (
+                    task_ppl._case_init_params is not None
+                    and task_ppl._case_init_params.get("case_type") == Finetune.__name__
+                ):
+                    trainer_inst = Finetune(pipeline=task_ppl)
+                    trainer_list.append(trainer_inst)
+            except Exception as e:
+                raise e
+        print("ret: ", len(trainer_list))
+        return trainer_list
+
+    @staticmethod
+    def load(id: str) -> "Trainer":
+        task_ppl = g_persister.load(id, Pipeline)
+        assert isinstance(task_ppl, Pipeline)
+        if (
+            task_ppl._case_init_params is not None
+            and task_ppl._case_init_params.get("case_type") == Finetune.__name__
+        ):
+            trainer_inst = Finetune(pipeline=task_ppl)
+            return trainer_inst
+        raise InvalidArgumentError("pipeline not found {id} to load")
+
+    def info(self) -> Dict:
+        return self.ppls[0]._action_dict()
+
+    @property
+    def id(self) -> str:
+        return self.ppls[0].id
 
 
 LLMFinetune = Finetune

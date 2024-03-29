@@ -19,7 +19,7 @@ from copy import deepcopy
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-import pyarrow.json
+import pyarrow
 from pyarrow import Table as PyarrowTable
 from typing_extensions import Self
 
@@ -1289,7 +1289,12 @@ class Dataset(Table):
             self.inner_data_source_cache, model_id, model_version_id
         )
 
-        result_dataset = Dataset.load(qianfan_dataset_id=result_dataset_id, **kwargs)
+        result_dataset = Dataset.load(
+            qianfan_dataset_id=result_dataset_id,
+            is_download_to_local=output_prettified,
+            **kwargs,
+        )
+
         if not output_prettified and result_dataset.is_dataset_located_in_qianfan():
             return result_dataset
 

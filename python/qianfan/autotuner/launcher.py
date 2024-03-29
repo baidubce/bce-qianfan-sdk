@@ -14,6 +14,7 @@
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -35,6 +36,7 @@ class Launcher(object):
         log_dir: Optional[str] = None,
         log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "INFO",
         max_turn: Optional[int] = None,
+        max_time: Optional[float] = None,
     ) -> None:
         """
         Args:
@@ -46,6 +48,7 @@ class Launcher(object):
         """
         self._id = uuid()
         self._max_turn = max_turn
+        self._max_time = max_time
         self._logger = logging.getLogger(f"qianfan_autotuner_{self._id}")
         self._logger.setLevel(log_level)
         formatter = logging.Formatter(
@@ -80,11 +83,18 @@ class Launcher(object):
         context = Context()
         suggestor._set_logger(self._logger)
         runner._set_logger(self._logger)
+        start_time = time.time()
 
         while True:
             is_end = False
+            cur_time = time.time()
             if self._max_turn is not None and context.current_turn == self._max_turn:
                 self._logger.info(f"max turn reached: {self._max_turn}")
+                is_end = True
+            elif self._max_time is not None and cur_time - start_time > self._max_time:
+                self._logger.info(
+                    f"max time reached: {cur_time - start_time} seconds elapsed..."
+                )
                 is_end = True
             else:
                 is_end, config_list = await suggestor.next(context)

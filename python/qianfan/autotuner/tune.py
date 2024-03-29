@@ -34,10 +34,48 @@ async def run(
     metrics: str = "score",
     mode: Literal["min", "max"] = "max",
     max_turn: Optional[int] = None,
+    max_time: Optional[float] = None,
     repeat: int = 1,
     log_dir: Optional[str] = None,
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "INFO",
 ) -> Context:
+    """
+    Runs the autotuning task.
+
+    This function orchestrates the autotuning task by coordinating the suggestor,
+    runner, and evaluator.
+
+    Args:
+      search_space (Dict[str, Space]):
+        A dictionary defining the search space for each parameter.
+      dataset (Dataset):
+        The dataset used for evaluation.
+      evaluator (Evaluator):
+        The evaluator object responsible for evaluating model outputs.
+      suggestor (Literal["random"]):
+        The suggestor algorithm to use. Default is "random".
+      cost_budget (Optional[float]):
+        The budget constraint on the total cost. Default is None.
+      metrics (str):
+        The key of the metric used for optimization. Default is "score". This should
+        be same with the output of the evaluator.
+      mode (Literal["min", "max"]):
+        The optimization mode, either "min" (minimization) or "max" (maximization).
+        Default is "max".
+      max_turn (Optional[int]):
+        The maximum number of turns for the autotuning task. Default is None.
+      max_time (Optional[float]):
+        The maximum time in seconds allowed for the autotuning task. Default is None.
+      repeat (int):
+        The number of times to repeat inference for each input. Default is 1.
+      log_dir (Optional[str]):
+        The directory to store logs. Default is None.
+      log_level (Literal["DEBUG", "INFO", "WARN", "ERROR"]):
+        The logging level. Default is "INFO".
+
+    Returns:
+        Context: The context object containing the results of the autotuning task.
+    """
     _suggestor: Suggestor
     if suggestor == "random":
         _suggestor = RandomSuggestor(
@@ -52,6 +90,7 @@ async def run(
         log_dir=log_dir,
         log_level=log_level,
         max_turn=max_turn,
+        max_time=max_time,
     ).run(
         suggestor=_suggestor,
         runner=QianfanRunner(

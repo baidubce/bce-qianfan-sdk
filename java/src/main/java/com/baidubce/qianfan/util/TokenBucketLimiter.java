@@ -31,6 +31,12 @@ public class TokenBucketLimiter {
     private int availableTokens;
 
     public TokenBucketLimiter(int maxTokens, int refillPeriod) {
+        if (maxTokens <= 0) {
+            throw new IllegalArgumentException("maxTokens should be positive");
+        }
+        if (refillPeriod <= 0) {
+            throw new IllegalArgumentException("refillPeriod should be positive");
+        }
         this.maxTokens = maxTokens;
         this.availableTokens = maxTokens;
         this.scheduler.scheduleAtFixedRate(this::refill, refillPeriod, refillPeriod, TimeUnit.SECONDS);
@@ -41,6 +47,12 @@ public class TokenBucketLimiter {
     }
 
     public void acquire(int tokens) throws InterruptedException {
+        if (tokens <= 0) {
+            throw new IllegalArgumentException("tokens should be positive");
+        }
+        if (tokens > maxTokens) {
+            throw new IllegalArgumentException("tokens should be less than or equal to maxTokens");
+        }
         lock.lock();
         try {
             while (tokens > availableTokens) {
@@ -53,6 +65,9 @@ public class TokenBucketLimiter {
     }
 
     public void updateMaxTokens(int maxTokens, boolean resetAvailableTokens) {
+        if (maxTokens <= 0) {
+            throw new IllegalArgumentException("maxTokens should be positive");
+        }
         lock.lock();
         try {
             this.maxTokens = maxTokens;

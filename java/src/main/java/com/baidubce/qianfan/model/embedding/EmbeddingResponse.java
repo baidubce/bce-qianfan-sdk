@@ -16,24 +16,11 @@
 
 package com.baidubce.qianfan.model.embedding;
 
+import com.baidubce.qianfan.model.BaseResponse;
+
 import java.util.List;
 
-public class EmbeddingResponse {
-    /**
-     * 本轮对话的id
-     */
-    private String id;
-
-    /**
-     * 回包类型，固定值“embedding_list”
-     */
-    private String object;
-
-    /**
-     * 时间戳
-     */
-    private Integer created;
-
+public class EmbeddingResponse extends BaseResponse<EmbeddingResponse> {
     /**
      * embedding信息，data成员数和文本数量保持一致
      */
@@ -43,33 +30,6 @@ public class EmbeddingResponse {
      * token统计信息，token数 = 汉字数+单词数*1.3 （仅为估算逻辑）
      */
     private EmbeddingUsage usage;
-
-    public String getId() {
-        return id;
-    }
-
-    public EmbeddingResponse setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getObject() {
-        return object;
-    }
-
-    public EmbeddingResponse setObject(String object) {
-        this.object = object;
-        return this;
-    }
-
-    public Integer getCreated() {
-        return created;
-    }
-
-    public EmbeddingResponse setCreated(Integer created) {
-        this.created = created;
-        return this;
-    }
 
     public List<EmbeddingData> getData() {
         return data;

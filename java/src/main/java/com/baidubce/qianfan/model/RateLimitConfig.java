@@ -14,38 +14,34 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.image;
+package com.baidubce.qianfan.model;
 
-import com.baidubce.qianfan.model.BaseResponse;
-
-import java.util.List;
-
-public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
+public class RateLimitConfig {
     /**
-     * 生成图片结果
+     * query per second limit
      */
-    private List<ImageData> data;
+    private int qpsLimit = 0;
 
     /**
-     * token统计信息
+     * request per minute limit
      */
-    private ImageUsage usage;
+    private int rpmLimit = 0;
 
-    public List<ImageData> getData() {
-        return data;
+    public int getQpsLimit() {
+        return qpsLimit;
     }
 
-    public Text2ImageResponse setData(List<ImageData> data) {
-        this.data = data;
+    public RateLimitConfig setQpsLimit(int qpsLimit) {
+        this.qpsLimit = qpsLimit;
         return this;
     }
 
-    public ImageUsage getUsage() {
-        return usage;
+    public int getRpmLimit() {
+        return rpmLimit;
     }
 
-    public Text2ImageResponse setUsage(ImageUsage usage) {
-        this.usage = usage;
+    public RateLimitConfig setRpmLimit(int rpmLimit) {
+        this.rpmLimit = rpmLimit;
         return this;
     }
 }

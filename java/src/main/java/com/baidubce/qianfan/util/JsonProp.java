@@ -14,30 +14,12 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
+package com.baidubce.qianfan.util;
 
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-import java.util.List;
-
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
-    /**
-     * 输入文本以获取embedding
-     */
-    private List<String> input;
-
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
-    }
-
-    public List<String> getInput() {
-        return input;
-    }
-
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
-        return this;
-    }
+@Retention(RetentionPolicy.RUNTIME)
+public @interface JsonProp {
+    String value();
 }

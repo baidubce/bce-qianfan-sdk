@@ -14,30 +14,13 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
+package com.baidubce.qianfan.util.http;
 
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+public final class ContentType {
+    public static final String HEADER = "Content-Type";
+    public static final String APPLICATION_JSON = "application/json";
+    public static final String TEXT_EVENT_STREAM = "text/event-stream";
 
-import java.util.List;
-
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
-    /**
-     * 输入文本以获取embedding
-     */
-    private List<String> input;
-
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
-    }
-
-    public List<String> getInput() {
-        return input;
-    }
-
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
-        return this;
+    private ContentType() {
     }
 }

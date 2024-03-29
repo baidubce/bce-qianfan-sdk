@@ -14,38 +14,48 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.image;
+package com.baidubce.qianfan.model;
 
-import com.baidubce.qianfan.model.BaseResponse;
-
-import java.util.List;
-
-public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
+public abstract class BaseResponse<T extends BaseResponse<T>> {
     /**
-     * 生成图片结果
+     * 请求的Id
      */
-    private List<ImageData> data;
+    private String id;
 
     /**
-     * token统计信息
+     * 回包类型。例如："image" 表示图像生成返回
      */
-    private ImageUsage usage;
+    private String object;
 
-    public List<ImageData> getData() {
-        return data;
+    /**
+     * 时间戳
+     */
+    private Long created;
+
+    public String getId() {
+        return id;
     }
 
-    public Text2ImageResponse setData(List<ImageData> data) {
-        this.data = data;
+    public BaseResponse<T> setId(String id) {
+        this.id = id;
         return this;
     }
 
-    public ImageUsage getUsage() {
-        return usage;
+    public String getObject() {
+        return object;
     }
 
-    public Text2ImageResponse setUsage(ImageUsage usage) {
-        this.usage = usage;
+    public BaseResponse<T> setObject(String object) {
+        this.object = object;
+        return this;
+    }
+
+    public Long getCreated() {
+        return created;
+    }
+
+    public BaseResponse<T> setCreated(Long created) {
+        this.created = created;
         return this;
     }
 }

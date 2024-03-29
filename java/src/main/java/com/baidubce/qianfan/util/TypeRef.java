@@ -14,30 +14,23 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.embedding;
+package com.baidubce.qianfan.util;
 
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.constant.ModelType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-import java.util.List;
+public abstract class TypeRef<T> {
+    private final Type type;
 
-public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
-    /**
-     * 输入文本以获取embedding
-     */
-    private List<String> input;
-
-    @Override
-    public String getType() {
-        return ModelType.EMBEDDINGS;
+    protected TypeRef() {
+        Type superClass = getClass().getGenericSuperclass();
+        if (superClass instanceof Class) {
+            throw new RuntimeException("Missing type parameter.");
+        }
+        this.type = ((ParameterizedType) superClass).getActualTypeArguments()[0];
     }
 
-    public List<String> getInput() {
-        return input;
-    }
-
-    public EmbeddingRequest setInput(List<String> input) {
-        this.input = input;
-        return this;
+    public Type getType() {
+        return this.type;
     }
 }

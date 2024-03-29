@@ -61,7 +61,6 @@ fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
 
 
-
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
 

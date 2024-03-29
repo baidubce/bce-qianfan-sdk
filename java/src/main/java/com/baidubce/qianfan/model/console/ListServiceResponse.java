@@ -14,38 +14,36 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.image;
-
-import com.baidubce.qianfan.model.BaseResponse;
+package com.baidubce.qianfan.model.console;
 
 import java.util.List;
 
-public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
+public class ListServiceResponse {
     /**
-     * 生成图片结果
+     * 预置服务
      */
-    private List<ImageData> data;
+    private List<ServiceItem> common;
 
     /**
-     * token统计信息
+     * 自定义服务
      */
-    private ImageUsage usage;
+    private List<ServiceItem> custom;
 
-    public List<ImageData> getData() {
-        return data;
+    public List<ServiceItem> getCommon() {
+        return common;
     }
 
-    public Text2ImageResponse setData(List<ImageData> data) {
-        this.data = data;
+    public ListServiceResponse setCommon(List<ServiceItem> common) {
+        this.common = common;
         return this;
     }
 
-    public ImageUsage getUsage() {
-        return usage;
+    public List<ServiceItem> getCustom() {
+        return custom;
     }
 
-    public Text2ImageResponse setUsage(ImageUsage usage) {
-        this.usage = usage;
+    public ListServiceResponse setCustom(List<ServiceItem> custom) {
+        this.custom = custom;
         return this;
     }
 }

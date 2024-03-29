@@ -105,7 +105,6 @@ class QianfanClient {
             BaseRequest<T> request,
             ThrowingFunction<HttpRequest, HttpResponse<U>, E> reqProcessor,
             ThrowingFunction<HttpResponse<U>, V, E> respProcessor) {
-        long startTime = System.currentTimeMillis();
         for (int i = 0; i < retryConfig.getRetryCount(); i++) {
             try {
                 return innerRequest(request, reqProcessor, respProcessor);
@@ -119,7 +118,7 @@ class QianfanClient {
                 if (i == retryConfig.getRetryCount() - 1) {
                     throw ex;
                 }
-                backoffSleep(i, retryConfig.getBackoffFactor(), startTime, retryConfig.getMaxWaitInterval());
+                backoffSleep(i, retryConfig.getBackoffFactor(), retryConfig.getMaxWaitInterval());
             }
         }
         throw new IllegalStateException("Request failed with unknown error");
@@ -151,12 +150,10 @@ class QianfanClient {
         }
     }
 
-    private void backoffSleep(int retryCount, double backoffFactor, long startTime, int totalRetryTimeout) throws RequestException {
+    private void backoffSleep(int retryCount, double backoffFactor, int maxWaitInterval) throws RequestException {
         try {
-            long baseDelay = (long) (Math.pow(2, retryCount) * backoffFactor * 1000);
-            long elapsedTime = System.currentTimeMillis() - startTime;
-            long adjustedDelay = Math.min(baseDelay, (long) totalRetryTimeout * 1000 - elapsedTime);
-            Thread.sleep(adjustedDelay);
+            long delay = (long) (Math.pow(2, retryCount) * backoffFactor * 1000);
+            Thread.sleep(Math.min(delay, maxWaitInterval * 1000L));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RequestException("Request failed: retry delay interrupted", e);

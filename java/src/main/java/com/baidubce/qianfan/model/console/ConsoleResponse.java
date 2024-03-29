@@ -14,38 +14,37 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.image;
+package com.baidubce.qianfan.model.console;
 
-import com.baidubce.qianfan.model.BaseResponse;
+import com.baidubce.qianfan.util.JsonProp;
 
-import java.util.List;
-
-public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
+public class ConsoleResponse<T> {
     /**
-     * 生成图片结果
+     * 请求ID
      */
-    private List<ImageData> data;
+    @JsonProp("logId")
+    private String logId;
 
     /**
-     * token统计信息
+     * 请求结果
      */
-    private ImageUsage usage;
+    private T result;
 
-    public List<ImageData> getData() {
-        return data;
+    public String getLogId() {
+        return logId;
     }
 
-    public Text2ImageResponse setData(List<ImageData> data) {
-        this.data = data;
+    public ConsoleResponse<T> setLogId(String logId) {
+        this.logId = logId;
         return this;
     }
 
-    public ImageUsage getUsage() {
-        return usage;
+    public T getResult() {
+        return result;
     }
 
-    public Text2ImageResponse setUsage(ImageUsage usage) {
-        this.usage = usage;
+    public ConsoleResponse<T> setResult(T result) {
+        this.result = result;
         return this;
     }
 }

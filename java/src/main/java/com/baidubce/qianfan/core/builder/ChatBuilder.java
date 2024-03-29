@@ -18,7 +18,6 @@ package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
 import com.baidubce.qianfan.model.chat.*;
-import com.baidubce.qianfan.model.constant.ModelEndpoint;
 
 import java.util.Iterator;
 import java.util.List;
@@ -152,10 +151,8 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
     }
 
     public ChatRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.CHAT, super.getModel(), super.getEndpoint());
         List<Message> messages = messageBuilder.build();
         return new ChatRequest()
-                .setEndpoint(finalEndpoint)
                 .setMessages(messages)
                 .setTemperature(temperature)
                 .setTopP(topP)
@@ -168,6 +165,8 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
                 .setResponseFormat(responseFormat)
                 .setFunctions(functions)
                 .setToolChoice(toolChoice)
+                .setModel(super.getModel())
+                .setEndpoint(super.getEndpoint())
                 .setUserId(super.getUserId())
                 .setExtraParameters(super.getExtraParameters());
     }

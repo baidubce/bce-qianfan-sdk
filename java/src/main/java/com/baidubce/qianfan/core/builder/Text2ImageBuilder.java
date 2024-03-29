@@ -17,7 +17,6 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
-import com.baidubce.qianfan.model.constant.ModelEndpoint;
 import com.baidubce.qianfan.model.image.Text2ImageRequest;
 import com.baidubce.qianfan.model.image.Text2ImageResponse;
 
@@ -94,9 +93,7 @@ public class Text2ImageBuilder extends BaseBuilder<Text2ImageBuilder> {
     }
 
     public Text2ImageRequest build() {
-        String finalEndpoint = ModelEndpoint.getEndpoint(ModelEndpoint.TEXT_2_IMAGE, super.getModel(), super.getEndpoint());
         return new Text2ImageRequest()
-                .setEndpoint(finalEndpoint)
                 .setPrompt(prompt)
                 .setNegativePrompt(negativePrompt)
                 .setSize(size)
@@ -106,6 +103,8 @@ public class Text2ImageBuilder extends BaseBuilder<Text2ImageBuilder> {
                 .setSeed(seed)
                 .setCfgScale(cfgScale)
                 .setStyle(style)
+                .setModel(super.getModel())
+                .setEndpoint(super.getEndpoint())
                 .setUserId(super.getUserId())
                 .setExtraParameters(super.getExtraParameters());
     }

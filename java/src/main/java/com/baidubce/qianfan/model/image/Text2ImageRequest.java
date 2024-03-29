@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.model.image;
 
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.constant.ModelType;
 
 public class Text2ImageRequest extends BaseRequest<Text2ImageRequest> {
     /**
@@ -67,6 +68,11 @@ public class Text2ImageRequest extends BaseRequest<Text2ImageRequest> {
      * 生成风格，默认值为Base
      */
     private String style;
+
+    @Override
+    public String getType() {
+        return ModelType.TEXT_2_IMAGE;
+    }
 
     public String getPrompt() {
         return prompt;

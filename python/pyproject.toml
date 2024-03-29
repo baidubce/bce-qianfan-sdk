@@ -55,8 +55,8 @@ clevercsv = [
     { version = "*", python = ">=3.8", optional = true }
 ]
 ijson = { version = "*", optional = true }
-flask = { version = "*", optional = true }
-gevent = { version = "*", optional = true }
+fastapi = { version = "*", optional = true }
+uvicorn = { version = "*", optional = true }
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -86,8 +86,8 @@ ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
 langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
 local_data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "flask", "gevent"]
-extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
+openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
+extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

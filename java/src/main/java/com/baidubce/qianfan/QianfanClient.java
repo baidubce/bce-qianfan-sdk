@@ -16,6 +16,7 @@
 
 package com.baidubce.qianfan;
 
+import com.baidubce.qianfan.core.ModelEndpointRetriever;
 import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
@@ -41,17 +42,23 @@ class QianfanClient {
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
 
     private final IAuth auth;
+    private final ModelEndpointRetriever endpointRetriever;
 
     public QianfanClient() {
-        this.auth = Auth.create();
+        this(Auth.create());
     }
 
     public QianfanClient(String accessKey, String secretKey) {
-        this.auth = Auth.create(accessKey, secretKey);
+        this(Auth.create(accessKey, secretKey));
     }
 
     public QianfanClient(String type, String accessKey, String secretKey) {
-        this.auth = Auth.create(type, accessKey, secretKey);
+        this(Auth.create(type, accessKey, secretKey));
+    }
+
+    private QianfanClient(IAuth auth) {
+        this.auth = auth;
+        this.endpointRetriever = new ModelEndpointRetriever(auth);
     }
 
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
@@ -87,12 +94,14 @@ class QianfanClient {
     }
 
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
+        String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
+        String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
         if (baseRequest.getExtraParameters() == null) {
             baseRequest.setExtraParameters(new HashMap<>());
         }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
         HttpRequest request = HttpClient.request()
-                .post(String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), baseRequest.getEndpoint()))
+                .post(String.format(url))
                 .body(baseRequest);
         return auth.signRequest(request);
     }

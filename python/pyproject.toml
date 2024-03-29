@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.6.1"
+version = "0.3.7"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -54,9 +54,12 @@ clevercsv = [
     { version = "<=0.8.0", python = "<3.8", optional = true },
     { version = "*", python = ">=3.8", optional = true }
 ]
+diskcache = "^5.6.3"
+
 ijson = { version = "*", optional = true }
 fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
+
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"

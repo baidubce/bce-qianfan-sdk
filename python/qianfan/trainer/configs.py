@@ -1152,8 +1152,7 @@ def update_all_train_configs() -> None:
         )
         # 更新模型默认配置：
         default_configs_mapping = _update_default_config(model_info_list)
-    except Exception as e:
-        log_warn(f"failed to get supported models: {e}")
+    except Exception:
         return
     global ModelInfoMapping
     ModelInfoMapping = {**ModelInfoMapping, **sft_model_info}

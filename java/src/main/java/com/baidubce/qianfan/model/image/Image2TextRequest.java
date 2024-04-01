@@ -43,7 +43,7 @@ public class Image2TextRequest extends BaseRequest<Image2TextRequest> {
      * （1）较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定
      * （2）范围 (0, 1.0]，不能为0
      */
-    private Float temperature;
+    private Double temperature;
 
     /**
      * Top-K 采样参数，在每轮token生成时，保留k个概率最高的token作为候选。说明：
@@ -56,14 +56,14 @@ public class Image2TextRequest extends BaseRequest<Image2TextRequest> {
      * （1）影响输出文本的多样性，取值越大，生成文本的多样性越强
      * （2）取值范围 [0, 1.0]
      */
-    private Float topP;
+    private Double topP;
 
     /**
      * 通过对已生成的token增加惩罚，减少重复生成的现象。说明：
      * （1）值越大表示惩罚越大
      * （2）取值范围：[1.0, 2.0]
      */
-    private Float penaltyScore;
+    private Double penaltyScore;
 
     /**
      * 生成停止标识。当模型生成结果以stop中某个元素结尾时，停止文本生成。说明：
@@ -105,11 +105,11 @@ public class Image2TextRequest extends BaseRequest<Image2TextRequest> {
         return this;
     }
 
-    public Float getTemperature() {
+    public Double getTemperature() {
         return temperature;
     }
 
-    public Image2TextRequest setTemperature(Float temperature) {
+    public Image2TextRequest setTemperature(Double temperature) {
         this.temperature = temperature;
         return this;
     }
@@ -123,20 +123,20 @@ public class Image2TextRequest extends BaseRequest<Image2TextRequest> {
         return this;
     }
 
-    public Float getTopP() {
+    public Double getTopP() {
         return topP;
     }
 
-    public Image2TextRequest setTopP(Float topP) {
+    public Image2TextRequest setTopP(Double topP) {
         this.topP = topP;
         return this;
     }
 
-    public Float getPenaltyScore() {
+    public Double getPenaltyScore() {
         return penaltyScore;
     }
 
-    public Image2TextRequest setPenaltyScore(Float penaltyScore) {
+    public Image2TextRequest setPenaltyScore(Double penaltyScore) {
         this.penaltyScore = penaltyScore;
         return this;
     }

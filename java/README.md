@@ -150,9 +150,9 @@ Text2ImageResponse response = new Qianfan().text2Image()
 System.out.println(response.getData().get(0).getB64Image());
 ```
 
-### 图生文
+### 图像理解
 
-千帆 SDK 支持调用图生文模型，用于根据用户输入的图像和文字，回答图像有关问题。
+千帆 SDK 支持调用图像理解模型，用于根据用户输入的图像和文字，回答图像有关问题。
 
 ```java
 Image2TextResponse response = new Qianfan().image2Text()

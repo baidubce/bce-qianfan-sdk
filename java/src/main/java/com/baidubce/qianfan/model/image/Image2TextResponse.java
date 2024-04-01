@@ -43,7 +43,7 @@ public class Image2TextResponse extends BaseResponse<Image2TextResponse> {
     /**
      * token统计信息
      */
-    private Image2TextUsage usage;
+    private ImageUsage usage;
 
     public Integer getSentenceId() {
         return sentenceId;
@@ -81,11 +81,11 @@ public class Image2TextResponse extends BaseResponse<Image2TextResponse> {
         return this;
     }
 
-    public Image2TextUsage getUsage() {
+    public ImageUsage getUsage() {
         return usage;
     }
 
-    public Image2TextResponse setUsage(Image2TextUsage usage) {
+    public Image2TextResponse setUsage(ImageUsage usage) {
         this.usage = usage;
         return this;
     }

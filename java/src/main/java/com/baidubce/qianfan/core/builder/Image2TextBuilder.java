@@ -30,13 +30,13 @@ public class Image2TextBuilder extends BaseBuilder<Image2TextBuilder> {
 
     private Boolean stream;
 
-    private Float temperature;
+    private Double temperature;
 
     private Integer topK;
 
-    private Float topP;
+    private Double topP;
 
-    private Float penaltyScore;
+    private Double penaltyScore;
 
     private List<String> stop;
 
@@ -75,11 +75,11 @@ public class Image2TextBuilder extends BaseBuilder<Image2TextBuilder> {
         return this;
     }
 
-    public Float getTemperature() {
+    public Double getTemperature() {
         return temperature;
     }
 
-    public Image2TextBuilder temperature(Float temperature) {
+    public Image2TextBuilder temperature(Double temperature) {
         this.temperature = temperature;
         return this;
     }
@@ -93,20 +93,20 @@ public class Image2TextBuilder extends BaseBuilder<Image2TextBuilder> {
         return this;
     }
 
-    public Float getTopP() {
+    public Double getTopP() {
         return topP;
     }
 
-    public Image2TextBuilder topP(Float topP) {
+    public Image2TextBuilder topP(Double topP) {
         this.topP = topP;
         return this;
     }
 
-    public Float getPenaltyScore() {
+    public Double getPenaltyScore() {
         return penaltyScore;
     }
 
-    public Image2TextBuilder penaltyScore(Float penaltyScore) {
+    public Image2TextBuilder penaltyScore(Double penaltyScore) {
         this.penaltyScore = penaltyScore;
         return this;
     }

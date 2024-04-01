@@ -38,6 +38,7 @@ public class ModelEndpointRetriever {
     private static final String DEFAULT_COMPLETION_MODEL = "codellama-7b-instruct";
     private static final String DEFAULT_EMBEDDING_MODEL = "embedding-v1";
     private static final String DEFAULT_TEXT_2_IMAGE_MODEL = "stable-diffusion-xl";
+    private static final String DEFAULT_IMAGE_2_TEXT_MODEL = "fuyu-8b";
 
     private static final String LIST_MODEL_SERVICE_URL = "%s/wenxinworkshop/service/list";
     private static final String ENDPOINT_TEMPLATE = "/%s/%s";
@@ -60,6 +61,7 @@ public class ModelEndpointRetriever {
         defaultTypeModelMap.put(ModelType.COMPLETIONS, DEFAULT_COMPLETION_MODEL);
         defaultTypeModelMap.put(ModelType.EMBEDDINGS, DEFAULT_EMBEDDING_MODEL);
         defaultTypeModelMap.put(ModelType.TEXT_2_IMAGE, DEFAULT_TEXT_2_IMAGE_MODEL);
+        defaultTypeModelMap.put(ModelType.IMAGE_2_TEXT, DEFAULT_IMAGE_2_TEXT_MODEL);
 
         for (String type : MODEL_TYPES) {
             typeModelEndpointMap.put(type, new HashMap<>());
@@ -98,6 +100,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.EMBEDDINGS).put("bge-large-en", "bge_large_en");
         typeModelEndpointMap.get(ModelType.EMBEDDINGS).put("tao-8k", "tao_8k");
         typeModelEndpointMap.get(ModelType.TEXT_2_IMAGE).put("stable-diffusion-xl", "sd_xl");
+        typeModelEndpointMap.get(ModelType.IMAGE_2_TEXT).put("fuyu-8b", "fuyu_8b");
         // Compatibility for old model names
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-turbo", "eb-instant");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot", "completions");

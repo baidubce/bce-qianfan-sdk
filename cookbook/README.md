@@ -5,11 +5,14 @@
 # 大模型推理
 
 
-- [图生文示例](./text2image.ipynb)：展示了如何使用千帆 SDK 完成图生文任务。
+- [文生图示例](./text2image.ipynb)：展示了如何使用千帆 SDK 完成文生图任务。
 - [ERNIE Bot 搜索能力示例](./eb_search.ipynb)：展示了 ENRIE Bot 的搜索增强能力和使用方法。
 - [批量推理示例](./batch_prediction.ipynb)：展示了如何使用 SDK 批量对数据进行预测。
 - [离线批量推理](./offline_batch_inference.ipynb)：展示了如何使用 SDK 调用平台的离线批量功能。
 
+## 推理配置推荐
+
+- [基本使用](./autotuner/tune.ipynb)：展示了如何使用千帆 SDK 所提供的大模型推理配置推荐功能，去寻找更适合目标场景的配置以提高模型性能。
 
 
 # 大模型训练

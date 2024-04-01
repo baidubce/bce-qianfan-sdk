@@ -19,7 +19,7 @@ import concurrent.futures
 import copy
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import MINYEAR, datetime
+from datetime import datetime, timezone
 from typing import (
     Any,
     AsyncIterator,
@@ -37,11 +37,12 @@ from typing import (
 
 import qianfan.errors as errors
 from qianfan import get_config
-from qianfan.consts import Consts, DefaultValue
+from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn, utils
+from qianfan.utils.cache.base import global_disk_cache
 from qianfan.version import VERSION
 
 # This is used when user provides `endpoint`
@@ -260,15 +261,31 @@ class BaseResource(object):
             max_wait_interval=retry_max_wait_interval,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
-        resp = self._client.llm(
-            endpoint=endpoint,
-            header=self._generate_header(model, endpoint, stream, **kwargs),
-            query=self._generate_query(model, endpoint, stream, **kwargs),
-            body=self._generate_body(model, endpoint, stream, **kwargs),
-            stream=stream,
-            data_postprocess=self._data_postprocess,
-            retry_config=retry_config,
-        )
+        refreshed_model_list: bool = False
+        while True:
+            try:
+                resp = self._client.llm(
+                    endpoint=endpoint,
+                    header=self._generate_header(model, endpoint, stream, **kwargs),
+                    query=self._generate_query(model, endpoint, stream, **kwargs),
+                    body=self._generate_body(model, endpoint, stream, **kwargs),
+                    stream=stream,
+                    data_postprocess=self._data_postprocess,
+                    retry_config=retry_config,
+                )
+            except errors.APIError as e:
+                if (
+                    e.error_code == APIErrorCode.UnsupportedMethod
+                    and not refreshed_model_list
+                ):
+                    list = get_latest_supported_models(True)
+                    endpoint = list.get(self.api_type(), {}).get(model)
+                    refreshed_model_list = True
+                    continue
+                else:
+                    raise e
+            break
+
         return resp
 
     async def _ado(
@@ -346,15 +363,30 @@ class BaseResource(object):
             max_wait_interval=retry_max_wait_interval,
         )
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
-        resp = await self._client.async_llm(
-            endpoint=endpoint,
-            header=self._generate_header(model, endpoint, stream, **kwargs),
-            query=self._generate_query(model, endpoint, stream, **kwargs),
-            body=self._generate_body(model, endpoint, stream, **kwargs),
-            stream=stream,
-            data_postprocess=self._data_postprocess,
-            retry_config=retry_config,
-        )
+        refreshed_model_list: bool = False
+        while True:
+            try:
+                resp = await self._client.async_llm(
+                    endpoint=endpoint,
+                    header=self._generate_header(model, endpoint, stream, **kwargs),
+                    query=self._generate_query(model, endpoint, stream, **kwargs),
+                    body=self._generate_body(model, endpoint, stream, **kwargs),
+                    stream=stream,
+                    data_postprocess=self._data_postprocess,
+                    retry_config=retry_config,
+                )
+            except errors.APIError as e:
+                if (
+                    e.error_code == APIErrorCode.UnsupportedMethod
+                    and not refreshed_model_list
+                ):
+                    list = get_latest_supported_models(True)
+                    endpoint = list.get(self.api_type(), {}).get(model)
+                    refreshed_model_list = True
+                    continue
+                else:
+                    raise e
+            break
         return resp
 
     def _check_params(
@@ -380,7 +412,7 @@ class BaseResource(object):
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
-        preset model list
+        get preset model list
 
         Args:
             None
@@ -419,10 +451,12 @@ class BaseResource(object):
         Return:
             Information of the model
         """
+        # try update with local cache
+        cls.update_with_cache_model_infos()
+        # get the supported_models list
         model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
         model_info = model_info_list.get(model.lower())
         if model_info is None:
-            # 拿不到的话
             raise errors.InvalidArgumentError(
                 f"The provided model `{model}` is not in the list of supported models."
                 " If this is a recently added model, try using the `endpoint`"
@@ -430,6 +464,68 @@ class BaseResource(object):
                 f" {cls.models()}"
             )
         return model_info
+
+    @staticmethod
+    def format_model_infos_cache(
+        type_model_list: Dict[str, Dict[str, QfLLMInfo]], update_time: datetime
+    ) -> Any:
+        """
+        format the model info to cache format
+        Args:
+            model_list (Dict[str, QfLLMInfo]): model infos list
+            expired_time (float): expire time of the cache
+        Returns:
+            a dict which key is preset model and value is the endpoint
+        """
+        return {"models": type_model_list, "update_time": update_time}
+
+    @staticmethod
+    def _merge_models(
+        merged: Dict[str, Dict[str, QfLLMInfo]],
+        new: Dict[str, Dict[str, QfLLMInfo]],
+    ) -> Dict[str, Dict[str, QfLLMInfo]]:
+        for model_type, list in new.items():
+            if model_type not in merged:
+                merged[model_type] = {}
+            merged[model_type] = {**merged[model_type], **list}
+
+        return merged
+
+    @classmethod
+    def update_with_cache_model_infos(cls) -> Dict[str, Dict[str, QfLLMInfo]]:
+        """
+        update the model info with cache and return `_runtime_models_info`
+
+        Returns:
+            Dict[str, Dict[str, QfLLMInfo]]: model infos list
+        """
+        global _last_update_time
+        global _runtime_models_info
+        global _model_infos_access_lock
+        if _last_update_time.timestamp() == 0:
+            # 首次加载本地缓存
+            value = global_disk_cache.get(Consts.QianfanLLMModelsListCacheKey)
+            if value is not None:
+                try:
+                    with _model_infos_access_lock:
+                        _last_update_time = value.get(
+                            "update_time",
+                            datetime(1970, 1, 1, second=1, tzinfo=timezone.utc),
+                        )
+
+                        _runtime_models_info = BaseResource._merge_models(
+                            _runtime_models_info, value.get("models", {})
+                        )
+                except TypeError:
+                    # 防止value格式不对齐可能产生的问题
+                    # global_disk_cache.delete(Consts.QianfanLLMModelsListCacheKey)
+                    ...
+            else:
+                with _model_infos_access_lock:
+                    _last_update_time = datetime(
+                        1970, 1, 1, second=1, tzinfo=timezone.utc
+                    )
+        return _runtime_models_info
 
     def _get_endpoint(self, model: str) -> QfLLMInfo:
         """
@@ -486,8 +582,7 @@ class BaseResource(object):
             kwargs["request_id"]
             if "request_id" in kwargs
             else (
-                f"{Consts.QianfanRequestIdDefaultPrefix}-"
-                f"{utils.generate_letter_num_random_id(16)}"
+                f"{Consts.QianfanRequestIdDefaultPrefix}-{utils.generate_letter_num_random_id(16)}"
             )
         )
         return kwargs["header"]
@@ -625,9 +720,9 @@ class BaseResource(object):
 
 
 # {api_type: {model_name: QfLLMInfo}}
-_runtime_models_info: Dict[str, Dict[str, QfLLMInfo]] = {}
-_last_update_time: datetime = datetime(MINYEAR, 1, 1)
-_model_infos_access_lock: threading.Lock = threading.Lock()
+_runtime_models_info = {}  # type: ignore
+_last_update_time = datetime(1970, 1, 1, tzinfo=timezone.utc)  # type: ignore
+_model_infos_access_lock = threading.Lock()  # type: ignore
 
 
 def trim_prefix(s: str, prefix: str) -> str:
@@ -637,9 +732,12 @@ def trim_prefix(s: str, prefix: str) -> str:
         return s
 
 
-def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
+def get_latest_supported_models(
+    refresh_focus: bool = False,
+    update_interval: Optional[float] = None,
+) -> Dict[str, Dict[str, QfLLMInfo]]:
     """
-    fetch supported models from server
+    fetch supported models from server if `_last_update_time` is expired
     and update the `_runtime_models_info`
     """
     if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
@@ -651,13 +749,15 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
 
     global _last_update_time
     global _runtime_models_info
+    if update_interval is None:
+        update_interval = get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL
     if (
-        datetime.now() - _last_update_time
-    ).total_seconds() > get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
+        datetime.now(timezone.utc) - _last_update_time
+    ).total_seconds() >= update_interval or refresh_focus:
         _model_infos_access_lock.acquire()
         if (
-            datetime.now() - _last_update_time
-        ).total_seconds() < get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL:
+            datetime.now(timezone.utc) - _last_update_time
+        ).total_seconds() < update_interval and not refresh_focus:
             _model_infos_access_lock.release()
             return _runtime_models_info
         try:
@@ -665,7 +765,7 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
         except Exception as e:
             log_warn(f"fetch_supported_models failed: {e}")
             _model_infos_access_lock.release()
-            _last_update_time = datetime.now()
+            _last_update_time = datetime.now(timezone.utc)
             return _runtime_models_info
 
         # get preset services:
@@ -685,6 +785,12 @@ def get_latest_supported_models() -> Dict[str, Dict[str, QfLLMInfo]]:
                 api_type=api_type,
             )
             _runtime_models_info[api_type] = model_info
-            _last_update_time = datetime.now()
+            _last_update_time = datetime.now(timezone.utc)
+        global_disk_cache.set(
+            Consts.QianfanLLMModelsListCacheKey,
+            BaseResource.format_model_infos_cache(
+                _runtime_models_info, _last_update_time
+            ),
+        )
         _model_infos_access_lock.release()
     return _runtime_models_info

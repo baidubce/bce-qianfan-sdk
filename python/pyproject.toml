@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.6.1"
+version = "0.3.7"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -27,36 +27,39 @@ python-dotenv = [
     { version = "<=0.21.1", python = "<3.8" },
     { version = ">=1.0", python = ">=3.8" }
 ]
+tenacity = "^8.2.3"
+multiprocess = "*"
 langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
 numpy = [
-    { version = "<1.22.0", python = ">=3.7 <3.8" },
-    { version = ">=1.22.0", python = ">=3.8" }
+    { version = "<1.22.0", python = ">=3.7 <3.8", optional = true },
+    { version = ">=1.22.0", python = ">=3.8", optional = true }
 ]
 pyarrow = [
-    { version = ">=14.0.1", python = ">=3.8" },
-    { version = "<=12.0.1", python = ">=3.7 <3.8" }
+    { version = ">=14.0.1", python = ">=3.8", optional = true },
+    { version = "<=12.0.1", python = ">=3.7 <3.8", optional = true }
 ]
-python-dateutil = "^2.8.2"
+python-dateutil = { version = "^2.8.2", optional = true }
 rich = ">=13.0.0"
 typer = ">=0.9.0"
-tenacity = "^8.2.3"
 pyyaml = "^6.0.1"
 prompt-toolkit = ">=3.0.38"
 torch = [
     { version = "<=1.13.1", python = "<3.8", optional = true},
     { version = "*", python = ">=3.8", optional = true }
 ]
-ltp = { version = "*", optional = true}
-emoji = { version = "*", optional = true}
-sentencepiece = { version = "*", optional = true}
-multiprocess = "*"
+ltp = { version = "*", optional = true }
+emoji = { version = "*", optional = true }
+sentencepiece = { version = "*", optional = true }
 clevercsv = [
-    { version = "<=0.8.0", python = "<3.8"},
-    { version = "*", python = ">=3.8" }
+    { version = "<=0.8.0", python = "<3.8", optional = true },
+    { version = "*", python = ">=3.8", optional = true }
 ]
-ijson = "*"
-flask = { version = "*", optional = true}
-gevent = { version = "*", optional = true}
+diskcache = "^5.6.3"
+
+ijson = { version = "*", optional = true }
+fastapi = { version = "*", optional = true }
+uvicorn = { version = "*", optional = true }
+
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -77,10 +80,11 @@ types-protobuf = "4.24.0.4"
 setuptools = "*"
 
 [tool.poetry.extras]
-langchain = ["langchain"]
-data_clean = ["ltp", "emoji", "sentencepiece", "torch"]
-openai = ["flask", "gevent"]
-all = ["langchain", "ltp", "emoji", "sentencepiece", "torch", "flask", "gevent"]
+dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
+langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
+local_data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
+extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]
@@ -91,6 +95,7 @@ select = [
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
+exclude = ["qianfan/__init__.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = ["PLW1514"]
@@ -101,7 +106,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests", "qianfan/utils/pydantic"]
+exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py"]
 
 
 [build-system]

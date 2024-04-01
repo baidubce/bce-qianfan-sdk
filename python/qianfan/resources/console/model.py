@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from qianfan.consts import Consts
 from qianfan.resources.console.consts import (
-    DataStorageType,
     EvaluationResultExportDestinationType,
     EvaluationResultExportField,
     EvaluationResultExportRange,
@@ -29,7 +28,6 @@ from qianfan.resources.console.consts import (
 )
 from qianfan.resources.console.utils import console_api_request
 from qianfan.resources.typing import QfRequest
-from qianfan.utils import log_error
 
 
 class Model(object):
@@ -147,9 +145,6 @@ class Model(object):
         eval_config: Dict[str, Any],
         description: Optional[str] = None,
         pending_eval_id: Optional[int] = None,
-        result_dataset_storage_type: DataStorageType = DataStorageType.PublicBos,
-        result_dataset_storage_id: Optional[str] = None,
-        result_dataset_raw_path: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -170,15 +165,6 @@ class Model(object):
                 the id of evaluation which doesn't start yet,
                 you can set this parameter to modify the spec of
                 specific evaluation and start it. Default to None
-            result_dataset_storage_type (DataStorageType):
-                where to place evaluation result dataset,
-                default to DataStorageType.PublicBos
-            result_dataset_storage_id (Optional[str]):
-                user bos id, only used when result_dataset_storage_type is
-                DataStorageType.PrivateBos, default to None.
-            result_dataset_raw_path (Optional[str]):
-                bos path, only used when result_dataset_storage_type is
-                DataStorageType.PrivateBos, default to None.
             **kwargs (Any):
                 arbitrary arguments
 
@@ -195,19 +181,7 @@ class Model(object):
             "datasetId": dataset_id,
             "evalStandardConf": eval_config,
             "computeResourceConf": {"vmType": 1, "vmNumber": 8},
-            "resultDatasetStorageType": result_dataset_storage_type.value,
         }
-
-        if result_dataset_storage_type != DataStorageType.PublicBos:
-            if not result_dataset_storage_id or not result_dataset_raw_path:
-                err_msg = (
-                    "result_dataset_storage_id or result_dataset_raw_path is empty when"
-                    " result_dataset_storage_type isn't DataStorageType.PublicBos"
-                )
-                log_error(err_msg)
-                raise ValueError(err_msg)
-            request_json["resultDatasetStorageId"] = result_dataset_storage_id
-            request_json["resultDatasetRawPath"] = result_dataset_raw_path
 
         if pending_eval_id:
             request_json["id"] = pending_eval_id
@@ -592,14 +566,15 @@ class Model(object):
     def get_evaluation_result_list(
         cls,
         id: Union[str, int],
-        bleu4: Optional[float] = None,
-        rouge_1: Optional[float] = None,
-        rouge_2: Optional[float] = None,
-        rouge_l: Optional[float] = None,
-        judge_score: Optional[int] = None,
+        bleu4: Optional[Dict[str, float]] = None,
+        rouge_1: Optional[Dict[str, float]] = None,
+        rouge_2: Optional[Dict[str, float]] = None,
+        rouge_l: Optional[Dict[str, float]] = None,
+        judge_score: Optional[Dict[str, int]] = None,
         model_version_ids: Optional[List[int]] = None,
         order_by: Optional[str] = None,
         order: Optional[str] = None,
+        eval_unit_id: Optional[List[str]] = None,
         page_no: int = 1,
         page_size: int = 20,
         **kwargs: Any,
@@ -611,21 +586,23 @@ class Model(object):
             id (Union[str, int]):
                 evaluation id
             bleu4 (Optional[float]):
-                bleu4 score, range in 0.0 to 1.0
+                bleu4 score, {"start": 0.0, "end": 1.0}
             rouge_1 (Optional[float]):
-                rouge_1 score, range in 0.0 to 1.0
+                rouge_1 score, {"start": 0.0, "end": 1.0}
             rouge_2 (Optional[float]):
-                rouge_2 score, range in 0.0 to 1.0
+                rouge_2 score, {"start": 0.0, "end": 1.0}
             rouge_l (Optional[float]):
-                rouge_l score, range in 0.0 to 1.0
+                rouge_l score, {"start": 0.0, "end": 1.0}
             judge_score (Optional[int]):
-                judge score, min is -1
+                judge score, {"start": -1, "end": ...}
             model_version_ids (Optional[List[int]]):
                 model version ids
             order_by (Optional[str]):
                 order condition, such as `bleu4`
             order (Optional[str]):
                 order type, including: `asc` and `desc`
+            eval_unit_id (Optional[List[str]]):
+                evaluation unit ids
             page_no (int):
                 page number default is 1, start from 1
             page_size (int):
@@ -652,6 +629,8 @@ class Model(object):
             req.json_body["judgeScore"] = judge_score
         if model_version_ids:
             req.json_body["modelVersionIds"] = model_version_ids
+        if eval_unit_id:
+            req.json_body["evalUnitId"] = eval_unit_id
         if order_by:
             req.json_body["orderBy"] = order_by
         if order:

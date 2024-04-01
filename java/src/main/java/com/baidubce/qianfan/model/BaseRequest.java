@@ -16,11 +16,17 @@
 
 package com.baidubce.qianfan.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class BaseRequest<T extends BaseRequest<T>> {
     /**
-     * 模型的调用端点
+     * 模型名称 (与endpoint二选一)
+     */
+    private String model;
+
+    /**
+     * 模型的调用端点 (与model二选一)
      */
     private String endpoint;
 
@@ -32,7 +38,19 @@ public abstract class BaseRequest<T extends BaseRequest<T>> {
     /**
      * 请求的额外参数
      */
-    private Map<String, Object> extraParameters;
+    private Map<String, Object> extraParameters = new HashMap<>();
+
+    public abstract String getType();
+
+    public String getModel() {
+        return model;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setModel(String model) {
+        this.model = model;
+        return (T) this;
+    }
 
     public String getEndpoint() {
         return endpoint;

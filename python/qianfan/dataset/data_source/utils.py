@@ -26,7 +26,6 @@ from pathlib import Path
 from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-import dateutil.parser
 import pyarrow
 import requests
 
@@ -66,6 +65,11 @@ from qianfan.resources.console.consts import (
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
 from qianfan.utils.pydantic import BaseModel
+
+try:
+    import dateutil.parser
+except ImportError:
+    log_warn("python-dateutil not installed, only online function can be used")
 
 
 class ImageExtensionName(Enum):

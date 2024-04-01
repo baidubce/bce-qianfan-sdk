@@ -49,10 +49,10 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.base import Pipeline
 from qianfan.trainer.configs import ModelInfo, TrainLimit
 from qianfan.trainer.consts import ActionState, PeftType
 from qianfan.trainer.event import Event, EventHandler
+from qianfan.trainer.pipeline import Pipeline
 
 trainer_app = typer.Typer(
     no_args_is_help=True,

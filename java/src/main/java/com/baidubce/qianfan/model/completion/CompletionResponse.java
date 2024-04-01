@@ -16,22 +16,9 @@
 
 package com.baidubce.qianfan.model.completion;
 
-public class CompletionResponse {
-    /**
-     * 本轮对话的id
-     */
-    private String id;
+import com.baidubce.qianfan.model.BaseResponse;
 
-    /**
-     * 回包类型
-     */
-    private String object;
-
-    /**
-     * 时间戳
-     */
-    private Integer created;
-
+public class CompletionResponse extends BaseResponse<CompletionResponse> {
     /**
      * 表示当前子句的序号。只有在流式接口模式下会返回该字段
      */
@@ -56,33 +43,6 @@ public class CompletionResponse {
      * token统计信息
      */
     private CompletionUsage usage;
-
-    public String getId() {
-        return id;
-    }
-
-    public CompletionResponse setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getObject() {
-        return object;
-    }
-
-    public CompletionResponse setObject(String object) {
-        this.object = object;
-        return this;
-    }
-
-    public Integer getCreated() {
-        return created;
-    }
-
-    public CompletionResponse setCreated(Integer created) {
-        this.created = created;
-        return this;
-    }
 
     public Integer getSentenceId() {
         return sentenceId;

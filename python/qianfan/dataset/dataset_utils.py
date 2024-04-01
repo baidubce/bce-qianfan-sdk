@@ -281,8 +281,8 @@ def _list_cloud_data(
             raise RequestError(message)
 
         log_info(
-            f"retrieve single entity from {elem['entity_url']} succeeded, with"
-            f" content: {resp.text}"
+            f"retrieve single entity from {elem['entity_url']} succeeded, with content:"
+            f" {resp.text}"
         )
         elem.pop("entity_url")
         elem["entity_content"] = resp.text

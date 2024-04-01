@@ -17,18 +17,18 @@
 """
 
 import json
-import shutil
-import time
-from glob import glob
-import papermill as pm
 import logging
 import os
 import random
 import re
+import shutil
 import string
+import time
+from glob import glob
 from typing import Dict, List
 
 import nbformat as nbf
+import papermill as pm
 from pydantic import BaseModel, Field
 
 
@@ -439,7 +439,8 @@ class CookbookExecutor:
         self.rm_dir(self.const_dir['temp_dir'])
         if not self.debug:
             self.rm_dir(self.const_dir['output_dir'])
-            self.rm_dir(f'{self.const_dir["root_dir"]}/test')
+        if len(os.listdir(f'{self.const_dir["root_dir"]}/test')) == 0:
+            os.rmdir(f'{self.const_dir["root_dir"]}/test')
 
     def rm_dir(self, path: str, mkdir: bool = False):
         """

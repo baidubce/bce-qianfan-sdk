@@ -29,6 +29,7 @@ from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
 from qianfan.common.client.utils import credential_required, print_error_msg
+from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -64,6 +65,7 @@ def openai(
     """
     Create an openai wrapper server.
     """
+    check_dependency("openai", ["fastapi", "uvicorn"])
     from qianfan.common.client.openai_adapter import entry as openai_entry
 
     openai_entry(host=host, port=port, detach=detach, log_file=log_file)

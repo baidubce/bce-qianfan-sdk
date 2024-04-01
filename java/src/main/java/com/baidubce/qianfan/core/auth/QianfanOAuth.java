@@ -31,8 +31,7 @@ import com.baidubce.qianfan.util.http.HttpResponse;
 import java.net.URI;
 
 public class QianfanOAuth implements IAuth {
-    private static final String AUTH_URL = "https://aip.baidubce.com/oauth/2.0/token?" +
-            "grant_type=client_credentials&client_id=%s&client_secret=%s";
+    private static final String OAUTH_URL = "%s/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s";
     private static final String ACCESS_TOKEN = "access_token";
     private static final long EXPIRE_OFFSET_SECONDS = 10;
     private final String apiKey;
@@ -80,7 +79,7 @@ public class QianfanOAuth implements IAuth {
     }
 
     private String sign() {
-        String url = String.format(AUTH_URL, apiKey, secretKey);
+        String url = String.format(OAUTH_URL, QianfanConfig.getBaseUrl(), apiKey, secretKey);
         try {
             HttpResponse<OAuthResponse> resp = HttpClient.request().get(url).executeJson(OAuthResponse.class);
             if (resp.getCode() > 400 || StringUtils.isEmpty(resp.getBody().getAccessToken())) {

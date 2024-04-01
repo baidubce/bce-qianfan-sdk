@@ -16,24 +16,11 @@
 
 package com.baidubce.qianfan.model.image;
 
+import com.baidubce.qianfan.model.BaseResponse;
+
 import java.util.List;
 
-public class Text2ImageResponse {
-    /**
-     * 请求的Id
-     */
-    private String id;
-
-    /**
-     * 回包类型。例如："image" 表示图像生成返回
-     */
-    private String object;
-
-    /**
-     * 时间戳
-     */
-    private long created;
-
+public class Text2ImageResponse extends BaseResponse<Text2ImageResponse> {
     /**
      * 生成图片结果
      */
@@ -43,33 +30,6 @@ public class Text2ImageResponse {
      * token统计信息
      */
     private ImageUsage usage;
-
-    public String getId() {
-        return id;
-    }
-
-    public Text2ImageResponse setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getObject() {
-        return object;
-    }
-
-    public Text2ImageResponse setObject(String object) {
-        this.object = object;
-        return this;
-    }
-
-    public long getCreated() {
-        return created;
-    }
-
-    public Text2ImageResponse setCreated(long created) {
-        this.created = created;
-        return this;
-    }
 
     public List<ImageData> getData() {
         return data;

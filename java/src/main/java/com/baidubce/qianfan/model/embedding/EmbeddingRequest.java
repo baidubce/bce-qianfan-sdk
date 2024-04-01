@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.model.embedding;
 
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.constant.ModelType;
 
 import java.util.List;
 
@@ -25,6 +26,11 @@ public class EmbeddingRequest extends BaseRequest<EmbeddingRequest> {
      * 输入文本以获取embedding
      */
     private List<String> input;
+
+    @Override
+    public String getType() {
+        return ModelType.EMBEDDINGS;
+    }
 
     public List<String> getInput() {
         return input;

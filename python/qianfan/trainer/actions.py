@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
@@ -83,6 +84,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     dataset: Optional[Dataset] = None
     bos_path: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
 
     def __init__(
         self,
@@ -94,9 +96,15 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if dataset is None:
             raise InvalidArgumentError("dataset must be set")
         if isinstance(dataset, str):
-            if not is_valid_bos_path(dataset):
-                raise InvalidArgumentError(f"invalid bos_path {dataset}")
-            self.bos_path = dataset
+            if is_valid_bos_path(dataset):
+                self.bos_path = dataset
+                # self.dataset = Dataset.load(bos_load_args=) 需要bos信息
+                self._dataset_str = dataset
+            elif dataset.startswith("ds-"):
+                self.dataset = Dataset.load(qianfan_dataset_id=dataset)
+                self._dataset_str = dataset
+            else:
+                raise InvalidArgumentError(f"invalid dataset_str: {dataset}")
         elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
             qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
             if (
@@ -107,8 +115,10 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     f"dataset must be `{dataset_template}` template."
                 )
             self.dataset = dataset
+            self._dataset_str = dataset.inner_data_source_cache.id
         elif isinstance(dataset.inner_data_source_cache, BosDataSource):
             self.dataset = dataset
+            self.bos_path = dataset.inner_data_source_cache.bos_file_path
         else:
             raise InvalidArgumentError(
                 "dataset must be either implemented with QianfanDataSource or"
@@ -132,7 +142,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 )
             else:
                 bos_path = self.bos_path
-            return {
+            self.result = {
                 "datasets": {
                     "sourceType": (
                         console_consts.TrainDatasetSourceType.PrivateBos.value
@@ -140,6 +150,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     "versions": [{"versionBosUri": bos_path}],
                 }
             }
+            return self.result
         from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 
         if self.dataset is None:
@@ -155,7 +166,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 raise InvalidArgumentError("dataset must be released")
             log_debug("[load_dataset_action] dataset loaded successfully")
             self.qf_dataset_id = qf_data_src.id
-            return {
+            self.result = {
                 "datasets": {
                     "sourceType": console_consts.TrainDatasetSourceType.Platform.value,
                     "versions": [
@@ -168,7 +179,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         elif isinstance(self.dataset.inner_data_source_cache, BosDataSource):
             log_debug("[load_dataset_action] prepare train-set in BOS")
             bos_data_src = cast(BosDataSource, self.dataset.inner_data_source_cache)
-            return {
+            self.result = {
                 "datasets": {
                     "sourceType": (
                         console_consts.TrainDatasetSourceType.PrivateBos.value
@@ -184,6 +195,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             }
         else:
             raise InvalidArgumentError("dataset must be set")
+        return self.result
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
@@ -206,6 +218,41 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             }
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)
+
+    def persist(self) -> bytes:
+        return self.serialize_helper.serialize(self._action_dict())
+
+    def _action_dict(self) -> Dict[str, Any]:
+        qf_ds: Optional[Any] = None
+        if isinstance(self.dataset, str):
+            qf_ds = self.dataset
+        elif (
+            self.dataset is not None
+            and self.dataset.inner_data_source_cache is not None
+        ):
+            assert isinstance(self.dataset.inner_data_source_cache, QianfanDataSource)
+            qf_ds = self.dataset.inner_data_source_cache.id
+        meta = {
+            "id": self.id,
+            "type": LoadDataSetAction.__name__,
+            "ds_id": qf_ds,
+            "dataset_bos": self.bos_path,
+            "output": self.result,
+        }
+        return meta
+
+    @classmethod
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
+        return cls(
+            id=meta.get("id"),
+            dataset=meta.get("ds_id") or meta.get("dataset_bos"),
+        )
+
+    @classmethod
+    def load(cls, b: bytes) -> "LoadDataSetAction":
+        meta = cls.serialize_helper.deserialize(b)
+        assert isinstance(meta, dict)
+        return cls._load_from_dict(meta)
 
 
 class TrainAction(
@@ -297,6 +344,8 @@ class TrainAction(
                 used in incr train, model train task_id. Defaults to None.
             job_id (Optional[int], optional):
                 used in incr train, mod train job_id. Defaults to None.
+            peft_type: Optional[PeftType], optional):
+                peft_type, e.g. `pretrain`, `finetune`. Defaults to None.
             job_name (Optional[str], optional):
                 train task name. Defaults to None.
             task_description (Optional[str], optional):
@@ -610,7 +659,7 @@ class TrainAction(
                 self._input = {}
             return self._exec(self._input, **kwargs)
 
-    def stop(self, **kwargs: Dict) -> None:
+    def stop(self, **kwargs: Dict) -> "BaseAction":
         """
         stop method for train action
 
@@ -620,12 +669,13 @@ class TrainAction(
         """
         if self.task_id is None or self.job_id is None:
             log_warn("[train_action] task_id or job_id not set, training not started")
-            return
+            return self
         resp = api.FineTune.V2.stop_task(self.task_id)
         if resp.get("result"):
             log_debug(f"train task {self.task_id}/{self.job_id} stopped successfully")
         else:
             log_debug(f"train task {self.task_id}/{self.job_id} stopped failed")
+        return self
 
     def get_default_train_config(
         self,
@@ -650,6 +700,48 @@ class TrainAction(
         train_config = model_info[peft_type]
         train_config.peft_type = peft_type
         return train_config
+
+    def persist(self) -> bytes:
+        return self.serialize_helper.serialize(self._action_dict())
+
+    def _action_dict(self) -> Dict[str, Any]:
+        meta = {
+            "id": self.id,
+            "type": TrainAction.__name__,
+            "init_params": {
+                "job_id": self.job_id,
+                "task_id": self.task_id,
+                "train_mode": (
+                    self.train_mode
+                    if isinstance(self.train_mode, str)
+                    else self.train_mode.value
+                ),
+                "train_type": self.train_type,
+                "train_config": (
+                    self.train_config.dict() if self.train_config is not None else {}
+                ),
+                "is_incr": self.is_incr,
+                "job_name": self.job_name,
+                "task_description": self.task_description,
+                "job_description": self.job_description,
+            },
+            "input": self._input,
+            "output": self.result,
+        }
+        return meta
+
+    @classmethod
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "TrainAction":
+        params = meta.get("init_params", {})
+        if "train_config" in params:
+            params["train_config"] = TrainConfig(**params["train_config"])
+        action = cls(
+            **params,
+        )
+        action.is_incr = params.pop("is_incr", False)
+        action._input = meta.get("input")
+        action.result = meta.get("output")
+        return action
 
 
 class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -689,6 +781,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+        self._input = input
         if self.model is None:
             raise InvalidArgumentError("model must be set when in model publish._exec")
         log_debug(
@@ -735,6 +828,41 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.model = Model(task_id=self.task_id, job_id=self.job_id)
         return self._exec(**kwargs)
 
+    def _action_dict(self) -> Dict[str, Any]:
+        meta: Dict[str, Any] = {
+            "id": self.id,
+            "type": ModelPublishAction.__name__,
+            "init_params": {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+            },
+            "input": {
+                "task_id": self.task_id,
+                "job_id": self.job_id,
+            },
+        }
+        if self.model:
+            meta["model_version_id"] = self.model.version_id
+        if self.result:
+            res = copy.deepcopy(self.result)
+            if "model" in res:
+                res.pop("model")
+            meta["output"] = res
+
+        return meta
+
+    @classmethod
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
+        params = meta.get("init_params", {})
+        action = cls(
+            **params,
+        )
+        action._input = meta.get("input")  # type: ignore
+        action.result = meta.get("output")
+        action.model = Model(version_id=meta.get("model_version_id"))
+        action.model.auto_complete_info()
+        return action
+
 
 class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """DeployAction
@@ -759,20 +887,21 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
     """
 
-    deploy_config: Optional[DeployConfig]
+    deploy_config: Optional[DeployConfig] = None
     """deploy config include replicas and so on"""
-    model_id: Optional[int]
+    model_id: Optional[int] = None
     """model id"""
-    model_id_str: Optional[str]
+    model_id_str: Optional[str] = None
     """model str id"""
-    model_version_id: Optional[int]
+    model_version_id: Optional[int] = None
     """model version id"""
-    model_version_id_str: Optional[str]
+    model_version_id_str: Optional[str] = None
     """model version str id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
     """result of action"""
+    model: Optional[Model] = None
 
     def __init__(self, deploy_config: Optional[DeployConfig] = None, **kwargs: Any):
         """
@@ -816,6 +945,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy_config must be set in deploy._exec")
+        assert self.model is not None
         log_debug(
             f"[deploy_action] try deploy model {self.model.id}_{self.model.version_id}"
         )
@@ -863,6 +993,37 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 "either (model_id and version_id) or model must be set"
             )
         return self._exec()
+
+    def _action_dict(self) -> Dict[str, Any]:
+        meta = {
+            "id": self.id,
+            "type": DeployAction.__name__,
+            "init_params": {
+                "deploy_config": (
+                    self.deploy_config.dict() if self.deploy_config else None
+                ),
+            },
+            "input": {
+                "model_id": self.model_id,
+                "model_version_id": self.model_version_id,
+            },
+        }
+        if self.model is not None and self.model.service is not None:
+            meta["output"] = {
+                "service_id": self.model.service.id,
+                "service_endpoint": self.model.service.endpoint,
+            }
+        return meta
+
+    @classmethod
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
+        deploy_config = meta.get("init_params", {}).get("deploy_config", {})
+        action = cls(
+            DeployConfig(**deploy_config),
+        )
+        action._input = meta.get("input")
+        action.result = meta.get("output")
+        return action
 
 
 class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -1003,37 +1164,51 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.result = {"eval_res": res, **self._input}
         return self.result
 
+    def _action_dict(self) -> Dict[str, Any]:
+        meta = {
+            "id": self.id,
+            "type": EvaluateAction.__name__,
+            "init_params": {},
+            # "input": self._input,
+            # "output": self.result,
+        }
+        return meta
+
+    @classmethod
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "EvaluateAction":
+        raise NotImplementedError()
+
 
 action_mapping: Dict[str, Dict[str, Any]] = {
-    LoadDataSetAction.__class__.__name__: {
+    LoadDataSetAction.__name__: {
         ActionState.Preceding: TrainStatus.DatasetLoading,
         ActionState.Running: TrainStatus.DatasetLoading,
         ActionState.Done: TrainStatus.DatasetLoaded,
         ActionState.Error: TrainStatus.DatasetLoadFailed,
         ActionState.Stopped: TrainStatus.DatasetLoadStopped,
     },
-    TrainAction.__class__.__name__: {
+    TrainAction.__name__: {
         ActionState.Preceding: TrainStatus.TrainCreated,
         ActionState.Running: TrainStatus.Training,
         ActionState.Done: TrainStatus.TrainFinished,
         ActionState.Error: TrainStatus.TrainFailed,
         ActionState.Stopped: TrainStatus.TrainStopped,
     },
-    ModelPublishAction.__class__.__name__: {
+    ModelPublishAction.__name__: {
         ActionState.Preceding: TrainStatus.ModelPublishing,
         ActionState.Running: TrainStatus.ModelPublishing,
         ActionState.Done: TrainStatus.ModelPublished,
         ActionState.Error: TrainStatus.ModelPublishFailed,
         ActionState.Stopped: TrainStatus.ModelPublishFailed,
     },
-    DeployAction.__class__.__name__: {
+    DeployAction.__name__: {
         ActionState.Preceding: ServiceStatus.Created,
         ActionState.Running: ServiceStatus.Deploying,
         ActionState.Done: ServiceStatus.Deployed,
         ActionState.Error: ServiceStatus.DeployFailed,
         ActionState.Stopped: ServiceStatus.DeployStopped,
     },
-    EvaluateAction.__class__.__name__: {
+    EvaluateAction.__name__: {
         ActionState.Preceding: TrainStatus.EvaluationCreated,
         ActionState.Running: TrainStatus.EvaluationRunning,
         ActionState.Done: TrainStatus.EvaluationFinished,

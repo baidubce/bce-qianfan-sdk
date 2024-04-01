@@ -14,10 +14,10 @@
 """
 constants for dataset using
 """
-from pathlib import Path
+from qianfan.consts import Consts
 
 # 千帆本地缓存文件夹的绝对路径
-QianfanLocalCacheDir = Path.home() / ".qianfan_cache"
+QianfanLocalCacheDir = Consts.QianfanCacheDir
 
 # 千帆数据集本地缓存文件夹的绝对路径
 QianfanDatasetLocalCacheDir = QianfanLocalCacheDir / "dataset"

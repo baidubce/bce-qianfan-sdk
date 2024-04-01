@@ -1291,7 +1291,7 @@ class Dataset(Table):
 
         result_dataset = Dataset.load(
             qianfan_dataset_id=result_dataset_id,
-            download_when_init=output_prettified,
+            is_download_to_local=output_prettified,
             **kwargs,
         )
 

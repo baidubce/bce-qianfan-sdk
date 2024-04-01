@@ -35,7 +35,7 @@ from qianfan.trainer.actions import (
 from qianfan.trainer.configs import TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
-from qianfan.trainer.finetune import LLMFinetune
+from qianfan.trainer.finetune import Finetune, LLMFinetune
 from qianfan.trainer.post_pretrain import PostPreTrain
 
 
@@ -167,7 +167,7 @@ def test_trainer_sft_with_deploy():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="Llama-2-7b",
+        train_type="Qianfan-Chinese-Llama-2-7B",
         dataset=ds,
         train_config=train_config,
         deploy_config=deploy_config,
@@ -305,10 +305,10 @@ def test_eval_action_resume():
 def test_trainer_sft_with_eval():
     train_config = TrainConfig(
         epoch=1,
-        batch_size=4,
-        learning_rate=0.00002,
+        learning_rate=0.00003,
         max_seq_len=4096,
-        peft_type=PeftType.LoRA,
+        trainset_rate=20,
+        peft_type=PeftType.ALL,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "train", console_consts.DataTemplateType.NonSortedConversation
@@ -320,7 +320,7 @@ def test_trainer_sft_with_eval():
     eval_ds = Dataset.load(source=qianfan_eval_data_source, organize_data_as_group=True)
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="Llama-2-7b",
+        train_type="ERNIE-Speed",
         dataset=ds,
         train_config=train_config,
         event_handler=eh,
@@ -454,7 +454,7 @@ def test_all_default_config():
 def test_failed_sft_run():
     train_config = TrainConfig(
         epoch=1,
-        learning_rate=0.00002,
+        learning_rate=0.00003,
         max_seq_len=4096,
         trainset_rate=20,
         peft_type=PeftType.ALL,
@@ -486,3 +486,31 @@ def test_increment_sft():
     assert res is not None
     assert isinstance(res, dict)
     assert "model_version_id" in res
+
+
+def test_persist():
+    train_config = TrainConfig(
+        epoch=1,
+        learning_rate=0.00002,
+        max_seq_len=4096,
+        trainset_rate=20,
+        peft_type=PeftType.ALL,
+    )
+    qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test", console_consts.DataTemplateType.NonSortedConversation
+    )
+    ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
+
+    trainer = LLMFinetune(
+        train_type="ERNIE-Speed",
+        dataset=ds,
+        train_config=train_config,
+    )
+    trainer.run()
+
+    trainers = Finetune.list()
+    assert len(trainers) >= 1
+
+    pre_id = trainers[0].id
+    sft = Finetune.load(pre_id)
+    assert sft.info().get("id") == pre_id

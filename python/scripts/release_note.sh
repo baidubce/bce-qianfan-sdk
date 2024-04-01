@@ -6,7 +6,7 @@ if [ -z "$1" ] ; then
 fi
 
 tag_json=$(
-        curl -L -s \
+        curl -L \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer $QF_GITHUB_TOKEN " \
         -H "X-GitHub-Api-Version: 2022-11-28" \

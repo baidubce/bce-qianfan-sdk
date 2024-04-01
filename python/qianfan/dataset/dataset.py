@@ -1298,26 +1298,21 @@ class Dataset(Table):
         if not output_prettified and result_dataset.is_dataset_located_in_qianfan():
             return result_dataset
 
-        result_dataset.unpack()
+        def _map_func(entry: Dict[str, Any]) -> Dict[str, Any]:
+            return {
+                "prompt": entry["prompt"],
+                NewInputPromptColumnName: entry["prompt"],
+                LLMOutputColumnName: entry["completion"],
+                OldReferenceColumnName: _extract_string(entry["response"]),
+            }
 
-        new_list: List[Dict[str, Any]] = []
-        for entry in result_dataset.list():
-            new_list.append(
-                {
-                    "prompt": entry["prompt"],
-                    NewInputPromptColumnName: entry["prompt"],
-                    LLMOutputColumnName: entry["model_response"][0]["content"],
-                    OldReferenceColumnName: _extract_string(entry["response"]),
-                }
-            )
+        result_dataset = result_dataset.map(_map_func)
+        result_dataset.input_columns = ["prompt"]
+        result_dataset.reference_column = OldReferenceColumnName
+        result_dataset.eval_input_column = NewInputPromptColumnName
+        result_dataset.eval_llm_output_column = LLMOutputColumnName
 
-        return Dataset.create_from_pyobj(
-            new_list,
-            input_columns=["prompt"],
-            reference_column=OldReferenceColumnName,
-            eval_input_column=NewInputPromptColumnName,
-            eval_llm_output_column=LLMOutputColumnName,
-        )
+        return result_dataset
 
     def _get_completion_return_dataset(
         self,

@@ -189,9 +189,7 @@ class AuthManager(metaclass=Singleton):
                     err_msg = f"SK({_masked_ak(sk)}) is not correct"
                 err_msg = exception_msg_tmpl.format(err_msg)
                 log_error(err_msg)
-                raise AuthError(
-                    err_msg
-                )
+                raise AuthError(err_msg)
             # unexpected error, maybe it can be recovered by retrying.
             log_error(
                 "refresh access_token for ak `{}` failed, error description={}".format(

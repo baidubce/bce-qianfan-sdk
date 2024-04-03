@@ -18,6 +18,7 @@ package com.baidubce.qianfan.util;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TokenBucketLimiter {
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler;
     private int maxTokens;
     private int availableTokens;
 
@@ -39,6 +40,11 @@ public class TokenBucketLimiter {
         }
         this.maxTokens = maxTokens;
         this.availableTokens = maxTokens;
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
         this.scheduler.scheduleAtFixedRate(this::refill, refillPeriod, refillPeriod, TimeUnit.SECONDS);
     }
 

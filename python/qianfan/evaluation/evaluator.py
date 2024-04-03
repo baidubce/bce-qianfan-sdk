@@ -19,6 +19,7 @@ collection of evaluator
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
+from qianfan.dataset import Dataset
 from qianfan.evaluation.consts import (
     QianfanRefereeEvaluatorDefaultMaxScore,
     QianfanRefereeEvaluatorDefaultMetrics,
@@ -36,6 +37,21 @@ class Evaluator(BaseModel, ABC):
         self, input: Union[str, List[Dict[str, Any]]], reference: str, output: str
     ) -> Dict[str, Any]:
         """evaluate one entry"""
+
+    def summarize(self, metric_dataset: Dataset) -> Optional[Dict[str, Any]]:
+        """
+        The default implementation of summarize interface,
+        which is designed to get a summarization from custom metrics
+
+        Args:
+            metric_dataset (Dataset): a Dataset object containing all metrics
+            for one specific evaluated llm
+
+        Returns:
+            Optional[Dict[str, Any]]: A dict including summarization info, or None
+            for nothing happened
+        """
+        return None
 
 
 class LocalEvaluator(Evaluator, ABC):

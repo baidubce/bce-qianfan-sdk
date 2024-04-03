@@ -182,6 +182,7 @@ class EvaluationManager(BaseModel):
                 else:
                     llm_key_str = f"{llm.id}_{llm.endpoint}"
             elif isinstance(llm, Model):
+                llm.auto_complete_info()
                 llm_key_str = f"{llm.id}_{llm.version_id}_{llm.name}"
             else:
                 llm_key_str = ""

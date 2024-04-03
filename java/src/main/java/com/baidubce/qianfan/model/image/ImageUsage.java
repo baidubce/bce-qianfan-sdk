@@ -23,6 +23,11 @@ public class ImageUsage {
     private Integer promptTokens;
 
     /**
+     * 回答tokens数，图像理解场景下该字段有值
+     */
+    private Integer completionTokens;
+
+    /**
      * tokens总数
      */
     private Integer totalTokens;
@@ -33,6 +38,15 @@ public class ImageUsage {
 
     public ImageUsage setPromptTokens(Integer promptTokens) {
         this.promptTokens = promptTokens;
+        return this;
+    }
+
+    public Integer getCompletionTokens() {
+        return completionTokens;
+    }
+
+    public ImageUsage setCompletionTokens(Integer completionTokens) {
+        this.completionTokens = completionTokens;
         return this;
     }
 

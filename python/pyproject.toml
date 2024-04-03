@@ -79,6 +79,12 @@ pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
 setuptools = "*"
 
+[tool.poetry.group.cookbook.dependencies]
+nbformat = {version = "^5.10.3", python = ">=3.8 <4"}
+aiohttp = {version = "^3.9.3", python = ">=3.8 <4"}
+papermill = {version = "*", python = ">=3.8 <4"}
+ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
+
 [tool.poetry.extras]
 dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
 langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]

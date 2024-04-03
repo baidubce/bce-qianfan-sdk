@@ -83,7 +83,7 @@ class QianfanRunner(InferRunner):
         if self.prompt is not None:
             for i in range(len(input_list)):
                 content = input_list[i][-1]["content"]
-                new_content = self.prompt.render(content=content)
+                new_content, _ = self.prompt.render(content=content)
                 input_list[i][-1]["content"] = new_content
         return input_list
 

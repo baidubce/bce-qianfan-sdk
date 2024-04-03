@@ -132,7 +132,7 @@ echo "$sorted_json" > pulls.json
 
 echo "## What's Changed" > release_note.md
 if [ "$issues_infos" != "null" ]; then
-  echo "**Related note** #$issues_infos" >> release_note.md
+  echo "### Release note (#$issues_infos)" >> release_note.md
 fi
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat pulls.json); do

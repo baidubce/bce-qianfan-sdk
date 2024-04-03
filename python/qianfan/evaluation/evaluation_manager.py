@@ -481,6 +481,8 @@ class EvaluationManager(BaseModel):
             # 整合数据，将得到的数据集整合成网页人工评估的数据集格式
             log_info("start to merge evaluation result dataset")
             table_list: List[pyarrow.Table] = []
+            metrics_dict: Dict[str, Dict[str, Any]] = {}
+
             for index, response_list in llm_response_list.items():
                 index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
                 ds = dataset.create_from_pyobj(
@@ -495,13 +497,25 @@ class EvaluationManager(BaseModel):
                 metrics_ds = dataset.create_from_pyobj(
                     llm_evaluation_result_dict[index]
                 )
+
                 ds.col_append(metrics_ds.col_list())
                 table_list.append(ds.inner_table)
+
+                summarization_dict: Dict[str, Any] = {}
+
+                for evaluator in self.local_evaluators:
+                    summarization = evaluator.summarize(metrics_ds)
+                    if summarization:
+                        summarization_dict.update(summarization)
+
+                if summarization_dict:
+                    metrics_dict[llm_tags[index]] = summarization_dict
 
             return EvaluationResult(
                 result_dataset=Dataset.create_from_pyarrow_table(
                     pyarrow.concat_tables(table_list)
-                )
+                ),
+                metrics=metrics_dict,
             )
 
         if self.qianfan_evaluators:

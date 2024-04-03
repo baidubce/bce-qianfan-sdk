@@ -14,7 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {Image2TextBody, RespBase} from '../interface';
-import {getPathAndBody} from '../utils';
+import {image2TextModelInfoMap} from './utils';
+import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class Image2Text extends BaseClient {
     /**
@@ -23,9 +24,13 @@ class Image2Text extends BaseClient {
      * @returns 返回图像转文本
      */
     public async image2Text(
-        body: Image2TextBody
+        body: Image2TextBody,
+        model = 'Fuyu-8B'
     ): Promise<RespBase> {
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, image2TextModelInfoMap);
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
+            model: modelUppercase,
+            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,

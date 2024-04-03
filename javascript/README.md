@@ -241,6 +241,25 @@ main();
 
 ```
 
+```ts
+import {Image2Text} from "@baiducloud/qianfan";
+// 直接读取 env 
+// 使用预置服务Fuyu-8B
+const client = new Image2Text();
+
+// 手动传 AK/SK 测试
+// const client = new Image2Text({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+async function main() {
+    const resp = await client.image2Text({
+        prompt: '分析一下图片画了什么',
+        image: '图片的base64编码',
+    });
+}
+
+main();
+
+```
+
 ### Plugin 插件
 
 SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。支持知识库、智慧图问、天气等插件。

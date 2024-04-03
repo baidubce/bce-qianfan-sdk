@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Union
 import pyarrow
 
 from qianfan import get_config
+from qianfan.config import encoding
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
@@ -65,29 +66,36 @@ from qianfan.utils.utils import generate_letter_num_random_id
 
 def _convert_the_value_in_evaluation_into_str(json_line_path: str) -> str:
     reader = JsonLineReader(json_line_path)
-    new_file_path = os.path.join(os.path.split(json_line_path)[0], "tmp_eval_modify.jsonl")
+    new_file_path = os.path.join(
+        os.path.split(json_line_path)[0], "tmp_eval_modify.jsonl"
+    )
 
     is_judge_reason_existed_checked: bool = False
 
-    with open(new_file_path, mode="w") as f:
+    with open(new_file_path, mode="w", encoding=encoding()) as f:
         for entry in reader:
             for inner_list in entry:
                 for single_entry in inner_list:
                     # 判断是否包含 judge_reason，如果包含则退出
-                    if is_judge_reason_existed_checked:
-                        pass
-                    elif any(
-                        [k == "judge_reason" for item in single_entry["evaluation"] for k, _ in item.items()]
+                    if not is_judge_reason_existed_checked and any(
+                        [
+                            k == "judge_reason"
+                            for item in single_entry["evaluation"]
+                            for k, _ in item.items()
+                        ]
                     ):
                         return json_line_path
 
                     is_judge_reason_existed_checked = True
 
                     single_entry["evaluation"] = [
-                        {k: str(v)} for item in single_entry["evaluation"] for k, v in item.items()
+                        {k: str(v)}
+                        for item in single_entry["evaluation"]
+                        for k, v in item.items()
                     ]
 
-            json.dump(inner_list, f, ensure_ascii=False)
+                json.dump(inner_list, f, ensure_ascii=False)
+                f.write("\n")
 
     return new_file_path
 
@@ -639,7 +647,9 @@ class EvaluationManager(BaseModel):
                 with zipfile.ZipFile(local_cache_file_path) as zip_f:
                     zip_f.extractall(unfold_zip_file_path)
 
-                data_jsonl_file_path = _convert_the_value_in_evaluation_into_str(data_jsonl_file_path)
+                data_jsonl_file_path = _convert_the_value_in_evaluation_into_str(
+                    data_jsonl_file_path
+                )
 
                 # 返回指标信息
                 return EvaluationResult(

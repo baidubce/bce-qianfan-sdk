@@ -36,7 +36,7 @@ import com.baidubce.qianfan.util.http.*;
 import java.util.Iterator;
 
 class QianfanClient {
-    private static final String SDK_VERSION = "0.0.3";
+    private static final String SDK_VERSION = "0.0.4";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";

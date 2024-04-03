@@ -32,7 +32,6 @@ function curl_json() {  # curl获取github数据,json格式
           # 判断数组里是否有string元素以"language"开头
           jq -c '[.[] | select(.name[]|startswith("language"))]'
           )
-
     #  合并json到目标文件
       if [ "$infos" != "[]" ]; then
           echo "$infos" > t.json
@@ -60,9 +59,8 @@ function get_tag() {
       echo "$tag_json" | \
       jq "[.[] | select(.name|startswith(\"$language\"))]"
   )
-
   if [ "$tag_filter" != "[]" ]; then  # 判断tag_filter是否为空, 非空则使用tag_filter，否则使用tag_json
-    tag_json=tag_filter
+    tag_json=$tag_filter
   else
     echo "old_tag not find"
   fi
@@ -129,8 +127,8 @@ sorted_json=$(
 echo "$sorted_json" > pulls.json
 
 echo "## What's Changed" > release_note.md
-if [ $issues_infos != "null" ]; then
-  echo "**related issues** #$issues_infos" >> release_note.md
+if [ "$issues_infos" != "null" ]; then
+  echo "**Related note** #$issues_infos" >> release_note.md
 fi
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
 for i in $(cat pulls.json); do

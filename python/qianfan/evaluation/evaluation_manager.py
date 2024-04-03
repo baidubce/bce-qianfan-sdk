@@ -77,21 +77,23 @@ def _convert_the_value_in_evaluation_into_str(json_line_path: str) -> str:
             for inner_list in entry:
                 for single_entry in inner_list:
                     # 判断是否包含 judge_reason，如果包含则退出
-                    if not is_judge_reason_existed_checked and any(
-                        [
-                            k == "judge_reason"
-                            for item in single_entry["evaluation"]
-                            for k, _ in item.items()
-                        ]
+                    if "evaluation" not in single_entry or (
+                        not is_judge_reason_existed_checked
+                        and not any(
+                            [
+                                v == "judge_reason"
+                                for item in single_entry["evaluation"]
+                                for _, v in item.items()
+                            ]
+                        )
                     ):
                         return json_line_path
 
                     is_judge_reason_existed_checked = True
 
                     single_entry["evaluation"] = [
-                        {k: str(v)}
+                        {k: str(v) for k, v in item.items()}
                         for item in single_entry["evaluation"]
-                        for k, v in item.items()
                     ]
 
                 json.dump(inner_list, f, ensure_ascii=False)

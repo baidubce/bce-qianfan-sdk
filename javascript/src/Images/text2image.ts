@@ -14,7 +14,7 @@
 
 import {BaseClient} from '../Base';
 import {Text2ImageBody, Text2ImageResp} from '../interface';
-import {modelInfoMap} from './utils';
+import {text2ImageModelInfoMap} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 
 class Text2Image extends BaseClient {
@@ -28,7 +28,7 @@ class Text2Image extends BaseClient {
         body: Text2ImageBody,
         model = 'Stable-Diffusion-XL'
     ): Promise<Text2ImageResp> {
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, text2ImageModelInfoMap);
         const {IAMPath, AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,

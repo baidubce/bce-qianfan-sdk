@@ -12,7 +12,6 @@ tag_json=$(
         -H "X-GitHub-Api-Version: 2022-11-28" \
         --url "https://api.github.com/repos/$REPO/tags"
 )
-
 tag_filter=$(
     echo "$tag_json" | \
     jq "[.[] | select(.name|startswith(\"$1\"))]"
@@ -37,17 +36,13 @@ fi
 
 log_json=$(
     git log \
-    --pretty=format:'{%n "title": "%s",%n "author": "%an" %n},' \
+    --pretty=format:'{%n "title": "%s" %n},' \
     "$OLD_TAG..." | \
     perl -pe 'BEGIN{print "["}; END{print "]\n"}' | \
     perl -pe 's/},]/}]/'
     )
 
-if [ -f g.txt ]; then
-    rm g.txt
-    echo "remove g.txt"
-fi
-touch g.txt
+echo '[]' > g.json
 
 # curl 循环获取每页pr信息
 n=1
@@ -69,46 +64,55 @@ while true; do
     if [ "$1" == "py" ]; then
     infos=$(
         echo "$pr_info" | \
-        jq '[.[] | {num:.number,title:.title,name:.labels[].name}]' | \
-        jq '.[] | if (.name == "language/python" or .name == "cookbook") then .num else empty end'
+        jq '[.[] | {num:.number,title:.title,name:.labels[].name,cont:.user.login}]' | \
+        jq -c '[.[] | select(.name == "language/python" or .name == "cookbook")]'
         )
     else
     infos=$(
         echo "$pr_info" | \
-        jq '[.[] | {num:.number,title:.title,name:.labels[].name}]' | \
-        jq ".[] | if (.name == \"language/$1\") then .num else empty end"
+        jq '[.[] | {num:.number,title:.title,name:.labels[].name,cont:.user.login}]' | \
+        jq -c "[.[] | select(.name == \"language/$1\")]"
         )
     fi
 
-    if [ -z "$infos" ]; then
-    break
+    if [ "$infos" != "[]" ]; then
+        echo "$infos" > t.json
+        ## 合并t.json和g.json，两者都是数组，合并后为新的g.json
+        jq -s add g.json t.json > h.json
+        mv h.json g.json
     else
-    echo "$infos" >> g.txt
+        rm t.json
+        break
     fi
     n=$((n+1))
 #结束
 done
 
-if [ -f release_note.md ]; then
-    rm release_note.md
-    echo "remove release_note.md"
-fi
+# 排序json文件并去重
+sorted_json=$(
+    cat g.json | \
+    jq 'sort_by(.num) | unique_by(.num)' | \
+    jq -c '.[] | [.num,.cont]' | \
+    sed 's/\"//g' | \
+    sed 's/\[//g' | \
+    sed 's/\]//g'
+    )
+echo "$sorted_json" > g.json
 
-touch release_note.md
-echo "## What's Changed" >> release_note.md
-
+echo "## What's Changed" > release_note.md
 # 遍历log_json, 获取每个pr的title, 判断title中#[0-9]+是否在g.txt中
-for i in $(cat g.txt | sort | uniq); do
+for i in $(cat g.json); do
     if [ -z $i ]; then
         break
     fi
+
+    line=$(echo "$i" | sed 's/,/ /g')
+    num=$(echo "$line" | awk '{print $1}')
+    author=$(echo "$line" | awk '{print $2}')
+
     title=$(
         echo "$log_json" | \
-        jq ".[] | if (.title|contains(\"#$i\")) then .title else empty end"
-    )
-    author=$(
-        echo "$log_json" | \
-        jq ".[] | if (.title|contains(\"#$i\")) then .author else empty end"
+        jq ".[] | if (.title|contains(\"#$num\")) then .title else empty end"
     )
     # 判断title非空白字符,去除 \"
     if [ -n "$title" ]; then
@@ -116,5 +120,9 @@ for i in $(cat g.txt | sort | uniq); do
     fi
 done
 echo "" >> release_note.md
-echo "**Full Changelog**: https://github.com/CMZSrost/bce-qianfan-sdk/compare/$OLD_TAG...$NEW_TAG" >> release_note.md
-rm g.txt
+echo "**Full Changelog**: https://github.com/$REPO/compare/$OLD_TAG...$NEW_TAG" >> release_note.md
+
+echo "release_note.md:\n"
+cat release_note.md
+
+rm g.json

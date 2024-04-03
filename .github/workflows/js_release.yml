@@ -66,13 +66,24 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: get pr collection  # 获取tag之间的pr内容，输出为md文件的路径
+        id: get-pr
+        env:
+          REPO: ${{ github.repository }}
+          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
+          NEW_TAG: ${{ format('js/v{0}', steps.get_version.outputs.version) }}
+        run: |
+          bash ./scripts/release_note.sh js
+          echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           name: ${{ format('JavaScript v{0}', steps.get_version.outputs.version) }}
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
-          generateReleaseNotes: true
+          bodyFile: ${{ steps.get-pr.outputs.body_path }}  #  引入上文生成的release_note.md作为内容
+          generateReleaseNotes: false
           tag: ${{ format('js/v{0}', steps.get_version.outputs.version) }}
           prerelease: ${{ contains(steps.get_version.outputs.version, 'rc') }}
           commit: main

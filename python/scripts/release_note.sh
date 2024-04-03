@@ -76,6 +76,10 @@ function get_tag() {
 #####main
 ###################
 
+if [[ -z "$QF_GITHUB_TOKEN"  || -z "$REPO" ]]; then
+  echo "QF_GITHUB_TOKEN or REPO is empty"
+  exit 1
+fi
 if [ -z "$1" ] ; then
     echo "Usage: $0 language"
     echo "example: $0 js"

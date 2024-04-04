@@ -1,9 +1,5 @@
 #!/bin/bash
 
-declare QF_GITHUB_TOKEN=
-declare REPO=
-declare OLD_TAG=
-
 function curl_json() {  # curl获取github数据,json格式
   target=$1
   json_path=$2
@@ -76,10 +72,10 @@ function get_tag() {
 #####main
 ###################
 
-if [[ -z "$QF_GITHUB_TOKEN"  || -z "$REPO" ]]; then
-  echo "QF_GITHUB_TOKEN or REPO is empty"
-  exit 1
-fi
+#if [[ -z "$QF_GITHUB_TOKEN"  || -z "$REPO" ]]; then
+#  echo "QF_GITHUB_TOKEN or REPO is empty"
+#  exit 1
+#fi
 if [ -z "$1" ] ; then
     echo "Usage: $0 language"
     echo "example: $0 js"

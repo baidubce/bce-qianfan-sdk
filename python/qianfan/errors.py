@@ -78,6 +78,12 @@ class InternalError(QianfanError):
     pass
 
 
+class AuthError(QianfanError):
+    """Exception when auth failed"""
+
+    pass
+
+
 class ValidationError(Exception):
     """Exception when validating failed"""
 

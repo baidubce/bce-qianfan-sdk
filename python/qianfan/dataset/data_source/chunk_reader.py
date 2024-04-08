@@ -54,7 +54,7 @@ class BaseReader(ABC):
             except StopIteration:
                 break
             except Exception as e:
-                err_msg = f"exception occurred during read csv file streamly: {e}"
+                err_msg = f"exception occurred during read file streamly: {e}"
                 log_error(err_msg)
                 raise e
 

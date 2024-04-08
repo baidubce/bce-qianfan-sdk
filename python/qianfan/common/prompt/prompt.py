@@ -543,7 +543,7 @@ class Prompt(HubSerializable):
             time.sleep(1)
         optimized_prompt = resp["result"]["optimizeContent"]
 
-        return Prompt(optimized_prompt)
+        return Prompt(optimized_prompt, identifier=self.identifier)
 
     @dataclass
     class PromptEvaluateResult(object):

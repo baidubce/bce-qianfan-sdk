@@ -13,12 +13,10 @@
 // limitations under the License.
 
 import HttpClient from '../HttpClient';
-import {Fetch, FetchConfig} from '../Fetch';
-import {TokenLimiter} from '../Limiter';
+import Fetch, {FetchConfig} from '../Fetch/fetch';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, calculateRetryDelay, isOpenTpm} from '../utils';
-import {Stream} from '../streaming';
-import {Resp, AsyncIterableType, AccessTokenResp, RespBase} from '../interface';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig} from '../utils';
+import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 
 export class BaseClient {
     protected controller: AbortController;
@@ -35,7 +33,6 @@ export class BaseClient {
     protected headers = DEFAULT_HEADERS;
     protected fetchInstance: Fetch;
     protected fetchConfig: FetchConfig;
-    private tokenLimiter: TokenLimiter;
     access_token = '';
     expires_in = 0;
 
@@ -65,18 +62,12 @@ export class BaseClient {
         this.qianfanLlmApiRetryCount
             = options?.QIANFAN_LLM_API_RETRY_COUNT ?? defaultConfig.QIANFAN_LLM_API_RETRY_COUNT;
         this.controller = new AbortController();
-        this.fetchConfig = {
-            retries: Number(this.qianfanLlmApiRetryCount),
+        this.fetchInstance = new Fetch({
+            maxRetries: Number(this.qianfanLlmApiRetryCount),
             timeout: Number(this.qianfanLlmApiRetryTimeout),
-            retryDelay: attempt =>
-                calculateRetryDelay(
-                    attempt,
-                    Number(this.qianfanLlmApiRetryBackoffFactor),
-                    Number(this.qianfanLlmRetryMaxWaitInterval)
-                ),
-        };
-        this.fetchInstance = new Fetch(this.fetchConfig);
-        this.tokenLimiter = new TokenLimiter();
+            backoffFactor: Number(this.qianfanLlmApiRetryBackoffFactor),
+            retryMaxWaitInterval: Number(this.qianfanLlmRetryMaxWaitInterval),
+        });
     }
 
     /**
@@ -87,16 +78,15 @@ export class BaseClient {
     private async getAccessToken(): Promise<AccessTokenResp> {
         const url = getAccessTokenUrl(this.qianfanAk, this.qianfanSk, this.qianfanBaseUrl);
         try {
-            const resp = await this.fetchInstance.fetchWithRetry(url, {headers: this.headers, method: 'POST'});
-            const data = (await resp.json()) as AccessTokenResp;
-            if (data?.error) {
-                throw new Error(data?.error_description || 'Failed to get access token');
-            }
-            this.access_token = data.access_token ?? '';
-            this.expires_in = data.expires_in + Date.now() / 1000;
+            const resp = (await this.fetchInstance.makeRequest(url, {
+                headers: this.headers,
+                method: 'POST',
+            })) as AccessTokenResp;
+            this.access_token = resp.access_token ?? '';
+            this.expires_in = resp.expires_in + Date.now() / 1000;
             return {
-                access_token: data.access_token,
-                expires_in: data.expires_in,
+                access_token: resp.access_token,
+                expires_in: resp.expires_in,
             };
         }
         catch (error) {
@@ -141,67 +131,12 @@ export class BaseClient {
                 body: requestBody,
             };
         }
-
-        // 计算请求token
-        const tokens = this.tokenLimiter.calculateTokens(requestBody);
-        const hasToken = await this.tokenLimiter.acquireTokens(tokens);
-        // 满足token限制
-        if (hasToken) {
-            try {
-                const resp = await this.fetchInstance.fetchWithRetry(fetchOptions.url, fetchOptions);
-                const val = this.getTpmHeader(resp.headers);
-                let usedTokens = 0;
-                if (stream) {
-                    const sseStream = Stream.fromSSEResponse(resp, this.controller);
-                    const [stream1, stream2] = sseStream.tee();
-                    if (isOpenTpm(val)) {
-                        const updateTokensAsync = async () => {
-                            for await (const data of stream1) {
-                                const typedData = data as RespBase;
-                                if (typedData.is_end) {
-                                    usedTokens = typedData?.usage?.total_tokens;
-                                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
-                                    break;
-                                }
-                            }
-                        };
-                        setTimeout(updateTokensAsync, 0);
-                    }
-                    return stream2 as AsyncIterableType;
-                }
-                const data = await resp.json();
-                setTimeout(async () => {
-                    usedTokens = this.getUsedTokens(data);
-                    await this.tokenLimiter.acquireTokens(usedTokens - tokens);
-                }, 0);
-                return data as any;
-            }
-            catch (error) {
-                throw error;
-            }
+        try {
+            const resp = await this.fetchInstance.makeRequest(fetchOptions.url, {...fetchOptions, stream});
+            return resp;
         }
-        else {
-            throw new Error('Token limit exceeded');
+        catch (error) {
+            throw error;
         }
-    }
-
-    getTpmHeader(headers: any): void {
-        const val = headers.get('x-ratelimit-limit-tokens') ?? '0';
-        this.tokenLimiter.resetTokens(val);
-        return val;
-    }
-
-    async getStreamUsedTokens(data: AsyncIterableType): Promise<number> {
-        let usedTokens = 0;
-        for await (const chunk of data as AsyncIterableType) {
-            if (chunk.is_end) {
-                usedTokens = chunk?.usage?.total_tokens;
-            }
-        }
-        return usedTokens ?? 0;
-    }
-    getUsedTokens(data: Resp): number {
-        const usage = data?.usage?.total_tokens;
-        return usage ?? 0;
     }
 }

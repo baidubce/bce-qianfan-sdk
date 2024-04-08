@@ -105,8 +105,8 @@ export class Fetch {
         maxRetries?: number | undefined;
         timeout?: number | undefined;
         backoffFactor?: number | undefined;
-        retryMaxWaitInterval: number | undefined;
-    }) {
+        retryMaxWaitInterval?: number | undefined;
+    } ={}) {
         this.maxRetries = validatePositiveInteger('maxRetries', maxRetries);
         this.timeout = validatePositiveInteger('timeout', timeout);
         this.backoffFactor = backoffFactor;
@@ -169,7 +169,7 @@ export class Fetch {
         const timeout = options.timeout ?? this.timeout;
         const controller = new AbortController();
         // 计算请求token
-        const tokens = this.tokenLimiter.calculateTokens(options.body as string);
+        const tokens = this.tokenLimiter.calculateTokens(options.body as string ?? '');
         const hasToken = await this.tokenLimiter.acquireTokens(tokens);
         if (hasToken) {
             const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);

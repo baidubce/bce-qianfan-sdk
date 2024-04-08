@@ -78,10 +78,10 @@ export class BaseClient {
     private async getAccessToken(): Promise<AccessTokenResp> {
         const url = getAccessTokenUrl(this.qianfanAk, this.qianfanSk, this.qianfanBaseUrl);
         try {
-            const resp = (await this.fetchInstance.makeRequest(url, {
+            const resp = await this.fetchInstance.makeRequest(url, {
                 headers: this.headers,
                 method: 'POST',
-            })) as AccessTokenResp;
+            });
             this.access_token = resp.access_token ?? '';
             this.expires_in = resp.expires_in + Date.now() / 1000;
             return {

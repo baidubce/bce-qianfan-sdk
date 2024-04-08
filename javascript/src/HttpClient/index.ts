@@ -21,7 +21,7 @@ import {URL} from 'url';
 import createDebug from 'debug';
 import * as packageJson from '../../package.json';
 
-import {Fetch, FetchConfig, RequestOptions} from '../Fetch';
+import {Fetch, FetchConfig, RequestOptions} from '../Fetch/fetch';
 import Auth from './auth';
 import * as H from './headers';
 import {urlObjectToPlainObject} from './strings';
@@ -105,9 +105,8 @@ class HttpClient extends EventEmitter {
             return this.establishSSEConnection(url, fetchOptions);
         }
         try {
-            const resp = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
-            const data = await resp.json();
-            return data as any;
+            const resp = await this.fetchInstance.makeRequest(url, fetchOptions);
+            return resp;
         }
         catch (error) {
             throw new Error(`Request failed: ${error.message}`);
@@ -116,19 +115,8 @@ class HttpClient extends EventEmitter {
 
     public async establishSSEConnection(url: string, fetchOptions: RequestOptions): Promise<AsyncIterable<any>> {
         try {
-            const response = await this.fetchInstance.fetchWithRetry(url, fetchOptions);
-            const contentType = response.headers.get('Content-Type');
-            if (contentType && contentType.includes('application/json')) {
-                const res = await response.json();
-                if (res.error_code) {
-                    const message = JSON.stringify(res);
-                    throw new Error(message);
-                }
-            }
-            else {
-                const sseStream: AsyncIterable<any> = Stream.fromSSEResponse(response, this.controller) as any;
-                return sseStream;
-            }
+            const response = await this.fetchInstance.makeRequest(url, fetchOptions);
+            return response;
         }
         catch (error) {
             throw error;

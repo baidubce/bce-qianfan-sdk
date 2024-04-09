@@ -1026,6 +1026,25 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return action
 
 
+class BatchInferAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """BatchInferAction
+    Action for batch inference.
+    Sample:
+    input:
+        ```
+        {'model_id': "am-xxxx", 'model_version_id': "amv-xxxx"}
+        ```
+    output:
+        ```
+        {'infer_res': InferenceResult ...}
+        ```
+    """
+
+    # batch_inference_manager: Optional[BatchInferenceManager] = None
+    """batch inference manager for batch infer models or services."""
+    dataset: Optional[Dataset] = None
+
+
 class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """EvaluateAction
     Action for evaluate models or services.

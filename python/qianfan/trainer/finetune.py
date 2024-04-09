@@ -14,7 +14,7 @@
 from typing import Any, Dict, List, Optional, Union
 
 from qianfan.common.persister.persist import g_persister
-from qianfan.config import get_config
+from qianfan.config import encoding, get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -220,6 +220,7 @@ class Finetune(Trainer):
             elif isinstance(ac, DeployAction):
                 self.deploy_action = ac
         self.ppls = [ppl]
+        self.result = [None]
         return self
 
     def run(self, **kwargs: Any) -> Trainer:
@@ -298,8 +299,12 @@ class Finetune(Trainer):
         return trainer_list
 
     @staticmethod
-    def load(id: str) -> "Trainer":
-        task_ppl = g_persister.load(id, Pipeline)
+    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer":
+        if file is not None:
+            with open(file=file, mode="r", encoding=encoding()) as f:
+                task_ppl = Pipeline.load(f.read())
+        else:
+            task_ppl = g_persister.load(id, Pipeline)
         assert isinstance(task_ppl, Pipeline)
         if (
             task_ppl._case_init_params is not None
@@ -307,7 +312,15 @@ class Finetune(Trainer):
         ):
             trainer_inst = Finetune(pipeline=task_ppl)
             return trainer_inst
+
         raise InvalidArgumentError("pipeline not found {id} to load")
+
+    def save(self, file: Optional[str] = None) -> None:
+        if file:
+            with open(file=file, mode="w", encoding=encoding()) as f:
+                f.write(self.ppls[0].persist())
+        else:
+            g_persister.save(self.ppls[0].persist())
 
     def info(self) -> Dict:
         return self.ppls[0]._action_dict()

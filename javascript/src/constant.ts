@@ -25,6 +25,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     QIANFAN_ACCESS_KEY: '',
     QIANFAN_SECRET_KEY: '',
     QIANFAN_BASE_URL: 'https://aip.baidubce.com',
+    QIANFAN_CONSOLE_API_BASE_URL: 'https://qianfan.baidubce.com',
     QIANFAN_LLM_API_RETRY_TIMEOUT: '600000',
     QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: '0',
     QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: '120000',
@@ -40,3 +41,5 @@ export const RETRY_CODE = [
     APIErrorCode.ServerHighLoad,
     APIErrorCode.QPSLimitReached,
 ];
+
+export const SERVER_LIST_API = '/wenxinworkshop/service/list';

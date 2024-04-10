@@ -1,0 +1,24 @@
+name: Java CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    paths:
+      - "java/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+      - name: Build with Maven
+        working-directory: ./java
+        run: mvn verify

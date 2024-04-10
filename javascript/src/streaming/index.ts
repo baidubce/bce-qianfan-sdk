@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import {EventEmitter} from 'events';
-import {OpenAIError, APIError} from './error';
 
 type Bytes = string | ArrayBuffer | Uint8Array | Buffer | null | undefined;
 const EVENT_TYPE = [null, 'pluginMeta', 'plugin', 'chat'];
@@ -142,7 +141,7 @@ class LineDecoder {
                 return Buffer.from(bytes).toString();
             }
 
-            throw new OpenAIError(
+            throw new Error(
                 // eslint-disable-next-line max-len
                 `Unexpected: received non-Uint8Array (${bytes.constructor.name}) stream chunk in an environment with a global "Buffer" defined, which this library assumes to be Node. Please report this error.`
             );
@@ -155,14 +154,14 @@ class LineDecoder {
                 return this.textDecoder.decode(bytes);
             }
 
-            throw new OpenAIError(
+            throw new Error(
                 `Unexpected: received non-Uint8Array/ArrayBuffer (${
                     (bytes as any).constructor.name
                 }) in a web platform. Please report this error.`
             );
         }
 
-        throw new OpenAIError(
+        throw new Error(
             'Unexpected: neither Buffer nor TextDecoder are available as globals. Please report this error.'
         );
     }
@@ -195,7 +194,7 @@ export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
 
             if (!response.body) {
                 controller.abort();
-                throw new OpenAIError('Attempted to iterate over a response with no body');
+                throw new Error('Attempted to iterate over a response with no body');
             }
 
             const lineDecoder = new LineDecoder();
@@ -260,7 +259,7 @@ export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
                         }
 
                         if (data && data.error) {
-                            throw new APIError(undefined, data.error, undefined, undefined);
+                            throw new Error(data.error);
                         }
 
                         yield data;

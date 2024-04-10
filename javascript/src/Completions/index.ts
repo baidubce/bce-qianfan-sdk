@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {ChatBody, CompletionBody, Resp} from '../interface';
 import {modelInfoMap, isCompletionBody} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {ModelType} from '../enum';
 
 class Completions extends BaseClient {
     /**
@@ -33,6 +34,7 @@ class Completions extends BaseClient {
         // 兼容Chat模型
         const required_keys = modelInfoMapUppercase[modelUppercase]?.required_keys;
         let reqBody: CompletionBody | ChatBody;
+        const type = ModelType.COMPLETIONS;
         if (required_keys.includes('messages') && isCompletionBody(body)) {
             const {prompt, ...restOfBody} = body;
             reqBody = {
@@ -48,15 +50,15 @@ class Completions extends BaseClient {
         else {
             reqBody = body;
         }
-        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+        const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body: reqBody,
             endpoint: this.Endpoint,
-            type: 'completions',
+            type,
         });
-        return this.sendRequest(IAMPath, AKPath, requestBody, stream);
+        return this.sendRequest(type, model, AKPath, requestBody, stream);
     }
 }
 

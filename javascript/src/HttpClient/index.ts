@@ -25,7 +25,6 @@ import {Fetch, FetchConfig, RequestOptions} from '../Fetch/fetch';
 import Auth from './auth';
 import * as H from './headers';
 import {urlObjectToPlainObject} from './strings';
-import {Stream} from '../streaming';
 
 interface RequestConfig {
     httpMethod: string;
@@ -36,7 +35,7 @@ interface RequestConfig {
     params?: Record<string, any>;
     signFunction?: () => [string, string] | string;
 }
-const debug = createDebug('bce-sdk:HttpClient');
+
 // 获取版本号
 const version = packageJson.version;
 class HttpClient extends EventEmitter {

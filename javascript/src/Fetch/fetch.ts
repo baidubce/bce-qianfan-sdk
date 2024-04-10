@@ -38,7 +38,7 @@ interface StreamWithTee {
 export async function handleResponse<T>(props: APIResponseProps): Promise<T | StreamWithTee | null> {
     const {response, options} = props;
     const controller = props.controller ?? new AbortController();
-    const contentType = response.headers.get('content-type');
+    const contentType = response?.headers?.get('content-type');
     const isJSON = contentType?.includes('application/json') || contentType?.includes('application/vnd.api+json');
     if (isJSON) {
         const json = await response.json();
@@ -51,7 +51,7 @@ export async function handleResponse<T>(props: APIResponseProps): Promise<T | St
     if (response.status === 204) {
         return null;
     }
-    const text = await response.text();
+    const text = await response?.text();
     return text as unknown as T;
 }
 
@@ -106,7 +106,7 @@ export class Fetch {
         timeout?: number | undefined;
         backoffFactor?: number | undefined;
         retryMaxWaitInterval?: number | undefined;
-    } ={}) {
+    } = {}) {
         this.maxRetries = validatePositiveInteger('maxRetries', maxRetries);
         this.timeout = validatePositiveInteger('timeout', timeout);
         this.backoffFactor = backoffFactor;
@@ -128,9 +128,20 @@ export class Fetch {
         const timeout = setTimeout(() => controller.abort(), ms);
 
         return this.rateLimiter.schedule(() =>
-            fetch(url, {signal: controller.signal as any, ...options}).finally(() => {
-                clearTimeout(timeout);
-            })
+            fetch(url, {signal: controller.signal as any, ...options})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error, status = ${response.status}`);
+                    }
+                    return response;
+                })
+                .catch(error => {
+                    console.error('Fetch request failed:', error.message);
+                    throw error;
+                })
+                .finally(() => {
+                    clearTimeout(timeout);
+                })
         );
     }
 
@@ -159,7 +170,7 @@ export class Fetch {
      * @returns Promise<APIResponseProps> 响应对象，包含响应信息、请求选项和 AbortController 实例
      */
     async makeRequest(url: string, options: RequestOptions, retriesRemaining?: number): Promise<Response | any> {
-        if (!retriesRemaining) {
+        if (!retriesRemaining && retriesRemaining !== 0) {
             retriesRemaining = options.maxRetries ?? this.maxRetries;
         }
 
@@ -168,6 +179,7 @@ export class Fetch {
         }
         const timeout = options.timeout ?? this.timeout;
         const controller = new AbortController();
+
         // 计算请求token
         const tokens = this.tokenLimiter.calculateTokens(options.body as string ?? '');
         const hasToken = await this.tokenLimiter.acquireTokens(tokens);
@@ -178,13 +190,10 @@ export class Fetch {
                 if (options.signal?.aborted) {
                     throw new Error('Request was aborted.');
                 }
-                if (retriesRemaining) {
-                    return this.retryRequest(url, options, retriesRemaining);
-                }
                 if (response.name === 'AbortError') {
                     throw new Error('Request timed out.');
                 }
-                throw new Error('Request timed out.');
+                throw new Error('Request timed out.' + response.message);
             }
 
             if (!response.ok) {
@@ -208,8 +217,8 @@ export class Fetch {
                     return this.retryRequest(url, options, retriesRemaining, response.headers as any);
                 }
             }
-            const rpm = response.headers.get('x-ratelimit-limit-requests');
-            const tmp = response.headers.get('x-ratelimit-limit-tokens') ?? '0';
+            const rpm = response?.headers?.get('x-ratelimit-limit-requests');
+            const tmp = response?.headers?.get('x-ratelimit-limit-tokens') ?? '0';
             if (rpm) {
                 this.rateLimiter.updateLimits(Number(rpm));
             }

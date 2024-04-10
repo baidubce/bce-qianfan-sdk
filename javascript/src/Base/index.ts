@@ -15,8 +15,9 @@
 import HttpClient from '../HttpClient';
 import Fetch, {FetchConfig} from '../Fetch/fetch';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
+import DynamicModelEndpoint from '../DynamicModelEndpoint';
 
 export class BaseClient {
     protected controller: AbortController;
@@ -25,6 +26,7 @@ export class BaseClient {
     protected qianfanAccessKey?: string;
     protected qianfanSecretKey?: string;
     protected qianfanBaseUrl?: string;
+    protected qianfanConsoleApiBaseUrl?: string;
     protected qianfanLlmApiRetryTimeout?: string;
     protected qianfanLlmApiRetryBackoffFactor?: string;
     protected qianfanLlmApiRetryCount?: string;
@@ -42,6 +44,7 @@ export class BaseClient {
         QIANFAN_ACCESS_KEY?: string;
         QIANFAN_SECRET_KEY?: string;
         QIANFAN_BASE_URL?: string;
+        QIANFAN_CONSOLE_API_BASE_URL?: string;
         QIANFAN_LLM_API_RETRY_TIMEOUT?: string;
         QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR?: string;
         QIANFAN_LLM_API_RETRY_COUNT?: string;
@@ -55,6 +58,8 @@ export class BaseClient {
         this.qianfanSecretKey = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
         this.Endpoint = options?.Endpoint;
         this.qianfanBaseUrl = options?.QIANFAN_BASE_URL ?? defaultConfig.QIANFAN_BASE_URL;
+        this.qianfanConsoleApiBaseUrl
+            = options?.QIANFAN_CONSOLE_API_BASE_URL ?? defaultConfig.QIANFAN_CONSOLE_API_BASE_URL;
         this.qianfanLlmApiRetryTimeout
             = options?.QIANFAN_LLM_API_RETRY_TIMEOUT ?? defaultConfig.QIANFAN_LLM_API_RETRY_TIMEOUT;
         this.qianfanLlmApiRetryBackoffFactor
@@ -96,7 +101,8 @@ export class BaseClient {
     }
 
     protected async sendRequest(
-        IAMpath: string,
+        type: string,
+        model: string,
         AKPath: string,
         requestBody: string,
         stream = false
@@ -110,10 +116,31 @@ export class BaseClient {
         // IAM鉴权
         if (this.qianfanAccessKey && this.qianfanSecretKey) {
             const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
+            console.log(config);
             const client = new HttpClient(config);
+            const dynamicModelEndpoint = new DynamicModelEndpoint(
+                client,
+                this.qianfanConsoleApiBaseUrl,
+                this.qianfanBaseUrl
+            );
+            let IAMPath = '';
+            if (this.Endpoint) {
+                IAMPath = getPath({
+                    Authentication: 'IAM',
+                    api_base: this.qianfanBaseUrl,
+                    endpoint: this.Endpoint,
+                    type,
+                });
+            }
+            else {
+                IAMPath = await dynamicModelEndpoint.getEndpoint(type, model);
+            }
+            if (!IAMPath) {
+                throw new Error(`${model} is not supported`);
+            }
             fetchOptions = await client.getSignature({
                 httpMethod: 'POST',
-                path: IAMpath,
+                path: IAMPath,
                 body: requestBody,
                 headers: this.headers,
             });
@@ -132,7 +159,8 @@ export class BaseClient {
             };
         }
         try {
-            const resp = await this.fetchInstance.makeRequest(fetchOptions.url, {...fetchOptions, stream});
+            const {url, ...rest} = fetchOptions;
+            const resp = await this.fetchInstance.makeRequest(url, {...rest, stream});
             return resp;
         }
         catch (error) {

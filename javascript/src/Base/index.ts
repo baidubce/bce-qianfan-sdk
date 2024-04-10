@@ -116,7 +116,6 @@ export class BaseClient {
         // IAM鉴权
         if (this.qianfanAccessKey && this.qianfanSecretKey) {
             const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
-            console.log(config);
             const client = new HttpClient(config);
             const dynamicModelEndpoint = new DynamicModelEndpoint(
                 client,

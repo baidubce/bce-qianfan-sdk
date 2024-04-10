@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import re
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from qianfan.common.hub.interface import HubSerializable
 from qianfan.config import encoding
@@ -28,7 +30,10 @@ from qianfan.errors import InvalidArgumentError, RequestError
 from qianfan.resources.console.prompt import Prompt as PromptResource
 from qianfan.resources.llm.completion import Completion
 from qianfan.resources.typing import Literal, QfResponse
-from qianfan.utils import log_warn
+
+if TYPE_CHECKING:
+    from qianfan.dataset import Dataset
+from qianfan.utils import log_warn, log_info
 
 
 @dataclass
@@ -544,6 +549,113 @@ class Prompt(HubSerializable):
         optimized_prompt = resp["result"]["optimizeContent"]
 
         return Prompt(optimized_prompt, identifier=self.identifier)
+
+    def optimize_by_example(
+        self,
+        example: "Dataset",
+        sample_prompt: Optional["Prompt"] = None,
+        feedback_prompt: Optional["Prompt"] = None,
+        update_prompt: Optional["Prompt"] = None,
+        iteration_round: int = 3,
+        infer_config: Dict[str, Any] = {"service_model": "ERNIE-Speed"},
+        optimize_config: Dict[str, Any] = {"model": "ERNIE-4.0-8K"},
+    ) -> "Prompt":
+        if iteration_round < 1:
+            raise ValueError("iteration_round must be greater than or equal to 1.")
+
+        from qianfan.common.prompt.template import (
+            PROMPT_OPTIMIZE_FEEDBACK_TMPL,
+            PROMPT_OPTIMIZE_SAMPLE_TMPL,
+            PROMPT_OPTIMIZE_UPDATE_TMPL,
+        )
+        from qianfan.resources.llm.chat_completion import ChatCompletion
+
+        if sample_prompt is None:
+            sample_prompt = Prompt(PROMPT_OPTIMIZE_SAMPLE_TMPL, identifier="{{}}")
+        if feedback_prompt is None:
+            feedback_prompt = Prompt(PROMPT_OPTIMIZE_FEEDBACK_TMPL, identifier="{{}}")
+        if update_prompt is None:
+            update_prompt = Prompt(PROMPT_OPTIMIZE_UPDATE_TMPL, identifier="{{}}")
+
+        client = ChatCompletion()
+        left_identifier, right_identifier = PromptResource._split_identifier(
+            self.identifier
+        )
+        current_prompt = self
+
+        for _ in range(iteration_round):
+            # use prompt to generate sample output
+            samples = example.test_using_llm(
+                prompt_template=current_prompt, **infer_config
+            )
+            sample_prompts = [
+                sample_prompt.render(
+                    input=json.dumps(
+                        {k: sample[k] for k in self.variables},
+                        ensure_ascii=False,
+                        indent=4,
+                    ),
+                    expect=sample["expected_output"],
+                    response=sample["llm_output"],
+                )[0]
+                for sample in samples.list()
+            ]
+            sample_str = "\n===\n".join(sample_prompts)
+            # put sample output into feedback prompt
+            feedback_input = feedback_prompt.render(
+                current_prompt=current_prompt.template,
+                samples=sample_str,
+            )[0]
+            log_info(f"Feedback input: {repr(feedback_input)}")
+            # get feedback from model
+            feedback = client.do(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": feedback_input,
+                    }
+                ],
+                **optimize_config,
+            )
+            assert isinstance(feedback, QfResponse)
+            log_info(f"Feedback output: {repr(feedback['result'])}")
+            # use model to update prompt
+            update_input = update_prompt.render(
+                current_prompt=current_prompt.template,
+                samples=sample_str,
+                feedback=feedback["result"],
+                variables=" ".join(
+                    [
+                        f"{left_identifier}{var}{right_identifier}"
+                        for var in self.variables
+                    ]
+                ),
+            )[0]
+            log_info(f"Update input: {repr(update_input)}")
+            update_resp = client.do(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": update_input,
+                    }
+                ],
+                **optimize_config,
+            )
+            assert isinstance(update_resp, QfResponse)
+            update = update_resp["result"]
+
+            log_info(f"Update output: {repr(update)}")
+
+            # update prompt
+            try:
+                new_prompt_tmpl = re.findall(
+                    "<START>(.*)<END>", update, re.MULTILINE | re.DOTALL
+                )[0]
+            except Exception:
+                new_prompt_tmpl = update
+            log_info(f"New prompt: {repr(new_prompt_tmpl)}")
+            current_prompt = Prompt(new_prompt_tmpl, identifier=self.identifier)
+        return current_prompt
 
     @dataclass
     class PromptEvaluateResult(object):

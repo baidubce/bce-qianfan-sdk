@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,9 @@ import {Image2Text, setEnvVariable} from '../index';
 // setEnvVariable('QIANFAN_SK','***');
 
 // 直接读取env
-const client = new Image2Text({Endpoint: '***'});
+// const client = new Image2Text({Endpoint: '***'});
+// 使用预置服务
+const client = new Image2Text();
 
 // 手动传AK/SK 测试
 // const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});

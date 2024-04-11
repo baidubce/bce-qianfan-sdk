@@ -220,12 +220,31 @@ main();
 
 #### 图生文
 
-根据用户输入的文本生成图片。
+多模态图像理解模型，可以支持多样的图像分辨率，回答图形图表有关问题
 注意事项：调用本文API，推荐使用安全认证AK/SK鉴权，调用流程及鉴权介绍详见SDK安装及使用流程
 
 ```ts
 import {Image2Text} from "@baiducloud/qianfan";
 // 直接读取 env  
+const client = new Image2Text({Endpoint: '***'});
+
+// 手动传 AK/SK 测试
+// const client = new Image2Text({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+async function main() {
+    const resp = await client.image2Text({
+        prompt: '分析一下图片画了什么',
+        image: '图片的base64编码',
+    });
+}
+
+main();
+
+```
+
+```ts
+import {Image2Text} from "@baiducloud/qianfan";
+// 直接读取 env 
+// 使用预置服务Fuyu-8B
 const client = new Image2Text();
 
 // 手动传 AK/SK 测试

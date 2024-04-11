@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {ChatBody, Resp} from '../interface';
 import {modelInfoMap} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {ModelType} from '../enum';
 
 class ChatCompletion extends BaseClient {
     /**
@@ -28,15 +29,16 @@ class ChatCompletion extends BaseClient {
     public async chat(body: ChatBody, model = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
         const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
-        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+        const type = ModelType.CHAT;
+        const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'chat',
+            type,
         });
-        return this.sendRequest(IAMPath, AKPath, requestBody, stream);
+        return this.sendRequest(type, model, AKPath, requestBody, stream);
     }
 }
 

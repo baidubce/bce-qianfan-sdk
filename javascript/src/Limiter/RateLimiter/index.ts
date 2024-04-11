@@ -50,7 +50,9 @@ class RateLimiter {
             minTime = Math.min(minTime, 1000 / this.qps);
         }
         if (this.rpm > 0) {
-            minTime = Math.min(minTime, 60000 / this.rpm);
+            // 取最小限制
+            const rpmMinTime = Math.min(minTime, 60000 / this.rpm);
+            minTime = Math.min(minTime, rpmMinTime);
         }
         // 确保 minTime 是一个合理的值
         minTime = Math.max(minTime, 0);
@@ -60,7 +62,6 @@ class RateLimiter {
             strategy: Bottleneck.strategy.OVERFLOW,
         });
     }
-
 
     /**
      * 使用限流器调度函数执行

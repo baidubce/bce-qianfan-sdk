@@ -14,8 +14,9 @@
 
 import {BaseClient} from '../Base';
 import {Text2ImageBody, Text2ImageResp} from '../interface';
-import {modelInfoMap} from './utils';
+import {text2ImageModelInfoMap} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {ModelType} from '../enum';
 
 class Text2Image extends BaseClient {
     /**
@@ -28,16 +29,17 @@ class Text2Image extends BaseClient {
         body: Text2ImageBody,
         model = 'Stable-Diffusion-XL'
     ): Promise<Text2ImageResp> {
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
-        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, text2ImageModelInfoMap);
+        const type = ModelType.TEXT_2_IMAGE;
+        const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'text2image',
+            type,
         });
-        const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
+        const resp = await this.sendRequest(type, model, AKPath, requestBody);
         return resp as Text2ImageResp;
     }
 }

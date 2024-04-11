@@ -20,7 +20,7 @@ import {QfLLMInfoMap} from '../interface';
 export type Text2ImageModel =
     | 'Stable-Diffusion-XL';
 
-export const modelInfoMap: QfLLMInfoMap = {
+export const text2ImageModelInfoMap: QfLLMInfoMap = {
     'Stable-Diffusion-XL': {
         endpoint: '/text2image/sd_xl',
         required_keys: ['prompt'],
@@ -34,6 +34,28 @@ export const modelInfoMap: QfLLMInfoMap = {
             'seed',
             'cfg_scale',
             'style',
+        ],
+    },
+    UNSPECIFIED_MODEL: {
+        endpoint: '',
+        required_keys: ['prompt'],
+        optional_keys: [],
+    },
+};
+
+export const image2TextModelInfoMap: QfLLMInfoMap = {
+    'Fuyu-8B': {
+        endpoint: '/image2text/fuyu_8b',
+        required_keys: ['prompt'],
+        optional_keys: [
+            'image',
+            'stream',
+            'temperature',
+            'top_k',
+            'user_id',
+            'top_p',
+            'penalty_score',
+            'stop',
         ],
     },
     UNSPECIFIED_MODEL: {

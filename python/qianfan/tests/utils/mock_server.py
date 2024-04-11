@@ -712,7 +712,7 @@ def iam_auth_checker(func):
         if "expired" in access_token, return token expired error
         """
         bce_date = request.headers.get("x-bce-date")
-        authorization = request.headers.get("authorization")
+        authorization = request.headers.get("Authorization")
         if bce_date is None or authorization is None:
             return flask.Response(
                 status=403,

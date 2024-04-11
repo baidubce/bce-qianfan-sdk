@@ -95,6 +95,7 @@ class DynamicModelEndpoint {
         const fetchOption = await this.client.getSignature({
             httpMethod: 'POST',
             path: url,
+            
             body: JSON.stringify({
                 apiTypefilter: [type],
             }),

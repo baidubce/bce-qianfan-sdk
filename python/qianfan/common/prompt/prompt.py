@@ -33,7 +33,7 @@ from qianfan.resources.typing import Literal, QfResponse
 
 if TYPE_CHECKING:
     from qianfan.dataset import Dataset
-from qianfan.utils import log_warn, log_info
+from qianfan.utils import log_info, log_warn
 
 
 @dataclass
@@ -550,7 +550,7 @@ class Prompt(HubSerializable):
 
         return Prompt(optimized_prompt, identifier=self.identifier)
 
-    def optimize_by_example(
+    def apo_by_sample(
         self,
         example: "Dataset",
         sample_prompt: Optional["Prompt"] = None,

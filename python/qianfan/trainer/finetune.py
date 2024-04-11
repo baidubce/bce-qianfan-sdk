@@ -318,7 +318,7 @@ class Finetune(Trainer):
     def save(self, file: Optional[str] = None) -> None:
         if file:
             with open(file=file, mode="w", encoding=encoding()) as f:
-                f.write(self.ppls[0].persist())
+                f.write(self.ppls[0].persist().decode(encoding=encoding()))
         else:
             g_persister.save(self.ppls[0].persist())
 

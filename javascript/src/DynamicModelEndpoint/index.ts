@@ -120,7 +120,7 @@ class DynamicModelEndpoint {
             }
         }
         catch (error) {
-            throw new Error('更新动态模型端点失败');
+            console.log('Failed to update dynamic model endpoint map', error);
         }
     }
 

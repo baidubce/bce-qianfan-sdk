@@ -515,8 +515,6 @@ def test_persist():
     sft = Finetune.load(pre_id)
     assert sft.info().get("id") == pre_id
 
-    from qianfan.trainer.pipeline import Pipeline
-
     json_config_path = "./ppl.json"
     try:
         with open(json_config_path, mode="w") as f:

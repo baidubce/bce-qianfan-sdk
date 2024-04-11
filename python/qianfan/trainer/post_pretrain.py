@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.common.persister.persist import g_persister
 from qianfan.config import encoding, get_config
@@ -219,8 +219,10 @@ class PostPreTrain(Trainer):
         if file is not None:
             with open(file=file, mode="rb") as f:
                 task_ppl = Pipeline.load(f.read())
+        elif id:
+            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
         else:
-            task_ppl = g_persister.load(id, Pipeline)
+            raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)
         if (
             task_ppl._case_init_params is not None
@@ -234,9 +236,9 @@ class PostPreTrain(Trainer):
     def save(self, file: Optional[str] = None) -> None:
         if file:
             with open(file=file, mode="w", encoding=encoding()) as f:
-                f.write(self.ppls[0].persist())
+                f.write(self.ppls[0].persist().decode(encoding=encoding()))
         else:
-            g_persister.save(self.ppls[0].persist())
+            g_persister.save(self.ppls[0])
 
     def info(self) -> Dict:
         return self.ppls[0]._action_dict()

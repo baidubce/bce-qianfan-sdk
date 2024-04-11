@@ -109,7 +109,8 @@ class Model(object):
           is_new (bool):
             A boolean indicating whether this is a new model to be published.
           version_meta (Dict[str, Any]):
-            Metadata for the model being published.
+            Metadata for the model being published, including description, jobId,
+            taskId, step.
           model_name (Optional[str]):
             The name of the model to be published (required when `is_new` is True).
           model_id (Optional[str]):

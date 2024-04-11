@@ -44,7 +44,7 @@ public class QianfanConfig {
     private static final String QIANFAN_RPM_LIMIT = "QIANFAN_RPM_LIMIT";
 
     private static final int DEFAULT_IAM_SIGN_EXPIRATION_SEC = 1800;
-    private static final int DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = 5;
+    private static final int DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = 3600;
     private static final String DEFAULT_BASE_URL = "https://aip.baidubce.com";
     private static final String DEFAULT_CONSOLE_API_BASE_URL = "https://qianfan.baidubce.com";
     private static final String DEFAULT_LLM_API_RETRY_COUNT = "1";

@@ -170,4 +170,6 @@ class QianfanRunner(InferRunner):
             [res["metrics"] for result in result_list for res in result["results"]]
         )
         total_metrics = self.evaluator.summarize(metrics_ds)
+        if total_metrics is None:
+            return {}
         return total_metrics

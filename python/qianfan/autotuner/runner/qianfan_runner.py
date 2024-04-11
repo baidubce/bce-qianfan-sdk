@@ -166,6 +166,8 @@ class QianfanRunner(InferRunner):
 
         await asyncio.gather(*[_eval(res) for res in result_list])
 
-        metrics_ds = Dataset.create_from_pyobj([res['metrics']  for result in result_list for res in result['results']])
+        metrics_ds = Dataset.create_from_pyobj(
+            [res["metrics"] for result in result_list for res in result["results"]]
+        )
         total_metrics = self.evaluator.summarize(metrics_ds)
         return total_metrics

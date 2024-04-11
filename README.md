@@ -21,7 +21,7 @@
 [![JS Release](https://img.shields.io/github/v/release/baidubce/bce-qianfan-sdk?filter=js*&logo=javascript)](https://github.com/baidubce/bce-qianfan-sdk/releases)
 [![NPM Version](https://img.shields.io/npm/v/%40baiducloud%2Fqianfan?logo=npm
 )](https://www.npmjs.com/package/@baiducloud/qianfan)
-![JS Version](https://img.shields.io/badge/Node%20version-v18%2B-brightgreen?logo=node.js&logoColor=white)
+![JS Version](https://img.shields.io/badge/Node%20version-v14%2B-brightgreen?logo=node.js&logoColor=white)
 
 ## 简介
 

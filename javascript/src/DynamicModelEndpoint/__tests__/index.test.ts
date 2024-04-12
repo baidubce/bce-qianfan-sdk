@@ -98,6 +98,6 @@ describe('DynamicModelEndpoint', () => {
     it('should return an empty string when the model is not found in both mappings', async () => {
         const endpoint = setupDynamicModelEndpoint({});
         endpoint.setDynamicMapExpireAt(Date.now() / 1000 + 1000); // 设置为未过期
-        await expect(endpoint.getEndpoint('chat', 'NonExistentModel')).resolves.toEqual(undefined);
+        await expect(endpoint.getEndpoint('chat', 'NonExistentModel')).resolves.toEqual('');
     });
 });

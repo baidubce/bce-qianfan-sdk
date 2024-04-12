@@ -37,7 +37,7 @@ describe('ChatCompletion', () => {
                 },
             ],
         };
-        const res = (await client.chat(body, 'ERNIE-Bot-turbo')) as RespBase;
+        const res = (await client.chat(body, 'ernie-bot')) as RespBase;
         const result = res?.result;
         expect(result).toBeDefined();
     });

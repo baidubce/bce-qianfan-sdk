@@ -97,10 +97,9 @@ export const getPath = ({
     type?: string,
 }): string => {
     if (endpoint && type) {
-        const boundary = type === 'plugin' ? '/' : '';
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
-            : `${api_base}/${type}/${endpoint}${boundary}`;
+        const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
+        const suffix = type === 'plugin' ? '/' : `/${type}/`;
+        return `${basePath}${suffix}${endpoint}`;
     }
     else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);

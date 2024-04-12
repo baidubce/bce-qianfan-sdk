@@ -37,7 +37,6 @@ class Plugin extends BaseClient {
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
             type,
         });
         return (await this.sendRequest(type, model, AKPath, requestBody, stream)) as

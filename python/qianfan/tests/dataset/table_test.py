@@ -128,20 +128,20 @@ def test_filter_row():
     def op(row: Dict[str, Any]) -> bool:
         return row["age"] > 25
 
-    filtered_table = table.filter(op)
+    filtered_table = table.filter(op, True)
     assert filtered_table.row_number() == 2
 
     def mis_op(row):
         return row["age"]
 
     with pytest.raises(ValueError):
-        table.filter(mis_op)
+        table.filter(mis_op, True)
 
     def return_none_op(row):
         return None
 
     with pytest.raises(ValueError):
-        table.filter(return_none_op)
+        table.filter(return_none_op, True)
 
 
 def test_delete_row():

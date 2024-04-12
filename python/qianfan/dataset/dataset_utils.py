@@ -154,16 +154,23 @@ def _batch_do_on_service(
 ) -> Tuple[List[str], List[float], List[float]]:
     if "prompt_template" in kwargs:
         kwargs.pop("prompt_template")
+
+    if "access_key" in kwargs:
+        kwargs.pop("access_key")
+
+    if "secret_key" in kwargs:
+        kwargs.pop("secret_key")
+
     output_list: List[str] = []
-    request_latency_list: List[float] = []
-    first_token_latency_list: List[float] = []
+    request_latency_list: List[float] = [-1 for _ in range(len(input_list))]
+    first_token_latency_list: List[float] = [-1 for _ in range(len(input_list))]
     results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
             output_list.append(result.body["result"])
             latencies = log_latency_info(result, idx)
-            request_latency_list.append(latencies[0])
+            request_latency_list[idx] = latencies[0]
         elif isinstance(result, Exception):
             log_warn(
                 "an exception has occurred during batch requesting and its"
@@ -182,8 +189,8 @@ def _batch_do_on_service(
                 latencies = log_latency_info(r, idx, index)
                 first_token_latency, total_latency = latencies[1], latencies[2]
             output_list.append(result_str)
-            request_latency_list.append(total_latency)
-            first_token_latency_list.append(first_token_latency)
+            request_latency_list[idx] = total_latency
+            first_token_latency_list[idx] = first_token_latency
 
     return output_list, request_latency_list, first_token_latency_list
 
@@ -383,9 +390,9 @@ def _check_and_generate_service(
 
     service: Union[ChatCompletion, Completion]
     if is_chat_service:
-        service = ChatCompletion(service_model, service_endpoint)
+        service = ChatCompletion(service_model, service_endpoint, **kwargs)
     else:
-        service = Completion(service_model, service_endpoint)
+        service = Completion(service_model, service_endpoint, **kwargs)
 
     return service
 

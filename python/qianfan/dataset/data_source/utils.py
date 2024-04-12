@@ -19,12 +19,13 @@ import hashlib
 import json
 import os
 import shutil
+import threading
 import uuid
 import zipfile
 from enum import Enum
 from pathlib import Path
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, Union
 
 import pyarrow
 import requests
@@ -79,6 +80,43 @@ class ImageExtensionName(Enum):
     Jpeg = "jpeg"
     Png = "png"
     Bmp = "bmp"
+
+
+class TaskDispatcher:
+    def __init__(self, batch_size: int, task_number: int):
+        self.task_queue: List[Tuple[int, int]] = []
+        for batch_index in range(0, task_number, batch_size):
+            current_batch_size = min(task_number - batch_index, batch_size)
+            self.task_queue.append((batch_index, current_batch_size))
+
+        self.lock = threading.Lock()
+        self.current_task_queue_index = 0
+
+    def get_task(self) -> Optional[Tuple[int, int]]:
+        with self.lock:
+            if self.current_task_queue_index >= len(self.task_queue):
+                return None
+
+            task = self.task_queue[self.current_task_queue_index]
+            self.current_task_queue_index += 1
+            return task
+
+    def mapper_closure(
+        self, func: Callable[[int, int], Generator[Any, None, None]]
+    ) -> Callable[[], Generator[Tuple[int, Any], None, None]]:
+        def new_func() -> Generator[Tuple[int, Any], None, None]:
+            task_slice = self.get_task()
+            while task_slice:
+                batch_index, batch_size = task_slice[0], task_slice[1]
+                returned_data_list: List[Any] = []
+
+                for returned_data in func(batch_index, batch_size):
+                    returned_data_list.append(returned_data)
+
+                yield batch_index, returned_data_list
+                task_slice = self.get_task()
+
+        return new_func
 
 
 def _get_annotation_file_name(file_name: str) -> str:
@@ -241,9 +279,15 @@ def _get_a_memory_mapped_pyarrow_table(
 def _create_map_arrow_file(
     path: str,
     mapper_closure: Callable,
+    batch_size: int,
+    task_number: int,
     **kwargs: Any,
 ) -> pyarrow.Table:
-    reader = MapperReader(mapper_closure=mapper_closure, **kwargs)
+    task_dispatcher = TaskDispatcher(batch_size, task_number)
+
+    reader = MapperReader(
+        mapper_closure=task_dispatcher.mapper_closure(mapper_closure), **kwargs
+    )
 
     tmp_folder_path, file_name = _construct_buffer_folder_path_and_file_name(
         QianfanMapperCacheDir, path
@@ -256,6 +300,42 @@ def _create_map_arrow_file(
     _write_table_to_arrow_file(tmp_arrow_file_path, reader)
     _remove_previous_folder_file(tmp_arrow_file_path)
     return _read_mmap_table_from_arrow_file(tmp_arrow_file_path)
+
+
+def _iterate_to_conduct_result(
+    mapper_closure: Callable,
+    batch_size: int,
+    task_number: int,
+    **kwargs: Any,
+) -> List[Any]:
+    task_dispatcher = TaskDispatcher(batch_size, task_number)
+
+    reader = MapperReader(
+        mapper_closure=task_dispatcher.mapper_closure(mapper_closure), **kwargs
+    )
+    result_list: List[Any] = []
+    for elem in reader:
+        result_list.extend(elem)
+
+    return result_list
+
+
+def _pure_iterate(
+    mapper_closure: Callable,
+    batch_size: int,
+    task_number: int,
+    **kwargs: Any,
+) -> None:
+    task_dispatcher = TaskDispatcher(batch_size, task_number)
+
+    reader = MapperReader(
+        mapper_closure=task_dispatcher.mapper_closure(mapper_closure), **kwargs
+    )
+
+    for _ in reader:
+        continue
+
+    return
 
 
 def _read_mmap_table_from_arrow_file(arrow_file_path: str) -> pyarrow.Table:

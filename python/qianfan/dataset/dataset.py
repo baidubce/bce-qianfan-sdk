@@ -17,7 +17,16 @@ dataset core concept, a wrap of data processing, data transmission and data vali
 import functools
 from copy import deepcopy
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pyarrow
 from pyarrow import Table as PyarrowTable
@@ -757,51 +766,87 @@ class Dataset(Table):
     # 直接调用 Table 对象的接口方法
     # 这些接口不支持用在云端数据集上
     @_online_except_decorator
-    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
+    def map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on dataset
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
             **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
         assert isinstance(self.inner_data_source_cache, FileDataSource)
-        return super().map(op, path=self.inner_data_source_cache.path, **kwargs)
+        return super().map(
+            op, should_create_new_obj, path=self.inner_data_source_cache.path, **kwargs
+        )
 
     @_online_except_decorator
-    def filter(self, op: Callable[[Any], bool]) -> Self:
+    def filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on dataset
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().filter(op)
+        return super().filter(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def delete(self, index: Union[int, str]) -> Self:
+    def delete(
+        self,
+        index: Union[int, str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         delete an element from dataset
 
         Args:
             index (Union[int, str]): element index to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().delete(index)
+        return super().delete(index, should_create_new_obj, **kwargs)
 
     # 但是在云上数据集追加数据未来可以支持，本质是向数据集中导入新数据。
     # 目前不做修改，等待接口 ready
     @_online_except_decorator
     def append(
-        self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
+        self,
+        elem: Any,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         append element(s) to dataset
@@ -821,10 +866,17 @@ class Dataset(Table):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().append(elem, add_new_group, is_grouped)
+        return super().append(
+            elem, add_new_group, is_grouped, should_create_new_obj, **kwargs
+        )
 
     @_online_except_decorator
     def insert(
@@ -834,6 +886,8 @@ class Dataset(Table):
         group_id: int = -1,
         add_new_group: bool = False,
         is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         insert element(s) to dataset
@@ -859,10 +913,17 @@ class Dataset(Table):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().insert(elem, index, add_new_group, is_grouped)
+        return super().insert(
+            elem, index, add_new_group, is_grouped, should_create_new_obj, **kwargs
+        )
 
     def list(
         self,
@@ -914,6 +975,16 @@ class Dataset(Table):
                 log_error(err_msg)
                 raise ValueError(err_msg)
 
+    @_online_except_decorator
+    def take_slice(
+        self,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        return super().take_slice(start, end, should_create_new_obj, **kwargs)
+
     def __getitem__(self, key: Any) -> Any:
         if (
             isinstance(key, int)
@@ -936,59 +1007,105 @@ class Dataset(Table):
 
     # 列操作集
     @_online_except_decorator
-    def col_map(self, op: Callable[[Any], Any]) -> Self:
+    def col_map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on dataset's column
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_map(op)
+        return super().col_map(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_filter(self, op: Callable[[Any], bool]) -> Self:
+    def col_filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on dataset's column
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_filter(op)
+        return super().col_filter(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_delete(self, index: Union[int, str]) -> Self:
+    def col_delete(
+        self,
+        index: Union[int, str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         delete an column from dataset
 
         Args:
             index (str): column name to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_delete(index)
+        return super().col_delete(index, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_append(self, elem: Any) -> Self:
+    def col_append(
+        self,
+        elem: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to dataset
 
         Args:
             elem (Dict[str, List]): a dict containing element added to dataset, which
                 key as column name, value as column data
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().col_append(elem)
+        return super().col_append(elem, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_insert(self, elem: Any, index: Any) -> Self:
+    def col_insert(
+        self,
+        elem: Any,
+        index: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to dataset
 
@@ -996,10 +1113,15 @@ class Dataset(Table):
             elem (Dict[str, List]): dict containing element added to dataset
                 must has column name "name" and column data list "data"
             index (int): where to insert new column
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().col_insert(elem, index)
+        return super().col_insert(elem, index, should_create_new_obj, **kwargs)
 
     # 等待接口 ready 才能对云端数据集做展示
     @_online_except_decorator
@@ -1055,6 +1177,15 @@ class Dataset(Table):
         return super().column_number()
 
     @_online_except_decorator
+    def select_columns(
+        self,
+        columns: List[str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        return super().select_columns(columns, should_create_new_obj, **kwargs)
+
+    @_online_except_decorator
     def pack(self, **kwargs: Any) -> bool:
         """
         pack all group into 1 row
@@ -1088,6 +1219,31 @@ class Dataset(Table):
             return super().unpack(path=self.inner_data_source_cache.path, **kwargs)
         else:
             return super().unpack(**kwargs)
+
+    @_online_except_decorator
+    def concat_table(
+        self,
+        concat_dataset: Union["Dataset", List["Dataset"]],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        concat content of operand dataset to caller dataset
+        this requires two datasets have identical fields
+
+        Args:
+            concat_dataset (Union["Dataset", List["Dataset"]]):
+                Dataset, or list of Dataset, which will be concat
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+
+        Returns:
+            Dataset: concat Dataset
+        """
+        return super().concat_table(concat_dataset, should_create_new_obj, **kwargs)  # type: ignore
 
     @_online_except_decorator
     def to_pydict(self) -> Dict:
@@ -1334,7 +1490,9 @@ class Dataset(Table):
             reference_column = OldReferenceColumnName
 
         if does_show_latency:
-            if len(first_token_latency_list) != 0:
+            if any(
+                [value != -1 and value != -1.0 for value in first_token_latency_list]
+            ):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 
@@ -1372,7 +1530,9 @@ class Dataset(Table):
         }
 
         if does_show_latency:
-            if len(first_token_latency_list) != 0:
+            if any(
+                [value != -1 and value != -1.0 for value in first_token_latency_list]
+            ):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 

@@ -31,6 +31,9 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import aiohttp
+import requests
+
 import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.consts import APIErrorCode, Consts
@@ -204,7 +207,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 )
             body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
             json_body = json.loads(body_str)
-            parsed = self._parse_async_response(json_body, resp)
+            parsed = await self._parse_async_response(json_body, resp)
             parsed.request = QfRequest.from_aiohttp(resp.request_info)
             parsed.request.json_body = copy.deepcopy(request.json_body)
             yield data_postprocess(parsed)
@@ -230,6 +233,26 @@ class QfAPIRequestor(BaseAPIRequestor):
             }:
                 raise errors.AccessTokenExpiredError
             raise errors.APIError(error_code, err_msg, req_id)
+
+    def _parse_response(
+        self, body: Dict[str, Any], resp: requests.Response
+    ) -> QfResponse:
+        try:
+            return super()._parse_response(body, resp)
+        except errors.APIError as e:
+            if e.error_code == APIErrorCode.TPMLimitReached.value:
+                self._token_limiter.clear()
+            raise e
+
+    async def _parse_async_response(
+        self, body: Dict[str, Any], resp: aiohttp.ClientResponse
+    ) -> QfResponse:
+        try:
+            return await super()._parse_async_response(body, resp)
+        except errors.APIError as e:
+            if e.error_code == APIErrorCode.TPMLimitReached.value:
+                await self._async_token_limiter.clear()
+            raise e
 
     def _get_token_count_from_body(self, body: Dict[str, Any]) -> int:
         token_count = 0

@@ -21,3 +21,18 @@ from typing import Any
 def max(*args: Any, **kwargs: Any) -> Any:
     # do nothing
     ...
+
+
+def mean(*args: Any, **kwargs: Any) -> Any:
+    # do nothing
+    ...
+
+
+def quantile(*args: Any, **kwargs: Any) -> Any:
+    # do nothing
+    ...
+
+
+def min(*args: Any, **kwargs: Any) -> Any:
+    # do nothing
+    ...

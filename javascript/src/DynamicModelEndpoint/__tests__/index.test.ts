@@ -34,7 +34,8 @@ jest.mock('../../HttpClient', () => {
 jest.mock('../../Fetch/fetch', () => {
     return jest.fn().mockImplementation(() => {
         return {
-            makeRequest: jest.fn()
+            makeRequest: jest
+                .fn()
                 .mockResolvedValueOnce({
                     result: {
                         common: [
@@ -70,17 +71,19 @@ describe('DynamicModelEndpoint', () => {
         endpoint.setDynamicMapExpireAt(Date.now() / 1000 + 1000); // 设置为未过期
         const dynamicTypeModelEndpointMap = endpoint.getDynamicTypeModelEndpointMap();
         dynamicTypeModelEndpointMap.set('chat', new Map([['model1', 'https://example.com/Model0']]));
-
-        await expect(endpoint.getEndpoint('chat', 'Model1')).resolves.toEqual('https://example.com/Model0');
+        await expect(endpoint.getEndpoint('chat', 'Model1')).resolves.toEqual(
+            '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/Model0'
+        );
     });
     // 测试动态映射已过期并成功更新后获取端点
     it('should update and return endpoint from dynamic mapping when expired', async () => {
         const endpoint = setupDynamicModelEndpoint({});
         endpoint.setDynamicMapExpireAt(Date.now() / 1000 - 1); // 设置为已过期
         const dynamicTypeModelEndpointMap = endpoint.getDynamicTypeModelEndpointMap();
-        dynamicTypeModelEndpointMap.set('chat', new Map([['model1', 'https://example.com/Model0']]));
-        await expect(endpoint.getEndpoint('chat', 'model1')).resolves.toEqual('https://example.com/Model1');
-        expect(dynamicTypeModelEndpointMap.get('chat').get('model1')).toEqual('https://example.com/Model1');
+        await expect(endpoint.getEndpoint('chat', 'model1')).resolves.toEqual(
+            '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/Model1'
+        );
+        expect(dynamicTypeModelEndpointMap.get('chat').get('model2')).toEqual('https://example.com/Model2');
     });
     //   测试更新动态映射失败时的，读取默认配置
     it('should handle failure during dynamic mapping update', async () => {
@@ -88,7 +91,11 @@ describe('DynamicModelEndpoint', () => {
         const fetchInstance = new Fetch() as jest.Mocked<Fetch>;
         client.getSignature.mockResolvedValue({}); // 假设这是获取签名的响应
         fetchInstance.makeRequest.mockRejectedValue(new Error('Failed to fetch')); // 模拟 fetch 请求失败
-        const endpoint = new DynamicModelEndpoint(client, 'https://qianfan-console-api-base-url.com', 'https://qianfan-base-url.com');
+        const endpoint = new DynamicModelEndpoint(
+            client,
+            'https://qianfan-console-api-base-url.com',
+            'https://qianfan-base-url.com'
+        );
         const dynamicTypeModelEndpointMap = endpoint.getDynamicTypeModelEndpointMap();
         dynamicTypeModelEndpointMap.set('chat', new Map([['model1', 'https://example.com/Model0']]));
         endpoint.setDynamicMapExpireAt(Date.now() / 1000 - 1); // 设置为已过期

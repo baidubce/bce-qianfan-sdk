@@ -346,6 +346,9 @@ def finetune(
     previous_task_id: Optional[str] = typer.Option(
         None, help="Task id of previous trainer output."
     ),
+    trainer_pipeline_file: Optional[str] = typer.Option(
+        None, help="Trainer pipeline file path"
+    ),
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
         None,

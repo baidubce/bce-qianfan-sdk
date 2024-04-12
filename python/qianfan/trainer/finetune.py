@@ -325,7 +325,8 @@ class Finetune(Trainer):
             g_persister.save(self.ppls[0])
 
     def info(self) -> Dict:
-        return self.ppls[0]._action_dict()
+        tmp = cast(Pipeline, g_persister.load(self.id))
+        return tmp._action_dict()
 
     @property
     def id(self) -> str:

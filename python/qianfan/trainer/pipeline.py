@@ -13,6 +13,7 @@
 # limitations under the License.
 import copy
 import threading
+import time
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
 
 from qianfan.common.persister.persist import g_persister
@@ -90,7 +91,24 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         Return:
             Dict[str, Any]: The output of the pipeline.
         """
-        return self.exec_from(input, 0, **kwargs)
+        res = [{}]
+
+        def _exec_helper(res: List[Any]) -> None:
+            if len(res) == 0:
+                return
+            res[0] = self.exec_from(input, 0, **kwargs)
+
+        t = threading.Thread(target=_exec_helper, args=[res])
+        t.start()
+
+        while True:
+            g_persister.save(self)
+            if self._stop:
+                g_persister.save(self)
+                break
+            time.sleep(10)
+
+        return res[0]
 
     def exec_from(
         self,

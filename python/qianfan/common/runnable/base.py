@@ -142,6 +142,26 @@ class DillSerializeHelper(SerializeHelper):
     def deserialize(self, data: bytes) -> Any:
         return dill.loads(data)
 
+class CompatSerializeHelper(SerializeHelper): 
+    
+    def __init__(self) -> None:
+        self.helpers: List[SerializeHelper] = [YamlSerializeHelper(), JsonSerializeHelper()]
+
+    def serialize(self, obj: Any) -> bytes:
+        for helper in self.helpers:
+            try:
+                return helper.serialize(obj)
+            except Exception as e:
+                continue
+        raise Exception("serialize failed")
+
+    def deserialize(self, data: bytes) -> Any:
+        for helper in self.helpers:
+            try:
+                return helper.deserialize(data)
+            except Exception as e:
+                continue
+        raise Exception("deserialize failed")
 
 class ExecuteSerializable(Executable[Input, Output], Serializable):
     """
@@ -152,7 +172,7 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
     process_id: str = ""
     process: Optional[multiprocessing.Process] = None
 
-    serialize_helper: SerializeHelper = JsonSerializeHelper()
+    serialize_helper: SerializeHelper = CompatSerializeHelper()
 
     def _get_specific_cache_path(self) -> str:
         cache_path = os.path.join(
@@ -177,8 +197,8 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
         self, join_on_exited: bool = False, **kwargs: Any
     ) -> "ExecuteSerializable":
         def run_subprocess(pipe: multiprocessing.Pipe) -> None:
-            if platform.system() != "Windows":
-                os.setsid()  # type: ignore[attr-defined]
+            # if platform.system() != "Windows":
+            #     os.setsid()  # type: ignore[attr-defined]
             # redirect output
             log_path = self._get_log_path()
             with open(log_path, "a", encoding=encoding()) as f:

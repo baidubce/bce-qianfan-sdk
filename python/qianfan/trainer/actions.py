@@ -243,10 +243,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
-        return cls(
+        action = cls(
             id=meta.get("id"),
             dataset=meta.get("ds_id") or meta.get("dataset_bos"),
         )
+        action.result = meta.get("output")
+        return action
 
     @classmethod
     def load(cls, b: bytes) -> "LoadDataSetAction":
@@ -314,6 +316,10 @@ class TrainAction(
     """"train result"""
     train_model_name: Optional[str] = None
     """real name to start training"""
+    task_status: str = ""
+    """train task status, e.g. `Running`"""
+    progress: int = 0
+    """training progress 0-100"""
 
     def __init__(
         self,
@@ -580,6 +586,8 @@ class TrainAction(
             )
             task_status_result = task_status_resp.get("result", {})
             task_status = task_status_result.get("runStatus")
+            # 更新任务状态
+            self.task_status = task_status
 
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
@@ -725,6 +733,8 @@ class TrainAction(
                 "task_description": self.task_description,
                 "job_description": self.job_description,
             },
+            "status": self.task_status,
+            "progress": self.progress,
             "input": self._input,
             "output": self.result,
         }
@@ -736,6 +746,7 @@ class TrainAction(
         if "train_config" in params:
             params["train_config"] = TrainConfig(**params["train_config"])
         action = cls(
+            id=meta.get("id"),
             **params,
         )
         action.is_incr = params.pop("is_incr", False)
@@ -832,10 +843,6 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta: Dict[str, Any] = {
             "id": self.id,
             "type": ModelPublishAction.__name__,
-            "init_params": {
-                "task_id": self.task_id,
-                "job_id": self.job_id,
-            },
             "input": {
                 "task_id": self.task_id,
                 "job_id": self.job_id,
@@ -855,6 +862,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
         params = meta.get("init_params", {})
         action = cls(
+            id=meta.get("id"),
             **params,
         )
         action._input = meta.get("input")  # type: ignore
@@ -1019,7 +1027,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
         deploy_config = meta.get("init_params", {}).get("deploy_config", {})
         action = cls(
-            DeployConfig(**deploy_config),
+            id=meta.get("id"),
+            deploy_config=DeployConfig(**deploy_config),
         )
         action._input = meta.get("input")
         action.result = meta.get("output")

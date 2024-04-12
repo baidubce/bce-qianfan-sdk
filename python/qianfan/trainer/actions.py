@@ -300,6 +300,10 @@ class TrainAction(
     """train_type"""
     is_incr: bool = False
     """if it's incremental train or not"""
+    _last_task_id: Optional[str] = None
+    """last task id"""
+    _last_task_step: Optional[int] = None
+    """last task step"""
     train_config: Optional[TrainConfig] = None
     """train config"""
     train_mode: console_consts.TrainMode
@@ -332,6 +336,7 @@ class TrainAction(
         job_name: Optional[str] = None,
         task_description: Optional[str] = None,
         job_description: Optional[str] = None,
+        task_step: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -360,13 +365,14 @@ class TrainAction(
                 train job description. Defaults to None.
         """
         super().__init__(**kwargs)
-        self.task_id = task_id
+        self._last_task_id = task_id
+        self._last_task_step = task_step
         self.job_id = job_id
         self.train_mode = train_mode
         self.train_model_name = train_type
-        if self.task_id is not None:
+        if self._last_task_id is not None:
             # if incremental train
-            pre_task_detail = api.FineTune.V2.task_detail(task_id=self.task_id)
+            pre_task_detail = api.FineTune.V2.task_detail(task_id=self._last_task_id)
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
@@ -551,8 +557,13 @@ class TrainAction(
         log_debug(f"train with hyper_params: { hyper_params_dict}")
         if self.is_incr:
             # 增量训练
-            kwargs["incrementTaskId"] = self.task_id
-            log_info(f"train with incrementTaskId: { self.task_id}")
+            kwargs["increment_task_id"] = self._last_task_id
+            if self._last_task_step:
+                kwargs["increment_checkpoint_step"] = self._last_task_step
+            log_info(
+                f"train with incrementTaskId: { self._last_task_id} with step:"
+                f" { self._last_task_step}"
+            )
         assert self.train_config.peft_type is not None
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
@@ -565,12 +576,12 @@ class TrainAction(
         log_debug(f"[train_action] create {self.train_mode} train task: {self.task_id}")
 
         # 获取job状态，是否训练完成
-        train_metrics = self._wait_model_trained(**kwargs)
+        train_output = self._wait_model_trained(**kwargs)
         self.result = {
             **input,
             "task_id": self.task_id,
             "job_id": self.job_id,
-            **train_metrics,
+            **train_output,
         }
         assert self.result is not None
         return self.result
@@ -592,7 +603,11 @@ class TrainAction(
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
                 output["metrics"] = task_status_result.get("metrics", {})
+                output["checkpoints"] = task_status_result.get("checkpointList", [])
                 log_info(f"[train_action] training task metrics: {output['metrics']}")
+                log_info(
+                    f"[train_action] training task checkpoints: {output['checkpoints']}"
+                )
                 break
             elif task_status in [
                 console_consts.TrainStatus.Fail,

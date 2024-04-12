@@ -51,24 +51,25 @@ class DynamicModelEndpoint {
         }
         finally {
             release(); // 释放互斥锁
-            // 在更新逻辑完成后继续
+            const getEndpointUrl = (typeMap :Map<string, string>) => {
+                const modelKey = (model || '').toLowerCase();
+                const rawEndPoint = typeMap.get(modelKey) || '';
+                let endPoint = type === 'plugin' ? rawEndPoint : rawEndPoint.split('/').pop() || '';
+                return endPoint ? getPath({
+                    Authentication: 'IAM',
+                    api_base: this.qianfanBaseUrl,
+                    endpoint: endPoint,
+                    type,
+                }) : '';
+            };
             const dynamicTypeMap = getTypeMap(this.dynamicTypeModelEndpointMap, type);
-            if (dynamicTypeMap) {
-                const url = dynamicTypeMap.get(model?.toLowerCase() ?? '') ?? '';
-
-                return url; // 如果找到了动态类型映射中的URL，返回它
+            let url = dynamicTypeMap ? getEndpointUrl(dynamicTypeMap) : '';
+            if (url) {
+                return url;
             }
-
             // 如果动态映射中没有找到，尝试从静态映射中获取
             const typeMap = getTypeMap(typeModelEndpointMap, type);
-            const endPoint = typeMap.get(model?.toLowerCase() ?? '') ?? '';
-            const url = getPath({
-                Authentication: 'IAM',
-                api_base: this.qianfanBaseUrl,
-                endpoint: endPoint,
-                type,
-            });
-            return url; // 返回从静态映射中获取的URL
+            return typeMap ? getEndpointUrl(typeMap) : ''; // 返回从静态映射中获取的URL
         }
     }
     /**

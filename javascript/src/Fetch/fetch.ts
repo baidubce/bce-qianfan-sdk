@@ -1,4 +1,5 @@
 import fetch, {RequestInit, Response} from 'node-fetch';
+import {Readable} from 'stream';
 import {RateLimiter, TokenLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
@@ -227,8 +228,8 @@ export class Fetch {
             }
             const val = this.getTpmHeader(response.headers);
             // 流式
-            if (options.stream && res instanceof ReadableStream) {
-                const [stream1, stream2] = res.tee();
+            if (options.stream && res instanceof Readable) {
+                const [stream1, stream2] = (res as any).tee();
                 if (isOpenTpm(val)) {
                     const updateTokensAsync = async () => {
                         for await (const data of (stream1 as unknown as AsyncIterableType)) {

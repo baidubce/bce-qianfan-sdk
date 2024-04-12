@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import json
 import re
 import time
@@ -552,26 +553,34 @@ class Prompt(HubSerializable):
 
     def apo_by_sample(
         self,
-        example: "Dataset",
+        example: Optional["Dataset"] = None,
         sample_prompt: Optional["Prompt"] = None,
         feedback_prompt: Optional["Prompt"] = None,
         update_prompt: Optional["Prompt"] = None,
         iteration_round: int = 3,
-        infer_config: Dict[str, Any] = {"service_model": "ERNIE-Speed"},
+        infer_config: Dict[str, Any] = {"model": "ERNIE-Speed"},
         optimize_config: Dict[str, Any] = {"model": "ERNIE-4.0-8K"},
     ) -> "Prompt":
         if iteration_round < 1:
             raise ValueError("iteration_round must be greater than or equal to 1.")
+        if len(self.variables) > 0 and example is None:
+            raise ValueError("Example is required when there are variables in prompt.")
 
         from qianfan.common.prompt.template import (
             PROMPT_OPTIMIZE_FEEDBACK_TMPL,
             PROMPT_OPTIMIZE_SAMPLE_TMPL,
+            PROMPT_OPTIMIZE_SAMPLE_WO_OUTPUT_TMPL,
             PROMPT_OPTIMIZE_UPDATE_TMPL,
         )
         from qianfan.resources.llm.chat_completion import ChatCompletion
 
         if sample_prompt is None:
-            sample_prompt = Prompt(PROMPT_OPTIMIZE_SAMPLE_TMPL, identifier="{{}}")
+            if example is None:
+                sample_prompt = Prompt(
+                    PROMPT_OPTIMIZE_SAMPLE_WO_OUTPUT_TMPL, identifier="{{}}"
+                )
+            else:
+                sample_prompt = Prompt(PROMPT_OPTIMIZE_SAMPLE_TMPL, identifier="{{}}")
         if feedback_prompt is None:
             feedback_prompt = Prompt(PROMPT_OPTIMIZE_FEEDBACK_TMPL, identifier="{{}}")
         if update_prompt is None:
@@ -584,22 +593,44 @@ class Prompt(HubSerializable):
         current_prompt = self
 
         for _ in range(iteration_round):
+            sample_prompts: List[str]
             # use prompt to generate sample output
-            samples = example.test_using_llm(
-                prompt_template=current_prompt, **infer_config
-            )
-            sample_prompts = [
-                sample_prompt.render(
-                    input=json.dumps(
-                        {k: sample[k] for k in self.variables},
-                        ensure_ascii=False,
-                        indent=4,
-                    ),
-                    expect=sample["expected_output"],
-                    response=sample["llm_output"],
-                )[0]
-                for sample in samples.list()
-            ]
+            if example is not None:
+                dataset_infer_config = copy.deepcopy(infer_config)
+                if "model" in infer_config:
+                    dataset_infer_config["service_model"] = infer_config["model"]
+                    del dataset_infer_config["model"]
+                if "endpoint" in infer_config:
+                    dataset_infer_config["service_endpoint"] = infer_config["endpoint"]
+                    del dataset_infer_config["endpoint"]
+                samples = example.test_using_llm(
+                    prompt_template=current_prompt, **dataset_infer_config
+                )
+                sample_prompts = [
+                    sample_prompt.render(
+                        input=json.dumps(
+                            {k: sample[k] for k in self.variables},
+                            ensure_ascii=False,
+                            indent=4,
+                        ),
+                        expect=sample["expected_output"],
+                        response=sample["llm_output"],
+                    )[0]
+                    for sample in samples.list()
+                ]
+            else:
+                model_output = ChatCompletion().do(
+                    messages=[{"role": "user", "content": current_prompt.render()[0]}],
+                    **infer_config,
+                )
+                assert isinstance(model_output, QfResponse)
+                sample_prompts = [
+                    sample_prompt.render(
+                        input=current_prompt.render()[0],
+                        expect="",
+                        response=model_output["result"],
+                    )[0]
+                ]
             sample_str = "\n===\n".join(sample_prompts)
             # put sample output into feedback prompt
             feedback_input = feedback_prompt.render(
@@ -656,6 +687,42 @@ class Prompt(HubSerializable):
             log_info(f"New prompt: {repr(new_prompt_tmpl)}")
             current_prompt = Prompt(new_prompt_tmpl, identifier=self.identifier)
         return current_prompt
+
+    def simplify(
+        self,
+        simplify_prompt: Optional["Prompt"] = None,
+        config: Dict[str, Any] = {"model": "ERNIE-4.0-8K"},
+    ) -> "Prompt":
+        from qianfan.common.prompt.template import PROMPT_SIMPLIFY_TMPL
+
+        if simplify_prompt is None:
+            simplify_prompt = Prompt(PROMPT_SIMPLIFY_TMPL, identifier="{{}}")
+
+        left_identifier, right_identifier = PromptResource._split_identifier(
+            self.identifier
+        )
+        client = Completion()
+        resp = client.do(
+            simplify_prompt.render(
+                current_prompt=self.template,
+                variables=" ".join(
+                    [
+                        f"{left_identifier}{var}{right_identifier}"
+                        for var in self.variables
+                    ]
+                ),
+            )[0],
+            **config,
+        )
+        assert isinstance(resp, QfResponse)
+        output = resp["result"]
+        try:
+            new_prompt_tmpl = re.findall(
+                "<START>(.*)<END>", output, re.MULTILINE | re.DOTALL
+            )[0]
+        except Exception:
+            new_prompt_tmpl = output
+        return Prompt(new_prompt_tmpl, identifier=self.identifier)
 
     @dataclass
     class PromptEvaluateResult(object):

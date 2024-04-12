@@ -88,6 +88,7 @@ def open_html_in_browser(ds: Dataset) -> None:
 
     def _write_columns_field(bio: BinaryIO) -> None:
         bio.write(bytes("\t\tconst columns = [\n", encoding="utf8"))
+        bio.write(bytes(column_field_template.format("index"), encoding="utf8"))
         for field in ds.col_names():
             bio.write(bytes(column_field_template.format(field), encoding="utf8"))
         bio.write(bytes("\t\t];\n", encoding="utf8"))
@@ -103,6 +104,7 @@ def open_html_in_browser(ds: Dataset) -> None:
             bio.write(bytes("\t\t\t{\n", encoding="utf8"))
 
             bio.write(bytes("\t\t\t\tkey: `{}`,\n".format(index), encoding="utf8"))
+            bio.write(bytes("\t\t\t\tindex: `{}`,\n".format(index), encoding="utf8"))
             for k, v in entry.items():
                 bio.write(bytes("\t\t\t\t{}: `{}`,\n".format(k, v), encoding="utf8"))
 

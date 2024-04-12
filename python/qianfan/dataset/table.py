@@ -455,10 +455,6 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 ]
                 for row in rows:
                     flag = op(row)
-                    if flag is None:
-                        raise ValueError("cant return None")
-                    if not isinstance(flag, bool):
-                        raise ValueError("returned value isn't bool")
 
                     yield flag
 
@@ -472,10 +468,6 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                     input_dict = {key: val for key, val in row.items()}
 
                     flag = op(input_dict)
-                    if flag is None:
-                        raise ValueError("cant return None")
-                    if not isinstance(flag, bool):
-                        raise ValueError("returned value isn't bool")
 
                     yield flag
 

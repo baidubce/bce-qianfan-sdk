@@ -315,6 +315,11 @@ def _iterate_to_conduct_result(
     )
     result_list: List[Any] = []
     for elem in reader:
+        for e in elem:
+            if e is None:
+                raise ValueError("cant return None")
+            if not isinstance(e, bool):
+                raise ValueError("returned value isn't bool")
         result_list.extend(elem)
 
     return result_list

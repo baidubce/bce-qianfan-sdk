@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
-dotenv.config();
+dotenv.config({path: '../.env'});
 
 /**
  * 获取访问令牌的URL地址

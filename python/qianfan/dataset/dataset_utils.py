@@ -16,7 +16,9 @@
 utilities dataset needs
 """
 import time
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import requests
 
@@ -39,6 +41,53 @@ from qianfan.resources.console.consts import (
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
+
+column_field_template = """
+      {{
+        title: `{0}`,
+        dataIndex: `{0}`,
+        key: `{0}`,
+      }},
+"""
+
+top_half_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ant Design Table Example</title>
+  <!-- 引入 Ant Design 的 CSS 文件 -->
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/antd/4.18.0/antd.min.css">
+</head>
+<body>
+  <!-- 定义一个容器用于渲染表格 -->
+  <div id="app"></div>
+
+  <!-- 引入 Ant Design 的 JavaScript 文件 -->
+  <script src="https://cdn.bootcdn.net/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/antd/4.18.0/antd.min.js"></script>
+
+  <!-- 定义表格的列和数据 -->
+  <script type="text/babel">
+    const { Table } = antd;
+
+
+"""
+
+bottom_half_html = """
+
+    // 在容器中渲染表格
+    ReactDOM.render(
+      <Table columns={columns} dataSource={data} />,
+      document.getElementById('app')
+    );
+  </script>
+</body>
+</html>
+"""
 
 
 def _check_online_data_process_result(etl_id: str) -> Optional[Union[bool, int]]:
@@ -154,16 +203,23 @@ def _batch_do_on_service(
 ) -> Tuple[List[str], List[float], List[float]]:
     if "prompt_template" in kwargs:
         kwargs.pop("prompt_template")
+
+    if "access_key" in kwargs:
+        kwargs.pop("access_key")
+
+    if "secret_key" in kwargs:
+        kwargs.pop("secret_key")
+
     output_list: List[str] = []
-    request_latency_list: List[float] = []
-    first_token_latency_list: List[float] = []
+    request_latency_list: List[float] = [-1 for _ in range(len(input_list))]
+    first_token_latency_list: List[float] = [-1 for _ in range(len(input_list))]
     results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
             output_list.append(result.body["result"])
             latencies = log_latency_info(result, idx)
-            request_latency_list.append(latencies[0])
+            request_latency_list[idx] = latencies[0]
         elif isinstance(result, Exception):
             log_warn(
                 "an exception has occurred during batch requesting and its"
@@ -182,8 +238,8 @@ def _batch_do_on_service(
                 latencies = log_latency_info(r, idx, index)
                 first_token_latency, total_latency = latencies[1], latencies[2]
             output_list.append(result_str)
-            request_latency_list.append(total_latency)
-            first_token_latency_list.append(first_token_latency)
+            request_latency_list[idx] = total_latency
+            first_token_latency_list[idx] = first_token_latency
 
     return output_list, request_latency_list, first_token_latency_list
 
@@ -383,9 +439,9 @@ def _check_and_generate_service(
 
     service: Union[ChatCompletion, Completion]
     if is_chat_service:
-        service = ChatCompletion(service_model, service_endpoint)
+        service = ChatCompletion(service_model, service_endpoint, **kwargs)
     else:
-        service = Completion(service_model, service_endpoint)
+        service = Completion(service_model, service_endpoint, **kwargs)
 
     return service
 
@@ -397,3 +453,61 @@ def _extract_string(data: Union[str, Iterator[str]]) -> str:
         for item in data:
             return _extract_string(item)
     return ""
+
+
+def open_html_in_browser(ds: Any) -> None:
+    """
+    Display Dataset in a web browser without creating a temp file.
+
+    Instantiates a trivial http server and uses the webbrowser module to
+    open a URL to retrieve html from that server.
+
+    Args:
+        ds (Dataset):
+            Dataset need to be displayed
+    """
+
+    def _write_columns_field(bio: BinaryIO) -> None:
+        bio.write(bytes("\t\tconst columns = [\n", encoding="utf8"))
+        bio.write(bytes(column_field_template.format("index"), encoding="utf8"))
+        for field in ds.col_names():
+            bio.write(bytes(column_field_template.format(field), encoding="utf8"))
+        bio.write(bytes("\t\t];\n", encoding="utf8"))
+
+    def _write_column_data(bio: BinaryIO) -> None:
+        bio.write(bytes("\t\tconst data = [\n", encoding="utf8"))
+        index = 0
+
+        def _iterate(entry: Dict[str, Any], **kwargs: Any) -> None:
+            nonlocal index
+            index += 1
+
+            bio.write(bytes("\t\t\t{\n", encoding="utf8"))
+
+            bio.write(bytes("\t\t\t\tkey: `{}`,\n".format(index), encoding="utf8"))
+            bio.write(bytes("\t\t\t\tindex: `{}`,\n".format(index), encoding="utf8"))
+            for k, v in entry.items():
+                bio.write(bytes("\t\t\t\t{}: `{}`,\n".format(k, v), encoding="utf8"))
+
+            bio.write(bytes("\t\t\t},\n", encoding="utf8"))
+
+        ds.iterate(_iterate)
+        bio.write(bytes("\t\t];\n", encoding="utf8"))
+
+    browser = webbrowser.get(None)
+
+    class OneShotRequestHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+
+            self.wfile.write(bytes(top_half_html, encoding="utf8"))
+            _write_columns_field(self.wfile)
+            _write_column_data(self.wfile)
+            self.wfile.write(bytes(bottom_half_html, encoding="utf8"))
+
+    server = HTTPServer(("127.0.0.1", 0), OneShotRequestHandler)
+    browser.open("http://127.0.0.1:%s" % server.server_port)
+
+    server.handle_request()

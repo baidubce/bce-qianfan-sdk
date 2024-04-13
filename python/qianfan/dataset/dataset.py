@@ -800,7 +800,10 @@ class Dataset(Table):
         """
         if isinstance(self.inner_data_source_cache, FileDataSource):
             return super().map(
-                op, should_create_new_obj, path=self.inner_data_source_cache.path, **kwargs
+                op,
+                should_create_new_obj,
+                path=self.inner_data_source_cache.path,
+                **kwargs,
             )
         else:
             return super().map(

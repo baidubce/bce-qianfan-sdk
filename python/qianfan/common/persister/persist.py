@@ -18,7 +18,7 @@ from typing import List, Type, TypeVar
 
 from qianfan.common.persister.base import Persistent
 from qianfan.consts import Consts
-from qianfan.utils.logging import log_info
+from qianfan.utils.logging import log_debug
 
 _T = TypeVar("_T", bound=Type["Persistent"])
 
@@ -55,7 +55,7 @@ class FilePersister(Persister):
         if not path.exists(f_path_dir):
             makedirs(f_path_dir)
         f_path = path.join(f_path_dir, p._identity())
-        log_info(f"save to {f_path}")
+        log_debug(f"save to {f_path}")
         with open(f_path, "wb") as f:
             f.write(b)
 

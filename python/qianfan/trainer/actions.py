@@ -320,10 +320,14 @@ class TrainAction(
     """"train result"""
     train_model_name: Optional[str] = None
     """real name to start training"""
-    task_status: str = ""
+    task_status: Optional[str] = None
     """train task status, e.g. `Running`"""
-    progress: int = 0
+    progress: Optional[int] = 0
     """training progress 0-100"""
+    vdl_link: Optional[str] = None
+    """visualdl link"""
+    log_link: Optional[str] = None
+    """log link"""
 
     def __init__(
         self,
@@ -365,6 +369,9 @@ class TrainAction(
                 train job description. Defaults to None.
         """
         super().__init__(**kwargs)
+        # for persist
+        self._init_job_id = job_id
+        self._init_task_id = task_id
         self._last_task_id = task_id
         self._last_task_step = task_step
         self.job_id = job_id
@@ -376,6 +383,7 @@ class TrainAction(
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
+                self.job_id = pre_task_detail.get("result", {}).get("jobId")
                 self.train_mode = train_mode
             self.is_incr = True
         else:
@@ -625,21 +633,22 @@ class TrainAction(
             elif task_status == console_consts.TrainStatus.Running:
                 job_progress_str = task_status_result.get("runProgress")
                 job_progress = int(job_progress_str[:-1])
+                self.progress = job_progress
                 log_prefix = (
                     "sft"
                     if self.train_mode == console_consts.TrainMode.SFT
                     else "postPretrain"
                 )
+                self.log_link = f"https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
+                self.vdl_link = task_status_result.get("vdlLink", "")
                 log_info(
                     "[train_action] training ..."
                     f" job_name:{self.job_name} current status: {task_status},"
                     f" {job_progress}% check train task log in"
-                    f" https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
+                    f" {self.log_link}"
                 )
                 if job_progress >= 50:
-                    log_info(
-                        f" check vdl report in {task_status_result.get('vdlLink')}"
-                    )
+                    log_info(f" check vdl report in {self.vdl_link}")
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             else:
                 raise InternalError(
@@ -732,8 +741,8 @@ class TrainAction(
             "id": self.id,
             "type": TrainAction.__name__,
             "init_params": {
-                "job_id": self.job_id,
-                "task_id": self.task_id,
+                "job_id": self._init_job_id,
+                "task_id": self._init_task_id,
                 "train_mode": (
                     self.train_mode
                     if isinstance(self.train_mode, str)
@@ -748,8 +757,12 @@ class TrainAction(
                 "task_description": self.task_description,
                 "job_description": self.job_description,
             },
+            "job_id": self.job_id if hasattr(self, "job_id") else None,
+            "task_id": self.task_id if hasattr(self, "task_id") else None,
             "status": self.task_status,
             "progress": self.progress,
+            "vdl_link": self.vdl_link,
+            "log_link": self.log_link,
             "input": self._input,
             "output": self.result,
         }
@@ -764,9 +777,15 @@ class TrainAction(
             id=meta.get("id"),
             **params,
         )
+        action.job_id = meta.get("job_id")
+        action.task_id = meta.get("task_id")
         action.is_incr = params.pop("is_incr", False)
         action._input = meta.get("input")
         action.result = meta.get("output")
+        action.task_status = meta.get("status")
+        action.progress = meta.get("progress")
+        action.vdl_link = meta.get("vdl_link")
+        action.log_link = meta.get("log_link")
         return action
 
 

@@ -275,7 +275,10 @@ class Finetune(Trainer):
 
     @property
     def output(self) -> Any:
-        return self.result[0]
+        if self.result[0]:
+            return self.result[0]
+        else:
+            return self.info()["actions"][-1]["output"]
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
@@ -325,7 +328,7 @@ class Finetune(Trainer):
             g_persister.save(self.ppls[0])
 
     def info(self) -> Dict:
-        tmp = cast(Pipeline, g_persister.load(self.id))
+        tmp = cast(Pipeline, g_persister.load(self.id, Pipeline))
         return tmp._action_dict()
 
     @property

@@ -15,17 +15,10 @@ import datetime
 import json
 import os
 import pickle
-import platform
 import sys
 import threading
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    Optional,
-    TypeVar,
-)
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 import dill
 import multiprocess as multiprocessing
@@ -142,16 +135,19 @@ class DillSerializeHelper(SerializeHelper):
     def deserialize(self, data: bytes) -> Any:
         return dill.loads(data)
 
-class CompatSerializeHelper(SerializeHelper): 
-    
+
+class CompatSerializeHelper(SerializeHelper):
     def __init__(self) -> None:
-        self.helpers: List[SerializeHelper] = [YamlSerializeHelper(), JsonSerializeHelper()]
+        self.helpers: List[SerializeHelper] = [
+            JsonSerializeHelper(),
+            YamlSerializeHelper(),
+        ]
 
     def serialize(self, obj: Any) -> bytes:
         for helper in self.helpers:
             try:
                 return helper.serialize(obj)
-            except Exception as e:
+            except Exception:
                 continue
         raise Exception("serialize failed")
 
@@ -159,9 +155,10 @@ class CompatSerializeHelper(SerializeHelper):
         for helper in self.helpers:
             try:
                 return helper.deserialize(data)
-            except Exception as e:
+            except Exception:
                 continue
         raise Exception("deserialize failed")
+
 
 class ExecuteSerializable(Executable[Input, Output], Serializable):
     """
@@ -202,7 +199,7 @@ class ExecuteSerializable(Executable[Input, Output], Serializable):
             # redirect output
             log_path = self._get_log_path()
             with open(log_path, "a", encoding=encoding()) as f:
-                log_info(f"check trainer running log in {log_path}")
+                log_info(f"check running log in {log_path}")
                 sys.stdout = f
                 from qianfan.utils.logging import redirect_log_to_file
 

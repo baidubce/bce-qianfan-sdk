@@ -15,6 +15,7 @@
 dataset core concept, a wrap of data processing, data transmission and data validation
 """
 import functools
+import uuid
 from copy import deepcopy
 from time import sleep
 from typing import (
@@ -531,6 +532,8 @@ class Dataset(Table):
         if replace_source is not None:
             log_warn('parameter "replace_source" has been set as deprecated')
 
+        new_ds._set_qianfan_default_io_column(source)
+
         if not replace_source:
             return new_ds
 
@@ -795,10 +798,14 @@ class Dataset(Table):
         Returns:
             Self: Dataset itself
         """
-        assert isinstance(self.inner_data_source_cache, FileDataSource)
-        return super().map(
-            op, should_create_new_obj, path=self.inner_data_source_cache.path, **kwargs
-        )
+        if isinstance(self.inner_data_source_cache, FileDataSource):
+            return super().map(
+                op, should_create_new_obj, path=self.inner_data_source_cache.path, **kwargs
+            )
+        else:
+            return super().map(
+                op, should_create_new_obj, path=f"no_source_{uuid.uuid4()}"
+            )
 
     @_online_except_decorator
     def filter(
@@ -989,9 +996,26 @@ class Dataset(Table):
         self,
         start: int = 0,
         end: int = -1,
-        should_create_new_obj: bool = True,
+        should_create_new_obj: bool = False,
         **kwargs: Any,
     ) -> Self:
+        """
+        make a slice of dataset
+
+        Args:
+            start (int):
+                where the slice starts
+            end (int):
+                where the slice ends
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+        Returns:
+            Dataset: a sliced dataset
+        """
         return super().take_slice(start, end, should_create_new_obj, **kwargs)
 
     def __getitem__(self, key: Any) -> Any:
@@ -1192,6 +1216,18 @@ class Dataset(Table):
         should_create_new_obj: bool = False,
         **kwargs: Any,
     ) -> Self:
+        """
+        select specific column in dataset
+
+        Args:
+            columns (List[str]):
+                column list
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+        """
         return super().select_columns(columns, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
@@ -1958,6 +1994,15 @@ class Dataset(Table):
     def show_processed_statistics(
         self, methods: List[SummarizationMethod] = [], **kwargs: Any
     ) -> None:
+        """
+        show processed statistics data
+
+        Args:
+            methods (List[SummarizationMethod]):
+                statistic method list
+            **kwargs (Any):
+                other arguments
+        """
         from tabulate import tabulate
 
         if not methods or len(methods) == 0:

@@ -799,6 +799,9 @@ class Dataset(Table):
             Self: Dataset itself
         """
         if isinstance(self.inner_data_source_cache, FileDataSource):
+            if len(self) == 0:
+                return self
+
             return super().map(
                 op,
                 should_create_new_obj,
@@ -806,6 +809,8 @@ class Dataset(Table):
                 **kwargs,
             )
         else:
+            if len(self) == 0:
+                return self
             return super().map(
                 op, should_create_new_obj, path=f"no_source_{uuid.uuid4()}"
             )
@@ -831,6 +836,8 @@ class Dataset(Table):
         Returns:
             Self: Dataset itself
         """
+        if len(self) == 0:
+            return self
         return super().filter(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator

@@ -809,7 +809,7 @@ class Dataset(Table):
                 **kwargs,
             )
         else:
-            if len(self) == 0:
+            if not self.inner_table or len(self) == 0:
                 return self
             return super().map(
                 op, should_create_new_obj, path=f"no_source_{uuid.uuid4()}"
@@ -836,7 +836,7 @@ class Dataset(Table):
         Returns:
             Self: Dataset itself
         """
-        if len(self) == 0:
+        if not self.inner_table or len(self) == 0:
             return self
         return super().filter(op, should_create_new_obj, **kwargs)
 

@@ -855,6 +855,9 @@ class Table(Addable, Listable, Processable):
                 rows[i].pop(inner_index)
                 rows[i].pop(QianfanDataGroupColumnName)
 
+                if "response" in rows[i] and isinstance(rows[i]["response"], str):
+                    rows[i]["response"] = [[rows[i]["response"]]]
+
                 # 当读完所有当前组的数据后，返回一次
                 if group_index != current_group_index:
                     if is_first_group_chunk:

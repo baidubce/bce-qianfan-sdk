@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from qianfan.dataset import Dataset
-
 
 class SummarizationMethod(ABC):
     """do nothing"""
@@ -10,7 +8,7 @@ class SummarizationMethod(ABC):
     name: str = "basic"
 
     @abstractmethod
-    def calculate(self, ds: Dataset, columns: List[str], **kwargs: Any) -> List[Any]:
+    def calculate(self, ds: Any, columns: List[str], **kwargs: Any) -> List[Any]:
         """do calculation"""
 
 
@@ -19,7 +17,7 @@ class MeanMethod(SummarizationMethod):
 
     name: str = "mean"
 
-    def calculate(self, ds: Dataset, columns: List[str], **kwargs: Any) -> List[float]:
+    def calculate(self, ds: Any, columns: List[str], **kwargs: Any) -> List[float]:
         return [ds.mean(column=column, **kwargs) for column in columns]
 
 
@@ -30,7 +28,7 @@ class QuantileMethod(SummarizationMethod):
         self.q = q
         self.name = f"{q * 100}_quantile"
 
-    def calculate(self, ds: Dataset, columns: List[str], **kwargs: Any) -> List[float]:
+    def calculate(self, ds: Any, columns: List[str], **kwargs: Any) -> List[float]:
         return [
             ds.quantile(column=column, q=[self.q], **kwargs)[0] for column in columns
         ]
@@ -41,7 +39,7 @@ class MinMethod(SummarizationMethod):
 
     name: str = "min"
 
-    def calculate(self, ds: Dataset, columns: List[str], **kwargs: Any) -> List[float]:
+    def calculate(self, ds: Any, columns: List[str], **kwargs: Any) -> List[float]:
         return [ds.min(column, **kwargs) for column in columns]
 
 
@@ -50,5 +48,5 @@ class MaxMethod(SummarizationMethod):
 
     name: str = "max"
 
-    def calculate(self, ds: Dataset, columns: List[str], **kwargs: Any) -> List[float]:
+    def calculate(self, ds: Any, columns: List[str], **kwargs: Any) -> List[float]:
         return [ds.max(column, **kwargs) for column in columns]

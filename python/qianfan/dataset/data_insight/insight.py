@@ -1,14 +1,12 @@
 import math
 from typing import Any, Callable, Dict, Generator, List, Optional, Set, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from qianfan.dataset import Dataset
 from qianfan.dataset.data_insight.data_insight_utils import (
     _get_generator,
-    open_html_in_browser,
 )
-from qianfan.dataset.data_insight.summarization_method import SummarizationMethod
 from qianfan.dataset.local_data_operators.consts import _default_special_characters_set
 from qianfan.dataset.local_data_operators.utils import (
     SentencePieceTokenizer,
@@ -16,129 +14,6 @@ from qianfan.dataset.local_data_operators.utils import (
     get_words_from_document,
 )
 from qianfan.dataset.local_data_operators.word_list import _flagged_words
-
-
-class DatasetInsight(BaseModel):
-    operator_list: List[
-        Callable[
-            [Union[List[Dict[str, Any]], Dict[str, Any], str]],
-            Union[Generator, Dict[str, Any]],
-        ]
-    ]
-
-    def insight(
-        self, ds: Dataset, column: Optional[str] = None, **kwargs: Any
-    ) -> Dataset:
-        def _closure(
-            entry: Union[List[Dict[str, Any]], Dict[str, Any], str]
-        ) -> Union[Generator, Dict[str, Any]]:
-            result_list: List = [
-                operator(entry, column=column, **kwargs)  # type: ignore
-                for operator in self.operator_list
-            ]
-
-            # 需要兼容，因为这里有可能是返回迭代器（针对 List 的情况）
-            if isinstance(result_list[0], Generator):
-                # 这里返回一个生成器函数而不是直接 Yield 的原因是
-                # 防止 Python 解释器将整个外围函数当成生成器
-
-                assert isinstance(entry, list)
-                assert column is not None
-
-                def _generator() -> Generator:
-                    index = 0
-                    while True:
-                        return_dict: Dict[str, Any] = {}
-                        for generator in result_list:
-                            return_dict.update(next(generator))
-
-                        return_dict[column] = entry[index][column]
-                        index += 1
-
-                        yield return_dict
-
-                return _generator()
-            else:
-                return_dict: Dict[str, Any] = {}
-                for result in result_list:
-                    return_dict.update(result)
-
-                column_name = column if column else "content"
-                column_value = (
-                    entry[column] if column and isinstance(entry, dict) else entry
-                )
-                return_dict[column_name] = column_value
-
-                return return_dict
-
-        return ds.map(_closure, should_create_new_obj=True)
-
-    @classmethod
-    def show_statistic_data_as_table(
-        cls, ds: Dataset, show_in_browser: bool = False
-    ) -> None:
-        if not show_in_browser:
-            from tabulate import tabulate
-
-            print(
-                tabulate(
-                    ds.col_list(),
-                    showindex="always",
-                    headers="keys",
-                    tablefmt="simple",
-                    numalign="right",
-                )
-            )
-        else:
-            open_html_in_browser(ds)
-
-    @classmethod
-    def show_overview_info(cls, ds: Dataset, column: Optional[str] = None) -> None:
-        repetition_set: Dict[Any, int] = {}
-        null_counter = 0
-
-        def _iterator(
-            entry: Union[List[Dict[str, Any]], Dict[str, Any], str], **kwargs: Any
-        ) -> None:
-            nonlocal null_counter
-            if not entry:
-                null_counter += 1
-                return
-
-            if isinstance(entry, (list, str)):
-                repetition_set[entry] = repetition_set.get(entry, 0) + 1
-            elif column:
-                repetition_set[entry[column]] = repetition_set.get(entry[column], 0) + 1
-            else:
-                null_counter += 1
-
-        ds.iterate(_iterator)
-
-        print(
-            f"entry count: {len(ds)}\nrepetition ratio:"
-            f" {1 - (len(repetition_set) / (len(ds)))}\nnull_ratio:"
-            f" {null_counter / len(ds)}"
-        )
-
-    @classmethod
-    def show_processed_statistics(
-        cls, ds: Dataset, methods: List[SummarizationMethod], **kwargs: Any
-    ) -> None:
-        from tabulate import tabulate
-
-        columns = [k for k, v in ds.list(0).items() if isinstance(v, (int, float))]
-        result_data = [method.calculate(ds, columns, **kwargs) for method in methods]
-        index_names = [method.name for method in methods]
-
-        print(
-            tabulate(
-                [columns, *result_data],
-                showindex=index_names,
-                headers="firstrow",
-                tablefmt="simple",
-                numalign="right",
-            )
-        )
 
 
 def get_content_length_for_each_entry(
@@ -297,3 +172,65 @@ def get_flagged_word_ratio(
         return _get_generator(entry, _calculate_single)
     else:
         return _calculate_single(entry)
+
+
+class DatasetInsight(BaseModel):
+    operator_list: List[
+        Callable[
+            [Union[List[Dict[str, Any]], Dict[str, Any], str]],
+            Union[Generator, Dict[str, Any]],
+        ]
+    ] = Field(
+        default=[
+            get_content_length_for_each_entry,
+            get_character_repetition_ratio,
+            get_special_characters_ratio,
+        ]
+    )
+
+    def insight(
+        self, ds: Dataset, column: Optional[str] = None, **kwargs: Any
+    ) -> Dataset:
+        def _closure(
+            entry: Union[List[Dict[str, Any]], Dict[str, Any], str]
+        ) -> Union[Generator, Dict[str, Any]]:
+            result_list: List = [
+                operator(entry, column=column, **kwargs)  # type: ignore
+                for operator in self.operator_list
+            ]
+
+            # 需要兼容，因为这里有可能是返回迭代器（针对 List 的情况）
+            if isinstance(result_list[0], Generator):
+                # 这里返回一个生成器函数而不是直接 Yield 的原因是
+                # 防止 Python 解释器将整个外围函数当成生成器
+
+                assert isinstance(entry, list)
+                assert column is not None
+
+                def _generator() -> Generator:
+                    index = 0
+                    while True:
+                        return_dict: Dict[str, Any] = {}
+                        for generator in result_list:
+                            return_dict.update(next(generator))
+
+                        return_dict[column] = entry[index][column]
+                        index += 1
+
+                        yield return_dict
+
+                return _generator()
+            else:
+                return_dict: Dict[str, Any] = {}
+                for result in result_list:
+                    return_dict.update(result)
+
+                column_name = column if column else "content"
+                column_value = (
+                    entry[column] if column and isinstance(entry, dict) else entry
+                )
+                return_dict[column_name] = column_value
+
+                return return_dict
+
+        return ds.map(_closure, should_create_new_obj=True)

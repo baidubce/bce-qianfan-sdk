@@ -30,6 +30,7 @@ from typing import (
 
 import pyarrow
 from pyarrow import Table as PyarrowTable
+from tabulate import tabulate
 from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
@@ -61,11 +62,19 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
+    open_html_in_browser,
 )
 from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
     QianfanSchema,
     Schema,
+)
+from qianfan.dataset.summarization_method import (
+    MaxMethod,
+    MeanMethod,
+    MinMethod,
+    QuantileMethod,
+    SummarizationMethod,
 )
 from qianfan.dataset.table import Table
 from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
@@ -980,7 +989,7 @@ class Dataset(Table):
         self,
         start: int = 0,
         end: int = -1,
-        should_create_new_obj: bool = False,
+        should_create_new_obj: bool = True,
         **kwargs: Any,
     ) -> Self:
         return super().take_slice(start, end, should_create_new_obj, **kwargs)
@@ -1337,11 +1346,11 @@ class Dataset(Table):
                 model_version_id, output_prettified, **kwargs
             )
         elif service_model or service_endpoint:
-            return self._batch_inference_on_service(
-                service_model,
-                service_endpoint,
-                is_chat_service,
-                does_show_latency,
+            return self._batch_on_service_in_slice_mode(
+                service_model=service_model,
+                service_endpoint=service_endpoint,
+                is_chat_service=is_chat_service,
+                does_show_latency=does_show_latency,
                 **kwargs,
             )
         else:
@@ -1398,17 +1407,53 @@ class Dataset(Table):
                 model_version_id, output_prettified, **kwargs
             )
         elif service_model or service_endpoint:
-            return await self._async_batch_inference_on_service(
-                service_model,
-                service_endpoint,
-                is_chat_service,
-                does_show_latency,
+            return await self._async_batch_on_service_in_slice_mode(
+                service_model=service_model,
+                service_endpoint=service_endpoint,
+                is_chat_service=is_chat_service,
+                does_show_latency=does_show_latency,
                 **kwargs,
             )
         else:
             err_msg = "no sufficient argument has been passed"
             log_error(err_msg)
             raise ValueError(err_msg)
+
+    def _batch_on_service_in_slice_mode(
+        self, slice_size: int = -1, **kwargs: Any
+    ) -> "Dataset":
+        if slice_size <= 0:
+            return self._batch_inference_on_service(**kwargs)
+
+        result_ds_list: List[Dataset] = []
+
+        for i in range(0, len(self), slice_size):
+            start_index = i
+            end_index = min(i + slice_size - 1, len(self) - 1)
+            sliced_dataset = self.take_slice(start_index, end_index, True)
+
+            result_ds_list.append(sliced_dataset._batch_inference_on_service(**kwargs))
+
+        return result_ds_list[0].concat_table(result_ds_list[1:])
+
+    async def _async_batch_on_service_in_slice_mode(
+        self, slice_size: int = -1, **kwargs: Any
+    ) -> "Dataset":
+        if slice_size <= 0:
+            return await self._async_batch_inference_on_service(**kwargs)
+
+        result_ds_list: List[Dataset] = []
+
+        for i in range(0, len(self), slice_size):
+            start_index = i
+            end_index = min(i + slice_size - 1, len(self) - 1)
+            sliced_dataset = self.take_slice(start_index, end_index, True)
+
+            result_ds_list.append(
+                await sliced_dataset._async_batch_inference_on_service(**kwargs)
+            )
+
+        return result_ds_list[0].concat_table(result_ds_list[1:])
 
     def _batch_inference_on_model(
         self, model_version_id: str, output_prettified: bool, **kwargs: Any
@@ -1807,3 +1852,135 @@ class Dataset(Table):
             input_chat_list.append(input_messages)
 
         return input_chat_list, reference_list
+
+    def show_as_table(self, show_in_browser: bool = False) -> None:
+        """
+        show dataset in browser or console
+
+        Args:
+            show_in_browser (bool):
+                whether show dataset in browser or console,
+                default to None.
+        """
+
+        if not show_in_browser:
+            from tabulate import tabulate
+
+            print(
+                tabulate(
+                    self.col_list(),
+                    showindex="always",
+                    headers="keys",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+        else:
+            open_html_in_browser(self)
+
+    def show_overview_info(self) -> None:
+        """
+        show overall info in console
+        """
+
+        repetition_set: Dict[str, Dict[Any, int]] = {}
+        null_counter_set: Dict[str, int] = {}
+
+        packed_identifier = "_packed_identifier"
+
+        def _iterator(
+            entry: Union[List[Dict[str, Any]], Dict[str, Any], str], **kwargs: Any
+        ) -> None:
+            if isinstance(entry, (list, str)):
+                if (
+                    packed_identifier not in repetition_set
+                    and packed_identifier not in null_counter_set
+                ):
+                    repetition_set[packed_identifier] = {}
+                    null_counter_set[packed_identifier] = 0
+
+                if not entry:
+                    null_counter_set[packed_identifier] += 1
+                else:
+                    repetition_set[packed_identifier][entry] = (
+                        repetition_set[packed_identifier].get(entry, 0) + 1
+                    )
+            else:
+                for k, v in entry.items():
+                    if k not in null_counter_set and k not in repetition_set:
+                        repetition_set[k] = {}
+                        null_counter_set[k] = 0
+                    if not v:
+                        null_counter_set[v] += 1
+                    else:
+                        repetition_set[k][v] = repetition_set[k].get(v, 0) + 1
+
+        self.iterate(_iterator)
+
+        print(f"entry count: {len(self)}\n")
+
+        if packed_identifier not in null_counter_set:
+            column_fields = self.col_names()
+
+            reputation_result_data: List[float] = []
+            null_result_data: List[float] = []
+
+            for field in column_fields:
+                reputation_result_data.append(
+                    1 - (len(repetition_set[field]) / len(self))
+                )
+                null_result_data.append(null_counter_set[field] / len(self))
+
+            print(
+                tabulate(
+                    [self.col_names(), reputation_result_data, null_result_data],
+                    showindex=["reputation_ratio", "null_ratio"],
+                    headers="firstrow",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+        else:
+            print(
+                tabulate(
+                    [
+                        "content",
+                        [1 - (len(repetition_set[packed_identifier]) / len(self))],
+                        [null_counter_set[packed_identifier] / len(self)],
+                    ],
+                    showindex=["reputation_ratio", "null_ratio"],
+                    headers="firstrow",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+
+    def show_processed_statistics(
+        self, methods: List[SummarizationMethod] = [], **kwargs: Any
+    ) -> None:
+        from tabulate import tabulate
+
+        if not methods or len(methods) == 0:
+            methods = [
+                MeanMethod(),
+                MinMethod(),
+                MaxMethod(),
+                QuantileMethod(q=0.2),
+                QuantileMethod(q=0.5),
+                QuantileMethod(q=0.8),
+                QuantileMethod(q=0.9),
+            ]
+
+        columns = [k for k, v in self.list(0).items() if isinstance(v, (int, float))]
+        result_data = [method.calculate(self, columns, **kwargs) for method in methods]
+        index_names = [method.name for method in methods]
+
+        print(
+            tabulate(
+                [columns, *result_data],
+                showindex=index_names,
+                headers="firstrow",
+                tablefmt="simple",
+                numalign="right",
+            )
+        )

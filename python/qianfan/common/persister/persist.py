@@ -53,7 +53,7 @@ class FilePersister(Persister):
         b = p.persist()
         f_path_dir = path.join(FileTmpPath, p._space())
         if not path.exists(f_path_dir):
-            makedirs(f_path_dir)
+            makedirs(f_path_dir, exist_ok=True)
         f_path = path.join(f_path_dir, p._identity())
         log_debug(f"save to {f_path}")
         with open(f_path, "wb") as f:

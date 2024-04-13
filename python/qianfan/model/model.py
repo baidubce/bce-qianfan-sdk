@@ -55,6 +55,8 @@ class Model(
     """train tkas id"""
     job_id: Optional[str]
     """train job id"""
+    step: Optional[int] = None
+    """checkpoint step"""
 
     def __init__(
         self,
@@ -239,10 +241,16 @@ class Model(
         self.model_name = (
             name if name != "" else f"m_{generate_letter_num_random_id(12)}"
         )
+        model_version_meta: Dict[str, Any] = {
+            "taskId": self.job_id,
+            "iterationId": self.task_id,
+        }
+        if self.step:
+            model_version_meta["step"] = self.step
         model_publish_resp = ResourceModel.publish(
             is_new=True,
             model_name=self.model_name,
-            version_meta={"taskId": self.job_id, "iterationId": self.task_id},
+            version_meta=model_version_meta,
             **kwargs,
         )
         self.id = model_publish_resp["result"]["modelIDStr"]

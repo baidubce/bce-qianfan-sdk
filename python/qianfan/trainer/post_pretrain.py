@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.common.persister.persist import g_persister
-from qianfan.config import get_config
+from qianfan.config import encoding, get_config
 from qianfan.dataset import Dataset
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console import consts as console_consts
@@ -215,8 +215,14 @@ class PostPreTrain(Trainer):
         return trainer_list
 
     @staticmethod
-    def load(id: str) -> "Trainer":
-        task_ppl = g_persister.load(id, Pipeline)
+    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer":
+        if file is not None:
+            with open(file=file, mode="rb") as f:
+                task_ppl = Pipeline.load(f.read())
+        elif id:
+            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
+        else:
+            raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)
         if (
             task_ppl._case_init_params is not None
@@ -226,6 +232,13 @@ class PostPreTrain(Trainer):
             return trainer_inst
 
         raise InvalidArgumentError("pipeline not found {id} to load")
+
+    def save(self, file: Optional[str] = None) -> None:
+        if file:
+            with open(file=file, mode="w", encoding=encoding()) as f:
+                f.write(self.ppls[0].persist().decode(encoding=encoding()))
+        else:
+            g_persister.save(self.ppls[0])
 
     def info(self) -> Dict:
         return self.ppls[0]._action_dict()

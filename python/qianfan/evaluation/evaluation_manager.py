@@ -421,7 +421,20 @@ class EvaluationManager(BaseModel):
         tmp_ds = Dataset.create_from_pyobj(
             self._run_evaluator_locally(dataset, **kwargs)
         )
-        return EvaluationResult(result_dataset=dataset.col_append(tmp_ds.col_list()))
+
+        assert self.local_evaluators
+
+        summarization_dict: Dict[str, Any] = {}
+
+        for evaluator in self.local_evaluators:
+            summarization = evaluator.summarize(tmp_ds)
+            if summarization:
+                summarization_dict.update(summarization)
+
+        return EvaluationResult(
+            metrics=summarization_dict,
+            result_dataset=dataset.col_append(tmp_ds.col_list()),
+        )
 
     def eval(
         self,

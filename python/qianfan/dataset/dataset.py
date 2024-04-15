@@ -1331,6 +1331,9 @@ class Dataset(Table):
         Returns:
             bool: whether packing succeeded
         """
+        if QianfanDataGroupColumnName not in self.col_names():
+            self.add_default_group_column()
+
         if isinstance(self.inner_data_source_cache, FileDataSource):
             return super().pack(path=self.inner_data_source_cache.path, **kwargs)
         else:

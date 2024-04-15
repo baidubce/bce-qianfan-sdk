@@ -844,10 +844,6 @@ class Table(Addable, Listable, Processable):
         Returns:
             bool: whether packing succeeded
         """
-        if QianfanDataGroupColumnName not in self.col_names():
-            log_error("can't pack a dataset without '_group' column")
-            return False
-
         if len(self.col_names()) == 1:
             log_error("can't pack a dataset only with '_group' column")
             return False

@@ -1028,6 +1028,36 @@ class Dataset(Table):
         """
         return super().take_slice(start, end, should_create_new_obj, **kwargs)
 
+    @_online_except_decorator
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        take random slice in dataset
+
+        Args:
+            sample_number (int):
+                how many entries should be sampled
+            start (int):
+                where the sample part starts
+            end (int):
+                where the sample part ends
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+        """
+        return super().sample(
+            sample_number, start, end, should_create_new_obj, **kwargs
+        )
+
     def __getitem__(self, key: Any) -> Any:
         if (
             isinstance(key, int)
@@ -2020,8 +2050,6 @@ class Dataset(Table):
                 MeanMethod(),
                 MinMethod(),
                 MaxMethod(),
-                QuantileMethod(q=0.2),
-                QuantileMethod(q=0.5),
                 QuantileMethod(q=0.8),
                 QuantileMethod(q=0.9),
             ]

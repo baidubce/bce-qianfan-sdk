@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
-dotenv.config();
+dotenv.config({path: '../.env'});
 
 /**
  * 获取访问令牌的URL地址
@@ -97,10 +97,9 @@ export const getPath = ({
     type?: string,
 }): string => {
     if (endpoint && type) {
-        const boundary = type === 'plugin' ? '/' : '';
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
-            : `${api_base}/${type}/${endpoint}${boundary}`;
+        const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
+        const suffix = type === 'plugin' ? '/' : `/${type}/`;
+        return `${basePath}${suffix}${endpoint}`;
     }
     else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);

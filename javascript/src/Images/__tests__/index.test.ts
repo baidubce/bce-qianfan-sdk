@@ -2,6 +2,7 @@ import {Image2Text, Text2Image, setEnvVariable} from '../../index';
 
 // 设置环境变量
 setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_CONSOLE_API_BASE_URL', 'http://127.0.0.1:8866');
 setEnvVariable('QIANFAN_ACCESS_KEY', '123');
 setEnvVariable('QIANFAN_SECRET_KEY', '456');
 

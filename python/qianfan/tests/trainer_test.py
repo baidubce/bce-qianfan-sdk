@@ -514,3 +514,44 @@ def test_persist():
     pre_id = trainers[0].id
     sft = Finetune.load(pre_id)
     assert sft.info().get("id") == pre_id
+
+    json_config_path = "./ppl.json"
+    try:
+        with open(json_config_path, mode="w") as f:
+            f.write("""
+                    {
+        "actions": [
+            {
+                "type": "LoadDataSetAction",
+                "ds_id": "ds-xx"
+            },
+            {
+                "type": "TrainAction",
+                "init_params": {
+                    "train_mode": "SFT",
+                    "train_type": "ERNIE-Speed",
+                    "train_config": {
+                        "peft_type": "FullFineTuning",
+                        "trainset_rate": 20,
+                        "epoch": 1,
+                        "learning_rate": 0.00002,
+                        "max_seq_len": 4096
+                    },
+                    "is_incr": false,
+                    "job_name": "hipytrainer"
+                }
+            },
+            {
+                "type": "ModelPublishAction"
+            }
+        ],
+        "case_init_params": {
+            "case_type": "Finetune"
+        }
+    }
+                """)
+        trainer = Finetune.load(file=json_config_path)
+        trainer.run()
+        trainer.save("./xx1.json")
+    finally:
+        os.remove(json_config_path)

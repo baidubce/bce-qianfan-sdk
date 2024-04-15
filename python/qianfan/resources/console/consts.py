@@ -168,6 +168,8 @@ class TrainMode(str, Enum):
     """对应 LLMFinetune"""
     PostPretrain = "PostPretrain"
     """PostPretrain """
+    DPO = "DPO"
+    """DPO"""
 
 
 class TrainParameterScale(str, Enum):

@@ -16,6 +16,7 @@ import {ChatBody, RespBase} from '../../interface';
 import {ChatCompletion, setEnvVariable} from '../../index';
 
 setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_CONSOLE_API_BASE_URL', 'http://127.0.0.1:8866');
 setEnvVariable('QIANFAN_ACCESS_KEY', '123');
 setEnvVariable('QIANFAN_SECRET_KEY', '456');
 
@@ -36,7 +37,7 @@ describe('ChatCompletion', () => {
                 },
             ],
         };
-        const res = (await client.chat(body, 'ERNIE-Bot-turbo')) as RespBase;
+        const res = (await client.chat(body, 'ernie-bot')) as RespBase;
         const result = res?.result;
         expect(result).toBeDefined();
     });

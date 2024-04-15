@@ -1,6 +1,6 @@
 {
     "name": "@baiducloud/qianfan",
-    "version": "0.0.8-alpha.0",
+    "version": "0.0.10",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"
@@ -13,6 +13,7 @@
     "main": "dist/bundle.js",
     "type": "commonjs",
     "scripts": {
+        "start": "NODE_ENV=production ts-node src/test/chatCompletion",
         "build": "npx rollup -c rollup.config.mjs",
         "test": "jest --detectOpenHandles",
         "publish:main": "npm version patch && npm run build && npm publish --access public",

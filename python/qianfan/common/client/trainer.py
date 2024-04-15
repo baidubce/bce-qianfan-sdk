@@ -325,6 +325,13 @@ list_train_type_option = typer.Option(
     help="Print supported train types.",
 )
 
+daemon_option = typer.Option(
+    None,
+    "--daemon",
+    "-d",
+    help="Run command as daemon.",
+)
+
 
 @trainer_app.command(
     "run",
@@ -342,10 +349,14 @@ def finetune(
         None,
         help="Dataset BOS path",
     ),
-    train_type: str = typer.Option(..., help="Train type"),
+    train_type: Optional[str] = typer.Option(None, help="Train type"),
     previous_task_id: Optional[str] = typer.Option(
         None, help="Task id of previous trainer output."
     ),
+    trainer_pipeline_file: Optional[str] = typer.Option(
+        None, help="Trainer pipeline file path"
+    ),
+    daemon: Optional[bool] = daemon_option,
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
         None,
@@ -426,63 +437,73 @@ def finetune(
     """
     console = replace_logger_handler()
     callback = MyEventHandler(console=console)
-    ds = None
-    if dataset_id is not None:
-        ds = Dataset.load(qianfan_dataset_id=dataset_id, does_release=True)
-    deploy_config = None
-    if deploy_name is not None:
-        if deploy_endpoint_prefix is None:
-            print_error_msg("Deploy endpoint prefix is required")
-            raise typer.Exit(code=1)
 
-        deploy_config = DeployConfig(
-            name=deploy_name,
-            endpoint_prefix=deploy_endpoint_prefix,
-            description=deploy_description,
-            replicas=deploy_replicas,
-            pool_type=DeployPoolType[deploy_pool_type],
-            service_type=ServiceType[deploy_service_type],
+    if trainer_pipeline_file is not None:
+        trainer = LLMFinetune.load(file=trainer_pipeline_file)
+        trainer.register_event_handler(callback)
+    else:
+        ds = None
+        if dataset_id is not None:
+            ds = Dataset.load(qianfan_dataset_id=dataset_id, does_release=True)
+        deploy_config = None
+        if deploy_name is not None:
+            if deploy_endpoint_prefix is None:
+                print_error_msg("Deploy endpoint prefix is required")
+                raise typer.Exit(code=1)
+
+            deploy_config = DeployConfig(
+                name=deploy_name,
+                endpoint_prefix=deploy_endpoint_prefix,
+                description=deploy_description,
+                replicas=deploy_replicas,
+                pool_type=DeployPoolType[deploy_pool_type],
+                service_type=ServiceType[deploy_service_type],
+            )
+        trainer = LLMFinetune(
+            dataset=ds,
+            train_type=train_type,
+            event_handler=callback,
+            train_config=train_config_file,
+            deploy_config=deploy_config,
+            dataset_bos_path=dataset_bos_path,
+            previous_task_id=previous_task_id,
         )
+        if trainer.train_action.train_config is None:
+            raise InternalError("Train config not found in trainer.")
+        if train_epoch is not None:
+            trainer.train_action.train_config.epoch = train_epoch
+        if train_batch_size is not None:
+            trainer.train_action.train_config.batch_size = train_batch_size
+        if train_learning_rate is not None:
+            trainer.train_action.train_config.learning_rate = train_learning_rate
+        if train_max_seq_len is not None:
+            trainer.train_action.train_config.max_seq_len = train_max_seq_len
+        if train_peft_type is not None:
+            trainer.train_action.train_config.peft_type = train_peft_type
+        if trainset_rate is not None:
+            trainer.train_action.train_config.trainset_rate = trainset_rate
+        if train_logging_steps is not None:
+            trainer.train_action.train_config.logging_steps = train_logging_steps
+        if train_warmup_ratio is not None:
+            trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
+        if train_weight_decay is not None:
+            trainer.train_action.train_config.weight_decay = train_weight_decay
+        if train_lora_rank is not None:
+            trainer.train_action.train_config.lora_rank = train_lora_rank
+        if train_lora_all_linear is not None:
+            trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
 
-    trainer = LLMFinetune(
-        dataset=ds,
-        train_type=train_type,
-        event_handler=callback,
-        train_config=train_config_file,
-        deploy_config=deploy_config,
-        dataset_bos_path=dataset_bos_path,
-        previous_task_id=previous_task_id,
-    )
-
-    if trainer.train_action.train_config is None:
-        raise InternalError("Train config not found in trainer.")
-    if train_epoch is not None:
-        trainer.train_action.train_config.epoch = train_epoch
-    if train_batch_size is not None:
-        trainer.train_action.train_config.batch_size = train_batch_size
-    if train_learning_rate is not None:
-        trainer.train_action.train_config.learning_rate = train_learning_rate
-    if train_max_seq_len is not None:
-        trainer.train_action.train_config.max_seq_len = train_max_seq_len
-    if train_peft_type is not None:
-        trainer.train_action.train_config.peft_type = train_peft_type
-    if trainset_rate is not None:
-        trainer.train_action.train_config.trainset_rate = trainset_rate
-    if train_logging_steps is not None:
-        trainer.train_action.train_config.logging_steps = train_logging_steps
-    if train_warmup_ratio is not None:
-        trainer.train_action.train_config.warmup_ratio = train_warmup_ratio
-    if train_weight_decay is not None:
-        trainer.train_action.train_config.weight_decay = train_weight_decay
-    if train_lora_rank is not None:
-        trainer.train_action.train_config.lora_rank = train_lora_rank
-    if train_lora_all_linear is not None:
-        trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
-
-    trainer.run()
-
-    console.log("Trainer finished!")
-    console.log(Pretty(trainer.output))
+    if daemon:
+        trainer.start()
+        console.print(
+            f"trainer[{trainer.id}] started with pid:"
+            f" {trainer.info().get('process_id')}"
+        )
+        console.print(f"check running log in: {trainer.ppls[0]._get_log_path()}")
+    else:
+        trainer.run()
+        console.log("Trainer finished!")
+        console.log(Pretty(trainer.output))
 
     # wait a second for the log to be flushed
     time.sleep(0.1)
@@ -496,7 +517,7 @@ def postpretrain(
         None,
         help="Dataset BOS path",
     ),
-    train_type: str = typer.Option(..., help="Train type"),
+    train_type: Optional[str] = typer.Option(None, help="Train type"),
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
         None,

@@ -267,6 +267,9 @@ SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将
 #### 千帆插件
 
 ```ts
+import {Plugin} from "@baiducloud/qianfan";
+// 注意：千帆插件需要传入Endpoint， 一言插件不用
+const client = new Plugin({Endpoint: '***'});
 // 天气插件
 async function main() {
     const resp = await client.plugins({

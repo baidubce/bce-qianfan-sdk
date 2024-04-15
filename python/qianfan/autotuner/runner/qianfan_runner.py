@@ -166,19 +166,10 @@ class QianfanRunner(InferRunner):
 
         await asyncio.gather(*[_eval(res) for res in result_list])
 
-        total_metrics = {
-            k: 0.0
-            for k in sample_metrics
-            if isinstance(sample_metrics[k], (float, int))
-        }
-        success_count = 0
-        for result in result_list:
-            for item in result["results"]:
-                if item["output"] is None:
-                    continue
-                success_count += 1
-                for k in total_metrics:
-                    total_metrics[k] += item["metrics"][k]
-        for k, v in total_metrics.items():
-            total_metrics[k] = v / success_count
+        metrics_ds = Dataset.create_from_pyobj(
+            [res["metrics"] for result in result_list for res in result["results"]]
+        )
+        total_metrics = self.evaluator.summarize(metrics_ds)
+        if total_metrics is None:
+            return {}
         return total_metrics

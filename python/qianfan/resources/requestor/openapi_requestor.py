@@ -47,7 +47,7 @@ from qianfan.resources.requestor.base import (
 )
 from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils.logging import log_error, log_info, log_debug
+from qianfan.utils.logging import log_debug, log_error, log_info
 
 _T = TypeVar("_T")
 

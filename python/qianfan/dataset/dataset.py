@@ -625,6 +625,30 @@ class Dataset(Table):
             **kwargs,
         )
 
+    @classmethod
+    def create_from_datasets(
+        cls,
+        datasets: List["Dataset"],
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        create a dataset from a list of Dataset
+
+        Args:
+            datasets (List["Dataset"]):
+                datasets used to create dataset。
+            **kwargs (Any):
+                optional arguments
+
+        Returns:
+            Dataset: a dataset instance
+        """
+
+        if len(datasets) == 1:
+            return datasets[0]
+
+        return datasets[0].concat_table(datasets[1:], True)
+
     def _is_dataset_located_in_qianfan(self) -> bool:
         return isinstance(self.inner_data_source_cache, QianfanDataSource)
 

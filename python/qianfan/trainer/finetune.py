@@ -307,10 +307,10 @@ class Finetune(Trainer):
         if file is not None:
             with open(file=file, mode="rb") as f:
                 task_ppl = Pipeline.load(f.read())
-        elif id:
-            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
             # load完save到本地
             g_persister.save(task_ppl)
+        elif id:
+            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
         else:
             raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)

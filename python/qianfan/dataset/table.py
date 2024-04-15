@@ -14,6 +14,7 @@
 """
 wrapper for pyarrow.Table
 """
+import random
 from typing import (
     Any,
     Callable,
@@ -518,6 +519,38 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             end = self.table.num_rows - 1
 
         return self.table.slice(start, end - start + 1)
+
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+    ) -> PyarrowTable:
+        if start < 0:
+            err_msg = f"start index is smaller than 0: {start}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end >= self.table.num_rows:
+            err_msg = (
+                f"end index {end} is bigger than table size: {self.table.num_rows}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end < 0:
+            end = self.table.num_rows - 1
+
+        if sample_number < 0:
+            err_msg = f"can't sample {sample_number} entries"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if sample_number >= self.table.num_rows:
+            return self.table
+
+        numbers = random.sample(range(start, end + 1), sample_number)
+        return self.table.take(numbers)
 
 
 class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
@@ -1191,6 +1224,18 @@ class Table(Addable, Listable, Processable):
     ) -> Self:
         manipulator = self._row_op()
         result_ds = manipulator.take_slice(start, end)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._row_op()
+        result_ds = manipulator.sample(sample_number, start, end)
         return self._create_new_obj(result_ds, should_create_new_obj)
 
     def col_map(

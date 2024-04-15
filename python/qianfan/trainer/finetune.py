@@ -41,6 +41,7 @@ from qianfan.trainer.consts import (
 )
 from qianfan.trainer.pipeline import Pipeline
 from qianfan.trainer.trainer import Trainer
+from qianfan.utils.logging import log_info
 
 
 class Finetune(Trainer):
@@ -278,7 +279,7 @@ class Finetune(Trainer):
         if self.result[0]:
             return self.result[0]
         else:
-            return self.info()["actions"][-1]["output"]
+            return self.info()["actions"][-1].get("output")
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
@@ -308,6 +309,8 @@ class Finetune(Trainer):
                 task_ppl = Pipeline.load(f.read())
         elif id:
             task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
+            # load完save到本地
+            g_persister.save(task_ppl)
         else:
             raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)
@@ -334,6 +337,46 @@ class Finetune(Trainer):
     @property
     def id(self) -> str:
         return self.ppls[0].id
+
+    def show(self) -> None:
+        if self.output and self.output.get("checkpoints"):
+            try:
+                import matplotlib.pyplot as plt
+            except ImportError:
+                raise RuntimeError(
+                    "matplotlib is required to show the training lossing, "
+                    "please install it by `pip install matplotlib`."
+                )
+
+            checkpoints = self.output["checkpoints"]
+            steps = [ckpt["step"] for ckpt in checkpoints]
+            loss = [ckpt["trainingLoss"] for ckpt in checkpoints]
+            perplexity = [ckpt["perplexity"] for ckpt in checkpoints]
+
+            # 创建图形和轴对象
+            _, ax1 = plt.subplots()
+
+            # 绘制 loss 曲线（使用左侧 Y 轴）
+            ax1.plot(steps, loss, color="tab:blue", label="Loss")
+            ax1.set_xlabel("Step")
+            ax1.set_ylabel("Loss", color="tab:blue")
+
+            # 创建第二个 Y 轴
+            ax2 = ax1.twinx()
+            ax2.plot(steps, perplexity, color="tab:red", label="Perplexity")
+            ax2.set_ylabel("Perplexity", color="tab:red")
+
+            # 添加图例
+            lines, labels = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax2.legend(lines + lines2, labels + labels2, loc="upper right")
+
+            # 设置标题
+            plt.title("Loss and Perplexity over Steps")
+
+            plt.show()
+        else:
+            log_info("no checkpoints to show, check if finished")
 
 
 LLMFinetune = Finetune

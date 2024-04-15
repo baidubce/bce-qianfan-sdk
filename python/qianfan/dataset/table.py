@@ -552,6 +552,12 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         numbers = random.sample(range(start, end + 1), sample_number)
         return self.table.take(numbers)
 
+    def shuffle(self) -> PyarrowTable:
+        indices = list(range(0, self.table.num_rows))
+        random.shuffle(indices)
+
+        return self.table.take(indices)
+
 
 class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table column"""
@@ -1236,6 +1242,15 @@ class Table(Addable, Listable, Processable):
     ) -> Self:
         manipulator = self._row_op()
         result_ds = manipulator.sample(sample_number, start, end)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def shuffle(
+        self,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._row_op()
+        result_ds = manipulator.shuffle()
         return self._create_new_obj(result_ds, should_create_new_obj)
 
     def col_map(

@@ -1053,10 +1053,35 @@ class Dataset(Table):
                 this value to True
             **kwargs (Any):
                 other arguments
+
+        Returns:
+            Dataset: a sliced dataset
         """
         return super().sample(
             sample_number, start, end, should_create_new_obj, **kwargs
         )
+
+    @_online_except_decorator
+    def shuffle(
+        self,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        make a shuffled Dataset
+
+        Args:
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+
+        Returns:
+            Dataset: a sliced dataset
+        """
+        return super().shuffle(should_create_new_obj, **kwargs)
 
     def __getitem__(self, key: Any) -> Any:
         if (

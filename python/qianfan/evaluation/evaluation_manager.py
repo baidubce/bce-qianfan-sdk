@@ -42,7 +42,6 @@ from qianfan.dataset.data_source.chunk_reader import JsonLineReader
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
-from qianfan.dataset.schema import EvaluationSchema
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -414,9 +413,6 @@ class EvaluationManager(BaseModel):
             dataset.col_append(
                 {OldReferenceColumnName: [None for _ in range(len(dataset))]}
             )
-
-        if not EvaluationSchema().validate(dataset):
-            raise ValueError("validate failed before evaluation")
 
         tmp_ds = Dataset.create_from_pyobj(
             self._run_evaluator_locally(dataset, **kwargs)

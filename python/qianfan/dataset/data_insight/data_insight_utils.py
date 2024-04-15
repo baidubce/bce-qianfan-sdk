@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+# Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,28 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
-fake pyarrow compute module
+utilities of data insight
 """
-
-from typing import Any
-
-
-def max(*args: Any, **kwargs: Any) -> Any:
-    # do nothing
-    ...
+from typing import Any, Callable, Dict, Generator, List
 
 
-def mean(*args: Any, **kwargs: Any) -> Any:
-    # do nothing
-    ...
-
-
-def quantile(*args: Any, **kwargs: Any) -> Any:
-    # do nothing
-    ...
-
-
-def min(*args: Any, **kwargs: Any) -> Any:
-    # do nothing
-    ...
+def _get_generator(iteration_list: List[Dict[str, Any]], func: Callable) -> Generator:
+    for single in iteration_list:
+        yield func(single)

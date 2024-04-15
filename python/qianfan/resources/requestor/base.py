@@ -283,7 +283,7 @@ class BaseAPIRequestor(object):
                         "Got invalid json response from server, body:"
                         f" {response.content}"
                     )
-                resp = self._parse_async_response(body, response)
+                resp = await self._parse_async_response(body, response)
                 resp.statistic["request_latency"] = time.perf_counter() - start
                 resp.request = QfRequest.from_aiohttp(response.request_info)
                 resp.request.json_body = copy.deepcopy(request.json_body)
@@ -305,7 +305,7 @@ class BaseAPIRequestor(object):
         )
         return qf_response
 
-    def _parse_async_response(
+    async def _parse_async_response(
         self, body: Dict[str, Any], resp: aiohttp.ClientResponse
     ) -> QfResponse:
         """

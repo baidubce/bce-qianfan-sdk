@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.7.1"
+version = "0.3.8"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -38,6 +38,7 @@ pyarrow = [
     { version = ">=14.0.1", python = ">=3.8", optional = true },
     { version = "<=12.0.1", python = ">=3.7 <3.8", optional = true }
 ]
+tabulate = { version = "*", optional = true }
 python-dateutil = { version = "^2.8.2", optional = true }
 rich = ">=13.0.0"
 typer = ">=0.9.0"
@@ -86,11 +87,11 @@ papermill = {version = "*", python = ">=3.8 <4"}
 ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 
 [tool.poetry.extras]
-dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
-langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
-local_data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
-extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson"]
+langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain"]
+local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
+extension = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

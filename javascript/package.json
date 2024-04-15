@@ -1,6 +1,6 @@
 {
     "name": "@baiducloud/qianfan",
-    "version": "0.0.8-alpha.0",
+    "version": "0.0.10",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"
@@ -13,6 +13,7 @@
     "main": "dist/bundle.js",
     "type": "commonjs",
     "scripts": {
+        "start": "NODE_ENV=production ts-node src/test/chatCompletion",
         "build": "npx rollup -c rollup.config.mjs",
         "test": "jest --detectOpenHandles",
         "publish:main": "npm version patch && npm run build && npm publish --access public",
@@ -22,11 +23,13 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@types/node-fetch": "^2.6.11",
         "async-mutex": "^0.5.0",
         "bottleneck": "^2.19.5",
         "debug": "^3.1.0",
         "dotenv": "^16.4.1",
-        "rollup": "^4.9.6",
+        "node-fetch": "2.7.0",
+        "rollup": "^3.29.4",
         "tslib": "^2.6.2",
         "typescript": "^5.3.3",
         "underscore": "^1.9.1",

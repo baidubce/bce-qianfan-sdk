@@ -1,3 +1,12 @@
+export enum ModelType {
+  CHAT = 'chat',
+  COMPLETIONS = 'completions',
+  EMBEDDINGS = 'embeddings',
+  TEXT_2_IMAGE = 'text2image',
+  IMAGE_2_TEXT = 'image2text',
+  PLUGIN = 'plugin',
+}
+
 export enum APIErrorCode {
     NoError = 0,
     UnknownError = 1,

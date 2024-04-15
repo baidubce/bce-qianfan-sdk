@@ -172,6 +172,15 @@ class TokenLimiter(_BaseTokenLimiter):
             log_error(err_msg)
             raise RuntimeError(err_msg)
 
+    def clear(self) -> bool:
+        if self._is_closed():
+            return True
+
+        with self._lock:
+            self._token_current = 0
+
+        return True
+
     def compensate(self, compensation: int) -> None:
         """
         justify the remaining token count in limiter
@@ -259,6 +268,15 @@ class AsyncTokenLimiter(_BaseTokenLimiter):
             err_msg = "get token from token limiter failed"
             log_error(err_msg)
             raise RuntimeError(err_msg)
+
+    async def clear(self) -> bool:
+        if self._is_closed():
+            return True
+
+        async with self._get_internal_async_lock():
+            self._token_current = 0
+
+        return True
 
     async def compensate(self, compensation: int) -> None:
         """

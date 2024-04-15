@@ -343,26 +343,26 @@ def _update_train_config(model_info_list: List[Dict]) -> Type:
 
 
 def _update_default_config(model_info_list: List[Dict]) -> Dict:
-    model_info_mapping: Dict[str, Any] = {
+    train_mode_model_info_mappings: Dict[str, Any] = {
         console_consts.TrainMode.PostPretrain: {},
         console_consts.TrainMode.SFT: {},
+        console_consts.TrainMode.DPO: {},
     }
     for info in model_info_list:
         model = info["model"]
         for train_mode_info in info["supportTrainMode"]:
             train_mode = train_mode_info.get("trainMode")
-            if not model_info_mapping[train_mode].get(model, None):
-                model_info_mapping[train_mode][model] = {}
+            current = train_mode_model_info_mappings.get(train_mode, {})
+            if not current.get(model, None):
+                current[model] = {}
             for param_scale in train_mode_info["supportParameterScale"]:
                 default_fields = {}
                 param_scale_peft = param_scale["parameterScale"]
                 for params in param_scale["supportHyperParameterConfig"]:
                     field_name = camel_to_snake(params["key"])
                     default_fields[field_name] = params["default"]
-                model_info_mapping[train_mode][model][param_scale_peft] = TrainConfig(
-                    **default_fields
-                )
-    return model_info_mapping
+                current[model][param_scale_peft] = TrainConfig(**default_fields)
+    return train_mode_model_info_mappings
 
 
 def _parse_model_info_list(

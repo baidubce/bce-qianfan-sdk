@@ -15,6 +15,7 @@ import {CompletionBody, RespBase} from '../../interface';
 import {Completions, setEnvVariable} from '../../index';
 
 setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_CONSOLE_API_BASE_URL', 'http://127.0.0.1:8866');
 setEnvVariable('QIANFAN_ACCESS_KEY', '123');
 setEnvVariable('QIANFAN_SECRET_KEY', '456');
 

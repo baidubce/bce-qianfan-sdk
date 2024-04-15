@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {Image2TextBody, RespBase} from '../interface';
 import {image2TextModelInfoMap} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {ModelType} from '../enum';
 
 class Image2Text extends BaseClient {
     /**
@@ -28,15 +29,16 @@ class Image2Text extends BaseClient {
         model = 'Fuyu-8B'
     ): Promise<RespBase> {
         const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, image2TextModelInfoMap);
-        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+        const type = ModelType.IMAGE_2_TEXT;
+        const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
             endpoint: this.Endpoint,
-            type: 'image2text',
+            type,
         });
-        const resp = await this.sendRequest(IAMPath, AKPath, requestBody);
+        const resp = await this.sendRequest(type, model, AKPath, requestBody);
         return resp as RespBase;
     }
 }

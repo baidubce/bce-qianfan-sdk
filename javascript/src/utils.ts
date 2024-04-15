@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
-dotenv.config();
+dotenv.config({path: '../.env'});
 
 /**
  * 获取访问令牌的URL地址
@@ -74,10 +74,8 @@ export function getModelEndpoint(model: string, modelInfoMap: QfLLMInfoMap): str
         throw new Error(`Model info not found for model: ${model}`);
     }
     const endpoint = modelInfo.endpoint;
-    if (!endpoint) {
-        throw new Error(`Endpoint not found for model: ${model}`);
-    }
-    return endpoint;
+    // 动态获取模型兜底
+    return endpoint ?? '';
 }
 
 /*
@@ -99,10 +97,9 @@ export const getPath = ({
     type?: string,
 }): string => {
     if (endpoint && type) {
-        const boundary = type === 'plugin' ? '/' : '';
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}/${type}/${endpoint}${boundary}`
-            : `${api_base}/${type}/${endpoint}${boundary}`;
+        const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
+        const suffix = type === 'plugin' ? '/' : `/${type}/`;
+        return `${basePath}${suffix}${endpoint}`;
     }
     else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);
@@ -110,7 +107,6 @@ export const getPath = ({
             ? `${BASE_PATH}${modelEndpoint}`
             : `${api_base}${modelEndpoint}`;
     }
-    throw new Error('invalid model or endpoint');
 };
 
 
@@ -173,19 +169,10 @@ export function getPathAndBody({
     endpoint?: string,
     type?: string
 }): {
-    IAMPath: string;
     AKPath: string;
     requestBody: string;
 } {
     const api_base = baseUrl + BASE_PATH;
-    const IAMPath = getPath({
-        model,
-        modelInfoMap,
-        Authentication: 'IAM',
-        api_base,
-        endpoint,
-        type,
-    });
     const AKPath = getPath({
         model,
         modelInfoMap,
@@ -196,7 +183,6 @@ export function getPathAndBody({
     });
     const requestBody = getRequestBody(body, packageJson.version);
     return {
-        IAMPath,
         AKPath,
         requestBody,
     };

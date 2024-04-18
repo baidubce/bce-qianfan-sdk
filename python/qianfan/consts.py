@@ -119,7 +119,7 @@ class DefaultValue:
     AccessTokenRefreshMinInterval: float = 3600
     InferResourceRefreshMinInterval: float = 600
     RetryCount: int = 3
-    RetryTimeout: float = 60
+    RetryTimeout: float = 300
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1
     RetryMaxWaitInterval: float = 120

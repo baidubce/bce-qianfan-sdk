@@ -43,6 +43,16 @@ except ImportError:
     log_warn("clevercsv isn't installed, only online function can be used")
 
 
+def _remove_none_values(entry: Union[List[Dict[str, Any]], Dict[str, Any], str]) -> Any:
+    if isinstance(entry, str):
+        return entry
+
+    if isinstance(entry, dict):
+        return {k: v for k, v in entry.items() if v is not None}
+
+    return [_remove_none_values(item) for item in entry]
+
+
 class FileDataSource(DataSource, BaseModel):
     """file data source"""
 
@@ -67,7 +77,9 @@ class FileDataSource(DataSource, BaseModel):
             if index != 0:
                 lines.append(",\n")
             for i in range(len(data)):
-                lines.append(json.dumps(data[i], ensure_ascii=False))
+                lines.append(
+                    json.dumps(_remove_none_values(data[i]), ensure_ascii=False)
+                )
                 if i != len(data) - 1:
                     lines.append(",\n")
 
@@ -80,9 +92,15 @@ class FileDataSource(DataSource, BaseModel):
             is_list = True if data and isinstance(data[0], list) else False
             for i in range(len(data)):
                 if use_qianfan_special_jsonl_format and not is_list:
-                    lines.append(f"[{json.dumps(data[i], ensure_ascii=False)}]")
+                    lines.append(
+                        "["
+                        + json.dumps(_remove_none_values(data[i]), ensure_ascii=False)
+                        + "]"
+                    )
                 else:
-                    lines.append(json.dumps(data[i], ensure_ascii=False))
+                    lines.append(
+                        json.dumps(_remove_none_values(data[i]), ensure_ascii=False)
+                    )
                 if i != len(data) - 1:
                     lines.append("\n")
 

@@ -106,10 +106,9 @@ func newAuthRequest(method string, url string, body RequestBody) (*QfRequest, er
 }
 
 // 创建一个用于管控类请求的 Request
-// 暂时注释避免 lint 报错
-// func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
-// 	return newRequest(ConsoleRequest, method, url, body)
-// }
+func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+	return newRequest(consoleRequest, method, url, body)
+}
 
 // 创建一个 Request，body 可以是任意实现了 RequestBody 接口的类型
 func newRequest(requestType string, method string, url string, body RequestBody) (*QfRequest, error) {
@@ -145,6 +144,7 @@ type baseResponse struct {
 // 所有回复类型需实现的接口
 type QfResponse interface {
 	SetResponse(Body []byte, RawResponse *http.Response)
+	GetResponse() *http.Response
 	GetErrorCode() string
 }
 
@@ -152,6 +152,10 @@ type QfResponse interface {
 func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {
 	r.Body = Body
 	r.RawResponse = RawResponse
+}
+
+func (r *baseResponse) GetResponse() *http.Response {
+	return r.RawResponse
 }
 
 // 请求器，负责 SDK 中所有请求的发送，是所有对外暴露对象的基类

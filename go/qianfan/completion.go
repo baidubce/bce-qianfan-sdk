@@ -66,8 +66,8 @@ func newCompletion(options *Options) *Completion {
 	// 如果提供了 model
 	if hasModel {
 		// 那就看模型是否是 chat 模型，如果是，就使用 chatWrapper
-		_, ok := ChatModelEndpoint[*options.Model]
-		if ok {
+		endpoint := getModelEndpointRetriever().GetEndpoint("chat", *options.Model)
+		if endpoint != "" {
 			comp.chatWrapper = newChatCompletion(options)
 		} else {
 			comp.Model = *options.Model
@@ -83,9 +83,12 @@ func newCompletion(options *Options) *Completion {
 func (c *Completion) realEndpoint() (string, error) {
 	url := modelAPIPrefix
 	if c.Endpoint == "" {
-		endpoint, ok := CompletionModelEndpoint[c.Model]
-		if !ok {
-			return "", &ModelNotSupportedError{Model: c.Model}
+		endpoint := getModelEndpointRetriever().GetEndpoint("completions", c.Model)
+		if endpoint == "" {
+			endpoint := getModelEndpointRetriever().GetEndpointWithRefresh("completions", c.Model)
+			if endpoint == "" {
+				return "", &ModelNotSupportedError{Model: c.Model}
+			}
 		}
 		url += endpoint
 	} else {
@@ -182,8 +185,9 @@ func NewCompletion(optionList ...Option) *Completion {
 // Completion 支持的模型列表
 func (c *Completion) ModelList() []string {
 	i := 0
-	list := make([]string, len(CompletionModelEndpoint))
-	for k := range CompletionModelEndpoint {
+	models := getModelEndpointRetriever().GetModelList("completions")
+	list := make([]string, len(models))
+	for k := range models {
 		list[i] = k
 		i++
 	}

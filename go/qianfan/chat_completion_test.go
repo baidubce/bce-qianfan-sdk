@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -282,14 +283,31 @@ func TestChatCompletionStreamRetry(t *testing.T) {
 	assert.Equal(t, target.Code, ServerHighLoadErrCode)
 }
 
+func resetConfig() {
+	_config = nil
+	_configInitOnce = sync.Once{}
+}
+
+func resetAuthManager() {
+	_authManager = nil
+	_authManagerInitOnce = sync.Once{}
+}
+
+func resetModelEndpointRetriever() {
+	_modelEndpointRetriever = nil
+	_modelEndpointRetrieverInitOnce = sync.Once{}
+}
+
 func resetTestEnv() {
 	rand.Seed(time.Now().UnixNano())
 	logger.SetLevel(logrus.DebugLevel)
 	os.Setenv("QIANFAN_BASE_URL", "http://127.0.0.1:8866")
+	os.Setenv("QIANFAN_CONSOLE_BASE_URL", "http://127.0.0.1:8866")
 	os.Setenv("QIANFAN_ACCESS_KEY", "test_access_key")
 	os.Setenv("QIANFAN_SECRET_KEY", "test_secret_key")
-	_authManager = nil
-	_config = nil
+	resetAuthManager()
+	resetConfig()
+	resetModelEndpointRetriever()
 }
 
 func TestMain(m *testing.M) {

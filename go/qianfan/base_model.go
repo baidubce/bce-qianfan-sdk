@@ -225,6 +225,7 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 	}
 	var err error
 	tokenRefreshed := false
+	modelListRefreshed := false
 	requestFunc := func() error {
 		modelApiResponse.ClearError()
 		err = m.Requestor.request(request, qfResponse)
@@ -239,6 +240,15 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 				tokenRefreshed = true
 				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
 				if err != nil {
+					return err
+				}
+				return &tryAgainError{}
+			}
+			if !modelListRefreshed && errCode == UnsupportedMethodErrCode {
+				// 模型 endpoint 错误，尝试刷新模型列表并重试，且不占用重试次数
+				modelListRefreshed = true
+				refreshErr := getModelEndpointRetriever().Refresh()
+				if refreshErr != nil {
 					return err
 				}
 				return &tryAgainError{}

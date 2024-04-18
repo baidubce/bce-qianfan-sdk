@@ -84,9 +84,12 @@ func newEmbedding(options *Options) *Embedding {
 func (c *Embedding) realEndpoint() (string, error) {
 	url := modelAPIPrefix
 	if c.Endpoint == "" {
-		endpoint, ok := EmbeddingEndpoint[c.Model]
-		if !ok {
-			return "", &ModelNotSupportedError{Model: c.Model}
+		endpoint := getModelEndpointRetriever().GetEndpoint("embeddings", c.Model)
+		if endpoint == "" {
+			endpoint := getModelEndpointRetriever().GetEndpointWithRefresh("chat", c.Model)
+			if endpoint == "" {
+				return "", &ModelNotSupportedError{Model: c.Model}
+			}
 		}
 		url += endpoint
 	} else {

@@ -152,9 +152,12 @@ func newChatCompletion(options *Options) *ChatCompletion {
 func (c *ChatCompletion) realEndpoint() (string, error) {
 	url := modelAPIPrefix
 	if c.Endpoint == "" {
-		endpoint, ok := ChatModelEndpoint[c.Model]
-		if !ok {
-			return "", &ModelNotSupportedError{Model: c.Model}
+		endpoint := getModelEndpointRetriever().GetEndpoint("chat", c.Model)
+		if endpoint == "" {
+			endpoint := getModelEndpointRetriever().GetEndpointWithRefresh("chat", c.Model)
+			if endpoint == "" {
+				return "", &ModelNotSupportedError{Model: c.Model}
+			}
 		}
 		url += endpoint
 	} else {
@@ -205,8 +208,9 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 // chat 支持的模型列表
 func (c *ChatCompletion) ModelList() []string {
 	i := 0
-	list := make([]string, len(ChatModelEndpoint))
-	for k := range ChatModelEndpoint {
+	models := getModelEndpointRetriever().GetModelList("chat")
+	list := make([]string, len(models))
+	for k := range models {
 		list[i] = k
 		i++
 	}

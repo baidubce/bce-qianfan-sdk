@@ -18,6 +18,7 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
+from qianfan.trainer.dpo import DPO
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import Finetune, LLMFinetune, Trainer
 from qianfan.trainer.post_pretrain import PostPreTrain
@@ -34,4 +35,5 @@ __all__ = [
     "DeployAction",
     "ModelPublishAction",
     "PostPreTrain",
+    "DPO",
 ]

@@ -625,6 +625,30 @@ class Dataset(Table):
             **kwargs,
         )
 
+    @classmethod
+    def create_from_datasets(
+        cls,
+        datasets: List["Dataset"],
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        create a dataset from a list of Dataset
+
+        Args:
+            datasets (List["Dataset"]):
+                datasets used to create dataset。
+            **kwargs (Any):
+                optional arguments
+
+        Returns:
+            Dataset: a dataset instance
+        """
+
+        if len(datasets) == 1:
+            return datasets[0]
+
+        return datasets[0].concat_table(datasets[1:], True)
+
     def _is_dataset_located_in_qianfan(self) -> bool:
         return isinstance(self.inner_data_source_cache, QianfanDataSource)
 
@@ -1053,10 +1077,35 @@ class Dataset(Table):
                 this value to True
             **kwargs (Any):
                 other arguments
+
+        Returns:
+            Dataset: a sliced dataset
         """
         return super().sample(
             sample_number, start, end, should_create_new_obj, **kwargs
         )
+
+    @_online_except_decorator
+    def shuffle(
+        self,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        make a shuffled Dataset
+
+        Args:
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+
+        Returns:
+            Dataset: a sliced dataset
+        """
+        return super().shuffle(should_create_new_obj, **kwargs)
 
     def __getitem__(self, key: Any) -> Any:
         if (
@@ -1282,6 +1331,9 @@ class Dataset(Table):
         Returns:
             bool: whether packing succeeded
         """
+        if QianfanDataGroupColumnName not in self.col_names():
+            self.add_default_group_column()
+
         if isinstance(self.inner_data_source_cache, FileDataSource):
             return super().pack(path=self.inner_data_source_cache.path, **kwargs)
         else:

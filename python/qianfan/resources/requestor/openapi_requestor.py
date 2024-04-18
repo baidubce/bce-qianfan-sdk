@@ -47,7 +47,7 @@ from qianfan.resources.requestor.base import (
 )
 from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
-from qianfan.utils.logging import log_error, log_info
+from qianfan.utils.logging import log_debug, log_error, log_info
 
 _T = TypeVar("_T")
 
@@ -356,7 +356,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         llm related api request
         """
-        log_info(f"requesting llm api endpoint: {endpoint}")
+        log_debug(f"requesting llm api endpoint: {endpoint}")
 
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:

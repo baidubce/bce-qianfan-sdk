@@ -15,6 +15,7 @@
 package qianfan
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -102,14 +103,14 @@ type ModelResponseStream struct {
 
 func newModelResponseStream(si *streamInternal) (*ModelResponseStream, error) {
 	s := &ModelResponseStream{streamInternal: si}
-	err := s.checkResponseError()
+	err := s.checkResponseError(si.context)
 	if err != nil {
 		return s, err
 	}
 	return s, nil
 }
 
-func (s *ModelResponseStream) checkResponseError() error {
+func (s *ModelResponseStream) checkResponseError(ctx context.Context) error {
 	tokenRefreshed := false
 	var apiError *APIError
 	// LLMRetryCount 为 0 时表示不限制重试次数
@@ -130,7 +131,11 @@ func (s *ModelResponseStream) checkResponseError() error {
 			apiError = &APIError{Code: resp.ErrorCode, Msg: resp.ErrorMsg}
 			if !tokenRefreshed && (resp.ErrorCode == APITokenInvalidErrCode || resp.ErrorCode == APITokenExpiredErrCode) {
 				tokenRefreshed = true
-				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(
+					ctx,
+					GetConfig().AK,
+					GetConfig().SK,
+				)
 				if err != nil {
 					return err
 				}
@@ -213,7 +218,7 @@ func (m *BaseModel) withRetry(fn func() error) error {
 	return err
 }
 
-func (m *BaseModel) requestResource(request *QfRequest, response any) error {
+func (m *BaseModel) requestResource(ctx context.Context, request *QfRequest, response any) error {
 	qfResponse, ok := response.(QfResponse)
 	if !ok {
 		return &InternalError{Msg: "response is not QfResponse"}
@@ -226,7 +231,7 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 	tokenRefreshed := false
 	requestFunc := func() error {
 		modelApiResponse.ClearError()
-		err = m.Requestor.request(request, qfResponse)
+		err = m.Requestor.request(ctx, request, qfResponse)
 		if err != nil {
 			return err
 		}
@@ -236,7 +241,11 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 			if !tokenRefreshed && (errCode == APITokenInvalidErrCode || errCode == APITokenExpiredErrCode) {
 				// access token 过期，重新获取 access token 并重试，且不占用重试次数
 				tokenRefreshed = true
-				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(
+					ctx,
+					GetConfig().AK,
+					GetConfig().SK,
+				)
 				if err != nil {
 					return err
 				}

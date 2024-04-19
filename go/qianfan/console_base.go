@@ -1,6 +1,9 @@
 package qianfan
 
-import "strconv"
+import (
+	"context"
+	"strconv"
+)
 
 type consoleBase struct {
 	*Requestor
@@ -32,7 +35,7 @@ func (e *ConsoleAPIError) GetErrorCode() string {
 	return strconv.Itoa(e.ErrorCode)
 }
 
-func (c *consoleBase) requestResource(request *QfRequest, response any) error {
+func (c *consoleBase) requestResource(ctx context.Context, request *QfRequest, response any) error {
 	qfResponse, ok := response.(QfResponse)
 	if !ok {
 		return &InternalError{Msg: "response is not QfResponse"}
@@ -43,7 +46,7 @@ func (c *consoleBase) requestResource(request *QfRequest, response any) error {
 	}
 
 	requestFunc := func() error {
-		err := c.Requestor.request(request, qfResponse)
+		err := c.Requestor.request(ctx, request, qfResponse)
 		if err != nil {
 			resp := qfResponse.GetResponse()
 			if resp != nil {

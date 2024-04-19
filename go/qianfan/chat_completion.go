@@ -149,12 +149,12 @@ func newChatCompletion(options *Options) *ChatCompletion {
 }
 
 // 将 endpoint 转换成完整的 url
-func (c *ChatCompletion) realEndpoint() (string, error) {
+func (c *ChatCompletion) realEndpoint(ctx context.Context) (string, error) {
 	url := modelAPIPrefix
 	if c.Endpoint == "" {
-		endpoint := getModelEndpointRetriever().GetEndpoint("chat", c.Model)
+		endpoint := getModelEndpointRetriever().GetEndpoint(ctx, "chat", c.Model)
 		if endpoint == "" {
-			endpoint = getModelEndpointRetriever().GetEndpointWithRefresh("chat", c.Model)
+			endpoint = getModelEndpointRetriever().GetEndpointWithRefresh(ctx, "chat", c.Model)
 			if endpoint == "" {
 				return "", &ModelNotSupportedError{Model: c.Model}
 			}
@@ -169,8 +169,20 @@ func (c *ChatCompletion) realEndpoint() (string, error) {
 
 // 发送 chat 请求
 func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest) (*ModelResponse, error) {
+	var resp *ModelResponse
+	var err error
+	runErr := runWithContext(ctx, func() {
+		resp, err = c.do(ctx, request)
+	})
+	if runErr != nil {
+		return nil, runErr
+	}
+	return resp, err
+}
+
+func (c *ChatCompletion) do(ctx context.Context, request *ChatCompletionRequest) (*ModelResponse, error) {
 	do := func() (*ModelResponse, error) {
-		url, err := c.realEndpoint()
+		url, err := c.realEndpoint(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +192,7 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 		}
 		var resp ModelResponse
 
-		err = c.requestResource(req, &resp)
+		err = c.requestResource(ctx, req, &resp)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +203,7 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 	if err != nil {
 		if c.Endpoint == "" && isUnsupportedModelError(err) {
 			// 根据 model 获得的 endpoint 错误，刷新模型列表后重试
-			refreshErr := getModelEndpointRetriever().Refresh()
+			refreshErr := getModelEndpointRetriever().Refresh(ctx)
 			if refreshErr != nil {
 				logger.Errorf("refresh endpoint failed: %s", refreshErr)
 				return resp, err
@@ -205,8 +217,20 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 
 // 发送流式请求
 func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequest) (*ModelResponseStream, error) {
+	var resp *ModelResponseStream
+	var err error
+	runErr := runWithContext(ctx, func() {
+		resp, err = c.stream(ctx, request)
+	})
+	if runErr != nil {
+		return nil, runErr
+	}
+	return resp, err
+}
+
+func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequest) (*ModelResponseStream, error) {
 	do := func() (*ModelResponseStream, error) {
-		url, err := c.realEndpoint()
+		url, err := c.realEndpoint(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -215,7 +239,7 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 		if err != nil {
 			return nil, err
 		}
-		stream, err := c.Requestor.requestStream(req)
+		stream, err := c.Requestor.requestStream(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -224,7 +248,7 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 	resp, err := do()
 	if err != nil {
 		if c.Endpoint == "" && isUnsupportedModelError(err) {
-			refreshErr := getModelEndpointRetriever().Refresh()
+			refreshErr := getModelEndpointRetriever().Refresh(ctx)
 			if refreshErr != nil {
 				logger.Errorf("refresh endpoint failed: %s", refreshErr)
 				return resp, err
@@ -239,7 +263,7 @@ func (c *ChatCompletion) Stream(ctx context.Context, request *ChatCompletionRequ
 // chat 支持的模型列表
 func (c *ChatCompletion) ModelList() []string {
 	i := 0
-	models := getModelEndpointRetriever().GetModelList("chat")
+	models := getModelEndpointRetriever().GetModelList(context.TODO(), "chat")
 	list := make([]string, len(models))
 	for k := range models {
 		list[i] = k

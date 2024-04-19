@@ -36,17 +36,18 @@ func setAccessTokenExpired(ak, sk string) {
 
 func TestAuth(t *testing.T) {
 	resetAuthManager()
+	ctx := context.TODO()
 	ak, sk := "ak_33", "sk_4235"
 	// 第一次获取前，缓存里应当没有
 	_, ok := GetAuthManager().tokenMap[credential{ak, sk}]
 	assert.False(t, ok)
 
-	accessTok, err := GetAuthManager().GetAccessToken(ak, sk)
+	accessTok, err := GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, accessTok, fakeAccessToken(ak, sk))
 	updateTime := GetAuthManager().tokenMap[credential{ak, sk}].lastUpateTime
 	// 再测试一次，应当从缓存里获取，更新时间不变
-	accessTok, err = GetAuthManager().GetAccessToken(ak, sk)
+	accessTok, err = GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, accessTok, fakeAccessToken(ak, sk))
 	assert.Equal(
@@ -60,16 +61,16 @@ func TestAuth(t *testing.T) {
 	// 设置一个附近的更新时间，用来测试是否会忽略刚更新过的 token
 	GetAuthManager().tokenMap[credential{ak, sk}].lastUpateTime = time.Now()
 
-	accessTok, err = GetAuthManager().GetAccessToken(ak, sk)
+	accessTok, err = GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, accessTok, "expired_token") // 直接获取还是从缓存获取
 
-	accessTok, err = GetAuthManager().GetAccessTokenWithRefresh(ak, sk)
+	accessTok, err = GetAuthManager().GetAccessTokenWithRefresh(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, accessTok, "expired_token") // 刷新后，由于 lastUpdateTime 太接近，依旧使用缓存
 	setAccessTokenExpired(ak, sk)
 
-	accessTok, err = GetAuthManager().GetAccessTokenWithRefresh(ak, sk)
+	accessTok, err = GetAuthManager().GetAccessTokenWithRefresh(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, accessTok, fakeAccessToken(ak, sk)) // 应当刷新
 	elaplsed := time.Since(GetAuthManager().tokenMap[credential{ak, sk}].lastUpateTime)
@@ -78,7 +79,7 @@ func TestAuth(t *testing.T) {
 
 func TestAuthFailed(t *testing.T) {
 	ak, sk := "bad_ak", "bad_sk"
-	_, err := GetAuthManager().GetAccessToken(ak, sk)
+	_, err := GetAuthManager().GetAccessToken(context.TODO(), ak, sk)
 	assert.Error(t, err)
 	var target *APIError
 	assert.ErrorAs(t, err, &target)
@@ -141,11 +142,12 @@ func TestAuthWhenUsing(t *testing.T) {
 func TestAccessTokenExpired(t *testing.T) {
 	defer resetTestEnv()
 	resetAuthManager()
+	ctx := context.TODO()
 	ak, sk := "ak_48915684", "sk_78941813"
 	GetConfig().AK = ak
 	GetConfig().SK = sk
 	setAccessTokenExpired(ak, sk)
-	token, err := GetAuthManager().GetAccessToken(ak, sk)
+	token, err := GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Contains(t, token, "expired")
 	prompt := "你好"
@@ -159,13 +161,13 @@ func TestAccessTokenExpired(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, resp.RawResponse.Request.URL.Query().Get("access_token"), fakeAccessToken(ak, sk))
 	assert.Contains(t, resp.Result, prompt)
-	token, err = GetAuthManager().GetAccessToken(ak, sk)
+	token, err = GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Equal(t, token, fakeAccessToken(ak, sk))
 
 	// 测试流式请求的刷新 token
 	setAccessTokenExpired(ak, sk)
-	token, err = GetAuthManager().GetAccessToken(ak, sk)
+	token, err = GetAuthManager().GetAccessToken(ctx, ak, sk)
 	assert.NoError(t, err)
 	assert.Contains(t, token, "expired")
 	stream, err := chat.Stream(
@@ -179,7 +181,7 @@ func TestAccessTokenExpired(t *testing.T) {
 	for {
 		r, err := stream.Recv()
 		assert.NoError(t, err)
-		token, err = GetAuthManager().GetAccessToken(ak, sk)
+		token, err = GetAuthManager().GetAccessToken(ctx, ak, sk)
 		assert.NoError(t, err)
 		assert.Equal(t, token, fakeAccessToken(ak, sk))
 		assert.Contains(t, r.RawResponse.Request.URL.Query().Get("access_token"), fakeAccessToken(ak, sk))

@@ -46,7 +46,7 @@ func (service *Service) List(ctx context.Context, request *ServiceListRequest) (
 	if err != nil {
 		return nil, err
 	}
-	err = service.requestResource(req, &s)
+	err = service.requestResource(ctx, req, &s)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,7 @@ package qianfan
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -176,12 +177,12 @@ func newRequestor(options *Options) *Requestor {
 	return r
 }
 
-func (r *Requestor) addAuthInfo(request *QfRequest) error {
+func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	if request.Type == authRequest {
 		return nil
 	}
 	if GetConfig().AK != "" && GetConfig().SK != "" {
-		return r.addAccessToken(request)
+		return r.addAccessToken(ctx, request)
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)
 	}
@@ -190,8 +191,8 @@ func (r *Requestor) addAuthInfo(request *QfRequest) error {
 }
 
 // 增加 accesstoken 鉴权信息
-func (r *Requestor) addAccessToken(request *QfRequest) error {
-	token, err := GetAuthManager().GetAccessToken(GetConfig().AK, GetConfig().SK)
+func (r *Requestor) addAccessToken(ctx context.Context, request *QfRequest) error {
+	token, err := GetAuthManager().GetAccessToken(ctx, GetConfig().AK, GetConfig().SK)
 	if err != nil {
 		return err
 	}
@@ -257,7 +258,7 @@ func (r *Requestor) sign(request *QfRequest) error {
 }
 
 // 对请求进行统一处理，并转换成 http.Request
-func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
+func (r *Requestor) prepareRequest(ctx context.Context, request QfRequest) (*http.Request, error) {
 	// 设置溯源标识
 	if request.Type == modelRequest {
 		request.URL = GetConfig().BaseURL + request.URL
@@ -283,7 +284,7 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 	}
 	request.Headers["Content-Type"] = "application/json"
 	// 增加鉴权信息
-	err = r.addAuthInfo(&request)
+	err = r.addAuthInfo(ctx, &request)
 	if err != nil {
 		return nil, err
 	}
@@ -301,20 +302,20 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 }
 
 // 进行请求，返回原始的 baseResponse，并将结果解析至 resp
-func (r *Requestor) request(request *QfRequest, response QfResponse) error {
-	req, err := r.prepareRequest(*request)
+func (r *Requestor) request(ctx context.Context, request *QfRequest, response QfResponse) error {
+	req, err := r.prepareRequest(ctx, *request)
 	if err != nil {
 		return err
 	}
-	err = r.sendRequestAndParse(req, response)
+	err = r.sendRequestAndParse(ctx, req, response)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Requestor) sendRequestAndParse(request *http.Request, response QfResponse) error {
-	resp, err := r.client.Do(request)
+func (r *Requestor) sendRequestAndParse(ctx context.Context, request *http.Request, response QfResponse) error {
+	resp, err := r.client.Do(request.WithContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -340,16 +341,20 @@ type streamInternal struct {
 	httpResponse *http.Response                 // 原始的 http.Response
 	scanner      *bufio.Scanner                 // 读取流的 scanner
 	IsEnd        bool                           // 流是否已经结束
+	context      context.Context                // 流所使用的 context
+	channel      chan QfResponse                // 流中的响应
 }
 
 // 创建一个流
-func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
+func newStreamInternal(ctx context.Context, requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
 	si := &streamInternal{
 		Requestor:    requestor,
 		requestFunc:  requestFunc,
 		httpResponse: nil,
 		scanner:      nil,
 		IsEnd:        false,
+		context:      ctx,
+		channel:      make(chan QfResponse, 1),
 	}
 	// 初始化请求
 	err := si.reset()
@@ -378,6 +383,18 @@ func (si *streamInternal) Close() {
 
 // 接受流中的响应，并将结果解析至 resp
 func (si *streamInternal) Recv(resp QfResponse) error {
+	var err error
+	runErr := runWithContext(si.context, func() {
+		err = si.recv(resp)
+	})
+	if runErr != nil {
+		logger.Warnf("Stream operation cancelled due to context, error: %s", runErr)
+		return runErr
+	}
+	return err
+}
+
+func (si *streamInternal) recv(resp QfResponse) error {
 	var eventData []byte
 	if si.scanner == nil {
 		si.scanner = bufio.NewScanner(si.httpResponse.Body)
@@ -423,9 +440,9 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 }
 
 // 发送请求，返回流对象
-func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
+func (r *Requestor) requestStream(ctx context.Context, request *QfRequest) (*streamInternal, error) {
 	sendRequest := func() (*http.Response, error) {
-		req, err := r.prepareRequest(*request)
+		req, err := r.prepareRequest(ctx, *request)
 		if err != nil {
 			return nil, err
 		}
@@ -436,5 +453,5 @@ func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
 		return resp, nil
 	}
 
-	return newStreamInternal(r, sendRequest)
+	return newStreamInternal(ctx, r, sendRequest)
 }

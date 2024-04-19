@@ -27,10 +27,6 @@ func fakeAccessToken(ak, sk string) string {
 	return fmt.Sprintf("%s.%s", ak, sk)
 }
 
-func resetAuthManager() {
-	_authManager = nil
-}
-
 func setAccessTokenExpired(ak, sk string) {
 	GetAuthManager().tokenMap[credential{ak, sk}] = &accessToken{
 		token:         "expired_token",
@@ -92,7 +88,7 @@ func TestAuthFailed(t *testing.T) {
 
 func TestAuthWhenUsing(t *testing.T) {
 	defer resetTestEnv()
-	_authManager = nil
+	resetAuthManager()
 	GetConfig().AccessKey = "access_key_484913"
 	GetConfig().SecretKey = "secret_key_48135"
 	GetConfig().AK = ""
@@ -144,7 +140,7 @@ func TestAuthWhenUsing(t *testing.T) {
 
 func TestAccessTokenExpired(t *testing.T) {
 	defer resetTestEnv()
-	_authManager = nil
+	resetAuthManager()
 	ak, sk := "ak_48915684", "sk_78941813"
 	GetConfig().AK = ak
 	GetConfig().SK = sk

@@ -61,6 +61,16 @@ func (e *InvalidParamError) Error() string {
 	return fmt.Sprint("invalid param ", e.Msg)
 }
 
+// IAM 错误
+type IAMError struct {
+	Code string
+	Msg  string
+}
+
+func (e *IAMError) Error() string {
+	return fmt.Sprintf("iam error, code: %s, msg: %s", e.Code, e.Msg)
+}
+
 // 内部使用，表示重试
 type tryAgainError struct {
 }

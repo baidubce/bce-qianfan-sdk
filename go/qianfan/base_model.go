@@ -100,8 +100,13 @@ type ModelResponseStream struct {
 	*streamInternal
 }
 
-func newModelResponseStream(si *streamInternal) *ModelResponseStream {
-	return &ModelResponseStream{streamInternal: si}
+func newModelResponseStream(si *streamInternal) (*ModelResponseStream, error) {
+	s := &ModelResponseStream{streamInternal: si}
+	err := s.checkResponseError()
+	if err != nil {
+		return s, err
+	}
+	return s, nil
 }
 
 func (s *ModelResponseStream) checkResponseError() error {
@@ -159,12 +164,6 @@ func (s *ModelResponseStream) checkResponseError() error {
 // 获取ModelResponse流式结果
 func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
 	var resp ModelResponse
-	if s.firstResponse {
-		err := s.checkResponseError()
-		if err != nil {
-			return nil, err
-		}
-	}
 	err := s.streamInternal.Recv(&resp)
 	if err != nil {
 		return nil, err
@@ -253,4 +252,14 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 		return err
 	}
 	return nil
+}
+
+func isUnsupportedModelError(err error) bool {
+	apiErr := &APIError{}
+	if ok := errors.As(err, &apiErr); ok {
+		if apiErr.Code == UnsupportedMethodErrCode {
+			return true
+		}
+	}
+	return false
 }

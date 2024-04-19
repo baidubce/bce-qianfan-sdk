@@ -77,15 +77,16 @@ func maskAk(ak string) string {
 }
 
 var _authManager *AuthManager
+var _authManagerInitOnce sync.Once
 
 func GetAuthManager() *AuthManager {
-	if _authManager == nil {
+	_authManagerInitOnce.Do(func() {
 		_authManager = &AuthManager{
 			tokenMap:  make(map[credential]*accessToken),
 			lock:      sync.Mutex{},
 			Requestor: newRequestor(makeOptions()),
 		}
-	}
+	})
 	return _authManager
 }
 

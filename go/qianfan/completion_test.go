@@ -333,7 +333,6 @@ func TestCompletionDynamicEndpointWhenNewModel(t *testing.T) {
 
 	// 缺少模型，应当尝试刷新
 	delete(getModelEndpointRetriever().modelList["chat"], "ERNIE-99")
-	delete(getModelEndpointRetriever().modelList["completions"], "ERNIE-88-completions")
 	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
 
 	resp, err = eb99.Do(
@@ -345,6 +344,9 @@ func TestCompletionDynamicEndpointWhenNewModel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Object, "chat.completion")
 	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	delete(getModelEndpointRetriever().modelList["completions"], "ERNIE-88-completions")
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
 
 	resp, err = eb88.Do(
 		context.Background(),

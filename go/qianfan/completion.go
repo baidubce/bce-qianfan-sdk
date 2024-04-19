@@ -85,7 +85,7 @@ func (c *Completion) realEndpoint() (string, error) {
 	if c.Endpoint == "" {
 		endpoint := getModelEndpointRetriever().GetEndpoint("completions", c.Model)
 		if endpoint == "" {
-			endpoint := getModelEndpointRetriever().GetEndpointWithRefresh("completions", c.Model)
+			endpoint = getModelEndpointRetriever().GetEndpointWithRefresh("completions", c.Model)
 			if endpoint == "" {
 				return "", &ModelNotSupportedError{Model: c.Model}
 			}

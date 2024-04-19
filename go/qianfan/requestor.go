@@ -446,7 +446,7 @@ func (r *Requestor) requestStream(ctx context.Context, request *QfRequest) (*str
 		if err != nil {
 			return nil, err
 		}
-		resp, err := r.client.Do(req)
+		resp, err := r.client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}

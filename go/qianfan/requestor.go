@@ -335,23 +335,21 @@ func (r *Requestor) sendRequestAndParse(request *http.Request, response QfRespon
 
 // 流的内部实现，用于接收流中的响应
 type streamInternal struct {
-	*Requestor                                   // 请求器
-	requestFunc   func() (*http.Response, error) // 请求流中的响应的函数
-	httpResponse  *http.Response                 // 原始的 http.Response
-	scanner       *bufio.Scanner                 // 读取流的 scanner
-	IsEnd         bool                           // 流是否已经结束
-	firstResponse bool                           // 是否已经读取过第一个响应
+	*Requestor                                  // 请求器
+	requestFunc  func() (*http.Response, error) // 请求流中的响应的函数
+	httpResponse *http.Response                 // 原始的 http.Response
+	scanner      *bufio.Scanner                 // 读取流的 scanner
+	IsEnd        bool                           // 流是否已经结束
 }
 
 // 创建一个流
 func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
 	si := &streamInternal{
-		Requestor:     requestor,
-		requestFunc:   requestFunc,
-		httpResponse:  nil,
-		scanner:       nil,
-		IsEnd:         false,
-		firstResponse: false,
+		Requestor:    requestor,
+		requestFunc:  requestFunc,
+		httpResponse: nil,
+		scanner:      nil,
+		IsEnd:        false,
 	}
 	// 初始化请求
 	err := si.reset()
@@ -364,7 +362,6 @@ func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response,
 func (si *streamInternal) reset() error {
 	response, err := si.requestFunc()
 	si.IsEnd = false
-	si.firstResponse = true
 	if err != nil {
 		si.IsEnd = true
 		return err
@@ -381,7 +378,6 @@ func (si *streamInternal) Close() {
 
 // 接受流中的响应，并将结果解析至 resp
 func (si *streamInternal) Recv(resp QfResponse) error {
-	si.firstResponse = false
 	var eventData []byte
 	if si.scanner == nil {
 		si.scanner = bufio.NewScanner(si.httpResponse.Body)

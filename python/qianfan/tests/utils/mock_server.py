@@ -306,6 +306,13 @@ def chat(model_name):
         )
     # check messages
     check_result = check_messages(r["messages"])
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     if model_name == "truncated":
         # stream
         if "stream" in r and r["stream"]:
@@ -498,6 +505,13 @@ def completions(model_name):
     """
     mock /completions/<model_name> completion api
     """
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     if model_name.startswith("test_retry"):
         global retry_cnt
         if model_name not in retry_cnt:
@@ -1892,6 +1906,15 @@ def list_service():
                 "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb99"
             ),
             "apiType": "chat",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "ERNIE-88-completions",
+            "url": (
+                "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/completions/eb88"
+            ),
+            "apiType": "completions",
             "chargeStatus": "OPENED",
             "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
         },

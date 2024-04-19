@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -183,14 +184,12 @@ func TestStreamCompletionAPIError(t *testing.T) {
 	comp := NewCompletion(
 		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
 	)
-	s, err := comp.Stream(
+	_, err := comp.Stream(
 		context.Background(),
 		&CompletionRequest{
 			Prompt: "",
 		},
 	)
-	assert.NoError(t, err)
-	_, err = s.Recv()
 	assert.Error(t, err)
 }
 
@@ -240,16 +239,324 @@ func TestCompletionStreamRetry(t *testing.T) {
 		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
 		WithLLMRetryCount(1),
 	)
-	stream, err = comp.Stream(
+	_, err = comp.Stream(
 		context.Background(),
 		&CompletionRequest{
 			Prompt: prompt,
 		},
 	)
-	assert.NoError(t, err)
-	_, err = stream.Recv()
 	assert.Error(t, err)
 	var target *APIError
 	assert.ErrorAs(t, err, &target)
 	assert.Equal(t, target.Code, ServerHighLoadErrCode)
+}
+
+func TestCompletionDynamicEndpoint(t *testing.T) {
+	defer resetTestEnv()
+	chat := NewCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	ebSpeed := NewCompletion(WithModel("ERNIE-Speed"))
+	resp, err = ebSpeed.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "speed")
+}
+
+func TestCompletionDynamicEndpointWhenAccessKeyUnavailable(t *testing.T) {
+	defer resetTestEnv()
+	GetConfig().AK = "test_ak"
+	GetConfig().SK = "test_sk"
+	GetConfig().AccessKey = ""
+	GetConfig().SecretKey = ""
+	chat := NewCompletion(WithModel("ERNIE-99"))
+	_, err := chat.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.Error(t, err)
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "ERNIE-99")
+
+	ebSpeed := NewCompletion(WithModel("ERNIE-Speed"))
+	resp, err := ebSpeed.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "speed")
+}
+
+func TestCompletionDynamicEndpointWhenNewModel(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	eb99 := NewCompletion(WithModel("ERNIE-99"))
+	resp, err := eb99.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	eb88 := NewCompletion(WithModel("ERNIE-88-completions"))
+	resp, err = eb88.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb88")
+
+	// 缺少模型，应当尝试刷新
+	delete(getModelEndpointRetriever().modelList["chat"], "ERNIE-99")
+	delete(getModelEndpointRetriever().modelList["completions"], "ERNIE-88-completions")
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = eb99.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	resp, err = eb88.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb88")
+}
+
+func TestCompletionDynamicEndpointWhenEndpointError(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	comp := NewCompletion(WithModel("ERNIE-99"))
+	resp, err := comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	getModelEndpointRetriever().modelList["chat"]["ERNIE-99"] = "/chat/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	comp = NewCompletion(WithModel("ERNIE-88-completions"))
+	resp, err = comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb88")
+
+	getModelEndpointRetriever().modelList["completions"]["ERNIE-88-completions"] = "/completions/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb88")
+
+	comp = NewCompletion(WithEndpoint("error"))
+	_, err = comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.Error(t, err)
+	apiErr := err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+
+	getModelEndpointRetriever().modelList["completions"]["ERROR_MODEL"] = "/completions/error"
+	comp = NewCompletion(WithModel("ERROR_MODEL"))
+	_, err = comp.Do(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.Error(t, err)
+	apiErr = err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+}
+
+func TestCompletionDynamicEndpointWhenEndpointErrorStream(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	comp := NewCompletion(WithModel("ERNIE-99"))
+	resp, err := comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb99")
+	}
+
+	getModelEndpointRetriever().modelList["chat"]["ERNIE-99"] = "/chat/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb99")
+	}
+
+	comp = NewCompletion(WithModel("ERNIE-88-completions"))
+	resp, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[CompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Prompt, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb88")
+	}
+
+	getModelEndpointRetriever().modelList["completions"]["ERNIE-88-completions"] = "/completions/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[CompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Prompt, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb88")
+	}
+
+	comp = NewCompletion(WithEndpoint("error"))
+	_, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.Error(t, err)
+	apiErr := err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+
+	getModelEndpointRetriever().modelList["completions"]["ERROR_MODEL"] = "/completions/error"
+	comp = NewCompletion(WithModel("ERROR_MODEL"))
+	_, err = comp.Stream(
+		context.Background(),
+		&CompletionRequest{
+			Prompt: "你好",
+		},
+	)
+	assert.Error(t, err)
+	apiErr = err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
 }

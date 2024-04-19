@@ -124,21 +124,36 @@ func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*Model
 	if c.chatWrapper != nil {
 		return c.chatWrapper.Do(ctx, convertCompletionReqToChatReq(request))
 	}
-	url, err := c.realEndpoint()
-	if err != nil {
-		return nil, err
-	}
-	req, err := newModelRequest("POST", url, request)
-	if err != nil {
-		return nil, err
-	}
-	var resp ModelResponse
-	err = c.requestResource(req, &resp)
-	if err != nil {
-		return nil, err
-	}
+	do := func() (*ModelResponse, error) {
+		url, err := c.realEndpoint()
+		if err != nil {
+			return nil, err
+		}
+		req, err := newModelRequest("POST", url, request)
+		if err != nil {
+			return nil, err
+		}
+		var resp ModelResponse
+		err = c.requestResource(req, &resp)
+		if err != nil {
+			return nil, err
+		}
 
-	return &resp, nil
+		return &resp, nil
+	}
+	resp, err := do()
+	if err != nil {
+		if c.Endpoint == "" && isUnsupportedModelError(err) {
+			refreshErr := getModelEndpointRetriever().Refresh()
+			if refreshErr != nil {
+				logger.Errorf("refresh endpoint failed: %s", refreshErr)
+				return resp, err
+			}
+			return do()
+		}
+		return resp, err
+	}
+	return resp, err
 }
 
 // 发送流式请求
@@ -146,22 +161,35 @@ func (c *Completion) Stream(ctx context.Context, request *CompletionRequest) (*M
 	if c.chatWrapper != nil {
 		return c.chatWrapper.Stream(ctx, convertCompletionReqToChatReq(request))
 	}
-	url, err := c.realEndpoint()
-	if err != nil {
-		return nil, err
+	do := func() (*ModelResponseStream, error) {
+		url, err := c.realEndpoint()
+		if err != nil {
+			return nil, err
+		}
+		request.SetStream()
+		req, err := newModelRequest("POST", url, request)
+		if err != nil {
+			return nil, err
+		}
+		stream, err := c.Requestor.requestStream(req)
+		if err != nil {
+			return nil, err
+		}
+		return newModelResponseStream(stream)
 	}
-	request.SetStream()
-	req, err := newModelRequest("POST", url, request)
+	resp, err := do()
 	if err != nil {
-		return nil, err
+		if c.Endpoint == "" && isUnsupportedModelError(err) {
+			refreshErr := getModelEndpointRetriever().Refresh()
+			if refreshErr != nil {
+				logger.Errorf("refresh endpoint failed: %s", refreshErr)
+				return resp, err
+			}
+			return do()
+		}
+		return resp, err
 	}
-	stream, err := c.Requestor.requestStream(req)
-	if err != nil {
-		return nil, err
-	}
-	return &ModelResponseStream{
-		streamInternal: stream,
-	}, nil
+	return resp, err
 }
 
 // 创建一个 Completion 实例

@@ -87,7 +87,10 @@ func (r *modelEndpointRetriever) GetModelList(modelType string) map[string]strin
 	defer r.lock.Unlock()
 	// 第一次使用时，需要刷新一次
 	if r.lastUpdate.IsZero() {
-		r.refreshModelList()
+		err := r.refreshModelList()
+		if err != nil {
+			logger.Errorf("refresh model list failed: %s, will fallback to preset config", err.Error())
+		}
 	}
 	return r.modelList[modelType]
 }

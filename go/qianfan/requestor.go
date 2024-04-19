@@ -342,7 +342,6 @@ type streamInternal struct {
 	scanner      *bufio.Scanner                 // 读取流的 scanner
 	IsEnd        bool                           // 流是否已经结束
 	context      context.Context                // 流所使用的 context
-	channel      chan QfResponse                // 流中的响应
 }
 
 // 创建一个流
@@ -354,7 +353,6 @@ func newStreamInternal(ctx context.Context, requestor *Requestor, requestFunc fu
 		scanner:      nil,
 		IsEnd:        false,
 		context:      ctx,
-		channel:      make(chan QfResponse, 1),
 	}
 	// 初始化请求
 	err := si.reset()

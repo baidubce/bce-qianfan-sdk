@@ -567,6 +567,13 @@ def embedding(model_name):
     """
     mock /embeddings/<model_name> embedding api
     """
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     r = request.json
     input_len = len(r["input"])
     data = [
@@ -1911,9 +1918,7 @@ def list_service():
         },
         {
             "name": "ERNIE-88-completions",
-            "url": (
-                "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/completions/eb88"
-            ),
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/completions/eb88",
             "apiType": "completions",
             "chargeStatus": "OPENED",
             "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
@@ -1968,6 +1973,13 @@ def list_service():
         {
             "name": "bge-large-en",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_en",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "embed-test",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embed_test",
             "apiType": "embeddings",
             "chargeStatus": "OPENED",
             "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],

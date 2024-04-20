@@ -11,109 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
-import logging
-from typing import Any, AsyncIterator, Callable, Dict, Optional, Union
+from typing import AsyncIterator, Callable, Optional
 
-from aiohttp import ClientSession
 from fastapi import FastAPI, Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
-import qianfan
-from qianfan.resources.auth.oauth import AuthManager
+from qianfan.extensions.proxy.proxy import ClientProxy
 from qianfan.utils.utils import get_ip_address
+from qianfan.consts import DefaultValue
 
 app = FastAPI()
-
-auth = AuthManager()
-
-
-async def get_json_response(
-    url: str, body: bytes, query_params: Optional[dict] = None
-) -> Dict[str, Any]:
-    """
-    向指定的URL发送POST请求，并将返回的JSON响应体作为字典返回。
-
-    Args:
-        url (str): 请求的URL地址。
-        body (bytes): 发送的请求体数据。
-        query_params (Optional[dict], optional): 查询参数，默认为None。
-
-    Returns:
-        Dict[str, Any]: 响应体的JSON数据，以字典形式返回。
-
-    """
-    async with ClientSession() as session:
-        async with session.post(url, data=body, params=query_params) as resp:
-            resp_body = await resp.json()
-            logging.info(resp_body)
-            return resp_body
+proxy = ClientProxy()
 
 
-async def get_json_response_async(
-    url: str, body: bytes, query_params: Optional[dict] = None
-) -> AsyncIterator[str]:
-    """
-    异步获取指定URL的流式响应，并将内容作为字符串返回。
-
-    Args:
-        url (str): 请求的URL。
-        body (bytes): 请求体，以字节形式传递。
-        query_params (Optional[dict], optional): 查询参数，以字典形式传递。默认为None。
-
-    Returns:
-        AsyncIterator[str]: 异步迭代器，用于返回解码后的JSON响应内容。
-
-    """
-    async with ClientSession() as session:
-        async with session.post(url, data=body, params=query_params) as resp:
-            async for data in resp.content:
-                logging.info(data)
-                yield data.decode("utf-8")
-
-
-async def get_response(
-    token: str, request: Request
-) -> Union[Dict[str, Any], AsyncIterator]:
-    """
-    从api服务器获取新的响应。
-
-    Args:
-        token (str): 访问令牌。
-        request (Request): HTTP请求对象。
-
-    Returns:
-        Union[Dict[str, Any], AsyncIterator]:
-            如果响应体是流式传输的，则返回一个异步迭代器，否则返回一个包含响应体的字典。
-
-    """
-    base_url = request.base_url
-
-    query_params = {}
-    if base_url.query:
-        query_params = {
-            q.split("=")[0]: q.split("=")[1] for q in base_url.query.split("&")
-        }
-    query_params["access_token"] = token
-
-    url = f"https://aip.baidubce.com{request.scope['path']}"
-    body = await request.json()
-
-    assert body is not None
-    is_stream = body.get("stream", False)
-
-    if is_stream:
-        return get_json_response_async(
-            url, json.dumps(body).encode("utf-8"), query_params
-        )
-    else:
-        return await get_json_response(
-            url, json.dumps(body).encode("utf-8"), query_params
-        )
-
-
-@app.middleware("http")
-async def add_token(request: Request, call_next: Callable) -> Response:
+@app.post("/base/{url_path:path}")
+async def base_iam(request: Request, url_path: str) -> Response:
     """
     中间件函数，用于向请求中添加访问令牌。
 
@@ -127,18 +39,33 @@ async def add_token(request: Request, call_next: Callable) -> Response:
     Raises:
         ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
-    config = qianfan.get_config()
-    ak, sk = config.AK, config.SK
 
-    if ak is None or sk is None:
-        raise ValueError("AK and SK must be set.")
+    print(request.scope)
+    resp = await proxy.get_response(request, DefaultValue.BaseURL)
+    if isinstance(resp, AsyncIterator):
+        return StreamingResponse(resp, media_type="text/event-stream")
 
-    auth.register(ak, sk)
-    token = auth.get_access_token(ak, sk)
-    if token is None:
-        raise ValueError("Failed to get access token.")
+    return JSONResponse(resp)
 
-    resp = await get_response(token, request)
+
+@app.post("/console/{url_path:path}")
+async def console_iam(request: Request, url_path: str) -> Response:
+    """
+    中间件函数，用于向请求中添加访问令牌。
+
+    Args:
+        request (Request): 请求对象。
+        call_next (Callable): 调用下一个中间件的函数。
+
+    Returns:
+        Response: 处理后的响应对象。
+
+    Raises:
+        ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
+    """
+
+    print(request.scope)
+    resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")
 
@@ -155,7 +82,7 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     from qianfan.common.client.proxy import app as proxy_apps
     from qianfan.utils.logging import logger
 
-    qianfan.enable_log("INFO")
+    qianfan.enable_log("DEBUG")
 
     log_config = uvicorn.config.LOGGING_CONFIG
     if log_file is not None:

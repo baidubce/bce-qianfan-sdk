@@ -15,6 +15,7 @@
 package qianfan
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -90,7 +91,7 @@ func GetAuthManager() *AuthManager {
 	return _authManager
 }
 
-func (m *AuthManager) GetAccessToken(ak, sk string) (string, error) {
+func (m *AuthManager) GetAccessToken(ctx context.Context, ak, sk string) (string, error) {
 	token, ok := func() (*accessToken, bool) {
 		m.lock.Lock()
 		defer m.lock.Unlock()
@@ -101,10 +102,10 @@ func (m *AuthManager) GetAccessToken(ak, sk string) (string, error) {
 		return token.token, nil
 	}
 	logger.Infof("Access token of ak `%s` not found, tring to refresh it...", maskAk(ak))
-	return m.GetAccessTokenWithRefresh(ak, sk)
+	return m.GetAccessTokenWithRefresh(ctx, ak, sk)
 }
 
-func (m *AuthManager) GetAccessTokenWithRefresh(ak, sk string) (string, error) {
+func (m *AuthManager) GetAccessTokenWithRefresh(ctx context.Context, ak, sk string) (string, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -132,7 +133,7 @@ func (m *AuthManager) GetAccessTokenWithRefresh(ak, sk string) (string, error) {
 		return "", err
 	}
 	req.Params = paramsMap
-	err = m.Requestor.request(req, &resp)
+	err = m.Requestor.request(ctx, req, &resp)
 	if err != nil {
 		return "", err
 	}

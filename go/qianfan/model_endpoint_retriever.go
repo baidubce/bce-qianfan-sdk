@@ -66,15 +66,15 @@ func (r *modelEndpointRetriever) shouldRefresh() bool {
 	)
 }
 
-func (r *modelEndpointRetriever) GetEndpoint(modelType string, name string) string {
-	return r.GetModelList(modelType)[name]
+func (r *modelEndpointRetriever) GetEndpoint(ctx context.Context, modelType string, name string) string {
+	return r.GetModelList(ctx, modelType)[name]
 }
 
-func (r *modelEndpointRetriever) GetEndpointWithRefresh(modelType string, name string) string {
+func (r *modelEndpointRetriever) GetEndpointWithRefresh(ctx context.Context, modelType string, name string) string {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	err := r.refreshModelList()
+	err := r.refreshModelList(ctx)
 	if err != nil {
 		logger.Errorf("refresh model list failed: %s", err.Error())
 		return ""
@@ -82,12 +82,12 @@ func (r *modelEndpointRetriever) GetEndpointWithRefresh(modelType string, name s
 	return r.modelList[modelType][name]
 }
 
-func (r *modelEndpointRetriever) GetModelList(modelType string) map[string]string {
+func (r *modelEndpointRetriever) GetModelList(ctx context.Context, modelType string) map[string]string {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	// 第一次使用时，需要刷新一次
 	if r.lastUpdate.IsZero() {
-		err := r.refreshModelList()
+		err := r.refreshModelList(ctx)
 		if err != nil {
 			logger.Errorf("refresh model list failed: %s, will fallback to preset config", err.Error())
 		}
@@ -95,11 +95,11 @@ func (r *modelEndpointRetriever) GetModelList(modelType string) map[string]strin
 	return r.modelList[modelType]
 }
 
-func (r *modelEndpointRetriever) Refresh() error {
+func (r *modelEndpointRetriever) Refresh(ctx context.Context) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	err := r.refreshModelList()
+	err := r.refreshModelList(ctx)
 	if err != nil {
 		logger.Errorf("refresh model list failed: %s", err.Error())
 		return err
@@ -113,7 +113,7 @@ func extractEndpoint(url string) string {
 	return fmt.Sprintf("/%s/%s", apiType, endpoint)
 }
 
-func (r *modelEndpointRetriever) refreshModelList() error {
+func (r *modelEndpointRetriever) refreshModelList(ctx context.Context) error {
 	if !r.shouldRefresh() {
 		return nil
 	}
@@ -125,7 +125,7 @@ func (r *modelEndpointRetriever) refreshModelList() error {
 		logger.Info("AccessKey or SecretKey is empty, skip refresh model list.")
 		return nil
 	}
-	resp, err := r.service.List(context.TODO(), &ServiceListRequest{})
+	resp, err := r.service.List(ctx, &ServiceListRequest{})
 	if err != nil {
 		return nil
 	}

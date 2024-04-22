@@ -14,6 +14,8 @@
 
 package qianfan
 
+import "context"
+
 type Option func(*Options)
 type Options struct {
 	Model                 *string
@@ -21,6 +23,7 @@ type Options struct {
 	LLMRetryCount         int
 	LLMRetryTimeout       float32
 	LLMRetryBackoffFactor float32
+	Context               context.Context
 }
 
 // 用于模型类对象设置使用的模型
@@ -58,12 +61,20 @@ func WithLLMRetryBackoffFactor(factor float32) Option {
 	}
 }
 
+// 设置初始化时的 Context
+func WithContext(ctx context.Context) Option {
+	return func(options *Options) {
+		options.Context = ctx
+	}
+}
+
 // 将多个 Option 转换成最终的 Options 对象
 func makeOptions(options ...Option) *Options {
 	option := Options{
 		LLMRetryCount:         GetConfig().LLMRetryCount,
 		LLMRetryTimeout:       GetConfig().LLMRetryTimeout,
 		LLMRetryBackoffFactor: GetConfig().LLMRetryBackoffFactor,
+		Context:               context.TODO(),
 	}
 	for _, opt := range options {
 		opt(&option)

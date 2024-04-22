@@ -93,7 +93,7 @@ type ModelResponse struct {
 	BanRound         int           `json:"ban_round"`          // 当need_clear_history为true时，此字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round=-1
 	SearchInfo       *SearchInfo   `json:"search_info"`        // 搜索数据，当请求参数enable_citation为true并且触发搜索时，会返回该字段
 	ModelAPIError                  // API 错误信息
-	baseResponse                   // 通用的响应信息
+	baseResponse     `json:"-"`    // 通用的响应信息
 }
 
 // 用于获取ModelResponse流式结果的结构体

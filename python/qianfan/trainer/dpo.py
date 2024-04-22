@@ -32,8 +32,8 @@ from qianfan.trainer.base import (
     EventHandler,
 )
 from qianfan.trainer.configs import (
+    DPOTrainModelInfoMapping,
     ModelInfo,
-    ModelInfoMapping,
     TrainConfig,
 )
 from qianfan.trainer.consts import (
@@ -41,12 +41,11 @@ from qianfan.trainer.consts import (
 )
 from qianfan.trainer.pipeline import Pipeline
 from qianfan.trainer.trainer import Trainer
-from qianfan.utils.logging import log_info
 
 
-class Finetune(Trainer):
+class DPO(Trainer):
     """
-    Class implements the SFT training pipeline with several actions.
+    Class implements the DPO training pipeline with several actions.
     Use `run()` to synchronously run the training pipeline until the
     model training is finished.
     or use `start()`, `wait()`, `stop()` to run the training asynchronously.
@@ -68,12 +67,12 @@ class Finetune(Trainer):
         **kwargs: Any,
     ) -> None:
         """
-        Initialization function for LLM fine-tuning.
+        Initialization function for LLM dpo.
 
         Parameters:
             train_type: str
                 A string representing the model version type.
-                like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
+                like 'ERNIE-Speed-8K'
             dataset: Dataset
                 A dataset instance.
             train_config: TrainConfig
@@ -104,8 +103,8 @@ class Finetune(Trainer):
 
         for calling example:
         ```
-        sft_task = LLMFinetune(
-            train_type="ERNIE-Bot-turbo-0725",
+        sft_task = DPO(
+            train_type="ERNIE-Speed-8K",
             dataset={"datasets": [{"type": 1, "id": ds_id}]},
             train_config=TrainConfig(...),
             event_handler=eh,
@@ -144,7 +143,7 @@ class Finetune(Trainer):
                 self.train_action = TrainAction(
                     train_config=train_config,
                     task_id=previous_trainer.train_action.task_id,
-                    train_mode=console_consts.TrainMode.SFT,
+                    train_mode=console_consts.TrainMode.DPO,
                     job_name=name,
                     event_handler=event_handler,
                     is_incr=True,
@@ -158,7 +157,7 @@ class Finetune(Trainer):
             self.train_action = TrainAction(
                 train_config=train_config,
                 task_id=previous_task_id,
-                train_mode=console_consts.TrainMode.SFT,
+                train_mode=console_consts.TrainMode.DPO,
                 job_name=name,
                 event_handler=event_handler,
                 is_incr=True,
@@ -169,7 +168,7 @@ class Finetune(Trainer):
             self.train_action = TrainAction(
                 train_config=train_config,
                 train_type=train_type,
-                train_mode=console_consts.TrainMode.SFT,
+                train_mode=console_consts.TrainMode.DPO,
                 event_handler=event_handler,
                 job_name=name,
                 **kwargs,
@@ -197,7 +196,7 @@ class Finetune(Trainer):
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
-            case_init_params={"case_type": Finetune.__name__},
+            case_init_params={"case_type": DPO.__name__},
         )
         self.ppls = [ppl]
         self.result = [None]
@@ -260,10 +259,10 @@ class Finetune(Trainer):
     @property
     def status(self) -> str:
         """
-        LLMFinetune status getter.
+        trainer status getter.
 
         Returns:
-            str: status for LLMFinetune, mapping from state of actions in pipeline.
+            str: status for DPO, mapping from state of actions in pipeline.
         """
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to get status")
@@ -284,7 +283,7 @@ class Finetune(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return ModelInfoMapping
+        return DPOTrainModelInfoMapping
 
     @staticmethod
     def list() -> List["Trainer"]:
@@ -295,9 +294,9 @@ class Finetune(Trainer):
                 assert isinstance(task_ppl, Pipeline)
                 if (
                     task_ppl._case_init_params is not None
-                    and task_ppl._case_init_params.get("case_type") == Finetune.__name__
+                    and task_ppl._case_init_params.get("case_type") == DPO.__name__
                 ):
-                    trainer_inst = Finetune(pipeline=task_ppl)
+                    trainer_inst = DPO(pipeline=task_ppl)
                     trainer_list.append(trainer_inst)
             except Exception as e:
                 raise e
@@ -317,9 +316,9 @@ class Finetune(Trainer):
         assert isinstance(task_ppl, Pipeline)
         if (
             task_ppl._case_init_params is not None
-            and task_ppl._case_init_params.get("case_type") == Finetune.__name__
+            and task_ppl._case_init_params.get("case_type") == DPO.__name__
         ):
-            trainer_inst = Finetune(pipeline=task_ppl)
+            trainer_inst = DPO(pipeline=task_ppl)
             return trainer_inst
 
         raise InvalidArgumentError("pipeline not found {id} to load")
@@ -338,46 +337,3 @@ class Finetune(Trainer):
     @property
     def id(self) -> str:
         return self.ppls[0].id
-
-    def show(self) -> None:
-        if self.output and self.output.get("checkpoints"):
-            try:
-                import matplotlib.pyplot as plt
-            except ImportError:
-                raise RuntimeError(
-                    "matplotlib is required to show the training lossing, "
-                    "please install it by `pip install matplotlib`."
-                )
-
-            checkpoints = self.output["checkpoints"]
-            steps = [ckpt["step"] for ckpt in checkpoints]
-            loss = [ckpt["trainingLoss"] for ckpt in checkpoints]
-            perplexity = [ckpt["perplexity"] for ckpt in checkpoints]
-
-            # 创建图形和轴对象
-            _, ax1 = plt.subplots()
-
-            # 绘制 loss 曲线（使用左侧 Y 轴）
-            ax1.plot(steps, loss, color="tab:blue", label="Loss")
-            ax1.set_xlabel("Step")
-            ax1.set_ylabel("Loss", color="tab:blue")
-
-            # 创建第二个 Y 轴
-            ax2 = ax1.twinx()
-            ax2.plot(steps, perplexity, color="tab:red", label="Perplexity")
-            ax2.set_ylabel("Perplexity", color="tab:red")
-
-            # 添加图例
-            lines, labels = ax1.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels()
-            ax2.legend(lines + lines2, labels + labels2, loc="upper right")
-
-            # 设置标题
-            plt.title("Loss and Perplexity over Steps")
-
-            plt.show()
-        else:
-            log_info("no checkpoints to show, check if finished")
-
-
-LLMFinetune = Finetune

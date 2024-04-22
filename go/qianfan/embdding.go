@@ -81,12 +81,15 @@ func newEmbedding(options *Options) *Embedding {
 }
 
 // endpoint 转成完整 url
-func (c *Embedding) realEndpoint() (string, error) {
+func (c *Embedding) realEndpoint(ctx context.Context) (string, error) {
 	url := modelAPIPrefix
 	if c.Endpoint == "" {
-		endpoint, ok := EmbeddingEndpoint[c.Model]
-		if !ok {
-			return "", &ModelNotSupportedError{Model: c.Model}
+		endpoint := getModelEndpointRetriever().GetEndpoint(ctx, "embeddings", c.Model)
+		if endpoint == "" {
+			endpoint = getModelEndpointRetriever().GetEndpointWithRefresh(ctx, "embeddings", c.Model)
+			if endpoint == "" {
+				return "", &ModelNotSupportedError{Model: c.Model}
+			}
 		}
 		url += endpoint
 	} else {
@@ -98,27 +101,56 @@ func (c *Embedding) realEndpoint() (string, error) {
 
 // 发送 Embedding 请求
 func (c *Embedding) Do(ctx context.Context, request *EmbeddingRequest) (*EmbeddingResponse, error) {
-	url, err := c.realEndpoint()
-	if err != nil {
-		return nil, err
+	var resp *EmbeddingResponse
+	var err error
+	runErr := runWithContext(ctx, func() {
+		resp, err = c.do(ctx, request)
+	})
+	if runErr != nil {
+		return nil, runErr
 	}
-	req, err := newModelRequest("POST", url, request)
-	if err != nil {
-		return nil, err
-	}
-	resp := &EmbeddingResponse{}
+	return resp, err
+}
 
-	err = c.requestResource(req, resp)
-	if err != nil {
-		return nil, err
-	}
+func (c *Embedding) do(ctx context.Context, request *EmbeddingRequest) (*EmbeddingResponse, error) {
+	do := func() (*EmbeddingResponse, error) {
+		url, err := c.realEndpoint(ctx)
+		if err != nil {
+			return nil, err
+		}
+		req, err := newModelRequest("POST", url, request)
+		if err != nil {
+			return nil, err
+		}
+		resp := &EmbeddingResponse{}
 
-	return resp, nil
+		err = c.requestResource(ctx, req, resp)
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+	resp, err := do()
+	if err != nil {
+		if c.Endpoint == "" && isUnsupportedModelError(err) {
+			// 根据 model 获得的 endpoint 错误，刷新模型列表后重试
+			refreshErr := getModelEndpointRetriever().Refresh(ctx)
+			if refreshErr != nil {
+				logger.Errorf("refresh endpoint failed: %s", refreshErr)
+				return resp, err
+			}
+			return do()
+		}
+		return resp, err
+	}
+	return resp, err
 }
 
 // 获取 Embedding 支持的模型列表
 func (c *Embedding) ModelList() []string {
-	list := make([]string, len(EmbeddingEndpoint))
+	models := getModelEndpointRetriever().GetModelList(context.TODO(), "embeddings")
+	list := make([]string, len(models))
 	i := 0
 	for k := range EmbeddingEndpoint {
 		list[i] = k

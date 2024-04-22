@@ -17,6 +17,7 @@ package qianfan
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -106,10 +107,9 @@ func newAuthRequest(method string, url string, body RequestBody) (*QfRequest, er
 }
 
 // 创建一个用于管控类请求的 Request
-// 暂时注释避免 lint 报错
-// func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
-// 	return newRequest(ConsoleRequest, method, url, body)
-// }
+func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+	return newRequest(consoleRequest, method, url, body)
+}
 
 // 创建一个 Request，body 可以是任意实现了 RequestBody 接口的类型
 func newRequest(requestType string, method string, url string, body RequestBody) (*QfRequest, error) {
@@ -145,6 +145,7 @@ type baseResponse struct {
 // 所有回复类型需实现的接口
 type QfResponse interface {
 	SetResponse(Body []byte, RawResponse *http.Response)
+	GetResponse() *http.Response
 	GetErrorCode() string
 }
 
@@ -152,6 +153,10 @@ type QfResponse interface {
 func (r *baseResponse) SetResponse(Body []byte, RawResponse *http.Response) {
 	r.Body = Body
 	r.RawResponse = RawResponse
+}
+
+func (r *baseResponse) GetResponse() *http.Response {
+	return r.RawResponse
 }
 
 // 请求器，负责 SDK 中所有请求的发送，是所有对外暴露对象的基类
@@ -172,12 +177,12 @@ func newRequestor(options *Options) *Requestor {
 	return r
 }
 
-func (r *Requestor) addAuthInfo(request *QfRequest) error {
+func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	if request.Type == authRequest {
 		return nil
 	}
 	if GetConfig().AK != "" && GetConfig().SK != "" {
-		return r.addAccessToken(request)
+		return r.addAccessToken(ctx, request)
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)
 	}
@@ -186,8 +191,8 @@ func (r *Requestor) addAuthInfo(request *QfRequest) error {
 }
 
 // 增加 accesstoken 鉴权信息
-func (r *Requestor) addAccessToken(request *QfRequest) error {
-	token, err := GetAuthManager().GetAccessToken(GetConfig().AK, GetConfig().SK)
+func (r *Requestor) addAccessToken(ctx context.Context, request *QfRequest) error {
+	token, err := GetAuthManager().GetAccessToken(ctx, GetConfig().AK, GetConfig().SK)
 	if err != nil {
 		return err
 	}
@@ -253,7 +258,7 @@ func (r *Requestor) sign(request *QfRequest) error {
 }
 
 // 对请求进行统一处理，并转换成 http.Request
-func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
+func (r *Requestor) prepareRequest(ctx context.Context, request QfRequest) (*http.Request, error) {
 	// 设置溯源标识
 	if request.Type == modelRequest {
 		request.URL = GetConfig().BaseURL + request.URL
@@ -279,7 +284,7 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 	}
 	request.Headers["Content-Type"] = "application/json"
 	// 增加鉴权信息
-	err = r.addAuthInfo(&request)
+	err = r.addAuthInfo(ctx, &request)
 	if err != nil {
 		return nil, err
 	}
@@ -297,20 +302,20 @@ func (r *Requestor) prepareRequest(request QfRequest) (*http.Request, error) {
 }
 
 // 进行请求，返回原始的 baseResponse，并将结果解析至 resp
-func (r *Requestor) request(request *QfRequest, response QfResponse) error {
-	req, err := r.prepareRequest(*request)
+func (r *Requestor) request(ctx context.Context, request *QfRequest, response QfResponse) error {
+	req, err := r.prepareRequest(ctx, *request)
 	if err != nil {
 		return err
 	}
-	err = r.sendRequestAndParse(req, response)
+	err = r.sendRequestAndParse(ctx, req, response)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Requestor) sendRequestAndParse(request *http.Request, response QfResponse) error {
-	resp, err := r.client.Do(request)
+func (r *Requestor) sendRequestAndParse(ctx context.Context, request *http.Request, response QfResponse) error {
+	resp, err := r.client.Do(request.WithContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -331,23 +336,23 @@ func (r *Requestor) sendRequestAndParse(request *http.Request, response QfRespon
 
 // 流的内部实现，用于接收流中的响应
 type streamInternal struct {
-	*Requestor                                   // 请求器
-	requestFunc   func() (*http.Response, error) // 请求流中的响应的函数
-	httpResponse  *http.Response                 // 原始的 http.Response
-	scanner       *bufio.Scanner                 // 读取流的 scanner
-	IsEnd         bool                           // 流是否已经结束
-	firstResponse bool                           // 是否已经读取过第一个响应
+	*Requestor                                  // 请求器
+	requestFunc  func() (*http.Response, error) // 请求流中的响应的函数
+	httpResponse *http.Response                 // 原始的 http.Response
+	scanner      *bufio.Scanner                 // 读取流的 scanner
+	IsEnd        bool                           // 流是否已经结束
+	context      context.Context                // 流所使用的 context
 }
 
 // 创建一个流
-func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
+func newStreamInternal(ctx context.Context, requestor *Requestor, requestFunc func() (*http.Response, error)) (*streamInternal, error) {
 	si := &streamInternal{
-		Requestor:     requestor,
-		requestFunc:   requestFunc,
-		httpResponse:  nil,
-		scanner:       nil,
-		IsEnd:         false,
-		firstResponse: false,
+		Requestor:    requestor,
+		requestFunc:  requestFunc,
+		httpResponse: nil,
+		scanner:      nil,
+		IsEnd:        false,
+		context:      ctx,
 	}
 	// 初始化请求
 	err := si.reset()
@@ -360,7 +365,6 @@ func newStreamInternal(requestor *Requestor, requestFunc func() (*http.Response,
 func (si *streamInternal) reset() error {
 	response, err := si.requestFunc()
 	si.IsEnd = false
-	si.firstResponse = true
 	if err != nil {
 		si.IsEnd = true
 		return err
@@ -377,7 +381,18 @@ func (si *streamInternal) Close() {
 
 // 接受流中的响应，并将结果解析至 resp
 func (si *streamInternal) Recv(resp QfResponse) error {
-	si.firstResponse = false
+	var err error
+	runErr := runWithContext(si.context, func() {
+		err = si.recv(resp)
+	})
+	if runErr != nil {
+		logger.Warnf("Stream operation cancelled due to context, error: %s", runErr)
+		return runErr
+	}
+	return err
+}
+
+func (si *streamInternal) recv(resp QfResponse) error {
 	var eventData []byte
 	if si.scanner == nil {
 		si.scanner = bufio.NewScanner(si.httpResponse.Body)
@@ -423,18 +438,18 @@ func (si *streamInternal) Recv(resp QfResponse) error {
 }
 
 // 发送请求，返回流对象
-func (r *Requestor) requestStream(request *QfRequest) (*streamInternal, error) {
+func (r *Requestor) requestStream(ctx context.Context, request *QfRequest) (*streamInternal, error) {
 	sendRequest := func() (*http.Response, error) {
-		req, err := r.prepareRequest(*request)
+		req, err := r.prepareRequest(ctx, *request)
 		if err != nil {
 			return nil, err
 		}
-		resp, err := r.client.Do(req)
+		resp, err := r.client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}
 		return resp, nil
 	}
 
-	return newStreamInternal(r, sendRequest)
+	return newStreamInternal(ctx, r, sendRequest)
 }

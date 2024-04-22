@@ -442,6 +442,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
         deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
+        model="Qianfan-Chinese-Llama-2-13B-v1",
         short_name="Llama2_13b",
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL],
@@ -454,8 +455,12 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 weight_decay=(0.0001, 0.05),
             ),
         },
+        deprecated=True,
     ),
 }
+
+
+DPOTrainModelInfoMapping: Dict[str, ModelInfo] = {}
 
 # model train type -> default train config
 ModelInfoMapping: Dict[str, ModelInfo] = {
@@ -838,7 +843,7 @@ DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = 
     },
 }
 
-tc = TrainConfig(learning_rate=0.333)
+DefaultDPOTrainConfigMapping: Dict[str, TrainConfig] = {}
 
 # finetune model train type -> default finetune train config
 DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
@@ -1152,6 +1157,9 @@ def update_all_train_configs() -> None:
         ppt_model_info = _get_online_supported_model_info_mapping(
             model_info_list, console_consts.TrainMode.PostPretrain
         )
+        dpo_model_info = _get_online_supported_model_info_mapping(
+            model_info_list, console_consts.TrainMode.DPO
+        )
         # 更新模型默认配置：
         default_configs_mapping = _update_default_config(model_info_list)
     except Exception:
@@ -1163,6 +1171,8 @@ def update_all_train_configs() -> None:
         **PostPreTrainModelInfoMapping,
         **ppt_model_info,
     }
+    global DPOTrainModelInfoMapping
+    DPOTrainModelInfoMapping = {**DPOTrainModelInfoMapping, **dpo_model_info}
     global DefaultTrainConfigMapping
     DefaultTrainConfigMapping = {
         **DefaultTrainConfigMapping,
@@ -1172,6 +1182,11 @@ def update_all_train_configs() -> None:
     DefaultPostPretrainTrainConfigMapping = {
         **DefaultPostPretrainTrainConfigMapping,
         **default_configs_mapping[console_consts.TrainMode.PostPretrain],
+    }
+    global DefaultDPOTrainConfigMapping
+    DefaultDPOTrainConfigMapping = {
+        **DefaultDPOTrainConfigMapping,
+        **default_configs_mapping[console_consts.TrainMode.DPO],
     }
 
 

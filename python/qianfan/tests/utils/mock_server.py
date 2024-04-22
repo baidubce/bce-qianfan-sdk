@@ -306,6 +306,13 @@ def chat(model_name):
         )
     # check messages
     check_result = check_messages(r["messages"])
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     if model_name == "truncated":
         # stream
         if "stream" in r and r["stream"]:
@@ -498,6 +505,13 @@ def completions(model_name):
     """
     mock /completions/<model_name> completion api
     """
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     if model_name.startswith("test_retry"):
         global retry_cnt
         if model_name not in retry_cnt:
@@ -553,6 +567,13 @@ def embedding(model_name):
     """
     mock /embeddings/<model_name> embedding api
     """
+    if model_name == "error":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "Unsupported openapi method",
+            }
+        )
     r = request.json
     input_len = len(r["input"])
     data = [
@@ -1896,6 +1917,13 @@ def list_service():
             "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
         },
         {
+            "name": "ERNIE-88-completions",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/completions/eb88",
+            "apiType": "completions",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
+        },
+        {
             "name": "ERNIE-Bot 4.0",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
             "apiType": "chat",
@@ -1945,6 +1973,13 @@ def list_service():
         {
             "name": "bge-large-en",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/bge_large_en",
+            "apiType": "embeddings",
+            "chargeStatus": "OPENED",
+            "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],
+        },
+        {
+            "name": "embed-test",
+            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embed_test",
             "apiType": "embeddings",
             "chargeStatus": "OPENED",
             "versionList": [{"trainType": "embedding", "serviceStatus": "Done"}],

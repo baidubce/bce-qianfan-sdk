@@ -20,6 +20,11 @@ const (
 	authAPIPrefix  = "/oauth/2.0/token"
 )
 
+// API URL
+const (
+	serviceListURL = "/wenxinworkshop/service/list"
+)
+
 // 默认使用的模型
 const (
 	DefaultChatCompletionModel = "ERNIE-Bot-turbo"

@@ -119,7 +119,7 @@ class DefaultValue:
     AccessTokenRefreshMinInterval: float = 3600
     InferResourceRefreshMinInterval: float = 600
     RetryCount: int = 3
-    RetryTimeout: float = 60
+    RetryTimeout: float = 300
     RetryBackoffFactor: float = 1
     RetryJitter: float = 1
     RetryMaxWaitInterval: float = 120
@@ -193,6 +193,10 @@ class Consts:
     FineTuneTaskDetailAction: str = "DescribeFineTuningTask"
     FineTuneStopTaskAction: str = "StopFineTuningTask"
     FineTuneSupportedModelsAction: str = "DescribeFineTuningSupportModels"
+    ServiceV2BaseRouteAPI: str = "/v2/service"
+    ServiceCreateAction: str = "CreateService"
+    ServiceListAction: str = "DescribeServices"
+    ServiceDetailAction: str = "DescribeService"
     ModelDetailAPI: str = "/wenxinworkshop/modelrepo/modelDetail"
     ModelVersionDetailAPI: str = "/wenxinworkshop/modelrepo/modelVersionDetail"
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"

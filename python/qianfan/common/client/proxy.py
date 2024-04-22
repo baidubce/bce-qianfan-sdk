@@ -27,11 +27,11 @@ proxy = ClientProxy()
 @app.post("/base/{url_path:path}")
 async def base_iam(request: Request, url_path: str) -> Response:
     """
-    中间件函数，用于向请求中添加访问令牌。
+    用于向base请求中添加访问令牌。
 
     Args:
         request (Request): 请求对象。
-        call_next (Callable): 调用下一个中间件的函数。
+        url_path (str): 请求的路径。
 
     Returns:
         Response: 处理后的响应对象。
@@ -40,7 +40,6 @@ async def base_iam(request: Request, url_path: str) -> Response:
         ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
 
-    print(request.scope)
     resp = await proxy.get_response(request, DefaultValue.BaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")
@@ -51,11 +50,11 @@ async def base_iam(request: Request, url_path: str) -> Response:
 @app.post("/console/{url_path:path}")
 async def console_iam(request: Request, url_path: str) -> Response:
     """
-    中间件函数，用于向请求中添加访问令牌。
+    用于向console请求中添加访问令牌。
 
     Args:
         request (Request): 请求对象。
-        call_next (Callable): 调用下一个中间件的函数。
+        url_path (str): 请求的路径。
 
     Returns:
         Response: 处理后的响应对象。
@@ -64,7 +63,6 @@ async def console_iam(request: Request, url_path: str) -> Response:
         ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
 
-    print(request.scope)
     resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")

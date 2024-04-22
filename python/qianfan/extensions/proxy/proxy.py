@@ -1,12 +1,11 @@
-import json
-import logging
 from typing import Any, AsyncIterator, Dict, Union
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponse
 from fastapi import Request
 
 from qianfan import get_config
 from qianfan.config import GlobalConfig
+from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.typing import QfRequest
@@ -16,33 +15,65 @@ from qianfan.consts import DefaultValue
 class ClientProxy(object):
     _auth: Auth = Auth()
     _config: GlobalConfig = get_config()
+    _client: HTTPClient = HTTPClient()
 
     def __init__(self) -> None:
         pass
 
     async def get_request(self, request: Request, url_route: str) -> QfRequest:
-        base_url = request.base_url
+        """
+        获取请求对象。
+        Args:
+            request (Request): HTTP请求对象。
+            url_route (str): 请求路由。
+        Returns:
+            QfRequest: 请求对象。
+        """
+        print(request.scope)
 
+        # 获取请求参数
         query_params = {}
-        if base_url.query:
+        if request.scope["query_string"] != b"":
             query_params = {
-                q.split("=")[0]: q.split("=")[1] for q in base_url.query.split("&")
+                q.split("=")[0]: q.split("=")[1]
+                for q in request.scope["query_string"].decode("utf-8").split("&")
             }
 
+        # 获取请求url
         if url_route is DefaultValue.BaseURL:
-            url = f"{DefaultValue.BaseURL}{request.scope['path'].replace('/base','')}"
+            url = f"{DefaultValue.BaseURL}{request.scope['path'].replace('/base', '')}"
         else:
-            url = f"{DefaultValue.ConsoleAPIBaseURL}{request.scope['path'].replace('/console','')}"
-        headers = {k: v for k, v in request.headers.items()}
-        headers["content-type"] = "application/json; charset=UTF-8"
-        print(f"json::{await request.json()}\n")
+            url = (
+                f"{DefaultValue.ConsoleAPIBaseURL}{request.scope['path'].replace('/console', '')}"
+            )
+
+        # 获取请求头
+        headers = {
+            k.decode("utf-8"): v.decode("utf-8") for k, v in request.scope["headers"]
+        }
+
+        # 获取请求体
+        json_body = await request.json()
         return QfRequest(
             url=url,
-            method=request.method,
+            method=request.scope["method"],
             headers=headers,
             query=query_params,
-            json_body=(await request.json()),
+            json_body=json_body,
         )
+
+    async def get_stream(
+        self, request: AsyncIterator[tuple[bytes, ClientResponse]]
+    ) -> AsyncIterator[str]:
+        """
+        改变响应体流式格式。
+        Args:
+            request (AsyncIterator[tuple[bytes, ClientResponse]]): 响应体流。
+        Returns:
+            AsyncIterator[str]: 响应体流。
+        """
+        async for body, response in request:
+            yield body.decode("utf-8")
 
     async def get_response(
         self, request: Request, url_route: str
@@ -62,50 +93,12 @@ class ClientProxy(object):
         qf_req = await self.get_request(request, url_route)
         iam_sign(self._config.ACCESS_KEY, self._config.SECRET_KEY, qf_req)
         qf_req.query["access_token"] = self._auth.access_token()
-        is_stream = qf_req.json_body.get("stream", False)
-        print(qf_req)
 
-        if is_stream:
-            return self.get_json_response_stream(qf_req)
+        if qf_req.json_body.get("stream", False):
+            resp = self._client.arequest_stream(qf_req)
+            return self.get_stream(resp)
         else:
-            return await self.get_json_response(qf_req)
-
-    async def get_json_response(
-        self,
-        req: QfRequest,
-    ) -> Dict[str, Any]:
-        """
-        向指定的URL发送POST请求，并将返回的JSON响应体作为字典返回。
-
-        Args:
-            req (QfRequest): 请求对象。
-
-        Returns:
-            Dict[str, Any]: 响应体的JSON数据，以字典形式返回。
-
-        """
-        async with ClientSession() as session:
-            async with session.request(**req.requests_args()) as resp:
-                resp_body = await resp.json()
-                logging.info(resp_body)
-                return resp_body
-
-    async def get_json_response_stream(
-        self,
-        req: QfRequest,
-    ) -> AsyncIterator[str]:
-        """
-        异步获取指定URL的流式响应，并将内容作为字符串返回。
-
-        Args:
-            req (QfRequest): 请求对象。
-
-        Returns:
-            AsyncIterator[str]: 异步迭代器，用于返回解码后的JSON响应内容。
-
-        """
-        async with ClientSession() as session:
-            async with session.request(**req.requests_args()) as resp:
-                async for data in resp.content:
-                    logging.info(data)
-                    yield data.decode("utf-8")
+            resp, session = await self._client.arequest(qf_req)
+            async with session:
+                json_body = await resp.json()
+            return json_body

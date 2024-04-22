@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -69,7 +69,14 @@ async def embedding(request: Request) -> Response:
     return JSONResponse(resp)
 
 
-def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
+def entry(
+    host: str,
+    port: int,
+    detach: bool,
+    log_file: Optional[str],
+    ignore_system: bool,
+    model_mapping: Dict[str, str],
+) -> None:
     import rich
     import uvicorn
     import uvicorn.config
@@ -92,12 +99,17 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
             if "handlers" in log_config["loggers"][key]:
                 log_config["loggers"][key]["handlers"].append("file")
 
+    if model_mapping is not None:
+        adapter._model_mapping = model_mapping
+    adapter._ignore_system = ignore_system
+
     messages = ["OpenAI wrapper server is running at"]
     messages.append(f"- http://127.0.0.1:{port}")
     display_host = host
     if display_host == "0.0.0.0":
         display_host = get_ip_address()
-    messages.append(f"- http://{display_host}:{port}")
+    if display_host != "127.0.0.1":
+        messages.append(f"- http://{display_host}:{port}")
 
     messages.append("\nRemember to set the environment variables:")
     messages.append(f"""```shell

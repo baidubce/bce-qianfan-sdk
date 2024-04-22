@@ -397,7 +397,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         llm related api request
         """
-        log_info(f"async requesting llm api endpoint: {endpoint}")
+        log_debug(f"async requesting llm api endpoint: {endpoint}")
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:

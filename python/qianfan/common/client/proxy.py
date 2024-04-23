@@ -42,9 +42,6 @@ async def base_iam(request: Request, url_path: str) -> Response:
 
     Returns:
         Response: 处理后的响应对象。
-
-    Raises:
-        ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
     try:
         resp = await proxy.get_response(request, DefaultValue.BaseURL)
@@ -74,9 +71,6 @@ async def console_iam(request: Request, url_path: str) -> Response:
 
     Returns:
         Response: 处理后的响应对象。
-
-    Raises:
-        ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
     try:
         resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)

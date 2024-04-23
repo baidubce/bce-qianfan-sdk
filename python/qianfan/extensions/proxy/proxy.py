@@ -132,4 +132,3 @@ class ClientProxy(object):
             resp, session = await self._client.arequest(qf_req)
             async with session:
                 json_body = await resp.json()
-            return json_body

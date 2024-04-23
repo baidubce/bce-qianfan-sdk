@@ -1,9 +1,5 @@
 import logging
-from typing import Any
-from typing import AsyncIterator
-from typing import Dict
-from typing import Tuple
-from typing import Union
+from typing import Any, AsyncIterator, Dict, Tuple, Union
 from urllib.parse import urlparse
 
 from aiohttp import ClientResponse
@@ -132,3 +128,4 @@ class ClientProxy(object):
             resp, session = await self._client.arequest(qf_req)
             async with session:
                 json_body = await resp.json()
+            return json_body

@@ -22,7 +22,7 @@ import os.path
 import threading
 from abc import ABC, abstractmethod
 from queue import PriorityQueue, Queue
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional
 
 from typing_extensions import override
 
@@ -81,7 +81,11 @@ class CsvReader(BaseReader):
 
         self.file_path = file_path
 
-        self.fd = open(file_path, mode="r")
+        self.fd = open(
+            file_path,
+            mode="r",
+            encoding="utf-8-sig" if encoding() == "utf-8" else encoding(),
+        )
         self.data_stream = csv.DictReader(self.fd, **kwargs)
 
     def _get_an_element(self, index: int) -> Any:

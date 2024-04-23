@@ -20,7 +20,7 @@ import (
 
 // Completion 模型请求的参数结构体，但并非每个模型都完整支持如下参数，具体是否支持以 API 文档为准
 type CompletionRequest struct {
-	BaseRequestBody
+	BaseRequestBody `mapstructure:"-"`
 	Prompt          string   `mapstructure:"prompt"`                      // 请求信息
 	Temperature     float64  `mapstructure:"temperature,omitempty"`       // 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定，范围 (0, 1.0]，不能为0
 	TopK            int      `mapstructure:"top_k,omitempty"`             // Top-K 采样参数，在每轮token生成时，保留k个概率最高的token作为候选

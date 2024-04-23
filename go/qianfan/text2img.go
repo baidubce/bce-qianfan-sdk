@@ -23,17 +23,17 @@ type Text2Image struct {
 
 // Text2Image 请求
 type Text2ImageRequest struct {
-	BaseRequestBody
-	Prompt         string  `mapstructure:"prompt"`                    // 输入的提示词
-	NegativePrompt *string `mapstructure:"negative_prompt,omitempty"` // 反向提示词
-	Size           string  `mapstructure:"size,omitempty"`            // 图片尺寸
-	N              int     `mapstructure:"n,omitempty"`               // 生成图片的个数
-	Steps          int     `mapstructure:"steps,omitempty"`           // 迭代论述
-	SamplerIndex   string  `mapstructure:"sampler_index,omitempty"`   // 采样方式
-	Seed           int     `mapstructure:"seed,omitempty"`            // 随机种子
-	CfgScale       float64 `mapstructure:"cfg_scale,omitempty"`       // 提示词相关性
-	Style          string  `mapstructure:"style,omitempty"`           // 风格
-	UserID         string  `mapstructure:"user_id,omitempty"`         // 用户ID
+	BaseRequestBody `mapstructure:"-"`
+	Prompt          string  `mapstructure:"prompt"`                    // 输入的提示词
+	NegativePrompt  string  `mapstructure:"negative_prompt,omitempty"` // 反向提示词
+	Size            string  `mapstructure:"size,omitempty"`            // 图片尺寸
+	N               int     `mapstructure:"n,omitempty"`               // 生成图片的个数
+	Steps           int     `mapstructure:"steps,omitempty"`           // 迭代论述
+	SamplerIndex    string  `mapstructure:"sampler_index,omitempty"`   // 采样方式
+	Seed            int     `mapstructure:"seed,omitempty"`            // 随机种子
+	CfgScale        float64 `mapstructure:"cfg_scale,omitempty"`       // 提示词相关性
+	Style           string  `mapstructure:"style,omitempty"`           // 风格
+	UserID          string  `mapstructure:"user_id,omitempty"`         // 用户ID
 }
 
 // 具体的 Text2Image 信息

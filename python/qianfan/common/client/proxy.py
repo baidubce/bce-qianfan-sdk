@@ -11,12 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator
+from typing import Optional
 
-from fastapi import FastAPI, Request
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from aiohttp import ClientConnectorError
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Request
+from starlette.responses import JSONResponse
+from starlette.responses import Response
+from starlette.responses import StreamingResponse
 
 from qianfan.consts import DefaultValue
+from qianfan.errors import InvalidArgumentError
 from qianfan.extensions.proxy.proxy import ClientProxy
 from qianfan.utils.utils import get_ip_address
 
@@ -39,8 +46,17 @@ async def base_iam(request: Request, url_path: str) -> Response:
     Raises:
         ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
+    try:
+        resp = await proxy.get_response(request, DefaultValue.BaseURL)
+    except InvalidArgumentError:
+        raise HTTPException(status_code=401, detail="Invalid Credential")
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail="Server Timeout")
+    except ConnectionResetError or ClientConnectorError:
+        raise HTTPException(status_code=503, detail="Server Unavailable")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error {e}")
 
-    resp = await proxy.get_response(request, DefaultValue.BaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")
 
@@ -62,8 +78,17 @@ async def console_iam(request: Request, url_path: str) -> Response:
     Raises:
         ValueError: 如果AK和SK未设置，或者获取访问令牌失败，则会抛出异常。
     """
+    try:
+        resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)
+    except InvalidArgumentError:
+        raise HTTPException(status_code=401, detail="Invalid Credential")
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail="Server Timeout")
+    except ConnectionResetError or ClientConnectorError:
+        raise HTTPException(status_code=503, detail="Server Unavailable")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error {e}")
 
-    resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")
 

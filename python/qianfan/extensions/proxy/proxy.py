@@ -1,9 +1,11 @@
 import logging
-from asyncio import TimeoutError
-from typing import Any, AsyncIterator, Dict, Tuple, Union
+from typing import Any
+from typing import AsyncIterator
+from typing import Dict
+from typing import Tuple
+from typing import Union
 from urllib.parse import urlparse
 
-import fastapi
 from aiohttp import ClientResponse
 from fastapi import Request
 
@@ -120,22 +122,14 @@ class ClientProxy(object):
 
         """
 
-        try:
-            qf_req = await self.get_request(request, url_route)
-            self._sign(qf_req)
-            logging.debug(f"request: {qf_req}")
+        qf_req = await self.get_request(request, url_route)
+        self._sign(qf_req)
+        logging.debug(f"request: {qf_req}")
 
-            if qf_req.json_body.get("stream", False):
-                return self.get_stream(self._client.arequest_stream(qf_req))
-            else:
-                resp, session = await self._client.arequest(qf_req)
-                async with session:
-                    json_body = await resp.json()
-                return json_body
-
-        except InvalidArgumentError:
-            raise fastapi.HTTPException(status_code=401, detail="Invalid Credential")
-        except TimeoutError:
-            raise fastapi.HTTPException(status_code=504, detail="Server Timeout")
-        except ConnectionError:
-            raise fastapi.HTTPException(status_code=503, detail="Server Unavailable")
+        if qf_req.json_body.get("stream", False):
+            return self.get_stream(self._client.arequest_stream(qf_req))
+        else:
+            resp, session = await self._client.arequest(qf_req)
+            async with session:
+                json_body = await resp.json()
+            return json_body

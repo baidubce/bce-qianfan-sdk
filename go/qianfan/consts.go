@@ -30,6 +30,7 @@ const (
 	DefaultChatCompletionModel = "ERNIE-Bot-turbo"
 	DefaultCompletionModel     = "ERNIE-Bot-turbo"
 	DefaultEmbeddingModel      = "Embedding-V1"
+	DefaultText2ImageModel     = "Stable-Diffusion-XL"
 )
 
 // API 错误码

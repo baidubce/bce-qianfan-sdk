@@ -60,6 +60,7 @@ diskcache = "^5.6.3"
 ijson = { version = "*", optional = true }
 fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
+filelock = { version = "*", optional = true}
 
 
 [tool.poetry.scripts]
@@ -87,11 +88,11 @@ papermill = {version = "*", python = ">=3.8 <4"}
 ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 
 [tool.poetry.extras]
-dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson"]
-langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain"]
-local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
-extension = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "filelock"]
+langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "filelock", "langchain"]
+local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "filelock", "fastapi", "uvicorn"]
+extension = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

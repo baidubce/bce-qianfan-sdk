@@ -50,13 +50,8 @@
 | | [批量预测](./batch_prediction.ipynb) | 利用 SDK 内置的批量推理功能，在本地通过并行调用模型接口实现高效的批量预测。 |
 | | [离线批量推理](./offline_batch_inference.ipynb) | 对于时间要求不那么严格的场景，可以考虑利用平台提供的离线批量预测能力，以降低实时推理的负载压力.在进行模型评估或其他任务时，通常需要对大量数据进行预测。然而，模型推理过程往往耗时较长，通过循环串行执行会增加整体时间成本，而并行执行则需要额外的开发工作。|
 | | [千帆sdk调用一言插件](./plugin.ipynb) | |
+| | [文生图示例](./text2image.ipynb)|展示了如何使用千帆 SDK 完成文生图任务。 | | 
 | Prompt | [Prompt使用](./prompt.ipynb) | 千帆提供了 Prompt 管理功能，可以快速地使用平台预置的优质 Prompt，或者保存用户自定义的 Prompt。SDK 也为用户快速使用 Prompt 提供了辅助。 |
 | 其他 | [千帆 Hub](./hub.ipynb) | |
 | | [ERNIE Bot 搜索能力](./eb_search.ipynb) | |
 | | [SDK 自动遗忘过长的对话历史](./auto_truncate_msg.ipynb) | |
-
-
-以下是旧md内容
----
-# 大模型推理
-| | [文生图示例](./text2image.ipynb)|展示了如何使用千帆 SDK 完成文生图任务。 | | 

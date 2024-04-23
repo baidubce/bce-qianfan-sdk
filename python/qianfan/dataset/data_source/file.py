@@ -104,9 +104,7 @@ class FileDataSource(DataSource, BaseModel):
         elif self.file_format == FormatType.Csv:
             assert isinstance(data[0], dict)
 
-            csv_writer = csv.DictWriter(
-                fd, fieldnames=list(data[0].keys())
-            )
+            csv_writer = csv.DictWriter(fd, fieldnames=list(data[0].keys()))
 
             # 如果是第一次写入，则需要加上 header 部分
             if index == 0:

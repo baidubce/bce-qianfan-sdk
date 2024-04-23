@@ -70,7 +70,9 @@ async def console_iam(request: Request, url_path: str) -> Response:
     return JSONResponse(resp)
 
 
-def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
+def entry(
+    host: str, port: int, detach: bool, log_file: Optional[str], mock_port: int
+) -> None:
     import rich
     import uvicorn
     import uvicorn.config
@@ -81,6 +83,8 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("DEBUG")
+
+    proxy.mock_port = mock_port
 
     log_config = uvicorn.config.LOGGING_CONFIG
     if log_file is not None:

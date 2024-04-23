@@ -60,6 +60,7 @@ diskcache = "^5.6.3"
 ijson = { version = "*", optional = true }
 fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
+locust = "*"
 
 
 [tool.poetry.scripts]

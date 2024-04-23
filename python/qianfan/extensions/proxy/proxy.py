@@ -1,7 +1,9 @@
 import logging
+from asyncio import TimeoutError
 from typing import Any, AsyncIterator, Dict, Tuple, Union
 from urllib.parse import urlparse
 
+import fastapi
 from aiohttp import ClientResponse
 from fastapi import Request
 
@@ -18,9 +20,18 @@ class ClientProxy(object):
     _auth: Auth = Auth()
     _config: GlobalConfig = get_config()
     _client: HTTPClient = HTTPClient()
+    _mock_port: int = 8866
 
     def __init__(self) -> None:
         pass
+
+    @property
+    def mock_port(self) -> int:
+        return self._mock_port
+
+    @mock_port.setter
+    def mock_port(self, value: int) -> None:
+        self._mock_port = value
 
     def _sign(self, request: QfRequest) -> None:
         """
@@ -39,6 +50,7 @@ class ClientProxy(object):
         request.url = path
         iam_sign(str(self._config.ACCESS_KEY), str(self._config.SECRET_KEY), request)
         request.url = url
+
         if not request.headers.get("Authorization", None):
             request.query["access_token"] = self._auth.access_token()
 
@@ -51,12 +63,6 @@ class ClientProxy(object):
         Returns:
             QfRequest: 请求对象。
         """
-        # 获取请求头
-        host = urlparse(url_route).netloc
-        headers = {
-            "Content-Type": "application/json",
-            "Host": host,
-        }
 
         # 获取请求url
         path = (
@@ -65,10 +71,21 @@ class ClientProxy(object):
             else request.url.path.replace("/console", "")
         )
 
+        # 获取请求头
+        if self.mock_port != -1:
+            url_route = f"http://127.0.0.1:{self.mock_port}"
+
+        url = url_route + path
+        host = urlparse(url_route).netloc
+        headers = {
+            "Content-Type": "application/json",
+            "Host": host,
+        }
+
         # 获取请求体
         json_body = await request.json()
         return QfRequest(
-            url=url_route + path,
+            url=url,
             headers=headers,
             method=request.method,
             query=dict(request.query_params),
@@ -103,14 +120,22 @@ class ClientProxy(object):
 
         """
 
-        qf_req = await self.get_request(request, url_route)
-        self._sign(qf_req)
-        logging.warning(f"request: {qf_req}")
+        try:
+            qf_req = await self.get_request(request, url_route)
+            self._sign(qf_req)
+            logging.debug(f"request: {qf_req}")
 
-        if qf_req.json_body.get("stream", False):
-            return self.get_stream(self._client.arequest_stream(qf_req))
-        else:
-            resp, session = await self._client.arequest(qf_req)
-            async with session:
-                json_body = await resp.json()
-            return json_body
+            if qf_req.json_body.get("stream", False):
+                return self.get_stream(self._client.arequest_stream(qf_req))
+            else:
+                resp, session = await self._client.arequest(qf_req)
+                async with session:
+                    json_body = await resp.json()
+                return json_body
+
+        except InvalidArgumentError:
+            raise fastapi.HTTPException(status_code=401, detail="Invalid Credential")
+        except TimeoutError:
+            raise fastapi.HTTPException(status_code=504, detail="Server Timeout")
+        except ConnectionError:
+            raise fastapi.HTTPException(status_code=503, detail="Server Unavailable")

@@ -83,6 +83,9 @@ def proxy(
         help="Run the server in background.",
     ),
     log_file: Optional[str] = typer.Option(None, help="Log file path."),
+    mock_port: int = typer.Option(
+        -1, "--mock-port", "-m", help="Port of the Mock server."
+    ),
 ) -> None:
     """
     Create a proxy server.
@@ -90,7 +93,9 @@ def proxy(
     check_dependency("proxy", ["fastapi", "uvicorn"])
     from qianfan.common.client.proxy import entry as proxy_entry
 
-    proxy_entry(host=host, port=port, detach=detach, log_file=log_file)
+    proxy_entry(
+        host=host, port=port, detach=detach, log_file=log_file, mock_port=mock_port
+    )
 
 
 def version_callback(value: bool) -> None:

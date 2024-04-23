@@ -1,5 +1,5 @@
 import logging
-from typing import Any, AsyncIterator, Dict, Union
+from typing import Any, AsyncIterator, Dict, Tuple, Union
 from urllib.parse import urlparse
 
 from aiohttp import ClientResponse
@@ -76,7 +76,7 @@ class ClientProxy(object):
         )
 
     async def get_stream(
-        self, request: AsyncIterator[tuple[bytes, ClientResponse]]
+        self, request: AsyncIterator[Tuple[bytes, ClientResponse]]
     ) -> AsyncIterator[str]:
         """
         改变响应体流式格式。

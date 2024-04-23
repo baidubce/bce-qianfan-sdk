@@ -112,7 +112,7 @@ func TestText2ImageDynamicEndpointWhenAccessKeyUnavailable(t *testing.T) {
 	assert.Error(t, err)
 	var target *ModelNotSupportedError
 	assert.ErrorAs(t, err, &target)
-	assert.Equal(t, target.Model, "embed-test")
+	assert.Equal(t, target.Model, "Stable-Diffusion-XL")
 
 }
 

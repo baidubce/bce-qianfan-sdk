@@ -133,6 +133,9 @@ def entry(
     log_config["loggers"]["uvicorn.access"]["handlers"].remove("access")
     log_config["loggers"]["uvicorn"]["handlers"].remove("default")
 
+    set_cors(base_app, base_port)
+    set_cors(console_app, console_port)
+
     process_base = Process(target=start_server, args=(base_app, base_port))
     process_console = Process(target=start_server, args=(console_app, console_port))
     process_base.start()

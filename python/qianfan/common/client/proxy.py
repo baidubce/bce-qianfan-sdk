@@ -131,8 +131,8 @@ def entry(
     def start_server(app: FastAPI, port: int) -> None:
         uvicorn.run(app, host=display_host, port=port, log_config=log_config)
 
-    set_cors(base_app, base_port)
-    set_cors(console_app, console_port)
+    set_cors(base_app)
+    set_cors(console_app)
 
     # close stderr output
     if detach:

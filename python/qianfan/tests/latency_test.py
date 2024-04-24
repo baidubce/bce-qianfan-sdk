@@ -1,3 +1,19 @@
+# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import pytest
+
 from qianfan.resources import ChatCompletion
 
 _TEST_MESSAGE = [
@@ -30,6 +46,7 @@ def test_latency():
         assert "first_token_latency" in s_resp.statistic
 
 
+@pytest.mark.asyncio
 async def test_async_latency():
     chat_comp = ChatCompletion()
     resp = await chat_comp.ado(_TEST_MESSAGE)
@@ -38,7 +55,7 @@ async def test_async_latency():
     assert "total_latency" in resp.statistic
     assert "first_token_latency" not in resp.statistic
 
-    async for s_resp in chat_comp.do(_TEST_MESSAGE, stream=True):
+    async for s_resp in await chat_comp.ado(_TEST_MESSAGE, stream=True):
         assert "request_latency" in s_resp.statistic
         assert "total_latency" in s_resp.statistic
         assert "first_token_latency" in s_resp.statistic

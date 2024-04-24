@@ -87,6 +87,9 @@ class HTTPClient(object):
             verify=self.ssl,
             proxies=self._requests_proxy(),
         )
+        # yield response first for checking meta info like status code
+        # without waiting for the whole response
+        yield bytes(), resp
         for line in resp.iter_lines():
             yield line, resp
 
@@ -120,5 +123,8 @@ class HTTPClient(object):
                 ssl=self.ssl,
                 proxy=self._aiohttp_proxy(),
             ) as resp:
+                # yield response first for checking meta info like status code
+                # without waiting for the whole response
+                yield bytes(), resp
                 async for line in resp.content:
                     yield line, resp

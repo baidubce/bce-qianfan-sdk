@@ -402,8 +402,7 @@ class BaseResource(object):
         """
         check user provide params
         """
-        if stream is True and retry_count != 1:
-            log_warn("retry is not available when stream is enabled")
+        pass
 
     @classmethod
     def api_type(cls) -> str:

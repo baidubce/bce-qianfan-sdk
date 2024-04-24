@@ -75,12 +75,11 @@ def openai(
 @credential_required
 def proxy(
     host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
-    port: int = typer.Option(8002, "--port", "-p", help="Port of the server."),
-    detach: bool = typer.Option(
-        False,
-        "--detach",
-        "-d",
-        help="Run the server in background.",
+    base_port: int = typer.Option(
+        8002, "--port", "-p", help="Port of the base server."
+    ),
+    console_port: int = typer.Option(
+        8003, "--port", "-p", help="Port of the console server."
     ),
     log_file: Optional[str] = typer.Option(None, help="Log file path."),
     mock_port: int = typer.Option(
@@ -94,7 +93,11 @@ def proxy(
     from qianfan.common.client.proxy import entry as proxy_entry
 
     proxy_entry(
-        host=host, port=port, detach=detach, log_file=log_file, mock_port=mock_port
+        host=host,
+        base_port=base_port,
+        console_port=console_port,
+        log_file=log_file,
+        mock_port=mock_port,
     )
 
 

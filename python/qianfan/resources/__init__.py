@@ -22,6 +22,7 @@ from qianfan.resources.llm.chat_completion import ChatCompletion
 from qianfan.resources.llm.completion import Completion
 from qianfan.resources.llm.embedding import Embedding
 from qianfan.resources.llm.plugin import Plugin
+from qianfan.resources.llm.rerank import Reranker
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import QfMessages, QfResponse, QfRole
 
@@ -38,6 +39,7 @@ __all__ = [
     "Text2Image",
     "Image2Text",
     "Tokenizer",
+    "Reranker",
     "AK",
     "SK",
     "Role",

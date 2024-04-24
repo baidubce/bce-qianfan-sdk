@@ -243,10 +243,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
-        return cls(
+        action = cls(
             id=meta.get("id"),
             dataset=meta.get("ds_id") or meta.get("dataset_bos"),
         )
+        action.result = meta.get("output")
+        return action
 
     @classmethod
     def load(cls, b: bytes) -> "LoadDataSetAction":
@@ -298,6 +300,10 @@ class TrainAction(
     """train_type"""
     is_incr: bool = False
     """if it's incremental train or not"""
+    _last_task_id: Optional[str] = None
+    """last task id"""
+    _last_task_step: Optional[int] = None
+    """last task step"""
     train_config: Optional[TrainConfig] = None
     """train config"""
     train_mode: console_consts.TrainMode
@@ -314,6 +320,14 @@ class TrainAction(
     """"train result"""
     train_model_name: Optional[str] = None
     """real name to start training"""
+    task_status: Optional[str] = None
+    """train task status, e.g. `Running`"""
+    progress: Optional[int] = 0
+    """training progress 0-100"""
+    vdl_link: Optional[str] = None
+    """visualdl link"""
+    log_link: Optional[str] = None
+    """log link"""
 
     def __init__(
         self,
@@ -326,6 +340,7 @@ class TrainAction(
         job_name: Optional[str] = None,
         task_description: Optional[str] = None,
         job_description: Optional[str] = None,
+        task_step: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -354,16 +369,21 @@ class TrainAction(
                 train job description. Defaults to None.
         """
         super().__init__(**kwargs)
-        self.task_id = task_id
+        # for persist
+        self._init_job_id = job_id
+        self._init_task_id = task_id
+        self._last_task_id = task_id
+        self._last_task_step = task_step
         self.job_id = job_id
         self.train_mode = train_mode
         self.train_model_name = train_type
-        if self.task_id is not None:
+        if self._last_task_id is not None:
             # if incremental train
-            pre_task_detail = api.FineTune.V2.task_detail(task_id=self.task_id)
+            pre_task_detail = api.FineTune.V2.task_detail(task_id=self._last_task_id)
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
+                self.job_id = pre_task_detail.get("result", {}).get("jobId")
                 self.train_mode = train_mode
             self.is_incr = True
         else:
@@ -545,8 +565,13 @@ class TrainAction(
         log_debug(f"train with hyper_params: { hyper_params_dict}")
         if self.is_incr:
             # 增量训练
-            kwargs["incrementTaskId"] = self.task_id
-            log_info(f"train with incrementTaskId: { self.task_id}")
+            kwargs["increment_task_id"] = self._last_task_id
+            if self._last_task_step:
+                kwargs["increment_checkpoint_step"] = self._last_task_step
+            log_info(
+                f"train with incrementTaskId: { self._last_task_id} with step:"
+                f" { self._last_task_step}"
+            )
         assert self.train_config.peft_type is not None
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
@@ -559,12 +584,12 @@ class TrainAction(
         log_debug(f"[train_action] create {self.train_mode} train task: {self.task_id}")
 
         # 获取job状态，是否训练完成
-        train_metrics = self._wait_model_trained(**kwargs)
+        train_output = self._wait_model_trained(**kwargs)
         self.result = {
             **input,
             "task_id": self.task_id,
             "job_id": self.job_id,
-            **train_metrics,
+            **train_output,
         }
         assert self.result is not None
         return self.result
@@ -580,11 +605,17 @@ class TrainAction(
             )
             task_status_result = task_status_resp.get("result", {})
             task_status = task_status_result.get("runStatus")
+            # 更新任务状态
+            self.task_status = task_status
 
             self.action_event(ActionState.Running, "train running", task_status_resp)
             if task_status == console_consts.TrainStatus.Finish:
                 output["metrics"] = task_status_result.get("metrics", {})
+                output["checkpoints"] = task_status_result.get("checkpointList", [])
                 log_info(f"[train_action] training task metrics: {output['metrics']}")
+                log_info(
+                    f"[train_action] training task checkpoints: {output['checkpoints']}"
+                )
                 break
             elif task_status in [
                 console_consts.TrainStatus.Fail,
@@ -602,21 +633,22 @@ class TrainAction(
             elif task_status == console_consts.TrainStatus.Running:
                 job_progress_str = task_status_result.get("runProgress")
                 job_progress = int(job_progress_str[:-1])
+                self.progress = job_progress
                 log_prefix = (
                     "sft"
                     if self.train_mode == console_consts.TrainMode.SFT
                     else "postPretrain"
                 )
+                self.log_link = f"https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
+                self.vdl_link = task_status_result.get("vdlLink", "")
                 log_info(
                     "[train_action] training ..."
                     f" job_name:{self.job_name} current status: {task_status},"
                     f" {job_progress}% check train task log in"
-                    f" https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
+                    f" {self.log_link}"
                 )
                 if job_progress >= 50:
-                    log_info(
-                        f" check vdl report in {task_status_result.get('vdlLink')}"
-                    )
+                    log_info(f" check vdl report in {self.vdl_link}")
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             else:
                 raise InternalError(
@@ -709,8 +741,8 @@ class TrainAction(
             "id": self.id,
             "type": TrainAction.__name__,
             "init_params": {
-                "job_id": self.job_id,
-                "task_id": self.task_id,
+                "job_id": self._init_job_id,
+                "task_id": self._init_task_id,
                 "train_mode": (
                     self.train_mode
                     if isinstance(self.train_mode, str)
@@ -725,6 +757,12 @@ class TrainAction(
                 "task_description": self.task_description,
                 "job_description": self.job_description,
             },
+            "job_id": self.job_id if hasattr(self, "job_id") else None,
+            "task_id": self.task_id if hasattr(self, "task_id") else None,
+            "status": self.task_status,
+            "progress": self.progress,
+            "vdl_link": self.vdl_link,
+            "log_link": self.log_link,
             "input": self._input,
             "output": self.result,
         }
@@ -736,11 +774,18 @@ class TrainAction(
         if "train_config" in params:
             params["train_config"] = TrainConfig(**params["train_config"])
         action = cls(
+            id=meta.get("id"),
             **params,
         )
+        action.job_id = meta.get("job_id")
+        action.task_id = meta.get("task_id")
         action.is_incr = params.pop("is_incr", False)
         action._input = meta.get("input")
         action.result = meta.get("output")
+        action.task_status = meta.get("status")
+        action.progress = meta.get("progress")
+        action.vdl_link = meta.get("vdl_link")
+        action.log_link = meta.get("log_link")
         return action
 
 
@@ -832,10 +877,6 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta: Dict[str, Any] = {
             "id": self.id,
             "type": ModelPublishAction.__name__,
-            "init_params": {
-                "task_id": self.task_id,
-                "job_id": self.job_id,
-            },
             "input": {
                 "task_id": self.task_id,
                 "job_id": self.job_id,
@@ -855,6 +896,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
         params = meta.get("init_params", {})
         action = cls(
+            id=meta.get("id"),
             **params,
         )
         action._input = meta.get("input")  # type: ignore
@@ -1019,11 +1061,31 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
         deploy_config = meta.get("init_params", {}).get("deploy_config", {})
         action = cls(
-            DeployConfig(**deploy_config),
+            id=meta.get("id"),
+            deploy_config=DeployConfig(**deploy_config),
         )
         action._input = meta.get("input")
         action.result = meta.get("output")
         return action
+
+
+class BatchInferAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
+    """BatchInferAction
+    Action for batch inference.
+    Sample:
+    input:
+        ```
+        {'model_id': "am-xxxx", 'model_version_id': "amv-xxxx"}
+        ```
+    output:
+        ```
+        {'infer_res': InferenceResult ...}
+        ```
+    """
+
+    # batch_inference_manager: Optional[BatchInferenceManager] = None
+    """batch inference manager for batch infer models or services."""
+    dataset: Optional[Dataset] = None
 
 
 class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):

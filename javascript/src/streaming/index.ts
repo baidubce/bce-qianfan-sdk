@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import {EventEmitter} from 'events';
-import {OpenAIError, APIError} from './error';
 
 type Bytes = string | ArrayBuffer | Uint8Array | Buffer | null | undefined;
 const EVENT_TYPE = [null, 'pluginMeta', 'plugin', 'chat'];
@@ -103,20 +102,9 @@ class LineDecoder {
 
     decode(chunk: Bytes): string[] {
         let text = this.decodeText(chunk);
-
-        if (this.trailingCR) {
-            text = '\r' + text;
-            this.trailingCR = false;
-        }
-        if (text.endsWith('\r')) {
-            this.trailingCR = true;
-            text = text.slice(0, -1);
-        }
-
         if (!text) {
             return [];
         }
-
         const trailingNewline = LineDecoder.NEWLINE_CHARS.has(text[text.length - 1] || '');
         let lines = text.split(LineDecoder.NEWLINE_REGEXP);
 
@@ -124,7 +112,6 @@ class LineDecoder {
             this.buffer.push(lines[0]!);
             return [];
         }
-
         if (this.buffer.length > 0) {
             lines = [this.buffer.join('') + lines[0], ...lines.slice(1)];
             this.buffer = [];
@@ -154,7 +141,7 @@ class LineDecoder {
                 return Buffer.from(bytes).toString();
             }
 
-            throw new OpenAIError(
+            throw new Error(
                 // eslint-disable-next-line max-len
                 `Unexpected: received non-Uint8Array (${bytes.constructor.name}) stream chunk in an environment with a global "Buffer" defined, which this library assumes to be Node. Please report this error.`
             );
@@ -167,14 +154,14 @@ class LineDecoder {
                 return this.textDecoder.decode(bytes);
             }
 
-            throw new OpenAIError(
+            throw new Error(
                 `Unexpected: received non-Uint8Array/ArrayBuffer (${
                     (bytes as any).constructor.name
                 }) in a web platform. Please report this error.`
             );
         }
 
-        throw new OpenAIError(
+        throw new Error(
             'Unexpected: neither Buffer nor TextDecoder are available as globals. Please report this error.'
         );
     }
@@ -207,18 +194,30 @@ export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
 
             if (!response.body) {
                 controller.abort();
-                throw new OpenAIError('Attempted to iterate over a response with no body');
+                throw new Error('Attempted to iterate over a response with no body');
             }
 
             const lineDecoder = new LineDecoder();
-
+            let buffer = new Uint8Array(); // 初始化缓存的 Buffer
             const iter = readableStreamAsyncIterable<Bytes>(response.body);
             for await (const chunk of iter) {
-                for (const line of lineDecoder.decode(chunk)) {
-                    const sse = decoder.decode(line);
-                    if (sse) {
-                        yield sse;
+                // 判断是否以特定结尾（例如 10，10）结束
+                if (endsWith1010(chunk as Uint8Array)) {
+                    // 将当前 Buffer 与新读取的 chunk 合并
+                    buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
+                    // 解码完整的 Buffer
+                    for (const line of lineDecoder.decode(buffer)) {
+                        const sse = decoder.decode(line);
+                        if (sse) {
+                            yield sse;
+                        }
                     }
+                    // 清空 Buffer
+                    buffer = new Uint8Array();
+                }
+                else {
+                    // 不是特定结尾，将当前 chunk 加入到缓存的 Buffer 中
+                    buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
                 }
             }
 
@@ -260,7 +259,7 @@ export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
                         }
 
                         if (data && data.error) {
-                            throw new APIError(undefined, data.error, undefined, undefined);
+                            throw new Error(data.error);
                         }
 
                         yield data;
@@ -461,4 +460,21 @@ export function readableStreamAsyncIterable<T>(stream: any): AsyncIterableIterat
             return this;
         },
     };
+}
+
+// 判断 Uint8Array 是否以 10，10 结尾
+function endsWith1010(uintArray: Uint8Array): boolean {
+    const len = uintArray.length;
+    if (len < 2) {
+        return false;
+    }
+    return uintArray[len - 2] === 10 && uintArray[len - 1] === 10;
+}
+
+// 合并两个 Uint8Array
+function concatUint8Arrays(a: Uint8Array, b: Uint8Array): Uint8Array {
+    const result = new Uint8Array(a.length + b.length);
+    result.set(a, 0);
+    result.set(b, a.length);
+    return result;
 }

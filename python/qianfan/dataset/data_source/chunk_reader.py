@@ -54,7 +54,7 @@ class BaseReader(ABC):
             except StopIteration:
                 break
             except Exception as e:
-                err_msg = f"exception occurred during read csv file streamly: {e}"
+                err_msg = f"exception occurred during read file streamly: {e}"
                 log_error(err_msg)
                 raise e
 
@@ -107,7 +107,7 @@ class JsonReader(BaseReader):
         self.file_path = file_path
         self.fd = open(file_path, mode="r", encoding=encoding())
 
-        self.ijson_object = ijson.items(self.fd, element_json_path)
+        self.ijson_object = ijson.items(self.fd, element_json_path, use_float=True)
 
     def _get_an_element(self, index: int) -> Any:
         return next(self.ijson_object)

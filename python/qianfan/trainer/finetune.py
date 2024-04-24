@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan.common.persister.persist import g_persister
-from qianfan.config import get_config
+from qianfan.config import encoding, get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
@@ -41,6 +41,7 @@ from qianfan.trainer.consts import (
 )
 from qianfan.trainer.pipeline import Pipeline
 from qianfan.trainer.trainer import Trainer
+from qianfan.utils.logging import log_info
 
 
 class Finetune(Trainer):
@@ -200,6 +201,7 @@ class Finetune(Trainer):
         )
         self.ppls = [ppl]
         self.result = [None]
+        g_persister.save(ppl)
 
     def from_ppl(self, ppl: Optional[Pipeline]) -> "Trainer":
         """
@@ -220,6 +222,7 @@ class Finetune(Trainer):
             elif isinstance(ac, DeployAction):
                 self.deploy_action = ac
         self.ppls = [ppl]
+        self.result = [None]
         return self
 
     def run(self, **kwargs: Any) -> Trainer:
@@ -274,7 +277,10 @@ class Finetune(Trainer):
 
     @property
     def output(self) -> Any:
-        return self.result[0]
+        if self.result[0]:
+            return self.result[0]
+        else:
+            return self.info()["actions"][-1].get("output")
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
@@ -298,8 +304,16 @@ class Finetune(Trainer):
         return trainer_list
 
     @staticmethod
-    def load(id: str) -> "Trainer":
-        task_ppl = g_persister.load(id, Pipeline)
+    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer":
+        if file is not None:
+            with open(file=file, mode="rb") as f:
+                task_ppl = Pipeline.load(f.read())
+            # load完save到本地
+            g_persister.save(task_ppl)
+        elif id:
+            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
+        else:
+            raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)
         if (
             task_ppl._case_init_params is not None
@@ -307,14 +321,63 @@ class Finetune(Trainer):
         ):
             trainer_inst = Finetune(pipeline=task_ppl)
             return trainer_inst
+
         raise InvalidArgumentError("pipeline not found {id} to load")
 
+    def save(self, file: Optional[str] = None) -> None:
+        if file:
+            with open(file=file, mode="w", encoding=encoding()) as f:
+                f.write(self.ppls[0].persist().decode(encoding=encoding()))
+        else:
+            g_persister.save(self.ppls[0])
+
     def info(self) -> Dict:
-        return self.ppls[0]._action_dict()
+        tmp = cast(Pipeline, g_persister.load(self.id, Pipeline))
+        return tmp._action_dict()
 
     @property
     def id(self) -> str:
         return self.ppls[0].id
+
+    def show(self) -> None:
+        if self.output and self.output.get("checkpoints"):
+            try:
+                import matplotlib.pyplot as plt
+            except ImportError:
+                raise RuntimeError(
+                    "matplotlib is required to show the training lossing, "
+                    "please install it by `pip install matplotlib`."
+                )
+
+            checkpoints = self.output["checkpoints"]
+            steps = [ckpt["step"] for ckpt in checkpoints]
+            loss = [ckpt["trainingLoss"] for ckpt in checkpoints]
+            perplexity = [ckpt["perplexity"] for ckpt in checkpoints]
+
+            # 创建图形和轴对象
+            _, ax1 = plt.subplots()
+
+            # 绘制 loss 曲线（使用左侧 Y 轴）
+            ax1.plot(steps, loss, color="tab:blue", label="Loss")
+            ax1.set_xlabel("Step")
+            ax1.set_ylabel("Loss", color="tab:blue")
+
+            # 创建第二个 Y 轴
+            ax2 = ax1.twinx()
+            ax2.plot(steps, perplexity, color="tab:red", label="Perplexity")
+            ax2.set_ylabel("Perplexity", color="tab:red")
+
+            # 添加图例
+            lines, labels = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax2.legend(lines + lines2, labels + labels2, loc="upper right")
+
+            # 设置标题
+            plt.title("Loss and Perplexity over Steps")
+
+            plt.show()
+        else:
+            log_info("no checkpoints to show, check if finished")
 
 
 LLMFinetune = Finetune

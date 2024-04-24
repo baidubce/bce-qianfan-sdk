@@ -33,6 +33,7 @@ async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
     """
     async for data in resp:
         yield "data: " + json.dumps(data) + "\n\n"
+    yield "data: [DONE]\n\n"
 
 
 @app.post("/v1/chat/completions")

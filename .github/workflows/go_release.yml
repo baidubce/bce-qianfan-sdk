@@ -60,13 +60,24 @@ jobs:
           VERSION=$(cat go/qianfan/version.go|grep 'const Version ='|sed -r "s/.*\"v(.*)\"/\1/g")
           echo $VERSION
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: get pr collection  # 获取tag之间的pr内容，输出为md文件的路径
+        id: get-pr
+        working-directory: ./python
+        env:
+          REPO: ${{ github.repository }}
+          QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}
+          NEW_TAG: ${{ format('go/qianfan/v{0}', steps.check-version.outputs.version) }}
+        run: |
+          bash ./scripts/release_note.sh go
+          echo body_path=$(realpath ./release_note.md) >> $GITHUB_OUTPUT
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           name: ${{ format('Go v{0}', steps.check-version.outputs.version) }}
           token: ${{ secrets.QF_GITHUB_TOKEN }}
           draft: false
-          generateReleaseNotes: true
+          bodyFile: ${{ steps.get-pr.outputs.body_path }}  #  引入上文生成的release_note.md作为内容
+          generateReleaseNotes: false
           tag: ${{ format('go/qianfan/v{0}', steps.check-version.outputs.version) }}
           prerelease: ${{ contains(steps.check-version.outputs.version, 'rc') }}
           commit: main

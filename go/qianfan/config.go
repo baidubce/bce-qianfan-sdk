@@ -15,22 +15,25 @@
 package qianfan
 
 import (
+	"sync"
+
 	"github.com/spf13/viper"
 )
 
 // 默认配置
 var defaultConfig = map[string]string{
-	"QIANFAN_AK":                                "",
-	"QIANFAN_SK":                                "",
-	"QIANFAN_ACCESS_KEY":                        "",
-	"QIANFAN_SECRET_KEY":                        "",
-	"QIANFAN_BASE_URL":                          "https://aip.baidubce.com",
-	"QIANFAN_IAM_SIGN_EXPIRATION_SEC":           "300",
-	"QIANFAN_CONSOLE_BASE_URL":                  "https://qianfan.baidubce.com",
-	"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL": "3600",
-	"QIANFAN_LLM_API_RETRY_COUNT":               "1",
-	"QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR":      "0",
-	"QIANFAN_LLM_API_RETRY_TIMEOUT":             "0",
+	"QIANFAN_AK":                                  "",
+	"QIANFAN_SK":                                  "",
+	"QIANFAN_ACCESS_KEY":                          "",
+	"QIANFAN_SECRET_KEY":                          "",
+	"QIANFAN_BASE_URL":                            "https://aip.baidubce.com",
+	"QIANFAN_IAM_SIGN_EXPIRATION_SEC":             "300",
+	"QIANFAN_CONSOLE_BASE_URL":                    "https://qianfan.baidubce.com",
+	"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL":   "3600",
+	"QIANFAN_LLM_API_RETRY_COUNT":                 "1",
+	"QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR":        "0",
+	"QIANFAN_LLM_API_RETRY_TIMEOUT":               "0",
+	"QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL": "600",
 }
 
 // SDK 使用的全局配置，可以用 GetConfig() 获取
@@ -46,6 +49,7 @@ type Config struct {
 	LLMRetryCount                 int     `mapstructure:"QIANFAN_LLM_API_RETRY_COUNT"`
 	LLMRetryTimeout               float32 `mapstructure:"QIANFAN_LLM_API_RETRY_TIMEOUT"`
 	LLMRetryBackoffFactor         float32 `mapstructure:"QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR"`
+	InferResourceRefreshInterval  int     `mapstructure:"QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"`
 }
 
 func setConfigDeafultValue(vConfig *viper.Viper) {
@@ -74,6 +78,7 @@ func loadConfigFromEnv() *Config {
 }
 
 var _config *Config = nil
+var _configInitOnce sync.Once
 
 // 获取全局配置，可以通过如下方式修改配置
 // 可以在代码中手动设置 `AccessKey` 和 `SecretKey`，具体如下：
@@ -81,8 +86,8 @@ var _config *Config = nil
 //	qianfan.GetConfig().AccessKey = "your_access_key"
 //	qianfan.GetConfig().SecretKey = "your_secret_key"
 func GetConfig() *Config {
-	if _config == nil {
+	_configInitOnce.Do(func() {
 		_config = loadConfigFromEnv()
-	}
+	})
 	return _config
 }

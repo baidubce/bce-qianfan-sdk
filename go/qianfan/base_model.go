@@ -15,6 +15,7 @@
 package qianfan
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -92,7 +93,7 @@ type ModelResponse struct {
 	BanRound         int           `json:"ban_round"`          // 当need_clear_history为true时，此字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round=-1
 	SearchInfo       *SearchInfo   `json:"search_info"`        // 搜索数据，当请求参数enable_citation为true并且触发搜索时，会返回该字段
 	ModelAPIError                  // API 错误信息
-	baseResponse                   // 通用的响应信息
+	baseResponse     `json:"-"`    // 通用的响应信息
 }
 
 // 用于获取ModelResponse流式结果的结构体
@@ -100,11 +101,16 @@ type ModelResponseStream struct {
 	*streamInternal
 }
 
-func newModelResponseStream(si *streamInternal) *ModelResponseStream {
-	return &ModelResponseStream{streamInternal: si}
+func newModelResponseStream(si *streamInternal) (*ModelResponseStream, error) {
+	s := &ModelResponseStream{streamInternal: si}
+	err := s.checkResponseError(si.context)
+	if err != nil {
+		return s, err
+	}
+	return s, nil
 }
 
-func (s *ModelResponseStream) checkResponseError() error {
+func (s *ModelResponseStream) checkResponseError(ctx context.Context) error {
 	tokenRefreshed := false
 	var apiError *APIError
 	// LLMRetryCount 为 0 时表示不限制重试次数
@@ -125,7 +131,11 @@ func (s *ModelResponseStream) checkResponseError() error {
 			apiError = &APIError{Code: resp.ErrorCode, Msg: resp.ErrorMsg}
 			if !tokenRefreshed && (resp.ErrorCode == APITokenInvalidErrCode || resp.ErrorCode == APITokenExpiredErrCode) {
 				tokenRefreshed = true
-				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(
+					ctx,
+					GetConfig().AK,
+					GetConfig().SK,
+				)
 				if err != nil {
 					return err
 				}
@@ -159,12 +169,6 @@ func (s *ModelResponseStream) checkResponseError() error {
 // 获取ModelResponse流式结果
 func (s *ModelResponseStream) Recv() (*ModelResponse, error) {
 	var resp ModelResponse
-	if s.firstResponse {
-		err := s.checkResponseError()
-		if err != nil {
-			return nil, err
-		}
-	}
 	err := s.streamInternal.Recv(&resp)
 	if err != nil {
 		return nil, err
@@ -214,7 +218,7 @@ func (m *BaseModel) withRetry(fn func() error) error {
 	return err
 }
 
-func (m *BaseModel) requestResource(request *QfRequest, response any) error {
+func (m *BaseModel) requestResource(ctx context.Context, request *QfRequest, response any) error {
 	qfResponse, ok := response.(QfResponse)
 	if !ok {
 		return &InternalError{Msg: "response is not QfResponse"}
@@ -227,7 +231,7 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 	tokenRefreshed := false
 	requestFunc := func() error {
 		modelApiResponse.ClearError()
-		err = m.Requestor.request(request, qfResponse)
+		err = m.Requestor.request(ctx, request, qfResponse)
 		if err != nil {
 			return err
 		}
@@ -237,7 +241,11 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 			if !tokenRefreshed && (errCode == APITokenInvalidErrCode || errCode == APITokenExpiredErrCode) {
 				// access token 过期，重新获取 access token 并重试，且不占用重试次数
 				tokenRefreshed = true
-				_, err := GetAuthManager().GetAccessTokenWithRefresh(GetConfig().AK, GetConfig().SK)
+				_, err := GetAuthManager().GetAccessTokenWithRefresh(
+					ctx,
+					GetConfig().AK,
+					GetConfig().SK,
+				)
 				if err != nil {
 					return err
 				}
@@ -253,4 +261,14 @@ func (m *BaseModel) requestResource(request *QfRequest, response any) error {
 		return err
 	}
 	return nil
+}
+
+func isUnsupportedModelError(err error) bool {
+	apiErr := &APIError{}
+	if ok := errors.As(err, &apiErr); ok {
+		if apiErr.Code == UnsupportedMethodErrCode {
+			return true
+		}
+	}
+	return false
 }

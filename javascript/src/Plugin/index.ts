@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {modelInfoMap} from './utilts';
 import {PluginsBody, PluginsResp, YiYanPluginBody} from '../interface';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {ModelType} from '../enum';
 
 class Plugin extends BaseClient {
     /**
@@ -30,15 +31,17 @@ class Plugin extends BaseClient {
     ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
         const stream = body.stream ?? false;
         const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
-        const {IAMPath, AKPath, requestBody} = getPathAndBody({
+        const type = ModelType.PLUGIN;
+        const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
-            type: 'plugin',
+            type,
         });
-        return await this.sendRequest(IAMPath, AKPath, requestBody, stream) as PluginsResp | AsyncIterable<PluginsResp>;
+        return (await this.sendRequest(type, model, AKPath, requestBody, stream)) as
+            | PluginsResp
+            | AsyncIterable<PluginsResp>;
     }
 }
 

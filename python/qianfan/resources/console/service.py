@@ -16,12 +16,12 @@
 Service API
 """
 
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan.consts import Consts
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.console.consts import DeployPoolType, ServiceType
-from qianfan.resources.console.utils import console_api_request
+from qianfan.resources.console.utils import _get_console_v2_query, console_api_request
 from qianfan.resources.typing import QfRequest
 
 
@@ -41,7 +41,7 @@ class Service(object):
         replicas: int,
         pool_type: DeployPoolType = DeployPoolType.PrivateResource,
         description: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> QfRequest:
         """
         Create a service for the given model.
@@ -120,7 +120,7 @@ class Service(object):
     def list(
         cls,
         api_type_filter: Optional[List[Union[str, ServiceType]]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> QfRequest:
         """
         list all services.
@@ -158,3 +158,145 @@ class Service(object):
                     raise InvalidArgumentError("Invalid api type: {}".format(type))
             req.json_body["apiTypefilter"] = api_type_filter
         return req
+
+    class V2:
+        @classmethod
+        def base_api_route(cls) -> str:
+            """
+            base api url route for service V2.
+
+            Returns:
+                str: base api url route
+            """
+            return Consts.ServiceV2BaseRouteAPI
+
+        @classmethod
+        @console_api_request
+        def service_list(
+            cls,
+            marker: Optional[str] = None,
+            max_keys: Optional[int] = None,
+            page_reverse: Optional[bool] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            get service list .
+
+            Parameters:
+            marker: Optional[str] = None,
+                job_id, the marker of the first page.
+            max_keys: Optional[int] = None,
+                max keys of the page.
+            page_reverse: Optional[bool] = None,
+                page reverse or not.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceListAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "maker": marker,
+                    "maxKeys": max_keys,
+                    "pageReverse": page_reverse,
+                }.items()
+                if v is not None
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def create_service(
+            cls,
+            model_id: str,
+            model_version_id: str,
+            name: str,
+            url_suffix: str,
+            resource_config: Dict,
+            description: Optional[str],
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            get service list .
+
+            Parameters:
+            model_id: str,
+                model id.
+            model_version_id: str,
+                model version id.
+            name: str,
+                service name.
+            url_suffix: str,
+                service url suffix.
+            resource_config: Dict,
+                resource config, include 'type', 'qps'
+            description: Optional[str],
+                service description.
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceCreateAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "modelId": model_id,
+                    "modelVersionId": model_version_id,
+                    "name": name,
+                    "urlSuffix": url_suffix,
+                    "description": description,
+                    "resourceConfig": resource_config,
+                }.items()
+                if v is not None
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def service_detail(
+            cls,
+            service_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            get service detail .
+
+            Parameters:
+            service_id: str,
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceDetailAction),
+            )
+            req.json_body = {
+                "serviceId": service_id,
+            }
+            return req

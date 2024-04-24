@@ -17,6 +17,7 @@ package qianfan
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -80,4 +81,139 @@ func TestEmbeddingUnexistedModel(t *testing.T) {
 	var target *ModelNotSupportedError
 	assert.ErrorAs(t, err, &target)
 	assert.Equal(t, target.Model, "unexisted_model")
+}
+
+func TestEmbeddingDynamicEndpoint(t *testing.T) {
+	defer resetTestEnv()
+	embed := NewEmbedding(WithModel("embed-test"))
+	resp, err := embed.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embed_test")
+
+	ebSpeed := NewEmbedding(WithModel("Embedding-V1"))
+	resp, err = ebSpeed.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embedding-v1")
+}
+
+func TestEmbeddingDynamicEndpointWhenAccessKeyUnavailable(t *testing.T) {
+	defer resetTestEnv()
+	GetConfig().AK = "test_ak"
+	GetConfig().SK = "test_sk"
+	GetConfig().AccessKey = ""
+	GetConfig().SecretKey = ""
+	embedding := NewEmbedding(WithModel("embed-test"))
+	_, err := embedding.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.Error(t, err)
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "embed-test")
+
+	ebSpeed := NewEmbedding(WithModel("Embedding-V1"))
+	resp, err := ebSpeed.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embedding-v1")
+}
+
+func TestEmbeddingDynamicEndpointWhenNewModel(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	embed := NewEmbedding(WithModel("embed-test"))
+	resp, err := embed.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embed_test")
+
+	// 缺少模型，应当尝试刷新
+	delete(getModelEndpointRetriever().modelList["embeddings"], "embed-test")
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = embed.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embed_test")
+}
+
+func TestEmbeddingDynamicEndpointWhenEndpointError(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	comp := NewEmbedding(WithModel("embed-test"))
+	resp, err := comp.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embed_test")
+
+	getModelEndpointRetriever().modelList["embeddings"]["embed-test"] = "/embeddings/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = comp.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "embedding_list")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "embed_test")
+
+	comp = NewEmbedding(WithEndpoint("error"))
+	_, err = comp.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.Error(t, err)
+	apiErr := err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+
+	getModelEndpointRetriever().modelList["embeddings"]["ERROR_MODEL"] = "/embeddings/error"
+	comp = NewEmbedding(WithModel("ERROR_MODEL"))
+	_, err = comp.Do(
+		context.Background(),
+		&EmbeddingRequest{
+			Input: []string{"hello3"},
+		},
+	)
+	assert.Error(t, err)
+	apiErr = err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
 }

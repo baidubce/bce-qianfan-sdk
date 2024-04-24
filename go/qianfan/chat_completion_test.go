@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -184,6 +185,7 @@ func TestChatCompletionAPIError(t *testing.T) {
 func TestChatCompletionModelList(t *testing.T) {
 	list := NewChatCompletion().ModelList()
 	assert.Greater(t, len(list), 0)
+	assert.Contains(t, list, "ERNIE-99")
 }
 
 func TestChatCompletionRetry(t *testing.T) {
@@ -266,6 +268,301 @@ func TestChatCompletionStreamRetry(t *testing.T) {
 		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
 		WithLLMRetryCount(1),
 	)
+	_, err = chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	// _, err = resp.Recv()
+	// assert.Error(t, err)
+	var target *APIError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Code, ServerHighLoadErrCode)
+}
+
+func TestChatDynamicEndpoint(t *testing.T) {
+	defer resetTestEnv()
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	ebSpeed := NewChatCompletion(WithModel("ERNIE-Speed"))
+	resp, err = ebSpeed.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "speed")
+}
+
+func TestChatDynamicEndpointStream(t *testing.T) {
+	defer resetTestEnv()
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb99")
+	}
+
+	ebSpeed := NewChatCompletion(WithModel("ERNIE-Speed"))
+	resp, err = ebSpeed.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "speed")
+	}
+
+}
+
+func TestChatDynamicEndpointWhenAccessKeyUnavailable(t *testing.T) {
+	defer resetTestEnv()
+	GetConfig().AK = "test_ak"
+	GetConfig().SK = "test_sk"
+	GetConfig().AccessKey = ""
+	GetConfig().SecretKey = ""
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	_, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	var target *ModelNotSupportedError
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "ERNIE-99")
+
+	_, err = chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	assert.ErrorAs(t, err, &target)
+	assert.Equal(t, target.Model, "ERNIE-99")
+
+	ebSpeed := NewChatCompletion(WithModel("ERNIE-Speed"))
+	resp, err := ebSpeed.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "speed")
+
+	stream, err := ebSpeed.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := stream.Recv()
+		assert.NoError(t, err)
+		if stream.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "speed")
+	}
+}
+
+func TestChatDynamicEndpointWhenNewModel(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	delete(getModelEndpointRetriever().modelList["chat"], "ERNIE-99")
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+}
+
+func TestChatDynamicEndpointWhenEndpointError(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	getModelEndpointRetriever().modelList["chat"]["ERNIE-99"] = "/chat/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
+	resp, err = chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Object, "chat.completion")
+	assert.Contains(t, resp.RawResponse.Request.URL.Path, "eb99")
+
+	chat = NewChatCompletion(WithEndpoint("error"))
+	_, err = chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	apiErr := err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+
+	getModelEndpointRetriever().modelList["chat"]["ERROR_MODEL"] = "/chat/error"
+	chat = NewChatCompletion(WithModel("ERROR_MODEL"))
+	_, err = chat.Do(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	apiErr = err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+}
+
+func TestChatDynamicEndpointWhenEndpointErrorStream(t *testing.T) {
+	resetTestEnv()
+	defer resetTestEnv()
+	chat := NewChatCompletion(WithModel("ERNIE-99"))
+	resp, err := chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb99")
+	}
+
+	getModelEndpointRetriever().modelList["chat"]["ERNIE-99"] = "/chat/error"
+	getModelEndpointRetriever().lastUpdate = time.Now().Add(-1 * time.Hour)
+
 	resp, err = chat.Stream(
 		context.Background(),
 		&ChatCompletionRequest{
@@ -275,21 +572,76 @@ func TestChatCompletionStreamRetry(t *testing.T) {
 		},
 	)
 	assert.NoError(t, err)
-	_, err = resp.Recv()
+	assert.NoError(t, err)
+	for {
+		r, err := resp.Recv()
+		assert.NoError(t, err)
+		if resp.IsEnd {
+			break
+		}
+		assert.Equal(t, r.RawResponse.StatusCode, 200)
+		assert.NotEqual(t, r.Id, nil)
+		assert.Equal(t, r.Object, "chat.completion")
+		assert.Contains(t, r.Result, "你好")
+		req, err := getRequestBody[ChatCompletionRequest](r.RawResponse)
+		assert.NoError(t, err)
+		assert.Equal(t, req.Messages[0].Content, "你好")
+		assert.Contains(t, r.RawResponse.Request.URL.Path, "eb99")
+	}
+
+	chat = NewChatCompletion(WithEndpoint("error"))
+	_, err = chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
 	assert.Error(t, err)
-	var target *APIError
-	assert.ErrorAs(t, err, &target)
-	assert.Equal(t, target.Code, ServerHighLoadErrCode)
+	apiErr := err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+
+	getModelEndpointRetriever().modelList["chat"]["ERROR_MODEL"] = "/chat/error"
+	chat = NewChatCompletion(WithModel("ERROR_MODEL"))
+	_, err = chat.Stream(
+		context.Background(),
+		&ChatCompletionRequest{
+			Messages: []ChatCompletionMessage{
+				ChatCompletionUserMessage("你好"),
+			},
+		},
+	)
+	assert.Error(t, err)
+	apiErr = err.(*APIError)
+	assert.Equal(t, apiErr.Code, UnsupportedMethodErrCode)
+}
+
+func resetConfig() {
+	_config = nil
+	_configInitOnce = sync.Once{}
+}
+
+func resetAuthManager() {
+	_authManager = nil
+	_authManagerInitOnce = sync.Once{}
+}
+
+func resetModelEndpointRetriever() {
+	_modelEndpointRetriever = nil
+	_modelEndpointRetrieverInitOnce = sync.Once{}
 }
 
 func resetTestEnv() {
 	rand.Seed(time.Now().UnixNano())
 	logger.SetLevel(logrus.DebugLevel)
 	os.Setenv("QIANFAN_BASE_URL", "http://127.0.0.1:8866")
+	os.Setenv("QIANFAN_CONSOLE_BASE_URL", "http://127.0.0.1:8866")
 	os.Setenv("QIANFAN_ACCESS_KEY", "test_access_key")
 	os.Setenv("QIANFAN_SECRET_KEY", "test_secret_key")
-	_authManager = nil
-	_config = nil
+	resetAuthManager()
+	resetConfig()
+	resetModelEndpointRetriever()
 }
 
 func TestMain(m *testing.M) {

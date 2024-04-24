@@ -1,0 +1,80 @@
+<!--
+Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ant Design Table Example</title>
+  <!-- 引入 Ant Design 的 CSS 文件 -->
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/antd/4.18.0/antd.min.css">
+</head>
+<body>
+  <!-- 定义一个容器用于渲染表格 -->
+  <div id="app"></div>
+
+  <!-- 引入 Ant Design 的 JavaScript 文件 -->
+  <script src="https://cdn.bootcdn.net/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/antd/4.18.0/antd.min.js"></script>
+
+  <!-- 定义表格的列和数据 -->
+  <script type="text/babel">
+    const { Table } = antd;
+
+    const columns = [
+      {
+        title: 'title',
+        dataIndex: 'title',
+        key: 'title',
+      },
+      {
+        title: 'content',
+        dataIndex: 'content',
+        key: 'content',
+      },
+    ];
+
+    const data = [
+      {
+        key: '1',
+        title: 'John Brown',
+        content: '阅读下面的材料，根据要求写作。\n2000年 农历庚辰龙年，人类迈进'
+      },
+      {
+        key: '2',
+        name: 'Jim Green',
+        age: 42,
+        address: 'London No. 1 Lake Park',
+      },
+      {
+        key: '3',
+        name: 'Joe Black',
+        age: 32,
+        address: 'Sidney No. 1 Lake Park',
+      },
+    ];
+
+    // 在容器中渲染表格
+    ReactDOM.render(
+      <Table columns={columns} dataSource={data} />,
+      document.getElementById('app')
+    );
+  </script>
+</body>
+</html>

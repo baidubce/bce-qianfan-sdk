@@ -343,26 +343,26 @@ def _update_train_config(model_info_list: List[Dict]) -> Type:
 
 
 def _update_default_config(model_info_list: List[Dict]) -> Dict:
-    model_info_mapping: Dict[str, Any] = {
+    train_mode_model_info_mappings: Dict[str, Any] = {
         console_consts.TrainMode.PostPretrain: {},
         console_consts.TrainMode.SFT: {},
+        console_consts.TrainMode.DPO: {},
     }
     for info in model_info_list:
         model = info["model"]
         for train_mode_info in info["supportTrainMode"]:
             train_mode = train_mode_info.get("trainMode")
-            if not model_info_mapping[train_mode].get(model, None):
-                model_info_mapping[train_mode][model] = {}
+            current = train_mode_model_info_mappings.get(train_mode, {})
+            if not current.get(model, None):
+                current[model] = {}
             for param_scale in train_mode_info["supportParameterScale"]:
                 default_fields = {}
                 param_scale_peft = param_scale["parameterScale"]
                 for params in param_scale["supportHyperParameterConfig"]:
                     field_name = camel_to_snake(params["key"])
                     default_fields[field_name] = params["default"]
-                model_info_mapping[train_mode][model][param_scale_peft] = TrainConfig(
-                    **default_fields
-                )
-    return model_info_mapping
+                current[model][param_scale_peft] = TrainConfig(**default_fields)
+    return train_mode_model_info_mappings
 
 
 def _parse_model_info_list(
@@ -442,6 +442,7 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
         deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
+        model="Qianfan-Chinese-Llama-2-13B-v1",
         short_name="Llama2_13b",
         base_model_type="Llama-2",
         support_peft_types=[PeftType.ALL],
@@ -454,8 +455,12 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
                 weight_decay=(0.0001, 0.05),
             ),
         },
+        deprecated=True,
     ),
 }
+
+
+DPOTrainModelInfoMapping: Dict[str, ModelInfo] = {}
 
 # model train type -> default train config
 ModelInfoMapping: Dict[str, ModelInfo] = {
@@ -838,7 +843,7 @@ DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = 
     },
 }
 
-tc = TrainConfig(learning_rate=0.333)
+DefaultDPOTrainConfigMapping: Dict[str, TrainConfig] = {}
 
 # finetune model train type -> default finetune train config
 DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
@@ -1152,6 +1157,9 @@ def update_all_train_configs() -> None:
         ppt_model_info = _get_online_supported_model_info_mapping(
             model_info_list, console_consts.TrainMode.PostPretrain
         )
+        dpo_model_info = _get_online_supported_model_info_mapping(
+            model_info_list, console_consts.TrainMode.DPO
+        )
         # 更新模型默认配置：
         default_configs_mapping = _update_default_config(model_info_list)
     except Exception:
@@ -1163,6 +1171,8 @@ def update_all_train_configs() -> None:
         **PostPreTrainModelInfoMapping,
         **ppt_model_info,
     }
+    global DPOTrainModelInfoMapping
+    DPOTrainModelInfoMapping = {**DPOTrainModelInfoMapping, **dpo_model_info}
     global DefaultTrainConfigMapping
     DefaultTrainConfigMapping = {
         **DefaultTrainConfigMapping,
@@ -1172,6 +1182,11 @@ def update_all_train_configs() -> None:
     DefaultPostPretrainTrainConfigMapping = {
         **DefaultPostPretrainTrainConfigMapping,
         **default_configs_mapping[console_consts.TrainMode.PostPretrain],
+    }
+    global DefaultDPOTrainConfigMapping
+    DefaultDPOTrainConfigMapping = {
+        **DefaultDPOTrainConfigMapping,
+        **default_configs_mapping[console_consts.TrainMode.DPO],
     }
 
 

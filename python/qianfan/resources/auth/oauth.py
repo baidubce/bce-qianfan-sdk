@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from qianfan.config import get_config
 from qianfan.consts import Consts
-from qianfan.errors import InternalError, InvalidArgumentError
+from qianfan.errors import AuthError, InternalError, InvalidArgumentError
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest, RetryConfig
 from qianfan.utils import (
@@ -176,6 +176,21 @@ class AuthManager(metaclass=Singleton):
         this function is not thread safe and should be protected by lock from obj !!!
         """
         if "error" in response:
+            error = response["error"]
+            if error == "invalid_client":
+                exception_msg_tmpl = (
+                    "{}, please check! AK/SK should be obtained from"
+                    " https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
+                )
+                err_msg = response.get("error_description", "AK/SK is not correct")
+                if err_msg == "unknown client id":
+                    err_msg = f"AK({_masked_ak(ak)}) is not correct"
+                if err_msg == "Client authentication failed":
+                    err_msg = f"SK({_masked_ak(sk)}) is not correct"
+                err_msg = exception_msg_tmpl.format(err_msg)
+                log_error(err_msg)
+                raise AuthError(err_msg)
+            # unexpected error, maybe it can be recovered by retrying.
             log_error(
                 "refresh access_token for ak `{}` failed, error description={}".format(
                     _masked_ak(ak), response["error_description"]
@@ -213,6 +228,8 @@ class AuthManager(metaclass=Singleton):
                 resp = self._client.request(self._auth_request(ak, sk))
                 json_body = resp.json()
                 self._update_access_token(obj, json_body, ak, sk)
+            except AuthError:
+                raise
             except Exception as e:
                 log_error(f"refresh access token failed with exception {str(e)}")
                 return
@@ -236,6 +253,8 @@ class AuthManager(metaclass=Singleton):
                 async with session:
                     json_body = await resp.json()
                 self._update_access_token(obj, json_body, ak, sk)
+            except AuthError:
+                raise
             except Exception as e:
                 log_error(f"refresh access token failed with exception {str(e)}")
                 return

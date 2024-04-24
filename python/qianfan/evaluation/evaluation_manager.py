@@ -16,6 +16,7 @@
 """
 manager which manage whole procedure of evaluation
 """
+import json
 import math
 import multiprocessing
 import os.path
@@ -29,6 +30,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Union
 import pyarrow
 
 from qianfan import get_config
+from qianfan.config import encoding
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     LLMOutputColumnName,
@@ -36,10 +38,10 @@ from qianfan.dataset.consts import (
     OldReferenceColumnName,
 )
 from qianfan.dataset.data_source import FileDataSource, QianfanDataSource
+from qianfan.dataset.data_source.chunk_reader import JsonLineReader
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
-from qianfan.dataset.schema import EvaluationSchema
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -59,6 +61,44 @@ from qianfan.resources.console.consts import (
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
 from qianfan.utils.utils import generate_letter_num_random_id
+
+
+def _convert_the_value_in_evaluation_into_str(json_line_path: str) -> str:
+    reader = JsonLineReader(json_line_path)
+    new_file_path = os.path.join(
+        os.path.split(json_line_path)[0], "tmp_eval_modify.jsonl"
+    )
+
+    is_judge_reason_existed_checked: bool = False
+
+    with open(new_file_path, mode="w", encoding=encoding()) as f:
+        for entry in reader:
+            for inner_list in entry:
+                for single_entry in inner_list:
+                    # 判断是否包含 judge_reason，如果包含则退出
+                    if "evaluation" not in single_entry or (
+                        not is_judge_reason_existed_checked
+                        and not any(
+                            [
+                                v == "judge_reason"
+                                for item in single_entry["evaluation"]
+                                for _, v in item.items()
+                            ]
+                        )
+                    ):
+                        return json_line_path
+
+                    is_judge_reason_existed_checked = True
+
+                    single_entry["evaluation"] = [
+                        {k: str(v) for k, v in item.items()}
+                        for item in single_entry["evaluation"]
+                    ]
+
+                json.dump(inner_list, f, ensure_ascii=False)
+                f.write("\n")
+
+    return new_file_path
 
 
 class EvaluationManager(BaseModel):
@@ -182,6 +222,7 @@ class EvaluationManager(BaseModel):
                 else:
                     llm_key_str = f"{llm.id}_{llm.endpoint}"
             elif isinstance(llm, Model):
+                llm.auto_complete_info()
                 llm_key_str = f"{llm.id}_{llm.version_id}_{llm.name}"
             else:
                 llm_key_str = ""
@@ -373,13 +414,23 @@ class EvaluationManager(BaseModel):
                 {OldReferenceColumnName: [None for _ in range(len(dataset))]}
             )
 
-        if not EvaluationSchema().validate(dataset):
-            raise ValueError("validate failed before evaluation")
-
         tmp_ds = Dataset.create_from_pyobj(
             self._run_evaluator_locally(dataset, **kwargs)
         )
-        return EvaluationResult(result_dataset=dataset.col_append(tmp_ds.col_list()))
+
+        assert self.local_evaluators
+
+        summarization_dict: Dict[str, Any] = {}
+
+        for evaluator in self.local_evaluators:
+            summarization = evaluator.summarize(tmp_ds)
+            if summarization:
+                summarization_dict.update(summarization)
+
+        return EvaluationResult(
+            metrics=summarization_dict,
+            result_dataset=dataset.col_append(tmp_ds.col_list()),
+        )
 
     def eval(
         self,
@@ -480,6 +531,8 @@ class EvaluationManager(BaseModel):
             # 整合数据，将得到的数据集整合成网页人工评估的数据集格式
             log_info("start to merge evaluation result dataset")
             table_list: List[pyarrow.Table] = []
+            metrics_dict: Dict[str, Dict[str, Any]] = {}
+
             for index, response_list in llm_response_list.items():
                 index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
                 ds = dataset.create_from_pyobj(
@@ -494,13 +547,25 @@ class EvaluationManager(BaseModel):
                 metrics_ds = dataset.create_from_pyobj(
                     llm_evaluation_result_dict[index]
                 )
+
                 ds.col_append(metrics_ds.col_list())
                 table_list.append(ds.inner_table)
+
+                summarization_dict: Dict[str, Any] = {}
+
+                for evaluator in self.local_evaluators:
+                    summarization = evaluator.summarize(metrics_ds)
+                    if summarization:
+                        summarization_dict.update(summarization)
+
+                if summarization_dict:
+                    metrics_dict[llm_tags[index]] = summarization_dict
 
             return EvaluationResult(
                 result_dataset=Dataset.create_from_pyarrow_table(
                     pyarrow.concat_tables(table_list)
-                )
+                ),
+                metrics=metrics_dict,
             )
 
         if self.qianfan_evaluators:
@@ -592,6 +657,10 @@ class EvaluationManager(BaseModel):
                 _download_file_from_url_streamly(download_url, local_cache_file_path)
                 with zipfile.ZipFile(local_cache_file_path) as zip_f:
                     zip_f.extractall(unfold_zip_file_path)
+
+                data_jsonl_file_path = _convert_the_value_in_evaluation_into_str(
+                    data_jsonl_file_path
+                )
 
                 # 返回指标信息
                 return EvaluationResult(

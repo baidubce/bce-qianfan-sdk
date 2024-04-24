@@ -14,7 +14,7 @@
 """
 wrapper for pyarrow.Table
 """
-import threading
+import random
 from typing import (
     Any,
     Callable,
@@ -44,6 +44,8 @@ from qianfan.dataset.process_interface import (
 from qianfan.dataset.table_utils import _construct_table_from_nest_sequence
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel
+
+i = 0
 
 
 def _create_new_table_for_add(
@@ -135,43 +137,6 @@ def _whether_dataset_is_grouped(col_names: List[str]) -> bool:
     return QianfanDataGroupColumnName in col_names
 
 
-class TaskDispatcher:
-    def __init__(self, batch_size: int, task_number: int):
-        self.task_queue: List[Tuple[int, int]] = []
-        for batch_index in range(0, task_number, batch_size):
-            current_batch_size = min(task_number - batch_index, batch_size)
-            self.task_queue.append((batch_index, current_batch_size))
-
-        self.lock = threading.Lock()
-        self.current_task_queue_index = 0
-
-    def get_task(self) -> Optional[Tuple[int, int]]:
-        with self.lock:
-            if self.current_task_queue_index >= len(self.task_queue):
-                return None
-
-            task = self.task_queue[self.current_task_queue_index]
-            self.current_task_queue_index += 1
-            return task
-
-    def mapper_closure(
-        self, func: Callable[[int, int], Generator[Any, None, None]]
-    ) -> Callable[[], Generator[Tuple[int, Any], None, None]]:
-        def new_func() -> Generator[Tuple[int, Any], None, None]:
-            task_slice = self.get_task()
-            while task_slice:
-                batch_index, batch_size = task_slice[0], task_slice[1]
-                returned_data_list: List[Any] = []
-
-                for returned_data in func(batch_index, batch_size):
-                    returned_data_list.append(returned_data)
-
-                yield batch_index, returned_data_list
-                task_slice = self.get_task()
-
-        return new_func
-
-
 class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table row"""
 
@@ -194,7 +159,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         is_grouped: bool = True,
         group_id: int = -1,
         **kwargs: Any,
-    ) -> Self:
+    ) -> PyarrowTable:
         """
         append element(s) to pyarrow table
 
@@ -207,7 +172,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             group_id (int): new group id, default to -1.
             **kwargs (Any): optional arguments
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         return pyarrow.concat_tables(
@@ -234,7 +199,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         is_grouped: bool = True,
         group_id: int = -1,
         **kwargs: Any,
-    ) -> Self:
+    ) -> PyarrowTable:
         """
         insert element(s) to pyarrow table
 
@@ -248,7 +213,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             group_id (int): new group id, default to -1.
             **kwargs (Any): optional arguments
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
         table_length = self.table.num_rows
         if index < 0 or index > table_length:
@@ -333,7 +298,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         path: str = "./default_path",
         keep_original_order: bool = True,
         **kwargs: Any,
-    ) -> Self:
+    ) -> PyarrowTable:
         """
         map on pyarrow table's row
 
@@ -346,7 +311,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             **kwargs (Any): other arguments
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         # 构建出的新 table 会按照首行的 key 作为 columns
@@ -358,7 +323,6 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         # 如果数据集是被 pack 起来的，则按照一行作为一个列表，传递给 op 函数
 
         # 创建一个任务分配器，来分配需要处理的区间
-        task_dispatcher = TaskDispatcher(batch_size, self.table.num_rows)
 
         if self._inner_table_is_packed():
 
@@ -373,14 +337,17 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
                 # 开始处理并且放在结果集合里面
                 for row in rows:
                     returned_data = op(row)
+                    # 为了支持返回的是个迭代器的情况，需要特判
+                    # 这个逻辑应该是只会在 Packed 的情况下出现
+                    # 因为需要返回迭代器的情况是一条数据返回多条数据
+                    # 而会产生多条数据的情况有且仅有在原始数据集是 Packed 的情况
+                    if isinstance(returned_data, Generator):
+                        yield from returned_data
+                        continue
+
                     if not returned_data:
                         log_warn("a row has been deleted from table")
                         continue
-                    if not isinstance(returned_data, (list, str)):
-                        raise ValueError(
-                            "returned value isn't list or str, rather"
-                            f" {type(returned_data)}"
-                        )
 
                     yield returned_data
 
@@ -416,49 +383,102 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         return _create_map_arrow_file(
             path=path,
             **kwargs,
-            mapper_closure=task_dispatcher.mapper_closure(_mapper_closure),
+            mapper_closure=_mapper_closure,
+            batch_size=batch_size,
+            task_number=self.table.num_rows,
             keep_original_order=keep_original_order,
         )
 
-    def filter(self, op: Callable[[Any], bool]) -> Self:
+    def iterate(
+        self, op: Callable[[Any], None], batch_size: int = 10000, **kwargs: Any
+    ) -> None:
+        """
+        iterate on pyarrow table's row
+
+        Args:
+            op (Callable[[Any], None]): handler used to iterate
+            batch_size (int): batch size of concurrent processing
+            **kwargs (Any): other arguments
+        """
+        from qianfan.dataset.data_source.utils import _pure_iterate
+
+        if self._inner_table_is_packed():
+
+            def _iterate_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[None, None, None]:
+                # 拿到一个区间任务并取出区间数据
+                rows = self.table.slice(batch_index, batch_size).to_pydict()[
+                    QianfanDatasetPackColumnName
+                ]
+                for row in rows:
+                    op(row)
+                    yield None
+
+        else:
+
+            def _iterate_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[None, None, None]:
+                rows = self.table.slice(batch_index, batch_size).to_pylist()
+                for row in rows:
+                    input_dict = {key: val for key, val in row.items()}
+
+                    op(input_dict)
+                    yield None
+
+        _pure_iterate(_iterate_closure, batch_size, self.table.num_rows, **kwargs)
+
+    def filter(
+        self, op: Callable[[Any], bool], batch_size: int = 10000, **kwargs: Any
+    ) -> PyarrowTable:
         """
         filter on pyarrow table's row
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            batch_size (int): batch size of concurrent processing
+            **kwargs (Any): other arguments
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
+        from qianfan.dataset.data_source.utils import _iterate_to_conduct_result
 
-        selection_masks: List[bool] = []
         if self._inner_table_is_packed():
-            for row_index in range(self.table.num_rows):
-                row = self.table.take([row_index]).to_pylist()[0][
+
+            def _filter_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[Any, None, None]:
+                # 拿到一个区间任务并取出区间数据
+                rows = self.table.slice(batch_index, batch_size).to_pydict()[
                     QianfanDatasetPackColumnName
                 ]
-                flag = op(row)
-                if flag is None:
-                    raise ValueError("cant return None")
-                if not isinstance(flag, bool):
-                    raise ValueError("returned value isn't bool")
+                for row in rows:
+                    flag = op(row)
 
-                selection_masks.append(flag)
+                    yield flag
+
         else:
-            for row_index in range(self.table.num_rows):
-                origin_data = self.table.take([row_index]).to_pylist()[0]
-                input_dict = {key: val for key, val in origin_data.items()}
-                flag = op(input_dict)
-                if flag is None:
-                    raise ValueError("cant return None")
-                if not isinstance(flag, bool):
-                    raise ValueError("returned value isn't bool")
 
-                selection_masks.append(flag)
+            def _filter_closure(
+                batch_index: int, batch_size: int
+            ) -> Generator[Any, None, None]:
+                rows = self.table.slice(batch_index, batch_size).to_pylist()
+                for row in rows:
+                    input_dict = {key: val for key, val in row.items()}
 
-        return self.table.filter(mask=selection_masks)
+                    flag = op(input_dict)
 
-    def delete(self, index: Union[int, str]) -> Self:
+                    yield flag
+
+        return self.table.filter(
+            _iterate_to_conduct_result(
+                _filter_closure, batch_size, self.table.num_rows, **kwargs
+            )
+        )
+
+    def delete(self, index: Union[int, str]) -> PyarrowTable:
         """
         delete an element from pyarrow table
 
@@ -466,7 +486,7 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             index (Union[int, str]): element index to delete
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         if isinstance(index, str):
@@ -482,6 +502,62 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             [self.table.slice(0, index), self.table.slice(index + 1)]
         )
 
+    def take_slice(self, start: int = 0, end: int = -1) -> PyarrowTable:
+        if start < 0:
+            err_msg = f"start index is smaller than 0: {start}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end >= self.table.num_rows:
+            err_msg = (
+                f"end index {end} is bigger than table size: {self.table.num_rows}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end < 0:
+            end = self.table.num_rows - 1
+
+        return self.table.slice(start, end - start + 1)
+
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+    ) -> PyarrowTable:
+        if start < 0:
+            err_msg = f"start index is smaller than 0: {start}"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end >= self.table.num_rows:
+            err_msg = (
+                f"end index {end} is bigger than table size: {self.table.num_rows}"
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if end < 0:
+            end = self.table.num_rows - 1
+
+        if sample_number < 0:
+            err_msg = f"can't sample {sample_number} entries"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        if sample_number >= self.table.num_rows:
+            return self.table
+
+        numbers = random.sample(range(start, end + 1), sample_number)
+        return self.table.take(numbers)
+
+    def shuffle(self) -> PyarrowTable:
+        indices = list(range(0, self.table.num_rows))
+        random.shuffle(indices)
+
+        return self.table.take(indices)
+
 
 class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
     """handler for processing of pyarrow table column"""
@@ -491,7 +567,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
     table: PyarrowTable
 
-    def append(self, elem: Dict[str, List]) -> Self:
+    def append(self, elem: Dict[str, List]) -> PyarrowTable:
         """
         append a row to pyarrow table
 
@@ -499,7 +575,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             elem (Dict[str, List]): dict containing element added to pyarrow table
                 key as column name, value as column data
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         if not isinstance(elem, dict):
@@ -522,7 +598,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
         return self.table
 
-    def insert(self, elem: Dict[str, List], index: int) -> Self:
+    def insert(self, elem: Dict[str, List], index: int) -> PyarrowTable:
         """
         insert a row to pyarrow table
 
@@ -532,7 +608,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             index (int): where to insert new column
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         col_length = self.table.num_columns
@@ -575,7 +651,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             raise ValueError(f"contain not existed column name: {indices}")
         return self.table.select(list(indices)).to_pydict()
 
-    def map(self, op: Callable[[Any], Any]) -> Self:
+    def map(self, op: Callable[[Any], Any]) -> PyarrowTable:
         """
         map on pyarrow table's column
 
@@ -583,7 +659,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             op (Callable[[Any], Any]): handler used to map
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         new_columns: Dict[str, List[Any]] = {}
@@ -594,7 +670,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
         return pyarrow.Table.from_pydict(new_columns)
 
-    def filter(self, op: Callable[[Any], bool]) -> Self:
+    def filter(self, op: Callable[[Any], bool]) -> PyarrowTable:
         """
         filter on pyarrow table's column
 
@@ -602,7 +678,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             op (Callable[[Any], bool]): handler used to filter
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         dropped_column_name = []
@@ -613,7 +689,7 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
 
         return self.table.drop_columns(dropped_column_name)
 
-    def delete(self, index: Union[int, str]) -> Self:
+    def delete(self, index: Union[int, str]) -> PyarrowTable:
         """
         delete an column from pyarrow table
 
@@ -621,21 +697,21 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             index (str): column name to delete
 
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         if isinstance(index, int):
             raise ValueError("cannot delete column by int")
         return self.table.drop_columns(index)
 
-    def col_renames(self, new_names: List[str]) -> Self:
+    def col_renames(self, new_names: List[str]) -> PyarrowTable:
         """
         rename all dataset column
 
         Args:
             new_names (List[str]): All new names for columns
         Returns:
-            Self: a new pyarrow table
+            PyarrowTable: a new pyarrow table
         """
 
         if (
@@ -646,6 +722,32 @@ class _PyarrowColumnManipulator(BaseModel, Addable, Listable, Processable):
             new_names.insert(i, QianfanDataGroupColumnName)
 
         return self.table.rename_columns(new_names)
+
+    def select_columns(self, columns: List[str]) -> PyarrowTable:
+        return self.table.select(columns)
+
+    def mean(self, column: str, skip_nulls: bool = True) -> float:
+        return pc.mean(self.table.column(column), skip_nulls=skip_nulls)
+
+    def quantile(
+        self,
+        column: str,
+        q: Union[List[float], float] = 0.5,
+        interpolation: str = "linear",
+        skip_nulls: bool = True,
+    ) -> List[float]:
+        return pc.quantile(
+            self.table.column(column),
+            q=q,
+            interpolation=interpolation,
+            skip_nulls=skip_nulls,
+        )
+
+    def min(self, column: str, skip_nulls: bool = True) -> Union[int, float]:
+        return pc.min(self.table.column(column), skip_nulls=skip_nulls)
+
+    def max(self, column: str, skip_nulls: bool = True) -> Union[int, float]:
+        return pc.max(self.table.column(column), skip_nulls=skip_nulls)
 
 
 class Table(Addable, Listable, Processable):
@@ -707,6 +809,26 @@ class Table(Addable, Listable, Processable):
 
         return
 
+    def _create_new_obj(
+        self,
+        arrow_table: PyarrowTable,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        if not should_create_new_obj:
+            self.inner_table = arrow_table
+            return self
+
+        attr_dict = vars(self)
+        new_obj = self.__class__(inner_table=arrow_table)
+        for k, v in attr_dict.items():
+            if k == "inner_table":
+                continue
+
+            setattr(new_obj, k, v)
+
+        return new_obj
+
     def pack(
         self, batch_size: int = 10000, path: str = "./default_path", **kwargs: Any
     ) -> bool:
@@ -722,10 +844,6 @@ class Table(Addable, Listable, Processable):
         Returns:
             bool: whether packing succeeded
         """
-        if QianfanDataGroupColumnName not in self.col_names():
-            log_error("can't pack a dataset without '_group' column")
-            return False
-
         if len(self.col_names()) == 1:
             log_error("can't pack a dataset only with '_group' column")
             return False
@@ -745,8 +863,6 @@ class Table(Addable, Listable, Processable):
         # 用于合并由于切分数据集而导致被分割的同组元素的一个 Dict
         # 键是由下一个切片的开始索引
         merge_dict: Dict[int, Tuple[int, List[Dict[str, Any]]]] = {}
-
-        task_dispatcher = TaskDispatcher(batch_size, self.inner_table.num_rows)
 
         def _pack_closure(
             batch_index: int, batch_size: int
@@ -773,6 +889,9 @@ class Table(Addable, Listable, Processable):
 
                 rows[i].pop(inner_index)
                 rows[i].pop(QianfanDataGroupColumnName)
+
+                if "response" in rows[i] and isinstance(rows[i]["response"], str):
+                    rows[i]["response"] = [[rows[i]["response"]]]
 
                 # 当读完所有当前组的数据后，返回一次
                 if group_index != current_group_index:
@@ -806,7 +925,9 @@ class Table(Addable, Listable, Processable):
         self.inner_table = _create_map_arrow_file(
             path=path,
             **kwargs,
-            mapper_closure=task_dispatcher.mapper_closure(_pack_closure),
+            mapper_closure=_pack_closure,
+            batch_size=batch_size,
+            task_number=self.inner_table.num_rows,
         )
         return True
 
@@ -847,8 +968,6 @@ class Table(Addable, Listable, Processable):
             log_warn(f"dataset has element not supported: {element}")
             return False
 
-        task_dispatcher = TaskDispatcher(batch_size, self.inner_table.num_rows)
-
         def _unpack_closure(
             batch_index: int, batch_size: int
         ) -> Generator[Any, None, None]:
@@ -868,17 +987,28 @@ class Table(Addable, Listable, Processable):
         self.inner_table = _create_map_arrow_file(
             path=path,
             **kwargs,
-            mapper_closure=task_dispatcher.mapper_closure(_unpack_closure),
+            mapper_closure=_unpack_closure,
+            batch_size=batch_size,
+            task_number=self.inner_table.num_rows,
         )
         return True
 
     # 直接调用 Table 对象的接口方法都默认是在行上做处理
-    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
+    def map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on pyarrow table's row
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
             **kwargs (Any): other arguments
 
         Returns:
@@ -890,36 +1020,69 @@ class Table(Addable, Listable, Processable):
             log_error(err_msg)
             raise TypeError(err_msg)
 
-        self.inner_table = manipulator.map(op, **kwargs)  # noqa
-        return self
+        result_ds = manipulator.map(op, **kwargs)
 
-    def filter(self, op: Callable[[Any], bool]) -> Self:
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on pyarrow table's row
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
-        self.inner_table = manipulator.filter(op)
-        return self
+        result_ds = manipulator.filter(op, **kwargs)
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
-    def delete(self, index: Union[int, str]) -> Self:
+    def delete(
+        self, index: Union[int, str], should_create_new_obj: bool = False, **kwargs: Any
+    ) -> Self:
         """
         delete an element from pyarrow table
 
         Args:
             index (Union[int, str]): element index to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
-        self.inner_table = manipulator.delete(index)
-        return self
+        result_ds = manipulator.delete(index)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def iterate(
+        self,
+        op: Callable[[Any], None],
+        **kwargs: Any,
+    ) -> None:
+        """
+        iterate on pyarrow table's row
+
+        Args:
+            op (Callable[[Any], bool]): handler used to iterate
+            **kwargs (Any): other arguments
+        """
+        manipulator = self._row_op()
+        manipulator.iterate(op, **kwargs)
 
     def _calculate_kwargs_for_add(
         self, add_new_group: bool = False, is_grouped: bool = True, group_id: int = -1
@@ -949,7 +1112,12 @@ class Table(Addable, Listable, Processable):
         return kwargs
 
     def append(
-        self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
+        self,
+        elem: Any,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         append an element to pyarrow table
@@ -968,15 +1136,20 @@ class Table(Addable, Listable, Processable):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
 
-        self.inner_table = manipulator.append(
+        result_ds = manipulator.append(
             elem, **self._calculate_kwargs_for_add(add_new_group, is_grouped)
         )
-        return self
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
     def insert(
         self,
@@ -985,6 +1158,8 @@ class Table(Addable, Listable, Processable):
         group_id: int = -1,
         add_new_group: bool = False,
         is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         insert an element to pyarrow table
@@ -1009,17 +1184,22 @@ class Table(Addable, Listable, Processable):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Table itself
         """
         manipulator = self._row_op()
 
-        self.inner_table = manipulator.insert(
+        result_ds = manipulator.insert(
             elem,
             index,
             **self._calculate_kwargs_for_add(add_new_group, is_grouped, group_id),
         )
-        return self
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
     def list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
@@ -1037,76 +1217,161 @@ class Table(Addable, Listable, Processable):
         manipulator = self._row_op()
         return manipulator.list(by)
 
-    def col_map(self, op: Callable[[Any], Any]) -> Self:
+    def take_slice(
+        self,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._row_op()
+        result_ds = manipulator.take_slice(start, end)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._row_op()
+        result_ds = manipulator.sample(sample_number, start, end)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def shuffle(
+        self,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._row_op()
+        result_ds = manipulator.shuffle()
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def col_map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on pyarrow table's column
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._col_op()
-        self.inner_table = manipulator.map(op)  # noqa
-        return self
+        result_ds = manipulator.map(op)  # noqa
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
-    def col_filter(self, op: Callable[[Any], bool]) -> Self:
+    def col_filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on pyarrow table's column
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._col_op()
-        self.inner_table = manipulator.filter(op)
-        return self
+        result_ds = manipulator.filter(op)
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
-    def col_delete(self, index: Union[int, str]) -> Self:
+    def col_delete(
+        self,
+        index: Union[int, str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         delete a column from pyarrow table
 
         Args:
             index (str): column name to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Table itself
         """
         manipulator = self._col_op()
-        self.inner_table = manipulator.delete(index)
-        return self
+        result_ds = manipulator.delete(index)
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
-    def col_append(self, elem: Any) -> Self:
+    def col_append(
+        self,
+        elem: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to pyarrow table
 
         Args:
             elem (Dict[str, List]): dict containing element added to pyarrow table
                 key as column name, value as column data
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+
         Returns:
             Self: Table itself
         """
         manipulator = self._col_op()
-        self.inner_table = manipulator.append(elem)
-        return self
+        result_ds = manipulator.append(elem)
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
-    def col_insert(self, elem: Any, index: Any) -> Self:
+    def col_insert(
+        self,
+        elem: Any,
+        index: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to pyarrow table
 
         Args:
             elem (Dict[str, List]): dict containing element added to pyarrow table
-                must has column name "name" and column data list "data"
+                must have column name "name" and column data list "data"
             index (int): where to insert new column
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+
         Returns:
             Self: Table itself
         """
         manipulator = self._col_op()
-        self.inner_table = manipulator.insert(elem, index)
-        return self
+        result_ds = manipulator.insert(elem, index)
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
     def col_list(
         self, by: Optional[Union[slice, int, str, Sequence[int], Sequence[str]]] = None
@@ -1145,6 +1410,73 @@ class Table(Addable, Listable, Processable):
         manipulator = self._col_op()
         self.inner_table = manipulator.col_renames(new_names)
         return self
+
+    def select_columns(
+        self,
+        columns: List[str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        manipulator = self._col_op()
+        result_ds = manipulator.select_columns(columns)
+        return self._create_new_obj(result_ds, should_create_new_obj)
+
+    def mean(self, column: str, skip_nulls: bool = True, **kwargs: Any) -> float:
+        manipulator = self._col_op()
+        return manipulator.mean(column, skip_nulls)
+
+    def quantile(
+        self,
+        column: str,
+        q: Union[List[float], float] = 0.5,
+        interpolation: str = "linear",
+        skip_nulls: bool = True,
+        **kwargs: Any,
+    ) -> List[float]:
+        manipulator = self._col_op()
+        return manipulator.quantile(column, q, interpolation, skip_nulls)
+
+    def min(
+        self, column: str, skip_nulls: bool = True, **kwargs: Any
+    ) -> Union[int, float]:
+        manipulator = self._col_op()
+        return manipulator.min(column, skip_nulls)
+
+    def max(
+        self, column: str, skip_nulls: bool = True, **kwargs: Any
+    ) -> Union[int, float]:
+        manipulator = self._col_op()
+        return manipulator.max(column, skip_nulls)
+
+    def concat_table(
+        self,
+        concat_table: Union[Self, List[Self]],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        concat content of operand Table to caller dataset
+        this requires two tables have identical fields
+
+        Args:
+            concat_table (Union[Self, List[Self]]):
+                Table, or list of Table, which will be concat
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+
+        Returns:
+            Self: concat Table
+        """
+        if not isinstance(concat_table, list):
+            concat_table = [concat_table]
+
+        result_ds = pyarrow.concat_tables(
+            [self.inner_table] + [table.inner_table for table in concat_table]
+        )
+        return self._create_new_obj(result_ds, should_create_new_obj)
 
     # 重写 get 和 del 的魔法方法
     def __getitem__(self, key: Any) -> Any:

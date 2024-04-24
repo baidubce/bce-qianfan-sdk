@@ -15,12 +15,23 @@
 dataset core concept, a wrap of data processing, data transmission and data validation
 """
 import functools
+import uuid
 from copy import deepcopy
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pyarrow
 from pyarrow import Table as PyarrowTable
+from tabulate import tabulate
 from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
@@ -52,11 +63,19 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
+    open_html_in_browser,
 )
 from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
     QianfanSchema,
     Schema,
+)
+from qianfan.dataset.summarization_method import (
+    MaxMethod,
+    MeanMethod,
+    MinMethod,
+    QuantileMethod,
+    SummarizationMethod,
 )
 from qianfan.dataset.table import Table
 from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
@@ -513,6 +532,8 @@ class Dataset(Table):
         if replace_source is not None:
             log_warn('parameter "replace_source" has been set as deprecated')
 
+        new_ds._set_qianfan_default_io_column(source)
+
         if not replace_source:
             return new_ds
 
@@ -603,6 +624,30 @@ class Dataset(Table):
             inner_schema_cache=schema,
             **kwargs,
         )
+
+    @classmethod
+    def create_from_datasets(
+        cls,
+        datasets: List["Dataset"],
+        **kwargs: Any,
+    ) -> "Dataset":
+        """
+        create a dataset from a list of Dataset
+
+        Args:
+            datasets (List["Dataset"]):
+                datasets used to create dataset。
+            **kwargs (Any):
+                optional arguments
+
+        Returns:
+            Dataset: a dataset instance
+        """
+
+        if len(datasets) == 1:
+            return datasets[0]
+
+        return datasets[0].concat_table(datasets[1:], True)
 
     def _is_dataset_located_in_qianfan(self) -> bool:
         return isinstance(self.inner_data_source_cache, QianfanDataSource)
@@ -757,51 +802,101 @@ class Dataset(Table):
     # 直接调用 Table 对象的接口方法
     # 这些接口不支持用在云端数据集上
     @_online_except_decorator
-    def map(self, op: Callable[[Any], Any], **kwargs: Any) -> Self:
+    def map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on dataset
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
             **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        assert isinstance(self.inner_data_source_cache, FileDataSource)
-        return super().map(op, path=self.inner_data_source_cache.path, **kwargs)
+        if isinstance(self.inner_data_source_cache, FileDataSource):
+            if len(self) == 0:
+                return self
+
+            return super().map(
+                op,
+                should_create_new_obj,
+                path=self.inner_data_source_cache.path,
+                **kwargs,
+            )
+        else:
+            if not self.inner_table or len(self) == 0:
+                return self
+            return super().map(
+                op, should_create_new_obj, path=f"no_source_{uuid.uuid4()}"
+            )
 
     @_online_except_decorator
-    def filter(self, op: Callable[[Any], bool]) -> Self:
+    def filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on dataset
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().filter(op)
+        if not self.inner_table or len(self) == 0:
+            return self
+        return super().filter(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def delete(self, index: Union[int, str]) -> Self:
+    def delete(
+        self,
+        index: Union[int, str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         delete an element from dataset
 
         Args:
             index (Union[int, str]): element index to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().delete(index)
+        return super().delete(index, should_create_new_obj, **kwargs)
 
     # 但是在云上数据集追加数据未来可以支持，本质是向数据集中导入新数据。
     # 目前不做修改，等待接口 ready
     @_online_except_decorator
     def append(
-        self, elem: Any, add_new_group: bool = False, is_grouped: bool = True
+        self,
+        elem: Any,
+        add_new_group: bool = False,
+        is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         append element(s) to dataset
@@ -821,10 +916,17 @@ class Dataset(Table):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().append(elem, add_new_group, is_grouped)
+        return super().append(
+            elem, add_new_group, is_grouped, should_create_new_obj, **kwargs
+        )
 
     @_online_except_decorator
     def insert(
@@ -834,6 +936,8 @@ class Dataset(Table):
         group_id: int = -1,
         add_new_group: bool = False,
         is_grouped: bool = True,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
     ) -> Self:
         """
         insert element(s) to dataset
@@ -859,10 +963,17 @@ class Dataset(Table):
                 If it's True, each element will have
                 sequential incremental group id from last
                 available group id.
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().insert(elem, index, add_new_group, is_grouped)
+        return super().insert(
+            elem, index, add_new_group, is_grouped, should_create_new_obj, **kwargs
+        )
 
     def list(
         self,
@@ -914,6 +1025,88 @@ class Dataset(Table):
                 log_error(err_msg)
                 raise ValueError(err_msg)
 
+    @_online_except_decorator
+    def take_slice(
+        self,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        make a slice of dataset
+
+        Args:
+            start (int):
+                where the slice starts
+            end (int):
+                where the slice ends
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+        Returns:
+            Dataset: a sliced dataset
+        """
+        return super().take_slice(start, end, should_create_new_obj, **kwargs)
+
+    @_online_except_decorator
+    def sample(
+        self,
+        sample_number: int,
+        start: int = 0,
+        end: int = -1,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        take random slice in dataset
+
+        Args:
+            sample_number (int):
+                how many entries should be sampled
+            start (int):
+                where the sample part starts
+            end (int):
+                where the sample part ends
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+
+        Returns:
+            Dataset: a sliced dataset
+        """
+        return super().sample(
+            sample_number, start, end, should_create_new_obj, **kwargs
+        )
+
+    @_online_except_decorator
+    def shuffle(
+        self,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        make a shuffled Dataset
+
+        Args:
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any):
+                other arguments
+
+        Returns:
+            Dataset: a sliced dataset
+        """
+        return super().shuffle(should_create_new_obj, **kwargs)
+
     def __getitem__(self, key: Any) -> Any:
         if (
             isinstance(key, int)
@@ -936,59 +1129,105 @@ class Dataset(Table):
 
     # 列操作集
     @_online_except_decorator
-    def col_map(self, op: Callable[[Any], Any]) -> Self:
+    def col_map(
+        self,
+        op: Callable[[Any], Any],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         map on dataset's column
 
         Args:
             op (Callable[[Any], Any]): handler used to map
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_map(op)
+        return super().col_map(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_filter(self, op: Callable[[Any], bool]) -> Self:
+    def col_filter(
+        self,
+        op: Callable[[Any], bool],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         filter on dataset's column
 
         Args:
             op (Callable[[Any], bool]): handler used to filter
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_filter(op)
+        return super().col_filter(op, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_delete(self, index: Union[int, str]) -> Self:
+    def col_delete(
+        self,
+        index: Union[int, str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         delete an column from dataset
 
         Args:
             index (str): column name to delete
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
 
         Returns:
             Self: Dataset itself
         """
-        return super().col_delete(index)
+        return super().col_delete(index, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_append(self, elem: Any) -> Self:
+    def col_append(
+        self,
+        elem: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to dataset
 
         Args:
             elem (Dict[str, List]): a dict containing element added to dataset, which
                 key as column name, value as column data
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().col_append(elem)
+        return super().col_append(elem, should_create_new_obj, **kwargs)
 
     @_online_except_decorator
-    def col_insert(self, elem: Any, index: Any) -> Self:
+    def col_insert(
+        self,
+        elem: Any,
+        index: Any,
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
         """
         append a row to dataset
 
@@ -996,10 +1235,15 @@ class Dataset(Table):
             elem (Dict[str, List]): dict containing element added to dataset
                 must has column name "name" and column data list "data"
             index (int): where to insert new column
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
         Returns:
             Self: Dataset itself
         """
-        return super().col_insert(elem, index)
+        return super().col_insert(elem, index, should_create_new_obj, **kwargs)
 
     # 等待接口 ready 才能对云端数据集做展示
     @_online_except_decorator
@@ -1055,6 +1299,27 @@ class Dataset(Table):
         return super().column_number()
 
     @_online_except_decorator
+    def select_columns(
+        self,
+        columns: List[str],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        select specific column in dataset
+
+        Args:
+            columns (List[str]):
+                column list
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+        """
+        return super().select_columns(columns, should_create_new_obj, **kwargs)
+
+    @_online_except_decorator
     def pack(self, **kwargs: Any) -> bool:
         """
         pack all group into 1 row
@@ -1066,6 +1331,9 @@ class Dataset(Table):
         Returns:
             bool: whether packing succeeded
         """
+        if QianfanDataGroupColumnName not in self.col_names():
+            self.add_default_group_column()
+
         if isinstance(self.inner_data_source_cache, FileDataSource):
             return super().pack(path=self.inner_data_source_cache.path, **kwargs)
         else:
@@ -1088,6 +1356,31 @@ class Dataset(Table):
             return super().unpack(path=self.inner_data_source_cache.path, **kwargs)
         else:
             return super().unpack(**kwargs)
+
+    @_online_except_decorator
+    def concat_table(
+        self,
+        concat_dataset: Union["Dataset", List["Dataset"]],
+        should_create_new_obj: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        concat content of operand dataset to caller dataset
+        this requires two datasets have identical fields
+
+        Args:
+            concat_dataset (Union["Dataset", List["Dataset"]]):
+                Dataset, or list of Dataset, which will be concat
+            should_create_new_obj (bool):
+                should a new object be created when mapping terminates.
+                Default to False. In some cases, you may want to set
+                this value to True
+            **kwargs (Any): other arguments
+
+        Returns:
+            Dataset: concat Dataset
+        """
+        return super().concat_table(concat_dataset, should_create_new_obj, **kwargs)  # type: ignore
 
     @_online_except_decorator
     def to_pydict(self) -> Dict:
@@ -1181,11 +1474,11 @@ class Dataset(Table):
                 model_version_id, output_prettified, **kwargs
             )
         elif service_model or service_endpoint:
-            return self._batch_inference_on_service(
-                service_model,
-                service_endpoint,
-                is_chat_service,
-                does_show_latency,
+            return self._batch_on_service_in_slice_mode(
+                service_model=service_model,
+                service_endpoint=service_endpoint,
+                is_chat_service=is_chat_service,
+                does_show_latency=does_show_latency,
                 **kwargs,
             )
         else:
@@ -1242,17 +1535,53 @@ class Dataset(Table):
                 model_version_id, output_prettified, **kwargs
             )
         elif service_model or service_endpoint:
-            return await self._async_batch_inference_on_service(
-                service_model,
-                service_endpoint,
-                is_chat_service,
-                does_show_latency,
+            return await self._async_batch_on_service_in_slice_mode(
+                service_model=service_model,
+                service_endpoint=service_endpoint,
+                is_chat_service=is_chat_service,
+                does_show_latency=does_show_latency,
                 **kwargs,
             )
         else:
             err_msg = "no sufficient argument has been passed"
             log_error(err_msg)
             raise ValueError(err_msg)
+
+    def _batch_on_service_in_slice_mode(
+        self, slice_size: int = -1, **kwargs: Any
+    ) -> "Dataset":
+        if slice_size <= 0:
+            return self._batch_inference_on_service(**kwargs)
+
+        result_ds_list: List[Dataset] = []
+
+        for i in range(0, len(self), slice_size):
+            start_index = i
+            end_index = min(i + slice_size - 1, len(self) - 1)
+            sliced_dataset = self.take_slice(start_index, end_index, True)
+
+            result_ds_list.append(sliced_dataset._batch_inference_on_service(**kwargs))
+
+        return result_ds_list[0].concat_table(result_ds_list[1:])
+
+    async def _async_batch_on_service_in_slice_mode(
+        self, slice_size: int = -1, **kwargs: Any
+    ) -> "Dataset":
+        if slice_size <= 0:
+            return await self._async_batch_inference_on_service(**kwargs)
+
+        result_ds_list: List[Dataset] = []
+
+        for i in range(0, len(self), slice_size):
+            start_index = i
+            end_index = min(i + slice_size - 1, len(self) - 1)
+            sliced_dataset = self.take_slice(start_index, end_index, True)
+
+            result_ds_list.append(
+                await sliced_dataset._async_batch_inference_on_service(**kwargs)
+            )
+
+        return result_ds_list[0].concat_table(result_ds_list[1:])
 
     def _batch_inference_on_model(
         self, model_version_id: str, output_prettified: bool, **kwargs: Any
@@ -1298,26 +1627,21 @@ class Dataset(Table):
         if not output_prettified and result_dataset.is_dataset_located_in_qianfan():
             return result_dataset
 
-        result_dataset.unpack()
+        def _map_func(entry: Dict[str, Any]) -> Dict[str, Any]:
+            return {
+                "prompt": entry["prompt"],
+                NewInputPromptColumnName: entry["prompt"],
+                LLMOutputColumnName: entry["completion"],
+                OldReferenceColumnName: _extract_string(entry["response"]),
+            }
 
-        new_list: List[Dict[str, Any]] = []
-        for entry in result_dataset.list():
-            new_list.append(
-                {
-                    "prompt": entry["prompt"],
-                    NewInputPromptColumnName: entry["prompt"],
-                    LLMOutputColumnName: entry["model_response"][0]["content"],
-                    OldReferenceColumnName: _extract_string(entry["response"]),
-                }
-            )
+        result_dataset = result_dataset.map(_map_func)
+        result_dataset.input_columns = ["prompt"]
+        result_dataset.reference_column = OldReferenceColumnName
+        result_dataset.eval_input_column = NewInputPromptColumnName
+        result_dataset.eval_llm_output_column = LLMOutputColumnName
 
-        return Dataset.create_from_pyobj(
-            new_list,
-            input_columns=["prompt"],
-            reference_column=OldReferenceColumnName,
-            eval_input_column=NewInputPromptColumnName,
-            eval_llm_output_column=LLMOutputColumnName,
-        )
+        return result_dataset
 
     def _get_completion_return_dataset(
         self,
@@ -1339,7 +1663,9 @@ class Dataset(Table):
             reference_column = OldReferenceColumnName
 
         if does_show_latency:
-            if len(first_token_latency_list) != 0:
+            if any(
+                [value != -1 and value != -1.0 for value in first_token_latency_list]
+            ):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 
@@ -1377,7 +1703,9 @@ class Dataset(Table):
         }
 
         if does_show_latency:
-            if len(first_token_latency_list) != 0:
+            if any(
+                [value != -1 and value != -1.0 for value in first_token_latency_list]
+            ):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 
@@ -1652,3 +1980,142 @@ class Dataset(Table):
             input_chat_list.append(input_messages)
 
         return input_chat_list, reference_list
+
+    def show_as_table(self, show_in_browser: bool = False) -> None:
+        """
+        show dataset in browser or console
+
+        Args:
+            show_in_browser (bool):
+                whether show dataset in browser or console,
+                default to None.
+        """
+
+        if not show_in_browser:
+            from tabulate import tabulate
+
+            print(
+                tabulate(
+                    self.col_list(),
+                    showindex="always",
+                    headers="keys",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+        else:
+            open_html_in_browser(self)
+
+    def show_overview_info(self) -> None:
+        """
+        show overall info in console
+        """
+
+        repetition_set: Dict[str, Dict[Any, int]] = {}
+        null_counter_set: Dict[str, int] = {}
+
+        packed_identifier = "_packed_identifier"
+
+        def _iterator(
+            entry: Union[List[Dict[str, Any]], Dict[str, Any], str], **kwargs: Any
+        ) -> None:
+            if isinstance(entry, (list, str)):
+                if (
+                    packed_identifier not in repetition_set
+                    and packed_identifier not in null_counter_set
+                ):
+                    repetition_set[packed_identifier] = {}
+                    null_counter_set[packed_identifier] = 0
+
+                if not entry:
+                    null_counter_set[packed_identifier] += 1
+                else:
+                    repetition_set[packed_identifier][entry] = (
+                        repetition_set[packed_identifier].get(entry, 0) + 1
+                    )
+            else:
+                for k, v in entry.items():
+                    if k not in null_counter_set and k not in repetition_set:
+                        repetition_set[k] = {}
+                        null_counter_set[k] = 0
+                    if not v:
+                        null_counter_set[v] += 1
+                    else:
+                        repetition_set[k][v] = repetition_set[k].get(v, 0) + 1
+
+        self.iterate(_iterator)
+
+        print(f"entry count: {len(self)}\n")
+
+        if packed_identifier not in null_counter_set:
+            column_fields = self.col_names()
+
+            reputation_result_data: List[float] = []
+            null_result_data: List[float] = []
+
+            for field in column_fields:
+                reputation_result_data.append(
+                    1 - (len(repetition_set[field]) / len(self))
+                )
+                null_result_data.append(null_counter_set[field] / len(self))
+
+            print(
+                tabulate(
+                    [self.col_names(), reputation_result_data, null_result_data],
+                    showindex=["reputation_ratio", "null_ratio"],
+                    headers="firstrow",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+        else:
+            print(
+                tabulate(
+                    [
+                        "content",
+                        [1 - (len(repetition_set[packed_identifier]) / len(self))],
+                        [null_counter_set[packed_identifier] / len(self)],
+                    ],
+                    showindex=["reputation_ratio", "null_ratio"],
+                    headers="firstrow",
+                    tablefmt="simple",
+                    numalign="right",
+                )
+            )
+
+    def show_processed_statistics(
+        self, methods: List[SummarizationMethod] = [], **kwargs: Any
+    ) -> None:
+        """
+        show processed statistics data
+
+        Args:
+            methods (List[SummarizationMethod]):
+                statistic method list
+            **kwargs (Any):
+                other arguments
+        """
+        from tabulate import tabulate
+
+        if not methods or len(methods) == 0:
+            methods = [
+                MeanMethod(),
+                MinMethod(),
+                MaxMethod(),
+                QuantileMethod(q=0.8),
+                QuantileMethod(q=0.9),
+            ]
+
+        columns = [k for k, v in self.list(0).items() if isinstance(v, (int, float))]
+        result_data = [method.calculate(self, columns, **kwargs) for method in methods]
+        index_names = [method.name for method in methods]
+
+        print(
+            tabulate(
+                [columns, *result_data],
+                showindex=index_names,
+                headers="firstrow",
+                tablefmt="simple",
+                numalign="right",
+            )
+        )

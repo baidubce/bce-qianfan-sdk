@@ -17,6 +17,7 @@ import {Plugin, setEnvVariable} from '../../index';
 
 // 设置环境变量
 setEnvVariable('QIANFAN_BASE_URL', 'http://127.0.0.1:8866');
+setEnvVariable('QIANFAN_CONSOLE_API_BASE_URL', 'http://127.0.0.1:8866');
 setEnvVariable('QIANFAN_ACCESS_KEY', '123');
 setEnvVariable('QIANFAN_SECRET_KEY', '456');
 
@@ -26,35 +27,6 @@ describe('Plugin functionality', () => {
     beforeEach(() => {
         client = new Plugin();
         jest.clearAllMocks();
-    });
-
-    it('should handle weather plugin', async () => {
-        const resp = await client.plugins({
-            query: '深圳今天天气如何',
-            plugins: ['uuid-weatherforecast'],
-        });
-        const result = resp?.result;
-        expect(result).toBeDefined();
-    });
-
-    it('should handle weather plugin with stream', async () => {
-        const resp = await client.plugins({
-            query: '深圳未来七天天气如何',
-            plugins: ['uuid-weatherforecast'],
-            stream: true,
-            verbose: false,
-        });
-        expect(resp).toBeDefined();
-    });
-
-    it('should handle chatocr plugin', async () => {
-        const resp = await client.plugins({
-            query: '请解析这张图片, 告诉我怎么画这张图的简笔画',
-            plugins: ['uuid-chatocr'],
-            stream: false,
-            fileurl: 'https://xxx.bcebos.com/xxx/xxx.jpeg',
-        });
-        expect(resp).toBeDefined();
     });
 
     it('should handle eChart plugin', async () => {

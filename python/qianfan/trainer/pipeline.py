@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
+import os
 import threading
+import time
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
 
 from qianfan.common.persister.persist import g_persister
@@ -90,7 +92,30 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         Return:
             Dict[str, Any]: The output of the pipeline.
         """
-        return self.exec_from(input, 0, **kwargs)
+        res: List[Any] = [{}]
+
+        def _exec_helper(res: List[Any]) -> None:
+            if len(res) == 0:
+                return
+            try:
+                res[0] = self.exec_from(input, 0, **kwargs)
+            except Exception as e:
+                res[0] = e
+
+        t = threading.Thread(target=_exec_helper, args=[res])
+        t.start()
+
+        while True:
+            g_persister.save(self)
+            if isinstance(res[0], Exception):
+                g_persister.save(self)
+                raise res[0]
+            if self._stop:
+                g_persister.save(self)
+                break
+            time.sleep(10)
+
+        return res[0]
 
     def exec_from(
         self,
@@ -106,6 +131,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError(
                 "pipeline start must be index of sequence or key of action"
             )
+        self._stop = False
         g_persister.save(self)
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for i, k in enumerate(self.seq):
@@ -130,6 +156,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         for next in self.post_actions:
             next.exec(copy.deepcopy(output), **kwargs)
+        self._stop = True
         return output
 
     def __getitem__(self, key: str) -> Optional[BaseAction]:
@@ -200,9 +227,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "current_action": self.current_action,
             # "output": self._last_output,
         }
-        # print("output:", self._last_output)
-        if self.process_id:
-            meta["process_id"] = self.process_id
+        meta["process_id"] = self.process_id if self.process_id else os.getpid()
         actions = []
         for action_id in self.seq:
             action_meta = self.actions[action_id]._action_dict()
@@ -210,8 +235,6 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta["actions"] = actions
         if self._case_init_params:
             meta["case_init_params"] = self._case_init_params
-        if self.process:
-            meta["process"] = self.process_id
         return meta
 
     @classmethod
@@ -239,6 +262,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             case_init_params=meta.get("case_init_params"),
         )
         assert isinstance(meta.get("current_action", ""), str)
+        ppl.process_id = meta.get("process_id", "")
         ppl.current_action = meta.get("current_action", "")
         return ppl
 

@@ -12,7 +12,7 @@
 <dependency>
     <groupId>com.baidubce</groupId>
     <artifactId>qianfan</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 
@@ -21,13 +21,13 @@
 对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖
 
 ```kotlin
-implementation("com.baidubce:qianfan:0.0.1")
+implementation("com.baidubce:qianfan:0.0.4")
 ```
 
 对于Groovy DSL，在build.gradle的dependencies中添加依赖
 
 ```groovy
-implementation 'com.baidubce:qianfan:0.0.1'
+implementation 'com.baidubce:qianfan:0.0.4'
 ```
 
 > 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
@@ -148,4 +148,16 @@ Text2ImageResponse response = new Qianfan().text2Image()
         .prompt("cute cat")
         .execute();
 System.out.println(response.getData().get(0).getB64Image());
+```
+
+### 图像理解
+
+千帆 SDK 支持调用图像理解模型，用于根据用户输入的图像和文字，回答图像有关问题。
+
+```java
+Image2TextResponse response = new Qianfan().image2Text()
+        .image("9j/4AAQSkZJRgABAQAAAQABAAD/xxxxx")
+        .prompt("introduce the picture")
+        .execute();
+System.out.println(response.getResult());
 ```

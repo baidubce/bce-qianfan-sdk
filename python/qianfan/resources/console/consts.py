@@ -39,6 +39,8 @@ class DataTemplateType(int, Enum):
     Template type used by Qianfan Data
     """
 
+    PromptChosenRejected: int = 2002
+    """对话偏好问答"""
     NonSortedConversation: int = 2000
     """非排序对话"""
     SortedConversation: int = 2001
@@ -168,6 +170,8 @@ class TrainMode(str, Enum):
     """对应 LLMFinetune"""
     PostPretrain = "PostPretrain"
     """PostPretrain """
+    DPO = "DPO"
+    """DPO"""
 
 
 class TrainParameterScale(str, Enum):

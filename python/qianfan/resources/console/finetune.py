@@ -232,7 +232,8 @@ class FineTune(object):
             params_scale: Union[str, console_consts.TrainParameterScale],
             hyper_params: Dict[str, Any],
             dataset_config: Dict[str, Any],
-            incrementTaskId: Optional[str] = None,
+            increment_task_id: Optional[str] = None,
+            increment_checkpoint_step: Optional[int] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -242,16 +243,18 @@ class FineTune(object):
             specific job.
 
             Parameters:
-            name (str):
-                The name of job.
-            model (str):
-                The identifier of the fine-tuning job to be stopped.
-                e.g. "ERNIE-Speed"
-            train_mode (Union[str, console_consts.TrainMode]):
-                The train mode of the fine-tuning job, including "SFT",
-                "PostPreTrain" and so on.
-            description (Optional[str]):
-                The description of the fine-tuning job.
+            job_id (str):
+                The identifier of the fine-tuning job.
+            params_scale (Union[str, console_consts.TrainParameterScale]):
+                The parameter scale of the fine-tuning task.
+            hyper_params (Dict[str, Any]):
+                The hyper-parameters of the fine-tuning task.
+            dataset_config (Dict[str, Any]):
+                The dataset config of the fine-tuning task.
+            increment_task_id (Optional[str]):
+                The task id of the increment task.
+            increment_checkpoint_step (Optional[int]):
+                The checkpoint step for the increment task.
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -276,8 +279,10 @@ class FineTune(object):
                 "hyperParameterConfig": hyper_params,
                 "datasetConfig": dataset_config,
             }
-            if incrementTaskId is not None:
-                req.json_body["incrementTaskId"] = incrementTaskId
+            if increment_task_id is not None:
+                req.json_body["incrementTaskId"] = increment_task_id
+                if increment_checkpoint_step is not None:
+                    req.json_body["incrementCheckpointStep"] = increment_checkpoint_step
             return req
 
         @classmethod

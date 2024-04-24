@@ -145,7 +145,11 @@ class Trainer(ABC):
 
     @staticmethod
     @abstractmethod
-    def load(id: str) -> "Trainer":
+    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer":
+        ...
+
+    @abstractmethod
+    def save(self, file: Optional[str] = None) -> None:
         ...
 
     def info(self) -> Dict:

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.7"
+version = "0.3.9"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -29,7 +29,7 @@ python-dotenv = [
 ]
 tenacity = "^8.2.3"
 multiprocess = "*"
-langchain = { version = ">=0.0.321", python = ">=3.8.1", optional = true }
+langchain = { version = ">=0.1.10", python = ">=3.8.1", optional = true }
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8", optional = true },
     { version = ">=1.22.0", python = ">=3.8", optional = true }
@@ -38,6 +38,7 @@ pyarrow = [
     { version = ">=14.0.1", python = ">=3.8", optional = true },
     { version = "<=12.0.1", python = ">=3.7 <3.8", optional = true }
 ]
+tabulate = { version = "*", optional = true }
 python-dateutil = { version = "^2.8.2", optional = true }
 rich = ">=13.0.0"
 typer = ">=0.9.0"
@@ -79,12 +80,18 @@ pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
 setuptools = "*"
 
+[tool.poetry.group.cookbook.dependencies]
+nbformat = {version = "^5.10.3", python = ">=3.8 <4"}
+aiohttp = {version = "^3.9.3", python = ">=3.8 <4"}
+papermill = {version = "*", python = ">=3.8 <4"}
+ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
+
 [tool.poetry.extras]
-dataset_base = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson"]
-langchain = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain"]
-local_data_clean = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
-extension = ["numpy", "pyarrow", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson"]
+langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain"]
+local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "ltp", "emoji", "sentencepiece", "torch"]
+openai = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "fastapi", "uvicorn"]
+extension = ["numpy", "pyarrow", "tabulate", "python-dateutil", "clevercsv", "ijson", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

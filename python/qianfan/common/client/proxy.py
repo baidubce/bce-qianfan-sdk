@@ -75,6 +75,7 @@ def entry(
     host: str,
     base_port: int,
     console_port: int,
+    detach: bool,
     log_file: Optional[str],
     mock_port: int,
 ) -> None:
@@ -116,7 +117,9 @@ def entry(
     rich.print()
 
     def set_cors(app: FastAPI, port: int) -> None:
-        origins = [f"http://{display_host}:{port}", f"http://localhost:{port}"]
+        origins = [
+            "http://172.18.184.85:5000",
+        ]
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
@@ -126,15 +129,16 @@ def entry(
         )
 
     def start_server(app: FastAPI, port: int) -> None:
-        uvicorn.run(app, host=host, port=port, log_config=log_config)
-
-    # close stderr output
-    logger._logger.removeHandler(logger.handler)
-    log_config["loggers"]["uvicorn.access"]["handlers"].remove("access")
-    log_config["loggers"]["uvicorn"]["handlers"].remove("default")
+        uvicorn.run(app, host=display_host, port=port, log_config=log_config)
 
     set_cors(base_app, base_port)
     set_cors(console_app, console_port)
+
+    # close stderr output
+    if detach:
+        logger._logger.removeHandler(logger.handler)
+        log_config["loggers"]["uvicorn.access"]["handlers"].remove("access")
+        log_config["loggers"]["uvicorn"]["handlers"].remove("default")
 
     process_base = Process(target=start_server, args=(base_app, base_port))
     process_console = Process(target=start_server, args=(console_app, console_port))
@@ -147,4 +151,12 @@ def entry(
     rich.print(
         f"Proxy console server is running in background with PID {process_console.pid}."
     )
-    os._exit(0)
+    if detach:
+        os._exit(0)
+    else:
+        try:
+            process_base.join()
+            process_console.join()
+        except KeyboardInterrupt:
+            process_base.terminate()
+            process_console.terminate()

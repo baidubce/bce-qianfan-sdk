@@ -116,7 +116,7 @@ def entry(
     rich.print(Markdown("\n".join(messages)))
     rich.print()
 
-    def set_cors(app: FastAPI, port: int) -> None:
+    def set_cors(app: FastAPI) -> None:
         origins = [
             "http://172.18.184.85:5000",
         ]

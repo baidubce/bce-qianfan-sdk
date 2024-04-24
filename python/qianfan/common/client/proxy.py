@@ -11,10 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import AsyncIterator, Callable, Optional
+from typing import AsyncIterator
+from typing import Callable
+from typing import Optional
 
-from fastapi import FastAPI, Request
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from fastapi import FastAPI
+from fastapi import Request
+from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
+from starlette.responses import Response
+from starlette.responses import StreamingResponse
 
 from qianfan.consts import DefaultValue
 from qianfan.extensions.proxy.proxy import ClientProxy
@@ -108,6 +114,16 @@ def entry(
 
     rich.print(Markdown("\n".join(messages)))
     rich.print()
+
+    def set_cors(app: FastAPI, port: int) -> None:
+        origins = [f"http://{display_host}:{port}", f"http://localhost:{port}"]
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     def start_server(app: FastAPI, port: int) -> None:
         uvicorn.run(app, host=host, port=port, log_config=log_config)

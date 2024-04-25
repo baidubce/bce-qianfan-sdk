@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import AsyncIterator, Callable, Optional
+from typing import AsyncIterator, Callable, Optional, Tuple
 
+from aiohttp import ClientResponse
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response, StreamingResponse
@@ -24,6 +25,20 @@ from qianfan.utils.utils import get_ip_address
 base_app = FastAPI()
 console_app = FastAPI()
 proxy = ClientProxy()
+
+
+async def get_stream(
+    request: AsyncIterator[Tuple[bytes, ClientResponse]]
+) -> AsyncIterator[str]:
+    """
+    改变响应体流式格式。
+    Args:
+        request (AsyncIterator[tuple[bytes, ClientResponse]]): 响应体流。
+    Returns:
+        AsyncIterator[str]: 响应体流。
+    """
+    async for body, response in request:
+        yield body.decode("utf-8")
 
 
 @base_app.middleware("http")
@@ -41,7 +56,7 @@ async def base_iam(request: Request, callback: Callable) -> Response:
     resp = await proxy.get_response(request, DefaultValue.BaseURL)
 
     if isinstance(resp, AsyncIterator):
-        return StreamingResponse(resp, media_type="text/event-stream")
+        return StreamingResponse(get_stream(resp), media_type="text/event-stream")
 
     return JSONResponse(resp)
 

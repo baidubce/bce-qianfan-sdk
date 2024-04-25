@@ -1,13 +1,13 @@
 import logging
-from typing import Any, AsyncIterator, Dict, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Dict, Optional, Union
 from urllib.parse import urlparse
 
-from aiohttp import ClientResponse
 from fastapi import Request
 from starlette.requests import ClientDisconnect
 
 from qianfan import get_config
 from qianfan.config import GlobalConfig
+from qianfan.consts import DefaultValue
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
@@ -93,19 +93,18 @@ class ClientProxy(object):
             QfRequest: 请求对象。
         """
 
-        # 获取请求url与重试配置
-        if request.url.path.startswith("/base"):
-            path = request.url.path.replace("/base", "")
-            retry_config = self.retry_base_config
-        else:
-            path = request.url.path.replace("/console", "")
-            retry_config = self.retry_console_config
+        # 获取重试配置
+        retry_config = (
+            self.retry_console_config
+            if url_route == DefaultValue.ConsoleAPIBaseURL
+            else self.retry_base_config
+        )
 
         # 获取请求头
         if self.mock_port != -1:
             url_route = f"http://127.0.0.1:{self.mock_port}"
 
-        url = url_route + path
+        url = url_route + request.url.path
         host = urlparse(url_route).netloc
         headers = {
             "Content-Type": "application/json",
@@ -122,19 +121,6 @@ class ClientProxy(object):
             json_body=json_body,
             retry_config=retry_config,
         )
-
-    async def get_stream(
-        self, request: AsyncIterator[Tuple[bytes, ClientResponse]]
-    ) -> AsyncIterator[str]:
-        """
-        改变响应体流式格式。
-        Args:
-            request (AsyncIterator[tuple[bytes, ClientResponse]]): 响应体流。
-        Returns:
-            AsyncIterator[str]: 响应体流。
-        """
-        async for body, response in request:
-            yield body.decode("utf-8")
 
     async def get_response(
         self, request: Request, url_route: str
@@ -158,7 +144,7 @@ class ClientProxy(object):
                 logging.debug(f"request: {qf_req}")
 
                 if qf_req.json_body.get("stream", False):
-                    return self.get_stream(self._client.arequest_stream(qf_req))
+                    return self._client.arequest_stream(qf_req)
                 else:
                     resp, session = await self._client.arequest(qf_req)
                     async with session:

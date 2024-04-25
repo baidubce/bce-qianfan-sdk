@@ -17,7 +17,9 @@ from typing import Optional
 import click
 import rich.markup
 import typer
-from typer.completion import completion_init, install_callback, show_callback
+from typer.completion import completion_init
+from typer.completion import install_callback
+from typer.completion import show_callback
 
 import qianfan
 from qianfan.common.client.chat import chat_entry
@@ -28,7 +30,8 @@ from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import credential_required, print_error_msg
+from qianfan.common.client.utils import credential_required
+from qianfan.common.client.utils import print_error_msg
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
@@ -76,10 +79,10 @@ def openai(
 def proxy(
     host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
     base_port: int = typer.Option(
-        8002, "--port", "-p", help="Port of the base server."
+        8002, "--base-port", "-b", help="Port of the base server."
     ),
     console_port: int = typer.Option(
-        8003, "--port", "-p", help="Port of the console server."
+        8003, "--console-port", "-c", help="Port of the console server."
     ),
     detach: bool = typer.Option(
         False,

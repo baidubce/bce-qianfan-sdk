@@ -52,10 +52,6 @@ def entry(
             if "handlers" in log_config["loggers"][key]:
                 log_config["loggers"][key]["handlers"].append("file")
 
-    if model_mapping is not None:
-        adapter._model_mapping = model_mapping
-    adapter._ignore_system = ignore_system
-
     messages = ["OpenAI wrapper server is running at"]
     messages.append(f"- http://127.0.0.1:{port}")
     display_host = host
@@ -78,6 +74,10 @@ def entry(
         openai_apps = FastAPI()
 
         adapter = OpenAIApdater()
+
+        if model_mapping is not None:
+            adapter._model_mapping = model_mapping
+        adapter._ignore_system = ignore_system
 
         async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
             """

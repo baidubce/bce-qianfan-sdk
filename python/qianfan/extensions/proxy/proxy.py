@@ -1,5 +1,9 @@
 import logging
-from typing import Any, AsyncIterator, Dict, Tuple, Union
+from typing import Any
+from typing import AsyncIterator
+from typing import Dict
+from typing import Tuple
+from typing import Union
 from urllib.parse import urlparse
 
 from aiohttp import ClientResponse
@@ -12,6 +16,7 @@ from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.typing import QfRequest
+from qianfan.resources.typing import RetryConfig
 
 
 class ClientProxy(object):
@@ -79,6 +84,7 @@ class ClientProxy(object):
             "Content-Type": "application/json",
             "Host": host,
         }
+        retry_config = RetryConfig(timeout=120)
 
         # 获取请求体
         json_body = await request.json()
@@ -88,6 +94,7 @@ class ClientProxy(object):
             method=request.method,
             query=dict(request.query_params),
             json_body=json_body,
+            retry_config=retry_config,
         )
 
     async def get_stream(

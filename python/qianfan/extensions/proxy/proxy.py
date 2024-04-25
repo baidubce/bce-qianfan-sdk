@@ -84,7 +84,7 @@ class ClientProxy(object):
             "Content-Type": "application/json",
             "Host": host,
         }
-        retry_config = RetryConfig(timeout=120)
+        retry_config = RetryConfig(timeout=60)
 
         # 获取请求体
         json_body = await request.json()

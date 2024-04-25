@@ -98,7 +98,7 @@ def proxy(
     """
     Create a proxy server.
     """
-    check_dependency("proxy", ["fastapi", "uvicorn"])
+    check_dependency("openai", ["fastapi", "uvicorn"])
     from qianfan.common.client.proxy import entry as proxy_entry
 
     proxy_entry(

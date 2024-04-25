@@ -11,16 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import AsyncIterator
-from typing import Callable
-from typing import Optional
+from typing import AsyncIterator, Callable, Optional
 
-from fastapi import FastAPI
-from fastapi import Request
+from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
-from starlette.responses import Response
-from starlette.responses import StreamingResponse
+from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from qianfan.consts import DefaultValue
 from qianfan.extensions.proxy.proxy import ClientProxy

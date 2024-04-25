@@ -1,13 +1,10 @@
 import logging
-from typing import Any
-from typing import AsyncIterator
-from typing import Dict
-from typing import Tuple
-from typing import Union
+from typing import Any, AsyncIterator, Dict, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from aiohttp import ClientResponse
 from fastapi import Request
+from starlette.requests import ClientDisconnect
 
 from qianfan import get_config
 from qianfan.config import GlobalConfig
@@ -15,15 +12,18 @@ from qianfan.errors import InvalidArgumentError
 from qianfan.resources.auth.iam import iam_sign
 from qianfan.resources.auth.oauth import Auth
 from qianfan.resources.http_client import HTTPClient
-from qianfan.resources.typing import QfRequest
-from qianfan.resources.typing import RetryConfig
+from qianfan.resources.rate_limiter import VersatileRateLimiter
+from qianfan.resources.typing import QfRequest, RetryConfig
 
 
 class ClientProxy(object):
     _auth: Auth = Auth()
     _config: GlobalConfig = get_config()
     _client: HTTPClient = HTTPClient()
-    _mock_port: int = 8866
+    _mock_port: int = -1
+    _rate_limiter: VersatileRateLimiter = VersatileRateLimiter()
+    _retry_base_config: Optional[RetryConfig] = None
+    _retry_console_config: Optional[RetryConfig] = None
 
     def __init__(self) -> None:
         pass
@@ -35,6 +35,32 @@ class ClientProxy(object):
     @mock_port.setter
     def mock_port(self, value: int) -> None:
         self._mock_port = value
+
+    @property
+    def retry_base_config(self) -> RetryConfig:
+        if self._retry_base_config is None:
+            self._retry_base_config = RetryConfig(
+                retry_count=self._config.LLM_API_RETRY_COUNT,
+                timeout=self._config.LLM_API_RETRY_TIMEOUT,
+                max_wait_interval=self._config.LLM_API_RETRY_MAX_WAIT_INTERVAL,
+                backoff_factor=self._config.LLM_API_RETRY_BACKOFF_FACTOR,
+                jitter=self._config.LLM_API_RETRY_JITTER,
+                retry_err_codes=self._config.LLM_API_RETRY_ERR_CODES,
+            )
+        return self._retry_base_config
+
+    @property
+    def retry_console_config(self) -> RetryConfig:
+        if self._retry_console_config is None:
+            self._retry_console_config = RetryConfig(
+                retry_count=self._config.CONSOLE_API_RETRY_COUNT,
+                timeout=self._config.CONSOLE_API_RETRY_TIMEOUT,
+                max_wait_interval=self._config.CONSOLE_API_RETRY_MAX_WAIT_INTERVAL,
+                backoff_factor=self._config.CONSOLE_API_RETRY_BACKOFF_FACTOR,
+                jitter=self._config.CONSOLE_API_RETRY_JITTER,
+                retry_err_codes=self._config.CONSOLE_API_RETRY_ERR_CODES,
+            )
+        return self._retry_console_config
 
     def _sign(self, request: QfRequest) -> None:
         """
@@ -67,12 +93,13 @@ class ClientProxy(object):
             QfRequest: 请求对象。
         """
 
-        # 获取请求url
-        path = (
-            request.url.path.replace("/base", "")
-            if request.url.path.startswith("/base")
-            else request.url.path.replace("/console", "")
-        )
+        # 获取请求url与重试配置
+        if request.url.path.startswith("/base"):
+            path = request.url.path.replace("/base", "")
+            retry_config = self.retry_base_config
+        else:
+            path = request.url.path.replace("/console", "")
+            retry_config = self.retry_console_config
 
         # 获取请求头
         if self.mock_port != -1:
@@ -84,7 +111,6 @@ class ClientProxy(object):
             "Content-Type": "application/json",
             "Host": host,
         }
-        retry_config = RetryConfig(timeout=60)
 
         # 获取请求体
         json_body = await request.json()
@@ -118,21 +144,26 @@ class ClientProxy(object):
 
         Args:
             request (Request): HTTP请求对象。
+            url_route (str): 请求路由。
 
         Returns:
             Union[Dict[str, Any], AsyncIterator]:
                 如果响应体是流式传输的，则返回一个异步迭代器，否则返回一个包含响应体的字典。
 
         """
+        try:
+            async with self._rate_limiter:
+                qf_req = await self.get_request(request, url_route)
+                self._sign(qf_req)
+                logging.debug(f"request: {qf_req}")
 
-        qf_req = await self.get_request(request, url_route)
-        self._sign(qf_req)
-        logging.debug(f"request: {qf_req}")
-
-        if qf_req.json_body.get("stream", False):
-            return self.get_stream(self._client.arequest_stream(qf_req))
-        else:
-            resp, session = await self._client.arequest(qf_req)
-            async with session:
-                json_body = await resp.json()
-            return json_body
+                if qf_req.json_body.get("stream", False):
+                    return self.get_stream(self._client.arequest_stream(qf_req))
+                else:
+                    resp, session = await self._client.arequest(qf_req)
+                    async with session:
+                        json_body = await resp.json()
+                    return json_body
+        except ClientDisconnect as e:
+            logging.error(f"client disconnected, {e}")
+        return {}

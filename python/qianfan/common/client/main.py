@@ -17,9 +17,7 @@ from typing import Optional
 import click
 import rich.markup
 import typer
-from typer.completion import completion_init
-from typer.completion import install_callback
-from typer.completion import show_callback
+from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
 from qianfan.common.client.chat import chat_entry
@@ -30,8 +28,7 @@ from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import credential_required
-from qianfan.common.client.utils import print_error_msg
+from qianfan.common.client.utils import credential_required, print_error_msg
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TypeVar, Union
 
 import qianfan
@@ -26,19 +27,6 @@ OpenAIRequest = Dict[str, Any]
 OpenAIResponse = Dict[str, Any]
 QianfanRequest = Dict[str, Any]
 QianfanResponse = Dict[str, Any]
-
-
-def _convert_model(model: str) -> str:
-    """
-    Convert OpenAI model name to Qianfan model name.
-    """
-    if model.lower().startswith("gpt-3.5"):
-        return "ERNIE-3.5-8K"
-    elif model.lower().startswith("gpt-4"):
-        return "ERNIE-4.0-8K"
-    elif model.lower().startswith("text-embedding"):
-        return "Embedding-V1"
-    return model
 
 
 def merge_async_iters(*aiters: AsyncIterator[_T]) -> AsyncIterator[_T]:
@@ -100,14 +88,35 @@ class OpenAIApdater(object):
     This value is used to split OpenAI requests into multiple Qianfan requests.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        ignore_system: bool = True,
+        model_mapping: Dict[str, str] = {
+            r"gpt-3.5.*": "ERNIE-3.5-8K",
+            r"gpt-4.*": "ERNIE-4.0-8K",
+            r"text-embedding.*": "Embedding-V1",
+        },
+    ) -> None:
         self._chat_client = qianfan.ChatCompletion()
         self._comp_client = qianfan.Completion()
         self._embed_client = qianfan.Embedding()
 
-    @classmethod
+        self._ignore_system = ignore_system
+        self._model_mapping = model_mapping
+
+    def _convert_model(self, model: str) -> str:
+        """
+        Convert OpenAI model name to Qianfan model name.
+        """
+        for pattern, qianfan_model in self._model_mapping.items():
+            new_model, n = re.subn(pattern, qianfan_model, model)
+            if n != 0:
+                return new_model
+
+        return model
+
     def openai_base_request_to_qianfan(
-        cls, openai_request: OpenAIRequest
+        self, openai_request: OpenAIRequest
     ) -> QianfanRequest:
         """
         Convert general arguments in OpenAI request to Qianfan request.
@@ -129,7 +138,7 @@ class OpenAIApdater(object):
         add_if_exist("tool_choice")
 
         model = openai_request["model"]
-        qianfan_request["model"] = _convert_model(model)
+        qianfan_request["model"] = self._convert_model(model)
 
         if "presence_penalty" in openai_request:
             penalty = openai_request["presence_penalty"]
@@ -166,17 +175,17 @@ class OpenAIApdater(object):
             qianfan_request["response_format"] = response_format
         return qianfan_request
 
-    @classmethod
     def openai_chat_request_to_qianfan(
-        cls, openai_request: OpenAIRequest
+        self, openai_request: OpenAIRequest
     ) -> QianfanRequest:
         """
         Convert chat request in OpenAI to Qianfan request.
         """
-        qianfan_request = cls.openai_base_request_to_qianfan(openai_request)
+        qianfan_request = self.openai_base_request_to_qianfan(openai_request)
         messages = openai_request["messages"]
         if messages[0]["role"] == "system":
-            qianfan_request["system"] = messages[0]["content"]
+            if not self._ignore_system:
+                qianfan_request["system"] = messages[0]["content"]
             messages = messages[1:]
 
         for item in messages:
@@ -194,23 +203,21 @@ class OpenAIApdater(object):
         qianfan_request["messages"] = messages
         return qianfan_request
 
-    @classmethod
     def openai_completion_request_to_qianfan(
-        cls, openai_request: OpenAIRequest
+        self, openai_request: OpenAIRequest
     ) -> QianfanRequest:
         """
         Convert completion request in OpenAI to Qianfan request.
         """
-        qianfan_request = cls.openai_base_request_to_qianfan(openai_request)
+        qianfan_request = self.openai_base_request_to_qianfan(openai_request)
         prompt = openai_request["prompt"]
         if isinstance(prompt, list):
             prompt = "".join(prompt)
         qianfan_request["prompt"] = prompt
         return qianfan_request
 
-    @classmethod
     def convert_openai_embedding_request(
-        cls, openai_request: OpenAIRequest
+        self, openai_request: OpenAIRequest
     ) -> List[QianfanRequest]:
         """
         Converts embedding request in OpenAI to multiple Qianfan requests.
@@ -218,7 +225,7 @@ class OpenAIApdater(object):
         Since Qianfan has limits on the count of texts in one request, we need to
         split the OpenAI request to multiple Qianfan requests.
         """
-        qianfan_request = cls.openai_base_request_to_qianfan(openai_request)
+        qianfan_request = self.openai_base_request_to_qianfan(openai_request)
         input = openai_request["input"]
         if isinstance(input, str):
             input = [input]
@@ -227,11 +234,11 @@ class OpenAIApdater(object):
         while i < len(input):
             request_list.append(
                 {
-                    "texts": input[i : min(i + cls.EmbeddingBatchSize, len(input))],
+                    "texts": input[i : min(i + self.EmbeddingBatchSize, len(input))],
                     **qianfan_request,
                 },
             )
-            i += cls.EmbeddingBatchSize
+            i += self.EmbeddingBatchSize
 
         return request_list
 

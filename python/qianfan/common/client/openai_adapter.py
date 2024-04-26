@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -23,7 +23,14 @@ from qianfan.extensions.openai.adapter import OpenAIApdater
 from qianfan.utils.utils import get_ip_address
 
 
-def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
+def entry(
+    host: str,
+    port: int,
+    detach: bool,
+    log_file: Optional[str],
+    ignore_system: bool,
+    model_mapping: Dict[str, str],
+) -> None:
     import rich
     import uvicorn
     import uvicorn.config
@@ -50,7 +57,8 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     display_host = host
     if display_host == "0.0.0.0":
         display_host = get_ip_address()
-    messages.append(f"- http://{display_host}:{port}")
+    if display_host != "127.0.0.1":
+        messages.append(f"- http://{display_host}:{port}")
 
     messages.append("\nRemember to set the environment variables:")
     messages.append(f"""```shell
@@ -66,6 +74,10 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
         openai_apps = FastAPI()
 
         adapter = OpenAIApdater()
+
+        if model_mapping is not None:
+            adapter._model_mapping = model_mapping
+        adapter._ignore_system = ignore_system
 
         async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
             """

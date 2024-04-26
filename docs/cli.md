@@ -428,4 +428,33 @@ export OPENAI_BASE_URL='http://127.0.0.1:8001/v1'  # 模拟 OpenAI 接口的地�
 * `--port / -p`: 绑定的端口，默认为 [default：8001]
 * `--detach / -d`: 后台运行
 * `--log-file`: 日志文件路径，默认不输出至文件
+* `--ignore-system / --no-ignore-system`: 是否忽略消息中的 system 字段，默认忽略
+* `--config-file / -c`: 配置文件路径，具体文件格式请参考下方配置文件说明
 * `--help`: 展示帮助信息
+
+#### 配置文件
+
+配置文件为 YAML 格式，支持传递如模型映射等更为复杂的信息，配置格式和默认参数如下：
+
+> ⚠️ 命令行的参数会覆盖配置文件中的参数
+
+```yaml
+openai_adapter:
+  # 绑定的 host
+  host: 0.0.0.0
+  # 运行端口
+  port: 8001
+  # 是否后台运行
+  detach: false
+  # 日志文件路径，不设置则不输出至文件
+  log_file: null
+  # 模型映射，将模型名称从 OpenAI 的模型映射至千帆模型
+  # 当所有映射都失败时，会使用原始名称
+  # 映射的 key 与 value 均支持正则表达式
+  model_mapping:
+    gpt-3.5.*: ERNIE-3.5-8K
+    gpt-4.*: ERNIE-4.0-8K
+    text-embedding.*: Embedding-V1
+    # 支持正则替换，如下仅作示意
+    # gpt-3.5(.*): ERNIE-3.5\1
+```

@@ -28,7 +28,12 @@ from qianfan.common.client.evaluation import evaluation_app
 from qianfan.common.client.plugin import plugin_entry
 from qianfan.common.client.trainer import trainer_app
 from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import credential_required, print_error_msg
+from qianfan.common.client.utils import (
+    credential_required,
+    print_error_msg,
+    print_info_msg,
+)
+from qianfan.config import encoding
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
@@ -52,15 +57,35 @@ _enable_traceback = False
 @app.command(name="openai")
 @credential_required
 def openai(
-    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
-    port: int = typer.Option(8001, "--port", "-p", help="Port of the server."),
-    detach: bool = typer.Option(
-        False,
+    host: Optional[str] = typer.Option(
+        None,
+        "--host",
+        "-h",
+        help="Host to bind. [dim]\[default: 0.0.0.0][/]",
+        show_default=False,
+    ),
+    port: Optional[int] = typer.Option(
+        None,
+        "--port",
+        "-p",
+        help="Port of the server. [dim]\[default: 8001][/]",
+        show_default=False,
+    ),
+    detach: Optional[bool] = typer.Option(
+        None,
         "--detach",
         "-d",
         help="Run the server in background.",
     ),
+    ignore_system: Optional[bool] = typer.Option(
+        None,
+        help="Ignore system messages in input. [dim]\[default: True][/]",
+        show_default=False,
+    ),
     log_file: Optional[str] = typer.Option(None, help="Log file path."),
+    config_file: Optional[str] = typer.Option(
+        None, help="Config file path.", show_default=False
+    ),
 ) -> None:
     """
     Create an openai wrapper server.
@@ -68,7 +93,45 @@ def openai(
     check_dependency("openai", ["fastapi", "uvicorn"])
     from qianfan.common.client.openai_adapter import entry as openai_entry
 
-    openai_entry(host=host, port=port, detach=detach, log_file=log_file)
+    default_config = {
+        "host": "0.0.0.0",
+        "port": 8001,
+        "detach": False,
+        "ignore_system": True,
+        "log_file": None,
+        "model_mapping": None,
+    }
+    adapter_config = {}
+    if config_file is not None:
+        import yaml
+
+        with open(config_file, "r", encoding=encoding()) as f:
+            config = yaml.safe_load(f)
+        adapter_config = config.get("openai_adapter")
+        if adapter_config is None:
+            raise ValueError("Config file should contain a key named `openai_adapter`.")
+    if ignore_system is None and adapter_config.get("ignore_system") is None:
+        print_info_msg(
+            "`--no-ignore-system` is not set. System messages will be ignored by"
+            " default since most system messages for openai is not suitable for ERNIE"
+            " model."
+        )
+        print()
+
+    merged_config = {**default_config, **adapter_config}
+
+    openai_entry(
+        host=host if host is not None else merged_config["host"],
+        port=port if port is not None else merged_config["port"],
+        detach=detach if detach is not None else merged_config["detach"],
+        log_file=log_file if log_file is not None else merged_config["log_file"],
+        ignore_system=(
+            ignore_system
+            if ignore_system is not None
+            else merged_config["ignore_system"]
+        ),
+        model_mapping=merged_config["model_mapping"],
+    )
 
 
 @app.command(name="proxy")

@@ -31,7 +31,6 @@ from typing import (
 
 import pyarrow
 from pyarrow import Table as PyarrowTable
-from tabulate import tabulate
 from typing_extensions import Self
 
 from qianfan import Completion, QfRole, get_config
@@ -2015,6 +2014,8 @@ class Dataset(Table):
         null_counter_set: Dict[str, int] = {}
 
         packed_identifier = "_packed_identifier"
+
+        from tabulate import tabulate
 
         def _iterator(
             entry: Union[List[Dict[str, Any]], Dict[str, Any], str], **kwargs: Any

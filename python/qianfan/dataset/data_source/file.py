@@ -14,7 +14,7 @@
 """
 file data source implementation
 """
-import io
+import csv
 import json
 import os
 import zipfile
@@ -36,11 +36,6 @@ from qianfan.dataset.data_source.utils import (
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
-
-try:
-    import clevercsv
-except ImportError:
-    log_warn("clevercsv isn't installed, only online function can be used")
 
 
 def _remove_none_values(entry: Union[List[Dict[str, Any]], Dict[str, Any], str]) -> Any:
@@ -109,16 +104,13 @@ class FileDataSource(DataSource, BaseModel):
         elif self.file_format == FormatType.Csv:
             assert isinstance(data[0], dict)
 
-            string_stream_buffer = io.StringIO()
-            csv_writer = clevercsv.DictWriter(
-                string_stream_buffer, fieldnames=list(data[0].keys())
-            )
+            csv_writer = csv.DictWriter(fd, fieldnames=list(data[0].keys()))
 
             # 如果是第一次写入，则需要加上 header 部分
             if index == 0:
                 csv_writer.writeheader()
+
             csv_writer.writerows(data)  # type: ignore
-            fd.write(string_stream_buffer.getvalue())
 
         elif self.file_format == FormatType.Text:
             for elem in data:

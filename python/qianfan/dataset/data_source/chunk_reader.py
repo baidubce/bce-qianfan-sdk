@@ -14,6 +14,7 @@
 """
 A file which implements chunk reading from various file
 """
+import csv
 import io
 import json
 import multiprocessing
@@ -21,7 +22,7 @@ import os.path
 import threading
 from abc import ABC, abstractmethod
 from queue import PriorityQueue, Queue
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional
 
 from typing_extensions import override
 
@@ -31,9 +32,8 @@ from qianfan.utils import log_error, log_warn
 
 try:
     import ijson
-    from clevercsv import stream_table
 except ImportError:
-    log_warn("ijson and clevercsv aren't installed, only online function can be used")
+    log_warn("ijson aren't installed, only online function can be used")
 
 
 class BaseReader(ABC):
@@ -81,17 +81,25 @@ class CsvReader(BaseReader):
 
         self.file_path = file_path
 
-        if "dialect" in kwargs:
-            self.data_stream = stream_table(file_path, dialect=kwargs["dialect"])
-        else:
-            self.data_stream = stream_table(file_path)
-
-        self.column_list: List[str] = next(self.data_stream)
+        self.fd = open(
+            file_path,
+            mode="r",
+            encoding="utf-8-sig" if encoding() == "utf-8" else encoding(),
+        )
+        self.data_stream = csv.DictReader(self.fd, **kwargs)
 
     def _get_an_element(self, index: int) -> Any:
-        data = next(self.data_stream)
-        elem: Dict[str, str] = {self.column_list[j]: data[j] for j in range(len(data))}
-        return elem
+        try:
+            data = next(self.data_stream)
+        except StopIteration:
+            # 第一次迭代完成，关闭 FD
+            self.fd.close()
+            raise
+        except ValueError:
+            # 第二次请求会进入文件被关闭的状态
+            # 重新抛出 StopIteration 错误
+            raise StopIteration
+        return data
 
 
 class JsonReader(BaseReader):

@@ -71,6 +71,43 @@ def openai(
     openai_entry(host=host, port=port, detach=detach, log_file=log_file)
 
 
+@app.command(name="proxy")
+@credential_required
+def proxy(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind."),
+    base_port: int = typer.Option(
+        8002, "--base-port", "-b", help="Port of the base server."
+    ),
+    console_port: int = typer.Option(
+        8003, "--console-port", "-c", help="Port of the console server."
+    ),
+    detach: bool = typer.Option(
+        False,
+        "--detach",
+        "-d",
+        help="Run the server in background.",
+    ),
+    log_file: Optional[str] = typer.Option(None, help="Log file path."),
+    mock_port: int = typer.Option(
+        -1, "--mock-port", "-m", help="Port of the Mock server."
+    ),
+) -> None:
+    """
+    Create a proxy server.
+    """
+    check_dependency("openai", ["fastapi", "uvicorn"])
+    from qianfan.common.client.proxy import entry as proxy_entry
+
+    proxy_entry(
+        host=host,
+        base_port=base_port,
+        console_port=console_port,
+        detach=detach,
+        log_file=log_file,
+        mock_port=mock_port,
+    )
+
+
 def version_callback(value: bool) -> None:
     """
     Print qianfan sdk version

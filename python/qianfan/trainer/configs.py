@@ -247,6 +247,8 @@ def get_model_info(
         return PostPreTrainModelInfoMapping.get(model)
     elif train_mode == console_consts.TrainMode.SFT:
         return ModelInfoMapping.get(model)
+    elif train_mode == console_consts.TrainMode.DPO:
+        return DPOTrainModelInfoMapping.get(model)
     else:
         return None
 
@@ -843,7 +845,7 @@ DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = 
     },
 }
 
-DefaultDPOTrainConfigMapping: Dict[str, TrainConfig] = {}
+DefaultDPOTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {}
 
 # finetune model train type -> default finetune train config
 DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {

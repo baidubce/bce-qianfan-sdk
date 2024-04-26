@@ -27,6 +27,7 @@ from qianfan.common import Prompt
 from qianfan.dataset.data_source import DataSource, QianfanDataSource
 from qianfan.dataset.schema import (
     QianfanGenericText,
+    QianfanPromptChosenRejected,
     QianfanQuerySet,
     QianfanSortedConversation,
     QianfanText2Image,
@@ -169,6 +170,8 @@ def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
         return QianfanQuerySet()
     if template_type == DataTemplateType.Text2Image:
         return QianfanText2Image()
+    if template_type == DataTemplateType.PromptChosenRejected:
+        return QianfanPromptChosenRejected()
 
     error = ValueError(f"schema didn't find for template type {template_type}")
     log_error(str(error))

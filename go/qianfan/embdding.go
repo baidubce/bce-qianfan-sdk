@@ -25,9 +25,9 @@ type Embedding struct {
 
 // Embedding 请求
 type EmbeddingRequest struct {
-	BaseRequestBody
-	Input  []string `mapstructure:"input"`             // 输入的文本列表
-	UserID string   `mapstructure:"user_id,omitempty"` // 表示最终用户的唯一标识符
+	BaseRequestBody `mapstructure:"-"`
+	Input           []string `mapstructure:"input"`             // 输入的文本列表
+	UserID          string   `mapstructure:"user_id,omitempty"` // 表示最终用户的唯一标识符
 }
 
 // 具体的 Embedding 信息

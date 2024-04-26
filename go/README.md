@@ -208,6 +208,38 @@ if err != nil {
 embed := resp.Data[0].Embedding  // 获取第一个输入的向量
 ```
 
+### Text2Image 文生图
+
+千帆 SDK 支持调用千帆大模型平台中的文生图模型，可快速生成图片。
+
+```go
+text2img := qianfan.NewText2Image()  // 默认使用 Stable-Diffusion-XL 模型
+
+// 可以通过 WithModel 指定模型
+text2img := qianfan.NewText2Image(
+    qianfan.WithModel("Stable-Diffusion-XL"),  // 支持的模型可以通过 text2img.ModelList() 获取
+)
+// 或者通过 WithEndpoint 指定 endpoint
+text2img := qianfan.NewText2Image(
+    qianfan.WithEndpoint("your_custom_endpoint"),
+)
+```
+
+之后使用 `Do` 方法进行调用
+
+```go
+resp, err := text2img.Do(
+    context.TODO(), 
+    &Text2ImageRequest{
+        Prompt: "target prompt",
+    }
+)
+if err != nil {
+    return err
+}
+image := resp.Data[0].Base64Image  // 获取输出的第一张图片的 base64 编码
+```
+
 ### 其他设置
 
 为了便于使用，SDK 提供了一些设置项。

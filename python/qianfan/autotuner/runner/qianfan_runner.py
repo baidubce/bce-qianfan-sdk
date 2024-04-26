@@ -16,13 +16,13 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 import qianfan
-from qianfan import QfResponse
+from qianfan import VERSION, QfResponse
 from qianfan.autotuner.context import Config, Context, Metrics
 from qianfan.autotuner.runner.infer_runner import InferRunner
 from qianfan.common.prompt.prompt import Prompt
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
-from qianfan.utils.utils import async_to_thread
+from qianfan.utils.utils import async_to_thread, generate_letter_num_random_id
 
 
 class QianfanRunner(InferRunner):
@@ -40,7 +40,7 @@ class QianfanRunner(InferRunner):
         prompt: Optional[Prompt] = None,
         client: Optional[qianfan.ChatCompletion] = None,
         repeat: int = 1,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """
         Args:
@@ -97,7 +97,13 @@ class QianfanRunner(InferRunner):
 
         results_list = []
         for _ in range(self.repeat):
-            results_list.append(await self._client.abatch_do(input_list, **config))
+            results_list.append(
+                await self._client.abatch_do(
+                    input_list,
+                    request_id=f"qianfan_py_sdk_autotuner_v{VERSION}_{generate_letter_num_random_id()}",
+                    **config,
+                )
+            )
 
         ret = []
         for i, (input, reference) in enumerate(zip(input_list, reference_list)):

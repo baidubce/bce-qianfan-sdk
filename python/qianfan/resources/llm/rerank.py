@@ -76,15 +76,12 @@ class Reranker(BaseResource):
         """
         Reranker needs to transform body (`_query` -> `query`)
         """
-        if model is None:
-            body = super()._generate_body(model, endpoint, stream, **kwargs)
-            # "query" is conflict with QfRequest.query in params, so "_query" is
-            # the argument in SDK so we need to change "_query" back to "query" here
-            body["query"] = body["_query"]
-            del body["_query"]
-            return body
-        else:
-            return super()._generate_body(model, endpoint, stream, **kwargs)
+        body = super()._generate_body(model, endpoint, stream, **kwargs)
+        # "query" is conflict with QfRequest.query in params, so "_query" is
+        # the argument in SDK so we need to change "_query" back to "query" here
+        body["query"] = body["_query"]
+        del body["_query"]
+        return body
 
     def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
@@ -108,7 +105,7 @@ class Reranker(BaseResource):
         Rerank the input documents according to the query.
 
         Parameters:
-          query (List[str]):
+          query (str):
             User input for choosing the documents .
           documents (List[str]):
             The documents to be ranked.
@@ -168,7 +165,7 @@ class Reranker(BaseResource):
         Rerank the input documents according to the query.
 
         Parameters:
-          query (List[str]):
+          query str:
             User input for choosing the documents .
           documents (List[str]):
             The documents to be ranked.

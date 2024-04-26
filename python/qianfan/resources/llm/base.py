@@ -427,6 +427,10 @@ class BaseResource(object):
             return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
+    def supported_models(cls) -> Dict[str, QfLLMInfo]:
+        return cls._supported_models()
+
+    @classmethod
     def _default_model(cls) -> str:
         """
         default model
@@ -575,16 +579,16 @@ class BaseResource(object):
         """
         generate header
         """
-        if "header" not in kwargs:
-            kwargs["header"] = {}
-        kwargs["header"][Consts.XRequestID] = (
+        if "headers" not in kwargs:
+            kwargs["headers"] = {}
+        kwargs["headers"][Consts.XRequestID] = (
             kwargs["request_id"]
             if "request_id" in kwargs
             else (
                 f"{Consts.QianfanRequestIdDefaultPrefix}-{utils.generate_letter_num_random_id(16)}"
             )
         )
-        return kwargs["header"]
+        return kwargs["headers"]
 
     def _generate_query(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any

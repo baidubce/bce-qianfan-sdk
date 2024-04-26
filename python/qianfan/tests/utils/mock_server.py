@@ -3965,6 +3965,34 @@ def rpm_related_api():
         )
 
 
+@app.route(Consts.ModelAPIPrefix + "/reranker/<model_name>", methods=["POST"])
+def reranker(model_name):
+    if model_name == "":
+        return json_response(
+            {
+                "error_code": 3,
+                "error_msg": "unsupported method",
+            }
+        )
+    req = request.json
+    documents = req["documents"]
+    res = [
+        {"document": d, "relevance_score": 0.85, "index": i}
+        for i, d in enumerate(documents)
+    ]
+    if req.get("top_n"):
+        res = res[: req["top_n"]]
+    return json_response(
+        {
+            "id": "as-nc3zn3k8gn",
+            "object": "reranker_list",
+            "created": 1714094015,
+            "results": res,
+            "usage": {"prompt_tokens": 22, "total_tokens": 22},
+        }
+    )
+
+
 def _start_mock_server():
     """
     run mock server

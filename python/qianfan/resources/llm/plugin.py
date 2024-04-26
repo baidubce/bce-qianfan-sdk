@@ -23,6 +23,7 @@ from qianfan.resources.llm.base import (
     BatchRequestFuture,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse
+from qianfan.utils.logging import log_warn
 
 
 class Plugin(BaseResource):
@@ -43,6 +44,9 @@ class Plugin(BaseResource):
             # 转换成一言插件
             super().__init__(model, **kwargs)
         else:
+            log_warn(
+                "qianfan plugin is deprecated, please use model='EBPluginV2' instead."
+            )
             super().__init__(endpoint=endpoint, **kwargs)
 
     @classmethod

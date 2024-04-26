@@ -271,6 +271,28 @@ class QianfanText2Image(QianfanSchema):
         return True
 
 
+class QianfanPromptChosenRejected(QianfanSchema):
+    """validator for prompt chosen rejected text dataset"""
+
+    def validate(self, table: Table) -> bool:
+        """
+        validate a table
+
+        Args:
+            table (Table): table need to be validated
+
+        Returns:
+            bool:whether table is valid
+        """
+        if table.row_number() == 0:
+            log_error("no data in table")
+            return False
+
+        # col_names = table.col_names()
+
+        return True
+
+
 class EvaluationSchema(Schema):
     """validator for evaluation used"""
 

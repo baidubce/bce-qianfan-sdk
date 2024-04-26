@@ -31,6 +31,7 @@ from qianfan.trainer.base import (
     with_event,
 )
 from qianfan.trainer.configs import (
+    DefaultDPOTrainConfigMapping,
     DefaultPostPretrainTrainConfigMapping,
     DefaultTrainConfigMapping,
     PeftType,
@@ -718,12 +719,14 @@ class TrainAction(
         if train_mode == console_consts.TrainMode.PostPretrain:
             model_info = DefaultPostPretrainTrainConfigMapping.get(
                 model_type,
-                # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
+            )
+        elif train_mode == console_consts.TrainMode.DPO:
+            model_info = DefaultDPOTrainConfigMapping.get(
+                model_type,
             )
         else:
             model_info = DefaultTrainConfigMapping.get(
                 model_type,
-                # DefaultTrainConfigMapping[get_config().DEFAULT_FINE_TUNE_TRAIN_TYPE],
             )
         if model_info is None or len(model_info) == 0:
             raise InvalidArgumentError(f"can not find default config for {model_type}")

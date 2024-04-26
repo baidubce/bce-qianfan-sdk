@@ -546,6 +546,7 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
         DataTemplateType.NonSortedConversation,
         DataTemplateType.SortedConversation,
         DataTemplateType.QuerySet,
+        DataTemplateType.PromptChosenRejected,
     ]:
         return FormatType.Jsonl
     elif template_type == DataTemplateType.GenericText:

@@ -22,52 +22,6 @@ from starlette.responses import StreamingResponse
 from qianfan.extensions.openai.adapter import OpenAIApdater
 from qianfan.utils.utils import get_ip_address
 
-app = FastAPI()
-
-adapter = OpenAIApdater()
-
-
-async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
-    """
-    Convert an async iterator to a stream.
-    """
-    async for data in resp:
-        yield "data: " + json.dumps(data) + "\n\n"
-    yield "data: [DONE]\n\n"
-
-
-@app.post("/v1/chat/completions")
-async def chat_completion(request: Request) -> Response:
-    openai_params = await request.json()
-    assert openai_params is not None
-    resp = await adapter.chat(openai_params)
-
-    if isinstance(resp, AsyncIterator):
-        return StreamingResponse(stream(resp), media_type="text/event-stream")
-
-    return JSONResponse(resp)
-
-
-@app.post("/v1/completions")
-async def completion(request: Request) -> Response:
-    openai_params = await request.json()
-    assert openai_params is not None
-    resp = await adapter.completion(openai_params)
-
-    if isinstance(resp, AsyncIterator):
-        return StreamingResponse(stream(resp), media_type="text/event-stream")
-
-    return JSONResponse(resp)
-
-
-@app.post("/v1/embeddings")
-async def embedding(request: Request) -> Response:
-    openai_params = await request.json()
-    assert openai_params is not None
-    resp = await adapter.embedding(openai_params)
-
-    return JSONResponse(resp)
-
 
 def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     import rich
@@ -76,7 +30,6 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     from rich.markdown import Markdown
 
     import qianfan
-    from qianfan.common.client.openai_adapter import app as openai_apps
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("INFO")
@@ -108,7 +61,52 @@ def entry(host: str, port: int, detach: bool, log_file: Optional[str]) -> None:
     rich.print(Markdown("\n".join(messages)))
     rich.print()
 
+    # might not work on Windows if moving this function out of current scope
     def start_server() -> None:
+        openai_apps = FastAPI()
+
+        adapter = OpenAIApdater()
+
+        async def stream(resp: AsyncIterator[Any]) -> AsyncIterator[str]:
+            """
+            Convert an async iterator to a stream.
+            """
+            async for data in resp:
+                yield "data: " + json.dumps(data) + "\n\n"
+            yield "data: [DONE]\n\n"
+
+        @openai_apps.post("/v1/chat/completions")
+        async def chat_completion(request: Request) -> Response:
+            openai_params = await request.json()
+            assert openai_params is not None
+            resp = await adapter.chat(openai_params)
+
+            if isinstance(resp, AsyncIterator):
+                return StreamingResponse(stream(resp), media_type="text/event-stream")
+
+            return JSONResponse(resp)
+
+        @openai_apps.post("/v1/completions")
+        async def completion(request: Request) -> Response:
+            openai_params = await request.json()
+            assert openai_params is not None
+            resp = await adapter.completion(openai_params)
+
+            if isinstance(resp, AsyncIterator):
+                return StreamingResponse(stream(resp), media_type="text/event-stream")
+
+            return JSONResponse(resp)
+
+        @openai_apps.post("/v1/embeddings")
+        async def embedding(request: Request) -> Response:
+            openai_params = await request.json()
+            assert openai_params is not None
+            resp = await adapter.embedding(openai_params)
+
+            return JSONResponse(resp)
+
+        import uvicorn
+
         uvicorn.run(openai_apps, host=host, port=port, log_config=log_config)
 
     if detach:

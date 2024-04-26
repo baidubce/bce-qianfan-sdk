@@ -28,7 +28,10 @@
 |                  | [通过SK实现RAG](./extensions/semantic_kernel/rag_with_sk.ipynb)                                           | 基于SK的RAG demo                                                                                                                                                          |
 |                  | [在 Llama Index 中使用千帆能力](./extensions/qianfan_with_llama_index.ipynb)                                  | LlamaIndex是一个用于连接大语言模型（LLMs）和外部数据源的数据框架。它能够让LLMs访问和利用私有或领域特定的数据，以优化模型性能并使其更加易用和流畅。本文准备了一份在 Llama Index 中使用千帆的能力进行 RAG 的示例，供用户参考。                                       |
 |                  | [Sequential](./langchain_sequential.ipynb)                                                            | 本文将展示Langchain结合qianfan使用Sequential 以及 LCEL 进行大模型应用Prompt和Chain的组装调用，原文请参考Langchain Seuqential 总的来说Langchain更推荐是LCEL的方式进行实现                                            |
-|        其他        | [OpenAI 适配器](./openai_adapter.ipynb)                                                                  | 对于部分已经适配 OpenAI 而尚未支持千帆 SDK 的第三库，本文提供了一种方法，可以快速将千帆适配至任意这类库。                                                                                                            |
+|        其他        | [OpenAI 适配器](./openai_adapter.ipynb)   | 对于部分已经适配 OpenAI 而尚未支持千帆 SDK 的第三库，本文提供了一种方法，可以快速将千帆适配至任意这类库。                                                                                                            |
+|                   | [Prompt 优化](./apo.ipynb)：展示了如何使用 SDK 提供的 APO 功能自动地对 Prompt 进行优化，提升模型效果。|  |
+
+
 
 
 # 面向管控API+SDK本地算子能力的Cookbook

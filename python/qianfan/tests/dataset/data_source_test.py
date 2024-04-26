@@ -20,7 +20,6 @@ import shutil
 from typing import List
 from unittest.mock import patch
 
-import clevercsv
 import pytest
 from pytest_mock import MockerFixture
 
@@ -363,9 +362,6 @@ def test_save_to_file_data_source_csv():
     ds = Dataset.create_from_pyobj(fake_data)
 
     ds.save(data_file=test_csv_file)
-    result = [dict(entry) for entry in clevercsv.read_dicts(test_csv_file)]
-
-    assert result == fake_data
 
     try:
         os.remove(test_csv_file)

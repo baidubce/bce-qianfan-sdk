@@ -126,15 +126,15 @@ def _with_latency(func: Callable) -> Callable:
     general decorator to add latency info into response
     """
     sign = inspect.signature(func)
-    if inspect.iscoroutinefunction(func):
-        return _async_latency(func)
+    if sign.return_annotation is QfResponse:
+        if inspect.iscoroutinefunction(func):
+            return _async_latency(func)
+        return _latency(func)
     elif sign.return_annotation is Iterator[QfResponse]:
         return _stream_latency(func)
-    elif sign.return_annotation is QfResponse:
-        return _latency(func)
     elif sign.return_annotation is AsyncIterator[QfResponse]:
         return _async_stream_latency(func)
-    return func
+    raise errors.InternalError()
 
 
 def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
@@ -178,43 +178,53 @@ def _stream_latency(
         start_time = time.perf_counter()
         first_token_latency: Optional[float] = None
         resp = func(*args, **kwargs)
-        sse_block_receive_time = time.perf_counter()
-        for r in resp:
-            if first_token_latency is None:
-                first_token_latency = time.perf_counter() - start_time
-            r.statistic["request_latency"] = (
-                time.perf_counter() - sse_block_receive_time
-            )
-            r.statistic["first_token_latency"] = first_token_latency
-            r.statistic["total_latency"] = time.perf_counter() - start_time
+
+        def iter() -> Iterator[QfResponse]:
+            nonlocal first_token_latency
             sse_block_receive_time = time.perf_counter()
-            yield r
+            for r in resp:
+                if first_token_latency is None:
+                    first_token_latency = time.perf_counter() - start_time
+                r.statistic["request_latency"] = (
+                    time.perf_counter() - sse_block_receive_time
+                )
+                r.statistic["first_token_latency"] = first_token_latency
+                r.statistic["total_latency"] = time.perf_counter() - start_time
+                sse_block_receive_time = time.perf_counter()
+                yield r
+
+        return iter()
 
     return wrapper
 
 
 def _async_stream_latency(
-    func: Callable[..., AsyncIterator[QfResponse]]
-) -> Callable[..., AsyncIterator[QfResponse]]:
+    func: Callable[..., Awaitable[AsyncIterator[QfResponse]]]
+) -> Callable[..., Awaitable[AsyncIterator[QfResponse]]]:
     """
     a decorator to add latency info into async stream response
     """
 
     async def wrapper(*args: Any, **kwargs: Any) -> AsyncIterator[QfResponse]:
         start_time = time.perf_counter()
+        resp = await func(*args, **kwargs)
         first_token_latency: Optional[float] = None
-        resp = func(*args, **kwargs)
         sse_block_receive_time = time.perf_counter()
-        async for r in resp:
-            if first_token_latency is None:
-                first_token_latency = time.perf_counter() - start_time
-            r.statistic["request_latency"] = (
-                time.perf_counter() - sse_block_receive_time
-            )
-            r.statistic["first_token_latency"] = first_token_latency
-            r.statistic["total_latency"] = time.perf_counter() - start_time
-            sse_block_receive_time = time.perf_counter()
-            yield r
+
+        async def iter() -> AsyncIterator[QfResponse]:
+            nonlocal first_token_latency, sse_block_receive_time
+            async for r in resp:
+                if first_token_latency is None:
+                    first_token_latency = time.perf_counter() - start_time
+                r.statistic["request_latency"] = (
+                    time.perf_counter() - sse_block_receive_time
+                )
+                r.statistic["first_token_latency"] = first_token_latency
+                r.statistic["total_latency"] = time.perf_counter() - start_time
+                sse_block_receive_time = time.perf_counter()
+                yield r
+
+        return iter()
 
     return wrapper
 

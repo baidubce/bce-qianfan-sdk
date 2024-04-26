@@ -21,6 +21,14 @@ import pytest
 import qianfan
 from qianfan.errors import APIError
 from qianfan.tests.utils import EnvHelper
+from qianfan.utils.utils import generate_letter_num_random_id
+
+
+def retry_config():
+    """
+    Test retry config
+    """
+    return {"endpoint": f"test_retry_{generate_letter_num_random_id()}"}
 
 
 def test_retry_accesstoken_expired():
@@ -80,11 +88,11 @@ def test_retry_retry_cnt():
     """
     Test retry
     """
-    comp = qianfan.Completion(endpoint="test_retry")
+    comp = qianfan.Completion(**retry_config())
     with pytest.raises(APIError):
         resp = comp.do(prompt="test", retry_count=10, retry_err_codes=[1])
 
-    comp = qianfan.Completion(endpoint="test_retry1")
+    comp = qianfan.Completion(**retry_config())
     with pytest.raises(APIError):
         resp = comp.do(prompt="test", retry_count=1)
         assert resp is not None
@@ -92,12 +100,28 @@ def test_retry_retry_cnt():
         assert "id" in resp["body"]
         assert resp["object"] == "completion"
 
-    comp = qianfan.Completion(endpoint="test_retry2")
+    comp = qianfan.Completion(**retry_config())
     resp = comp.do(prompt="test", retry_count=3)
     assert resp is not None
     assert resp["code"] == 200
     assert "id" in resp["body"]
     assert resp["object"] == "completion"
+
+    comp = qianfan.Completion(**retry_config())
+    with pytest.raises(APIError):
+        resp = comp.do(prompt="test", retry_count=10, retry_err_codes=[1], stream=True)
+
+    comp = qianfan.Completion(**retry_config())
+    with pytest.raises(APIError):
+        s = comp.do(prompt="test", retry_count=1, stream=True)
+
+    comp = qianfan.Completion(**retry_config())
+    s = comp.do(prompt="test", retry_count=5, stream=True)
+    for resp in s:
+        assert resp is not None
+        assert resp["code"] == 200
+        assert "id" in resp["body"]
+        assert resp["object"] == "completion"
 
 
 @pytest.mark.asyncio
@@ -105,7 +129,7 @@ async def test_async_retry_retry_cnt():
     """
     Test async retry
     """
-    comp = qianfan.Completion(endpoint="test_retry")
+    comp = qianfan.Completion(**retry_config())
 
     with pytest.raises(APIError):
         resp = await comp.ado(prompt="test", retry_count=1)
@@ -114,8 +138,22 @@ async def test_async_retry_retry_cnt():
         assert "id" in resp["body"]
         assert resp["object"] == "completion"
 
+    comp = qianfan.Completion(**retry_config())
     resp = await comp.ado(prompt="test", retry_count=4)
     assert resp is not None
     assert resp["code"] == 200
     assert "id" in resp["body"]
     assert resp["object"] == "completion"
+
+    comp = qianfan.Completion(**retry_config())
+
+    with pytest.raises(APIError):
+        resp = await comp.ado(prompt="test", retry_count=1, stream=True)
+
+    comp = qianfan.Completion(**retry_config())
+    resp = await comp.ado(prompt="test", retry_count=4, stream=True)
+    assert resp is not None
+    async for r in resp:
+        assert r["code"] == 200
+        assert "id" in r["body"]
+        assert r["object"] == "completion"

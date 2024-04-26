@@ -22,7 +22,7 @@ from qianfan.autotuner.runner.infer_runner import InferRunner
 from qianfan.common.prompt.prompt import Prompt
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
-from qianfan.utils.utils import async_to_thread
+from qianfan.utils.utils import async_to_thread, generate_letter_num_random_id
 
 
 class QianfanRunner(InferRunner):
@@ -100,7 +100,7 @@ class QianfanRunner(InferRunner):
             results_list.append(
                 await self._client.abatch_do(
                     input_list,
-                    request_id=f"qianfan_py_sdk_autotuner_v{VERSION}",
+                    request_id=f"qianfan_py_sdk_autotuner_v{VERSION}_{generate_letter_num_random_id()}",
                     **config,
                 )
             )

@@ -34,6 +34,7 @@ from qianfan.resources import (
     QfRole,
     Text2Image,
     Tokenizer,
+    Reranker,
 )
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
@@ -50,6 +51,7 @@ __all__ = [
     "Text2Image",
     "Image2Text",
     "Tokenizer",
+    "Reranker",
     "AK",
     "SK",
     "Role",

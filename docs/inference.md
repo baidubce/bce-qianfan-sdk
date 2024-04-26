@@ -155,35 +155,10 @@ resp = emb.do(endpoint="your_custom_endpoint", texts=[
 - [Embedding-V1](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/alj562vvu) （默认）
 - [bge-large-en](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mllz05nzk)
 - [bge-large-zh](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/dllz04sro)
-
+- 
 #### **Plugin 插件**
 
-千帆大模型平台支持使用平台插件并进行编排，以帮助用户快速构建 LLM 应用或将 LLM 应用到自建程序中。在使用这一功能前需要先[创建应用](https://console.bce.baidu.com/qianfan/plugin/service/list)、设定服务地址、将服务地址作为参数传入千帆 SDK
-##### 千帆插件
-
-千帆插件需要用户在千帆控制台-插件编排中配置并上线插件应用服务，获得endpoint后才能使用
-```python
-# Plugin 千帆基础功能展示
-plugin = qianfan.Plugin(endpoint="your_custom_endpoint")
-resp = plugin.do(query="你好")
-print(resp['result'])
-
-# 流式调用
-resp = plugin.do(query="你好", stream=True)
-
-# 异步调用
-resp = await plugin.ado(query="你好")
-print(resp['result'])
-
-# 异步流式调用
-resp = await plugin.ado(query="你好", stream=True)
-async for r in resp:
-    print(r)
-```
-
-##### 一言插件
-
-当前一言插件存在两个版本，分别对应model="EBPlugin"和model="EBPluginV2"，默认不传使用前者
+当前插件存在两个版本，分别对应model="EBPlugin"和model="EBPluginV2"，默认不传使用前者
 ```python
 # v1
 TEST_MESSAGE = [
@@ -236,6 +211,16 @@ img = Image.open(io.BytesIO(img_data))
 i2t = qianfan.Image2Text(endpoint="....")
 resp = i2t.do(prompt="Rag doll cat", "9j/4AAQSkZJRgABAQAAAQABAAD/xxxxx")
 print(resp["result"])
+```
+
+#### **重排序**
+为了提升RAG等检索业务场景的效果，千帆平台也提供了重排序功能，用户可以通过千帆SDK快速调用。
+
+以下是一个使用示例
+```python
+r = qianfan.Reranker()
+res = r.do("北京的天气", ["北京今天12.5度，北风，阴天", "北京美食很多"])
+print(res["results"])
 ```
 
 #### **批量推理**

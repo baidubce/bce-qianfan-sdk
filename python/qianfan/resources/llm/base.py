@@ -576,16 +576,16 @@ class BaseResource(object):
         """
         generate header
         """
-        if "header" not in kwargs:
-            kwargs["header"] = {}
-        kwargs["header"][Consts.XRequestID] = (
+        if "headers" not in kwargs:
+            kwargs["headers"] = {}
+        kwargs["headers"][Consts.XRequestID] = (
             kwargs["request_id"]
             if "request_id" in kwargs
             else (
                 f"{Consts.QianfanRequestIdDefaultPrefix}-{utils.generate_letter_num_random_id(16)}"
             )
         )
-        return kwargs["header"]
+        return kwargs["headers"]
 
     def _generate_query(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
@@ -604,7 +604,7 @@ class BaseResource(object):
         generate body
         """
         kwargs = copy.deepcopy(kwargs)
-        IGNORED_KEYS = {"headers", "query"}
+        IGNORED_KEYS = {"header", "query"}
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]

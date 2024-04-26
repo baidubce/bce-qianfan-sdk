@@ -428,6 +428,10 @@ class BaseResource(object):
             return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
+    def supported_models(cls) -> Dict[str, QfLLMInfo]:
+        return cls._supported_models()
+
+    @classmethod
     def _default_model(cls) -> str:
         """
         default model
@@ -604,7 +608,7 @@ class BaseResource(object):
         generate body
         """
         kwargs = copy.deepcopy(kwargs)
-        IGNORED_KEYS = {"header", "query"}
+        IGNORED_KEYS = {"headers", "query"}
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]

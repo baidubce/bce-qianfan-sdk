@@ -64,6 +64,7 @@ while True:
 - [ChatGLM2-6B-32K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Bllz001ff)
 - [AquilaChat-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ollz02e7i)
 - [XuanYuan-70B-Chat-4bit](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Ylp88e5jc)
+- 更多模型请参考 [千帆大模型平台Chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%AF%B9%E8%AF%9Dchat)
 
 支持的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得。
 
@@ -122,6 +123,7 @@ resp = comp.do(endpoint="your_custom_endpoint", prompt="你好")
 
 - [SQLCoder-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo472sa2)
 - [CodeLlama-7b-Instruct](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ylo47d03k)
+- 更多模型请参考 [千帆大模型平台Completion](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E7%BB%AD%E5%86%99completions)
 
 同时 SDK 也支持传入对话类模型实现续写任务。
 
@@ -155,7 +157,8 @@ resp = emb.do(endpoint="your_custom_endpoint", texts=[
 - [Embedding-V1](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/alj562vvu) （默认）
 - [bge-large-en](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mllz05nzk)
 - [bge-large-zh](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/dllz04sro)
-- 
+- [tao-8k](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/7lq0buxys)
+- 更多模型请参考 [千帆大模型平台Embedding](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%90%91%E9%87%8Fembeddings)
 #### **Plugin 插件**
 
 当前插件存在两个版本，分别对应model="EBPlugin"和model="EBPluginV2"，默认不传使用前者

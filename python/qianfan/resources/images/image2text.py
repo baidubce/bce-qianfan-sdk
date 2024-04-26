@@ -45,6 +45,21 @@ class Image2Text(BaseResource):
 
         """
         info_list = {
+            "Fuyu-8B": QfLLMInfo(
+                endpoint="/image2text/fuyu_8b",
+                required_keys={"prompt", "image"},
+                optional_keys={
+                    "negative_prompt",
+                    "size",
+                    "n",
+                    "steps",
+                    "sampler_index",
+                    "user_id",
+                    "seed",
+                    "cfg_scale",
+                    "style",
+                },
+            ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",
                 # the key of api is "query", which is conflict with query in params

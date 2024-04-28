@@ -35,10 +35,10 @@
 
 ## 如何安装
 
-目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装，Python需要 3.7.0 或更高的版本。其他语言的SDK敬请期待。
+目前千帆Python SDK 已发布到 PyPI ，用户可使用 pip 命令进行安装，Python需要 3.7.0 或更高的版本。
 
 ```
-pip install qianfan
+pip install 'qianfan[dataset_base]'
 ```
 
 在安装完成后，用户可以参考 [文档](./docs/cli.md) 在命令行中快速使用千帆平台功能，或者在代码内引入千帆 SDK 并使用
@@ -46,6 +46,14 @@ pip install qianfan
 ```python
 import qianfan
 ```
+
+更多安装选项见[文档](./docs/install.md)
+
+其它语言见如下文档：
+
++ [Go](https://github.com/baidubce/bce-qianfan-sdk/tree/main/go)
++ [Java](https://github.com/baidubce/bce-qianfan-sdk/tree/main/java)
++ [JavaScript](https://github.com/baidubce/bce-qianfan-sdk/tree/main/javascript)
 
 ## 快速使用
 
@@ -129,22 +137,51 @@ print(resp["result"])
 #### Dataset
 
 千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
-以下是一个通过加载本地数据集并进行数据处理的例子
+
+以下是一个通过加载本地数据集、处理并上传到千帆的例子
+
+假设我们有以下格式的 Json 数据集：
+
+```json
+[
+  {"question": "...", "answer":  "..."},
+  {"question": "...", "answer":  "..."},
+  {"question": "..."}
+]
+```
+
 ```python
+from typing import Dict, Any
+
 from qianfan.dataset import Dataset
+
 # 从本地文件导入
-ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
+ds = Dataset.load(data_file="path/to/dataset_file.json")
 
 def filter_func(row: Dict[str, Any]) -> bool:
-  return "sensitive data for example" not in row["col1"]
+  return "answer" in row.keys()
 
 def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
   return {
-    "col1": row["col1"].replace("sensitive data for example", ""),
-    "col2": row["col2"]
+      "prompt": row["question"],
+      "response": row["answer"],
   }
 
-print(ds.filter(filter_func).map(map_func).list())
+# 链式调用处理数据
+ds.filter(filter_func).map(map_func).pack()
+
+# 上传到千帆
+# 数据集只有上传到千帆后才可以用于训练
+# 请确保你的数据集格式符合要求
+ds.save(qianfan_dataset_id="your_dataset_id")
+```
+
+当然，你也可以直接通过 SDK 加载一个已经保存在千帆的数据集用于后续训练
+
+```python
+from qianfan.dataset import Dataset
+
+ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
 ```
 
 #### Trainer

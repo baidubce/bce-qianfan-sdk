@@ -108,7 +108,7 @@ print(resp["result"])
 
 ## 功能导览
 
-我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
+我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/blob/main/cookbook/README.md)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
 
 ### 大模型推理
 
@@ -119,8 +119,10 @@ print(resp["result"])
 + Embedding 向量化
 + Plugin 插件调用
 + Text2Image 文生图
++ Image2Text 图生文
++ Reranker 重排序
 
-如下是使用千帆 SDK 调用 Chat 对话的例子，同时 SDK 还支持异步和流式调用，更多使用方法详见 [推理服务](./docs/inference.md)
+如下是使用千帆 SDK 调用 Chat 对话的例子，同时 SDK 还支持异步、流式调用和批量推理，详见 [推理服务](./docs/inference.md)
 
 ```python
 import qianfan

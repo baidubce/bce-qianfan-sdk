@@ -30,15 +30,19 @@ resp = chat_comp.do(messages=[{
     "content": "你好"
 }])
 
-print(resp['body']['result'])
+print(resp['result'])
 # 输入：你好
 # 输出：你好！有什么我可以帮助你的吗？
 
 # 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
-resp = chat_comp.do(model="ERNIE-3.5-8K", messages=[{
-    "role": "user",
-    "content": "你好"
-}])
+resp = chat_comp.do(
+    model="ERNIE-3.5-8K",
+    messages=[{"role": "user", "content": "你好"}],
+    # 还可以设置其他参数，例如 temperature、top_p 等，此处字段名与 API 参数一致
+    # 具体可以参考每个模型对应的 API 文档
+    temperature=0.5,
+    top_p=0.9,
+)
 
 # 也可以利用内置 Messages 简化多轮对话
 # 下面是一个简单的用户对话案例，实现了对话内容的记录
@@ -50,10 +54,33 @@ while True:
     msgs.append(resp)            # 增加模型输出
 ```
 
-支持的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得，也可以在命令行运行 `qianfan chat --list-model` 查看。
+目前，千帆大模型平台提供了一系列可供用户通过 SDK 直接使用的模型，部分支持的模型如下所示：
+
+- [ERNIE-4.0-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t)
+- [ERNIE-3.5-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11)
+- [ERNIE-Speed-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/klqx7b1xf)
+- [ERNIE-Lite-8K-0922](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lilb2lpf) （默认）
+- [ERNIE Speed-AppBuilder](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alp0kdm0n)
+- [Meta-Llama-3-8B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ilv62om62)
+- [Meta-Llama-3-70B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/3lv6364k8)
+- [BLOOMZ-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Jljcadglj)
+- [Llama-2-7b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Rlki1zlai)
+- [Llama-2-13b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/2lki2us1e)
+- [Llama-2-70b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lkjfhiyt)
+- [Qianfan-BLOOMZ-7B-compressed](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/nllyzpcmp)
+- [Qianfan-Chinese-Llama-2-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sllyztytp)
+- [Qianfan-Chinese-Llama-2-13B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lo479b4b)
+- [ChatGLM2-6B-32K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Bllz001ff)
+- [AquilaChat-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ollz02e7i)
+- [XuanYuan-70B-Chat-4bit](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Ylp88e5jc)
+- 更多模型请参考 [千帆大模型平台Chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%AF%B9%E8%AF%9Dchat)
+
 
 > [!IMPORTANT]
-> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+> 
+> 完整的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得，也可以在命令行运行 `qianfan chat --list-model` 查看。
+> 
+> 随着平台更新，预置模型列表也可能有所变化，在使用 Access Key 进行鉴权时 SDK 会自动获取最新的模型。如果通过应用 AK 鉴权，则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
 
@@ -128,10 +155,19 @@ async for r in resp:
     print(r['result'])
 ```
 
-Completion 模型支持的预置模型列表可以通过 `qianfan.Completion().models()` 获得，也可以在命令行运行 `qianfan completion --list-model` 查看。Completion 除了可以调用续写类的模型，也支持调用对话类的模型。
+目前，平台预置的续写模型有：
+
+- [SQLCoder-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo472sa2)
+- [CodeLlama-7b-Instruct](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ylo47d03k)
+- 更多模型请参考 [千帆大模型平台Completion](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E7%BB%AD%E5%86%99completions)
 
 > [!IMPORTANT]
-> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+> 
+> 预置模型列表可以通过 `qianfan.Completion().models()` 获得，也可以在命令行运行 `qianfan completion --list-model` 查看。
+> 
+> 随着平台更新，预置模型列表也可能有所变化，在使用 Access Key 进行鉴权时 SDK 会自动获取最新的模型。如果通过应用 AK 鉴权，则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+
+Completion 除了可以调用续写类的模型，也支持调用对话类的模型。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
 
@@ -180,10 +216,11 @@ resp = emb.do(endpoint="your_custom_endpoint", texts=[
 - [tao-8k](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/7lq0buxys)
 - 更多模型请参考 [千帆大模型平台Embedding](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%90%91%E9%87%8Fembeddings)
 
-完整的预置模型列表可以通过 `qianfan.Embedding().models()` 获得，也可以在命令行运行 `qianfan embedding --list-model` 查看。
-
 > [!IMPORTANT]
-> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+> 
+> 完整的预置模型列表可以通过 `qianfan.Embedding().models()` 获得，也可以在命令行运行 `qianfan embedding --list-model` 查看。
+> 
+> 随着平台更新，预置模型列表也可能有所变化，在使用 Access Key 进行鉴权时 SDK 会自动获取最新的模型。如果通过应用 AK 鉴权，则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
 
@@ -256,10 +293,13 @@ img = Image.open(io.BytesIO(img_data))
 
 - [Stable-Diffusion-XL](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Klkqubb9w) （默认）
 
-完整的预置模型列表可以通过 `qianfan.Text2Image().models()` 获得，也可以在命令行运行 `qianfan txt2img --list-model` 查看。
+
 
 > [!IMPORTANT]
-> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+> 
+> 完整的预置模型列表可以通过 `qianfan.Text2Image().models()` 获得，也可以在命令行运行 `qianfan txt2img --list-model` 查看。
+> 
+> 随着平台更新，预置模型列表也可能有所变化，在使用 Access Key 进行鉴权时 SDK 会自动获取最新的模型。如果通过应用 AK 鉴权，则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
 

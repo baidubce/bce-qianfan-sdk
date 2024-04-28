@@ -135,10 +135,17 @@ comp = qianfan.Completion(model="ERNIE-Speed-8K")
 comp = qianfan.Completion(endpoint="your_custom_endpoint")
 
 resp = comp.do(prompt="你好")
+print(resp['result'])
 # 输出：你好！有什么我可以帮助你的吗？
 
 # 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
-resp = comp.do(model="ERNIE-3.5-8K", prompt="你好")
+resp = comp.do(
+    model="ERNIE-3.5-8K",
+    prompt="你好",
+    # 还可以设置其他参数，例如 temperature、top_p 等，此处字段名与 API 参数一致
+    # 具体可以参考每个模型对应的 API 文档
+    temperature=0.5
+)
 
 # 续写功能同样支持流式调用
 resp = comp.do(prompt="你好", stream=True)
@@ -163,7 +170,7 @@ async for r in resp:
 
 > [!IMPORTANT]
 > 
-> 预置模型列表可以通过 `qianfan.Completion().models()` 获得，也可以在命令行运行 `qianfan completion --list-model` 查看。
+> 完整的预置模型列表可以通过 `qianfan.Completion().models()` 获得，也可以在命令行运行 `qianfan completion --list-model` 查看。
 > 
 > 随着平台更新，预置模型列表也可能有所变化，在使用 Access Key 进行鉴权时 SDK 会自动获取最新的模型。如果通过应用 AK 鉴权，则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
@@ -203,9 +210,15 @@ resp = await emb.ado(texts=[
 print(resp['data'][0]['embedding'])
 
 # 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
-resp = emb.do(endpoint="your_custom_endpoint", texts=[
-    "世界上最高的山"
-])
+resp = emb.do(
+    endpoint="your_custom_endpoint", 
+    texts=[
+        "世界上最高的山"
+    ],
+    # 还可以设置其他参数，此处字段名与 API 参数一致
+    # 具体可以参考每个模型对应的 API 文档
+    user_id="xxx",
+)
 ```
 
 如下是目前支持的部分模型：
@@ -279,11 +292,17 @@ import qianfan
 qfg = qianfan.Text2Image(model="Stable-Diffusion-XL")
 
 # 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
-# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 embedding-v1
+# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 sd_xl
 qfg = qianfan.Text2Image(endpoint="your_custom_endpoint")
 
 # 调用模型
-resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
+resp = qfg.do(
+    prompt="Rag doll cat",
+    with_decode="base64",
+    # 还可以设置其他参数，此处字段名与 API 参数一致
+    # 具体可以参考每个模型对应的 API 文档
+    n=3,
+)
 img_data = resp["body"]["data"][0]["image"]
 
 img = Image.open(io.BytesIO(img_data))

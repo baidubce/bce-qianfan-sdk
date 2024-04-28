@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+# coding=utf-8
+"""
+workers read shard data
+"""
+
+from typing import Dict, Iterator, Optional
+import logging
+
+from gevent.event import AsyncResult
+import greenlet
+import gevent
+from locust.env import Environment
+from locust.runners import WorkerRunner
+from yame.logger import logger
+
+_results: Dict[int, AsyncResult] = {}
+
+
+class Distributor(Iterator):
+    """distributor"""
+
+    def __init__(self, environment: Environment, iterator: Optional[Iterator], name="distributor"):
+        """Register distributor method handlers and tie them to use the iterator that you pass.
+
+        iterator is not used on workers, so you can leave it as None there.
+        """
+        self.iterator = iterator
+        self.name = name
+        self.environment = environment
+        assert iterator or isinstance(
+            self.environment.runner, WorkerRunner
+        ), "iterator is a mandatory parameter when not on a worker runner"
+        if self.environment.runner:
+            # received on master
+            def _distributor_request(environment: Environment, msg, **kwargs):
+                # do this in the background to avoid blocking locust's client_listener loop
+                gevent.spawn(self._master_next_and_send, msg.data["gid"], msg.data["client_id"])
+
+            # received on worker
+            def _distributor_response(environment: Environment, msg, **kwargs):
+                _results[msg.data["gid"]].set(msg.data)
+
+            self.environment.runner.register_message(f"_{name}_request", _distributor_request)
+            self.environment.runner.register_message(f"_{name}_response", _distributor_response)
+        self.stop_iteration = False  # yame添加：是否已停止迭代
+
+    def _master_next_and_send(self, gid, client_id):
+        """master/local runner get next data and send to worker client"""
+        # yame: quite/stop runner when iterator raises StopIteration.
+        try:
+            item = next(self.iterator)
+        except StopIteration as e:
+            if not self.stop_iteration:
+                self.stop_iteration = True
+                logger.warning(f'[NOTICE] Distributor[{self.name}] {repr(e)} !')
+            if self.environment.web_ui:
+                self.environment.runner.stop()
+            else:
+                self.environment.runner.quit()
+            return
+        ##############################
+
+        self.environment.runner.send_message(
+            f"_{self.name}_response",
+            {"item": item, "gid": gid},
+            client_id=client_id,
+        )
+
+    def __next__(self):
+        """Get the next data dict from iterator"""
+        if not self.environment.runner:  # no need to do anything clever if there is no runner
+            assert self.iterator
+            return next(self.iterator)
+
+        gid = greenlet.getcurrent().minimal_ident  # type: ignore
+
+        if gid in _results:
+            logging.warning("This user was already waiting for data. Strange.")
+
+        _results[gid] = AsyncResult()
+        self.environment.runner.send_message(f"_{self.name}_request",
+                                             {"gid": gid, "client_id": self.environment.runner.client_id})
+        item = _results[gid].get()["item"]  # this waits for the reply
+        del _results[gid]
+        return item

@@ -47,7 +47,7 @@ pip install qianfan
 import qianfan
 ```
 
-## 快速使用
+## 准备工作
 
 在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
 
@@ -55,14 +55,12 @@ import qianfan
 import os
 import qianfan
 
-os.environ["QIANFAN_ACCESS_KEY"]="..."
-os.environ["QIANFAN_SECRET_KEY"]="..."
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
-resp = chat_comp.do(messages=[{
-    "role": "user",
-    "content": "你好，千帆"
-}], top_p=0.8, temperature=0.9, penalty_score=1.0)
+# 接下来就可以调用 SDK 的所有功能
+chat = qianfan.ChatCompletion()
+resp = chat.do(messages=[{"role": "user", "content": "你好，千帆"}])
 
 print(resp["result"])
 ```
@@ -70,24 +68,24 @@ print(resp["result"])
 除了通过环境变量设置外，千帆 SDK 还提供了 通过DotEnv加载 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
-<summary> 其他认证方式 </summary>
+<summary> 通过应用接入进行鉴权 </summary>
+
+<br>
 
 > 这里是一些其他认证方式，请仅在无法获取 Access Key 与 Secret Key 时使用。这些认证方式已经过时，将在未来从 SDK 中移除。
 
-API Key (**AK**) 和 Secret Key (**SK**）是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
+API Key (**AK**) 和 Secret Key (**SK**) 是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
 
 ```python
 import os
 import qianfan
 
-os.environ["QIANFAN_AK"]="..."
-os.environ["QIANFAN_SK"]="..."
+os.environ["QIANFAN_AK"] = "..."
+os.environ["QIANFAN_SK"] = "..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
-resp = chat_comp.do(messages=[{
-    "role": "user",
-    "content": "你好，千帆"
-}], top_p=0.8, temperature=0.9, penalty_score=1.0)
+# 只可以调用模型推理相关功能
+chat = qianfan.ChatCompletion()
+resp = chat.do(messages=[{"role": "user", "content": "你好，千帆"}])
 
 print(resp["result"])
 ```
@@ -114,13 +112,32 @@ print(resp["result"])
 
 ### 大模型推理
 
-目前千帆 SDK 支持用户使用如下大模型预测能力，详见[推理服务](./docs/inference.md)
+目前千帆 SDK 支持用户使用如下大模型预测能力
 
 + Chat 对话
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
 + Text2Image 文生图
+
+如下是使用千帆 SDK 调用 Chat 对话的例子，同时 SDK 还支持异步和流式调用，更多使用方法详见 [推理服务](./docs/inference.md)
+
+```python
+import qianfan
+
+# 模型名称可以通过 qianfan.ChatCompletion.models() 获取
+# 也可以在命令行运行 qianfan chat --list-model 查看
+chat_comp = qianfan.ChatCompletion(model="ERNIE-3.5-8K")
+resp = chat_comp.do(
+    messages=[{"role": "user", "content": "你好，千帆"}],
+    # （可选）设置模型参数，与 API 参数一致
+    top_p=0.8,
+    temperature=0.9,
+    penalty_score=1.0,
+)
+
+print(resp["result"])
+```
 
 ### 大模型训练
 

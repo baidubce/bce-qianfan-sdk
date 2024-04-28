@@ -13,10 +13,18 @@
 
 ```python
 import qianfan
-# 鉴权参数也可以通过函数参数传入，若已通过环境变量配置，则无需传入
-chat_comp = qianfan.ChatCompletion(access_key="...", secret_key="...")
 
-# 调用默认模型，即 ERNIE-Bot-turbo
+# 指定特定模型
+# 模型名称可以通过 qianfan.ChatCompletion.models() 获取
+# 也可以在命令行运行 qianfan chat --list-model 查看
+# 如果不设置 model，则使用默认模型 ERNIE-Bot-turbo
+chat_comp = qianfan.ChatCompletion(model="ERNIE-Speed-8K")
+
+# 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
+# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 ernie_speed
+chat_comp = qianfan.ChatCompletion(endpoint="your_custom_endpoint")
+
+# 调用模型
 resp = chat_comp.do(messages=[{
     "role": "user",
     "content": "你好"
@@ -26,14 +34,8 @@ print(resp['body']['result'])
 # 输入：你好
 # 输出：你好！有什么我可以帮助你的吗？
 
-# 指定特定模型
-resp = chat_comp.do(model="ERNIE-Bot", messages=[{
-    "role": "user",
-    "content": "你好"
-}])
-
-# 指定自行发布的模型
-resp = chat_comp.do(endpoint="your_custom_endpoint", messages=[{
+# 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
+resp = chat_comp.do(model="ERNIE-3.5-8K", messages=[{
     "role": "user",
     "content": "你好"
 }])
@@ -48,40 +50,38 @@ while True:
     msgs.append(resp)            # 增加模型输出
 ```
 
-目前，千帆大模型平台提供了一系列可供用户通过 SDK 直接使用的模型，模型清单如下所示：
+支持的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得，也可以在命令行运行 `qianfan chat --list-model` 查看。
 
-- [ERNIE-Bot-4](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t)
-- [ERNIE-Bot](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11)
-- [ERNIE-Bot-turbo](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lilb2lpf) （默认）
-- [ERNIE-Bot-turbo-AI](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alp0kdm0n)
-- [BLOOMZ-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Jljcadglj)
-- [Llama-2-7b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Rlki1zlai)
-- [Llama-2-13b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/2lki2us1e)
-- [Llama-2-70b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lkjfhiyt)
-- [Qianfan-BLOOMZ-7B-compressed](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/nllyzpcmp)
-- [Qianfan-Chinese-Llama-2-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sllyztytp)
-- [Qianfan-Chinese-Llama-2-13B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/8lo479b4b)
-- [ChatGLM2-6B-32K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Bllz001ff)
-- [AquilaChat-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ollz02e7i)
-- [XuanYuan-70B-Chat-4bit](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Ylp88e5jc)
-- 更多模型请参考 [千帆大模型平台Chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%AF%B9%E8%AF%9Dchat)
-
-支持的预置模型列表可以通过 `qianfan.ChatCompletion().models()` 获得。
+> [!IMPORTANT]
+> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
 对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
+
+> endpoint 指发布模型时 API 地址最后需要填入的地址，也同样适用于预置模型。
+>
+> 例如 ERNIE Speed 的 API 地址为 `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_speed`，则 endpoint 为 URL 最后一部分 `ernie_speed`。
 
 除了通过  `do`  方法同步调用千帆 SDK 以外， SDK 还支持使用 `ado` 来异步调用千帆 SDK。在同步和异步的基础上，用户还可以传入 `stream=True` 来实现大模型输出结果的流式返回。示例代码如下所示：
 
 ```python
+# 流式调用
+resp = chat_comp.do(messages=[{
+    "role": "user",
+    "content": "你好"
+}], stream=True)
+
+for r in resp:
+    print(r['result'])
+
 # 异步调用
-resp = await chat_comp.ado(model="ERNIE-Bot-turbo", messages=[{
+resp = await chat_comp.ado(messages=[{
     "role": "user",
     "content": "你好"
 }])
 print(resp['body']['result'])
 
 # 异步流式调用
-resp = await chat_comp.ado(model="ERNIE-Bot-turbo", messages=[{
+resp = await chat_comp.ado(messages=[{
     "role": "user",
     "content": "你好"
 }], stream=True)
@@ -96,47 +96,67 @@ async for r in resp:
 
 ```python
 import qianfan
-comp = qianfan.Completion()
 
-resp = comp.do(model="ERNIE-Bot", prompt="你好")
+# 指定特定模型
+# 模型名称可以通过 qianfan.Completion.models() 获取
+# 也可以在命令行运行 qianfan completion --list-model 查看
+# 如果不设置 model，则使用默认模型 ERNIE-Bot-turbo
+comp = qianfan.Completion(model="ERNIE-Speed-8K")
+
+# 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
+# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 ernie_speed
+comp = qianfan.Completion(endpoint="your_custom_endpoint")
+
+resp = comp.do(prompt="你好")
 # 输出：你好！有什么我可以帮助你的吗？
 
+# 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
+resp = comp.do(model="ERNIE-3.5-8K", prompt="你好")
+
 # 续写功能同样支持流式调用
-resp = comp.do(model="ERNIE-Bot", prompt="你好", stream=True)
+resp = comp.do(prompt="你好", stream=True)
 for r in resp:
     print(r['result'])
 
 # 异步调用
-resp = await comp.ado(model="ERNIE-Bot-turbo", prompt="你好")
+resp = await comp.ado(prompt="你好")
 print(resp['body']['result'])
 
 # 异步流式调用
-resp = await comp.ado(model="ERNIE-Bot-turbo", prompt="你好", stream=True)
+resp = await comp.ado(prompt="你好", stream=True)
 async for r in resp:
     print(r['result'])
-
-# 调用非平台内置的模型
-resp = comp.do(endpoint="your_custom_endpoint", prompt="你好")
 ```
 
-目前，平台预置的续写模型有：
+Completion 模型支持的预置模型列表可以通过 `qianfan.Completion().models()` 获得，也可以在命令行运行 `qianfan completion --list-model` 查看。Completion 除了可以调用续写类的模型，也支持调用对话类的模型。
 
-- [SQLCoder-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Hlo472sa2)
-- [CodeLlama-7b-Instruct](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/ylo47d03k)
-- 更多模型请参考 [千帆大模型平台Completion](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E7%BB%AD%E5%86%99completions)
+> [!IMPORTANT]
+> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
 
-同时 SDK 也支持传入对话类模型实现续写任务。
+对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
+
+> endpoint 指发布模型时 API 地址最后需要填入的地址，也同样适用于预置模型。
+>
+> 例如 ERNIE Speed 的 API 地址为 `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_speed`，则 endpoint 为 URL 最后一部分 `ernie_speed`。
 
 #### **Embedding 向量化**
 
 千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
 
 ```python
-# Embedding 基础功能
 import qianfan
-emb = qianfan.Embedding()
 
-resp = emb.do(model="Embedding-V1", texts=["世界上最高的山"])
+# 指定特定模型
+# 模型名称可以通过 qianfan.Embedding.models() 获取
+# 也可以在命令行运行 qianfan embedding --list-model 查看
+# 如果不设置 model，则使用默认模型 Embedding-V1
+emb = qianfan.Embedding(model="ERNIE-Speed-8K")
+
+# 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
+# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 embedding-v1
+emb = qianfan.Embedding(endpoint="your_custom_endpoint")
+
+resp = emb.do(texts=["世界上最高的山"])
 print(resp['data'][0]['embedding'])
 # 输出：0.062249645590782166, 0.05107472464442253, 0.033479999750852585, ...]
 
@@ -146,19 +166,31 @@ resp = await emb.ado(texts=[
 ])
 print(resp['data'][0]['embedding'])
 
-# 使用非预置模型
+# 也可以调用时设置 model 或者 endpoint，这将覆盖之前设置的 model 和 endpoint
 resp = emb.do(endpoint="your_custom_endpoint", texts=[
     "世界上最高的山"
 ])
 ```
 
-对于向量化任务，目前千帆大模型平台预置的模型有：
+如下是目前支持的部分模型：
 
 - [Embedding-V1](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/alj562vvu) （默认）
 - [bge-large-en](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mllz05nzk)
 - [bge-large-zh](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/dllz04sro)
 - [tao-8k](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/7lq0buxys)
 - 更多模型请参考 [千帆大模型平台Embedding](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Zlt2agedu#%E5%90%91%E9%87%8Fembeddings)
+
+完整的预置模型列表可以通过 `qianfan.Embedding().models()` 获得，也可以在命令行运行 `qianfan embedding --list-model` 查看。
+
+> [!IMPORTANT]
+> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+
+对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
+
+> endpoint 指发布模型时 API 地址最后需要填入的地址，也同样适用于预置模型。
+>
+> 例如 Embedding-V1 的 API 地址为 `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1`，则 endpoint 为 URL 最后一部分 `embedding-v1`。
+
 #### **Plugin 插件**
 
 当前插件存在两个版本，分别对应model="EBPlugin"和model="EBPluginV2"，默认不传使用前者
@@ -195,16 +227,45 @@ resp = plugin.do(
 ```
 
 #### **文生图**
+
 千帆平台提供了热门的文生图功能，千帆SDK支持用户调用SDK来获取文生图结果，以快速集成多模态能力到大模型应用中。
 
 以下是一个使用示例
+
 ```python
-qfg = qianfan.Text2Image()
+import qianfan
+
+# 指定特定模型
+# 模型名称可以通过 qianfan.Text2Image.models() 获取
+# 也可以在命令行运行 qianfan txt2img --list-model 查看
+# 如果不设置 model，则使用默认模型 Stable-Diffusion-XL
+qfg = qianfan.Text2Image(model="Stable-Diffusion-XL")
+
+# 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
+# endpoint 指模型 API 地址的最后一个 / 后的部分，例如 embedding-v1
+qfg = qianfan.Text2Image(endpoint="your_custom_endpoint")
+
+# 调用模型
 resp = qfg.do(prompt="Rag doll cat", with_decode="base64")
 img_data = resp["body"]["data"][0]["image"]
 
 img = Image.open(io.BytesIO(img_data))
 ```
+
+如下是目前支持的部分模型：
+
+- [Stable-Diffusion-XL](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Klkqubb9w) （默认）
+
+完整的预置模型列表可以通过 `qianfan.Text2Image().models()` 获得，也可以在命令行运行 `qianfan txt2img --list-model` 查看。
+
+> [!IMPORTANT]
+> 只有在使用 Access Key 进行鉴权时模型列表才会获取最新的模型，通过应用 AK 鉴权时则只能使用 SDK 预置的模型，可能会过时，请注意更新 SDK。
+
+对于那些不在清单中的其他模型，用户可通过传入 `endpoint` 来使用它们。
+
+> endpoint 指发布模型时 API 地址最后需要填入的地址，也同样适用于预置模型。
+>
+> 例如 Stable-Diffusion-XL 的 API 地址为 `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/sd_xl`，则 endpoint 为 URL 最后一部分 `sd_xl`。
 
 #### **图生文**
 千帆平台也提供了图+文生文功能，千帆SDK支持用户调用SDK来获取结果，以快速集成多模态能力到大模型应用中。

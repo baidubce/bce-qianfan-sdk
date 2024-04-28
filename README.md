@@ -68,7 +68,7 @@ print(resp["result"])
 除了通过环境变量设置外，千帆 SDK 还提供了 通过DotEnv加载 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
-<summary> 通过应用接入进行鉴权 </summary>
+<summary> （方案二）通过应用接入进行鉴权 </summary>
 
 <br>
 

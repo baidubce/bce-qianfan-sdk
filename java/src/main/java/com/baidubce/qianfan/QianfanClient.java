@@ -21,10 +21,7 @@ import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
-import com.baidubce.qianfan.model.ApiErrorResponse;
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.RateLimitConfig;
-import com.baidubce.qianfan.model.RetryConfig;
+import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
@@ -45,7 +42,10 @@ class QianfanClient {
     private final IAuth auth;
     private final ModelEndpointRetriever endpointRetriever;
     private RetryConfig retryConfig;
+    private ProxyConfig proxyConfig;
     private RateLimiter rateLimiter;
+
+
 
     public QianfanClient() {
         this(Auth.create());
@@ -59,21 +59,38 @@ class QianfanClient {
         this(Auth.create(type, accessKey, secretKey));
     }
 
+    public QianfanClient(ProxyConfig proxyConfig) {
+        this(Auth.create(proxyConfig),proxyConfig);
+    }
+
+    public QianfanClient(String accessKey, String secretKey,ProxyConfig proxyConfig) {
+        this(Auth.create(accessKey, secretKey,proxyConfig),proxyConfig);
+    }
+
+    public QianfanClient(String type, String accessKey, String secretKey,ProxyConfig proxyConfig) {
+        this(Auth.create(type, accessKey, secretKey, proxyConfig),proxyConfig);
+
+    }
     private QianfanClient(IAuth auth) {
         this.auth = auth;
         this.endpointRetriever = new ModelEndpointRetriever(auth);
         this.retryConfig = QianfanConfig.getRetryConfig();
         this.rateLimiter = new RateLimiter(QianfanConfig.getRateLimitConfig());
     }
-
-    public void setRetryConfig(RetryConfig retryConfig) {
-        this.retryConfig = retryConfig;
+    private QianfanClient(IAuth auth,ProxyConfig proxyConfig) {
+        this.proxyConfig=proxyConfig;
+        this.auth = auth;
+        this.endpointRetriever = new ModelEndpointRetriever(auth);
+        this.retryConfig = QianfanConfig.getRetryConfig();
+        this.rateLimiter = new RateLimiter(QianfanConfig.getRateLimitConfig());
     }
+    public void setRetryConfig(RetryConfig retryConfig) { this.retryConfig = retryConfig; }
+
+    public void setProxyConfig(ProxyConfig proxyConfig) { this.proxyConfig = proxyConfig; }
 
     public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
         this.rateLimiter = new RateLimiter(rateLimitConfig);
     }
-
     @SuppressWarnings("unchecked")
     public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return request(
@@ -95,9 +112,18 @@ class QianfanClient {
         String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
         String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
-        HttpRequest request = HttpClient.request()
+        HttpRequest request;
+
+        if ("".equals(proxyConfig.getProxyHost())||proxyConfig.getProxyPort()==0){
+            request = HttpClient.request()
                 .post(url)
-                .body(baseRequest);
+                .body(baseRequest); }
+        else{
+            request =
+                     new HttpProxyClient(proxyConfig.getProxyHost(),proxyConfig.getProxyPort()).build().request().proxy(proxyConfig)
+//                    new HttpProxyClient(proxyConfig.getProxyHost(),proxyConfig.getProxyPort()).request()
+                    .post(url)
+                    .body(baseRequest); }
         return auth.signRequest(request);
     }
 

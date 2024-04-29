@@ -22,6 +22,7 @@ import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
 import com.baidubce.qianfan.core.builder.Image2TextBuilder;
 import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.ProxyConfig;
 import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
@@ -52,10 +53,28 @@ public class Qianfan {
         this.client = new QianfanClient(type, accessKey, secretKey);
     }
 
+
+    public Qianfan(ProxyConfig proxyConfig) {
+        this.client = new QianfanClient(proxyConfig);
+    }
+
+    public Qianfan(String accessKey, String secretKey,ProxyConfig proxyConfig) {
+        this.client = new QianfanClient(accessKey, secretKey, proxyConfig);
+    }
+
+    public Qianfan(String type, String accessKey, String secretKey,ProxyConfig proxyConfig) {
+        this.client = new QianfanClient(type, accessKey, secretKey, proxyConfig);
+    }
+
     public Qianfan setRetryConfig(RetryConfig retryConfig) {
         this.client.setRetryConfig(retryConfig);
         return this;
     }
+
+//    public Qianfan setHttpProxy(ProxyConfig proxyConfig) {
+//        this.client.setProxyConfig(proxyConfig);
+//        return this;
+//    }
 
     public Qianfan setRateLimitConfig(RateLimitConfig rateLimitConfig) {
         this.client.setRateLimitConfig(rateLimitConfig);

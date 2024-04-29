@@ -383,7 +383,7 @@ class ChatCompletion(BaseResource):
                 output_price_per_1k_tokens=0.008,
             ),
             "ERNIE-Functions-8K": QfLLMInfo(
-                endpoint="/chat/ernie-char-8k",
+                endpoint="/chat/ernie-func-8k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",

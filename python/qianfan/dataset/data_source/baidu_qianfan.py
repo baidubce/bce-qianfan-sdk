@@ -144,7 +144,7 @@ class QianfanDataSource(DataSource, BaseModel):
     def save(
         self,
         table: Table,
-        is_annotated: bool = False,
+        is_annotated: bool = True,
         does_release: bool = False,
         sup_storage_id: str = "",
         sup_storage_path: str = "",
@@ -160,7 +160,7 @@ class QianfanDataSource(DataSource, BaseModel):
             table (Table):
                 data waiting to be uploaded.
             is_annotated (bool):
-                has data been annotated, default to False
+                has data been annotated, default to True
             does_release (bool):
                 does release dataset
                 after saving successfully,
@@ -209,30 +209,39 @@ class QianfanDataSource(DataSource, BaseModel):
             file_name = f"data_{uuid.uuid4()}"
             remote_file_path = f"{storage_path}{file_name}.zip"
 
-        # 如果数据集还是 grouped 格式，需要先转换为 packed
-        if table.is_dataset_grouped() and not should_save_as_zip_file:
-            table.pack()
-
         # 构造本地路径
         local_file_path = os.path.join(self._get_cache_folder_path(), file_name)
 
-        # 如果不是文生图，则把数据转存一份到本地
-        if self.template_type != DataTemplateType.Text2Image:
-            FileDataSource(
-                path=local_file_path,
-                file_format=self.format_type(),
-                save_as_folder=should_save_as_zip_file,
-            ).save(
-                table,
-                use_qianfan_special_jsonl_format=not should_save_as_zip_file,
-                **kwargs,
-            )
+        from qianfan.dataset.dataset import Dataset
 
-        # 否则直接保存
+        if not (
+            isinstance(table, Dataset)
+            and table.inner_table is None
+            and isinstance(table.inner_data_source_cache, FileDataSource)
+        ):
+            # 如果数据集还是 grouped 格式，需要先转换为 packed
+            if table.is_dataset_grouped() and not should_save_as_zip_file:
+                table.pack()
+
+            # 如果不是文生图，则把数据转存一份到本地
+            if self.template_type != DataTemplateType.Text2Image:
+                FileDataSource(
+                    path=local_file_path,
+                    file_format=self.format_type(),
+                    save_as_folder=should_save_as_zip_file,
+                ).save(
+                    table,
+                    use_qianfan_special_jsonl_format=not should_save_as_zip_file,
+                    **kwargs,
+                )
+
+            # 否则直接保存
+            else:
+                _collect_all_images_and_annotations_in_one_folder(
+                    table.inner_table, local_file_path
+                )
         else:
-            _collect_all_images_and_annotations_in_one_folder(
-                table.inner_table, local_file_path
-            )
+            local_file_path = table.inner_data_source_cache.path
 
         # 如果是泛文本还需要打压缩包
         if should_save_as_zip_file:

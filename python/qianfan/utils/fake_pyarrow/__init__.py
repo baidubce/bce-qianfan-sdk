@@ -18,8 +18,11 @@ fake pyarrow package
 from qianfan.utils.fake_pyarrow.functions import concat_tables
 from qianfan.utils.fake_pyarrow.table import ChunkedArray, Table
 
+is_fake = True
+
 __all__ = [
     "Table",
     "concat_tables",
     "ChunkedArray",
+    "is_fake",
 ]

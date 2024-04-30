@@ -15,8 +15,14 @@
 """
 Library aimed to helping developer to interactive with LLM.
 """
-
+import os
 import sys
+
+# Enable doing performance test with locust
+# if enabled, the ssl module will be patched
+if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "false":
+    from gevent import monkey
+    monkey.patch_ssl()
 
 from qianfan.fake_pyarrow_replacer import _ModuleFinder
 
@@ -38,6 +44,7 @@ from qianfan.resources import (
 )
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
+
 
 Role = QfRole
 Messages = QfMessages

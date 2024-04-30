@@ -2119,4 +2119,51 @@ class Dataset(Table):
                 tablefmt="simple",
                 numalign="right",
             )
-        )
+       )
+
+    def stress_test(self,
+            workers: int,
+            users: int,
+            runtime: str,
+            spawn_rate: int,
+            model: str,
+            data_column: str = "prompt",
+            hyperparameters: Dict[str, Any] = None
+        ) -> None:
+        """
+        Start a load test task with current dataset. The task stops after the specified amount of time, or
+        all queries of current dataset are sent.
+        Only works when environment variable QIANFAN_ENABLE_STRESS_TEST is set, or an exception will be thrown.
+
+        Args:
+            workers (int):
+                Number of workers. Each worker refers a process.
+            users (int):
+                Number of concurrent users, must be greater than workers. Each worker simulated at least one user.
+            runtime (str):
+                Stop after the specified amount of time, e.g. (300s, 20m, 3h, 1h30m, etc.).
+            spawn_rate (int):
+                Rate to spawn users at (users per second). 
+            model (str):
+                Name of the model service you want to test.
+            data_column (str),
+                Specify which column will be used as prompt. Default value is 'prompt'.
+            hyperparameters (dict[str, Any]):
+                Specify the hyperparameters in your request.
+        """
+        import os
+        if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false"):
+            from qianfan.dataset.stress_test.load_runner import QianfanLocustRunner
+            runner = QianfanLocustRunner(
+                         user_num=users, 
+                         worker_num=workers, 
+                         runtime=runtime,
+                         spawn_rate=spawn_rate, 
+                         model=model, 
+                         dataset=self,
+                         data_column=data_column,
+                         hyperparameters=hyperparameters
+                     )
+            runner.run()
+        else:
+            raise Exception("Value of QIANFAN_ENABLE_STRESS_TEST must be 1 if you want to start a stress test task.")

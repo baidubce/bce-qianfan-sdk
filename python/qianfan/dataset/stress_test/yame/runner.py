@@ -14,10 +14,11 @@ from urllib.parse import urlparse
 
 import locust.main
 
-from yame import GlobalData
-from yame.utils import select_a_free_port, strftime
-from yame.logger import console_logger
-import yame.listeners  # required
+from qianfan.dataset.stress_test.yame import GlobalData
+from qianfan.dataset.stress_test.yame.utils import select_a_free_port, strftime
+from qianfan.dataset.stress_test.yame.logger import console_logger
+import qianfan.dataset.stress_test.yame.listeners  # required
+
 
 
 class LocustRunner(object):
@@ -188,6 +189,7 @@ class LocustRunner(object):
             process.join()
             if not process.is_alive() and process.exitcode != 0:
                 console_logger.error(f'local runner pid={process.pid} exitcode={process.exitcode}.')
+            exit_code = process.exitcode
         else:
             master = None
             workers = []
@@ -230,9 +232,11 @@ class LocustRunner(object):
             except Exception as e:
                 self._kill_master_and_workers(master, workers)
                 raise e
+            exit_code = master.exitcode
         end_time = time.time()
         console_logger.info('run completed.')
         result = {
+            'exitcode': exit_code,
             'start_time': strftime(start_time),
             'end_time': strftime(end_time),
             'duration': end_time - start_time,

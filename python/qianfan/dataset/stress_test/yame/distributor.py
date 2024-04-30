@@ -43,7 +43,7 @@ class Distributor(Iterator):
 
             self.environment.runner.register_message(f"_{name}_request", _distributor_request)
             self.environment.runner.register_message(f"_{name}_response", _distributor_response)
-        self.stop_iteration = False  # True: runner has been stopped.
+        self.stop_iteration_num = 0
 
     def _master_next_and_send(self, gid, client_id):
         """master/local runner get next data and send to worker client"""
@@ -51,15 +51,16 @@ class Distributor(Iterator):
         try:
             item = next(self.iterator)
         except StopIteration as e:
-            if not self.stop_iteration:
-                self.stop_iteration = True
-                logger.warning(f'Distributor[{self.name}] {repr(e)}')
-            if self.environment.web_ui:
-                self.environment.runner.stop()
-            else:
-                self.environment.runner.quit()
+            self.stop_iteration_num += 1
+            #if self.stop_iteration_num >= self.environment.runner.user_count:
+            if self.stop_iteration_num >= self.environment.runner.target_user_count:
+                logger.warning(f'Distributor[{self.name}] StopIteration occurs {self.stop_iteration_num} times, '
+                               f'and {self.environment.runner.target_user_count} users have been spawned.')
+                if self.environment.web_ui:
+                    self.environment.runner.stop()
+                else:
+                    self.environment.runner.quit()
             return
-        ##############################
 
         self.environment.runner.send_message(
             f"_{self.name}_response",

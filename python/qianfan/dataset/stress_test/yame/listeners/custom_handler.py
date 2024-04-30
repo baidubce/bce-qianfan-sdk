@@ -29,7 +29,7 @@ from locust.stats import STATS_NAME_WIDTH, STATS_TYPE_WIDTH, PERCENTILES_TO_REPO
 from locust.runners import MasterRunner, LocalRunner, WorkerRunner, STATE_STOPPING, STATE_STOPPED, STATE_CLEANUP
 from locust.env import Environment
 from locust.log import greenlet_exception_logger
-from yame.logger import logger, console_logger
+from qianfan.dataset.stress_test.yame.logger import logger, console_logger
 
 
 class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):

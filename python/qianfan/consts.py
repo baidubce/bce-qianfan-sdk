@@ -35,6 +35,7 @@ class APIErrorCode(enum.Enum):
     RequestLimitReached = 4
     NoPermissionToAccessData = 6
     GetServiceTokenFailed = 13
+    IAMCertificationFailed = 14
     AppNotExist = 15
     DailyLimitReached = 17
     QPSLimitReached = 18

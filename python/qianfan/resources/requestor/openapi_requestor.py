@@ -38,7 +38,7 @@ import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.auth.iam import iam_sign
-from qianfan.resources.auth.oauth import Auth
+from qianfan.resources.auth.oauth import Auth, _masked_ak
 from qianfan.resources.requestor.base import (
     BaseAPIRequestor,
     _async_check_if_status_code_is_200,
@@ -243,6 +243,17 @@ class QfAPIRequestor(BaseAPIRequestor):
             req_id = body.get("id", "")
             error_code = body["error_code"]
             err_msg = body.get("error_msg", "no error message found in response body")
+            possible_reason = ""
+            if error_code == APIErrorCode.IAMCertificationFailed.value:
+                possible_reason = (
+                    "IAM 鉴权失败，请检查 Access Key 与 Secret Key 是否正确，"
+                    "当前使用的 Access Key 为"
+                    f" `{_masked_ak(get_config().ACCESS_KEY or '')}`"
+                )
+            elif error_code == APIErrorCode.DailyLimitReached.value:
+                possible_reason = "未开通所调用服务的付费权限，或者账户已欠费"
+            if possible_reason != "":
+                err_msg += f" 可能的原因: {possible_reason}"
             log_error(
                 f"api request req_id: {req_id} failed with error code: {error_code},"
                 f" err msg: {err_msg}, please check"

@@ -19,10 +19,10 @@ import os
 import sys
 
 # Enable doing performance test with locust
-# if enabled, the ssl module will be patched
+# if enabled, the some modules will be patched
 if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
     from gevent import monkey
-    monkey.patch_ssl()
+    monkey.patch_all()
 
 from qianfan.fake_pyarrow_replacer import _ModuleFinder
 

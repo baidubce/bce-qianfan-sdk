@@ -49,7 +49,7 @@ import qianfan
 
 ## 准备工作
 
-在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
+在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
 
 ```python
 import os
@@ -125,7 +125,12 @@ print(resp["result"])
 如下是使用千帆 SDK 调用 Chat 对话的例子，同时 SDK 还支持异步、流式调用和批量推理，详见 [推理服务](./docs/inference.md)
 
 ```python
+import os
 import qianfan
+
+# 动态获取最新模型列表依赖 IAM Access Key 进行鉴权，使用应用 AK 鉴权时不支持该功能
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
 
 # 模型名称可以通过 qianfan.ChatCompletion.models() 获取
 # 也可以在命令行运行 qianfan chat --list-model 查看

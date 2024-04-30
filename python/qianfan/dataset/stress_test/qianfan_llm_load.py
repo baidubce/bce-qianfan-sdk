@@ -15,9 +15,10 @@ from locust.clients import ResponseContextManager
 from locust.env import Environment
 from locust.exception import LocustError
 
-from yame.users.custom_user import CustomHttpSession, CustomUser
-from yame.listeners import CustomHandler
-from yame.distributor import Distributor
+from qianfan.dataset.stress_test.yame.users.custom_user import CustomHttpSession, CustomUser
+from qianfan.dataset.stress_test.yame.listeners import CustomHandler
+from qianfan.dataset.stress_test.yame.distributor import Distributor
+from qianfan.dataset.stress_test.yame import GlobalData
 
 import qianfan
 from qianfan.utils import disable_log
@@ -28,10 +29,6 @@ disable_log()
 
 
 distributor = None
-
-
-os.environ["QIANFAN_ACCESS_KEY"] = ""
-os.environ["QIANFAN_SECRET_KEY"] = ""
 
 
 def first_token_latency_request_handler(stats: RequestStats, request_type, name, response_time, response_length,
@@ -185,22 +182,13 @@ class QianfanCustomHttpSession(CustomHttpSession):
             pass
 
 
-@events.init_command_line_parser.add_listener
-def add_arguments(parser):
-    """
-    注册参数数据本地路径
-    """
-    parser.add_argument("--data_file", help="数据集本地路径")
-
-
 @events.test_start.add_listener
 def test_start(environment: Environment, **kwargs):
     """
     注册分布式数据集
     """
     global distributor
-    data_file = environment.parsed_options.data_file
-    dataset = Dataset.load(data_file=data_file)
+    dataset = GlobalData.data["dataset"]
     distributor = Distributor(environment, iter(dataset))  # Quite runner when iterator raises StopIteration.
 
 
@@ -235,8 +223,18 @@ class QianfanLLMLoadUser(CustomUser):
 
     @task
     def mytask(self):
-        prompt = next(distributor)[0]["prompt"]
+        kwargs = {
+            "stream": True
+        }
+        data_column = GlobalData.data["data_column"]
+        hyperparameters = GlobalData.data["hyperparameters"]
+        contents = []
+        data = next(distributor)
+        for d in data:
+            contents.append(d[data_column])
+        if hyperparameters is not None:
+            kwargs["hyperparameters"] = hyperparameters
         self.client.request(
-            contents=[prompt],
-            stream=True,
+            contents=contents,
+            **kwargs
         )

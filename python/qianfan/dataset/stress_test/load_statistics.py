@@ -25,7 +25,10 @@ def get_qps_and_rate(path):
             total_count = int(line_splits[2]) 
             error_count = int(line_splits[3])
             break
-        rate = (total_count - error_count) / total_count * 100
+        if total_count != 0:
+            rate = (total_count - error_count) / total_count * 100
+        else:
+            rate = 0
         return [qps, rate]
 
 

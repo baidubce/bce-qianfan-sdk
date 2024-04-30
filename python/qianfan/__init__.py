@@ -22,6 +22,7 @@ import sys
 # if enabled, the some modules will be patched
 if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
     from gevent import monkey
+
     monkey.patch_all()
 
 from qianfan.fake_pyarrow_replacer import _ModuleFinder

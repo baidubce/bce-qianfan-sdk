@@ -5,20 +5,20 @@
 支持request_meta添加自定义指标（需要再添加自定义Handler处理统计）
 """
 import time
-
-import requests
-from urllib3 import PoolManager
 from typing import Generator, Optional
 
+import requests
 from locust import User
 from locust.clients import HttpSession, ResponseContextManager
 from locust.exception import LocustError
+from urllib3 import PoolManager
 
 
 class CustomUser(User):
     """
     custom http user class
     """
+
     abstract = True
     """If abstract is True, the class is meant to be subclassed, and users will not choose this locust during a test"""
 
@@ -30,15 +30,16 @@ class CustomUser(User):
 
         if self.host is None:
             raise LocustError(
-                "You must specify the base host. Either in the host attribute in the User class, " + \
-                "or on the command line using the --host option."
+                "You must specify the base host. Either in the host attribute in the"
+                " User class, "
+                + "or on the command line using the --host option."
             )
 
         self.client = CustomHttpSession(
             base_url=self.host,
             request_event=self.environment.events.request,
             user=self,
-            pool_manager=self.pool_manager
+            pool_manager=self.pool_manager,
         )
         """
         Instance of HttpSession that is created upon instantiation of Locust.
@@ -55,7 +56,7 @@ class CustomUser(User):
         :return : 含自定义指标的dict；key value形式。
         建议key值不要使用：request_type、response_time、name、context、response、exception、start_time、url，否则将会覆盖locust原生统计数据。
         """
-        if not kwargs.get('stream'):
+        if not kwargs.get("stream"):
             return
         first_flag = True
         result = dict()
@@ -66,10 +67,14 @@ class CustomUser(User):
             if ret:
                 response_length += len(ret)
                 if first_flag:
-                    result['ttft'] = (time.perf_counter() - start_time) * 1000  # 首Token延迟
+                    result["ttft"] = (
+                        time.perf_counter() - start_time
+                    ) * 1000  # 首Token延迟
                     first_flag = False
-        result['response_length'] = response_length  # 会覆盖locust response_length统计
-        result['request_length'] = len(response.request.body) if response.request.body else 0
+        result["response_length"] = response_length  # 会覆盖locust response_length统计
+        result["request_length"] = (
+            len(response.request.body) if response.request.body else 0
+        )
         return result
 
     def check_response(self, response: ResponseContextManager):
@@ -85,13 +90,26 @@ class CustomHttpSession(HttpSession):
     """
     custom http session class
     """
-    def __init__(self, base_url, request_event, user, *args, pool_manager: Optional[PoolManager] = None, **kwargs):
-        """
-            init
-        """
-        super().__init__(base_url, request_event, user, *args, pool_manager=pool_manager, **kwargs)
 
-    def request(self, method, url, name=None, catch_response=False, context={}, **kwargs):
+    def __init__(
+        self,
+        base_url,
+        request_event,
+        user,
+        *args,
+        pool_manager: Optional[PoolManager] = None,
+        **kwargs
+    ):
+        """
+        init
+        """
+        super().__init__(
+            base_url, request_event, user, *args, pool_manager=pool_manager, **kwargs
+        )
+
+    def request(
+        self, method, url, name=None, catch_response=False, context={}, **kwargs
+    ):
         """
         Constructs and sends a :py:class:`requests.Request`.
         Returns :py:class:`requests.Response` object.
@@ -113,7 +131,9 @@ class CustomHttpSession(HttpSession):
 
         response_time = (time.perf_counter() - start_perf_counter) * 1000
 
-        request_before_redirect = (response.history and response.history[0] or response).request
+        request_before_redirect = (
+            response.history and response.history[0] or response
+        ).request
         url = request_before_redirect.url
 
         if not name:
@@ -131,7 +151,7 @@ class CustomHttpSession(HttpSession):
             "response": response,
             "exception": None,
             "start_time": start_time,
-            "url": url
+            "url": url,
         }
 
         # get the length of the content, but if the argument stream is set to True, we take
@@ -141,15 +161,21 @@ class CustomHttpSession(HttpSession):
             if custom_result:  # request_meta添加自定义数据
                 request_meta.update(custom_result)
             request_meta["response_length"] = request_meta.get(
-                'response_length',  # 尝试优先读取自定义response_length
-                int(response.headers.get("content-length") or 0)
+                "response_length",  # 尝试优先读取自定义response_length
+                int(response.headers.get("content-length") or 0),
             )
         else:
             request_meta["response_length"] = len(response.content or b"")
 
         if catch_response:
-            return ResponseContextManager(response, request_event=self.request_event, request_meta=request_meta)
+            return ResponseContextManager(
+                response, request_event=self.request_event, request_meta=request_meta
+            )
         else:
-            with ResponseContextManager(response, request_event=self.request_event, request_meta=request_meta) as rcm:
-                self.user.check_response(rcm)  # yame自定义逻辑，catch_response=False时执行.
+            with ResponseContextManager(
+                response, request_event=self.request_event, request_meta=request_meta
+            ) as rcm:
+                self.user.check_response(
+                    rcm
+                )  # yame自定义逻辑，catch_response=False时执行.
             return response

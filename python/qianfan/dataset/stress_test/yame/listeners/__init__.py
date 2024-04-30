@@ -3,6 +3,7 @@ yame plugins
 """
 
 from locust import events
+
 from qianfan.dataset.stress_test.yame.listeners.custom_handler import CustomHandler
 from qianfan.dataset.stress_test.yame.logger import set_filehandler
 

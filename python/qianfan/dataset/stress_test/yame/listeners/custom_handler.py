@@ -4,17 +4,16 @@
 自定义统计指标（stream=True时有效）
 默认行为：首Token延迟 Time to First Token
 """
-import time
+import functools
 import json
 import os
-import gevent
-import functools
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
-    List,
     Callable,
     Iterable,
+    List,
     NoReturn,
     Protocol,
     TypedDict,
@@ -22,33 +21,53 @@ from typing import (
     cast,
 )
 
-from locust import events
+import gevent
 import locust.stats
-from locust.stats import RequestStats, StatsEntry, StatsError
-from locust.stats import STATS_NAME_WIDTH, STATS_TYPE_WIDTH, PERCENTILES_TO_REPORT, CONSOLE_STATS_INTERVAL_SEC
-from locust.runners import MasterRunner, LocalRunner, WorkerRunner, STATE_STOPPING, STATE_STOPPED, STATE_CLEANUP
+from locust import events
 from locust.env import Environment
 from locust.log import greenlet_exception_logger
-from qianfan.dataset.stress_test.yame.logger import logger, console_logger
+from locust.runners import (
+    STATE_CLEANUP,
+    STATE_STOPPED,
+    STATE_STOPPING,
+    LocalRunner,
+    MasterRunner,
+    WorkerRunner,
+)
+from locust.stats import (
+    CONSOLE_STATS_INTERVAL_SEC,
+    PERCENTILES_TO_REPORT,
+    STATS_NAME_WIDTH,
+    STATS_TYPE_WIDTH,
+    RequestStats,
+    StatsEntry,
+    StatsError,
+)
+
+from qianfan.dataset.stress_test.yame.logger import console_logger, logger
 
 
 class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
     """Custom StatsCSVFileWriter using custom stats"""
 
     def __init__(
-            self,
-            stats: RequestStats,
-            environment: Environment,
-            percentiles_to_report: List,
-            base_filepath: str,
-            full_history: bool = False,
+        self,
+        stats: RequestStats,
+        environment: Environment,
+        percentiles_to_report: List,
+        base_filepath: str,
+        full_history: bool = False,
     ):
-        super(CustomStatsCSVFileWriter, self).__init__(environment, percentiles_to_report, base_filepath, full_history)
+        super(CustomStatsCSVFileWriter, self).__init__(
+            environment, percentiles_to_report, base_filepath, full_history
+        )
         self.stats = stats
 
     def _requests_data_rows(self, csv_writer: locust.stats.CSVWriter):
         """Write requests csv data row, excluding header."""
-        for stats_entry in locust.stats.chain(locust.stats.sort_stats(self.stats.entries), [self.stats.total]):
+        for stats_entry in locust.stats.chain(
+            locust.stats.sort_stats(self.stats.entries), [self.stats.total]
+        ):
             csv_writer.writerow(
                 locust.stats.chain(
                     [
@@ -80,7 +99,9 @@ class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
                 ]
             )
 
-    def _stats_history_data_rows(self, csv_writer: locust.stats.CSVWriter, now: float) -> None:
+    def _stats_history_data_rows(
+        self, csv_writer: locust.stats.CSVWriter, now: float
+    ) -> None:
         """Write CSV rows with the custom stats."""
         timestamp = int(now)
         stats_entries: List[StatsEntry] = []
@@ -92,7 +113,11 @@ class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
                 locust.stats.chain(
                     (
                         timestamp,
-                        self.environment.runner.user_count if self.environment.runner is not None else 0,
+                        (
+                            self.environment.runner.user_count
+                            if self.environment.runner is not None
+                            else 0
+                        ),
                         stats_entry.method or "",
                         stats_entry.name,
                         f"{stats_entry.current_rps:2f}",
@@ -116,15 +141,18 @@ class CustomHandler:
     """
     stream response handler class
     """
+
     index = 1
 
-    def __init__(self, name: str = None, request_handler: Callable = None, csv_suffix: str = None):
+    def __init__(
+        self, name: str = None, request_handler: Callable = None, csv_suffix: str = None
+    ):
         self.stats = RequestStats()
         self.id = CustomHandler.index
         CustomHandler.index += 1
-        self.name = name or f'自定义统计{self.id}'
+        self.name = name or f"自定义统计{self.id}"
         self.listener_index = 1
-        self.csv_suffix = csv_suffix or f'custom{self.id}'
+        self.csv_suffix = csv_suffix or f"custom{self.id}"
 
         # init listeners
         if not request_handler:
@@ -136,7 +164,9 @@ class CustomHandler:
         events.test_stop.add_listener(self.test_stop_listener)
         events.test_start.add_listener(self.test_start_handler)
 
-    def add_listener(self, name=None, condition_handler: Callable = None, thresholds=None):
+    def add_listener(
+        self, name=None, condition_handler: Callable = None, thresholds=None
+    ):
         """
         添加阈值监听器
         :param name: 监听器名称
@@ -164,23 +194,39 @@ class CustomHandler:
             启动异步greenlet，以检查阈值
             """
             # don't run this on workers, we only care about the aggregated numbers
-            if isinstance(environment.runner, MasterRunner) or isinstance(environment.runner, LocalRunner):
-                gevent.spawn(thresholds_checker, environment).link_exception(greenlet_exception_logger(logger))
+            if isinstance(environment.runner, MasterRunner) or isinstance(
+                environment.runner, LocalRunner
+            ):
+                gevent.spawn(thresholds_checker, environment).link_exception(
+                    greenlet_exception_logger(logger)
+                )
 
         def thresholds_checker(environment: Environment):
             """
             检查指标，超过阈值退出
             """
-            logger.info(f'{self.name} {listener_name} listener starts: thresholds={thresholds}')
+            logger.info(
+                f"{self.name} {listener_name} listener starts: thresholds={thresholds}"
+            )
             time.sleep(0.1)
-            while environment.runner.state not in [STATE_STOPPING, STATE_STOPPED, STATE_CLEANUP]:
+            while environment.runner.state not in [
+                STATE_STOPPING,
+                STATE_STOPPED,
+                STATE_CLEANUP,
+            ]:
                 time.sleep(1)
                 if condition_handler(self.stats, thresholds):
                     if environment.web_ui:
-                        logger.warning(f'{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}), stopping.')
+                        logger.warning(
+                            f"{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}),"
+                            " stopping."
+                        )
                         environment.runner.stop()
                     else:
-                        logger.warning(f'{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}), quitting.')
+                        logger.warning(
+                            f"{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}),"
+                            " quitting."
+                        )
                         environment.runner.quit()
                     return
 
@@ -208,8 +254,9 @@ class CustomHandler:
             entry = StatsEntry.unserialize(stats_data)
             request_key = (entry.name, entry.method)
             if request_key not in self.stats.entries:
-                self.stats.entries[request_key] = \
-                    StatsEntry(self.stats, entry.name, entry.method, use_response_times_cache=True)
+                self.stats.entries[request_key] = StatsEntry(
+                    self.stats, entry.name, entry.method, use_response_times_cache=True
+                )
             self.stats.entries[request_key].extend(entry)
 
         for error_key, error in data[f"custom_errors_{self.id}"].items():
@@ -218,7 +265,9 @@ class CustomHandler:
             else:
                 self.stats.errors[error_key].occurrences += error["occurrences"]
 
-        self.stats.total.extend(StatsEntry.unserialize(data[f"custom_stats_total_{self.id}"]))
+        self.stats.total.extend(
+            StatsEntry.unserialize(data[f"custom_stats_total_{self.id}"])
+        )
 
     def test_start_handler(self, environment: Environment, **kwargs):
         """
@@ -227,7 +276,9 @@ class CustomHandler:
         # reset statistics
         self.stats.reset_all()
         # don't run this on workers, we only care about the aggregated numbers
-        if isinstance(environment.runner, MasterRunner) or isinstance(environment.runner, LocalRunner):
+        if isinstance(environment.runner, MasterRunner) or isinstance(
+            environment.runner, LocalRunner
+        ):
             # init csv writer
             options = environment.parsed_options
             if options.csv_prefix:
@@ -239,28 +290,43 @@ class CustomHandler:
                     self.stats,
                     environment,
                     PERCENTILES_TO_REPORT,
-                    options.csv_prefix + f'_{self.csv_suffix}',
-                    options.stats_history_enabled
+                    options.csv_prefix + f"_{self.csv_suffix}",
+                    options.stats_history_enabled,
                 )
                 # start csv writer gevent
-                gevent.spawn(stats_csv_writer.stats_writer).link_exception(greenlet_exception_logger(logger))
+                gevent.spawn(stats_csv_writer.stats_writer).link_exception(
+                    greenlet_exception_logger(logger)
+                )
             # start stats printer
-            if not options.only_summary and (options.print_stats or (options.headless and not options.worker)):
-                gevent.spawn(self.stats_printer, environment).link_exception(greenlet_exception_logger(logger))
+            if not options.only_summary and (
+                options.print_stats or (options.headless and not options.worker)
+            ):
+                gevent.spawn(self.stats_printer, environment).link_exception(
+                    greenlet_exception_logger(logger)
+                )
 
     def print_stats_json(self):
         """
         print self.stats.serialize_stats()
         reference: locust.stats.print_stats_json
         """
-        content = f'Summary: {self.name} [stats (json)]\n' + json.dumps(self.stats.serialize_stats(), indent=4) + '\n'
+        content = (
+            f"Summary: {self.name} [stats (json)]\n"
+            + json.dumps(self.stats.serialize_stats(), indent=4)
+            + "\n"
+        )
         console_logger.debug(content)
         return content
 
     def print_stats(self, current=True):
         """print self.stats summary"""
-        content = ('' if current else 'Summary: ') + self.name + ' [stats]\n' + \
-            '\n'.join(locust.stats.get_stats_summary(self.stats, current=current)) + '\n'
+        content = (
+            ("" if current else "Summary: ")
+            + self.name
+            + " [stats]\n"
+            + "\n".join(locust.stats.get_stats_summary(self.stats, current=current))
+            + "\n"
+        )
         console_logger.debug(content)
         return content
 
@@ -268,24 +334,40 @@ class CustomHandler:
         """print self.stats percentile"""
         percentile_stats = locust.stats.get_percentile_stats_summary(self.stats)
         percentile_stats[0] = f"Summary: {self.name} [percentiles (approximated)]"
-        content = '\n'.join(percentile_stats) + '\n'
+        content = "\n".join(percentile_stats) + "\n"
         console_logger.debug(content)
         return content
 
     def get_error_report_summary(self):
         """get custom error report"""
-        summary = [f'Summary: {self.name} [report (from "fails")]',
-                   "%-18s|%-18s %-18s %-80s" % ("count", "count/fails", "count/total", "catalog")]
-        separator = f'{"-" * 18}|{"-" * 18}|{"-" * 18}|{"-" * ((80 + STATS_NAME_WIDTH) - 50)}'
+        summary = [
+            f'Summary: {self.name} [report (from "fails")]',
+            "%-18s|%-18s %-18s %-80s"
+            % ("count", "count/fails", "count/total", "catalog"),
+        ]
+        separator = (
+            f'{"-" * 18}|{"-" * 18}|{"-" * 18}|{"-" * ((80 + STATS_NAME_WIDTH) - 50)}'
+        )
         summary.append(separator)
         for error in self.stats.errors.values():
             summary.append(
-                "%-18i %-18s %-18s %-100s" %
-                (error.occurrences,
-                 "%-.2f%%" % (float(error.occurrences) / self.stats.total.num_failures * 100),
-                 "%-.2f%%" % (float(error.occurrences) /
-                              (self.stats.total.num_requests + self.stats.total.num_failures) * 100),
-                 error.to_name()))
+                "%-18i %-18s %-18s %-100s"
+                % (
+                    error.occurrences,
+                    "%-.2f%%"
+                    % (float(error.occurrences) / self.stats.total.num_failures * 100),
+                    "%-.2f%%"
+                    % (
+                        float(error.occurrences)
+                        / (
+                            self.stats.total.num_requests
+                            + self.stats.total.num_failures
+                        )
+                        * 100
+                    ),
+                    error.to_name(),
+                )
+            )
         summary.append(separator)
         summary.append("")
         return summary
@@ -293,10 +375,10 @@ class CustomHandler:
     def print_error_report(self):
         """print self.status error report"""
         if self.stats.errors:
-            content = '\n'.join(self.get_error_report_summary()) + '\n'
+            content = "\n".join(self.get_error_report_summary()) + "\n"
             console_logger.debug(content)
         else:
-            content = ''
+            content = ""
         return content
 
     def start_stats_printer_gevent(self, environment: Environment, **kwargs):
@@ -304,40 +386,58 @@ class CustomHandler:
         启动异步greenlet，定时打印stats
         """
         # don't run this on workers, we only care about the aggregated numbers
-        if isinstance(environment.runner, MasterRunner) or isinstance(environment.runner, LocalRunner):
-            gevent.spawn(self.stats_printer, environment).link_exception(greenlet_exception_logger(logger))
+        if isinstance(environment.runner, MasterRunner) or isinstance(
+            environment.runner, LocalRunner
+        ):
+            gevent.spawn(self.stats_printer, environment).link_exception(
+                greenlet_exception_logger(logger)
+            )
 
     def stats_printer(self, environment: Environment):
         """
         定时打印stats
         """
-        while environment.runner.state not in [STATE_STOPPING, STATE_STOPPED, STATE_CLEANUP]:
+        while environment.runner.state not in [
+            STATE_STOPPING,
+            STATE_STOPPED,
+            STATE_CLEANUP,
+        ]:
             self.print_stats()
             gevent.sleep(CONSOLE_STATS_INTERVAL_SEC)
 
     @staticmethod
-    def request_handler(stats: RequestStats, request_type, name, response_time, response_length,
-                        exception=None, **kwargs):
+    def request_handler(
+        stats: RequestStats,
+        request_type,
+        name,
+        response_time,
+        response_length,
+        exception=None,
+        **kwargs,
+    ):
         """
         每个请求均会调用，用于向统计表注册数据
         (1) 注册1个记录：stats.log_request(type, name, time, length)
         (2) 标记为失败或某种分类：stats.log_error(type, name, exc)  其中exc为错误或分类message，最终会按type+name+exc分类统计
         """
-        if 'ttft' in kwargs:
-            stats.log_request(request_type, name, kwargs['ttft'], response_length)
+        if "ttft" in kwargs:
+            stats.log_request(request_type, name, kwargs["ttft"], response_length)
         else:
             stats.log_request(request_type, name, 0, response_length)
-            stats.log_error(request_type, name, '未找到ttft首token延迟')
+            stats.log_error(request_type, name, "未找到ttft首token延迟")
 
     def test_stop_listener(self, environment):
         """
-            测试结束时，通过这个event将存储在global data中的first response stats打印到终端
+        测试结束时，通过这个event将存储在global data中的first response stats打印到终端
         """
         if isinstance(environment.runner, WorkerRunner):
             return
 
         # print final statistics of self.stats
-        if hasattr(environment.parsed_options, 'json') and environment.parsed_options.json:
+        if (
+            hasattr(environment.parsed_options, "json")
+            and environment.parsed_options.json
+        ):
             log_content = self.print_stats_json()
         else:
             log_content = self.print_stats(current=False)
@@ -347,5 +447,7 @@ class CustomHandler:
         # output final statistics of self.stats to logfile
         if environment.parsed_options.logfile and log_content:
             output_folder = os.path.dirname(environment.parsed_options.logfile)
-            with open(os.path.join(output_folder, f"{self.csv_suffix}_statistics.log"), 'w') as fs:
+            with open(
+                os.path.join(output_folder, f"{self.csv_suffix}_statistics.log"), "w"
+            ) as fs:
                 fs.write(log_content)

@@ -211,18 +211,13 @@ class QianfanCustomHttpSession(CustomHttpSession):
         request_meta["response"] = last_resp
         return request_meta
 
-    def request(self, contents=None, context=None, **kwargs):
+    def request(self, messages=None, context=None, **kwargs):
         """
         Constructs and sends a :py:class:`requests.Request`.
         Returns :py:class:`requests.Response` object.
         """
-        contents = contents or []
         context = context or {}
         self.exc = None
-        messages = []
-        for i, content in enumerate(contents):
-            data = {"role": "user" if i % 2 == 0 else "assistant", "content": content}
-            messages.append(data)
 
         request_meta = self._request_internal(
             context=context, messages=messages, **kwargs
@@ -280,13 +275,52 @@ class QianfanLLMLoadUser(CustomUser):
 
     @task
     def mytask(self):
-        kwargs = {"stream": True}
-        data_column = GlobalData.data["data_column"]
         hyperparameters = GlobalData.data["hyperparameters"]
-        contents = []
         data = next(distributor)
+        if isinstance(data, list):
+            messages = self._load_jsonl(data)
+        elif isinstance(data, dict):
+            messages = self._load_json(data)
+        elif isinstance(data, str):
+            messages = self._load_txt(data)
+        else:
+            raise Exception("Data format unsupported.")
+        if hyperparameters is None:
+            hyperparameters = {}
+        self.client.request(messages=messages, stream=True, **hyperparameters)
+
+    def _load_jsonl(self, data):
+        messages = [] 
         for d in data:
-            contents.append(d[data_column])
-        if hyperparameters is not None:
-            kwargs["hyperparameters"] = hyperparameters
-        self.client.request(contents=contents, **kwargs)
+           msg = {
+               "role": "user",
+               "content": d["prompt"]
+           }
+           messages.append(msg)
+           if "response" in d:
+               msg = {
+                   "role": "assistant",
+                   "content": d["response"]
+               }
+               messages.append(msg)
+        if messages[-1]["role"] == "assistant":
+            messages.pop(-1)
+        return messages
+
+    def _load_json(self, data):
+        messages = []
+        msg = {
+            "role": "user",
+            "content": data["prompt"]
+        }
+        messages.append(msg)
+        return messages
+
+    def _load_txt(self, data):
+        messages = []
+        msg = {
+            "role": "user",
+            "content": data
+        }
+        messages.append(msg)
+        return messages

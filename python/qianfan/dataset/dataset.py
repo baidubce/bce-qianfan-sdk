@@ -2147,8 +2147,6 @@ class Dataset(Table):
                 Rate to spawn users at (users per second).
             model (str):
                 Name of the model service you want to test.
-            data_column (str),
-                Specify which column will be used as prompt. Default value is 'prompt'.
             hyperparameters (dict[str, Any]):
                 Specify the hyperparameters in your request.
         """
@@ -2164,7 +2162,6 @@ class Dataset(Table):
                 spawn_rate=spawn_rate,
                 model=model,
                 dataset=self,
-                data_column=data_column,
                 hyperparameters=hyperparameters,
             )
             runner.run()

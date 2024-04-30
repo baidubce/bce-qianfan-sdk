@@ -29,7 +29,6 @@ class QianfanLocustRunner(LocustRunner):
         recording=True,
         record_dir=None,
         dataset=None,
-        data_column="prompt",
         hyperparameters=None,
     ):
         super(QianfanLocustRunner, self).__init__(
@@ -42,7 +41,6 @@ class QianfanLocustRunner(LocustRunner):
             recording=recording,
             record_dir=record_dir,
             dataset=dataset,
-            data_column=data_column,
             hyperparameters=hyperparameters,
         )
 

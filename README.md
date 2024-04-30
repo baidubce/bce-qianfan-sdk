@@ -136,9 +136,17 @@ print(resp["result"])
 
 #### Dataset
 
-千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
+用户可以在本地通过千帆 Python SDK 提供的接口，加载平台的数据集并用于后续的训练流程
 
-以下是一个通过加载本地数据集、处理并上传到千帆的例子
+```python
+from qianfan.dataset import Dataset
+
+ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
+```
+
+且千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
+
+以下是一个通过加载本地数据集、处理并上传到千帆的例子。所有数据集在本地处理前都必须先通过 `load` 或 `save` 方法加载到本地。
 
 假设我们有以下格式的 Json 数据集：
 
@@ -174,14 +182,6 @@ ds.filter(filter_func).map(map_func).pack()
 # 数据集只有上传到千帆后才可以用于训练
 # 请确保你的数据集格式符合要求
 ds.save(qianfan_dataset_id="your_dataset_id")
-```
-
-当然，你也可以直接通过 SDK 加载一个已经保存在千帆的数据集用于后续训练
-
-```python
-from qianfan.dataset import Dataset
-
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
 ```
 
 #### Trainer

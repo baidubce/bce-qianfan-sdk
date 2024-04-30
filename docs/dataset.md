@@ -112,6 +112,8 @@ new_ds = ds.save(qianfan_dataset_id="your_dataset_id")
 new_ds = ds.save()
 ```
 
+> 当导出至千帆平台时，用户需要保证目标的平台数据集使用私有的百度对象存储 Bos 实例来存储数据。否则需要在上传时指定 `sup_storage_id`, `sup_storage_path`, `sup_storage_region` 参数。这是出于平台安全角度考虑所带来的不便，敬请谅解。
+
 恭喜你，已经学会了如何使用千帆 Python SDK 的数据集相关能力。
 
 接下来将会更加细致的讲解各个模块和功能点之间的作用

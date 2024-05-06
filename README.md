@@ -27,11 +27,11 @@
 
 ![framwwork](/docs/imgs/sdk_framework.png)
 
-千帆SDK提供大模型工具链最佳实践，让AI工作流和AI原生应用优雅且便捷地访问千帆大模型平台。SDK核心能力包含三大部分：大模型推理，大模型训练，以及通用和扩展:
+千帆 SDK 提供大模型工具链最佳实践，让 AI 工作流和 AI 原生应用优雅且便捷地访问千帆大模型平台。SDK 核心能力包含三大部分：大模型推理，大模型训练，以及通用和扩展:
 
-- `大模型推理`：实现了对一言（ERNIE-Bot）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding等。
+- `大模型推理`：实现了对一言（ERNIE-Bot）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding 等。
 - `大模型训练`：基于平台能力支持端到端的大模型训练过程，包括训练数据，精调/预训练，以及模型托管等。
-- `通用与扩展`：通用能力包括了Prompt/Debug/Client等常见的AI开发工具。扩展能力则基于千帆特性适配常见的中间层框架。
+- `通用与扩展`：通用能力包括了 Prompt/Debug/Client 等常见的 AI 开发工具。扩展能力则基于千帆特性适配常见的中间层框架。
 
 ## 如何安装
 
@@ -49,6 +49,8 @@ import qianfan
 
 更多安装选项见[文档](./docs/install.md)
 
+## 多语言SDK
+
 其它语言见如下文档：
 
 + [Go](https://github.com/baidubce/bce-qianfan-sdk/tree/main/go)
@@ -57,45 +59,43 @@ import qianfan
 
 ## 快速使用
 
-在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
+在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。在获得了 Access Key 与 Secret Key 后，用户即可开始使用 SDK：
 
 ```python
 import os
 import qianfan
 
-os.environ["QIANFAN_ACCESS_KEY"]="..."
-os.environ["QIANFAN_SECRET_KEY"]="..."
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
-resp = chat_comp.do(messages=[{
-    "role": "user",
-    "content": "你好，千帆"
-}], top_p=0.8, temperature=0.9, penalty_score=1.0)
+# 接下来就可以调用 SDK 的所有功能
+chat = qianfan.ChatCompletion()
+resp = chat.do(messages=[{"role": "user", "content": "你好，千帆"}])
 
 print(resp["result"])
 ```
 
-除了通过环境变量设置外，千帆 SDK 还提供了 通过DotEnv加载 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
+除了通过环境变量设置外，千帆 SDK 还提供了通过 DotEnv 加载 `.env` 文件和通过代码配置的方式，详细参见 [SDK 配置](./docs/configurable.md) 部分。
 
 <details>
-<summary> 其他认证方式 </summary>
+<summary> （方案二）通过应用接入进行鉴权 </summary>
+
+<br>
 
 > 这里是一些其他认证方式，请仅在无法获取 Access Key 与 Secret Key 时使用。这些认证方式已经过时，将在未来从 SDK 中移除。
 
-API Key (**AK**) 和 Secret Key (**SK**）是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
+API Key (**AK**) 和 Secret Key (**SK**) 是用户在调用千帆模型相关功能时所需要的凭证。具体获取流程参见平台的[应用接入使用说明文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Slkkydake)，但该认证方式无法使用训练、发布模型等功能，若需使用请使用 Access Key 和 Secret Key 的方式进行认证。在获得并配置了 AK 以及 SK 后，用户即可开始使用 SDK：
 
 ```python
 import os
 import qianfan
 
-os.environ["QIANFAN_AK"]="..."
-os.environ["QIANFAN_SK"]="..."
+os.environ["QIANFAN_AK"] = "..."
+os.environ["QIANFAN_SK"] = "..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
-resp = chat_comp.do(messages=[{
-    "role": "user",
-    "content": "你好，千帆"
-}], top_p=0.8, temperature=0.9, penalty_score=1.0)
+# 只可以调用模型推理相关功能
+chat = qianfan.ChatCompletion()
+resp = chat.do(messages=[{"role": "user", "content": "你好，千帆"}])
 
 print(resp["result"])
 ```
@@ -118,17 +118,43 @@ print(resp["result"])
 
 ## 功能导览
 
-我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/tree/main/cookbook)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
+我们提供了数个 [cookbook](https://github.com/baidubce/bce-qianfan-sdk/blob/main/cookbook/README.md)，可以快速了解如何使用 SDK 以及与第三方组件进行交互。
 
 ### 大模型推理
 
-目前千帆 SDK 支持用户使用如下大模型预测能力，详见[推理服务](./docs/inference.md)
+目前千帆 SDK 支持用户使用如下大模型预测能力
 
 + Chat 对话
 + Completion 续写
 + Embedding 向量化
 + Plugin 插件调用
 + Text2Image 文生图
++ Image2Text 图生文
++ Reranker 重排序
+
+如下是使用千帆 SDK 调用 Chat 对话的例子，同时 SDK 还支持异步、流式调用和批量推理，详见 [推理服务](./docs/inference.md)
+
+```python
+import os
+import qianfan
+
+# 动态获取最新模型列表依赖 IAM Access Key 进行鉴权，使用应用 AK 鉴权时不支持该功能
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
+
+# 模型名称可以通过 qianfan.ChatCompletion.models() 获取
+# 也可以在命令行运行 qianfan chat --list-model 查看
+chat_comp = qianfan.ChatCompletion(model="ERNIE-3.5-8K")
+resp = chat_comp.do(
+    messages=[{"role": "user", "content": "你好，千帆"}],
+    # （可选）设置模型参数，与 API 参数一致
+    top_p=0.8,
+    temperature=0.9,
+    penalty_score=1.0,
+)
+
+print(resp["result"])
+```
 
 ### 大模型训练
 

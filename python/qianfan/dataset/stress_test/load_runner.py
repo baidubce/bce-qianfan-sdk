@@ -26,6 +26,7 @@ class QianfanLocustRunner(LocustRunner):
         runtime="1m",
         spawn_rate=1,
         model=None,
+        model_type=None,
         recording=True,
         record_dir=None,
         dataset=None,
@@ -41,6 +42,7 @@ class QianfanLocustRunner(LocustRunner):
             recording=recording,
             record_dir=record_dir,
             dataset=dataset,
+            model_type=model_type,
             hyperparameters=hyperparameters,
         )
 

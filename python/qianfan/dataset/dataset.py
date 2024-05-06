@@ -2128,7 +2128,7 @@ class Dataset(Table):
         runtime: str,
         spawn_rate: int,
         model: str,
-        data_column: str = "prompt",
+        model_type: str = "ChatCompletion",
         hyperparameters: Dict[str, Any] = None,
     ) -> None:
         """
@@ -2147,6 +2147,9 @@ class Dataset(Table):
                 Rate to spawn users at (users per second).
             model (str):
                 Name of the model service you want to test.
+            model_type (str):
+                Type of model service you want to test. Must be one of following values: ChatCompletion / Completions.
+                Default value is 'ChatCompletion'.
             hyperparameters (dict[str, Any]):
                 Specify the hyperparameters in your request.
         """
@@ -2161,12 +2164,13 @@ class Dataset(Table):
                 runtime=runtime,
                 spawn_rate=spawn_rate,
                 model=model,
+                model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,
             )
             runner.run()
         else:
             raise Exception(
-                "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be 1 if"
+                "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true if"
                 " you want to start a stress test task."
             )

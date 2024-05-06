@@ -115,6 +115,45 @@ class QianfanCustomHttpSession(CustomHttpSession):
 
     exc = None
 
+    def _request_internal(self, context=None, **kwargs):
+        return {}
+
+    def transfer_data(self, data):
+        return None
+
+    def request(self, context=None, **kwargs):
+        """
+        Constructs and sends a :py:class:`requests.Request`.
+        Returns :py:class:`requests.Response` object.
+        """
+        context = context or {}
+        self.exc = None
+
+        request_meta = self._request_internal(
+            context=context, **kwargs
+        )
+
+        with ResponseContextManager(
+            request_meta["response"],
+            request_event=self.request_event,
+            request_meta=request_meta,
+        ) as rcm:
+            pass
+
+    def transfer_data(self, data):
+        if isinstance(data, list):
+            ret = self._transfer_jsonl(data)
+        elif isinstance(data, dict):
+            ret = self._transfer_json(data)
+        elif isinstance(data, str):
+            ret = self._transfer_txt(data)
+        else:
+            raise Exception("Data format unsupported.")
+        return ret
+
+
+class ChatCompletionClient(QianfanCustomHttpSession):
+
     def __init__(
         self,
         model,
@@ -133,9 +172,12 @@ class QianfanCustomHttpSession(CustomHttpSession):
         self.model = model
         self.chat_comp = qianfan.ChatCompletion(model=model)
 
-    def _request_internal(self, context=None, messages=None, **kwargs):
+    def _request_internal(self, context=None, **kwargs):
         context = context or {}
-        messages = messages or []
+        if "messages" in kwargs:
+            messages = kwargs.pop("messages")
+        else:
+            messages = []
         first_flag = True
         request_meta = {
             "input_tokens": 0,
@@ -149,6 +191,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         responses = self.chat_comp.do(messages=messages, **kwargs)
+
         for resp in responses:
             resp.url = self.model
             resp.reason = None
@@ -211,24 +254,160 @@ class QianfanCustomHttpSession(CustomHttpSession):
         request_meta["response"] = last_resp
         return request_meta
 
-    def request(self, messages=None, context=None, **kwargs):
-        """
-        Constructs and sends a :py:class:`requests.Request`.
-        Returns :py:class:`requests.Response` object.
-        """
-        context = context or {}
-        self.exc = None
+    def _transfer_jsonl(self, data):
+        ret = {
+            "messages": []
+        }
+        for d in data:
+           msg = {
+               "role": "user",
+               "content": d["prompt"]
+           }
+           ret["messages"].append(msg)
+           if "response" in d:
+               msg = {
+                   "role": "assistant",
+                   "content": d["response"]
+               }
+               ret["messages"].append(msg)
+        if ret["messages"][-1]["role"] == "assistant":
+            ret["messages"].pop(-1)
+        return ret
 
-        request_meta = self._request_internal(
-            context=context, messages=messages, **kwargs
+    def _transfer_json(self, data):
+        ret = {
+            "messages": []
+        }
+        msg = {
+            "role": "user",
+            "content": data["prompt"]
+        }
+        ret["messages"].append(msg)
+        return ret
+
+    def _transfer_txt(self, data):
+        ret = {
+            "messages": []
+        }
+        msg = {
+            "role": "user",
+            "content": data
+        }
+        ret["messages"].append(msg)
+        return ret
+
+
+class CompletionClient(QianfanCustomHttpSession):
+
+    def __init__(
+        self,
+        model,
+        request_event,
+        user,
+        *args,
+        pool_manager: Optional[PoolManager] = None,
+        **kwargs
+    ):
+        """
+        init
+        """
+        super().__init__(
+            model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
+        self.model = model
+        self.comp = qianfan.Completion(model=model)
 
-        with ResponseContextManager(
-            request_meta["response"],
-            request_event=self.request_event,
-            request_meta=request_meta,
-        ) as rcm:
-            pass
+    def _request_internal(self, context=None, **kwargs):
+        context = context or {}
+        if "prompt" in kwargs:
+            prompt = kwargs.pop("prompt")
+        else:
+            prompt = ""
+        first_flag = True
+        request_meta = {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "response_length": 0,
+            "request_length": len(prompt),
+        }
+        last_resp = None
+        all_empty = True
+
+        start_time = time.time()
+        start_perf_counter = time.perf_counter()
+        responses = self.comp.do(prompt=prompt, **kwargs)
+        for resp in responses:
+            resp.url = self.model
+            resp.reason = None
+            resp.status_code = resp["code"]
+
+            stream_json = resp["body"]
+            if first_flag:
+                request_meta["first_token_latency"] = (
+                    time.perf_counter() - start_perf_counter
+                ) * 1000  # 首Token延迟
+                first_flag = False
+            content = ""
+            if "result" in stream_json:
+                content = stream_json["result"]
+            else:
+                self.exc = Exception("ERROR CODE 结果无法解析")
+                break
+            if "error_code" in stream_json and stream_json["error_code"] > 0:
+                self.exc = Exception(
+                    "ERROR CODE {}".format(str(stream_json["error_code"]))
+                )
+                break
+            if len(content) != 0:
+                all_empty = False
+            # 计算token数, 有usage的累加，没有的直接计算content
+            if "usage" in stream_json:
+                request_meta["input_tokens"] = int(
+                    stream_json["usage"]["prompt_tokens"]
+                )
+                request_meta["output_tokens"] = int(
+                    stream_json["usage"]["total_tokens"]
+                ) - int(
+                    stream_json["usage"]["prompt_tokens"]
+                )
+            else:
+                request_meta["input_tokens"] = request_meta["request_length"]
+                request_meta["output_tokens"] = request_meta["response_length"]
+            last_resp = resp
+
+        if last_resp is None and self.exc is None:
+            self.exc = Exception("Response is null")
+        elif "is_end" not in last_resp["body"]:
+            self.exc = Exception("Response not finished")
+        elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
+            self.exc = Exception("NOT 200 OR is_end is False")
+
+        response_time = (time.perf_counter() - start_perf_counter) * 1000
+        if self.user:
+            context = {**self.user.context(), **context}
+
+        # store meta data that is used when reporting the request to locust's statistics
+        request_meta["request_type"] = "POST"
+        request_meta["response_time"] = response_time
+        request_meta["name"] = self.model
+        request_meta["context"] = context
+        request_meta["exception"] = self.exc
+        request_meta["start_time"] = start_time
+        request_meta["url"] = self.model
+        request_meta["response"] = last_resp
+        return request_meta
+
+    def _transfer_jsonl(self, data):
+        prompt = ""
+        if len(data) > 0:
+            prompt = data[0]["prompt"]
+        return dict(prompt=prompt)
+
+    def _transfer_json(self, data):
+        return dict(prompt=data["prompt"])
+
+    def _transfer_txt(self, data):
+        return dict(prompt=data)
 
 
 @events.test_start.add_listener
@@ -248,8 +427,6 @@ class QianfanLLMLoadUser(CustomUser):
 
     wait_time = constant(0)
 
-    # ds = Dataset.load(data_file="./lxtest.jsonl")
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -260,12 +437,23 @@ class QianfanLLMLoadUser(CustomUser):
                 + "or on the command line using the --host option."
             )
 
-        self.client = QianfanCustomHttpSession(
-            model=self.host,
-            request_event=self.environment.events.request,
-            user=self,
-            pool_manager=self.pool_manager,
-        )
+        model_type = GlobalData.data["model_type"]
+        if model_type == "ChatCompletion":
+            self.client = ChatCompletionClient(
+                model=self.host,
+                request_event=self.environment.events.request,
+                user=self,
+                pool_manager=self.pool_manager,
+            )
+        elif model_type == "Completion":
+            self.client = CompletionClient(
+                model=self.host,
+                request_event=self.environment.events.request,
+                user=self,
+                pool_manager=self.pool_manager,
+            )
+        else:
+            raise Exception("Unsupported model type: %s." % model_type)
         """
         Instance of HttpSession that is created upon instantiation of Locust.
         The client supports cookies, and therefore keeps the session between HTTP requests.
@@ -277,50 +465,7 @@ class QianfanLLMLoadUser(CustomUser):
     def mytask(self):
         hyperparameters = GlobalData.data["hyperparameters"]
         data = next(distributor)
-        if isinstance(data, list):
-            messages = self._load_jsonl(data)
-        elif isinstance(data, dict):
-            messages = self._load_json(data)
-        elif isinstance(data, str):
-            messages = self._load_txt(data)
-        else:
-            raise Exception("Data format unsupported.")
+        body = self.client.transfer_data(data)
         if hyperparameters is None:
             hyperparameters = {}
-        self.client.request(messages=messages, stream=True, **hyperparameters)
-
-    def _load_jsonl(self, data):
-        messages = [] 
-        for d in data:
-           msg = {
-               "role": "user",
-               "content": d["prompt"]
-           }
-           messages.append(msg)
-           if "response" in d:
-               msg = {
-                   "role": "assistant",
-                   "content": d["response"]
-               }
-               messages.append(msg)
-        if messages[-1]["role"] == "assistant":
-            messages.pop(-1)
-        return messages
-
-    def _load_json(self, data):
-        messages = []
-        msg = {
-            "role": "user",
-            "content": data["prompt"]
-        }
-        messages.append(msg)
-        return messages
-
-    def _load_txt(self, data):
-        messages = []
-        msg = {
-            "role": "user",
-            "content": data
-        }
-        messages.append(msg)
-        return messages
+        self.client.request(stream=True, **body, **hyperparameters)

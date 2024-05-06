@@ -128,7 +128,10 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
     ak = kwargs.get("ak", None) or get_config().ACCESS_KEY
     sk = kwargs.get("sk", None) or get_config().SECRET_KEY
     if ak is None or sk is None:
-        raise InvalidArgumentError("access_key and secret_key must be provided")
+        raise InvalidArgumentError(
+            "access_key and secret_key must be provided! 未提供 access_key 或"
+            " secret_key ！"
+        )
     if pop:
         # remove ak and sk from kwargs
         for key in ("ak", "sk"):

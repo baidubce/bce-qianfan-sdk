@@ -179,15 +179,21 @@ class AuthManager(metaclass=Singleton):
             error = response["error"]
             if error == "invalid_client":
                 exception_msg_tmpl = (
-                    "{}, please check! AK/SK should be obtained from"
+                    "{err_msg}, please check! {chinese_err_msg}, 请检查！ AK/SK should"
+                    " be obtained from"
                     " https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
                 )
                 err_msg = response.get("error_description", "AK/SK is not correct")
+                chineses_err_msg = response.get("error_description", "AK/SK 错误")
                 if err_msg == "unknown client id":
                     err_msg = f"AK({_masked_ak(ak)}) is not correct"
+                    chineses_err_msg = f"AK(`{_masked_ak(ak)}`) 错误"
                 if err_msg == "Client authentication failed":
                     err_msg = f"SK({_masked_ak(sk)}) is not correct"
-                err_msg = exception_msg_tmpl.format(err_msg)
+                    chineses_err_msg = f"SK(`{_masked_ak(sk)}`) 错误"
+                err_msg = exception_msg_tmpl.format(
+                    err_msg=err_msg, chinese_err_msg=chineses_err_msg
+                )
                 log_error(err_msg)
                 raise AuthError(err_msg)
             # unexpected error, maybe it can be recovered by retrying.

@@ -42,6 +42,8 @@ from tenacity import (
 )
 
 import qianfan.errors as errors
+from qianfan.config import get_config
+from qianfan.resources.auth.oauth import _masked_ak
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import VersatileRateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
@@ -97,11 +99,34 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
         request_body = _get_body_str(response.request.body)
         response_body = _get_body_str(response.content)
 
+        possible_reason = ""
+        x_err_msg = response.headers.get("X-Bce-Error-Message", "")
+        if x_err_msg == "NotFound, cause: Could not find credential.":
+            access_key = get_config().ACCESS_KEY
+            if access_key:
+                possible_reason = f"Access Key(`{_masked_ak(access_key)}`) 错误"
+            else:
+                possible_reason = "Access Key 未设置"
+        elif (
+            x_err_msg
+            == "SignatureDoesNotMatch, cause: Fail to authn user: Signature does not"
+            " match"
+        ):
+            secret_key = get_config().SECRET_KEY
+            if secret_key:
+                possible_reason = f"Secret Key(`{_masked_ak(secret_key)}`) 错误"
+            else:
+                possible_reason = "Secret Key 未设置"
+
+        if possible_reason != "":
+            possible_reason = f"\n可能的原因：{possible_reason}"
+
         failed_msg += (
             f"request headers: {response.request.headers}\n"
             f"request body: {request_body!r}\n"
             f"response headers: {response.headers}\n"
             f"response body: {response_body!r}"
+            f"{possible_reason}"
         )
 
         log_error(failed_msg)

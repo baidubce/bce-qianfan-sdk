@@ -427,10 +427,6 @@ class BaseResource(object):
             return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
-    def supported_models(cls) -> Dict[str, QfLLMInfo]:
-        return cls._supported_models()
-
-    @classmethod
     def _default_model(cls) -> str:
         """
         default model
@@ -460,11 +456,17 @@ class BaseResource(object):
         model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
         model_info = model_info_list.get(model.lower())
         if model_info is None:
+            use_iam_aksk_msg = ""
+            if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
+                use_iam_aksk_msg = (
+                    "might use `QIANFAN_ACCESS_KEY` and `QIANFAN_SECRET_KEY` instead to"
+                    " get complete features supported."
+                )
             raise errors.InvalidArgumentError(
                 f"The provided model `{model}` is not in the list of supported models."
                 " If this is a recently added model, try using the `endpoint`"
                 " arguments and create an issue to tell us. Supported models:"
-                f" {cls.models()}"
+                f" {cls.models()} {use_iam_aksk_msg}"
             )
         return model_info
 
@@ -618,7 +620,10 @@ class BaseResource(object):
                 # warn if user provide unexpected arguments
                 for key in kwargs:
                     if (
-                        key not in model_info.required_keys
+                        len(model_info.required_keys) > 0
+                        and key not in model_info.required_keys
+                    ) and (
+                        len(model_info.optional_keys) > 0
                         and key not in model_info.optional_keys
                     ):
                         log_warn(

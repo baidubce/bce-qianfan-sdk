@@ -14,6 +14,7 @@
 
 
 import copy
+import functools
 from functools import partial
 from typing import (
     Any,
@@ -41,11 +42,12 @@ from qianfan.utils.logging import log_info
 
 
 def _hyper_parameters_extraction(func: Callable) -> Callable:
+    @functools.wraps(func)
     def _wrapper(
         *args: List[Any], **kwargs: Any
     ) -> Union[QfResponse, Iterator[QfResponse]]:
-        if isinstance(args[0], QfMessages):
-            messages = args[0]
+        if len(args) > 1 and isinstance(args[1], QfMessages):
+            messages = args[1]
         elif isinstance(kwargs.get("messages", None), QfMessages):
             messages = kwargs["messages"]
         else:
@@ -58,11 +60,12 @@ def _hyper_parameters_extraction(func: Callable) -> Callable:
 
 
 def _async_hyper_parameters_extraction(func: Callable) -> Callable:
+    @functools.wraps(func)
     async def _wrapper(
         *args: List[Any], **kwargs: Any
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        if isinstance(args[0], QfMessages):
-            messages = args[0]
+        if len(args) > 1 and isinstance(args[1], QfMessages):
+            messages = args[1]
         elif isinstance(kwargs.get("messages", None), QfMessages):
             messages = kwargs["messages"]
         else:

@@ -96,8 +96,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         stream sync request
         """
-        with self._rate_limiter:
-            responses = self._client.request_stream(request)
+        responses = self._client.request_stream(request)
 
         _, resp = next(responses)
         if "json" in resp.headers.get("content-type", ""):
@@ -188,8 +187,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async stream request
         """
-        async with self._rate_limiter:
-            responses = self._client.arequest_stream(request)
+        responses = self._client.arequest_stream(request)
 
         _, resp = await responses.__anext__()
         if "json" in resp.headers.get("content-type", ""):

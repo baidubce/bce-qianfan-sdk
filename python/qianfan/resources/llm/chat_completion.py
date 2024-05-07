@@ -15,7 +15,17 @@
 
 import copy
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import qianfan.errors as errors
 from qianfan.config import get_config
@@ -28,6 +38,40 @@ from qianfan.resources.llm.base import (
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_info
+
+
+def _hyper_parameters_extraction(func: Callable) -> Callable:
+    def _wrapper(
+        *args: List[Any], **kwargs: Any
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if isinstance(args[0], QfMessages):
+            messages = args[0]
+        elif isinstance(kwargs.get("messages", None), QfMessages):
+            messages = kwargs["messages"]
+        else:
+            return func(*args, **kwargs)
+
+        kwargs.update(messages._hyper_parameters)
+        return func(*args, **kwargs)
+
+    return _wrapper
+
+
+def _async_hyper_parameters_extraction(func: Callable) -> Callable:
+    async def _wrapper(
+        *args: List[Any], **kwargs: Any
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if isinstance(args[0], QfMessages):
+            messages = args[0]
+        elif isinstance(kwargs.get("messages", None), QfMessages):
+            messages = kwargs["messages"]
+        else:
+            return await func(*args, **kwargs)
+
+        kwargs.update(messages._hyper_parameters)
+        return await func(*args, **kwargs)
+
+    return _wrapper
 
 
 class ChatCompletion(BaseResource):
@@ -786,6 +830,7 @@ class ChatCompletion(BaseResource):
         """
         return f"/chat/{endpoint}"
 
+    @_hyper_parameters_extraction
     def do(
         self,
         messages: Union[List[Dict], QfMessages],
@@ -1001,6 +1046,7 @@ class ChatCompletion(BaseResource):
                 #     r.body["is_end"] = False
                 yield r
 
+    @_async_hyper_parameters_extraction
     async def ado(
         self,
         messages: Union[List[Dict], QfMessages],

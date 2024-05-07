@@ -117,6 +117,23 @@ async for r in resp:
     print(r['result'])
 ```
 
+本文所有大模型返回的结果（对于流式请求，则每个返回值）是一个 `QfResponse` 对象，具有如下字段
+
+- `body`：API 返回的结果。可以通过 `[]` 简化调用直接获取 body 字段，例如 `resp.body['result']` 与 `resp['result']` 等价。
+- `code`：返回的 HTTP 状态码。
+- `headers`：返回的 HTTP 头。
+- `statistic`：请求相关的统计信息，包含如下字段
+  - `request_latency`：请求延迟，单位为秒
+  - `first_token_latency`：第一个 token 的延迟，单位为秒
+  - `total_latency`：总调用延迟，包含了请求、序列化、限流等耗时，单位为秒
+- `request`：请求的原始信息，包含如下字段
+  - `method`：请求方法
+  - `url`：请求的 URL
+  - `query`：请求的 query 字典
+  - `headers`：请求的 header 字典
+  - `json_body`：请求体
+  - `retry_config`：请求使用的重试信息
+
 #### **Completion 续写**
 
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `qianfan.Completion` 来完成这一任务。

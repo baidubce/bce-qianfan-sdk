@@ -48,14 +48,21 @@ def _hyper_parameters_extraction(func: Callable) -> Callable:
     def _wrapper(
         *args: List[Any], **kwargs: Any
     ) -> Union[QfResponse, Iterator[QfResponse]]:
-        if len(args) > 1 and isinstance(args[1], QfMessages):
+        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
             messages = args[1]
-        elif isinstance(kwargs.get("messages", None), QfMessages):
+        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
             messages = kwargs["messages"]
         else:
             return func(*args, **kwargs)
 
-        kwargs.update(messages._hyper_parameters)
+        if isinstance(messages, QfMessages):
+            kwargs.update(messages._hyper_parameters)
+        else:
+            kwargs.update(messages)
+            if len(args) > 1 and isinstance(args[1], dict):
+                args = list(args)
+                del args[1]
+
         return func(*args, **kwargs)
 
     return _wrapper
@@ -66,14 +73,21 @@ def _async_hyper_parameters_extraction(func: Callable) -> Callable:
     async def _wrapper(
         *args: List[Any], **kwargs: Any
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        if len(args) > 1 and isinstance(args[1], QfMessages):
+        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
             messages = args[1]
-        elif isinstance(kwargs.get("messages", None), QfMessages):
+        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
             messages = kwargs["messages"]
         else:
             return await func(*args, **kwargs)
 
-        kwargs.update(messages._hyper_parameters)
+        if isinstance(messages, QfMessages):
+            kwargs.update(messages._hyper_parameters)
+        else:
+            kwargs.update(messages)
+            if len(args) > 1 and isinstance(args[1], dict):
+                args = list(args)
+                del args[1]
+
         return await func(*args, **kwargs)
 
     return _wrapper
@@ -838,7 +852,7 @@ class ChatCompletion(BaseResource):
     @_hyper_parameters_extraction
     def do(
         self,
-        messages: Union[List[Dict], QfMessages],
+        messages: Union[List[Dict], Dict, QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -855,12 +869,12 @@ class ChatCompletion(BaseResource):
         Perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Union[List[Dict], QfMessages]):
+          messages (Union[List[Dict], Dict, QfMessages]):
             A list of messages in the conversation including the one from system. Each
             message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
             message, respectively. Alternatively, you can provide a QfMessages object
-            for convenience.
+            or a dict contains all arguments in body for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -903,6 +917,9 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
+
+        assert not isinstance(messages, dict)
+
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -1054,7 +1071,7 @@ class ChatCompletion(BaseResource):
     @_async_hyper_parameters_extraction
     async def ado(
         self,
-        messages: Union[List[Dict], QfMessages],
+        messages: Union[List[Dict], Dict, QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -1076,7 +1093,7 @@ class ChatCompletion(BaseResource):
             message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
             message, respectively. Alternatively, you can provide a QfMessages object
-            for convenience.
+            or a dict contains all arguments in body for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -1119,6 +1136,9 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
+
+        assert not isinstance(messages, dict)
+
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -1243,7 +1263,7 @@ class ChatCompletion(BaseResource):
 
     def batch_do(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:

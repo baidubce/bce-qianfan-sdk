@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import asyncio
 import copy
 import functools
+from asyncio import Task
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
     Callable,
     Dict,
     Iterator,
@@ -1277,6 +1279,41 @@ class ChatCompletion(BaseResource):
 
         return self._batch_request(task_list, worker_num)
 
+    def batch_do_in_instant_way(
+        self,
+        messages_list: Union[List[List[Dict]], List[QfMessages]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, List[QfResponse]]]:
+        task_list = [
+            partial(self.do, messages=messages, **kwargs) for messages in messages_list
+        ]
+
+        tasks = self._batch_request(task_list, worker_num)
+        executor = ThreadPoolExecutor(
+            max_workers=len(tasks) if len(tasks) < 1000 else 1000
+        )
+
+        results: List[Union[List[QfResponse], QfResponse]] = []
+
+        def worker(task: Task) -> None:
+            r = task.result()
+            if isinstance(r, QfResponse):
+                results.append(r)
+                return
+
+            result_list: List[QfResponse] = []
+            for resp in r:
+                result_list.append(resp)
+
+            results.append(result_list)
+
+        for task in tasks:
+            executor.submit(functools.partial(worker, task))
+
+        executor.shutdown()
+        return results
+
     async def abatch_do(
         self,
         messages_list: Sequence[Union[List[Dict], QfMessages]],
@@ -1306,7 +1343,43 @@ class ChatCompletion(BaseResource):
 
         """
         tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
-        return await self._abatch_request(tasks, worker_num)
+        return await asyncio.gather(
+            *(self._abatch_request_coros(tasks, worker_num)),
+            return_exceptions=True,
+        )
+
+    async def abatch_do_in_instant_way(
+        self,
+        messages_list: Sequence[Union[List[Dict], QfMessages]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, List[QfResponse]]]:
+        tasks = self._abatch_request_coros(
+            [self.ado(messages=messages, **kwargs) for messages in messages_list],
+            worker_num,
+        )
+
+        results: List[Union[List[QfResponse], QfResponse]] = []
+
+        async def worker(task: Awaitable) -> None:
+            r = await task
+            if isinstance(r, QfResponse):
+                results.append(r)
+                return
+
+            result_list: List[QfResponse] = []
+            async for resp in r:
+                result_list.append(resp)
+
+            results.append(result_list)
+            return
+
+        await asyncio.gather(
+            *[worker(task) for task in tasks],
+            return_exceptions=True,
+        )
+
+        return results
 
     def _generate_body(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any

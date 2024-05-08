@@ -18,6 +18,7 @@ import asyncio
 import concurrent.futures
 import copy
 import threading
+from asyncio import Task
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import (
@@ -91,6 +92,9 @@ class BatchRequestFuture(object):
             if self._finished_count == self._task_count:
                 log_info("All tasks finished, exeutor will be shutdown")
                 self._executor.shutdown(wait=False)
+
+    def get_future_list(self) -> List[Future]:
+        return self._future_list
 
     def wait(self) -> None:
         """
@@ -720,6 +724,34 @@ class BaseResource(object):
             *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
             return_exceptions=True,
         )
+
+    def _abatch_request_coros(
+        self,
+        tasks: Sequence[
+            Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
+        ],
+        worker_num: Optional[int] = None,
+    ) -> List[Task[Union[QfResponse, AsyncIterator[QfResponse]]]]:
+        """
+        async do batch prediction
+        """
+        if worker_num is not None and worker_num <= 0:
+            raise errors.InvalidArgumentError("worker_num must be greater than 0")
+        if worker_num:
+            sem = asyncio.Semaphore(worker_num)
+        else:
+            sem = None
+
+        async def _with_concurrency_limit(
+            task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
+        ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+            if sem:
+                async with sem:
+                    return await task
+            else:
+                return await task
+
+        return [asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks]
 
 
 # {api_type: {model_name: QfLLMInfo}}

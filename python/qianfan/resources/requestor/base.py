@@ -221,7 +221,6 @@ def _stream_latency(
 
         def iter() -> Iterator[QfResponse]:
             nonlocal first_token_latency
-            reading_start_time = time.perf_counter()
 
             is_first_block = True
             sse_block_receive_time = time.perf_counter()
@@ -235,7 +234,9 @@ def _stream_latency(
                 is_first_block = False
 
                 r.statistic["first_token_latency"] = first_token_latency
-                r.statistic["total_latency"] = time.perf_counter() - start_time + first_token_latency
+                r.statistic["total_latency"] = (
+                    time.perf_counter() - start_time + first_token_latency
+                )
                 sse_block_receive_time = time.perf_counter()
                 yield r
 
@@ -262,7 +263,6 @@ def _async_stream_latency(
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal first_token_latency
-            reading_start_time = time.perf_counter()
 
             sse_block_receive_time = time.perf_counter()
             is_first_block = True
@@ -276,7 +276,9 @@ def _async_stream_latency(
                 is_first_block = False
 
                 r.statistic["first_token_latency"] = first_token_latency
-                r.statistic["total_latency"] = time.perf_counter() - reading_start_time + first_token_latency
+                r.statistic["total_latency"] = (
+                    time.perf_counter() - start_time + first_token_latency
+                )
                 sse_block_receive_time = time.perf_counter()
                 yield r
 

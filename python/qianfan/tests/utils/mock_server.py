@@ -258,6 +258,9 @@ def truncated_stream_response(is_end_resp: bool):
             yield "data: " + data + "\n\n"
 
 
+_multi_func_call_round = 0
+
+
 @app.route(Consts.ModelAPIPrefix + "/chat/<model_name>", methods=["POST"])
 @access_token_checker
 def chat(model_name):
@@ -304,6 +307,46 @@ def chat(model_name):
             },
             request_id,
         )
+    if model_name == "ernie-func-8k":
+        global _multi_func_call_round
+        _multi_func_call_round += 1
+        if _multi_func_call_round == 1:
+            return json_response(
+                {
+                    "id": "as-bcmt5ct4id",
+                    "object": "chat.completion",
+                    "created": 1680167072,
+                    "result": (
+                        'Action: get_current_weather\nAction Input: {"location": "上海市"}'
+                    ),
+                    "is_truncated": False,
+                    "need_clear_history": False,
+                    "usage": {
+                        "prompt_tokens": 10,
+                        "completion_tokens": 72,
+                        "total_tokens": 82,
+                    },
+                },
+                request_id,
+            )
+        else:
+            _multi_func_call_round = 0
+            return json_response(
+                {
+                    "id": "as-bcmt5ct4ie",
+                    "object": "chat.completion",
+                    "created": 1680167075,
+                    "result": "上海气温25度",
+                    "is_truncated": False,
+                    "need_clear_history": False,
+                    "usage": {
+                        "prompt_tokens": 10,
+                        "completion_tokens": 72,
+                        "total_tokens": 82,
+                    },
+                },
+                request_id,
+            )
     # check messages
     check_result = check_messages(r["messages"])
     if model_name == "error":
@@ -989,6 +1032,18 @@ def finetune_v2_supported_models(body):
                                             "checkValue": [0.0001, 0.1],
                                             "default": 0.01,
                                             "key": "weightDecay",
+                                            "type": "float",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "parameterScale": "FullFineTuning",
+                                    "supportHyperParameterConfig": [
+                                        {
+                                            "checkType": "range",
+                                            "checkValue": [0.0001, 0.1],
+                                            "default": 0.01,
+                                            "key": "custom_key",
                                             "type": "float",
                                         },
                                     ],

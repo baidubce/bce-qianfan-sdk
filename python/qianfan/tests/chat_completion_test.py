@@ -16,6 +16,7 @@
     Unit test for ChatCompletion
 """
 
+import json
 import os
 import threading
 import time
@@ -745,3 +746,70 @@ def test_auto_model_list():
 
     assert model_list.get("ERNIE-99")
     assert qianfan.ChatCompletion.get_model_info("ernie-99")
+
+
+def test_function_chat():
+    def get_current_weather(location):
+        return "25度"
+
+    func_list = [
+        {
+            "name": "get_current_weather",
+            "description": "获取一个地区的天气情况",
+            "parameters": {
+                "type": "object",
+                "properties": {"location": {"type": "string", "description": "地点"}},
+                "required": ["location"],
+            },
+        }
+    ]
+    f = qianfan.Function()
+    query = "请帮我查一下上海的气温"
+    msgs = qianfan.QfMessages()
+    msgs.append(query, role="user")
+    resp = f.do(messages=msgs, functions=func_list)
+    assert resp["body"].get("function_call")
+
+    func_call_result = resp["function_call"]
+    location = json.loads(func_call_result["arguments"]).get("location")
+    func_resp = get_current_weather(location)
+
+    msgs.append(resp, role="assistant")
+    msgs.append(json.dumps({"return": func_resp}), role="function")
+
+    resp = f.do(messages=msgs, functions=func_list)
+    assert resp["body"].get("result")
+
+
+@pytest.mark.asyncio
+async def test_async_function_chat():
+    def get_current_weather(location):
+        return "25度"
+
+    func_list = [
+        {
+            "name": "get_current_weather",
+            "description": "获取一个地区的天气情况",
+            "parameters": {
+                "type": "object",
+                "properties": {"location": {"type": "string", "description": "地点"}},
+                "required": ["location"],
+            },
+        }
+    ]
+    f = qianfan.Function()
+    query = "请帮我查一下上海的气温"
+    msgs = qianfan.QfMessages()
+    msgs.append(query, role="user")
+    resp = await f.ado(messages=msgs, functions=func_list)
+    assert resp["body"].get("function_call")
+
+    func_call_result = resp["function_call"]
+    location = json.loads(func_call_result["arguments"]).get("location")
+    func_resp = get_current_weather(location)
+
+    msgs.append(resp, role="assistant")
+    msgs.append(json.dumps({"return": func_resp}), role="function")
+
+    resp = await f.ado(messages=msgs, functions=func_list)
+    assert resp["body"].get("result")

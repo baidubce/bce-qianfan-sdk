@@ -2,10 +2,10 @@ build:
 	bash ./scripts/build.sh
 
 install:
-	poetry install -E extension
+	poetry install -E all
 
 install_ntbk:
-	poetry install -E extension --with dev,cookbook
+	poetry install -E all --with dev,cookbook
 
 uninstall:
 	pip uninstall -y qianfan

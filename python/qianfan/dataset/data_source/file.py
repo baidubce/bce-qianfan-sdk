@@ -228,6 +228,9 @@ class FileDataSource(DataSource, BaseModel):
 
         assert isinstance(self.file_format, FormatType)
 
+        if hasattr(pyarrow, "is_fake"):
+            return None
+
         # 特判文生图
         if self.file_format is FormatType.Text2Image:
             if zipfile.is_zipfile(self.path):

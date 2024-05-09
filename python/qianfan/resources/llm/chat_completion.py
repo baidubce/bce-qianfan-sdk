@@ -11,11 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import asyncio
 import copy
+import functools
+from asyncio import Task
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Union,
+)
 
 import qianfan.errors as errors
 from qianfan.config import get_config
@@ -28,6 +40,56 @@ from qianfan.resources.llm.base import (
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_info
+
+
+def _hyper_parameters_extraction(func: Callable) -> Callable:
+    @functools.wraps(func)
+    def _wrapper(
+        *args: List[Any], **kwargs: Any
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
+            messages = args[1]
+        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
+            messages = kwargs["messages"]
+        else:
+            return func(*args, **kwargs)
+
+        if isinstance(messages, QfMessages):
+            kwargs.update(messages._hyper_parameters)
+        else:
+            kwargs.update(messages)
+            if len(args) > 1 and isinstance(args[1], dict):
+                args = list(args)
+                del args[1]
+
+        return func(*args, **kwargs)
+
+    return _wrapper
+
+
+def _async_hyper_parameters_extraction(func: Callable) -> Callable:
+    @functools.wraps(func)
+    async def _wrapper(
+        *args: List[Any], **kwargs: Any
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
+            messages = args[1]
+        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
+            messages = kwargs["messages"]
+        else:
+            return await func(*args, **kwargs)
+
+        if isinstance(messages, QfMessages):
+            kwargs.update(messages._hyper_parameters)
+        else:
+            kwargs.update(messages)
+            if len(args) > 1 and isinstance(args[1], dict):
+                args = list(args)
+                del args[1]
+
+        return await func(*args, **kwargs)
+
+    return _wrapper
 
 
 class ChatCompletion(BaseResource):
@@ -786,9 +848,10 @@ class ChatCompletion(BaseResource):
         """
         return f"/chat/{endpoint}"
 
+    @_hyper_parameters_extraction
     def do(
         self,
-        messages: Union[List[Dict], QfMessages],
+        messages: Union[List[Dict], Dict, QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -805,12 +868,12 @@ class ChatCompletion(BaseResource):
         Perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Union[List[Dict], QfMessages]):
+          messages (Union[List[Dict], Dict, QfMessages]):
             A list of messages in the conversation including the one from system. Each
             message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
             message, respectively. Alternatively, you can provide a QfMessages object
-            for convenience.
+            or a dict contains all arguments in body for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -853,6 +916,9 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
+
+        assert not isinstance(messages, dict)
+
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -1001,9 +1067,10 @@ class ChatCompletion(BaseResource):
                 #     r.body["is_end"] = False
                 yield r
 
+    @_async_hyper_parameters_extraction
     async def ado(
         self,
-        messages: Union[List[Dict], QfMessages],
+        messages: Union[List[Dict], Dict, QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -1025,7 +1092,7 @@ class ChatCompletion(BaseResource):
             message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
             message, respectively. Alternatively, you can provide a QfMessages object
-            for convenience.
+            or a dict contains all arguments in body for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -1068,6 +1135,9 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
+
+        assert not isinstance(messages, dict)
+
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -1192,7 +1262,7 @@ class ChatCompletion(BaseResource):
 
     def batch_do(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -1228,9 +1298,65 @@ class ChatCompletion(BaseResource):
 
         return self._batch_request(task_list, worker_num)
 
+    def batch_do_in_instant_way(
+        self,
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
+        """
+        Batch perform chat-based language generation using user-supplied messages
+        and return result immediately.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        Returns:
+            List[Union[QfResponse, List[QfResponse], Exception]]:
+                A list content QfResponse or List[QfResponse] (in stream mode)
+        """
+        task_list = [
+            partial(self.do, messages=messages, **kwargs) for messages in messages_list
+        ]
+
+        tasks = self._batch_request(task_list, worker_num)
+        executor = ThreadPoolExecutor(
+            max_workers=len(tasks) if len(tasks) < 1000 else 1000
+        )
+
+        results: List[Union[List[QfResponse], QfResponse, Exception]] = [
+            [] for _ in range(len(messages_list))
+        ]
+
+        def worker(task: Task, index: int) -> None:
+            r = task.result()
+            if isinstance(r, (QfResponse, Exception)):
+                results[index] = r
+                return
+
+            result_list: List[QfResponse] = []
+            for resp in r:
+                result_list.append(resp)
+
+            results[index] = result_list
+
+        for index, task in enumerate(tasks):
+            executor.submit(functools.partial(worker, task, index))
+
+        executor.shutdown()
+        return results
+
     async def abatch_do(
         self,
-        messages_list: Sequence[Union[List[Dict], QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1258,6 +1384,56 @@ class ChatCompletion(BaseResource):
         """
         tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
         return await self._abatch_request(tasks, worker_num)
+
+    async def abatch_do_in_instant_way(
+        self,
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
+        """
+        Async batch perform chat-based language generation using user-supplied messages
+        and return result immediately.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        Returns:
+            List[Union[QfResponse, List[QfResponse], Exception]]:
+                A list content QfResponse or List[QfResponse] (in stream mode)
+        """
+        tasks = self._abatch_request_coros(
+            [self.ado(messages=messages, **kwargs) for messages in messages_list],
+            worker_num,
+        )
+
+        async def worker(
+            task: Awaitable, index: int
+        ) -> Union[List[QfResponse], QfResponse, Exception]:
+            r = await task
+            if isinstance(r, (QfResponse, Exception)):
+                return r
+
+            result_list: List[QfResponse] = []
+            async for resp in r:
+                result_list.append(resp)
+
+            return result_list
+
+        results = await asyncio.gather(
+            *[worker(task, index) for index, task in enumerate(tasks)],
+            return_exceptions=True,
+        )
+
+        return results
 
     def _generate_body(
         self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any

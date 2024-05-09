@@ -17,6 +17,7 @@ API Requestor for SDK
 """
 
 import copy
+import functools
 import inspect
 import json
 import time
@@ -167,11 +168,16 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
     a decorator to add latency info into response
     """
 
-    def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
-        start_time = time.perf_counter()
-        resp = func(*args, **kwargs)
-        resp.statistic["total_latency"] = time.perf_counter() - start_time
-        return resp
+    @functools.wraps(func)
+    def wrapper(
+        requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
+    ) -> QfResponse:
+        log_trace(f"raw request: {request}")
+        with requestor._rate_limiter:
+            start_time = time.perf_counter()
+            resp = func(requestor, request, *args, **kwargs)
+            resp.statistic["total_latency"] = time.perf_counter() - start_time
+            return resp
 
     return wrapper
 
@@ -183,11 +189,16 @@ def _async_latency(
     a decorator to add latency info into async response
     """
 
-    async def wrapper(*args: Any, **kwargs: Any) -> QfResponse:
-        start_time = time.perf_counter()
-        resp = await func(*args, **kwargs)
-        resp.statistic["total_latency"] = time.perf_counter() - start_time
-        return resp
+    @functools.wraps(func)
+    async def wrapper(
+        requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
+    ) -> QfResponse:
+        log_trace(f"raw request: {request}")
+        async with requestor._rate_limiter:
+            start_time = time.perf_counter()
+            resp = await func(requestor, request, *args, **kwargs)
+            resp.statistic["total_latency"] = time.perf_counter() - start_time
+            return resp
 
     return wrapper
 
@@ -199,21 +210,26 @@ def _stream_latency(
     a decorator to add latency info into stream response
     """
 
-    def wrapper(*args: Any, **kwargs: Any) -> Iterator[QfResponse]:
-        start_time = time.perf_counter()
-        first_token_latency: Optional[float] = None
-        resp = func(*args, **kwargs)
+    @functools.wraps(func)
+    def wrapper(
+        requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
+    ) -> Iterator[QfResponse]:
+        with requestor._rate_limiter:
+            start_time = time.perf_counter()
+            resp = func(requestor, request, *args, **kwargs)
 
         def iter() -> Iterator[QfResponse]:
-            nonlocal first_token_latency
+            is_first_block = True
             sse_block_receive_time = time.perf_counter()
+
             for r in resp:
-                if first_token_latency is None:
-                    first_token_latency = time.perf_counter() - start_time
                 r.statistic["request_latency"] = (
-                    time.perf_counter() - sse_block_receive_time
+                    (time.perf_counter() - sse_block_receive_time)
+                    if not is_first_block
+                    else r.statistic["first_token_latency"]
                 )
-                r.statistic["first_token_latency"] = first_token_latency
+                is_first_block = False
+
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 sse_block_receive_time = time.perf_counter()
                 yield r
@@ -230,20 +246,29 @@ def _async_stream_latency(
     a decorator to add latency info into async stream response
     """
 
-    async def wrapper(*args: Any, **kwargs: Any) -> AsyncIterator[QfResponse]:
-        start_time = time.perf_counter()
-        resp = await func(*args, **kwargs)
-        first_token_latency: Optional[float] = None
-        sse_block_receive_time = time.perf_counter()
+    @functools.wraps(func)
+    async def wrapper(
+        requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
+    ) -> AsyncIterator[QfResponse]:
+        async with requestor._rate_limiter:
+            start_time = time.perf_counter()
+            resp = await func(requestor, request, *args, **kwargs)
+            first_token_latency = time.perf_counter() - start_time
 
         async def iter() -> AsyncIterator[QfResponse]:
-            nonlocal first_token_latency, sse_block_receive_time
+            nonlocal first_token_latency
+
+            sse_block_receive_time = time.perf_counter()
+            is_first_block = True
+
             async for r in resp:
-                if first_token_latency is None:
-                    first_token_latency = time.perf_counter() - start_time
                 r.statistic["request_latency"] = (
-                    time.perf_counter() - sse_block_receive_time
+                    (time.perf_counter() - sse_block_receive_time)
+                    if not is_first_block
+                    else first_token_latency
                 )
+                is_first_block = False
+
                 r.statistic["first_token_latency"] = first_token_latency
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 sse_block_receive_time = time.perf_counter()
@@ -275,9 +300,7 @@ class BaseAPIRequestor(object):
         """
         simple sync request
         """
-        with self._rate_limiter:
-            log_trace(f"raw request: {request}")
-            response = self._client.request(request)
+        response = self._client.request(request)
         _check_if_status_code_is_200(response)
         try:
             body = response.json()
@@ -305,9 +328,10 @@ class BaseAPIRequestor(object):
         """
         async request
         """
-        async with self._rate_limiter:
-            response, session = await self._client.arequest(request)
         start = time.perf_counter()
+        response, session = await self._client.arequest(request)
+        request_latency = time.perf_counter() - start
+
         async with session:
             async with response:
                 _async_check_if_status_code_is_200(response)
@@ -319,13 +343,14 @@ class BaseAPIRequestor(object):
                         f" {response.content}"
                     )
                 resp = await self._parse_async_response(body, response)
-                resp.statistic["request_latency"] = time.perf_counter() - start
+                resp.statistic["request_latency"] = request_latency
                 resp.request = QfRequest.from_aiohttp(response.request_info)
                 resp.request.json_body = copy.deepcopy(request.json_body)
                 if "X-Ratelimit-Limit-Requests" in resp.headers:
                     await self._rate_limiter.async_reset_once(
                         float(resp.headers["X-Ratelimit-Limit-Requests"])
                     )
+
                 return data_postprocess(resp)
 
     def _parse_response(

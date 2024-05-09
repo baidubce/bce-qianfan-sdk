@@ -96,8 +96,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         stream sync request
         """
-        with self._rate_limiter:
-            responses = self._client.request_stream(request)
+        responses = self._client.request_stream(request)
 
         _, resp = next(responses)
         if "json" in resp.headers.get("content-type", ""):
@@ -152,6 +151,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 parsed = self._parse_response(json_body, resp)
                 parsed.request = QfRequest.from_requests(resp.request)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.statistic["first_token_latency"] = resp.elapsed.total_seconds()
                 yield data_postprocess(parsed)
 
         return iter()
@@ -188,8 +188,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async stream request
         """
-        async with self._rate_limiter:
-            responses = self._client.arequest_stream(request)
+        responses = self._client.arequest_stream(request)
 
         _, resp = await responses.__anext__()
         if "json" in resp.headers.get("content-type", ""):

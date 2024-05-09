@@ -330,6 +330,7 @@ def chat(model_name):
                 request_id,
             )
         else:
+            _multi_func_call_round = 0
             return json_response(
                 {
                     "id": "as-bcmt5ct4ie",

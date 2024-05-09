@@ -127,7 +127,7 @@ def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
 
 
 def is_valid_bos_path(path: str) -> bool:
-    pattern = r"^bos:/([a-zA-Z0-9_-]+(\/)?)*$"
+    pattern = r"^bos:/([a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]*$"
     match = re.match(pattern, path)
 
     if match:

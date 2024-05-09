@@ -1304,6 +1304,25 @@ class ChatCompletion(BaseResource):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
+        """
+        Batch perform chat-based language generation using user-supplied messages
+        and return result immediately.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        Returns:
+            List[Union[QfResponse, List[QfResponse], Exception]]:
+                A list content QfResponse or List[QfResponse] (in stream mode)
+        """
         task_list = [
             partial(self.do, messages=messages, **kwargs) for messages in messages_list
         ]
@@ -1364,10 +1383,7 @@ class ChatCompletion(BaseResource):
 
         """
         tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
-        return await asyncio.gather(
-            *(self._abatch_request_coros(tasks, worker_num)),
-            return_exceptions=True,
-        )
+        return await self._abatch_request(tasks, worker_num)
 
     async def abatch_do_in_instant_way(
         self,
@@ -1375,6 +1391,25 @@ class ChatCompletion(BaseResource):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
+        """
+        Async batch perform chat-based language generation using user-supplied messages
+        and return result immediately.
+
+        Parameters:
+          messages_list: List[Union[List[Dict], QfMessages]]:
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        Returns:
+            List[Union[QfResponse, List[QfResponse], Exception]]:
+                A list content QfResponse or List[QfResponse] (in stream mode)
+        """
         tasks = self._abatch_request_coros(
             [self.ado(messages=messages, **kwargs) for messages in messages_list],
             worker_num,

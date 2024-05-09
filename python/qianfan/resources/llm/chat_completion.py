@@ -740,7 +740,7 @@ class ChatCompletion(BaseResource):
             "ERNIE 3.5": "ERNIE-3.5-8K",
             "ERNIE-Lite-8K": "ERNIE-Lite-8K-0308",
             "ERNIE-4.0-preview": "ERNIE-4.0-8K-preview",
-            "ERNIE-3.5-preview": "ERNIE-3.5-8K-preview"
+            "ERNIE-3.5-preview": "ERNIE-3.5-8K-preview",
         }
         for src, target in alias.items():
             info_list[src] = info_list[target]

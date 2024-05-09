@@ -9,6 +9,7 @@ import logging.config
 import logging.handlers
 import socket
 from logging import Filter
+from typing import Any, Dict
 
 HOSTNAME = socket.gethostname()
 loglevel = "DEBUG"
@@ -19,16 +20,16 @@ runner_logger_name = "yame.runner"
 class LogFilterByLevel(Filter):
     """log filter by loglevel"""
 
-    def __init__(self, levelname: str, name=""):
+    def __init__(self, levelname: str, name: str = ""):
         super().__init__(name)
         self.levelname = levelname.upper()
 
-    def filter(self, record):
+    def filter(self, record: Any) -> bool:
         """filter record by loglevel"""
         return record.levelname == self.levelname
 
 
-LOGGING_CONFIG = {
+LOGGING_CONFIG: Dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
@@ -89,7 +90,7 @@ logger = logging.getLogger(runner_logger_name)
 console_logger = logging.getLogger(console_logger_name)
 
 
-def set_filehandler(logfile):
+def set_filehandler(logfile: str) -> None:
     """set file handler of 'yame.runner' logger"""
     LOGGING_CONFIG["handlers"]["file"] = {
         "class": "logging.FileHandler",

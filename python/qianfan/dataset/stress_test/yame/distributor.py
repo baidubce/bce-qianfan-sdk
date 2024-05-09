@@ -5,7 +5,7 @@ workers read shard data
 """
 
 import logging
-from typing import Dict, Iterator, Optional
+from typing import Any, Dict, Iterator
 
 import gevent
 import greenlet
@@ -22,9 +22,13 @@ class Distributor(Iterator):
     """distributor"""
 
     def __init__(
-        self, environment: Environment, iterator: Optional[Iterator], name="distributor"
+        self,
+        environment: Environment,
+        iterator: Any,
+        name: str = "distributor",
     ):
-        """Register distributor method handlers and tie them to use the iterator that you pass.
+        """Register distributor method handlers and
+        tie them to use the iterator that you pass.
 
         iterator is not used on workers, so you can leave it as None there.
         """
@@ -36,14 +40,19 @@ class Distributor(Iterator):
         ), "iterator is a mandatory parameter when not on a worker runner"
         if self.environment.runner:
             # received on master
-            def _distributor_request(environment: Environment, msg, **kwargs):
-                # do this in the background to avoid blocking locust's client_listener loop
+            def _distributor_request(
+                environment: Environment, msg: Any, **kwargs: Any
+            ) -> None:
+                # do this in the background to avoid blocking
+                # locust's client_listener loop
                 gevent.spawn(
                     self._master_next_and_send, msg.data["gid"], msg.data["client_id"]
                 )
 
             # received on worker
-            def _distributor_response(environment: Environment, msg, **kwargs):
+            def _distributor_response(
+                environment: Environment, msg: Any, **kwargs: Any
+            ) -> None:
                 _results[msg.data["gid"]].set(msg.data)
 
             self.environment.runner.register_message(
@@ -54,12 +63,12 @@ class Distributor(Iterator):
             )
         self.stop_iteration_num = 0
 
-    def _master_next_and_send(self, gid, client_id):
+    def _master_next_and_send(self, gid: str, client_id: str) -> None:
         """master/local runner get next data and send to worker client"""
         # yame: quit/stop runner when iterator raises StopIteration.
         try:
             item = next(self.iterator)
-        except StopIteration as e:
+        except StopIteration:
             self.stop_iteration_num += 1
             # if self.stop_iteration_num >= self.environment.runner.user_count:
             if self.stop_iteration_num >= self.environment.runner.target_user_count:
@@ -81,7 +90,7 @@ class Distributor(Iterator):
             client_id=client_id,
         )
 
-    def __next__(self):
+    def __next__(self) -> Any:
         """Get the next data dict from iterator"""
         if (
             not self.environment.runner

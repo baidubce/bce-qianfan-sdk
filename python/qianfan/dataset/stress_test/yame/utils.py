@@ -8,7 +8,7 @@ import socket
 import time
 
 
-def is_port_in_use(host, port):
+def is_port_in_use(host: str, port: int) -> bool:
     """
     判断port是否被占用
     """
@@ -16,7 +16,9 @@ def is_port_in_use(host, port):
         return s.connect_ex((host, port)) == 0
 
 
-def select_a_free_port(host="127.0.0.1", start_port=8000, end_port=65535):
+def select_a_free_port(
+    host: str = "127.0.0.1", start_port: int = 8000, end_port: int = 65535
+) -> int:
     """
     选择一个空闲的端口
     """
@@ -30,7 +32,7 @@ def select_a_free_port(host="127.0.0.1", start_port=8000, end_port=65535):
     )
 
 
-def strftime(timestamp, time_format="%Y-%m-%dT%H:%M:%SZ"):
+def strftime(timestamp: float, time_format: str = "%Y-%m-%dT%H:%M:%SZ") -> str:
     """
     timestamp -> string like "2022-04-01T08:40:45Z"
     """

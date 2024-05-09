@@ -3,13 +3,14 @@ QianfanLocustRunner
 """
 import logging
 import os
-import sys
+from typing import Any, Dict, Optional
+
+from qianfan.dataset import Dataset
+from qianfan.dataset.stress_test.load_statistics import gen_brief
+from qianfan.dataset.stress_test.yame.runner import LocustRunner
 
 logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
-
-from qianfan.dataset.stress_test.load_statistics import gen_brief
-from qianfan.dataset.stress_test.yame.runner import LocustRunner
 
 
 class QianfanLocustRunner(LocustRunner):
@@ -21,16 +22,16 @@ class QianfanLocustRunner(LocustRunner):
 
     def __init__(
         self,
-        user_num=1,
-        worker_num=1,
-        runtime="1m",
-        spawn_rate=1,
-        model=None,
-        model_type=None,
-        recording=True,
-        record_dir=None,
-        dataset=None,
-        hyperparameters=None,
+        model: str,
+        dataset: Dataset,
+        model_type: str = "ChatCompletion",
+        user_num: int = 1,
+        worker_num: int = 1,
+        runtime: str = "1m",
+        spawn_rate: int = 1,
+        recording: bool = True,
+        record_dir: Optional[str] = None,
+        hyperparameters: Optional[Dict[str, Any]] = None,
     ):
         super(QianfanLocustRunner, self).__init__(
             locustfile=self.locust_file,
@@ -46,7 +47,7 @@ class QianfanLocustRunner(LocustRunner):
             hyperparameters=hyperparameters,
         )
 
-    def run(self):
+    def run(self) -> Dict[str, Any]:
         """
         run
         """

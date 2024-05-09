@@ -8,18 +8,7 @@ import functools
 import json
 import os
 import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    List,
-    NoReturn,
-    Protocol,
-    TypedDict,
-    TypeVar,
-    cast,
-)
+from typing import Any, Callable, List, Optional
 
 import gevent
 import locust.stats
@@ -38,7 +27,6 @@ from locust.stats import (
     CONSOLE_STATS_INTERVAL_SEC,
     PERCENTILES_TO_REPORT,
     STATS_NAME_WIDTH,
-    STATS_TYPE_WIDTH,
     RequestStats,
     StatsEntry,
     StatsError,
@@ -63,7 +51,7 @@ class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
         )
         self.stats = stats
 
-    def _requests_data_rows(self, csv_writer: locust.stats.CSVWriter):
+    def _requests_data_rows(self, csv_writer: locust.stats.CSVWriter) -> None:
         """Write requests csv data row, excluding header."""
         for stats_entry in locust.stats.chain(
             locust.stats.sort_stats(self.stats.entries), [self.stats.total]
@@ -87,7 +75,7 @@ class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
                 )
             )
 
-    def _failures_data_rows(self, csv_writer: locust.stats.CSVWriter):
+    def _failures_data_rows(self, csv_writer: locust.stats.CSVWriter) -> None:
         """Write failures csv data row."""
         for stats_error in locust.stats.sort_stats(self.stats.errors):
             csv_writer.writerow(
@@ -145,7 +133,10 @@ class CustomHandler:
     index = 1
 
     def __init__(
-        self, name: str = None, request_handler: Callable = None, csv_suffix: str = None
+        self,
+        name: Optional[str] = None,
+        request_handler: Optional[Callable] = None,
+        csv_suffix: Optional[str] = None,
     ):
         self.stats = RequestStats()
         self.id = CustomHandler.index
@@ -165,8 +156,11 @@ class CustomHandler:
         events.test_start.add_listener(self.test_start_handler)
 
     def add_listener(
-        self, name=None, condition_handler: Callable = None, thresholds=None
-    ):
+        self,
+        name: Optional[str] = None,
+        condition_handler: Optional[Callable] = None,
+        thresholds: Optional[float] = None,
+    ) -> Any:
         """
         添加阈值监听器
         :param name: 监听器名称
@@ -182,14 +176,14 @@ class CustomHandler:
         """
         listener_name = name or f"自定义监听器{self.listener_index}"
 
-        def default_handler(stats: RequestStats, thresholds):
+        def default_handler(stats: RequestStats, thresholds: Optional[float]) -> bool:
             """默认handler"""
             return stats.total.avg_response_time > thresholds
 
         if not condition_handler:
             condition_handler = default_handler
 
-        def thresholds_listener(environment: Environment, **kwargs):
+        def thresholds_listener(environment: Environment, **kwargs: Any) -> None:
             """
             启动异步greenlet，以检查阈值
             """
@@ -201,7 +195,7 @@ class CustomHandler:
                     greenlet_exception_logger(logger)
                 )
 
-        def thresholds_checker(environment: Environment):
+        def thresholds_checker(environment: Environment) -> None:
             """
             检查指标，超过阈值退出
             """
@@ -218,13 +212,15 @@ class CustomHandler:
                 if condition_handler(self.stats, thresholds):
                     if environment.web_ui:
                         logger.warning(
-                            f"{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}),"
+                            f"{self.name} {listener_name} "
+                            "满足阈值条件(thresholds={thresholds}),"
                             " stopping."
                         )
                         environment.runner.stop()
                     else:
                         logger.warning(
-                            f"{self.name} {listener_name} 满足阈值条件(thresholds={thresholds}),"
+                            f"{self.name} {listener_name} "
+                            "满足阈值条件(thresholds={thresholds}),"
                             " quitting."
                         )
                         environment.runner.quit()
@@ -234,20 +230,22 @@ class CustomHandler:
         self.listener_index += 1
         return self
 
-    def on_report_to_master(self, client_id: str, data: dict):
+    def on_report_to_master(self, client_id: str, data: dict) -> None:
         """
         当为worker runner时，需要将收集到的自定义数据上报给master runner做汇总
         master runner接受到data时，再从其中解出自定义数据做汇总
-        注意：自定义数据的key 不能使用stats、status_total、errors，这是locust原生数据占用的结构.
+        注意：自定义数据的key 不能使用stats、status_total、errors，
+        这是locust原生数据占用的结构.
         """
         data[f"custom_stats_{self.id}"] = self.stats.serialize_stats()
         data[f"custom_stats_total_{self.id}"] = self.stats.total.get_stripped_report()
         data[f"custom_errors_{self.id}"] = self.stats.serialize_errors()
         self.stats.errors = {}
 
-    def on_worker_report(self, client_id: str, data: dict):
+    def on_worker_report(self, client_id: str, data: dict) -> None:
         """
-        worker runner通过data上传stats数据，data包含自定义数据（通过on_report_to_master传入）
+        worker runner通过data上传stats数据，
+        data包含自定义数据（通过on_report_to_master传入）
         master runner接受到data后将其中的自定义数据与自己本地数据做merge
         """
         for stats_data in data[f"custom_stats_{self.id}"]:
@@ -269,7 +267,7 @@ class CustomHandler:
             StatsEntry.unserialize(data[f"custom_stats_total_{self.id}"])
         )
 
-    def test_start_handler(self, environment: Environment, **kwargs):
+    def test_start_handler(self, environment: Environment, **kwargs: Any) -> None:
         """
         启动异步greenlet，定时打印stats
         """
@@ -305,7 +303,7 @@ class CustomHandler:
                     greenlet_exception_logger(logger)
                 )
 
-    def print_stats_json(self):
+    def print_stats_json(self) -> str:
         """
         print self.stats.serialize_stats()
         reference: locust.stats.print_stats_json
@@ -318,7 +316,7 @@ class CustomHandler:
         console_logger.debug(content)
         return content
 
-    def print_stats(self, current=True):
+    def print_stats(self, current: bool = True) -> str:
         """print self.stats summary"""
         content = (
             ("" if current else "Summary: ")
@@ -330,7 +328,7 @@ class CustomHandler:
         console_logger.debug(content)
         return content
 
-    def print_percentile_stats(self):
+    def print_percentile_stats(self) -> str:
         """print self.stats percentile"""
         percentile_stats = locust.stats.get_percentile_stats_summary(self.stats)
         percentile_stats[0] = f"Summary: {self.name} [percentiles (approximated)]"
@@ -338,7 +336,7 @@ class CustomHandler:
         console_logger.debug(content)
         return content
 
-    def get_error_report_summary(self):
+    def get_error_report_summary(self) -> list:
         """get custom error report"""
         summary = [
             f'Summary: {self.name} [report (from "fails")]',
@@ -372,7 +370,7 @@ class CustomHandler:
         summary.append("")
         return summary
 
-    def print_error_report(self):
+    def print_error_report(self) -> str:
         """print self.status error report"""
         if self.stats.errors:
             content = "\n".join(self.get_error_report_summary()) + "\n"
@@ -381,7 +379,9 @@ class CustomHandler:
             content = ""
         return content
 
-    def start_stats_printer_gevent(self, environment: Environment, **kwargs):
+    def start_stats_printer_gevent(
+        self, environment: Environment, **kwargs: Any
+    ) -> None:
         """
         启动异步greenlet，定时打印stats
         """
@@ -393,7 +393,7 @@ class CustomHandler:
                 greenlet_exception_logger(logger)
             )
 
-    def stats_printer(self, environment: Environment):
+    def stats_printer(self, environment: Environment) -> None:
         """
         定时打印stats
         """
@@ -408,17 +408,18 @@ class CustomHandler:
     @staticmethod
     def request_handler(
         stats: RequestStats,
-        request_type,
-        name,
-        response_time,
-        response_length,
-        exception=None,
-        **kwargs,
-    ):
+        request_type: Any,
+        name: str,
+        response_time: float,
+        response_length: int,
+        exception: Optional[Exception] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         每个请求均会调用，用于向统计表注册数据
         (1) 注册1个记录：stats.log_request(type, name, time, length)
-        (2) 标记为失败或某种分类：stats.log_error(type, name, exc)  其中exc为错误或分类message，最终会按type+name+exc分类统计
+        (2) 标记为失败或某种分类：stats.log_error(type, name, exc)
+            其中exc为错误或分类message，最终会按type+name+exc分类统计
         """
         if "ttft" in kwargs:
             stats.log_request(request_type, name, kwargs["ttft"], response_length)
@@ -426,7 +427,7 @@ class CustomHandler:
             stats.log_request(request_type, name, 0, response_length)
             stats.log_error(request_type, name, "未找到ttft首token延迟")
 
-    def test_stop_listener(self, environment):
+    def test_stop_listener(self, environment: Environment) -> None:
         """
         测试结束时，通过这个event将存储在global data中的first response stats打印到终端
         """

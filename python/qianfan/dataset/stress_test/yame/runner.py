@@ -10,6 +10,7 @@ import os
 import signal
 import sys
 import time
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import locust.main
@@ -19,33 +20,35 @@ from qianfan.dataset.stress_test.yame import GlobalData
 from qianfan.dataset.stress_test.yame.logger import console_logger
 from qianfan.dataset.stress_test.yame.utils import select_a_free_port, strftime
 
+_listeners = qianfan.dataset.stress_test.yame.listeners
+
 
 class LocustRunner(object):
     """class: LocustRunner"""
 
     def __init__(
         self,
-        locustfile="lucustfile.py",
-        user_num=1,
-        worker_num=1,
-        runtime="1m",
-        spawn_rate=1,
-        host=None,
-        master_host=None,
-        master_port=None,
-        enable_web=False,
-        web_port=None,
-        web_host=None,
-        recording=False,
-        record_dir=None,
-        loglevel=None,
-        logfile=None,
-        report=None,
-        csv_prefix=None,
-        csv_full_history=False,
-        json=False,
-        only_summary=False,
-        **kwargs,
+        locustfile: str = "lucustfile.py",
+        user_num: int = 1,
+        worker_num: int = 1,
+        runtime: str = "1m",
+        spawn_rate: int = 1,
+        host: Optional[str] = None,
+        master_host: Optional[str] = None,
+        master_port: Optional[int] = None,
+        enable_web: bool = False,
+        web_port: Optional[int] = None,
+        web_host: Optional[str] = None,
+        recording: bool = False,
+        record_dir: Optional[str] = None,
+        loglevel: Optional[str] = None,
+        logfile: Optional[str] = None,
+        report: Optional[str] = None,
+        csv_prefix: Optional[str] = None,
+        csv_full_history: bool = False,
+        json: bool = False,
+        only_summary: bool = False,
+        **kwargs: Any,
     ):
         self.locustfile = locustfile
         # headless开启时有效
@@ -82,7 +85,7 @@ class LocustRunner(object):
         # 自定义参数
         GlobalData.data.update(kwargs)
 
-    def generate_record_path(self):
+    def generate_record_path(self) -> Optional[str]:
         """
         生成记录保存路径
         """
@@ -100,8 +103,9 @@ class LocustRunner(object):
             if not self.csv_prefix:
                 self.csv_prefix = os.path.join(self.record_dir, "statistics")
             return self.record_dir
+        return None
 
-    def generate_command(self, role):
+    def generate_command(self, role: str) -> str:
         """
         生成locust执行命令
         """
@@ -153,7 +157,7 @@ class LocustRunner(object):
 
         return cmd
 
-    def master(self):
+    def master(self) -> None:
         """
         run master in process
         """
@@ -162,7 +166,7 @@ class LocustRunner(object):
         sys.argv = cmd.split()
         locust.main.main()
 
-    def worker(self, wid):
+    def worker(self, wid: int) -> None:
         """
         run worker in process
         """
@@ -172,7 +176,7 @@ class LocustRunner(object):
         sys.argv = cmd.split()
         locust.main.main()
 
-    def local(self):
+    def local(self) -> None:
         """
         run local runner
         """
@@ -182,13 +186,17 @@ class LocustRunner(object):
         locust.main.main()
 
     @staticmethod
-    def _kill_process(process: multiprocessing.Process):
+    def _kill_process(process: multiprocessing.Process) -> None:
         """kill master or worker process"""
-        if isinstance(process, multiprocessing.Process) and process.is_alive():
+        if (
+            isinstance(process, multiprocessing.Process)
+            and process.is_alive()
+            and process.pid is not None
+        ):
             os.kill(process.pid, signal.SIGKILL)
 
     @staticmethod
-    def _kill_master_and_workers(master, workers):
+    def _kill_master_and_workers(master: Any, workers: Any) -> None:
         """
         kill locust master and all workers processes
         """
@@ -197,7 +205,7 @@ class LocustRunner(object):
             for worker in workers:
                 LocustRunner._kill_process(worker)
 
-    def run(self):
+    def run(self) -> Dict[str, Any]:
         """
         run load test job
         """
@@ -275,7 +283,7 @@ class LocustRunner(object):
             exit_code = master.exitcode
         end_time = time.time()
         console_logger.info("run completed.")
-        result = {
+        result: Dict[str, Any] = {
             "exitcode": exit_code,
             "start_time": strftime(start_time),
             "end_time": strftime(end_time),

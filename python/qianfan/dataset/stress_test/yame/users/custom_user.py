@@ -5,7 +5,7 @@
 支持request_meta添加自定义指标（需要再添加自定义Handler处理统计）
 """
 import time
-from typing import Generator, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from locust import User
@@ -20,12 +20,14 @@ class CustomUser(User):
     """
 
     abstract = True
-    """If abstract is True, the class is meant to be subclassed, and users will not choose this locust during a test"""
+    """If abstract is True, the class is meant to be subclassed, 
+    and users will not choose this locust during a test"""
 
     pool_manager: Optional[PoolManager] = None
-    """Connection pool manager to use. If not given, a new manager is created per single user."""
+    """Connection pool manager to use. If not given, 
+    a new manager is created per single user."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         if self.host is None:
@@ -43,11 +45,14 @@ class CustomUser(User):
         )
         """
         Instance of HttpSession that is created upon instantiation of Locust.
-        The client supports cookies, and therefore keeps the session between HTTP requests.
+        The client supports cookies, 
+        and therefore keeps the session between HTTP requests.
         """
         self.client.trust_env = False
 
-    def set_result(self, response: requests.Response, start_time, **kwargs):
+    def set_result(
+        self, response: requests.Response, start_time: float, **kwargs: Any
+    ) -> Optional[Dict[Any, Any]]:
         """
         添加自定义指标数据
         :param response: request.Response
@@ -57,7 +62,7 @@ class CustomUser(User):
         建议key值不要使用：request_type、response_time、name、context、response、exception、start_time、url，否则将会覆盖locust原生统计数据。
         """
         if not kwargs.get("stream"):
-            return
+            return None
         first_flag = True
         result = dict()
         response_length = 0
@@ -77,7 +82,9 @@ class CustomUser(User):
         )
         return result
 
-    def check_response(self, response: ResponseContextManager):
+    def check_response(
+        self, response: ResponseContextManager
+    ) -> ResponseContextManager:
         """
         校验返回，当catch_response=False (client.request默认行为)时执行此函数.
         标记成功（默认无需执行）：response.success()
@@ -93,12 +100,12 @@ class CustomHttpSession(HttpSession):
 
     def __init__(
         self,
-        base_url,
-        request_event,
-        user,
-        *args,
+        base_url: str,
+        request_event: Any,
+        user: Any,
+        *args: Any,
         pool_manager: Optional[PoolManager] = None,
-        **kwargs
+        **kwargs: Any
     ):
         """
         init
@@ -108,13 +115,20 @@ class CustomHttpSession(HttpSession):
         )
 
     def request(
-        self, method, url, name=None, catch_response=False, context={}, **kwargs
-    ):
+        self,
+        method: str,
+        url: str,
+        name: Optional[str] = None,
+        catch_response: bool = False,
+        context: Dict[str, Any] = {},
+        **kwargs: Any
+    ) -> requests.Response:
         """
         Constructs and sends a :py:class:`requests.Request`.
         Returns :py:class:`requests.Response` object.
         """
-        # if group name has been set and no name parameter has been passed in; set the name parameter to group_name
+        # if group name has been set and no name parameter has been passed in;
+        # set the name parameter to group_name
         if self.request_name and not name:
             name = self.request_name
 
@@ -154,8 +168,10 @@ class CustomHttpSession(HttpSession):
             "url": url,
         }
 
-        # get the length of the content, but if the argument stream is set to True, we take
-        # the size from the content-length header, in order to not trigger fetching of the body
+        # get the length of the content,
+        # but if the argument stream is set to True, we take
+        # the size from the content-length header,
+        # in order to not trigger fetching of the body
         if kwargs.get("stream", False):
             # yame自定义逻辑
             if custom_result:  # request_meta添加自定义数据

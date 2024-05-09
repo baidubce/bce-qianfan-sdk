@@ -3,19 +3,17 @@
 brief.py
 """
 import logging
-import os
 import sys
+from typing import List
 
 logger = logging.getLogger("yame.runner")
 
 
-def get_qps_and_rate(path):
+def get_qps_and_rate(path: str) -> List[float]:
     """
     get_duration
     """
     with open(path) as fd:
-        start_time = -1
-        end_time = -1
         for line in fd:
             if line.startswith("Type"):
                 continue
@@ -31,7 +29,7 @@ def get_qps_and_rate(path):
         return [qps, rate]
 
 
-def get_statistics(path):
+def get_statistics(path: str) -> List[float]:
     """
     get_statistics
     """
@@ -49,7 +47,7 @@ def get_statistics(path):
     return [lat_avg, lat_min, lat_max, lat_50p, lat_80p]
 
 
-def gen_brief(report_dir):
+def gen_brief(report_dir: str) -> None:
     """
     gen_brief
     """

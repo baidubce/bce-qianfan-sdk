@@ -346,6 +346,60 @@ res = r.do("北京的天气", ["北京今天12.5度，北风，阴天", "北京�
 print(res["results"])
 ```
 
+#### 函数调用(Function calling)
+为了提升函数调用的能力，千帆平台专门针对任务规划等函数调用场景推出了`ERNIE-Functions-8K`，可以配套`qianfan.Function`以实现多个函数的函数调用。使用上和ChatCompletion的函数调用类似。
+
+以下是一个使用示例，cookbook可参考：[函数调用](../cookbook/function_call.ipynb)
+```python
+def get_file_num(language: str) -> str:
+    """获取数据库中指定语言的代码文件数量"""
+    return 5
+
+func_list = [{
+    "name": "get_file_num",  # 函数名称
+    "description": "获取内部数据库中以某一编程语言编写的文件数量",  # 函数描述
+    "parameters":{
+        "type":"object",
+        "properties":{  # 参数schema，如果参数为空，设为空字典即可
+            "language":{  # 参数名称
+                "type":"string",  # 参数类型
+                "description": "代码所运用的编程语言，例如：python、c/c++、go、java"  # 参数描述
+            }
+        },
+        "required":["language"]  # 必填参数（无默认值）
+    }
+}]
+
+f = Function()
+query = "请帮我查询一下数据库中用go以及java撰写的代码文件数量"
+msgs = qianfan.QfMessages()
+msgs.append(query,role='user')
+resp = f.do(
+    messages=msgs,
+    functions=func_list
+)
+
+while True:
+    func_call_result = resp["function_call"]
+    func_name = func_call_result["name"]
+    language = json.loads(func_call_result["arguments"]).get("language")
+    func_resp = get_file_num(language)
+    
+    func_content = json.dumps({
+        "return":func_resp
+    })
+    msgs.append(resp, role="assistant")
+    msgs.append(func_content, role="function")
+    resp = f.do(
+        messages=msgs,
+        functions=func_list
+    )
+    
+    print(resp['body']['result'])
+    if resp.get("function_call") is None:
+        break
+```
+
 #### **批量推理**
 
 上述模型均提供了 `batch_do` 和异步的 `abatch_do` 方法，方便用户批量进行推理，并通过 `worker_num` 来控制并发量。

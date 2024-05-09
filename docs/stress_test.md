@@ -26,7 +26,7 @@ from qianfan.dataset import Dataset
 os.environ["QIANFAN_ACCESS_KEY"] = "..."
 os.environ["QIANFAN_SECRET_KEY"] = "..."
 
-\# 需要初始化一个数据集对象
+# 需要初始化一个数据集对象
 
 ds = Dataset.load(data_file="...")
 
@@ -42,13 +42,13 @@ ds.stress_test(
 ## 方法参数
 stress_test支持以下参数：
 
-- **workers (int)：**指定发压使用的worker数目，每个worker为1个进程；
-- **users (int)：**指定发压使用的总user数，必须大于worker数目；每个worker负责模拟${users}/${workers}个虚拟用户；
-- **runtime (str)：**指定发压任务的最大运行时间，格式为带时间单位的字符串，例如（300s, 20m, 3h, 1h30m）；压测任务启动后会一直运行到数据集内所有数据都请求完毕，或到达该参数指定的最大运行时间；该参数默认值为'0s'，表示不设最大运行时间；
-- **spawn_rate (int)：**指定每秒启动的user数目；
-- **model (str)：**指定需要压测服务的模型名称。该参数与endpoint只能指定一个；
-- **endpoint (str)：**指定需要压测服务的url路径。该参数与model只能指定一个；
-- **model_type (str)：**指定被测服务的模型类型。 目前只支持'ChatCompletion'与'Completion两类'；
+- **workers (int)**：指定发压使用的worker数目，每个worker为1个进程；
+- **users (int)**：指定发压使用的总user数，必须大于worker数目；每个worker负责模拟${users}/${workers}个虚拟用户；
+- **runtime (str)**：指定发压任务的最大运行时间，格式为带时间单位的字符串，例如（300s, 20m, 3h, 1h30m）；压测任务启动后会一直运行到数据集内所有数据都请求完毕，或到达该参数指定的最大运行时间；该参数默认值为'0s'，表示不设最大运行时间；
+- **spawn_rate (int)**：指定每秒启动的user数目；
+- **model (str)**：指定需要压测服务的模型名称。该参数与endpoint只能指定一个；
+- **endpoint (str)**：指定需要压测服务的url路径。该参数与model只能指定一个；
+- **model_type (str)**：指定被测服务的模型类型。 目前只支持'ChatCompletion'与'Completion两类'；默认值为'ChatCompletion'；
 - **hyperparameters (Optional[Dict[str, Any]])**：指定压测时使用的超参数；
 
 
@@ -96,9 +96,9 @@ txt格式示例
 
 各项指标含义如下：
 
-- **QPS：**服务每秒实际处理的请求数；
-- **Latency Avg/Min/Max/50%/80%：**全长时延的平均值/最小值/最大值/50分位值/80分位值；
-- **FirstSentenceLatency Avg/Min/Max/50%/80%：**首句时延的平均值/最小值/最大值/50分位值/80分位值；
-- **InputTokens Avg：**单次请求输入的token长度平均值；
-- **OutputTokens Avg：**单次请求输出的token长度平均值；
-- **SuccessRate：**请求成功率；
+- **QPS**：服务每秒实际处理的请求数；
+- **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
+- **FirstSentenceLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
+- **InputTokens Avg**：单次请求输入的token长度平均值；
+- **OutputTokens Avg**：单次请求输出的token长度平均值；
+- **SuccessRate**：请求成功率；

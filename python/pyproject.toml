@@ -87,8 +87,8 @@ ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock"]
 langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "langchain"]
 local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
-openai = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "fastapi", "uvicorn"]
-extension = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+openai = ["fastapi", "uvicorn"]
+all = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

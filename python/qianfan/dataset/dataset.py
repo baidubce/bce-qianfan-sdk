@@ -496,7 +496,8 @@ class Dataset(Table):
         # 首先检查是否有传入 schema 或者已经默认有了 schema
         schema = schema if schema else self.inner_schema_cache
         # 如果导出的数据源是千帆，则强制构造 schema 进行检查，优先级最高
-        if isinstance(source, QianfanDataSource):
+        # 如果是只上传，则不校验
+        if isinstance(source, QianfanDataSource) and self.inner_table:
             # 一个方法从 source 中抽取 schema 信息
             schema = _get_qianfan_schema(source)
 
@@ -506,8 +507,7 @@ class Dataset(Table):
             log_error(str(error))
             raise error
 
-        if isinstance(source, QianfanDataSource):
-            assert isinstance(schema, QianfanSchema)
+        if isinstance(source, QianfanDataSource) and isinstance(schema, QianfanSchema):
             kwargs["is_annotated"] = schema.is_annotated
 
         # 开始写入数据

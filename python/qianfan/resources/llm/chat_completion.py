@@ -26,7 +26,6 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Sequence,
     Union,
 )
 
@@ -1301,10 +1300,10 @@ class ChatCompletion(BaseResource):
 
     def batch_do_in_instant_way(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Union[QfResponse, List[QfResponse]]]:
+    ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
         task_list = [
             partial(self.do, messages=messages, **kwargs) for messages in messages_list
         ]
@@ -1314,29 +1313,31 @@ class ChatCompletion(BaseResource):
             max_workers=len(tasks) if len(tasks) < 1000 else 1000
         )
 
-        results: List[Union[List[QfResponse], QfResponse]] = []
+        results: List[Union[List[QfResponse], QfResponse, Exception]] = [
+            [] for _ in range(len(messages_list))
+        ]
 
-        def worker(task: Task) -> None:
+        def worker(task: Task, index: int) -> None:
             r = task.result()
-            if isinstance(r, QfResponse):
-                results.append(r)
+            if isinstance(r, (QfResponse, Exception)):
+                results[index] = r
                 return
 
             result_list: List[QfResponse] = []
             for resp in r:
                 result_list.append(resp)
 
-            results.append(result_list)
+            results[index] = result_list
 
-        for task in tasks:
-            executor.submit(functools.partial(worker, task))
+        for index, task in enumerate(tasks):
+            executor.submit(functools.partial(worker, task, index))
 
         executor.shutdown()
         return results
 
     async def abatch_do(
         self,
-        messages_list: Sequence[Union[List[Dict], QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1370,32 +1371,30 @@ class ChatCompletion(BaseResource):
 
     async def abatch_do_in_instant_way(
         self,
-        messages_list: Sequence[Union[List[Dict], QfMessages]],
+        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Union[QfResponse, List[QfResponse]]]:
+    ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
         tasks = self._abatch_request_coros(
             [self.ado(messages=messages, **kwargs) for messages in messages_list],
             worker_num,
         )
 
-        results: List[Union[List[QfResponse], QfResponse]] = []
-
-        async def worker(task: Awaitable) -> None:
+        async def worker(
+            task: Awaitable, index: int
+        ) -> Union[List[QfResponse], QfResponse, Exception]:
             r = await task
-            if isinstance(r, QfResponse):
-                results.append(r)
-                return
+            if isinstance(r, (QfResponse, Exception)):
+                return r
 
             result_list: List[QfResponse] = []
             async for resp in r:
                 result_list.append(resp)
 
-            results.append(result_list)
-            return
+            return result_list
 
-        await asyncio.gather(
-            *[worker(task) for task in tasks],
+        results = await asyncio.gather(
+            *[worker(task, index) for index, task in enumerate(tasks)],
             return_exceptions=True,
         )
 

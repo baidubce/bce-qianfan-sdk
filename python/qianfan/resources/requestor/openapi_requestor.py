@@ -151,6 +151,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 parsed = self._parse_response(json_body, resp)
                 parsed.request = QfRequest.from_requests(resp.request)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.statistic["first_token_latency"] = resp.elapsed.total_seconds()
                 yield data_postprocess(parsed)
 
         return iter()

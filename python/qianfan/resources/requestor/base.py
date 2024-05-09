@@ -217,11 +217,8 @@ def _stream_latency(
         with requestor._rate_limiter:
             start_time = time.perf_counter()
             resp = func(requestor, request, *args, **kwargs)
-            first_token_latency = time.perf_counter() - start_time
 
         def iter() -> Iterator[QfResponse]:
-            nonlocal first_token_latency
-
             is_first_block = True
             sse_block_receive_time = time.perf_counter()
 
@@ -229,14 +226,11 @@ def _stream_latency(
                 r.statistic["request_latency"] = (
                     (time.perf_counter() - sse_block_receive_time)
                     if not is_first_block
-                    else first_token_latency
+                    else r.statistic["first_token_latency"]
                 )
                 is_first_block = False
 
-                r.statistic["first_token_latency"] = first_token_latency
-                r.statistic["total_latency"] = (
-                    time.perf_counter() - start_time + first_token_latency
-                )
+                r.statistic["total_latency"] = time.perf_counter() - start_time
                 sse_block_receive_time = time.perf_counter()
                 yield r
 
@@ -276,9 +270,7 @@ def _async_stream_latency(
                 is_first_block = False
 
                 r.statistic["first_token_latency"] = first_token_latency
-                r.statistic["total_latency"] = (
-                    time.perf_counter() - start_time + first_token_latency
-                )
+                r.statistic["total_latency"] = time.perf_counter() - start_time
                 sse_block_receive_time = time.perf_counter()
                 yield r
 

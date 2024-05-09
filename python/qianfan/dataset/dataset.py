@@ -2125,9 +2125,10 @@ class Dataset(Table):
         self,
         workers: int,
         users: int,
-        runtime: str,
         spawn_rate: int,
-        model: str,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        runtime: str = "0s",
         model_type: str = "ChatCompletion",
         hyperparameters: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -2151,6 +2152,8 @@ class Dataset(Table):
                 Rate to spawn users at (users per second).
             model (str):
                 Name of the model service you want to test.
+            endpoint (str):
+                Endpoint of the model service you want to test.
             model_type (str):
                 Type of model service you want to test.
                 Must be one of following values: ChatCompletion / Completions.
@@ -2161,6 +2164,15 @@ class Dataset(Table):
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
+            if model is None and endpoint is None:
+                raise Exception(
+                    "These two arguments: model/endpoint cannot both be null."
+                )
+            if model is not None and endpoint is not None:
+                raise Exception(
+                    "Only one of these two arguments: model/endpoint can be non-null."
+                )
+
             from qianfan.dataset.stress_test.load_runner import QianfanLocustRunner
 
             runner = QianfanLocustRunner(
@@ -2169,6 +2181,7 @@ class Dataset(Table):
                 runtime=runtime,
                 spawn_rate=spawn_rate,
                 model=model,
+                endpoint=endpoint,
                 model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,

@@ -22,8 +22,9 @@ class QianfanLocustRunner(LocustRunner):
 
     def __init__(
         self,
-        model: str,
         dataset: Dataset,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
         model_type: str = "ChatCompletion",
         user_num: int = 1,
         worker_num: int = 1,
@@ -33,18 +34,25 @@ class QianfanLocustRunner(LocustRunner):
         record_dir: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
     ):
+        if model is not None:
+            host = model
+            is_endpoint = False
+        elif endpoint is not None:
+            host = endpoint
+            is_endpoint = True
         super(QianfanLocustRunner, self).__init__(
             locustfile=self.locust_file,
             user_num=user_num,
             worker_num=worker_num,
             runtime=runtime,
             spawn_rate=spawn_rate,
-            host=model,
+            host=host,
             recording=recording,
             record_dir=record_dir,
             dataset=dataset,
             model_type=model_type,
             hyperparameters=hyperparameters,
+            is_endpoint=is_endpoint,
         )
 
     def run(self) -> Dict[str, Any]:

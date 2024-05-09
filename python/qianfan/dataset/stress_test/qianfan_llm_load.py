@@ -154,6 +154,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     def __init__(
         self,
         model: str,
+        is_endpoint: bool,
         request_event: Any,
         user: Any,
         *args: Any,
@@ -167,7 +168,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
-        self.chat_comp = qianfan.ChatCompletion(model=model)
+        if is_endpoint:
+            self.chat_comp = qianfan.ChatCompletion(endpoint=model)
+        else:
+            self.chat_comp = qianfan.ChatCompletion(model=model)
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -283,6 +287,7 @@ class CompletionClient(QianfanCustomHttpSession):
     def __init__(
         self,
         model: str,
+        is_endpoint: bool,
         request_event: Any,
         user: Any,
         *args: Any,
@@ -296,7 +301,10 @@ class CompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
-        self.comp = qianfan.Completion(model=model)
+        if is_endpoint:
+            self.comp = qianfan.Completion(endpoint=model)
+        else:
+            self.comp = qianfan.Completion(model=model)
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -422,9 +430,11 @@ class QianfanLLMLoadUser(CustomUser):
             )
 
         model_type = GlobalData.data["model_type"]
+        is_endpoint = GlobalData.data["is_endpoint"]
         if model_type == "ChatCompletion":
             self.client = ChatCompletionClient(
                 model=self.host,
+                is_endpoint=is_endpoint,
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,
@@ -432,6 +442,7 @@ class QianfanLLMLoadUser(CustomUser):
         elif model_type == "Completion":
             self.client = CompletionClient(
                 model=self.host,
+                is_endpoint=is_endpoint,
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,

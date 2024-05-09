@@ -26,8 +26,8 @@ prompt_list = ["你好", "很高兴认识你"]
 task = Completion().batch_do(prompt_list, worker_num=10)
 # 由于推理任务较为耗时，所以推理会在后台进行
 # 返回的 task 是一个 Future 对象，可以通过它来获得任务运行状态
-# 例如通过 resp.finished_count() 和 resp.total_count() 来获取已完成和总任务数
-print("{}/{}".format(task.finished_count(), task.total_count())) # => 11/20
+# 例如通过 resp.finished_count() 和 resp.task_count() 来获取已完成和总任务数
+print("{}/{}".format(task.finished_count(), task.task_count())) # => 11/20
 # SDK 会按照输入顺序进行批量推理
 # 可以通过遍历的方式获取已完成任务的结果
 for r in task:

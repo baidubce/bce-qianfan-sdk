@@ -212,7 +212,7 @@ class ChatCompletion(BaseResource):
                 input_price_per_1k_tokens=0.12,
                 output_price_per_1k_tokens=0.12,
             ),
-            "ERNIE-4.0-preview": QfLLMInfo(
+            "ERNIE-4.0-8K-preview": QfLLMInfo(
                 endpoint="/chat/ernie-4.0-8k-preview",
                 required_keys={"messages"},
                 optional_keys={
@@ -445,7 +445,7 @@ class ChatCompletion(BaseResource):
                 output_price_per_1k_tokens=0.008,
             ),
             "ERNIE-Functions-8K": QfLLMInfo(
-                endpoint="/chat/ernie-char-8k",
+                endpoint="/chat/ernie-func-8k",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -801,6 +801,8 @@ class ChatCompletion(BaseResource):
             "ERNIE Speed": "ERNIE-Speed-8K",
             "ERNIE 3.5": "ERNIE-3.5-8K",
             "ERNIE-Lite-8K": "ERNIE-Lite-8K-0308",
+            "ERNIE-4.0-preview": "ERNIE-4.0-8K-preview",
+            "ERNIE-3.5-preview": "ERNIE-3.5-8K-preview",
         }
         for src, target in alias.items():
             info_list[src] = info_list[target]

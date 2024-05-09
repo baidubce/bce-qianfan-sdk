@@ -232,6 +232,23 @@ trainer.run()
 
 ```
 
+#### Model
+
+千帆 Python SDK 对模型管理能力进行了抽象和封装，开发者可以通过[Model](./docs/trainer.md)模块进行模型相关的管理，和批量推理，评估等操作。
+
+以下是一个基于模型实现批量推理的例子：
+
+```python
+from qianfan.model import Model
+from qianfan.dataset import Dataset
+
+ds = Dataset.load(qianfan_dataset_id="ds-xx")
+m = Model(version_id="amv-xx")
+
+m.batch_inference(dataset=ds)
+```
+
+
 ### 通用与扩展
 
 #### Prompt

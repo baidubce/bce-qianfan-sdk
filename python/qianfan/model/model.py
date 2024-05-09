@@ -88,8 +88,10 @@ class Model(
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
-        if kwargs.get("auto_complete"):
+        if version_id is None or id is None:
             self.auto_complete_info()
+        if version_id is None and id is None:
+            log_warn("model id or version_id should be provided")
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict

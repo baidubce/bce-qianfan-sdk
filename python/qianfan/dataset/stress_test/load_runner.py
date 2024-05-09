@@ -60,6 +60,7 @@ class QianfanLocustRunner(LocustRunner):
         run
         """
         ret = super(QianfanLocustRunner, self).run()
+        logger.info("Log path: %s" % ret["logfile"])
         if ret["exitcode"] == 0:
             gen_brief(ret["record_dir"])
         else:

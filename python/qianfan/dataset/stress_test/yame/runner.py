@@ -193,7 +193,12 @@ class LocustRunner(object):
             and process.is_alive()
             and process.pid is not None
         ):
-            os.kill(process.pid, signal.SIGKILL)
+            import platform
+
+            if platform.system().lower() == "windows":
+                os.kill(process.pid, getattr(signal, "CTRL_C_EVENT"))
+            else:
+                os.kill(process.pid, getattr(signal, "SIGKILL"))
 
     @staticmethod
     def _kill_master_and_workers(master: Any, workers: Any) -> None:

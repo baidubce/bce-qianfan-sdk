@@ -203,6 +203,7 @@ class CustomHandler:
                 f"{self.name} {listener_name} listener starts: thresholds={thresholds}"
             )
             time.sleep(0.1)
+            assert environment.runner is not None
             while environment.runner.state not in [
                 STATE_STOPPING,
                 STATE_STOPPED,
@@ -279,7 +280,7 @@ class CustomHandler:
         ):
             # init csv writer
             options = environment.parsed_options
-            if options.csv_prefix:
+            if options and options.csv_prefix:
                 base_csv_file = os.path.basename(options.csv_prefix)
                 base_csv_dir = options.csv_prefix[: -len(base_csv_file)]
                 if not os.path.exists(base_csv_dir) and len(base_csv_dir) != 0:
@@ -296,8 +297,10 @@ class CustomHandler:
                     greenlet_exception_logger(logger)
                 )
             # start stats printer
-            if not options.only_summary and (
-                options.print_stats or (options.headless and not options.worker)
+            if (
+                options
+                and not options.only_summary
+                and (options.print_stats or (options.headless and not options.worker))
             ):
                 gevent.spawn(self.stats_printer, environment).link_exception(
                     greenlet_exception_logger(logger)
@@ -397,6 +400,7 @@ class CustomHandler:
         """
         定时打印stats
         """
+        assert environment.runner is not None
         while environment.runner.state not in [
             STATE_STOPPING,
             STATE_STOPPED,
@@ -437,6 +441,7 @@ class CustomHandler:
         # print final statistics of self.stats
         if (
             hasattr(environment.parsed_options, "json")
+            and environment.parsed_options
             and environment.parsed_options.json
         ):
             log_content = self.print_stats_json()
@@ -446,7 +451,11 @@ class CustomHandler:
             log_content += self.print_error_report()
 
         # output final statistics of self.stats to logfile
-        if environment.parsed_options.logfile and log_content:
+        if (
+            environment.parsed_options
+            and environment.parsed_options.logfile
+            and log_content
+        ):
             output_folder = os.path.dirname(environment.parsed_options.logfile)
             with open(
                 os.path.join(output_folder, f"{self.csv_suffix}_statistics.log"), "w"

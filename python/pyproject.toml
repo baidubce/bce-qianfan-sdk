@@ -38,6 +38,7 @@ pyarrow = [
     { version = ">=14.0.1", python = ">=3.8", optional = true },
     { version = "<=12.0.1", python = ">=3.7 <3.8", optional = true }
 ]
+locust = { version = "*", optional = true }
 tabulate = { version = "*", optional = true }
 python-dateutil = { version = "^2.8.2", optional = true }
 rich = ">=13.0.0"
@@ -84,11 +85,11 @@ papermill = {version = "*", python = ">=3.8 <4"}
 ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 
 [tool.poetry.extras]
-dataset_base = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock"]
-langchain = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "langchain"]
-local_data_clean = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
+dataset_base = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock"]
+langchain = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain"]
+local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
 openai = ["fastapi", "uvicorn"]
-all = ["numpy", "pyarrow", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

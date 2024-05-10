@@ -114,7 +114,7 @@ class CustomHttpSession(HttpSession):
             base_url, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
 
-    def request(
+    def request(  # type: ignore
         self,
         method: str,
         url: str,

@@ -138,16 +138,37 @@ class QianfanCustomHttpSession(CustomHttpSession):
         ):
             pass
 
-    def transfer_data(self, data: Any) -> Any:
+    def transfer_data(self, data: Any, input_column: str, output_column: str) -> Any:
         if isinstance(data, list):
-            ret = self._transfer_jsonl(data)
+            ret = self._transfer_jsonl(
+                data, input_column=input_column, output_column=output_column
+            )
         elif isinstance(data, dict):
-            ret = self._transfer_json(data)
+            ret = self._transfer_json(
+                data, input_column=input_column, output_column=output_column
+            )
         elif isinstance(data, str):
-            ret = self._transfer_txt(data)
+            ret = self._transfer_txt(
+                data, input_column=input_column, output_column=output_column
+            )
         else:
             raise Exception("Data format unsupported.")
         return ret
+
+    def _transfer_jsonl(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
+        ...
+
+    def _transfer_json(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
+        ...
+
+    def _transfer_txt(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
+        ...
 
 
 class ChatCompletionClient(QianfanCustomHttpSession):
@@ -258,25 +279,31 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         request_meta["response"] = last_resp
         return request_meta
 
-    def _transfer_jsonl(self, data: Any) -> Any:
+    def _transfer_jsonl(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
         ret: Dict[str, Any] = {"messages": []}
         for d in data:
-            msg = {"role": "user", "content": d["prompt"]}
+            msg = {"role": "user", "content": d[input_column]}
             ret["messages"].append(msg)
-            if "response" in d:
-                msg = {"role": "assistant", "content": d["response"]}
+            if output_column in d:
+                msg = {"role": "assistant", "content": d[output_column]}
                 ret["messages"].append(msg)
         if ret["messages"][-1]["role"] == "assistant":
             ret["messages"].pop(-1)
         return ret
 
-    def _transfer_json(self, data: Any) -> Any:
+    def _transfer_json(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
         ret: Dict[str, Any] = {"messages": []}
-        msg = {"role": "user", "content": data["prompt"]}
+        msg = {"role": "user", "content": data[input_column]}
         ret["messages"].append(msg)
         return ret
 
-    def _transfer_txt(self, data: Any) -> Any:
+    def _transfer_txt(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
         ret: Dict[str, Any] = {"messages": []}
         msg = {"role": "user", "content": data}
         ret["messages"].append(msg)
@@ -389,16 +416,22 @@ class CompletionClient(QianfanCustomHttpSession):
         request_meta["response"] = last_resp
         return request_meta
 
-    def _transfer_jsonl(self, data: Any) -> Any:
+    def _transfer_jsonl(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
         prompt = ""
         if len(data) > 0:
-            prompt = data[0]["prompt"]
+            prompt = data[0][input_column]
         return dict(prompt=prompt)
 
-    def _transfer_json(self, data: Any) -> Any:
-        return dict(prompt=data["prompt"])
+    def _transfer_json(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
+        return dict(prompt=data[input_column])
 
-    def _transfer_txt(self, data: Any) -> Any:
+    def _transfer_txt(
+        self, data: Any, input_column: str, output_column: str, **kwargs: Any
+    ) -> Any:
         return dict(prompt=data)
 
 
@@ -431,6 +464,7 @@ class QianfanLLMLoadUser(CustomUser):
 
         model_type = GlobalData.data["model_type"]
         is_endpoint = GlobalData.data["is_endpoint"]
+        self.client: QianfanCustomHttpSession
         if model_type == "ChatCompletion":
             self.client = ChatCompletionClient(
                 model=self.host,
@@ -440,7 +474,7 @@ class QianfanLLMLoadUser(CustomUser):
                 pool_manager=self.pool_manager,
             )
         elif model_type == "Completion":
-            self.client = CompletionClient(
+            self.client = CompletionClient(  # noqa
                 model=self.host,
                 is_endpoint=is_endpoint,
                 request_event=self.environment.events.request,
@@ -453,12 +487,16 @@ class QianfanLLMLoadUser(CustomUser):
         self.client.trust_env = False
         self.query_idx = 0
 
+        ds = GlobalData.data["dataset"]
+        self.input_column = ds.input_columns[0] if ds.input_columns else "prompt"
+        self.output_column = ds.reference_column if ds.reference_column else "response"
+
     @task
     def mytask(self) -> None:
         hyperparameters = GlobalData.data["hyperparameters"]
         assert distributor is not None
         data = next(distributor)
-        body = self.client.transfer_data(data)
+        body = self.client.transfer_data(data, self.input_column, self.output_column)
         if hyperparameters is None:
             hyperparameters = {}
         self.client.qianfan_request(stream=True, **body, **hyperparameters)

@@ -11,9 +11,9 @@ import gevent
 import greenlet
 from gevent.event import AsyncResult
 from locust.env import Environment
-from locust.runners import WorkerRunner
+from locust.runners import MasterRunner, WorkerRunner
 
-from yame.logger import logger
+from qianfan.dataset.stress_test.yame.logger import logger
 
 _results: Dict[int, AsyncResult] = {}
 
@@ -66,6 +66,8 @@ class Distributor(Iterator):
     def _master_next_and_send(self, gid: str, client_id: str) -> None:
         """master/local runner get next data and send to worker client"""
         # yame: quit/stop runner when iterator raises StopIteration.
+        assert isinstance(self.environment.runner, MasterRunner)
+
         try:
             item = next(self.iterator)
         except StopIteration:
@@ -104,6 +106,7 @@ class Distributor(Iterator):
             logging.warning("This user was already waiting for data. Strange.")
 
         _results[gid] = AsyncResult()
+        assert isinstance(self.environment.runner, WorkerRunner)
         self.environment.runner.send_message(
             f"_{self.name}_request",
             {"gid": gid, "client_id": self.environment.runner.client_id},

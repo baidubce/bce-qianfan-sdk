@@ -13,8 +13,6 @@
 # limitations under the License.
 import asyncio
 import copy
-import functools
-from asyncio import Task
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import (
@@ -33,63 +31,14 @@ import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
+    MAX_WORKER_THREAD_COUNT,
     UNSPECIFIED_MODEL,
     BaseResource,
     BatchRequestFuture,
 )
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
-from qianfan.utils.logging import log_info
-
-
-def _hyper_parameters_extraction(func: Callable) -> Callable:
-    @functools.wraps(func)
-    def _wrapper(
-        *args: List[Any], **kwargs: Any
-    ) -> Union[QfResponse, Iterator[QfResponse]]:
-        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
-            messages = args[1]
-        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
-            messages = kwargs["messages"]
-        else:
-            return func(*args, **kwargs)
-
-        if isinstance(messages, QfMessages):
-            kwargs.update(messages._hyper_parameters)
-        else:
-            kwargs.update(messages)
-            if len(args) > 1 and isinstance(args[1], dict):
-                args = list(args)
-                del args[1]
-
-        return func(*args, **kwargs)
-
-    return _wrapper
-
-
-def _async_hyper_parameters_extraction(func: Callable) -> Callable:
-    @functools.wraps(func)
-    async def _wrapper(
-        *args: List[Any], **kwargs: Any
-    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        if len(args) > 1 and isinstance(args[1], (QfMessages, dict)):
-            messages = args[1]
-        elif isinstance(kwargs.get("messages", None), (QfMessages, dict)):
-            messages = kwargs["messages"]
-        else:
-            return await func(*args, **kwargs)
-
-        if isinstance(messages, QfMessages):
-            kwargs.update(messages._hyper_parameters)
-        else:
-            kwargs.update(messages)
-            if len(args) > 1 and isinstance(args[1], dict):
-                args = list(args)
-                del args[1]
-
-        return await func(*args, **kwargs)
-
-    return _wrapper
+from qianfan.utils.logging import log_error, log_info
 
 
 class ChatCompletion(BaseResource):
@@ -850,10 +799,10 @@ class ChatCompletion(BaseResource):
         """
         return f"/chat/{endpoint}"
 
-    @_hyper_parameters_extraction
     def do(
         self,
-        messages: Union[List[Dict], Dict, QfMessages],
+        messages: Optional[Union[List[Dict], QfMessages]] = None,
+        body: Optional[Dict] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -870,12 +819,17 @@ class ChatCompletion(BaseResource):
         Perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Union[List[Dict], Dict, QfMessages]):
-            A list of messages in the conversation including the one from system. Each
-            message should be a dictionary containing 'role' and 'content' keys,
+          messages (Optional[Union[List[Dict], QfMessages]]):
+            A list of messages in the conversation including the one from system.
+            Take either `messages` or `body` as your arguments.
+            Each message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
-            message, respectively. Alternatively, you can provide a QfMessages object
-            or a dict contains all arguments in body for convenience.
+            message, respectively. Alternatively, you can provide a QfMessages object.
+            Default to None.
+          body (Optional[Dict]):
+            A dict contains all arguments in body for convenience.
+            Take either `messages` or `body` as your arguments.
+            Default to None.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -914,12 +868,23 @@ class ChatCompletion(BaseResource):
         ```
 
         """
+        if not messages and not body:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
         if isinstance(messages, QfMessages):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
 
-        assert not isinstance(messages, dict)
+        if body:
+            kwargs.update(body)
+
+        backup_messages: List[Dict] = copy.deepcopy(kwargs["messages"])
 
         if (
             not get_config().DISABLE_EB_SDK
@@ -970,7 +935,7 @@ class ChatCompletion(BaseResource):
         cur_content: str = resp["result"]
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
-        msgs = copy.deepcopy(messages)
+        msgs = copy.deepcopy(backup_messages)
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
@@ -1069,10 +1034,10 @@ class ChatCompletion(BaseResource):
                 #     r.body["is_end"] = False
                 yield r
 
-    @_async_hyper_parameters_extraction
     async def ado(
         self,
-        messages: Union[List[Dict], Dict, QfMessages],
+        messages: Optional[Union[List[Dict], QfMessages]] = None,
+        body: Optional[Dict] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -1089,12 +1054,17 @@ class ChatCompletion(BaseResource):
         Async perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Union[List[Dict], QfMessages]):
-            A list of messages in the conversation including the one from system. Each
-            message should be a dictionary containing 'role' and 'content' keys,
+          messages (Optional[Union[List[Dict], QfMessages]]):
+            A list of messages in the conversation including the one from system.
+            Take either `messages` or `body` as your arguments.
+            Each message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
-            message, respectively. Alternatively, you can provide a QfMessages object
-            or a dict contains all arguments in body for convenience.
+            message, respectively. Alternatively, you can provide a QfMessages object.
+            Default to None.
+          body (Optional[Dict]):
+            A dict contains all arguments in body for convenience.
+            Take either `messages` or `body` as your arguments.
+            Default to None.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -1133,12 +1103,23 @@ class ChatCompletion(BaseResource):
         ```
 
         """
+        if not messages and not body:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
         if isinstance(messages, QfMessages):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
 
-        assert not isinstance(messages, dict)
+        if body:
+            kwargs.update(body)
+
+        backup_messages: List[Dict] = copy.deepcopy(kwargs["messages"])
 
         if (
             not get_config().DISABLE_EB_SDK
@@ -1189,7 +1170,7 @@ class ChatCompletion(BaseResource):
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
 
-        msgs = copy.deepcopy(messages)
+        msgs = copy.deepcopy(backup_messages)
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
@@ -1264,7 +1245,8 @@ class ChatCompletion(BaseResource):
 
     def batch_do(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -1272,9 +1254,15 @@ class ChatCompletion(BaseResource):
         Batch perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages_list: List[Union[List[Dict], QfMessages]]:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -1294,15 +1282,27 @@ class ChatCompletion(BaseResource):
         ```
 
         """
-        task_list = [
-            partial(self.do, messages=messages, **kwargs) for messages in messages_list
-        ]
+        if messages_list:
+            task_list = [
+                partial(self.do, messages=messages, **kwargs)
+                for messages in messages_list
+            ]
+        elif body_list:
+            task_list = [partial(self.do, body=body, **kwargs) for body in body_list]
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
 
         return self._batch_request(task_list, worker_num)
 
     def batch_do_in_instant_way(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
@@ -1311,9 +1311,15 @@ class ChatCompletion(BaseResource):
         and return result immediately.
 
         Parameters:
-          messages_list: List[Union[List[Dict], QfMessages]]:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -1325,21 +1331,10 @@ class ChatCompletion(BaseResource):
             List[Union[QfResponse, List[QfResponse], Exception]]:
                 A list content QfResponse or List[QfResponse] (in stream mode)
         """
-        task_list = [
-            partial(self.do, messages=messages, **kwargs) for messages in messages_list
-        ]
+        results: List[Union[List[QfResponse], QfResponse, Exception]]
 
-        tasks = self._batch_request(task_list, worker_num)
-        executor = ThreadPoolExecutor(
-            max_workers=len(tasks) if len(tasks) < 1000 else 1000
-        )
-
-        results: List[Union[List[QfResponse], QfResponse, Exception]] = [
-            [] for _ in range(len(messages_list))
-        ]
-
-        def worker(task: Task, index: int) -> None:
-            r = task.result()
+        def worker(inner_func: Callable, index: int, **kwargs: Any) -> None:
+            r = inner_func(**kwargs)
             if isinstance(r, (QfResponse, Exception)):
                 results[index] = r
                 return
@@ -1350,15 +1345,43 @@ class ChatCompletion(BaseResource):
 
             results[index] = result_list
 
-        for index, task in enumerate(tasks):
-            executor.submit(functools.partial(worker, task, index))
+        if messages_list:
+            task_list = [
+                partial(worker, self.do, index, messages=messages, **kwargs)
+                for index, messages in enumerate(messages_list)
+            ]
+        elif body_list:
+            task_list = [
+                partial(worker, self.do, index, body=body, **kwargs)
+                for index, body in enumerate(body_list)
+            ]
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        results = [[] for _ in range(len(task_list))]
+
+        max_workers = (
+            worker_num
+            if worker_num
+            else min(len(task_list) + 1, MAX_WORKER_THREAD_COUNT)
+        )
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+
+        for task in task_list:
+            executor.submit(task)
 
         executor.shutdown()
         return results
 
     async def abatch_do(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1366,9 +1389,15 @@ class ChatCompletion(BaseResource):
         Async batch perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages_list: List[Union[List[Dict], QfMessages]]:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -1384,12 +1413,28 @@ class ChatCompletion(BaseResource):
         ```
 
         """
-        tasks = [self.ado(messages=messages, **kwargs) for messages in messages_list]
+        if messages_list:
+            task_list = [
+                partial(self.ado, messages=messages, **kwargs)
+                for messages in messages_list
+            ]
+        elif body_list:
+            task_list = [partial(self.ado, body=body, **kwargs) for body in body_list]
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        tasks = [task() for task in task_list]
         return await self._abatch_request(tasks, worker_num)
 
     async def abatch_do_in_instant_way(
         self,
-        messages_list: Union[List[List[Dict]], List[QfMessages], List[Dict]],
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, List[QfResponse], Exception]]:
@@ -1398,9 +1443,15 @@ class ChatCompletion(BaseResource):
         and return result immediately.
 
         Parameters:
-          messages_list: List[Union[List[Dict], QfMessages]]:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
             List of the messages list in the conversation. Please refer to
             `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
           worker_num (Optional[int]):
             The number of prompts to process at the same time, default to None,
             which means this number will be decided dynamically.
@@ -1412,8 +1463,23 @@ class ChatCompletion(BaseResource):
             List[Union[QfResponse, List[QfResponse], Exception]]:
                 A list content QfResponse or List[QfResponse] (in stream mode)
         """
+        if messages_list:
+            task_list = [
+                partial(self.ado, messages=messages, **kwargs)
+                for messages in messages_list
+            ]
+        elif body_list:
+            task_list = [partial(self.ado, body=body, **kwargs) for body in body_list]
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
         tasks = self._abatch_request_coros(
-            [self.ado(messages=messages, **kwargs) for messages in messages_list],
+            [task() for task in task_list],
             worker_num,
         )
 

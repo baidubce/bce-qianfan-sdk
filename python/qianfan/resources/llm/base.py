@@ -67,9 +67,9 @@ class BatchRequestFuture(object):
         """
         Init batch request future
         """
-        max_workers = worker_num if worker_num else len(tasks) + 1
-        if max_workers > MAX_WORKER_THREAD_COUNT:
-            max_workers = MAX_WORKER_THREAD_COUNT
+        max_workers = (
+            worker_num if worker_num else min(len(tasks) + 1, MAX_WORKER_THREAD_COUNT)
+        )
 
         self._future_list: List[Future[Union[QfResponse, Iterator[QfResponse]]]] = []
         self._executor = ThreadPoolExecutor(max_workers=max_workers)

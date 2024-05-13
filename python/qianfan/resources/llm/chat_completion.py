@@ -801,8 +801,7 @@ class ChatCompletion(BaseResource):
 
     def do(
         self,
-        messages: Optional[Union[List[Dict], QfMessages]] = None,
-        body: Optional[Dict] = None,
+        messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -819,17 +818,12 @@ class ChatCompletion(BaseResource):
         Perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Optional[Union[List[Dict], QfMessages]]):
-            A list of messages in the conversation including the one from system.
-            Take either `messages` or `body` as your arguments.
-            Each message should be a dictionary containing 'role' and 'content' keys,
+          messages (Union[List[Dict], QfMessages]):
+            A list of messages in the conversation including the one from system. Each
+            message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
-            message, respectively. Alternatively, you can provide a QfMessages object.
-            Default to None.
-          body (Optional[Dict]):
-            A dict contains all arguments in body for convenience.
-            Take either `messages` or `body` as your arguments.
-            Default to None.
+            message, respectively. Alternatively, you can provide a QfMessages object
+            for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -868,24 +862,10 @@ class ChatCompletion(BaseResource):
         ```
 
         """
-        if not messages and not body:
-            err_msg = (
-                "Make sure you set either `messages_list` or `body_list` as your"
-                " argument."
-            )
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
         if isinstance(messages, QfMessages):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-
-        if body:
-            kwargs.update(body)
-
-        backup_messages: List[Dict] = copy.deepcopy(kwargs["messages"])
-
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -935,7 +915,7 @@ class ChatCompletion(BaseResource):
         cur_content: str = resp["result"]
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
-        msgs = copy.deepcopy(backup_messages)
+        msgs = copy.deepcopy(messages)
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
@@ -1036,8 +1016,7 @@ class ChatCompletion(BaseResource):
 
     async def ado(
         self,
-        messages: Optional[Union[List[Dict], QfMessages]] = None,
-        body: Optional[Dict] = None,
+        messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         stream: bool = False,
@@ -1054,17 +1033,12 @@ class ChatCompletion(BaseResource):
         Async perform chat-based language generation using user-supplied messages.
 
         Parameters:
-          messages (Optional[Union[List[Dict], QfMessages]]):
-            A list of messages in the conversation including the one from system.
-            Take either `messages` or `body` as your arguments.
-            Each message should be a dictionary containing 'role' and 'content' keys,
+          messages (Union[List[Dict], QfMessages]):
+            A list of messages in the conversation including the one from system. Each
+            message should be a dictionary containing 'role' and 'content' keys,
             representing the role (either 'user', or 'assistant') and content of the
-            message, respectively. Alternatively, you can provide a QfMessages object.
-            Default to None.
-          body (Optional[Dict]):
-            A dict contains all arguments in body for convenience.
-            Take either `messages` or `body` as your arguments.
-            Default to None.
+            message, respectively. Alternatively, you can provide a QfMessages object
+            for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
             default model is used(ERNIE-Bot-turbo).
@@ -1103,24 +1077,10 @@ class ChatCompletion(BaseResource):
         ```
 
         """
-        if not messages and not body:
-            err_msg = (
-                "Make sure you set either `messages_list` or `body_list` as your"
-                " argument."
-            )
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
         if isinstance(messages, QfMessages):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-
-        if body:
-            kwargs.update(body)
-
-        backup_messages: List[Dict] = copy.deepcopy(kwargs["messages"])
-
         if (
             not get_config().DISABLE_EB_SDK
             and get_config().EB_SDK_INSTALLED
@@ -1170,7 +1130,7 @@ class ChatCompletion(BaseResource):
         entire_content: str = cur_content
         is_truncated: bool = resp["is_truncated"]
 
-        msgs = copy.deepcopy(backup_messages)
+        msgs = copy.deepcopy(messages)
         while is_truncated:
             if isinstance(msgs, QfMessages):
                 msgs.append(cur_content, QfRole.Assistant)
@@ -1282,13 +1242,18 @@ class ChatCompletion(BaseResource):
         ```
 
         """
+        task_list: List[Callable]
         if messages_list:
             task_list = [
                 partial(self.do, messages=messages, **kwargs)
                 for messages in messages_list
             ]
         elif body_list:
-            task_list = [partial(self.do, body=body, **kwargs) for body in body_list]
+            task_list = []
+            for body in body_list:
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(self.do, **new_kwargs))
         else:
             err_msg = (
                 "Make sure you set either `messages_list` or `body_list` as your"
@@ -1345,16 +1310,19 @@ class ChatCompletion(BaseResource):
 
             results[index] = result_list
 
+        task_list: List[Callable]
+
         if messages_list:
             task_list = [
                 partial(worker, self.do, index, messages=messages, **kwargs)
                 for index, messages in enumerate(messages_list)
             ]
         elif body_list:
-            task_list = [
-                partial(worker, self.do, index, body=body, **kwargs)
-                for index, body in enumerate(body_list)
-            ]
+            task_list = []
+            for index, body in enumerate(body_list):
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(worker, self.do, index, **new_kwargs))
         else:
             err_msg = (
                 "Make sure you set either `messages_list` or `body_list` as your"
@@ -1413,13 +1381,19 @@ class ChatCompletion(BaseResource):
         ```
 
         """
+        task_list: List[Callable]
+
         if messages_list:
             task_list = [
                 partial(self.ado, messages=messages, **kwargs)
                 for messages in messages_list
             ]
         elif body_list:
-            task_list = [partial(self.ado, body=body, **kwargs) for body in body_list]
+            task_list = []
+            for body in body_list:
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(self.ado, **new_kwargs))
         else:
             err_msg = (
                 "Make sure you set either `messages_list` or `body_list` as your"
@@ -1463,13 +1437,19 @@ class ChatCompletion(BaseResource):
             List[Union[QfResponse, List[QfResponse], Exception]]:
                 A list content QfResponse or List[QfResponse] (in stream mode)
         """
+        task_list: List[Callable]
+
         if messages_list:
             task_list = [
                 partial(self.ado, messages=messages, **kwargs)
                 for messages in messages_list
             ]
         elif body_list:
-            task_list = [partial(self.ado, body=body, **kwargs) for body in body_list]
+            task_list = []
+            for index, body in enumerate(body_list):
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(self.ado, **new_kwargs))
         else:
             err_msg = (
                 "Make sure you set either `messages_list` or `body_list` as your"

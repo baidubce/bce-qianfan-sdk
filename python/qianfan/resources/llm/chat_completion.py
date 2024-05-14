@@ -1473,6 +1473,8 @@ class ChatCompletion(BaseResource):
 
         if model_info.max_input_chars is not None:
             chars_limit = model_info.max_input_chars
+            if "system" in body:
+                chars_limit -= len(body["system"])
             msg_list = body["messages"]
             last_msg = msg_list[-1]
             cur_length = len(last_msg["content"]) if last_msg.get("content") else 0
@@ -1494,6 +1496,8 @@ class ChatCompletion(BaseResource):
 
         if model_info.max_input_tokens is not None:
             token_limit = model_info.max_input_tokens
+            if "system" in body:
+                token_limit -= Tokenizer.count_tokens(body["system"], mode="local")
             msg_list = body["messages"]
             last_msg = msg_list[-1]
             cur_length = (

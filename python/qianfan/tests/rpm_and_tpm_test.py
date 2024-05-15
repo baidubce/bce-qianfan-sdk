@@ -26,7 +26,7 @@ def test_charge():
 
     model = "ernie-4.0-8k"
     count = 10
-    resp = Charge.charge(model, count)
+    resp = Charge.charge_tpm_credit(model, count)
     assert resp["_request"]["model"] == model
     assert resp["_request"]["purchaseCount"] == count
     assert resp["_request"]["billing"]["paymentTiming"] == "Postpaid"
@@ -40,7 +40,7 @@ def test_info():
     model = "ernie-4.0-8k"
     wrong_payment_type = "wrong_payment_type"
 
-    resp = Charge.info(model, wrong_payment_type)
+    resp = Charge.tpm_credit_info(model, wrong_payment_type)
     assert resp["_request"]["model"] == model
     assert "paymentTiming" not in resp["_request"]
 
@@ -53,6 +53,6 @@ def test_stop():
     model = "ernie-4.0-8k"
     instance_id = "instance_id"
 
-    resp = Charge.stop(model, instance_id)
+    resp = Charge.stop_tpm_credit_charging(model, instance_id)
     assert resp["_request"]["model"] == model
     assert resp["_request"]["instanceId"] == instance_id

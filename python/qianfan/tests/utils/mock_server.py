@@ -3978,7 +3978,7 @@ def prompt_evaluate_summary():
     )
 
 
-@app.route(Consts.ChargeAPI, methods=["POST"])
+@app.route(Consts.TpmCreditAPI, methods=["POST"])
 @iam_auth_checker
 def rpm_related_api():
     """

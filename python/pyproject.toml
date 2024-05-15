@@ -59,6 +59,8 @@ fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
 filelock = { version = "*", optional = true}
 
+guidance = { version = "*", optional = true }
+
 
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
@@ -86,10 +88,11 @@ ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 
 [tool.poetry.extras]
 dataset_base = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock"]
-langchain = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain"]
 local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
+langchain = ["langchain"]
 openai = ["fastapi", "uvicorn"]
-all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+guidance = ["guidance"]
+all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn", "guidance"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]
@@ -100,7 +103,7 @@ select = [
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
-exclude = ["qianfan/__init__.py"]
+exclude = ["qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = ["PLW1514"]
@@ -111,7 +114,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py"]
+exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py"]
 
 
 [build-system]

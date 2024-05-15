@@ -260,3 +260,17 @@ export function getCurrentEnvironment() {
     }
     return 'unknown';
 }
+
+/**
+ * 将 Headers 对象解析为键值对形式的对象
+ *
+ * @param headers Headers 对象
+ * @returns 返回键值对形式的对象
+ */
+export function parseHeaders(headers): {[key: string]: string} {
+    const headerObj: {[key: string]: string} = {};
+    headers.forEach((value, key) => {
+        headerObj[key] = value;
+    });
+    return headerObj;
+}

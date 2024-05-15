@@ -16,6 +16,8 @@
 
 package com.baidubce.qianfan.model;
 
+import java.util.Map;
+
 public abstract class BaseResponse<T extends BaseResponse<T>> {
     /**
      * 请求的Id
@@ -31,6 +33,11 @@ public abstract class BaseResponse<T extends BaseResponse<T>> {
      * 时间戳
      */
     private Long created;
+
+    /**
+     * HTTP Response Headers
+     */
+    private Map<String, String> headers;
 
     public String getId() {
         return id;
@@ -56,6 +63,15 @@ public abstract class BaseResponse<T extends BaseResponse<T>> {
 
     public BaseResponse<T> setCreated(Long created) {
         this.created = created;
+        return this;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public BaseResponse<T> setHeaders(Map<String, String> headers) {
+        this.headers = headers;
         return this;
     }
 }

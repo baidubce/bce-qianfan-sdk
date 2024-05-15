@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {EventEmitter} from 'events';
+import {parseHeaders} from '../utils';
 
 type Bytes = string | ArrayBuffer | Uint8Array | Buffer | null | undefined;
 const EVENT_TYPE = [null, 'pluginMeta', 'plugin', 'chat'];
@@ -178,25 +178,28 @@ class LineDecoder {
     }
 }
 
-export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
+export class Stream<Item> implements AsyncIterable<Item> {
+    controller: AbortController;
 
     constructor(
         private iterator: () => AsyncIterator<Item>,
-        private controller: AbortController
+        controller: AbortController
     ) {
-        super();
+        this.controller = controller;
     }
 
     static fromSSEResponse<Item>(response: any, controller: AbortController) {
         let consumed = false;
         const decoder = new SSEDecoder();
+        const headers = parseHeaders(response.headers);
+        console.log(response.headers);
+        console.log(headers);
         async function* iterMessages(): AsyncGenerator<ServerSentEvent, void, unknown> {
 
             if (!response.body) {
                 controller.abort();
                 throw new Error('Attempted to iterate over a response with no body');
             }
-
             const lineDecoder = new LineDecoder();
             let buffer = new Uint8Array(); // 初始化缓存的 Buffer
             const iter = readableStreamAsyncIterable<Bytes>(response.body);
@@ -249,8 +252,10 @@ export class Stream<Item> extends EventEmitter implements AsyncIterable<Item> {
                     if (EVENT_TYPE.includes(sse.event)) {
                         let data;
                         try {
-                            data = JSON.parse(sse.data);
-                            this.emit('data', data);
+                            data = {
+                                headers,
+                                ...(JSON.parse(sse.data) ?? {}),
+                            };
                         }
                         catch (e) {
                             console.error('Could not parse message into JSON:', sse.data);

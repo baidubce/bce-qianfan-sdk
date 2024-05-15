@@ -93,16 +93,32 @@ class DynamicModelEndpoint {
      */
     async updateDynamicModelEndpoint(type: string) {
         const url = `${this.qianfanConsoleApiBaseUrl}${SERVER_LIST_API}`;
-        const fetchOption = await this.client.getSignature({
-            httpMethod: 'POST',
-            path: url,
+        let fetchOption = {};
+        // 设置默认的请求选项
+        const defaultOptions = {
             body: JSON.stringify({
                 apiTypefilter: [type],
             }),
             headers: {
                 ...DEFAULT_HEADERS,
             },
-        });
+        };
+        // 如果有node环境，则获取签名
+        if (this.client !== null) {
+            fetchOption = await this.client.getSignature({
+                ...defaultOptions,
+                httpMethod: 'POST',
+                path: url,
+            });
+        }
+        // 浏览器环境下走proxy代理，不需要签名
+        else {
+            fetchOption = {
+                ...defaultOptions,
+                method: 'POST',
+                url,
+            };
+        }
 
         try {
             const res = await this.fetchInstance.makeRequest(url, fetchOption);

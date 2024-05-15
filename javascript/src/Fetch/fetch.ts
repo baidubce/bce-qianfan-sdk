@@ -1,11 +1,12 @@
-import fetch, {RequestInit, Response} from 'node-fetch';
+import nodeFetch, {RequestInit, Response} from 'node-fetch';
 import {Readable} from 'stream';
 import {RateLimiter, TokenLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
-import {isOpenTpm} from '../utils';
+import {isOpenTpm, getCurrentEnvironment} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
 
+const fetchInstance = getCurrentEnvironment() === 'node' ? nodeFetch : fetch;
 export interface FetchConfig {
     retries: number;
     timeout: number;
@@ -129,7 +130,7 @@ export class Fetch {
         const timeout = setTimeout(() => controller.abort(), ms);
 
         return this.rateLimiter.schedule(() =>
-            fetch(url, {signal: controller.signal as any, ...options})
+            fetchInstance(url, {signal: controller.signal as any, ...(options as any)})
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error, status = ${response.status}`);

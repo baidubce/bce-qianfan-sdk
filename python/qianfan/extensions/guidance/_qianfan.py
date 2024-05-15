@@ -6,9 +6,11 @@ try:
     from guidance.models._model import Chat
     from guidance.models._grammarless import Grammarless, GrammarlessEngine
 except ImportError:
-    log_warn("Qianfan SDK Guidance extension was imported without guidance installed, "
-             "you need to install guidance via `pip install guidance` "
-             "to use related function")
+    log_warn(
+        "Qianfan SDK Guidance extension was imported without guidance installed, "
+        "you need to install guidance via `pip install guidance` "
+        "to use related function"
+    )
 
 
 class ClassUnavailableException(Exception):
@@ -29,7 +31,10 @@ class QianfanAI(Grammarless):
 
         # if we are called directly (as opposed to through super()) then we convert ourselves to a more specific subclass if possible
         if self.__class__ is QianfanAI:
-            raise ClassUnavailableException("Cannot use `QianfanAI` directly, please use `QianfanAIChat` or `QianfanAICompletion` instead")
+            raise ClassUnavailableException(
+                "Cannot use `QianfanAI` directly, please use `QianfanAIChat` or"
+                " `QianfanAICompletion` instead"
+            )
 
         engine_map = {
             QianfanAIChat: QianfanAIChatEngine,
@@ -49,7 +54,6 @@ class QianfanAI(Grammarless):
 
 
 class QianfanAIEngine(GrammarlessEngine):
-
     def __init__(
         self,
         model,
@@ -71,9 +75,11 @@ class QianfanAIEngine(GrammarlessEngine):
         ), "We don't support compute_log_probs=True yet for QianfanAIEngine!"
         self.model_name = model
 
-        self.model_obj = ChatCompletion(model=model, **kwargs) \
-            if self.__class__ is QianfanAIChatEngine \
+        self.model_obj = (
+            ChatCompletion(model=model, **kwargs)
+            if self.__class__ is QianfanAIChatEngine
             else Completion(model=model, **kwargs)
+        )
 
         self.extra_arguments = copy.deepcopy(kwargs)
         self.extra_arguments.pop("endpoint") if "endpoint" in kwargs else None
@@ -87,7 +93,6 @@ class QianfanAIChat(QianfanAI, Chat):
 
 class QianfanAIChatEngine(QianfanAIEngine):
     def _generator(self, prompt, temperature):
-
         # find the system text
         pos = 0
 
@@ -108,7 +113,6 @@ class QianfanAIChatEngine(QianfanAIEngine):
         messages = []
         valid_end = False
         while True:
-
             # find the user text
             if prompt[pos:].startswith(user_start):
                 pos += len(user_start)
@@ -118,7 +122,7 @@ class QianfanAIChatEngine(QianfanAIEngine):
                 messages.append(
                     dict(
                         role="user",
-                        content=prompt[pos: pos + end_pos].decode("utf8"),
+                        content=prompt[pos : pos + end_pos].decode("utf8"),
                     )
                 )
                 pos += end_pos + len(role_end)
@@ -131,7 +135,7 @@ class QianfanAIChatEngine(QianfanAIEngine):
                 messages.append(
                     dict(
                         role="assistant",
-                        content=prompt[pos: pos + end_pos].decode("utf8"),
+                        content=prompt[pos : pos + end_pos].decode("utf8"),
                     )
                 )
                 pos += end_pos + len(role_end)
@@ -146,9 +150,10 @@ class QianfanAIChatEngine(QianfanAIEngine):
         self._data = prompt[:pos]
 
         assert len(messages) > 0, "Bad chat format! No chat blocks were defined."
-        assert (
-                messages[-1]["role"] == "user"
-        ), "Bad chat format! There must be a user() role before the last assistant() role."
+        assert messages[-1]["role"] == "user", (
+            "Bad chat format! There must be a user() role before the last assistant()"
+            " role."
+        )
         assert valid_end, "Bad chat format! You must generate inside assistant() roles."
 
         if temperature == 0.0:

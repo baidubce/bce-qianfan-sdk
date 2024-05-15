@@ -4,10 +4,10 @@ Guidance 是开源社区中专注于，对大模型的输出进行约束，使�
 
 # 如何安装
 
-用户需要指定安装千帆 Python SDK 的拓展依赖，以兼容 Guidance：
+用户需要安装千帆 Python SDK ，以及 Guidance
 
 ```shell
-pip install 'qianfan[guidance]'
+pip install qianfan guidance
 ```
 
 # 如何使用

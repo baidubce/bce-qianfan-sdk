@@ -1,6 +1,6 @@
 from qianfan.extensions.guidance._qianfan import (
-    QianfanAICompletion,
     QianfanAIChat,
+    QianfanAICompletion,
 )
 
 __all__ = [

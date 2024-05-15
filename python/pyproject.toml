@@ -59,9 +59,6 @@ fastapi = { version = "*", optional = true }
 uvicorn = { version = "*", optional = true }
 filelock = { version = "*", optional = true}
 
-guidance = { version = "*", optional = true }
-
-
 [tool.poetry.scripts]
 qianfan = "qianfan.common.client.main:main"
 
@@ -91,8 +88,7 @@ dataset_base = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ij
 local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
 langchain = ["langchain"]
 openai = ["fastapi", "uvicorn"]
-guidance = ["guidance"]
-all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn", "guidance"]
+all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

@@ -59,6 +59,7 @@ class Image2Text(BaseResource):
                     "cfg_scale",
                     "style",
                 },
+                input_price_per_1k_tokens=0.002,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",

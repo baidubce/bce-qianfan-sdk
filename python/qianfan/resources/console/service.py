@@ -16,6 +16,7 @@
 Service API
 """
 
+import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from qianfan.consts import Consts
@@ -223,7 +224,8 @@ class Service(object):
             name: str,
             url_suffix: str,
             resource_config: Dict,
-            description: Optional[str],
+            billing: Dict,
+            description: Optional[str] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -240,6 +242,8 @@ class Service(object):
                 service url suffix.
             resource_config: Dict,
                 resource config, include 'type', 'qps'
+            billing: Dict,
+                billing
             description: Optional[str],
                 service description.
 
@@ -266,6 +270,7 @@ class Service(object):
                     "urlSuffix": url_suffix,
                     "description": description,
                     "resourceConfig": resource_config,
+                    "billing": billing,
                 }.items()
                 if v is not None
             }
@@ -299,4 +304,64 @@ class Service(object):
             req.json_body = {
                 "serviceId": service_id,
             }
+            return req
+
+        @classmethod
+        @console_api_request
+        def service_metric(
+            cls,
+            start_time: Union[str, datetime.datetime],
+            end_time: Union[str, datetime.datetime],
+            service_id: Optional[List[str]] = None,
+            app_id: Optional[str] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            get service metrics .
+
+            Parameters:
+            start_time: Union[str, datetime.datetime],
+                start time. e.g. 2016-04-06T08:23:49Z
+            end_time: Union[str, datetime.datetime],
+                end time. e.g. 2016-04-07T08:23:49Z
+            service_id: Optional[List[str]],
+                service id.
+            app_id: Optional[str],
+                app id.
+
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceMetricAction),
+            )
+            if service_id is not None:
+                req.json_body = {
+                    "serviceId": service_id,
+                }
+            if app_id is not None:
+                req.json_body = {
+                    "appId": app_id,
+                }
+
+            if start_time is not None:
+                if isinstance(start_time, datetime.datetime):
+                    req.json_body["startTime"] = start_time.strftime(
+                        Consts.DateTimeFormat
+                    )
+                else:
+                    req.json_body["startTime"] = start_time
+            if end_time is not None:
+                if isinstance(end_time, datetime.datetime):
+                    req.json_body["endTime"] = end_time.strftime(Consts.DateTimeFormat)
+                else:
+                    req.json_body["endTime"] = end_time
             return req

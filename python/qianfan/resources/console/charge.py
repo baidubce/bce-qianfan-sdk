@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-RPM & TPM API
+Charging API, including RPM & TPM, service deployment.
 """
 from typing import Any, Dict, Optional
 

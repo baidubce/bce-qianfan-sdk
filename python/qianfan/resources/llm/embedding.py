@@ -51,25 +51,21 @@ class Embedding(BaseResource):
                 endpoint="/embeddings/embedding-v1",
                 required_keys={"input"},
                 optional_keys={"user_id"},
-                input_price_per_1k_tokens=0.002,
             ),
             "bge-large-en": QfLLMInfo(
                 endpoint="/embeddings/bge_large_en",
                 required_keys={"input"},
                 optional_keys={"user_id"},
-                input_price_per_1k_tokens=0.002,
             ),
             "bge-large-zh": QfLLMInfo(
                 endpoint="/embeddings/bge_large_zh",
                 required_keys={"input"},
                 optional_keys={"user_id"},
-                input_price_per_1k_tokens=0.002,
             ),
             "tao-8k": QfLLMInfo(
                 endpoint="/embeddings/tao_8k",
                 required_keys={"input"},
                 optional_keys={"user_id"},
-                input_price_per_1k_tokens=0.002,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="", required_keys={"input"}, optional_keys=set()

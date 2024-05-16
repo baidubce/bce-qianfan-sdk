@@ -91,7 +91,6 @@ class QfRequest:
     query: ParamsType = default_field({})
     headers: HeadersType = default_field({})
     json_body: JsonBody = default_field({})
-    files: JsonBody = default_field({})
     retry_config: RetryConfig = default_field(RetryConfig())
 
     def requests_args(self) -> Dict[str, Any]:
@@ -104,7 +103,6 @@ class QfRequest:
             "params": self.query,
             "headers": self.headers,
             "json": self.json_body,
-            "files": self.files,
         }
 
     @classmethod

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qianfan.resources.console.charge import Charge
 from qianfan.resources.console.data import Data
 from qianfan.resources.console.finetune import FineTune
 from qianfan.resources.console.model import Model
@@ -29,7 +28,6 @@ from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import QfMessages, QfResponse, QfRole
 
 __all__ = [
-    "Charge",
     "Data",
     "Model",
     "Service",

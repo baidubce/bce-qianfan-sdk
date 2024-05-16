@@ -13,7 +13,6 @@
 # limitations under the License.
 import pickle
 import time
-from datetime import datetime
 from typing import Any, Dict, Iterator, Optional, Union
 
 from qianfan import resources as api
@@ -346,7 +345,7 @@ class Model(
 
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):
-    id: Optional[str]
+    id: Optional[int]
     """remote service id"""
     model: Optional[Model]
     """service model instance"""
@@ -361,7 +360,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
 
     def __init__(
         self,
-        id: Optional[str] = None,
+        id: Optional[int] = None,
         endpoint: Optional[str] = None,
         model: Optional[Union[Model, str]] = None,
         deploy_config: Optional[DeployConfig] = None,
@@ -372,7 +371,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         get a custom model service.
 
         Parameters:
-            id (Optional[Union[int, str]], optional):
+            id (Optional[int], optional):
                 qianfan service id. Defaults to None.
             endpoint (Optional[str], optional):
                 qianfan service endpoint. Defaults to None.
@@ -415,15 +414,13 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         """
         if self.id is None:
             return ""
-        elif isinstance(self.id, str):
-            resp = api.Service.V2.service_detail(
-                service_id=self.id,
+        else:
+            resp = api.Service.get(
+                id=self.id,
                 retry_count=get_config().TRAINER_STATUS_POLLING_RETRY_TIMES,
                 backoff_factor=get_config().TRAINER_STATUS_POLLING_BACKOFF_FACTOR,
             )
-            return resp["result"]["runStatus"]
-        else:
-            raise InternalError("id type not supported")
+        return resp["result"]["serviceStatus"]
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -461,10 +458,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
                 "service type must be specified when endpoint passed in"
             )
         svc_status = self.status
-        if svc_status not in [
-            console_const.ServiceStatus.Done,
-            console_const.ServiceStatus.Serving,
-        ]:
+        if svc_status != console_const.ServiceStatus.Done:
             log_warn("service status unknown, service could be unavailable.")
         if self.service_type == ServiceType.Chat:
             return ChatCompletion(
@@ -489,24 +483,6 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         else:
             raise InvalidArgumentError(f"unsupported service type {self.service_type}")
 
-    def metrics(
-        self, start_time: datetime, end_time: datetime, **kwargs: Any
-    ) -> Dict[str, Any]:
-        """
-        return the service metrics in the specified time range
-
-        Args:
-            start_time (datetime): start datetime
-            end_time (datetime): end datetime
-
-        Returns:
-            Dict[str, Any]: _description_
-        """
-        assert self.id is not None
-        return api.Service.V2.service_metric(
-            start_time=start_time, end_time=end_time, service_id=[self.id]
-        )["result"]["serviceList"][0]
-
     def deploy(self, **kwargs: Any) -> "Service":
         if self.model is None:
             raise InvalidArgumentError("model not found")
@@ -519,29 +495,21 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         model.auto_complete_info()
         assert model.old_id is not None
         assert model.old_version_id is not None
-        res_config: Dict[str, Any] = {
-            "type": self.deploy_config.resource_type,
-        }
-        if self.deploy_config.qps is not None:
-            res_config["qps"] = self.deploy_config.qps
-        svc_publish_resp = api.Service.V2.create_service(
-            model_id=model.id,
-            model_version_id=model.version_id,
-            name=self.deploy_config.name or f"svc{model.id}_{model.version_id}",
-            url_suffix=self.deploy_config.endpoint_suffix
-            or f"svc{model.id}_{model.version_id}",
-            resource_config=res_config,
-            billing={
-                "paymentTiming": "Prepaid",
-                "reservation": {
-                    "reservationTimeUnit": (
-                        "Month" if self.deploy_config.months else "Hour"
-                    ),
-                    "reservationLength": (
-                        self.deploy_config.months or self.deploy_config.hours
-                    ),
-                },
-            },
+        svc_publish_resp = api.Service.create(
+            model_id=model.old_id,
+            model_version_id=model.old_version_id,
+            name=(
+                self.deploy_config.name
+                if self.deploy_config.name != ""
+                else f"svc{model.id}_{model.version_id}"
+            ),
+            uri=(
+                self.deploy_config.endpoint_prefix
+                if self.deploy_config.endpoint_prefix != ""
+                else f"ep{model.id}_{model.version_id}"
+            ),
+            replicas=self.deploy_config.replicas,
+            pool_type=self.deploy_config.pool_type,
             **kwargs,
         )
 
@@ -551,28 +519,22 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             raise InternalError("service id not found")
         # 资源付费完成后，serviceStatus会变成Deploying，查看模型服务状态
         while True:
-            resp = api.Service.V2.service_detail(service_id=self.id, **kwargs)
-            svc_status = resp["result"]["runStatus"]
+            resp = api.Service.get(id=self.id, **kwargs)
+            svc_status = resp["result"]["serviceStatus"]
 
             if svc_status in [
                 console_const.ServiceStatus.Deploying.value,
                 console_const.ServiceStatus.New.value,
             ]:
-                # purchase_resp = api.Charge.purchase_service_resource(
-                #     service_id = self.id,
-                #     billing={},
-                #     replicas=DeployConfig.replicas,
-                # )
-                # while True:
-                #     inst_info_resp = api.Charge.get_service_resource_instance_info(
-                #         service_id = self.id,
-                #         instance_id = purchase_resp["result"]["instanceId"]
-                #     )
-                log_debug(f"service {self.id} status: {svc_status}")
-            elif svc_status == console_const.ServiceStatus.Serving:
-                sft_model_endpoint = resp["result"]["url"].split("/")[-1]
                 log_info(
-                    f"service {self.id} has been deployed in `{sft_model_endpoint}` "
+                    "please check web console"
+                    " `https://console.bce.baidu.com/qianfan/ais/console/onlineService`,for"
+                    " service  deployment payment."
+                )
+            elif svc_status == console_const.ServiceStatus.Done:
+                sft_model_endpoint = resp["result"]["uri"]
+                log_info(
+                    f"service {self.id} has been deployed in `/{sft_model_endpoint}` "
                 )
                 break
             else:

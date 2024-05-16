@@ -65,7 +65,6 @@ class Completion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
-                input_price_per_1k_tokens=0.004,
             ),
             "CodeLlama-7b-Instruct": QfLLMInfo(
                 endpoint="/completions/codellama_7b_instruct",
@@ -81,7 +80,6 @@ class Completion(BaseResource):
                     "tools",
                     "tool_choice",
                 },
-                input_price_per_1k_tokens=0.004,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",

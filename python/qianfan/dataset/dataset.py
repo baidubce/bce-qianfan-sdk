@@ -1430,7 +1430,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
-        does_show_latency: bool = True,
+        does_show_latency: bool = False,
         output_prettified: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
@@ -1453,9 +1453,9 @@ class Dataset(Table):
                 whether result dataset contain latency info column when
                 using Service as evaluated object.
                 Depending on different request mode (stream and non-stream),
-                it will contains request_complete_latency or
+                it will contain request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
-                Default to True
+                Default to False
             output_prettified (bool):
                 whether the result dataset should be prettified before return.
                 Note: after set this arguments True, the function will
@@ -1491,7 +1491,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
-        does_show_latency: bool = True,
+        does_show_latency: bool = False,
         output_prettified: bool = True,
         **kwargs: Any,
     ) -> "Dataset":
@@ -1514,7 +1514,7 @@ class Dataset(Table):
                 whether result dataset contain latency info column when
                 using Service as evaluated object.
                 Depending on different request mode (stream and non-stream),
-                it will contains request_complete_latency or
+                it will contain request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
                 Default to True
             output_prettified (bool):
@@ -1721,7 +1721,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
-        does_show_latency: bool = True,
+        does_show_latency: bool = False,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
@@ -1740,9 +1740,9 @@ class Dataset(Table):
                 whether result dataset contain latency info column when
                 using Service as evaluated object.
                 Depending on different request mode (stream and non-stream),
-                it will contains request_complete_latency or
+                it will contain request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
-                Default to True
+                Default to False
             system_prompt (str):
                 Optional system text for input using, default to ""
             **kwargs (Any):
@@ -1773,7 +1773,11 @@ class Dataset(Table):
             input_str_list = self._get_input_str_list(**kwargs)
             output_list, request_latency_list, first_token_latency_list = (
                 _batch_do_on_service(
-                    service, input_str_list, system=system_prompt, **kwargs
+                    service,
+                    input_str_list,
+                    does_show_latency,
+                    system=system_prompt,
+                    **kwargs,
                 )
             )
 
@@ -1788,7 +1792,11 @@ class Dataset(Table):
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
             output_list, request_latency_list, first_token_latency_list = (
                 _batch_do_on_service(
-                    service, input_chat_list, system=system_prompt, **kwargs
+                    service,
+                    input_chat_list,
+                    does_show_latency,
+                    system=system_prompt,
+                    **kwargs,
                 )
             )
 
@@ -1806,7 +1814,7 @@ class Dataset(Table):
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
-        does_show_latency: bool = True,
+        does_show_latency: bool = False,
         system_prompt: str = "",
         **kwargs: Any,
     ) -> "Dataset":
@@ -1825,9 +1833,9 @@ class Dataset(Table):
                 whether result dataset contain latency info column when
                 using Service as evaluated object.
                 Depending on different request mode (stream and non-stream),
-                it will contains request_complete_latency or
+                it will contain request_complete_latency or
                 (first_token_latency, request_complete_latency) combo.
-                Default to True
+                Default to False
             system_prompt (str):
                 Optional system text for input using, default to ""
             **kwargs (Any):
@@ -1858,7 +1866,11 @@ class Dataset(Table):
             input_str_list = self._get_input_str_list(**kwargs)
             output_list, request_latency_list, first_token_latency_list = (
                 await _async_batch_do_on_service(
-                    service, input_str_list, system=system_prompt, **kwargs
+                    service,
+                    input_str_list,
+                    does_show_latency,
+                    system=system_prompt,
+                    **kwargs,
                 )
             )
 
@@ -1873,7 +1885,11 @@ class Dataset(Table):
             input_chat_list, reference_list = self._get_input_chat_list(**kwargs)
             output_list, request_latency_list, first_token_latency_list = (
                 await _async_batch_do_on_service(
-                    service, input_chat_list, system=system_prompt, **kwargs
+                    service,
+                    input_chat_list,
+                    does_show_latency,
+                    system=system_prompt,
+                    **kwargs,
                 )
             )
 

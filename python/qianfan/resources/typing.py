@@ -266,10 +266,6 @@ class QfMessages:
         Init QfMessages
         """
         self._msg_list: List[QfMessages._Message] = []
-        self._hyper_parameters: Dict[str, Any] = {}
-
-    def set_hyper_parameters(self, hyper_parameters: Dict[str, Any]) -> None:
-        self._hyper_parameters = hyper_parameters
 
     def append(
         self, message: Union[str, QfResponse], role: Optional[Union[str, QfRole]] = None

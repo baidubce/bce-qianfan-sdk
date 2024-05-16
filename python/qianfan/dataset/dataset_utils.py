@@ -148,6 +148,7 @@ def _create_a_dataset_etl_task(
     log_info("new dataset group and dataset created, start creating etl task")
 
     etl_id: str = Data.create_dataset_etl_task(
+        f"etl_task_{generate_letter_num_random_id()}",
         source_dataset_id=origin_data_source.id,
         destination_dataset_id=new_data_source.id,
         operations=operator_dict,

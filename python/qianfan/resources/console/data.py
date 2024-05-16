@@ -417,6 +417,7 @@ class Data:
     @console_api_request
     def create_dataset_etl_task(
         cls,
+        etl_task_name: str,
         source_dataset_id: str,
         destination_dataset_id: str,
         operations: Dict[str, List[Dict[str, Any]]],
@@ -426,6 +427,8 @@ class Data:
         create a post-pretrain dataset etl task
 
         Parameters:
+            etl_task_name (str):
+                etl task name
             source_dataset_id (str):
                 dataset id need to be processed.
             destination_dataset_id (str):
@@ -444,6 +447,7 @@ class Data:
         """
         req = QfRequest(method="POST", url=Consts.DatasetCreateETLTaskAPI)
         req.json_body = {
+            "etlTaskName": etl_task_name,
             "sourceDatasetId": source_dataset_id,
             "destDatasetId": destination_dataset_id,
             "entityType": 2,
@@ -547,6 +551,7 @@ class Data:
         source_dataset_id: str,
         destination_dataset_id: str,
         service_name: str,
+        dev_api_id: str,
         service_url: str,
         app_id: int,
         num_seed_fewshot: int,
@@ -566,6 +571,8 @@ class Data:
                 where dataset should be stored after augmentation
             service_name (str):
                 which LLM should be used for augmenting task
+            dev_api_id (str):
+                fixed field with value depends on service_name.
             service_url (str):
                 service url related to service_name
             app_id (int):
@@ -600,6 +607,7 @@ class Data:
             "sourceDatasetId": source_dataset_id,
             "destDatasetId": destination_dataset_id,
             "serviceName": service_name,
+            "devApiId": dev_api_id,
             "serviceUrl": service_url,
             "appId": app_id,
             "numSeedFewshot": num_seed_fewshot,

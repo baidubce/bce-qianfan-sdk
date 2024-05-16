@@ -421,6 +421,8 @@ while True:
 
 上述模型均提供了 `batch_do` 和异步的 `abatch_do` 方法，方便用户批量进行推理，并通过 `worker_num` 来控制并发量。
 
+`worker_num` 代表同一时刻下，可同时存在的最大链接数。若不手动设置，这个最大链接数会被设置为批量推理的任务数，至多 1000 个。手动设置的 `worker_num` 不受这一限制。
+
 ```python
 prompt_list = ["你好", "很高兴认识你"]
 # 所有模型传入的均为一个 List，但内部元素类型与模型类型相关
@@ -460,6 +462,30 @@ for prompt, result in zip(prompt_list, results):
 
 # 异步调用
 results = await Completion().abatch_do(prompt_list, worker_num=10)
+# 返回值为一个 List，与输入列表中的元素一一对应
+# 正常情况下与 `ado` 返回类型一致，但如果发生异常则会是一个 Exception 对象
+for prompt, result in zip(prompt_list, results):
+    if not isinstance(result, Exception):
+        print(prompt, result)
+```
+
+我们还提供了 `batch_do_in_instant_way` 和 `abatch_do_in_instant_way` 两个批量推理方法。
+
+它们与 `batch_do` 和 `abatch_do` 的差别在于，前者会阻塞当前函数的执行，并在所有任务结束之后，直接将批量请求的结果返回给用户，用户不需要关注如何读取异步返回的结果。
+
+并且这两个函数可以提供更加准确的性能统计信息，如首 Token 延迟等
+
+```python
+prompt_list = ["你好", "很高兴认识你"]
+
+# 同步调用
+task = Completion().batch_do_in_instant_way(prompt_list, worker_num=10)
+
+# 此处会打印出来由 `QfResponse` 所组成的 List
+print(task)
+
+# 异步调用
+results = await Completion().abatch_do_in_instant_way(prompt_list, worker_num=10)
 # 返回值为一个 List，与输入列表中的元素一一对应
 # 正常情况下与 `ado` 返回类型一致，但如果发生异常则会是一个 Exception 对象
 for prompt, result in zip(prompt_list, results):

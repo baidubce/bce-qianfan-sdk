@@ -131,6 +131,8 @@ class ServiceStatus(str, Enum):
     """服务部署失败"""
     Stopped = "Stopped"
     """服务下线"""
+    Serving = "Serving"
+    """"服务已发布"""
 
 
 class TrainStatus(str, Enum):
@@ -330,3 +332,23 @@ class ModelTypeUser(int, Enum):
     """向量表示模型"""
     Image2Text: int = 5
     """图像理解模型"""
+
+
+class CustomModelSetModelType(str, Enum):
+    Text2Text: str = "Text2Text"
+    """文本生成"""
+    Text2Image: str = "Text2Image"
+    """图像生成"""
+    TextRepresentation: str = "TextRepresentation"
+    """文本表示"""
+    ImageUnderstanding: str = "ImageUnderstanding"
+    """图像理解"""
+    Industry: str = "Industry"
+    """行业大模型"""
+
+
+class CreateCustomModelSourceType(str, Enum):
+    Train: str = "Train"
+    """训练模型"""
+    Import: str = "Import"
+    """外部导入模型"""

@@ -1892,6 +1892,83 @@ def evaluable_model_list():
     )
 
 
+@app.route(Consts.ServiceV2BaseRouteAPI, methods=["POST"])
+@iam_auth_checker
+def service_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.ServiceCreateAction: service_v2_create_service,
+        Consts.ServiceDetailAction: service_v2_get_service,
+        Consts.ServiceMetricAction: service_v2_get_service_metrics,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+def service_v2_create_service(body):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "serviceId": "svco-ktth9mkb5cqn",
+                "instanceId": "44961088f51d4b91b4c539e9379f5daf",
+            },
+        }
+    )
+
+
+def service_v2_get_service(body):
+    return json_response(
+        {
+            "requestId": "e39a7511-50f6-45ff-a94f-fed58e4a32c5",
+            "result": {
+                "serviceId": "svco-ktth9mkb5cqn",
+                "modelId": "am-b6ngmk0j3cap",
+                "modelVersionId": "amv-6g8nng4auutg",
+                "name": "mydasvc",
+                "description": "hi",
+                "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/kzpitmni_daxx",
+                "serviceType": "chat",
+                "runStatus": "Serving",
+                "chargeStatus": "Free",
+                "resourceConfig": {"type": "GPU-I-2", "replicasCount": 1, "qps": 0.5},
+                "createTime": "2024-05-16T15:23:30Z",
+            },
+        }
+    )
+
+
+def service_v2_get_service_metrics(body):
+    return json_response(
+        {
+            "requestId": "3f2cefc4-b139-42f8-8fb2-48758e65afbf",
+            "result": {
+                "startTime": "2024-05-06T08:23:49Z",
+                "endTime": "2024-05-17T08:23:49Z",
+                "serviceList": [
+                    {
+                        "serviceId": "svco-ktth9mkb5cqn",
+                        "serviceName": "mydasvc",
+                        "appList": [
+                            {
+                                "appId": "26217442",
+                                "metric": {
+                                    "inputTokensTotal": 3,
+                                    "outputTokensTotal": 61,
+                                    "tokensTotal": 64,
+                                    "succeedCallTotal": 1,
+                                    "failureCallTotal": 0,
+                                    "callTotal": 1,
+                                },
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+
 @app.route(Consts.ServiceCreateAPI, methods=["POST"])
 @iam_auth_checker
 def create_service():

@@ -1,6 +1,6 @@
 # 搭配千帆 Python SDK 使用 Guidance
 
-Guidance 是开源社区中专注于，对大模型的输出进行约束，使得输出更符合用户预期的第三方开源框架。目前千帆 Python SDK 已经自身的推理能力以拓展插件的形式提供给 Guidance 的用户，用户可以现可将 Guidance 的能力用于文心系列大模型上。
+Guidance是一个开源社区中专注于对大模型的输出进行约束的第三方开源框架，旨在使输出更符合用户预期。目前，千帆Python SDK已经在拓展模块`qianfan.extensions`中为Guidance的用户提供了自身的推理能力，用户现在可以将Guidance的能力应用于文心系列大模型上。
 
 # 如何安装
 

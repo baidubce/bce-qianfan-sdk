@@ -21,10 +21,7 @@ import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
-import com.baidubce.qianfan.model.ApiErrorResponse;
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.RateLimitConfig;
-import com.baidubce.qianfan.model.RetryConfig;
+import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
@@ -34,9 +31,10 @@ import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
 
 import java.util.Iterator;
+import java.util.Map;
 
 class QianfanClient {
-    private static final String SDK_VERSION = "0.0.4";
+    private static final String SDK_VERSION = "0.0.5";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
@@ -75,19 +73,19 @@ class QianfanClient {
     }
 
     @SuppressWarnings("unchecked")
-    public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return request(
                 request,
                 req -> req.executeJson(responseClass),
-                resp -> (T) resp.getBody()
+                resp -> (T) ((T) resp.getBody()).setHeaders(resp.getHeaders())
         );
     }
 
-    public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return request(
                 request,
                 HttpRequest::executeSSE,
-                resp -> new StreamIterator<>(resp.getBody(), responseClass)
+                resp -> new StreamIterator<>(resp.getHeaders(), resp.getBody(), responseClass)
         );
     }
 
@@ -160,11 +158,13 @@ class QianfanClient {
         }
     }
 
-    private static class StreamIterator<T> implements Iterator<T> {
+    private static class StreamIterator<T extends BaseResponse<T>> implements Iterator<T> {
+        private final Map<String, String> headers;
         private final Iterator<String> sseIterator;
         private final Class<T> responseClass;
 
-        public StreamIterator(Iterator<String> sseIterator, Class<T> responseClass) {
+        public StreamIterator(Map<String, String> headers, Iterator<String> sseIterator, Class<T> responseClass) {
+            this.headers = headers;
             this.sseIterator = sseIterator;
             this.responseClass = responseClass;
         }
@@ -175,11 +175,13 @@ class QianfanClient {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public T next() {
             String event = sseIterator.next().replaceFirst("data: ", "");
             // Skip sse empty line
             sseIterator.next();
-            return Json.deserialize(event, responseClass);
+            T response = Json.deserialize(event, responseClass);
+            return (T) response.setHeaders(headers);
         }
     }
 }

@@ -91,6 +91,7 @@ class QfRequest:
     query: ParamsType = default_field({})
     headers: HeadersType = default_field({})
     json_body: JsonBody = default_field({})
+    files: JsonBody = default_field({})
     retry_config: RetryConfig = default_field(RetryConfig())
 
     def requests_args(self) -> Dict[str, Any]:
@@ -103,6 +104,7 @@ class QfRequest:
             "params": self.query,
             "headers": self.headers,
             "json": self.json_body,
+            "files": self.files,
         }
 
     @classmethod
@@ -264,10 +266,6 @@ class QfMessages:
         Init QfMessages
         """
         self._msg_list: List[QfMessages._Message] = []
-        self._hyper_parameters: Dict[str, Any] = {}
-
-    def set_hyper_parameters(self, hyper_parameters: Dict[str, Any]) -> None:
-        self._hyper_parameters = hyper_parameters
 
     def append(
         self, message: Union[str, QfResponse], role: Optional[Union[str, QfRole]] = None

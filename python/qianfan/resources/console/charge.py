@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """
-RPM & TPM API
+Charging API, including RPM & TPM, service deployment.
 """
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from qianfan.consts import Consts
 from qianfan.resources.console.utils import console_api_request
@@ -29,7 +29,9 @@ class Charge(object):
 
     @classmethod
     @console_api_request
-    def charge(cls, model: str, purchase_count: int, **kwargs: Any) -> QfRequest:
+    def charge_tpm_credit(
+        cls, model: str, purchase_count: int, **kwargs: Any
+    ) -> QfRequest:
         """
         charge the rpm / tpm credit.
 
@@ -47,8 +49,8 @@ class Charge(object):
 
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/pltmk8zoc
         """
-        req = QfRequest(method="POST", url=Consts.ChargeAPI)
-        req.query = {"Action": Consts.ChargePurchaseQueryParam}
+        req = QfRequest(method="POST", url=Consts.TpmCreditAPI)
+        req.query = {"Action": Consts.TpmCreditPurchaseQueryParam}
         req.json_body = {
             "model": model,
             "purchaseCount": purchase_count,
@@ -59,7 +61,7 @@ class Charge(object):
 
     @classmethod
     @console_api_request
-    def info(
+    def tpm_credit_info(
         cls,
         model: str,
         payment_type: Optional[str] = None,
@@ -87,8 +89,8 @@ class Charge(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/oltmo6eq4
         """
 
-        req = QfRequest(method="POST", url=Consts.ChargeAPI)
-        req.query = {"Action": Consts.ChargeInfoQueryParam}
+        req = QfRequest(method="POST", url=Consts.TpmCreditAPI)
+        req.query = {"Action": Consts.TpmCreditInfoQueryParam}
         req.json_body = {
             "model": model,
         }
@@ -103,7 +105,9 @@ class Charge(object):
 
     @classmethod
     @console_api_request
-    def stop(cls, model: str, instance_id: str, **kwargs: Any) -> QfRequest:
+    def stop_tpm_credit_charging(
+        cls, model: str, instance_id: str, **kwargs: Any
+    ) -> QfRequest:
         """
         stop the rpm / tpm charging
 
@@ -122,10 +126,110 @@ class Charge(object):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/oltmo6eq4
         """
 
-        req = QfRequest(method="POST", url=Consts.ChargeAPI)
-        req.query = {"Action": Consts.ChargeStopQueryParam}
+        req = QfRequest(method="POST", url=Consts.TpmCreditAPI)
+        req.query = {"Action": Consts.TpmCreditStopQueryParam}
         req.json_body = {
             "model": model,
+            "instanceId": instance_id,
+        }
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def purchase_service_resource(
+        cls, service_id: str, billing: Dict[str, Any], replicas: int, **kwargs: Any
+    ) -> QfRequest:
+        """
+        purchase private service resource from qianfan
+
+        Parameters:
+            service_id (str):
+                The service id which needs to buy private service resource
+            billing (Dict[str, Any]):
+                Purchase info.
+            replicas (int):
+                How many replica the user want to get.
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lvuk0kxi
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourcePurchaseParam}
+        req.json_body = {
+            "serviceId": service_id,
+            "billing": billing,
+            "replicas": replicas,
+        }
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def ger_service_resource_list(
+        cls, service_id: str, payment_timing: Optional[str] = None, **kwargs: Any
+    ) -> QfRequest:
+        """
+        get service resource info list
+
+        Parameters:
+            service_id (str):
+                The service id which needs to buy private service resource
+            payment_timing (Optional[str]):
+                This parameter's value can only be either None or "Prepaid".
+                Default to None
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/klvuk3qob
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourceGetResourceListParam}
+        req.json_body = {
+            "serviceId": service_id,
+            "paymentTiming": payment_timing,
+        }
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def get_service_resource_instance_info(
+        cls, service_id: str, instance_id: str, **kwargs: Any
+    ) -> QfRequest:
+        """
+        purchase private service resource from qianfan
+
+        Parameters:
+            service_id (str):
+                The service id which needs to buy private service resource
+            instance_id (str):
+                The resource instance id.
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lvuk0kxi
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourceGetResourceParam}
+        req.json_body = {
+            "serviceId": service_id,
             "instanceId": instance_id,
         }
 

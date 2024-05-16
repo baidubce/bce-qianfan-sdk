@@ -17,7 +17,7 @@ import json
 import re
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 from qianfan.common.hub.interface import HubSerializable
 from qianfan.config import encoding
@@ -43,7 +43,7 @@ class PromptLabel(HubSerializable):
     Class of prompt label
     """
 
-    id: int
+    id: Union[str, int]
     """
     id of the label
     """

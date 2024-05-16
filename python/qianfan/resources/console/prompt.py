@@ -16,7 +16,7 @@
 Prompt API
 """
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 from qianfan.consts import (
     Consts,
@@ -44,7 +44,7 @@ class Prompt(object):
         scene: PromptSceneType = PromptSceneType.Text2Text,
         framework: PromptFrameworkType = PromptFrameworkType.NotUse,
         variables: Optional[List[str]] = None,
-        label_ids: Optional[List[int]] = None,
+        label_ids: Optional[List[Union[int, str]]] = None,
         negative_template: Optional[str] = None,
         negative_variables: Optional[List[str]] = None,
         **kwargs: Any,
@@ -68,7 +68,7 @@ class Prompt(object):
             automatically find variables in the template. The variables only support
             English, numbers, and underscores (_), and cannot start with a number. They
             must be between 2 and 30 characters in length.
-          label_ids (Optional[List[int]]):
+          label_ids (Optional[List[Union[int, str]]]):
             List of label IDs associated with the prompt.
           negative_template (Optional[str]):
             An optional negative example template. Only available when scene is
@@ -171,7 +171,7 @@ class Prompt(object):
         cls,
         id: str,
         name: Optional[str] = None,
-        label_ids: Optional[List[int]] = None,
+        label_ids: Optional[List[Union[int, str]]] = None,
         template: Optional[str] = None,
         identifier: Optional[Literal["{}", "{{}}", "[]", "[[]]", "()", "(())"]] = None,
         negative_template: Optional[str] = None,
@@ -188,7 +188,7 @@ class Prompt(object):
             The ID of the prompt template to update.
           name (Optional[str]):
             The new name for the prompt template.
-          label_ids (Optional[List[int]]):
+          label_ids (Optional[List[Union[int, str]]]):
             The updated list of label IDs associated with the prompt template.
           template (Optional[str]):
             The modified template for the prompt.
@@ -259,7 +259,7 @@ class Prompt(object):
         offset: int = 0,
         page_size: int = 10,
         name: Optional[str] = None,
-        label_ids: List[int] = [],
+        label_ids: List[Union[int, str]] = [],
         type: Optional[PromptType] = None,
         **kwargs: Any,
     ) -> QfRequest:
@@ -276,7 +276,7 @@ class Prompt(object):
             The number of prompt templates to retrieve per page. Default is 10.
           name (Optional[str]):
             A filter for prompt templates by name.
-          label_ids (List[int]):
+          label_ids (List[Union[int, str]]):
             A list of label IDs to filter prompt templates.
           type (Optional[PromptType]):
             A filter for prompt templates by type.

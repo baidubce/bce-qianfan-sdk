@@ -104,7 +104,7 @@ class QfRequest:
             "params": self.query,
             "headers": self.headers,
             "json": self.json_body,
-            "files": self.files,
+            # "files": self.files,
         }
 
     @classmethod

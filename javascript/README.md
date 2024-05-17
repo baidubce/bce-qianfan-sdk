@@ -41,6 +41,17 @@ yarn add @baiducloud/qianfan
 
 SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY ，同时支持初始化手动传入 AK/SK 。
 
+浏览器使用不需要鉴权，连接proxy使用，方法如下：
+
+1. 需要先安装python>=3.8
+2. pip install qianfan
+3. qianfan proxy
+在执行qianfan proxy的同级目录下，新建 .env文件，设置 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY 即可
+
+注意：在Vue或react项目中集成使用时，需确保webpack为4以下，如果5以上版本需要根据提示配置polyfills，在后续的迭代中会逐步优化。
+
+![proxy](../docs/imgs/proxy.png)
+
 #### env 读取
 
 ##### env 文件示例
@@ -54,7 +65,7 @@ QIANFAN_ACCESS_KEY=another_access_key
 QIANFAN_SECRET_KEY=another_secret_key
 ```
 
-#### 修改 env 的配置
+#### 修改 env 的配置 （仅 node可使用）
 
 ```ts
 import {setEnvVariable} from "@baiducloud/qianfan";
@@ -77,11 +88,17 @@ const client = new ChatCompletion({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KE
 可以使用 `ChatCompletion` 对象完成对话相关操作
 
 ```ts
+// node 环境
 import {ChatCompletion} from "@baiducloud/qianfan";
+
 // 直接读取 env
 const client = new  ChatCompletion();
 // 手动传 AK/SK 
 // const client = new ChatCompletion({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {ChatCompletion} from "@baiducloud/qianfan";
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.chat({
@@ -123,12 +140,17 @@ async function main() {
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `Completions` 来完成这一任务。
 
 ```ts
+// node环境
 import {Completions} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Completions();
 
 // 手动传 AK/SK
 // const client = new Completions({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Completions} from "@baiducloud/qianfan";
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.completions({
@@ -160,12 +182,18 @@ main();
 千帆 SDK 同样支持调用千帆大模型平台中的模型，将输入文本转化为用浮点数表示的向量形式。转化得到的语义向量可应用于文本检索、信息推荐、知识挖掘等场景。
 
 ```ts
+// node环境
 import {Eembedding} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Eembedding();
 
 // 手动传 AK/SK 测试
 // const client = new Eembedding({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Eembedding} from "@baiducloud/qianfan";
+const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+
 async function main() {
     const resp = await client.embedding({
         input: [ 'Introduce the city Beijing'],
@@ -185,13 +213,18 @@ main();
     Stable-Diffusion-XL
 
 ```ts
+// node环境
 import * as http from 'http';
 import {Text2Image} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Text2Image();
-
 // 手动传 AK/SK 测试
 // const client = new Text2Image({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Text2Image} from "@baiducloud/qianfan";
+const client = Text2Image({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+
 async function main() {
     const resp = await client.text2Image({
         prompt: '生成爱莎公主的图片',
@@ -224,12 +257,18 @@ main();
 注意事项：调用本文API，推荐使用安全认证AK/SK鉴权，调用流程及鉴权介绍详见SDK安装及使用流程
 
 ```ts
+// node 环境
 import {Image2Text} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Image2Text({Endpoint: '***'});
 
 // 手动传 AK/SK 测试
 // const client = new Image2Text({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Image2Text} from "@baiducloud/qianfan";
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+
 async function main() {
     const resp = await client.image2Text({
         prompt: '分析一下图片画了什么',
@@ -242,10 +281,15 @@ main();
 ```
 
 ```ts
+// node环境
 import {Image2Text} from "@baiducloud/qianfan";
 // 直接读取 env 
 // 使用预置服务Fuyu-8B
 const client = new Image2Text();
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Image2Text} from "@baiducloud/qianfan";
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 // 手动传 AK/SK 测试
 // const client = new Image2Text({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
@@ -267,9 +311,15 @@ SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将
 #### 千帆插件
 
 ```ts
+// node环境
 import {Plugin} from "@baiducloud/qianfan";
 // 注意：千帆插件需要传入Endpoint， 一言插件不用
 const client = new Plugin({Endpoint: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Plugin} from "@baiducloud/qianfan";
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+
 // 天气插件
 async function main() {
     const resp = await client.plugins({
@@ -317,12 +367,18 @@ main();
 参数传入 stream 为 `true` 时，返回流式结果
 
 ```ts
+// node环境
 import {Plugin} from "@baiducloud/qianfan";
 // 直接读取 env  
 const client = new Plugin();
 
 // 手动传 AK/SK 测试
 // const client = new Plugins({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Plugin} from "@baiducloud/qianfan";
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+
 async function main() {
     const stream = await client.plugins({
         query: '深圳今天天气如何',

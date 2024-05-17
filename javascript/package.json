@@ -1,6 +1,6 @@
 {
     "name": "@baiducloud/qianfan",
-    "version": "0.0.10-beta.8",
+    "version": " 0.0.11-alpha.0",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"

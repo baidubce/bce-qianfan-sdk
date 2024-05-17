@@ -50,11 +50,8 @@ SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 
 
 注意：在Vue或react项目中集成使用时，需确保webpack为4以下，如果5以上版本需要根据提示配置polyfills，在后续的迭代中会逐步优化。
 
-<<<<<<< HEAD
 注意访问地址，需要修改为proxy的ip地址，否则会跨域
 
-=======
->>>>>>> origin
 ![proxy](../docs/imgs/proxy.png)
 
 #### env 读取

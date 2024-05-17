@@ -1,4 +1,4 @@
-import nodeFetch, {RequestInit, Response} from 'node-fetch';
+import {RequestInit, Response} from 'node-fetch';
 import {Readable} from 'stream';
 import {RateLimiter, TokenLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
@@ -6,7 +6,13 @@ import {Stream} from '../streaming';
 import {isOpenTpm, getCurrentEnvironment, parseHeaders} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
 
-const fetchInstance = getCurrentEnvironment() === 'node' ? nodeFetch : fetch;
+let fetchInstance;
+if (getCurrentEnvironment() === 'node') {
+    fetchInstance = require('node-fetch');
+}
+else {
+    fetchInstance = window.fetch.bind(window);
+}
 export interface FetchConfig {
     retries: number;
     timeout: number;

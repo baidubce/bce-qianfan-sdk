@@ -12,15 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as util from 'util';
-import * as crypto from 'crypto';
-import _ from 'underscore';
-import createDebug from 'debug';
+import crypto from 'crypto-browserify';
 
 import * as H from './headers';
 import {normalize, trim} from './strings';
+import {getCurrentEnvironment} from '../utils';
 
-const debug = createDebug('bce-sdk:Auth');
+let cryptoClass;
+if (getCurrentEnvironment() === 'node') {
+    cryptoClass = require('crypto');
+}
+else {
+    cryptoClass = crypto;
+}
 
 class Auth {
     private ak: string;
@@ -41,8 +45,7 @@ class Auth {
         headersToSign?: string[]
     ): string {
         const now = this.getTimestamp(timestamp);
-        const rawSessionKey = util.format('bce-auth-v1/%s/%s/%d', this.ak, now, expirationInSeconds || 1800);
-        debug('rawSessionKey = %j', rawSessionKey);
+        const rawSessionKey = `bce-auth-v1/${this.ak}/${now}/${expirationInSeconds || 1800}`;
         const sessionKey = this.hash(rawSessionKey, this.sk);
         const canonicalUri = this.generateCanonicalUri(resource);
         const canonicalQueryString = this.queryStringCanonicalization(params || {});
@@ -50,26 +53,15 @@ class Auth {
         const rv = this.headersCanonicalization(headers || {}, headersToSign);
         const canonicalHeaders = rv[0];
         const signedHeaders = rv[1];
-        debug('canonicalUri = %j', canonicalUri);
-        debug('canonicalQueryString = %j', canonicalQueryString);
-        debug('canonicalHeaders = %j', canonicalHeaders);
-        debug('signedHeaders = %j', signedHeaders);
 
-        const rawSignature = util.format(
-            '%s\n%s\n%s\n%s',
-            method,
-            canonicalUri,
-            canonicalQueryString,
-            canonicalHeaders
-        );
-        debug('rawSignature = %j', rawSignature);
-        debug('sessionKey = %j', sessionKey);
+        const rawSignature = `${method}\n${canonicalUri}\n${canonicalQueryString}\n${canonicalHeaders}`;
+
         const signature = this.hash(rawSignature, sessionKey);
 
         if (signedHeaders.length) {
-            return util.format('%s/%s/%s', rawSessionKey, signedHeaders.join(';'), signature);
+            return `${rawSessionKey}/${signedHeaders.join(';')}/${signature}`;
         }
-        return util.format('%s//%s', rawSessionKey, signature);
+        return `${rawSessionKey}//${signature}`;
     }
 
     private normalize(string: string, encodingSlash: boolean = true): string {
@@ -143,7 +135,6 @@ class Auth {
         if (!headersToSign || !headersToSign.length) {
             headersToSign = [H.HOST, H.CONTENT_MD5, H.CONTENT_LENGTH, H.CONTENT_TYPE];
         }
-        debug('headers = %j, headersToSign = %j', headers, headersToSign);
 
         const headersMap: Record<string, boolean> = {};
         headersToSign.forEach(item => {
@@ -153,13 +144,13 @@ class Auth {
         const canonicalHeaders: string[] = [];
         Object.keys(headers).forEach(key => {
             let value = headers[key];
-            value = _.isString(value) ? trim(value) : value;
+            value = Object.prototype.toString.call(value) === '[object String]' ? trim(value) : value;
             if (value == null || value === '') {
                 return;
             }
             key = key.toLowerCase();
             if (/^x\-bce\-/.test(key) || headersMap[key] === true) {
-                canonicalHeaders.push(util.format('%s:%s', normalize(key), normalize(value)));
+                canonicalHeaders.push(`${normalize(key)}:${normalize(value)}`);
             }
         });
 
@@ -174,7 +165,7 @@ class Auth {
     }
 
     private hash(data: string, key: string): string {
-        const sha256Hmac = crypto.createHmac('sha256', key);
+        const sha256Hmac = cryptoClass.createHmac('sha256', key);
         sha256Hmac.update(data);
         return sha256Hmac.digest('hex');
     }

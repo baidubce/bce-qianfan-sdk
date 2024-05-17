@@ -46,9 +46,11 @@ SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 
 1. 需要先安装python>=3.8
 2. pip install qianfan
 3. qianfan proxy
-在安装qianfan的同级目录下，新建 .env文件，设置 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY 即可
+在执行qianfan proxy的同级目录下，新建 .env文件，设置 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY 即可
 
 注意：在Vue或react项目中集成使用时，需确保webpack为4以下，如果5以上版本需要根据提示配置polyfills，在后续的迭代中会逐步优化。
+
+![proxy](../../bce-qianfan-sdk/docs/imgs/proxy.png)
 
 #### env 读取
 

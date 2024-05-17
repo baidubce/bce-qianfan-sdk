@@ -50,7 +50,7 @@ SDK 支持从当前目录的 .env 中读取配置，也可以修改环境变量 
 
 注意：在Vue或react项目中集成使用时，需确保webpack为4以下，如果5以上版本需要根据提示配置polyfills，在后续的迭代中会逐步优化。
 
-![proxy](../../bce-qianfan-sdk/docs/imgs/proxy.png)
+![proxy](../docs/imgs/proxy.png)
 
 #### env 读取
 
@@ -98,7 +98,7 @@ const client = new  ChatCompletion();
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {ChatCompletion} from "@baiducloud/qianfan";
-const client = new ChatCompletion({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'})
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.chat({
@@ -150,7 +150,7 @@ const client = new Completions();
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Completions} from "@baiducloud/qianfan";
-const client = Completions({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.completions({
@@ -192,7 +192,7 @@ const client = new Eembedding();
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Eembedding} from "@baiducloud/qianfan";
-const client = Eembedding({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.embedding({
@@ -267,7 +267,7 @@ const client = new Image2Text({Endpoint: '***'});
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Image2Text} from "@baiducloud/qianfan";
-const client = Image2Text({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const resp = await client.image2Text({
@@ -289,7 +289,7 @@ const client = new Image2Text();
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Image2Text} from "@baiducloud/qianfan";
-const client = Image2Text({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 // 手动传 AK/SK 测试
 // const client = new Image2Text({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
@@ -318,7 +318,7 @@ const client = new Plugin({Endpoint: '***'});
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Plugin} from "@baiducloud/qianfan";
-const client = Image2Text({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 // 天气插件
 async function main() {
@@ -377,7 +377,7 @@ const client = new Plugin();
 
 // 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 import {Plugin} from "@baiducloud/qianfan";
-const client = Image2Text({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
+const client = Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
     const stream = await client.plugins({

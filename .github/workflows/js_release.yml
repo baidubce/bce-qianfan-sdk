@@ -68,6 +68,7 @@ jobs:
 
       - name: get pr collection  # 获取tag之间的pr内容，输出为md文件的路径
         id: get-pr
+        working-directory: ./python
         env:
           REPO: ${{ github.repository }}
           QF_GITHUB_TOKEN: ${{ secrets.QF_GITHUB_TOKEN }}

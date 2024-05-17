@@ -63,6 +63,23 @@ for prompt, result in zip(prompt_list, results):
         print(prompt, result)
 ```
 
+对于 `ChatCompletion` 提供的 `batch_do` 和 `abatch_do` 方法，对比其它对象而言，它们还具有以下两个特点：
+
+1. 支持用户直接传入由字典所组成的列表进行批量推理，其中一个字典是一次请求的 Body，里面附有请求所用到的所有参数。
+
+```python
+from qianfan import ChatCompletion
+task_list = [{"messages": [{"role": "user", "content": "你好"}], "system": "你是一个友善的机器人助手"}]
+
+# 同步调用
+ChatCompletion().batch_do(body_list=task_list)
+
+# 异步调用
+ChatCompletion().abatch_do(body_list=task_list)
+```
+
+2. 支持用户设置 `enable_reading_buffer=True` 以获取更为准确的延迟统计信息。此时，流式请求下单条请求返回的对象会由 `Iterator` / `AsyncIterator` 变为 `List`。如果用户需要批量统计不同请求的延迟，请设置该参数
+
 ## 数据集评估
 
 > [点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/cookbook/dataset/batch_inference_using_dataset.ipynb) 查看 Cookbook

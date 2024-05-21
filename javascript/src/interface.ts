@@ -624,8 +624,71 @@ export interface Image2TextBody extends baseReq{
     stop?: string[];
 }
 
+export interface RerankerBody extends baseReq{
+    /**
+     * 查询文本
+     * 长度不超过1600个字符，token数若超过400做截断
+     */
+    query: string;
+    /**
+     * 需要重排序的文本
+     *（1）不能为空List，List的每个成员不能为空字符串
+     *（2）文本数量不超过64
+     *（3）每条document文本长度不超过4096个字符，token数若超过1024做截断
+     */
+    documents: string[];
+    /**
+     * 返回的最相关文本的数量
+     * 默认为document的数量
+     */
+    top_n?: number;
+}
 
+type RerankerData = {
+    /**
+     * 文本内容
+     */
+    document: string;
+    /**
+     * 相似性得分
+     */
+    relevance_score: number;
+    /**
+     * 序号
+     */
+    index: number;
+}
+type UsageType = {
+    /**
+     * 问题tokens数（包含历史QA）
+     */
+    prompt_tokens: number;
+    /**
+     * tokens总数
+     */
+    total_tokens: number;
+}
 
-export type ReqBody = ChatBody | CompletionBody | EmbeddingBody | PluginsBody | Text2ImageBody;
-export type Resp = RespBase | ChatResp | EmbeddingResp | PluginsResp | Text2ImageResp;
+export interface RerankerResp {
+    /**
+     * 本轮对话的id
+     */
+    id: string;
+    /**
+     * 回包类型, 固定值“rerank_list”
+     */
+    object: string;
+    /**
+     * 时间戳
+     */
+    created: number;
+    /**
+     * 重排序结果，按相似性得分倒序
+     */
+    results: RerankerData[];
+    usage: UsageType;
+}
+
+export type ReqBody = ChatBody | CompletionBody | EmbeddingBody | PluginsBody | Text2ImageBody | RerankerBody;
+export type Resp = RespBase | ChatResp | EmbeddingResp | PluginsResp | Text2ImageResp | RerankerResp;
 export type AsyncIterableType = AsyncIterable<ChatResp | RespBase | PluginsResp>;

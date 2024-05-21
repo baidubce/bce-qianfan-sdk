@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ChatCompletion from './ChatCompletion';
-import Completions from './Completions';
-import Embedding from './Embedding';
-import Plugin from './Plugin';
-import {Text2Image, Image2Text} from './Images';
-import Reranker from './Reranker';
-import {setEnvVariable} from './utils';
+import {QfLLMInfoMap} from '../interface';
 
-export {ChatCompletion, Completions, Embedding, Plugin, Text2Image, Image2Text, Reranker, setEnvVariable};
+/**
+ * 重新排序向量模型
+ */
+export type RerankerModel =
+    | 'bce-reranker-base_v1';
+
+export const modelInfoMap: QfLLMInfoMap = {
+    'bce-reranker-base_v1': {
+        endpoint: '/reranker/bce_reranker_base',
+        required_keys: ['query', 'documents'],
+        optional_keys: [
+            'user_id',
+            'top_n',
+        ],
+    },
+};

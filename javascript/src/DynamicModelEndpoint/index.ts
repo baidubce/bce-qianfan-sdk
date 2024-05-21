@@ -1,7 +1,7 @@
 import {Mutex} from 'async-mutex';
 import Fetch from '../Fetch/fetch';
 import HttpClient from '../HttpClient';
-import {SERVER_LIST_API, DEFAULT_HEADERS} from '../constant';
+import {SERVER_LIST_API, DEFAULT_HEADERS, DYNAMIC_INVALID} from '../constant';
 import {getTypeMap, typeModelEndpointMap} from './utils';
 import {getPath} from '../utils';
 
@@ -41,7 +41,7 @@ class DynamicModelEndpoint {
         const mutex = new Mutex();
         const release = await mutex.acquire(); // 等待获取互斥锁
         try {
-            if (this.isDynamicMapExpired()) {
+            if (!DYNAMIC_INVALID.includes(type) && this.isDynamicMapExpired()) {
                 await this.updateDynamicModelEndpoint(type); // 等待动态更新完成
                 this.dynamicMapExpireAt = Date.now() / 1000 + this.DYNAMIC_MAP_REFRESH_INTERVAL;
             }

@@ -84,6 +84,11 @@ const pluginEndpoints = new Map<string, string>([
     ['ebpluginv2', 'erniebot/plugin'],
 ]);
 
+// 重新排序向量模型
+const rerankerEndpoints = new Map<string, string>([
+    ['bce-reranker-base_v1', 'bce_reranker_base'],
+]);
+
 // 将模型 endpoints 映射添加到主映射中
 typeModelEndpointMap.set(ModelType.CHAT, chatModelEndpoints);
 typeModelEndpointMap.set(ModelType.COMPLETIONS, completionsModelEndpoints);
@@ -91,6 +96,7 @@ typeModelEndpointMap.set(ModelType.EMBEDDINGS, embeddingEndpoints);
 typeModelEndpointMap.set(ModelType.TEXT_2_IMAGE, text2imageEndpoints);
 typeModelEndpointMap.set(ModelType.IMAGE_2_TEXT, image2textEndpoints);
 typeModelEndpointMap.set(ModelType.PLUGIN, pluginEndpoints);
+typeModelEndpointMap.set(ModelType.RERANKER, rerankerEndpoints);
 
 export {typeModelEndpointMap};
 // 检查CHAT是否有数据的函数

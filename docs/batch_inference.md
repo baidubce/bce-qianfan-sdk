@@ -185,3 +185,13 @@ status = task['result']['runStatus'] # => Done / Running / Failed
 {"id":"3","output":{"created":1709216528,"finish_reason":"normal","id":"as-swjxpa86s9","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"水的冰态在摄氏0度开始融化。通常情况下，冰的熔点是0℃，当环境温度高于0℃，冰块温度达到0℃时，冰开始融化。冰在融化过程中，冰水混合在一起，温度会长时间保持在0℃，直至完全融化成水。","usage":{"completion_tokens":59,"prompt_tokens":10,"total_tokens":69}},"query":"水的冰态在摄氏多少度开始融化？"}
 {"id":"5","output":{"created":1709216528,"finish_reason":"normal","id":"as-5s2f544zhg","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"太阳系中最大的行星是**木星**。木星是太阳系中体积最大的行星，其质量是太阳系其他行星质量的总和的2.5倍。木星是一个气态行星，大气层高度可达5千米，是其他太阳系行星望尘莫及的。木星的大气层中包含大量的氢、氦和甲烷。木星的磁场强度是地球的14倍，这比太阳系中其他任何行星都要强得多。","usage":{"completion_tokens":100,"prompt_tokens":8,"total_tokens":108}},"query":"太阳系中最大的行星是哪颗？"}
 ```
+
+**获取批量推理任务列表**
+
+可以传入分页大小`max_keys`等参数获取批量推理任务列表
+```python
+from qianfan.resources.console.data import Data
+
+resp = Data.list_offline_batch_inference_task(max_keys=1).body
+```
+

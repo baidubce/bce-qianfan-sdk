@@ -259,6 +259,7 @@ class Consts:
     DatasetV2OfflineBatchInferenceAPI: str = "/v2/batchinference"
     DatasetCreateOfflineBatchInferenceAction: str = "CreateBatchInferenceTask"
     DatasetDescribeOfflineBatchInferenceAction: str = "DescribeBatchInferenceTask"
+    DatasetDescribeOfflineBatchInferencesAction: str = "DescribeBatchInferenceTasks"
     PromptRenderAPI: str = "/rest/2.0/wenxinworkshop/api/v1/template/info"
     PromptCreateAPI: str = "/wenxinworkshop/prompt/template/create"
     PromptInfoAPI: str = "/wenxinworkshop/prompt/template/info"

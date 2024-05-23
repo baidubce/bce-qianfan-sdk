@@ -959,3 +959,46 @@ class Data:
 
         req.json_body = request_json
         return req
+
+    @classmethod
+    @console_api_request
+    def list_offline_batch_inference_task(
+        cls,
+        marker: Optional[str] = None,
+        max_keys: Optional[int] = None,
+        page_reverse: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        get batch_inference list .
+
+        Parameters:
+        marker: Optional[str] = None,
+            job_id, the marker of the first page.
+        max_keys: Optional[int] = None,
+            max keys of the page.
+        page_reverse: Optional[bool] = None,
+            page reverse or not.
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+        """
+        req = QfRequest(
+            method="POST",
+            url=Consts.DatasetV2OfflineBatchInferenceAPI,
+            query=_get_console_v2_query(
+                Consts.DatasetDescribeOfflineBatchInferencesAction
+            ),
+        )
+        req.json_body = {
+            k: v
+            for k, v in {
+                **kwargs,
+                "maker": marker,
+                "maxKeys": max_keys,
+                "pageReverse": page_reverse,
+            }.items()
+            if v is not None
+        }
+        return req

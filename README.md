@@ -277,7 +277,7 @@ SDK 内置了一个命令行工具，能够在终端直接与千帆平台进行�
 - [GitHub issues](https://github.com/baidubce/bce-qianfan-sdk/issues)
 - [百度智能云工单](https://console.bce.baidu.com/ticket/#/ticket/create?productId=279) （百度专家即时服务）
 - 千帆SDK官方微信群
-<img src="https://github.com/baidubce/bce-qianfan-sdk/assets/37836090/50f38a78-31cb-4b0d-a03e-0bb1d4f367b3" width="240" height="240">
+<img src="https://github.com/baidubce/bce-qianfan-sdk/assets/56953648/7307db0d-60d4-4066-a016-cbd5aa84f65a" width="240" height="240">
 
 ## License
 

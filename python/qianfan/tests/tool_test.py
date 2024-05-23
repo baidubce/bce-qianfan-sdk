@@ -194,7 +194,7 @@ def test_tool_from_langchain_decorator_tool():
     tool = BaseTool.from_langchain_tool(hello_tool)
 
     assert tool.name == "hello_tool"
-    assert tool.description == "hello_tool(a: str, b: str) -> str - Say hello"
+    assert tool.description == "Say hello"
     assert len(tool.parameters) == 2
     assert tool.parameters[0] == ToolParameter(name="a", type="string", required=True)
     assert tool.parameters[1] == ToolParameter(name="b", type="string", required=True)

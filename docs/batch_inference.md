@@ -175,3 +175,12 @@ task = Data.get_offline_batch_inference_task(task_id="task_id")
 
 status = task['result']['runStatus'] # => Done / Running / Failed
 ```
+
+**获取批量推理任务列表**
+
+可以传入分页大小`max_keys`等参数获取批量推理任务列表
+```python
+from qianfan.resources.console.data import Data
+
+resp = Data.list_offline_batch_inference_task(max_keys=1).body
+```

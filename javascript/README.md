@@ -454,3 +454,30 @@ async function yiYanChatFileMain() {
 }
 yiYanChatFileMain();
 ```
+
+### Reranker 重排序
+
+跨语种语义表征算法模型，擅长优化语义搜索结果和语义相关顺序精排，支持中英日韩四门语言。
+
+```ts
+// node环境
+import {Reranker} from "@baiducloud/qianfan";
+// 直接读取 env  
+const client = new Reranker();
+
+// 手动传 AK/SK
+// const client = new Reranker({ QIANFAN_AK: '***', QIANFAN_SK: '***'});
+
+// 浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
+import {Reranker} from "@baiducloud/qianfan";
+const client = Reranker({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+
+async function main() {
+     const resp = await client.reranker({
+        query: '上海天气',
+        documents: ['上海气候', '北京美食'],
+    });
+}
+
+main();
+```

@@ -5,6 +5,7 @@ export enum ModelType {
   TEXT_2_IMAGE = 'text2image',
   IMAGE_2_TEXT = 'image2text',
   PLUGIN = 'plugin',
+  RERANKER = 'reranker'
 }
 
 export enum APIErrorCode {

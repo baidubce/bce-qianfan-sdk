@@ -43,3 +43,5 @@ export const RETRY_CODE = [
 ];
 
 export const SERVER_LIST_API = '/wenxinworkshop/service/list';
+
+export const DYNAMIC_INVALID = ['reranker'];

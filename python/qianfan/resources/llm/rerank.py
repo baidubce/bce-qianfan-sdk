@@ -34,6 +34,7 @@ class Reranker(BaseResource):
                 endpoint="/reranker/bce_reranker_base",
                 required_keys={"_query", "documents"},
                 optional_keys={"top_n"},
+                input_price_per_1k_tokens=0.002,
             ),
             UNSPECIFIED_MODEL: QfLLMInfo(
                 endpoint="",

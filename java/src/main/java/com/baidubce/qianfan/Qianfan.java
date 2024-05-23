@@ -22,6 +22,7 @@ import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
 import com.baidubce.qianfan.core.builder.Image2TextBuilder;
 import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.BaseResponse;
 import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
@@ -117,11 +118,11 @@ public class Qianfan {
         return requestStream(request, Image2TextResponse.class);
     }
 
-    public <T, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return client.request(request, responseClass);
     }
 
-    public <T, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return client.requestStream(request, responseClass);
     }
 }

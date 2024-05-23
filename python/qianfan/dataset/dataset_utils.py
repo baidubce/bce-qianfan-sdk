@@ -148,6 +148,7 @@ def _create_a_dataset_etl_task(
     log_info("new dataset group and dataset created, start creating etl task")
 
     etl_id: str = Data.create_dataset_etl_task(
+        f"etl_task_{generate_letter_num_random_id()}",
         source_dataset_id=origin_data_source.id,
         destination_dataset_id=new_data_source.id,
         operations=operator_dict,
@@ -201,6 +202,7 @@ def log_latency_info(result: QfResponse, index: int, stream_index: int = 1) -> T
 def _batch_do_on_service(
     service: Union[ChatCompletion, Completion],
     input_list: Union[List[str], List[List[Dict[str, Any]]]],
+    with_accurate_statistics: bool,
     *args: Any,
     **kwargs: Any,
 ) -> Tuple[List[str], List[float], List[float]]:
@@ -216,7 +218,9 @@ def _batch_do_on_service(
     output_list: List[str] = []
     request_latency_list: List[float] = [-1 for _ in range(len(input_list))]
     first_token_latency_list: List[float] = [-1 for _ in range(len(input_list))]
-    results = service.batch_do(input_list, *args, **kwargs).results()  # type: ignore
+    results = service.batch_do(  # type: ignore
+        input_list, enable_reading_buffer=with_accurate_statistics, *args, **kwargs  # type: ignore
+    ).results()  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
@@ -250,6 +254,7 @@ def _batch_do_on_service(
 async def _async_batch_do_on_service(
     service: Union[ChatCompletion, Completion],
     input_list: Union[List[str], List[List[Dict[str, Any]]]],
+    with_accurate_statistics: bool,
     *args: Any,
     **kwargs: Any,
 ) -> Tuple[List[str], List[float], List[float]]:
@@ -258,7 +263,9 @@ async def _async_batch_do_on_service(
     output_list: List[str] = []
     request_latency_list: List[float] = []
     first_token_latency_list: List[float] = []
-    results = await service.abatch_do(input_list, *args, **kwargs)  # type: ignore
+    results = await service.abatch_do(  # type: ignore
+        input_list, enable_reading_buffer=with_accurate_statistics, *args, **kwargs  # type: ignore
+    )  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):

@@ -69,15 +69,24 @@ public class ModelEndpointRetriever {
         }
 
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k", "completions_pro");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preemptible", "completions_pro_preemptible");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview", "ernie-4.0-8k-preview");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0329", "ernie-4.0-8k-0329");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0104", "ernie-4.0-8k-0104");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k", "completions");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0205", "ernie-3.5-8k-0205");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-1222", "ernie-3.5-8k-1222");
-        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-8k", "ernie_bot_8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-4k-0205", "ernie-3.5-4k-0205");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preemptible", "completions_preemptible");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preview", "ernie-3.5-8k-preview");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0329", "ernie-3.5-8k-0329");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-8k", "ernie_speed");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-128k", "ernie-speed-128k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-8k-0321", "ernie-char-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k-0922", "eb-instant");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k-0308", "ernie-lite-8k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-functions-8k", "ernie-func-8k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-tiny-8k", "ernie-tiny-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie speed-appbuilder", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("gemma-7b-it", "gemma_7b_it");
         typeModelEndpointMap.get(ModelType.CHAT).put("yi-34b-chat", "yi_34b_chat");
@@ -87,8 +96,11 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("llama-2-7b-chat", "llama_2_7b");
         typeModelEndpointMap.get(ModelType.CHAT).put("llama-2-13b-chat", "llama_2_13b");
         typeModelEndpointMap.get(ModelType.CHAT).put("llama-2-70b-chat", "llama_2_70b");
+        typeModelEndpointMap.get(ModelType.CHAT).put("meta-llama-3-8b-instruct", "llama_3_8b");
+        typeModelEndpointMap.get(ModelType.CHAT).put("meta-llama-3-70b-instruct", "llama_3_70b");
         typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-7b", "qianfan_chinese_llama_2_7b");
-        typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-13b", "qianfan_chinese_llama_2_13b");
+        typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-13b-v1", "qianfan_chinese_llama_2_13b");
+        typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-70b", "qianfan_chinese_llama_2_70b");
         typeModelEndpointMap.get(ModelType.CHAT).put("chatglm2-6b-32k", "chatglm2_6b_32k");
         typeModelEndpointMap.get(ModelType.CHAT).put("xuanyuan-70b-chat-4bit", "xuanyuan_70b_chat");
         typeModelEndpointMap.get(ModelType.CHAT).put("chatlaw", "chatlaw");
@@ -107,9 +119,9 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-4", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-8k", "ernie_bot_8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed", "ernie_speed");
-        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-128k", "ernie_speed");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-turbo-ai", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("eb-turbo-appbuilder", "ai_apaas");
+        typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-13b", "qianfan_chinese_llama_2_13b");
     }
 
     private static String parseEndpoint(String url) {

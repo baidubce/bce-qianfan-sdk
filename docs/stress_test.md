@@ -12,14 +12,17 @@
 
 ## 启动压测
 
-如果用户想要对大模型服务进行性能测试，需要事先准备好测试用的数据集。
-数据集就绪后，可调用数据集的stress_test接口启动压测任务。
+如果用户想要对大模型服务进行性能测试，需要在导入 `qianfan` 模块之前设置环境变量 `QIANFAN_ENABLE_STRESS_TEST` 为 `true`
+
+然后准备好测试用的数据集。数据集就绪后，可调用数据集的stress_test接口启动压测任务。
 
 以下为一个调用的示例：
 
 ```python
 
 import os
+
+os.environ['QIANFAN_ENABLE_STRESS_TEST'] = "true"
 
 from qianfan.dataset import Dataset
 

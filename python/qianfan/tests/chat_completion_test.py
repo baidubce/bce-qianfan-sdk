@@ -740,6 +740,47 @@ def test_truncated_message():
     assert req_messages[0]["content"] == "s3"
     assert req_messages[2]["content"] == "s5"
 
+    # test msgs with system
+    messages = [
+        {"role": "user", "content": "s "},
+        {"role": "assistant", "content": "s2"},
+        {"role": "user", "content": "h " * 3000},
+        {"role": "assistant", "content": "s4"},
+        {"role": "user", "content": "s5"},
+    ]
+    system = "s " * 3000
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=True
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 5
+
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=True, system=system
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 1
+    assert req_messages[0]["content"] == "s5"
+
+    messages = [
+        {"role": "user", "content": "s "},
+        {"role": "assistant", "content": "s2"},
+        {"role": "user", "content": "h " * 3000},
+        {"role": "assistant", "content": "s4"},
+        {"role": "user", "content": "s " * 10000},
+    ]
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages, truncate_overlong_msgs=True, system=system
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 1
+
+    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+        messages=messages[-1:], truncate_overlong_msgs=True, system=system
+    )
+    req_messages = resp["_request"]["messages"]
+    assert len(req_messages) == 1
+
 
 def test_auto_model_list():
     model_list = qianfan.ChatCompletion._supported_models()

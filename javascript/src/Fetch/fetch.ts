@@ -1,11 +1,18 @@
-import fetch, {RequestInit, Response} from 'node-fetch';
+import {RequestInit, Response} from 'node-fetch';
 import {Readable} from 'stream';
 import {RateLimiter, TokenLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
-import {isOpenTpm} from '../utils';
+import {isOpenTpm, getCurrentEnvironment, parseHeaders} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
 
+let fetchInstance;
+if (getCurrentEnvironment() === 'node') {
+    fetchInstance = require('node-fetch');
+}
+else {
+    fetchInstance = window.fetch.bind(window);
+}
 export interface FetchConfig {
     retries: number;
     timeout: number;
@@ -41,9 +48,13 @@ export async function handleResponse<T>(props: APIResponseProps): Promise<T | St
     const controller = props.controller ?? new AbortController();
     const contentType = response?.headers?.get('content-type');
     const isJSON = contentType?.includes('application/json') || contentType?.includes('application/vnd.api+json');
+    const headers = parseHeaders(response.headers);
     if (isJSON) {
         const json = await response.json();
-        return json as T;
+        return {
+            headers,
+            ...(json as T),
+        };
     }
     if (options.stream) {
         // 明确指出返回类型为 StreamWithTee
@@ -53,7 +64,10 @@ export async function handleResponse<T>(props: APIResponseProps): Promise<T | St
         return null;
     }
     const text = await response?.text();
-    return text as unknown as T;
+    return {
+        headers,
+        ...(text as unknown as T),
+    };
 }
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -129,7 +143,7 @@ export class Fetch {
         const timeout = setTimeout(() => controller.abort(), ms);
 
         return this.rateLimiter.schedule(() =>
-            fetch(url, {signal: controller.signal as any, ...options})
+            fetchInstance(url, {signal: controller.signal as any, ...(options as any)})
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error, status = ${response.status}`);

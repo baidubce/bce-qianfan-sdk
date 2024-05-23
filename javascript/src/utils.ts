@@ -12,13 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import dotenv from 'dotenv';
-
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
 import * as packageJson from '../package.json';
 
-dotenv.config({path: '../.env'});
+/**
+ * 获取当前运行环境
+ *
+ * @returns 如果运行在浏览器中，返回 'browser'；如果运行在 Node.js 环境中，返回 'node'；否则返回 'unknown'
+ */
+export function getCurrentEnvironment() {
+    if (typeof window !== 'undefined') {
+        return 'browser';
+    }
+    else if (typeof process !== 'undefined' && process.release.name === 'node') {
+        require('dotenv').config();
+        return 'node';
+    }
+    return 'unknown';
+}
 
 /**
  * 获取访问令牌的URL地址
@@ -129,6 +141,9 @@ export function readEnvVariable(key: string) {
  */
 export function getDefaultConfig(): Record<string, string> {
     const envVariables = Object.keys(DEFAULT_CONFIG);
+    if (getCurrentEnvironment() === 'browser') {
+        return {...DEFAULT_CONFIG};
+    }
     const obj: Record<string, string> = {};
     for (const key of envVariables) {
         const value = process.env[key];
@@ -249,4 +264,18 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
         modelInfoMapUppercase,
         modelUppercase,
     };
+}
+
+/**
+ * 将 Headers 对象解析为键值对形式的对象
+ *
+ * @param headers Headers 对象
+ * @returns 返回键值对形式的对象
+ */
+export function parseHeaders(headers): {[key: string]: string} {
+    const headerObj: {[key: string]: string} = {};
+    headers.forEach((value, key) => {
+        headerObj[key] = value;
+    });
+    return headerObj;
 }

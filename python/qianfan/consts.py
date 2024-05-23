@@ -195,10 +195,25 @@ class Consts:
     FineTuneTaskDetailAction: str = "DescribeFineTuningTask"
     FineTuneStopTaskAction: str = "StopFineTuningTask"
     FineTuneSupportedModelsAction: str = "DescribeFineTuningSupportModels"
+    ModelV2BaseRouteAPI: str = "/v2/model"
+    ModelCreateCustomModelSetAction: str = "CreateCustomModelSet"
+    ModelDescribeSystemModelSetsAction: str = "DescribeSystemModelSets"
+    ModelDescribeCustomModelSetsAction: str = "DescribeCustomModelSets"
+    ModelDescribeModelSetAction: str = "DescribeModelSet"
+    ModelDeleteModelSetAction: str = "DeleteModelSet"
+    ModelCreateCustomModelAction: str = "CreateCustomModel"
+    ModelCreateModelCustomConfAction: str = "CreateModelCustomConf"
+    ModelDescribeModelSystemAdvancedConfAction: str = "DescribeModelSystemAdvancedConf"
+    ModelDescribeModelAction: str = "DescribeModel"
+    ModelDescribeModelCustomAdvancedConfAction: str = "DescribeModelCustomAdvancedConf"
+    ModelDeleteModelAction: str = "DeleteModel"
+    ModelCreateModelExportTaskAction: str = "CreateModelExportTask"
+    ModelDescribeModelExportTaskAction: str = "DescribeModelExportTask"
     ServiceV2BaseRouteAPI: str = "/v2/service"
     ServiceCreateAction: str = "CreateService"
     ServiceListAction: str = "DescribeServices"
     ServiceDetailAction: str = "DescribeService"
+    ServiceMetricAction: str = "DescribeServiceMetric"
     ModelDetailAPI: str = "/wenxinworkshop/modelrepo/modelDetail"
     ModelVersionDetailAPI: str = "/wenxinworkshop/modelrepo/modelVersionDetail"
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"
@@ -259,10 +274,15 @@ class Consts:
     AppListAPI: str = "/wenxinworkshop/service/appList"
     EBTokenizerAPI: str = "/rpc/2.0/ai_custom/v1/wenxinworkshop/tokenizer/erniebot"
 
-    ChargeAPI: str = "/v2/charge"
-    ChargePurchaseQueryParam: str = "PurchaseTPMResource"
-    ChargeInfoQueryParam: str = "DescribeTPMResource"
-    ChargeStopQueryParam: str = "ReleaseTPMResource"
+    TpmCreditAPI: str = "/v2/charge"
+    TpmCreditPurchaseQueryParam: str = "PurchaseTPMResource"
+    TpmCreditInfoQueryParam: str = "DescribeTPMResource"
+    TpmCreditStopQueryParam: str = "ReleaseTPMResource"
+
+    PrivateResourceAPI: str = "/v2/charge"
+    PrivateResourcePurchaseParam: str = "PurchaseServiceResource"
+    PrivateResourceGetResourceListParam: str = "DescribeServiceResourceList"
+    PrivateResourceGetResourceParam: str = "DescribeServiceResource"
 
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
@@ -272,6 +292,8 @@ class Consts:
 
     QianfanCacheDir = Path.home() / ".qianfan_cache"
     QianfanLLMModelsListCacheKey = "qianfan_llm_models"
+
+    DateTimeFormat = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class DefaultLLMModel:

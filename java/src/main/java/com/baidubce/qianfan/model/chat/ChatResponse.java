@@ -55,7 +55,7 @@ public class ChatResponse extends BaseResponse<ChatResponse> {
     private Boolean needClearHistory;
 
     /**
-     * 0：正常返回 其他：非正常
+     * null：正常返回 其他：非正常
      */
     private Integer flag;
 

@@ -83,11 +83,18 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
-from qianfan.trainer.configs import TrainConfig
+from qianfan.trainer.configs import TrainConfig, DatasetConfig
 
+
+ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
 trainer = LLMFinetune(
     train_type="ERNIE-Speed",
-    dataset=ds,
+    dataset=DatasetConfig(
+        datasets=[sft_ds],
+        eval_split_ratio=20,
+        corpus_proportion=0.03,
+        sampling_rate=0.01,
+    ),
     train_config=TrainConfig(
         epochs=1, # 迭代轮次（Epoch），控制训练过程中的迭代轮数。
         batch_size=32, # 批处理大小（BatchSize）表示在每次训练迭代中使用的样本数。较大的批处理大小可以加速训练.

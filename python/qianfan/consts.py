@@ -168,6 +168,7 @@ class DefaultValue:
         APIErrorCode.QPSLimitReached.value,
         APIErrorCode.RPMLimitReached.value,
         APIErrorCode.TPMLimitReached.value,
+        APIErrorCode.AppNotExist.value,
     }
     SSLVerificationEnabled: bool = True
     Proxy: str = ""

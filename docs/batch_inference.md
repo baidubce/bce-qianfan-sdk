@@ -63,6 +63,23 @@ for prompt, result in zip(prompt_list, results):
         print(prompt, result)
 ```
 
+对于 `ChatCompletion` 提供的 `batch_do` 和 `abatch_do` 方法，对比其它对象而言，它们还具有以下两个特点：
+
+1. 支持用户直接传入由字典所组成的列表进行批量推理，其中一个字典是一次请求的 Body，里面附有请求所用到的所有参数。
+
+```python
+from qianfan import ChatCompletion
+task_list = [{"messages": [{"role": "user", "content": "你好"}], "system": "你是一个友善的机器人助手"}]
+
+# 同步调用
+ChatCompletion().batch_do(body_list=task_list)
+
+# 异步调用
+ChatCompletion().abatch_do(body_list=task_list)
+```
+
+2. 支持用户设置 `enable_reading_buffer=True` 以获取更为准确的延迟统计信息。此时，流式请求下单条请求返回的对象会由 `Iterator` / `AsyncIterator` 变为 `List`。如果用户需要批量统计不同请求的延迟，请设置该参数
+
 ## 数据集评估
 
 > [点此](https://github.com/baidubce/bce-qianfan-sdk/blob/main/cookbook/dataset/batch_inference_using_dataset.ipynb) 查看 Cookbook
@@ -157,4 +174,14 @@ from qianfan.resources.console.data import Data
 task = Data.get_offline_batch_inference_task(task_id="task_id")
 
 status = task['result']['runStatus'] # => Done / Running / Failed
+```
+
+输出文件的格式为：
+
+```
+{"id":"4","output":{"created":1709216524,"finish_reason":"normal","id":"as-nn7xd2vdcc","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"大气中最丰富的气体是氮气，占大气总体积的约78%。","usage":{"completion_tokens":17,"prompt_tokens":6,"total_tokens":23}},"query":"大气中最丰富的气体是什么？"}
+{"id":"1","output":{"created":1709216525,"finish_reason":"normal","id":"as-mq5rcuhc4d","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"化学元素周期表第一位是氢元素，符号为H。","usage":{"completion_tokens":13,"prompt_tokens":9,"total_tokens":22}},"query":"化学元素周期表中第一位的元素是什么？"}
+{"id":"2","output":{"created":1709216526,"finish_reason":"normal","id":"as-h7bw5f8kg5","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"水的化学式是H₂O。水是由氢、氧两种元素组成的无机物，无毒，可饮用。在常温常压下为无色无味的透明液体，被称为人类生命的源泉，是维持生命的重要物质。","usage":{"completion_tokens":50,"prompt_tokens":5,"total_tokens":55}},"query":"水的化学式是什么？"}
+{"id":"3","output":{"created":1709216528,"finish_reason":"normal","id":"as-swjxpa86s9","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"水的冰态在摄氏0度开始融化。通常情况下，冰的熔点是0℃，当环境温度高于0℃，冰块温度达到0℃时，冰开始融化。冰在融化过程中，冰水混合在一起，温度会长时间保持在0℃，直至完全融化成水。","usage":{"completion_tokens":59,"prompt_tokens":10,"total_tokens":69}},"query":"水的冰态在摄氏多少度开始融化？"}
+{"id":"5","output":{"created":1709216528,"finish_reason":"normal","id":"as-5s2f544zhg","is_truncated":false,"need_clear_history":false,"object":"chat.completion","result":"太阳系中最大的行星是**木星**。木星是太阳系中体积最大的行星，其质量是太阳系其他行星质量的总和的2.5倍。木星是一个气态行星，大气层高度可达5千米，是其他太阳系行星望尘莫及的。木星的大气层中包含大量的氢、氦和甲烷。木星的磁场强度是地球的14倍，这比太阳系中其他任何行星都要强得多。","usage":{"completion_tokens":100,"prompt_tokens":8,"total_tokens":108}},"query":"太阳系中最大的行星是哪颗？"}
 ```

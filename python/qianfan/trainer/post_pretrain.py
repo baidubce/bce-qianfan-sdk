@@ -28,6 +28,7 @@ from qianfan.trainer.base import (
     EventHandler,
 )
 from qianfan.trainer.configs import (
+    DatasetConfig,
     ModelInfo,
     PostPreTrainModelInfoMapping,
     TrainConfig,
@@ -49,7 +50,7 @@ class PostPreTrain(Trainer):
     def __init__(
         self,
         train_type: Optional[str] = None,
-        dataset: Optional[Union[Dataset, str]] = None,
+        dataset: Optional[Union[DatasetConfig, Dataset, str]] = None,
         train_config: Optional[Union[TrainConfig, str]] = None,
         event_handler: Optional[EventHandler] = None,
         name: Optional[str] = None,

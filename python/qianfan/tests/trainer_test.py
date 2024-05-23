@@ -32,7 +32,7 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.configs import TrainConfig, TrainLimit
+from qianfan.trainer.configs import DatasetConfig, TrainConfig, TrainLimit
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import Finetune, LLMFinetune
@@ -555,3 +555,19 @@ def test_persist():
         trainer.save("./xx1.json")
     finally:
         os.remove(json_config_path)
+
+
+def test_trainer_dataset_config():
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    qf_ds_conf = DatasetConfig(
+        datasets=[sft_ds],
+        eval_split_ratio=20,
+        corpus_proportion=0.03,
+        sampling_rate=0.01,
+    )
+
+    trainer = Finetune(
+        train_type="ERNIE-Speed",
+        dataset=qf_ds_conf,
+    )
+    trainer.run()

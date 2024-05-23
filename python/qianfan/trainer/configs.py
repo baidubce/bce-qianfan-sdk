@@ -30,14 +30,33 @@ T = TypeVar("T")
 LimitType = console_consts.FinetuneSupportHyperParameterCheckType
 
 
+class DatasetConfig(BaseModel):
+    datasets: List[Any]
+    """
+    datasets
+    """
+    eval_split_ratio: float = 20
+    """
+    training evaluation split ratio
+    """
+    corpus_proportion: Optional[float] = None
+    """
+    corpus proportion
+    """
+    sampling_rate: Optional[float] = None
+    """
+    sampling rate
+    """
+
+
 class BaseTrainConfig(BaseModel):
     peft_type: Optional[Union[str, PeftType]] = None
     """
     parameter efficient FineTuning method, like `LoRA`, `P-tuning`, `ALL`
     """
-    trainset_rate: int = 20
+    trainset_rate: Optional[int] = None
     """
-    rate for dataset to spilt 
+    rate for dataset to spilt, use DatasetConfig to configure the split ratio
     """
     extras: Dict[str, Any] = {}
     """

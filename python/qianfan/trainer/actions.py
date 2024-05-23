@@ -31,6 +31,7 @@ from qianfan.trainer.base import (
     with_event,
 )
 from qianfan.trainer.configs import (
+    DatasetConfig,
     DefaultDPOTrainConfigMapping,
     DefaultPostPretrainTrainConfigMapping,
     DefaultTrainConfigMapping,
@@ -86,20 +87,31 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     dataset: Optional[Dataset] = None
     bos_path: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
+    corpus_proportion: Optional[float] = None
+    eval_split_ratio: Optional[float] = None
+    sampling_rate: Optional[float] = None
 
     def __init__(
         self,
-        dataset: Optional[Union[Dataset, str]] = None,
+        dataset: Optional[Union[DatasetConfig, Dataset, str]] = None,
         dataset_template: Optional[console_consts.DataTemplateType] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
+        self.corpus_proportion = kwargs.get("corpus_proportion")
+        self.eval_split_ratio = kwargs.get("eval_split_ratio")
+        self.sampling_rate = kwargs.get("sampling_rate")
         if dataset is None:
             raise InvalidArgumentError("dataset must be set")
-        if isinstance(dataset, str):
+        if isinstance(dataset, DatasetConfig):
+            assert isinstance(dataset.datasets[0], Dataset)
+            self.dataset = dataset.datasets[0]
+            self.corpus_proportion = dataset.corpus_proportion or self.corpus_proportion
+            self.eval_split_ratio = dataset.eval_split_ratio or self.eval_split_ratio
+            self.sampling_rate = dataset.sampling_rate or self.sampling_rate
+        elif isinstance(dataset, str):
             if is_valid_bos_path(dataset):
                 self.bos_path = dataset
-                # self.dataset = Dataset.load(bos_load_args=) 需要bos信息
                 self._dataset_str = dataset
             elif dataset.startswith("ds-"):
                 self.dataset = Dataset.load(qianfan_dataset_id=dataset)
@@ -128,7 +140,17 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
-        return self._exec(input, **kwargs)
+        resp = self._exec(input, **kwargs)
+        if resp.get("datasets") is None:
+            return resp
+        if self.eval_split_ratio:
+            resp["datasets"]["splitRatio"] = self.eval_split_ratio
+        if self.corpus_proportion:
+            resp["datasets"]["corpusProportion"] = f"{self.corpus_proportion}%"
+        if self.sampling_rate:
+            for d in resp["datasets"]["versions"]:
+                d["samplingRate"] = self.sampling_rate
+        return resp
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         """
@@ -528,7 +550,6 @@ class TrainAction(
             raise InvalidArgumentError("train set must be set")
         assert isinstance(ds_config, dict)
         assert self.train_config
-        ds_config["splitRatio"] = self.train_config.trainset_rate
 
         if self.job_id is None:
             # request for create model train task

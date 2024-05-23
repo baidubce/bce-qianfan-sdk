@@ -521,6 +521,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         assert model.old_version_id is not None
         res_config: Dict[str, Any] = {
             "type": self.deploy_config.resource_type,
+            "replicasCount": self.deploy_config.replicas,
         }
         if self.deploy_config.qps is not None:
             res_config["qps"] = self.deploy_config.qps

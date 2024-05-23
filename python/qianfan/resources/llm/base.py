@@ -612,7 +612,7 @@ class BaseResource(object):
         generate body
         """
         kwargs = copy.deepcopy(kwargs)
-        IGNORED_KEYS = {"headers", "query"}
+        IGNORED_KEYS = {"headers", "query", "request_id"}
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]

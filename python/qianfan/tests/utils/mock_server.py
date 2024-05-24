@@ -311,32 +311,25 @@ def chat(model_name):
         global _multi_func_call_round
         _multi_func_call_round += 1
         if _multi_func_call_round == 1:
-            return json_response(
-                {
-                    "id": "as-bcmt5ct4id",
-                    "object": "chat.completion",
-                    "created": 1680167072,
-                    "result": (
-                        'Action: get_current_weather\nAction Input: {"location": "上海市"}'
-                    ),
-                    "is_truncated": False,
-                    "need_clear_history": False,
-                    "usage": {
-                        "prompt_tokens": 10,
-                        "completion_tokens": 72,
-                        "total_tokens": 82,
-                    },
-                },
-                request_id,
-            )
+            ans = 'Action: get_current_weather\nAction Input: {"location": "上海市"}'
         else:
             _multi_func_call_round = 0
+            ans = "上海气温25度"
+
+        if r.get("stream"):
+            return flask.Response(
+                chat_completion_stream_response(
+                    model_name, [{"role": "assistant", "content": ans}]
+                ),
+                mimetype="text/event-stream",
+            )
+        else:
             return json_response(
                 {
                     "id": "as-bcmt5ct4ie",
                     "object": "chat.completion",
                     "created": 1680167075,
-                    "result": "上海气温25度",
+                    "result": ans,
                     "is_truncated": False,
                     "need_clear_history": False,
                     "usage": {
@@ -4130,7 +4123,7 @@ def _start_mock_server():
     run mock server
     """
     try:
-        requests.get("http://127.0.0.1:8866")
+        requests.get("http://127.0.0.1:8865")
     except Exception:
         # mock server is not running, start it
         app.run(host="0.0.0.0", port=8866, debug=True, use_reloader=False)

@@ -17,6 +17,7 @@ dataset core concept, a wrap of data processing, data transmission and data vali
 import functools
 import uuid
 from copy import deepcopy
+from queue import Empty
 from time import sleep
 from typing import (
     Any,
@@ -63,6 +64,7 @@ from qianfan.dataset.dataset_utils import (
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
     open_html_in_browser,
+    open_in_streamlit,
 )
 from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
@@ -2019,7 +2021,7 @@ class Dataset(Table):
                 )
             )
         else:
-            open_html_in_browser(self)
+            self.open_in_streamlit()
 
     def show_overview_info(self) -> None:
         """
@@ -2061,8 +2063,6 @@ class Dataset(Table):
                         repetition_set[k][v] = repetition_set[k].get(v, 0) + 1
 
         self.iterate(_iterator)
-
-        print(f"entry count: {len(self)}\n")
 
         if packed_identifier not in null_counter_set:
             column_fields = self.col_names()
@@ -2208,3 +2208,31 @@ class Dataset(Table):
                 "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"
                 " if you want to start a stress test task."
             )
+
+    def open_in_streamlit(self) -> None:
+        from multiprocessing import Process, Queue
+
+        # 用于在父进程和子脚本之间同步数据集的队列
+        ds_queue = Queue(0)
+
+        # 子进程
+        child_process = Process(target=functools.partial(open_in_streamlit, self))
+
+        # 将队列绑定在子进程对象中以供获取
+        setattr(child_process, "_callback_queue", ds_queue)
+
+        # 开启子进程
+        child_process.start()
+
+        # 循环判断子进程是否存活
+        while child_process.is_alive():
+            try:
+                new_pyarrow_table = ds_queue.get(block=True, timeout=5)
+                self.inner_table = new_pyarrow_table
+            except Empty:
+                continue
+            except Exception as e:
+                log_error(f"an error occurred: {e}")
+                raise e
+
+        child_process.join()

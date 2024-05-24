@@ -15,6 +15,9 @@
 """
 utilities dataset needs
 """
+import functools
+import os
+import threading
 import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -521,3 +524,13 @@ def open_html_in_browser(ds: Any) -> None:
     browser.open("http://127.0.0.1:%s" % server.server_port)
 
     server.handle_request()
+
+
+def open_in_streamlit(ds: Any) -> None:
+    from streamlit.web.bootstrap import run
+
+    script_file = os.path.join(
+        os.path.split(os.path.abspath(__file__))[0], "streamlit_script.py"
+    )
+
+    run(script_file, False, [ds], {})

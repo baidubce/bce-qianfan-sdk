@@ -95,11 +95,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self,
         dataset: Optional[Union[DatasetConfig, Dataset, str]] = None,
         dataset_template: Optional[console_consts.DataTemplateType] = None,
+        eval_split_ratio: float = 20,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
+        self.eval_split_ratio = eval_split_ratio
         self.corpus_proportion = kwargs.get("corpus_proportion")
-        self.eval_split_ratio = kwargs.get("eval_split_ratio")
         self.sampling_rate = kwargs.get("sampling_rate")
         if dataset is None:
             raise InvalidArgumentError("dataset must be set")

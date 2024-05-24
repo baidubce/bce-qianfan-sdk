@@ -850,6 +850,18 @@ def finetune_v2_create_job(body):
 def finetune_v2_create_task(body):
     task_id = f"task-{generate_letter_num_random_id(12)}"
     job_id = body["jobId"]
+    if not body.get("datasetConfig", {}).get("splitRatio"):
+        return json_response(
+            {
+                "requestId": "bfad9ba9-9fc2-406d-ae84-c9e1ea92140a",
+                "code": "InappropriateJSON",
+                "message": (
+                    "The JSON you provided was well-formed and valid, but not"
+                    " appropriate for this operation. param[splitRatio] invalid."
+                ),
+            },
+            status_code=400,
+        )
     if job_id == MockFailedJobId:
         task_id = MockFailedTaskId
     global finetune_task_call_times

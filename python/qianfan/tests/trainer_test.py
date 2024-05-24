@@ -15,6 +15,7 @@ import os
 
 import pytest
 
+from qianfan import errors
 from qianfan.dataset import Dataset
 from qianfan.dataset.data_source import QianfanDataSource
 from qianfan.errors import InternalError, InvalidArgumentError
@@ -71,11 +72,25 @@ def test_train_action():
         train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.PostPretrain
     )
 
+    with pytest.raises(errors.RequestError):
+        output = ta.exec(
+            input={
+                "datasets": {
+                    "sourceType": (
+                        console_consts.TrainDatasetSourceType.PrivateBos.value
+                    ),
+                    "versions": [{"versionBosUri": "bos:/aaa/"}],
+                }
+            }
+        )
+
+    ta = TrainAction(train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.SFT)
     output = ta.exec(
         input={
             "datasets": {
                 "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
                 "versions": [{"versionBosUri": "bos:/aaa/"}],
+                "splitRatio": 20,
             }
         }
     )

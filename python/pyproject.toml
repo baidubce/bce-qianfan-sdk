@@ -30,7 +30,7 @@ python-dotenv = [
 tenacity = "^8.2.3"
 multiprocess = "*"
 langchain = { version = ">=0.1.10", python = ">=3.8.1", optional = true }
-langchain-community = { version="*", python = ">=3.8.1", optional = true }
+langchain-community = { version = "*", python = ">=3.8.1", optional = true}
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8", optional = true },
     { version = ">=1.22.0", python = ">=3.8", optional = true }
@@ -87,7 +87,7 @@ ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 [tool.poetry.extras]
 dataset_base = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock"]
 local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
-langchain = ["langchain","langchain-community"]
+langchain = ["langchain", "langchain-community"]
 openai = ["fastapi", "uvicorn"]
 all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "langchain-community", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
 

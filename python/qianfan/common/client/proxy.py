@@ -128,7 +128,7 @@ def entry(
 
     def set_cors(app: FastAPI) -> None:
         origins = [
-            "http://172.18.184.85:5000",
+            "*",
         ]
         app.add_middleware(
             CORSMiddleware,

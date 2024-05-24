@@ -27,7 +27,6 @@ from pathlib import Path
 from time import sleep
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, Union
 
-import filelock
 import pyarrow
 import requests
 
@@ -457,6 +456,8 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "md5") -> str:
 
 
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
+    import filelock
+
     stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
 
     log_info(f"start to write arrow table to {cache_file_path}")

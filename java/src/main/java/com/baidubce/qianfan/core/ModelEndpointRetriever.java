@@ -71,6 +71,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preemptible", "completions_pro_preemptible");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview", "ernie-4.0-8k-preview");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview-0518", "completions_adv_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0329", "ernie-4.0-8k-0329");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0104", "ernie-4.0-8k-0104");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k", "completions");
@@ -80,6 +81,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preemptible", "completions_preemptible");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preview", "ernie-3.5-8k-preview");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0329", "ernie-3.5-8k-0329");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-128k", "ernie-3.5-128k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-8k", "ernie_speed");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-128k", "ernie-speed-128k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-8k-0321", "ernie-char-8k");

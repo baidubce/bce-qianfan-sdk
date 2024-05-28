@@ -14,16 +14,34 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.constant;
+package com.baidubce.qianfan.model.rerank;
 
-public class ModelType {
-    public static final String CHAT = "chat";
-    public static final String COMPLETIONS = "completions";
-    public static final String EMBEDDINGS = "embeddings";
-    public static final String TEXT_2_IMAGE = "text2image";
-    public static final String IMAGE_2_TEXT = "image2text";
-    public static final String RERANK = "reranker";
+public class RerankUsage {
+    /**
+     * 问题tokens数
+     */
+    private Integer promptTokens;
 
-    private ModelType() {
+    /**
+     * tokens总数
+     */
+    private Integer totalTokens;
+
+    public Integer getPromptTokens() {
+        return promptTokens;
+    }
+
+    public RerankUsage setPromptTokens(Integer promptTokens) {
+        this.promptTokens = promptTokens;
+        return this;
+    }
+
+    public Integer getTotalTokens() {
+        return totalTokens;
+    }
+
+    public RerankUsage setTotalTokens(Integer totalTokens) {
+        this.totalTokens = totalTokens;
+        return this;
     }
 }

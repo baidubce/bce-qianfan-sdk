@@ -41,7 +41,11 @@ public class HttpClient {
         cm.setMaxTotal(MAX_CONNECTIONS);
         cm.setDefaultMaxPerRoute(MAX_CONNECTIONS);
 
-        client = HttpClients.custom().setConnectionManager(cm).build();
+        client = HttpClients.custom()
+                // Use system properties for proxy settings
+                .useSystemProperties()
+                .setConnectionManager(cm)
+                .build();
     }
 
     private HttpClient() {

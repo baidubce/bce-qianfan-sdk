@@ -22,7 +22,7 @@ public class ModelType {
     public static final String EMBEDDINGS = "embeddings";
     public static final String TEXT_2_IMAGE = "text2image";
     public static final String IMAGE_2_TEXT = "image2text";
-    public static final String RERANK = "reranker";
+    public static final String RERANKER = "reranker";
 
     private ModelType() {
     }

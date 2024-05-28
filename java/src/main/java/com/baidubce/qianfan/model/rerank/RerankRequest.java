@@ -43,7 +43,7 @@ public class RerankRequest extends BaseRequest<RerankRequest> {
 
     @Override
     public String getType() {
-        return ModelType.RERANK;
+        return ModelType.RERANKER;
     }
 
     public String getQuery() {

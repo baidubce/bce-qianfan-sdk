@@ -285,6 +285,8 @@ class Consts:
     PrivateResourceGetResourceListParam: str = "DescribeServiceResourceList"
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
 
+    ChatV2API: str = "/v2/chat"
+
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
     XRequestID: str = "Request_id"

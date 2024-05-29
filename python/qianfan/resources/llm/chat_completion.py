@@ -21,23 +21,35 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Type,
     Union,
 )
 
 import qianfan.errors as errors
-from qianfan.config import get_config
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
+    BaseResourceV2,
     BatchRequestFuture,
+    VersionBase,
 )
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_error, log_info
 
 
-class ChatCompletion(BaseResource):
+class ChatCompletion(VersionBase):
+    @classmethod
+    def _real_base(cls, version: str) -> Type:
+        if version == "1":
+            return ChatCompletionV1
+        elif version == "2":
+            return ChatCompletionV2
+        raise errors.InvalidArgumentError("Invalid version")
+
+
+class ChatCompletionV1(BaseResourceV1):
     """
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
     """
@@ -1023,33 +1035,18 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-        if (
-            not get_config().DISABLE_EB_SDK
-            and get_config().EB_SDK_INSTALLED
-            and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
-        ):
-            import erniebot
 
-            erniebot.ak = self._client._auth._ak
-            erniebot.sk = self._client._auth._sk
-            erniebot.access_token = self._client._auth.access_token()
-            # compat with eb sdk
-            if model == "ERNIE-Bot":
-                model = "ernie-bot-3.5"
-            return erniebot.ChatCompletion.create(  # type: ignore
-                model=model.lower(), stream=stream, **kwargs
-            )
         if request_id is not None:
             kwargs["request_id"] = request_id
         kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         if not auto_concat_truncate:
@@ -1084,11 +1081,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = msgs
             resp = self._do(
                 model,
-                endpoint,
                 False,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, QfResponse)
@@ -1156,11 +1153,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages
             resp = self._do(
                 model,
-                endpoint,
                 True,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
 
@@ -1238,33 +1235,18 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-        if (
-            not get_config().DISABLE_EB_SDK
-            and get_config().EB_SDK_INSTALLED
-            and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
-        ):
-            import erniebot
 
-            erniebot.ak = self._client._auth._ak
-            erniebot.sk = self._client._auth._sk
-            erniebot.access_token = self._client._auth.access_token()
-            # compat with eb sdk
-            if model == "ERNIE-Bot":
-                model = "ernie-bot-3.5"
-            return await erniebot.ChatCompletion.acreate(  # type: ignore
-                model=model.lower(), stream=stream, **kwargs
-            )
         if request_id is not None:
             kwargs["request_id"] = request_id
         kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         if not auto_concat_truncate:
@@ -1299,11 +1281,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = msgs
             resp = await self._ado(
                 model,
-                endpoint,
                 stream,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, QfResponse)
@@ -1347,11 +1329,11 @@ class ChatCompletion(BaseResource):
 
             resp = await self._ado(
                 model,
-                endpoint,
                 True,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, AsyncIterator)
@@ -1517,7 +1499,7 @@ class ChatCompletion(BaseResource):
         return await self._abatch_request(tasks, worker_num)
 
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         generate body
@@ -1525,7 +1507,7 @@ class ChatCompletion(BaseResource):
         truncate_msg = kwargs["_auto_truncate"]
         del kwargs["_auto_truncate"]
 
-        body = super()._generate_body(model, endpoint, stream, **kwargs)
+        body = super()._generate_body(model, stream, **kwargs)
         if not truncate_msg or len(body["messages"]) <= 1:
             return body
 
@@ -1536,7 +1518,7 @@ class ChatCompletion(BaseResource):
                 model_info = self.get_model_info(model)
             except errors.InvalidArgumentError:
                 ...
-
+        endpoint = self._extract_endpoint(**kwargs)
         if model_info is None:
             # 使用默认模型
             try:
@@ -1604,3 +1586,31 @@ class ChatCompletion(BaseResource):
             body["messages"] = new_messages
 
         return body
+
+
+class ChatCompletionV2(BaseResourceV2):
+    @classmethod
+    def api_type(cls) -> str:
+        return "chat"
+
+    def do(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        return self._do(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )

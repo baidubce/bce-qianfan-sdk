@@ -449,7 +449,9 @@ def _check_and_generate_service(
 
     service: Union[ChatCompletion, Completion]
     if is_chat_service:
-        service = ChatCompletion(service_model, service_endpoint, **kwargs)
+        service = ChatCompletion(
+            version="1", model=service_model, endpoint=service_endpoint, **kwargs
+        )
     else:
         service = Completion(service_model, service_endpoint, **kwargs)
 

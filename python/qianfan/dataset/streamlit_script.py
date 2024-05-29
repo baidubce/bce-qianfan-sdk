@@ -68,7 +68,7 @@ for label, column in zip(input_label, pd_table.columns):
 def on_quit_button_clicked() -> None:
     from multiprocessing import current_process
 
-    os.kill(current_process().pid, signal.SIGTERM)
+    os.kill(current_process().pid, signal.SIGTERM)  # type: ignore
 
 
 col1, col2 = st.columns(2)

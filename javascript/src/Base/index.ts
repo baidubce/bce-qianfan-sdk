@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import HttpClient from '../HttpClient';
-import Fetch, {FetchConfig} from '../Fetch/fetch';
+import Fetch, {FetchConfig} from '../Fetch/index';
 import {DEFAULT_HEADERS} from '../constant';
 import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath, getCurrentEnvironment} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
@@ -33,7 +33,7 @@ export class BaseClient {
     protected qianfanLlmRetryMaxWaitInterval?: string;
     protected Endpoint?: string;
     protected headers = DEFAULT_HEADERS;
-    protected fetchInstance: Fetch;
+    protected fetchInstance;
     protected fetchConfig: FetchConfig;
     access_token = '';
     expires_in = 0;

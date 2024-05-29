@@ -26,7 +26,6 @@ export function getCurrentEnvironment() {
         return 'browser';
     }
     else if (typeof process !== 'undefined' && process.release.name === 'node') {
-        require('dotenv').config();
         return 'node';
     }
     return 'unknown';
@@ -144,6 +143,7 @@ export function getDefaultConfig(): Record<string, string> {
     if (getCurrentEnvironment() === 'browser') {
         return {...DEFAULT_CONFIG};
     }
+    require('dotenv').config();
     const obj: Record<string, string> = {};
     for (const key of envVariables) {
         const value = process.env[key];

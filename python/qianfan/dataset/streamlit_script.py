@@ -1,3 +1,4 @@
+import os
 import signal
 import sys
 from typing import List, Optional, Tuple, Union
@@ -65,7 +66,9 @@ for label, column in zip(input_label, pd_table.columns):
 
 
 def on_quit_button_clicked() -> None:
-    signal.raise_signal(signal.SIGTERM)
+    from multiprocessing import current_process
+
+    os.kill(current_process().pid, signal.SIGTERM)
 
 
 col1, col2 = st.columns(2)

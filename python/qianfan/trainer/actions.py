@@ -407,7 +407,8 @@ class TrainAction(
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
-                self.job_id = pre_task_detail.get("result", {}).get("jobId")
+                if train_mode.value == pre_task_detail["result"]["trainMode"]:
+                    self.job_id = pre_task_detail.get("result", {}).get("jobId")
                 self.train_mode = train_mode
             self.is_incr = True
         else:
@@ -552,7 +553,7 @@ class TrainAction(
         assert isinstance(ds_config, dict)
         assert self.train_config
 
-        if self.job_id is None:
+        if not self.job_id:
             # request for create model train task
             assert self.train_type is not None
             resp = api.FineTune.V2.create_job(
@@ -657,11 +658,7 @@ class TrainAction(
                 job_progress_str = task_status_result.get("runProgress")
                 job_progress = int(job_progress_str[:-1])
                 self.progress = job_progress
-                log_prefix = (
-                    "sft"
-                    if self.train_mode == console_consts.TrainMode.SFT
-                    else "postPretrain"
-                )
+                log_prefix = log_prefix_mapping.get(self.train_mode, "sft")
                 self.log_link = f"https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
                 self.vdl_link = task_status_result.get("vdlLink", "")
                 log_info(
@@ -1302,4 +1299,11 @@ action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Error: TrainStatus.EvaluationFailed,
         ActionState.Stopped: TrainStatus.EvaluationStopped,
     },
+}
+
+
+log_prefix_mapping = {
+    console_consts.TrainMode.SFT: "dpo",
+    console_consts.TrainMode.PostPretrain: "postPretrain",
+    console_consts.TrainMode.DPO: "dpo",
 }

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-type Bytes = string | ArrayBuffer | Uint8Array | null | undefined;
+import {ReadableStream} from 'web-streams-polyfill';
+
+type Bytes = string | Uint8Array | null | undefined;
 const EVENT_TYPE = [null, 'pluginMeta', 'plugin', 'chat'];
 
 export type ServerSentEvent = {
@@ -123,7 +125,7 @@ class LineDecoder {
             return bytes;
         }
 
-        if (bytes instanceof Uint8Array || bytes instanceof ArrayBuffer) {
+        if (bytes instanceof Uint8Array) {
             return this.textDecoder.decode(bytes);
         }
 

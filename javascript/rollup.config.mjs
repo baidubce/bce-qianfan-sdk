@@ -1,29 +1,28 @@
-import json from '@rollup/plugin-json';
+import babel from '@rollup/plugin-babel';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
-import babel from '@rollup/plugin-babel';
 import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
 import eslint from '@rollup/plugin-eslint';
+import inject from '@rollup/plugin-inject';
+import ignore from 'rollup-plugin-ignore';
+import nodeGlobals from 'rollup-plugin-node-globals';
+import nodePolyfills from 'rollup-plugin-node-polyfills';
+import nodeBuiltins from 'rollup-plugin-node-builtins';
 
-export default {
-    input: 'src/index.ts',
-    output: [
-        {
-            file: 'dist/bundle.js',
-            format: 'umd',
-            name: 'MyLibrary',
-        },
-        {
-            file: 'dist/bundle.esm.js',
-            format: 'es',
-        },
-    ],
-    plugins: [
+const isBrowserBuild = format => ['es', 'iife'].includes(format);
+
+const createConfig = output => {
+    const plugins = [
         typescript({
             tsconfig: 'tsconfig.json',
         }),
         json(),
-        resolve(),
+        resolve({
+            browser: isBrowserBuild(output.format),
+            preferBuiltins: !isBrowserBuild(output.format),
+            dedupe: ['buffer'],
+        }),
         commonjs(),
         babel({
             extensions: ['.js', '.ts'],
@@ -39,5 +38,55 @@ export default {
             include: ['src/'],
             exclude: ['node_modules/'],
         }),
-    ],
+        inject({
+            Buffer: ['buffer', 'Buffer'],
+            crypto: 'crypto-js',
+        }),
+    ];
+
+    if (isBrowserBuild(output.format)) {
+        plugins.push(
+            nodeGlobals(),
+            nodePolyfills({
+                exclude: ['crypto'],
+            }),
+            nodeBuiltins()
+        );
+        plugins.push(ignore(['dotenv', 'os', 'path']));
+    }
+
+    return {
+        input: 'src/index.ts',
+        output,
+        plugins,
+        external: isBrowserBuild(output.format) ? [] : ['dotenv'],
+        onwarn: function (warning, warn) {
+            if (warning.code === 'CIRCULAR_DEPENDENCY') {
+                if (warning.importer?.includes('node_modules/bottleneck')
+                  || warning.importer?.includes('node_modules/asn1.js')) {
+                    return;
+                }
+            }
+            warn(warning);
+        },
+    };
 };
+
+export default [
+    createConfig({
+        file: 'dist/bundle.cjs.js',
+        format: 'cjs',
+        sourcemap: false,
+    }),
+    createConfig({
+        file: 'dist/bundle.esm.js',
+        format: 'es',
+        sourcemap: false,
+    }),
+    createConfig({
+        file: 'dist/bundle.iife.js',
+        format: 'iife',
+        name: 'QianfanSDK',
+        sourcemap: true,
+    }),
+];

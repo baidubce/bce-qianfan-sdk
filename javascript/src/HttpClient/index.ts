@@ -1,23 +1,23 @@
 import packageJson from '../../package.json';
-import {Fetch, FetchConfig} from '../Fetch/fetch';
-import {getCurrentEnvironment} from '../utils';
+import Fetch, {FetchConfig} from '../Fetch/index';
 import Auth from './auth';
 import * as H from './headers';
 import {urlObjectToPlainObject} from './strings';
+import {getCurrentEnvironment} from '../utils';
 
 let URLClass;
-if (getCurrentEnvironment() === 'node') {
-    URLClass = require('url').URL;
+if (getCurrentEnvironment() === 'browser') {
+    URLClass = window.URL.bind(window);
 }
 else {
-    URLClass = window.URL.bind(window);
+    URLClass = require('url').URL;
 }
 
 // 获取版本号
 const version = packageJson.version;
 
 class HttpClient {
-    private fetchInstance: Fetch;
+    private fetchInstance;
     private readonly defaultHeaders: Record<string, any> = {
         [H.CONTENT_TYPE]: 'application/json; charset=UTF-8',
         [H.USER_AGENT]:

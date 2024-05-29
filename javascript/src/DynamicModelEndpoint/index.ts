@@ -1,5 +1,5 @@
 import {Mutex} from 'async-mutex';
-import Fetch from '../Fetch/fetch';
+import Fetch from '../Fetch/index';
 import HttpClient from '../HttpClient';
 import {SERVER_LIST_API, DEFAULT_HEADERS, DYNAMIC_INVALID} from '../constant';
 import {getTypeMap, typeModelEndpointMap} from './utils';
@@ -20,7 +20,7 @@ class DynamicModelEndpoint {
     /**
      * 构造函数
      */
-    protected fetchInstance: Fetch;
+    protected fetchInstance;
 
     constructor(client: HttpClient, qianfanConsoleApiBaseUrl: string, qianfanBaseUrl: string) {
         this.client = client;

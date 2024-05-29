@@ -13,7 +13,7 @@
 // limitations under the License.
 import DynamicModelEndpoint from '../index';
 import HttpClient from '../../HttpClient';
-import Fetch from '../../Fetch/fetch';
+import Fetch from '../../Fetch/index';
 
 jest.mock('../../HttpClient', () => {
     return jest.fn().mockImplementation(() => {

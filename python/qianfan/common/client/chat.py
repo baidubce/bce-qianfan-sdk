@@ -28,7 +28,6 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
-import qianfan
 from qianfan import QfRole
 from qianfan.common.client.utils import (
     InputEmptyValidator,
@@ -39,7 +38,7 @@ from qianfan.common.client.utils import (
 )
 from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
-from qianfan.resources.llm.chat_completion import ChatCompletion
+from qianfan.resources.llm.chat_completion import ChatCompletionV1
 from qianfan.resources.typing import QfMessages, QfResponse
 
 
@@ -72,13 +71,13 @@ class ChatClient(object):
         """
         Init the chat client
         """
-        self.clients: List[qianfan.ChatCompletion] = []
+        self.clients: List[ChatCompletionV1] = []
         models = model.split(",") if model else []
         endpoints = endpoint.split(",") if endpoint else []
         for m in models:
-            self.clients.append(qianfan.ChatCompletion(model=m))
+            self.clients.append(ChatCompletionV1(model=m))
         for e in endpoints:
-            self.clients.append(qianfan.ChatCompletion(endpoint=e))
+            self.clients.append(ChatCompletionV1(endpoint=e))
         self.msg_history: List[Optional[QfMessages]] = [
             QfMessages() for _ in range(len(self.clients))
         ]
@@ -132,7 +131,9 @@ class ChatClient(object):
             *render_list,
         )
 
-    def _client_name(self, client: ChatCompletion, markup: Optional[str] = None) -> str:
+    def _client_name(
+        self, client: ChatCompletionV1, markup: Optional[str] = None
+    ) -> str:
         """
         Generate client name
         """
@@ -247,9 +248,7 @@ class ChatClient(object):
                 console=self.console,
             ) as live:
 
-                def model_response_worker(
-                    client: qianfan.ChatCompletion, i: int
-                ) -> None:
+                def model_response_worker(client: ChatCompletionV1, i: int) -> None:
                     """
                     Worker for each client to recevie message
                     """
@@ -318,7 +317,7 @@ def chat_entry(
             " used if no model and endpoint are specified. Use comma(,) to split"
             " multiple models."
         ),
-        autocompletion=qianfan.ChatCompletion.models,
+        autocompletion=ChatCompletionV1.models,
     ),
     endpoint: Optional[str] = typer.Option(
         None,

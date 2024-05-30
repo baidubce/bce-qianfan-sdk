@@ -170,6 +170,12 @@ class VersionBase(object):
 
 
 class BaseResource(object):
+    def __init__(
+        self,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """

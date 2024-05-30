@@ -15,13 +15,13 @@
 import asyncio
 from typing import Any, Dict, List, Optional
 
-import qianfan
 from qianfan import VERSION, QfResponse
 from qianfan.autotuner.context import Config, Context, Metrics
 from qianfan.autotuner.runner.infer_runner import InferRunner
 from qianfan.common.prompt.prompt import Prompt
 from qianfan.dataset import Dataset
 from qianfan.evaluation.evaluator import Evaluator
+from qianfan.resources.llm.chat_completion import ChatCompletionV1
 from qianfan.utils.utils import async_to_thread, generate_letter_num_random_id
 
 
@@ -38,7 +38,7 @@ class QianfanRunner(InferRunner):
         dataset: Dataset,
         evaluator: Evaluator,
         prompt: Optional[Prompt] = None,
-        client: Optional[qianfan.ChatCompletion] = None,
+        client: Optional[ChatCompletionV1] = None,
         repeat: int = 1,
         **kwargs: Any,
     ):
@@ -50,7 +50,7 @@ class QianfanRunner(InferRunner):
             The evaluator object responsible for evaluating model outputs.
           prompt (Optional[Prompt]):
             The prompt used for inference. Default is None.
-          client (Optional[qianfan.ChatCompletion]):
+          client (Optional[ChatCompletionV1]):
             The client used for inference. Default is None which means the default
             client will be used.
           repeat (int):
@@ -60,12 +60,12 @@ class QianfanRunner(InferRunner):
         """
         price_list = {
             model: (info.input_price_per_1k_tokens, info.output_price_per_1k_tokens)
-            for model, info in qianfan.ChatCompletion._supported_models().items()
+            for model, info in ChatCompletionV1._supported_models().items()
         }
         super().__init__(dataset=dataset, price_list=price_list, **kwargs)
         self.evaluator = evaluator
         if client is None:
-            self._client = qianfan.ChatCompletion()
+            self._client = ChatCompletionV1()
         else:
             self._client = client
         self.prompt = prompt

@@ -1332,162 +1332,6 @@ class ChatCompletionV1(BaseResourceV1):
                 is_truncated = r["is_truncated"]
                 yield r
 
-    def batch_do(
-        self,
-        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
-        body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
-        worker_num: Optional[int] = None,
-        **kwargs: Any,
-    ) -> BatchRequestFuture:
-        """
-        Batch perform chat-based language generation using user-supplied messages.
-
-        Parameters:
-          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
-            List of the messages list in the conversation. Please refer to
-            `ChatCompletion.do` for more information of each messages.
-            Make sure you only take either `messages_list` or `body_list` as
-            your argument. Default to None.
-          body_list: (Optional[List[Dict]]):
-            List of body for `ChatCompletion.do`.
-            Make sure you only take either `messages_list` or `body_list` as
-            your argument. Default to None.
-          enable_reading_buffer: (bool):
-            Whether auto reading all results in worker function, without any waiting
-            in streaming request situation. Default to False.
-          worker_num (Optional[int]):
-            The number of prompts to process at the same time, default to None,
-            which means this number will be decided dynamically.
-          kwargs (Any):
-            Please refer to `ChatCompletion.do` for other parameters such as
-            `model`, `endpoint`, `retry_count`, etc.
-
-        ```
-        response_list = ChatCompletion().batch_do([...], worker_num = 10)
-        for response in response_list:
-            # return QfResponse if succeed, or exception will be raised
-            print(response.result())
-        # or
-        while response_list.finished_count() != response_list.task_count():
-            time.sleep(1)
-        print(response_list.results())
-        ```
-
-        """
-
-        def worker(
-            inner_func: Callable, **kwargs: Any
-        ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            for resp in r:
-                result_list.append(resp)
-
-            return result_list
-
-        task_list: List[Callable]
-
-        if messages_list:
-            task_list = [
-                partial(worker, self.do, messages=messages, **kwargs)
-                for index, messages in enumerate(messages_list)
-            ]
-        elif body_list:
-            task_list = []
-            for index, body in enumerate(body_list):
-                new_kwargs = {**kwargs}
-                new_kwargs.update(body)
-                task_list.append(partial(worker, self.do, **new_kwargs))
-        else:
-            err_msg = (
-                "Make sure you set either `messages_list` or `body_list` as your"
-                " argument."
-            )
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        return self._batch_request(task_list, worker_num)
-
-    async def abatch_do(
-        self,
-        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
-        body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
-        worker_num: Optional[int] = None,
-        **kwargs: Any,
-    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
-        """
-        Async batch perform chat-based language generation using user-supplied messages.
-
-        Parameters:
-          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
-            List of the messages list in the conversation. Please refer to
-            `ChatCompletion.do` for more information of each messages.
-            Make sure you only take either `messages_list` or `body_list` as
-            your argument. Default to None.
-          body_list: (Optional[List[Dict]]):
-            List of body for `ChatCompletion.do`.
-            Make sure you only take either `messages_list` or `body_list` as
-            your argument. Default to None.
-          enable_reading_buffer: (bool):
-            Whether auto reading all results in worker function, without any waiting
-            in streaming request situation. Default to False.
-          worker_num (Optional[int]):
-            The number of prompts to process at the same time, default to None,
-            which means this number will be decided dynamically.
-          kwargs (Any):
-            Please refer to `ChatCompletion.do` for other parameters such as
-            `model`, `endpoint`, `retry_count`, etc.
-
-        ```
-        response_list = await ChatCompletion().abatch_do([...], worker_num = 10)
-        for response in response_list:
-            # response is `QfResponse` if succeed, or response will be exception
-            print(response)
-        ```
-
-        """
-        task_list: List[Callable]
-
-        async def worker(
-            inner_func: Callable, **kwargs: Any
-        ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = await inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            async for resp in r:
-                result_list.append(resp)
-
-            return result_list
-
-        if messages_list:
-            task_list = [
-                partial(worker, self.ado, messages=messages, **kwargs)
-                for messages in messages_list
-            ]
-        elif body_list:
-            task_list = []
-            for body in body_list:
-                new_kwargs = {**kwargs}
-                new_kwargs.update(body)
-                task_list.append(partial(worker, self.ado, **new_kwargs))
-        else:
-            err_msg = (
-                "Make sure you set either `messages_list` or `body_list` as your"
-                " argument."
-            )
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        tasks = [task() for task in task_list]
-        return await self._abatch_request(tasks, worker_num)
-
     def _generate_body(
         self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
@@ -1641,23 +1485,32 @@ class ChatCompletion(VersionBase):
 
     def do(
         self,
+        *,
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
+        endpoint: Optional[str] = None,
         stream: bool = False,
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         return self._real.do(
             messages=messages,
+            endpoint=endpoint,
             model=model,
             stream=stream,
             retry_count=retry_count,
             request_timeout=request_timeout,
             request_id=request_id,
             backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
             **kwargs,
         )
 
@@ -1665,20 +1518,184 @@ class ChatCompletion(VersionBase):
         self,
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
+        endpoint: Optional[str] = None,
         stream: bool = False,
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         return await self._real.ado(
             messages=messages,
             model=model,
+            endpoint=endpoint,
             stream=stream,
             retry_count=retry_count,
             request_timeout=request_timeout,
             request_id=request_id,
             backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
             **kwargs,
         )
+
+    def batch_do(
+        self,
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
+        enable_reading_buffer: bool = False,
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        """
+        Batch perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          enable_reading_buffer: (bool):
+            Whether auto reading all results in worker function, without any waiting
+            in streaming request situation. Default to False.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = ChatCompletion().batch_do([...], worker_num = 10)
+        for response in response_list:
+            # return QfResponse if succeed, or exception will be raised
+            print(response.result())
+        # or
+        while response_list.finished_count() != response_list.task_count():
+            time.sleep(1)
+        print(response_list.results())
+        ```
+
+        """
+
+        def worker(
+            inner_func: Callable, **kwargs: Any
+        ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
+            r = inner_func(**kwargs)
+            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
+                return r
+
+            result_list: List[QfResponse] = []
+            for resp in r:
+                result_list.append(resp)
+
+            return result_list
+
+        task_list: List[Callable]
+
+        if messages_list:
+            task_list = [
+                partial(worker, self.do, messages=messages, **kwargs)
+                for index, messages in enumerate(messages_list)
+            ]
+        elif body_list:
+            task_list = []
+            for index, body in enumerate(body_list):
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(worker, self.do, **new_kwargs))
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        return self._real._batch_request(task_list, worker_num)
+
+    async def abatch_do(
+        self,
+        messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
+        body_list: Optional[List[Dict]] = None,
+        enable_reading_buffer: bool = False,
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        """
+        Async batch perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages_list: (Optional[List[Union[List[Dict], QfMessages]]]):
+            List of the messages list in the conversation. Please refer to
+            `ChatCompletion.do` for more information of each messages.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          body_list: (Optional[List[Dict]]):
+            List of body for `ChatCompletion.do`.
+            Make sure you only take either `messages_list` or `body_list` as
+            your argument. Default to None.
+          enable_reading_buffer: (bool):
+            Whether auto reading all results in worker function, without any waiting
+            in streaming request situation. Default to False.
+          worker_num (Optional[int]):
+            The number of prompts to process at the same time, default to None,
+            which means this number will be decided dynamically.
+          kwargs (Any):
+            Please refer to `ChatCompletion.do` for other parameters such as
+            `model`, `endpoint`, `retry_count`, etc.
+
+        ```
+        response_list = await ChatCompletion().abatch_do([...], worker_num = 10)
+        for response in response_list:
+            # response is `QfResponse` if succeed, or response will be exception
+            print(response)
+        ```
+
+        """
+        task_list: List[Callable]
+
+        async def worker(
+            inner_func: Callable, **kwargs: Any
+        ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
+            r = await inner_func(**kwargs)
+            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
+                return r
+
+            result_list: List[QfResponse] = []
+            async for resp in r:
+                result_list.append(resp)
+
+            return result_list
+
+        if messages_list:
+            task_list = [
+                partial(worker, self.ado, messages=messages, **kwargs)
+                for messages in messages_list
+            ]
+        elif body_list:
+            task_list = []
+            for body in body_list:
+                new_kwargs = {**kwargs}
+                new_kwargs.update(body)
+                task_list.append(partial(worker, self.ado, **new_kwargs))
+        else:
+            err_msg = (
+                "Make sure you set either `messages_list` or `body_list` as your"
+                " argument."
+            )
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        tasks = [task() for task in task_list]
+        return await self._real._abatch_request(tasks, worker_num)

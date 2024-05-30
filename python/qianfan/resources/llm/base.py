@@ -42,7 +42,13 @@ from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
 from qianfan.resources.requestor.console_requestor import ConsoleInferAPIRequestor
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
-from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
+from qianfan.resources.typing import (
+    JsonBody,
+    Literal,
+    QfLLMInfo,
+    QfResponse,
+    RetryConfig,
+)
 from qianfan.utils import log_info, log_warn, utils
 from qianfan.utils.cache.base import global_disk_cache
 from qianfan.version import VERSION
@@ -151,7 +157,9 @@ class BatchRequestFuture(object):
 
 
 class VersionBase(object):
-    def __init__(self, version: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self, version: Optional[Literal["1", "2"]] = None, **kwargs: Any
+    ) -> None:
         self._version = version if version else "1"
         self._real = self._real_base(self._version)(**kwargs)
 
@@ -168,6 +176,22 @@ class VersionBase(object):
         """
         return self._real.access_token()
 
+    def models(self) -> Set[str]:
+        return self._real.models()
+
+    def get_model_info(self, model: str) -> QfLLMInfo:
+        """
+        Get the model info of `model`
+
+        Args:
+            model (str): the name of the model,
+
+        Return:
+            Information of the model
+        """
+
+        return self._real.get_model_info(model)
+
 
 class BaseResource(object):
     def __init__(
@@ -175,20 +199,6 @@ class BaseResource(object):
         **kwargs: Any,
     ) -> None:
         pass
-
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
-        """
-        get preset model list
-
-        Args:
-            None
-
-        Returns:
-            a dict which key is preset model and value is the endpoint
-
-        """
-        raise NotImplementedError
 
     @classmethod
     def _default_model(cls) -> str:
@@ -214,25 +224,7 @@ class BaseResource(object):
         Return:
             Information of the model
         """
-        # try update with local cache
-        cls.update_with_cache_model_infos()
-        # get the supported_models list
-        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
-        model_info = model_info_list.get(model.lower())
-        if model_info is None:
-            use_iam_aksk_msg = ""
-            if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
-                use_iam_aksk_msg = (
-                    "might use `QIANFAN_ACCESS_KEY` and `QIANFAN_SECRET_KEY` instead to"
-                    " get complete features supported."
-                )
-            raise errors.InvalidArgumentError(
-                f"The provided model `{model}` is not in the list of supported models."
-                " If this is a recently added model, try using the `endpoint`"
-                " arguments and create an issue to tell us. Supported models:"
-                f" {cls.models()} {use_iam_aksk_msg}"
-            )
-        return model_info
+        raise NotImplementedError
 
     @classmethod
     def update_with_cache_model_infos(cls) -> Dict[str, Dict[str, QfLLMInfo]]:
@@ -353,9 +345,7 @@ class BaseResource(object):
         """
         get all supported model names
         """
-        models = set(cls._supported_models().keys())
-        models.remove(UNSPECIFIED_MODEL)
-        return models
+        raise NotImplementedError
 
     @classmethod
     def api_type(cls) -> str:
@@ -608,6 +598,7 @@ class BaseResourceV1(BaseResource):
 
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
         refreshed_model_list: bool = False
+        kwargs["endpoint"] = endpoint
         while True:
             try:
                 resp = self._client.llm(
@@ -644,7 +635,7 @@ class BaseResourceV1(BaseResource):
         endpoint = self._extract_endpoint(**kwargs)
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
 
-        endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
+        endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
         refreshed_model_list: bool = False
         while True:
             try:
@@ -793,7 +784,48 @@ class BaseResourceV1(BaseResource):
         """
         extract endpoint from kwargs
         """
-        return kwargs.get("endpoint", "")
+        return kwargs.get("endpoint", None)
+
+    @classmethod
+    def models(cls) -> Set[str]:
+        """
+        get all supported model names
+        """
+        ...
+        models = set(cls._supported_models().keys())
+        models.remove(UNSPECIFIED_MODEL)
+        return models
+
+    @classmethod
+    def get_model_info(cls, model: str) -> QfLLMInfo:
+        """
+        Get the model info of `model`
+
+        Args:
+            model (str): the name of the model,
+
+        Return:
+            Information of the model
+        """
+        # try update with local cache
+        cls.update_with_cache_model_infos()
+        # get the supported_models list
+        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
+        model_info = model_info_list.get(model.lower())
+        if model_info is None:
+            use_iam_aksk_msg = ""
+            if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
+                use_iam_aksk_msg = (
+                    "might use `QIANFAN_ACCESS_KEY` and `QIANFAN_SECRET_KEY` instead to"
+                    " get complete features supported."
+                )
+            raise errors.InvalidArgumentError(
+                f"The provided model `{model}` is not in the list of supported models."
+                " If this is a recently added model, try using the `endpoint`"
+                " arguments and create an issue to tell us. Supported models:"
+                f" {cls.models()} {use_iam_aksk_msg}"
+            )
+        return model_info
 
 
 class BaseResourceV2(BaseResource):

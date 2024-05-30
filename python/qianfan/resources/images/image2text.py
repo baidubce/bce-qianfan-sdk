@@ -17,13 +17,13 @@ from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, Un
 
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
 from qianfan.resources.typing import QfLLMInfo, QfResponse
 
 
-class Image2Text(BaseResource):
+class Image2Text(BaseResourceV1):
     """
     QianFan Image2Text API Resource
 

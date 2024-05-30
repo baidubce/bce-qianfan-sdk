@@ -637,6 +637,7 @@ class BaseResourceV1(BaseResource):
 
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
         refreshed_model_list: bool = False
+        kwargs["endpoint"] = endpoint
         while True:
             try:
                 resp = await self._client.async_llm(

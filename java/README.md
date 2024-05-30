@@ -12,7 +12,7 @@
 <dependency>
     <groupId>com.baidubce</groupId>
     <artifactId>qianfan</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6</version>
 </dependency>
 ```
 
@@ -21,13 +21,13 @@
 对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖
 
 ```kotlin
-implementation("com.baidubce:qianfan:0.0.5")
+implementation("com.baidubce:qianfan:0.0.6")
 ```
 
 对于Groovy DSL，在build.gradle的dependencies中添加依赖
 
 ```groovy
-implementation 'com.baidubce:qianfan:0.0.5'
+implementation 'com.baidubce:qianfan:0.0.6'
 ```
 
 > 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
@@ -160,4 +160,24 @@ Image2TextResponse response = new Qianfan().image2Text()
         .prompt("introduce the picture")
         .execute();
 System.out.println(response.getResult());
+```
+
+### Rerank
+
+千帆 SDK 支持调用Rerank模型，用于重新排序向量模型返回的top-k文档，优化语义搜索结果。
+
+```java
+List<String> documents = new ArrayList<>();
+documents.add("上海位于中国东部海岸线的中心，长江三角洲最东部。");
+documents.add("上海现在的温度是27度。");
+documents.add("深圳现在的温度是29度。");
+
+RerankResponse response = new Qianfan().rerank()
+        .query("上海现在气温多少？")
+        .documents(documents)
+        .execute();
+response.getResults().forEach(data -> {
+    System.out.println(data.getDocument());
+    System.out.println(data.getRelevanceScore());
+});
 ```

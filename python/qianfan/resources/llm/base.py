@@ -156,20 +156,11 @@ class VersionBase(object):
         self._real = self._real_base(self._version)(**kwargs)
 
     @classmethod
-    def _real_base(cls, version: str) -> Type:
+    def _real_base(cls, version: str) -> Type[BaseResource]:
         """
         return the real base class
         """
         raise NotImplementedError
-
-    def do(self, **kwargs: Any) -> QfResponse:
-        """
-        return the request object
-        """
-        return self._real.do(**kwargs)
-
-    async def ado(self, **kwargs: Any) -> QfResponse:
-        return await self._real.do(**kwargs)
 
     def access_token(self) -> str:
         """
@@ -820,6 +811,24 @@ class BaseResourceV2(BaseResource):
         """
 
         resp = self._client.llm(
+            model_type=self.api_type(),
+            header=self._generate_header(model, stream, **kwargs),
+            query=self._generate_query(model, stream, **kwargs),
+            body=self._generate_body(model, stream, **kwargs),
+            stream=stream,
+            retry_config=retry_config,
+        )
+
+        return resp
+
+    async def _arequest(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        resp = await self._client.llm_async(
             model_type=self.api_type(),
             header=self._generate_header(model, stream, **kwargs),
             query=self._generate_query(model, stream, **kwargs),

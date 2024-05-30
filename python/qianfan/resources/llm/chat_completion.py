@@ -39,16 +39,6 @@ from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse
 from qianfan.utils.logging import log_error, log_info
 
 
-class ChatCompletion(VersionBase):
-    @classmethod
-    def _real_base(cls, version: str) -> Type:
-        if version == "1":
-            return ChatCompletionV1
-        elif version == "2":
-            return ChatCompletionV2
-        raise errors.InvalidArgumentError("Invalid version")
-
-
 class ChatCompletionV1(BaseResourceV1):
     """
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
@@ -1605,6 +1595,84 @@ class ChatCompletionV2(BaseResourceV2):
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         return self._do(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        return await self._ado(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+
+class ChatCompletion(VersionBase):
+    _real: Union[ChatCompletionV1, ChatCompletionV2]
+
+    @classmethod
+    def _real_base(cls, version: str) -> Type:
+        if version == "1":
+            return ChatCompletionV1
+        elif version == "2":
+            return ChatCompletionV2
+        raise errors.InvalidArgumentError("Invalid version")
+
+    def do(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        return self._real.do(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        return await self._real.ado(
             messages=messages,
             model=model,
             stream=stream,

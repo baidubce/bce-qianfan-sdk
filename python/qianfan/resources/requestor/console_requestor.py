@@ -79,19 +79,29 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         raise NotImplementedError("stream request is not supported")
 
     async def _async_request_console_api(
-        self, req: QfRequest, ak: str, sk: str, retry_config: RetryConfig
-    ) -> QfResponse:
+        self, req: QfRequest, ak: str, sk: str, retry_config: RetryConfig, stream: bool
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
         request console api with sign and retry
         """
         # pass request timeout
         req.retry_config = retry_config
 
-        async def _helper() -> QfResponse:
+        async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
+            req_copy = deepcopy(req)
             ConsoleAPIRequestor._sign(req, ak, sk)
+            if stream:
+                return await self._async_request_stream(req_copy)
+
             return await self._async_request(req)
 
         return await self._async_with_retry(retry_config, _helper)
+
+    async def _async_request_stream(
+        self,
+        request: QfRequest,
+    ) -> AsyncIterator[QfResponse]:
+        raise NotImplementedError("stream request is not supported")
 
     @staticmethod
     def _sign(request: QfRequest, ak: str, sk: str) -> None:
@@ -164,6 +174,31 @@ class ConsoleInferAPIRequestor(ConsoleAPIRequestor):
         # todo: token 限流
 
         return self._request_console_api(req, ak, sk, retry_config, stream)
+
+    async def llm_async(
+        self,
+        model_type: str,
+        header: Dict[str, Any] = {},
+        query: Dict[str, Any] = {},
+        body: Dict[str, Any] = {},
+        stream: bool = False,
+        retry_config: RetryConfig = RetryConfig(),
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        """
+        llm related api request
+        """
+
+        req = self._base_llm_request(
+            model_type=model_type,
+            header=header,
+            query=query,
+            body=body,
+            retry_config=retry_config,
+        )
+        ak, sk = _get_console_ak_sk()
+        # todo: token 限流
+
+        return await self._async_request_console_api(req, ak, sk, retry_config, stream)
 
     @_with_latency
     def _request_stream(

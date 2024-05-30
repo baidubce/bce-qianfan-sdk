@@ -107,9 +107,11 @@ def async_console_api_request(
         )
         req = await func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
-        return await ConsoleAPIRequestor(**kwargs)._async_request_console_api(
-            req, ak, sk, retry_config
+        resp = await ConsoleAPIRequestor(**kwargs)._async_request_console_api(
+            req, ak, sk, retry_config, stream=False
         )
+        assert isinstance(resp, QfResponse)
+        return resp
 
     return inner
 

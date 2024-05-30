@@ -1485,7 +1485,6 @@ class ChatCompletion(VersionBase):
 
     def do(
         self,
-        *,
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
         endpoint: Optional[str] = None,

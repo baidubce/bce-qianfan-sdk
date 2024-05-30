@@ -26,7 +26,6 @@ const createConfig = output => {
         commonjs(),
         babel({
             extensions: ['.js', '.ts'],
-            babelHelpers: 'bundled',
             presets: [
                 '@babel/preset-env',
                 '@babel/preset-typescript',
@@ -62,8 +61,7 @@ const createConfig = output => {
         external: isBrowserBuild(output.format) ? [] : ['dotenv'],
         onwarn: function (warning, warn) {
             if (warning.code === 'CIRCULAR_DEPENDENCY') {
-                if (warning.importer?.includes('node_modules/bottleneck')
-                  || warning.importer?.includes('node_modules/asn1.js')) {
+                if (warning.importer?.includes('node_modules/bottleneck') || warning.importer?.includes('node_modules/asn1.js')) {
                     return;
                 }
             }
@@ -76,12 +74,10 @@ export default [
     createConfig({
         file: 'dist/bundle.cjs.js',
         format: 'cjs',
-        sourcemap: false,
     }),
     createConfig({
         file: 'dist/bundle.esm.js',
         format: 'es',
-        sourcemap: false,
     }),
     createConfig({
         file: 'dist/bundle.iife.js',

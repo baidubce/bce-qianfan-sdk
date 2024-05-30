@@ -10,7 +10,9 @@
         "url": "https://github.com/baidubce/bce-qianfan-sdk"
     },
     "description": "",
-    "main": "dist/bundle.js",
+    "main": "dist/bundle.cjs.js",
+    "module": "dist/bundle.esm.js",
+    "browser": "dist/bundle.esm.js",
     "type": "commonjs",
     "scripts": {
         "start": "NODE_ENV=production ts-node src/test/chatCompletion",

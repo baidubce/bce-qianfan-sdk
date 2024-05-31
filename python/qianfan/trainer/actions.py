@@ -355,7 +355,7 @@ class TrainAction(
 
     def __init__(
         self,
-        train_mode: console_consts.TrainMode,
+        train_mode: Union[console_consts.TrainMode, str],
         train_type: Optional[str] = None,
         train_config: Optional[TrainConfig] = None,
         task_id: Optional[str] = None,
@@ -370,8 +370,8 @@ class TrainAction(
         """
 
         Parameters:
-            train_mode (Optional[console_consts.TrainMode], optional):
-                train mode, e.g. `SFT`, `PostPretrain`. Defaults to None.
+            train_mode Union[console_consts.TrainMode, str]:
+                train mode, e.g. `SFT`, `PostPretrain`, `DPO`. Defaults to None.
             train_type (Optional[str], optional):
                 train_type, must be specified when it's not increment training
                 like 'ERNIE-Bot-turbo-0725'
@@ -399,7 +399,7 @@ class TrainAction(
         self._last_task_id = task_id
         self._last_task_step = task_step
         self.job_id = job_id
-        self.train_mode = train_mode
+        self.train_mode = console_consts.TrainMode(train_mode)
         self.train_model_name = train_type
         if self._last_task_id is not None:
             # if incremental train
@@ -407,15 +407,15 @@ class TrainAction(
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
-                self.job_id = pre_task_detail.get("result", {}).get("jobId")
-                self.train_mode = train_mode
+                if self.train_mode.value == pre_task_detail["result"]["trainMode"]:
+                    self.job_id = pre_task_detail.get("result", {}).get("jobId")
             self.is_incr = True
         else:
             if train_type is None:
                 raise InvalidArgumentError("train_type must be specified")
             # 从基础模型开始训练
             self.train_type = train_type
-            model_info = get_model_info(train_mode, self.train_type)
+            model_info = get_model_info(self.train_mode, self.train_type)
             if model_info is None:
                 log_warn(f"unknown train model type: {self.train_type} is not found")
             elif model_info.model != "":
@@ -552,7 +552,7 @@ class TrainAction(
         assert isinstance(ds_config, dict)
         assert self.train_config
 
-        if self.job_id is None:
+        if not self.job_id:
             # request for create model train task
             assert self.train_type is not None
             resp = api.FineTune.V2.create_job(
@@ -657,11 +657,7 @@ class TrainAction(
                 job_progress_str = task_status_result.get("runProgress")
                 job_progress = int(job_progress_str[:-1])
                 self.progress = job_progress
-                log_prefix = (
-                    "sft"
-                    if self.train_mode == console_consts.TrainMode.SFT
-                    else "postPretrain"
-                )
+                log_prefix = log_prefix_mapping.get(self.train_mode, "sft")
                 self.log_link = f"https://console.bce.baidu.com/qianfan/train/{log_prefix}/{self.job_id}/{self.task_id}/detail/traininglog"
                 self.vdl_link = task_status_result.get("vdlLink", "")
                 log_info(
@@ -1302,4 +1298,11 @@ action_mapping: Dict[str, Dict[str, Any]] = {
         ActionState.Error: TrainStatus.EvaluationFailed,
         ActionState.Stopped: TrainStatus.EvaluationStopped,
     },
+}
+
+
+log_prefix_mapping = {
+    console_consts.TrainMode.SFT: "sft",
+    console_consts.TrainMode.PostPretrain: "postPretrain",
+    console_consts.TrainMode.DPO: "dpo",
 }

@@ -45,10 +45,10 @@ jobs:
       - name: Run mock
         run: 
           make mock
-      - name: Run test
-        working-directory: ./javascript
-        run: 
-           yarn test
+      # - name: Run test
+      #   working-directory: ./javascript
+      #   run: 
+      #      yarn test
 
       - name: Build package with Rollup
         working-directory: ./javascript

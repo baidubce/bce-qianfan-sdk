@@ -6,9 +6,9 @@ import json from '@rollup/plugin-json';
 import eslint from '@rollup/plugin-eslint';
 import inject from '@rollup/plugin-inject';
 import ignore from 'rollup-plugin-ignore';
-import nodeGlobals from 'rollup-plugin-node-globals';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
 import nodeBuiltins from 'rollup-plugin-node-builtins';
+import {terser} from 'rollup-plugin-terser';
 
 const isBrowserBuild = format => ['es', 'iife'].includes(format);
 
@@ -19,18 +19,16 @@ const createConfig = output => {
         }),
         json(),
         resolve({
+            extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
             browser: isBrowserBuild(output.format),
             preferBuiltins: !isBrowserBuild(output.format),
             dedupe: ['buffer'],
         }),
         commonjs(),
         babel({
-            extensions: ['.js', '.ts'],
-            babelHelpers: 'bundled',
-            presets: [
-                '@babel/preset-env',
-                '@babel/preset-typescript',
-            ],
+            babelrc: false,
+            configFile: './babel.config.cjs',
+            extensions: ['.js', '.jsx', '.ts', '.tsx'],
         }),
         eslint({
             throwOnError: true,
@@ -46,13 +44,13 @@ const createConfig = output => {
 
     if (isBrowserBuild(output.format)) {
         plugins.push(
-            nodeGlobals(),
             nodePolyfills({
                 exclude: ['crypto'],
             }),
             nodeBuiltins()
         );
         plugins.push(ignore(['dotenv', 'os', 'path']));
+        plugins.push(terser());
     }
 
     return {
@@ -62,8 +60,10 @@ const createConfig = output => {
         external: isBrowserBuild(output.format) ? [] : ['dotenv'],
         onwarn: function (warning, warn) {
             if (warning.code === 'CIRCULAR_DEPENDENCY') {
-                if (warning.importer?.includes('node_modules/bottleneck')
-                  || warning.importer?.includes('node_modules/asn1.js')) {
+                if (
+                    warning.importer?.includes('node_modules/bottleneck')
+                    || warning.importer?.includes('node_modules/asn1.js')
+                ) {
                     return;
                 }
             }
@@ -74,14 +74,15 @@ const createConfig = output => {
 
 export default [
     createConfig({
-        file: 'dist/bundle.cjs.js',
+        file: 'dist/bundle.cjs',
         format: 'cjs',
-        sourcemap: false,
+        exports: 'named',
     }),
     createConfig({
         file: 'dist/bundle.esm.js',
         format: 'es',
-        sourcemap: false,
+        preferConst: true,
+        exports: 'named',
     }),
     createConfig({
         file: 'dist/bundle.iife.js',

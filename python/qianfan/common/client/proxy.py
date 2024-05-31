@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import AsyncIterator, Callable, Optional, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, Optional, Tuple
 
 from aiohttp import ClientResponse
 from fastapi import FastAPI, Request
@@ -88,6 +88,7 @@ def entry(
     detach: bool,
     log_file: Optional[str],
     mock_port: int,
+    ssl_config: Dict[str, Any],
 ) -> None:
     import os
 
@@ -120,8 +121,11 @@ def entry(
     display_host = host
     if display_host == "0.0.0.0":
         display_host = get_ip_address()
-    messages.append(f"- base: http://{display_host}:{base_port}")
-    messages.append(f"- console: http://{display_host}:{console_port}")
+
+    http_header = "http" if not ssl_config else "https"
+
+    messages.append(f"- base: {http_header}://{display_host}:{base_port}")
+    messages.append(f"- console: {http_header}://{display_host}:{console_port}")
 
     rich.print(Markdown("\n".join(messages)))
     rich.print()
@@ -139,7 +143,9 @@ def entry(
         )
 
     def start_server(app: FastAPI, port: int) -> None:
-        uvicorn.run(app, host=display_host, port=port, log_config=log_config)
+        uvicorn.run(
+            app, host=display_host, port=port, log_config=log_config, **ssl_config
+        )
 
     set_cors(base_app)
     set_cors(console_app)

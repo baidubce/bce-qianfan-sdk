@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import click
 import rich.markup
@@ -154,12 +154,51 @@ def proxy(
     mock_port: int = typer.Option(
         -1, "--mock-port", "-m", help="Port of the Mock server."
     ),
+    ssl_keyfile: str = typer.Option("", "--ssl-keyfile", help="SSL key file"),
+    ssl_certfile: str = typer.Option("", "--ssl-certfile", help="SSL certificate file"),
+    ssl_keyfile_password: str = typer.Option(
+        "", "--ssl-keyfile-password", help="SSL keyfile password"
+    ),
+    ssl_version: int = typer.Option(
+        17,
+        "--ssl-version",
+        help="SSL version to use (see stdlib ssl module's) [default: 17]",
+    ),
+    ssl_cert_reqs: int = typer.Option(
+        0,
+        "--ssl-cert-reqs",
+        help=(
+            "Whether client certificate is required (see stdlib ssl module's) "
+            " [default: 0]"
+        ),
+    ),
+    ssl_ca_certs: str = typer.Option("", "--ssl-ca-certs", help="CA certificates file"),
+    ssl_ciphers: str = typer.Option(
+        "TLSv1",
+        "--ssl-ciphers",
+        help="Ciphers to use (see stdlib ssl module's) [default: TLSv1]",
+    ),
 ) -> None:
     """
     Create a proxy server.
     """
     check_dependency("openai", ["fastapi", "uvicorn"])
     from qianfan.common.client.proxy import entry as proxy_entry
+
+    ssl_config: Dict[str, Any] = {}
+    if ssl_keyfile:
+        ssl_config["ssl_keyfile"] = ssl_keyfile
+    if ssl_certfile:
+        ssl_config["ssl_certfile"] = ssl_certfile
+    if ssl_keyfile_password:
+        ssl_config["ssl_keyfile_password"] = ssl_keyfile_password
+    if ssl_ca_certs:
+        ssl_config["ssl_ca_certs"] = ssl_ca_certs
+
+    if ssl_config:
+        ssl_config["ssl_version"] = ssl_version
+        ssl_config["ssl_cert_reqs"] = ssl_cert_reqs
+        ssl_config["ssl_ciphers"] = ssl_ciphers
 
     proxy_entry(
         host=host,
@@ -168,6 +207,7 @@ def proxy(
         detach=detach,
         log_file=log_file,
         mock_port=mock_port,
+        ssl_config=ssl_config,
     )
 
 

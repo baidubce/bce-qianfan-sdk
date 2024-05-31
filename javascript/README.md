@@ -483,3 +483,41 @@ async function main() {
 
 main();
 ```
+
+### HTML 中使用, 引入 dist 文件中的 bundle.iife.js 即可使用，参考example/index.html
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Qianfan SDK</h1>
+    <script src="../dist/bundle.iife.js"></script>
+    <script>
+        const {ChatCompletion} = QianfanSDK;
+        const client =  new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.178.105:8002', QIANFAN_CONSOLE_API_BASE_URL: ' http://172.18.178.105:8003'})
+     async function main() {
+    const stream =  await client.chat({
+        messages: [
+            {
+                role: 'user',
+                content: '等额本金和等额本息有什么区别？',
+            },
+        ],
+        stream: true,
+    }, 'ERNIE-Bot-turbo');
+    console.log('流式返回结果');
+    for await (const chunk of stream) {
+        console.log(chunk);
+    }
+}
+
+main();
+    </script>
+</body>
+</html>
+```

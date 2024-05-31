@@ -84,3 +84,15 @@ import qianfan
 chat_comp = qianfan.Completion()
 resp = chat_comp.do(prompt="hi", request_id="sdk_req_01")
 ```
+
+## 自定义缓存目录
+
+千帆SDK在运行时可能会默认使用`home`目录作为缓存父目录，如果存在问题可以配置环境变量`QIANFAN_CACHE_DIR`或者.env文件以进行适配:
+```bash
+#.env
+QIANFAN_CACHE_DIR="./custom_cache_dir"
+```
+or
+```env
+os.environ["QIANFAN_CACHE_DIR"] = "./custom_cache_dir"
+```

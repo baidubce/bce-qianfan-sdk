@@ -34,6 +34,7 @@
         "crypto-js": "^4.2.0",
         "dotenv": "^16.4.5",
         "node-fetch": "2.7.0",
+        "qianfan-wt": "^0.0.11",
         "rollup": "^3.29.4",
         "typescript": "^5.3.3",
         "web-streams-polyfill": "^4.0.0"

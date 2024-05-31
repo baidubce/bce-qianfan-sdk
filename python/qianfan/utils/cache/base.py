@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Any
+
 from diskcache import Cache
 
-from qianfan.consts import Consts
+from qianfan.config import get_config
+from qianfan.utils.helper import Singleton
 
-# global cache item
-# thread, process-safe, file, sqlite-based
-global_disk_cache = Cache(directory=Consts.QianfanCacheDir)
+
+class KvCache(Cache, metaclass=Singleton):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(directory=get_config().CACHE_DIR, **kwargs)

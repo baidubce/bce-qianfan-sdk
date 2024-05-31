@@ -40,6 +40,7 @@ from qianfan.dataset.consts import (
     QianfanMapperCacheDir,
     Text2ImageAnnotationColumnName,
     Text2ImagePathColumnName,
+    _merge_custom_path,
 )
 from qianfan.dataset.data_source.base import FormatType
 from qianfan.dataset.data_source.chunk_reader import (
@@ -168,7 +169,8 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
 def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = os.path.join(
-        QianfanDatasetText2ImageUnzipCacheDir, f"image_dataset_folder_{uuid.uuid4()}"
+        _merge_custom_path(QianfanDatasetText2ImageUnzipCacheDir),
+        f"image_dataset_folder_{uuid.uuid4()}",
     )
     with zipfile.ZipFile(path) as zip_file:
         zip_file.extractall(tmp_folder_path)
@@ -290,7 +292,7 @@ def _create_map_arrow_file(
     )
 
     tmp_folder_path, file_name = _construct_buffer_folder_path_and_file_name(
-        QianfanMapperCacheDir, path
+        _merge_custom_path(QianfanMapperCacheDir), path
     )
     tmp_arrow_file_path = os.path.join(
         tmp_folder_path,
@@ -389,7 +391,7 @@ def _get_cache_file_path_and_check_cache_validity(
 ) -> str:
     cache_path_dir, file_name_without_extension_name = (
         _construct_buffer_folder_path_and_file_name(
-            QianfanDatasetLocalCacheDir, file_path
+            _merge_custom_path(QianfanDatasetLocalCacheDir), file_path
         )
     )
     abs_file_path: str = os.path.abspath(file_path)

@@ -14,6 +14,9 @@
 """
 constants for dataset using
 """
+from pathlib import Path
+
+from qianfan.config import get_config
 from qianfan.consts import Consts
 
 # 千帆本地缓存文件夹的绝对路径
@@ -79,3 +82,8 @@ Text2ImagePathColumnName = "image_path"
 
 # 文生图数据集中，标注信息的列名
 Text2ImageAnnotationColumnName = "annotation"
+
+
+def _merge_custom_path(p: Path) -> Path:
+    i = p.parts.index(Consts.QianfanCacheSubPath)
+    return Path(get_config().CACHE_DIR).joinpath(*p.parts[i + 1 :])

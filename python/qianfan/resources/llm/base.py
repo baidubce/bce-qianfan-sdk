@@ -42,7 +42,7 @@ from qianfan.resources.console.service import Service
 from qianfan.resources.requestor.openapi_requestor import create_api_requestor
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
 from qianfan.utils import log_info, log_warn, utils
-from qianfan.utils.cache.base import global_disk_cache
+from qianfan.utils.cache.base import KvCache
 from qianfan.version import VERSION
 
 # This is used when user provides `endpoint`
@@ -512,7 +512,9 @@ class BaseResource(object):
         global _model_infos_access_lock
         if _last_update_time.timestamp() == 0:
             # 首次加载本地缓存
-            value = global_disk_cache.get(Consts.QianfanLLMModelsListCacheKey)
+
+            cache = KvCache()
+            value = cache.get(Consts.QianfanLLMModelsListCacheKey)
             if value is not None:
                 try:
                     with _model_infos_access_lock:
@@ -797,7 +799,8 @@ def get_latest_supported_models(
             )
             _runtime_models_info[api_type] = model_info
             _last_update_time = datetime.now(timezone.utc)
-        global_disk_cache.set(
+        cache = KvCache()
+        cache.set(
             Consts.QianfanLLMModelsListCacheKey,
             BaseResource.format_model_infos_cache(
                 _runtime_models_info, _last_update_time

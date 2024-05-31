@@ -27,6 +27,7 @@ from qianfan.config import encoding
 from qianfan.dataset.consts import (
     QianfanDatasetBosDownloadingCacheDir,
     QianfanDatasetBosUploadingCacheDir,
+    _merge_custom_path,
 )
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.file import FileDataSource
@@ -207,7 +208,10 @@ class BosDataSource(DataSource, BaseModel):
     def _get_specific_uploading_cache_path(self) -> str:
         bos_file_path = os.path.split(self.bos_file_path[1:])[0]
         cache_path = os.path.join(
-            QianfanDatasetBosUploadingCacheDir, self.region, self.bucket, bos_file_path
+            _merge_custom_path(QianfanDatasetBosUploadingCacheDir),
+            self.region,
+            self.bucket,
+            bos_file_path,
         )
         os.makedirs(cache_path, exist_ok=True)
 
@@ -216,7 +220,7 @@ class BosDataSource(DataSource, BaseModel):
     def _get_specific_downloading_cache_path(self) -> str:
         bos_file_path = self.bos_file_path[1:]
         cache_path = os.path.join(
-            QianfanDatasetBosDownloadingCacheDir,
+            _merge_custom_path(QianfanDatasetBosDownloadingCacheDir),
             self.region,
             self.bucket,
             bos_file_path,

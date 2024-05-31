@@ -96,6 +96,7 @@ class Env:
     ConsoleRetryCount: str = "QIANFAN_CONSOLE_API_RETRY_COUNT"
     ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
+    CacheDir: str = "QIANFAN_CACHE_DIR"
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
     Proxy: str = "QIANFAN_PROXY"
@@ -173,6 +174,7 @@ class DefaultValue:
     SSLVerificationEnabled: bool = True
     Proxy: str = ""
     FileEncoding: str = "utf-8"
+    CacheDir: str = str(Path.home() / ".qianfan_cache")
 
 
 class Consts:
@@ -291,7 +293,8 @@ class Consts:
     XResponseID: str = "X-Baidu-Request-Id"
     QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"
 
-    QianfanCacheDir = Path.home() / ".qianfan_cache"
+    QianfanCacheSubPath = ".qianfan_cache"
+    QianfanCacheDir = Path.home() / QianfanCacheSubPath
     QianfanLLMModelsListCacheKey = "qianfan_llm_models"
 
     DateTimeFormat = "%Y-%m-%dT%H:%M:%SZ"

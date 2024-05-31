@@ -22,6 +22,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     Optional,
     Sequence,
@@ -62,7 +63,7 @@ from qianfan.dataset.dataset_utils import (
     _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
-    open_html_in_browser,
+    open_in_streamlit,
 )
 from qianfan.dataset.qianfan_data_operators import QianfanOperator
 from qianfan.dataset.schema import (
@@ -2019,7 +2020,7 @@ class Dataset(Table):
                 )
             )
         else:
-            open_html_in_browser(self)
+            open_in_streamlit(self)
 
     def show_overview_info(self) -> None:
         """
@@ -2061,8 +2062,6 @@ class Dataset(Table):
                         repetition_set[k][v] = repetition_set[k].get(v, 0) + 1
 
         self.iterate(_iterator)
-
-        print(f"entry count: {len(self)}\n")
 
         if packed_identifier not in null_counter_set:
             column_fields = self.col_names()
@@ -2208,3 +2207,102 @@ class Dataset(Table):
                 "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"
                 " if you want to start a stress test task."
             )
+
+    def open_in_streamlit(self, column_names: List[Optional[str]] = [None]) -> None:
+        from multiprocessing import Process
+
+        is_column_nullable = self.is_dataset_packed() and isinstance(self.list(0), str)
+
+        if (not column_names or not all(column_names)) and not is_column_nullable:
+            err_msg = "must specify column names of you want to do with insight"
+            log_error(err_msg)
+            raise ValueError(err_msg)
+
+        insight_data = self._get_insight_data(column_names)
+
+        # 子进程
+        child_process = Process(
+            target=functools.partial(open_in_streamlit, self, insight_data)
+        )
+
+        # 开启子进程
+        child_process.start()
+
+        # 等待子进程挂掉
+        child_process.join()
+
+    def _get_insight_data(
+        self, column_names: List[Optional[str]]
+    ) -> Dict[str, Dict[str, List[Union[int, float]]]]:
+        return_data_dict: Dict[str, Any]
+        if isinstance(column_names[0], str):
+            return_data_dict = {column: {} for column in column_names}  # type: ignore
+        else:
+            return_data_dict = {"content": {}}
+
+        from qianfan.dataset.data_insight.insight import (
+            get_character_repetition_ratio,
+            get_content_length_for_each_entry,
+            get_special_characters_ratio,
+        )
+
+        def _iterator(entry: Union[Dict[str, Any], List[Dict[str, Any]], str]) -> None:
+            for column in column_names:
+                result_list: List[Union[Dict[str, Any], Generator]] = [
+                    get_content_length_for_each_entry(entry, column),
+                    get_special_characters_ratio(entry, column),
+                    get_character_repetition_ratio(entry, column),
+                ]
+
+                if isinstance(result_list[0], Generator):
+                    total_metrics = {}
+                    for result in result_list:
+                        assert isinstance(result, Generator)
+                        metrics = {}
+                        for single_result in result:
+                            assert isinstance(single_result, dict)
+                            for k, v in single_result.items():
+                                if k not in metrics:
+                                    metrics[k] = [v]
+                                    continue
+
+                                metrics[k].append(v)
+
+                        total_metrics.update(metrics)
+
+                    summarization_metrics: List[Dict[str, Any]] = []
+                    for k, v in total_metrics.items():
+                        if len(v) == 1:
+                            summarization_metrics.append({k: v[0]})
+                            continue
+
+                        if isinstance(v[0], int):
+                            summarization_metrics.append({k: sum(v)})
+                            continue
+
+                        if isinstance(v[0], float):
+                            content_lengths = total_metrics["content_length"]
+                            length_sum = sum(content_lengths)
+
+                            result_value = 0
+                            for i in range(len(v)):
+                                value = v[i]
+                                weight = content_lengths[i] / length_sum
+                                result_value += value * weight
+
+                            summarization_metrics.append({k: result_value})
+                            continue
+
+                    result_list = summarization_metrics  # type: ignore
+
+                column_name = column if column is not None else "content"
+                for result in result_list:
+                    assert isinstance(result, dict)
+                    key, value = list(result.items())[0]
+                    if key not in return_data_dict[column_name]:
+                        return_data_dict[column_name][key] = []
+
+                    return_data_dict[column_name][key].append(value)
+
+        self.iterate(_iterator)
+        return return_data_dict

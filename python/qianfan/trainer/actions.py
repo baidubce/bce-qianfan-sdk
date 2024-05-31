@@ -355,7 +355,7 @@ class TrainAction(
 
     def __init__(
         self,
-        train_mode: console_consts.TrainMode,
+        train_mode: Union[console_consts.TrainMode, str],
         train_type: Optional[str] = None,
         train_config: Optional[TrainConfig] = None,
         task_id: Optional[str] = None,
@@ -370,8 +370,8 @@ class TrainAction(
         """
 
         Parameters:
-            train_mode (Optional[console_consts.TrainMode], optional):
-                train mode, e.g. `SFT`, `PostPretrain`. Defaults to None.
+            train_mode Union[console_consts.TrainMode, str]:
+                train mode, e.g. `SFT`, `PostPretrain`, `DPO`. Defaults to None.
             train_type (Optional[str], optional):
                 train_type, must be specified when it's not increment training
                 like 'ERNIE-Bot-turbo-0725'
@@ -399,7 +399,7 @@ class TrainAction(
         self._last_task_id = task_id
         self._last_task_step = task_step
         self.job_id = job_id
-        self.train_mode = train_mode
+        self.train_mode = console_consts.TrainMode(train_mode)
         self.train_model_name = train_type
         if self._last_task_id is not None:
             # if incremental train
@@ -407,16 +407,15 @@ class TrainAction(
             # 获取增量任务的训练model
             if pre_task_detail.get("result") is not None:
                 self.train_type = pre_task_detail["result"]["model"]
-                if train_mode.value == pre_task_detail["result"]["trainMode"]:
+                if self.train_mode.value == pre_task_detail["result"]["trainMode"]:
                     self.job_id = pre_task_detail.get("result", {}).get("jobId")
-                self.train_mode = train_mode
             self.is_incr = True
         else:
             if train_type is None:
                 raise InvalidArgumentError("train_type must be specified")
             # 从基础模型开始训练
             self.train_type = train_type
-            model_info = get_model_info(train_mode, self.train_type)
+            model_info = get_model_info(self.train_mode, self.train_type)
             if model_info is None:
                 log_warn(f"unknown train model type: {self.train_type} is not found")
             elif model_info.model != "":
@@ -1303,7 +1302,7 @@ action_mapping: Dict[str, Dict[str, Any]] = {
 
 
 log_prefix_mapping = {
-    console_consts.TrainMode.SFT: "dpo",
+    console_consts.TrainMode.SFT: "sft",
     console_consts.TrainMode.PostPretrain: "postPretrain",
     console_consts.TrainMode.DPO: "dpo",
 }

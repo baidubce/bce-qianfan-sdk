@@ -893,7 +893,7 @@ class Model(object):
             create custom model version.
 
             Parameters:
-            model_set_Id: str,
+            model_set_id: str,
                 model_type.
 
             kwargs:
@@ -931,6 +931,8 @@ class Model(object):
             ):
                 if import_meta:
                     req.json_body["importMeta"] = import_meta
+            if description:
+                req.json_body["description"] = description
             return req
 
         @classmethod

@@ -41,7 +41,7 @@ from qianfan.trainer.consts import (
 )
 from qianfan.trainer.pipeline import Pipeline
 from qianfan.trainer.trainer import Trainer
-from qianfan.utils.logging import log_info
+from qianfan.utils.logging import log_info, log_warn
 
 
 class Finetune(Trainer):
@@ -300,7 +300,7 @@ class Finetune(Trainer):
                     trainer_inst = Finetune(pipeline=task_ppl)
                     trainer_list.append(trainer_inst)
             except Exception as e:
-                raise e
+                log_warn(f"failed to restore trainer , {e}")
         return trainer_list
 
     @staticmethod

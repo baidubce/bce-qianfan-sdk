@@ -13,7 +13,7 @@
 # limitations under the License.
 from typing import Any, Dict, List, Optional, Union, cast
 
-from qianfan.common.persister.persist import g_persister
+from qianfan.common.persister.persist import FilePersister
 from qianfan.config import encoding, get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
@@ -200,7 +200,7 @@ class DPO(Trainer):
         )
         self.ppls = [ppl]
         self.result = [None]
-        g_persister.save(ppl)
+        FilePersister.save(ppl)
 
     def from_ppl(self, ppl: Optional[Pipeline]) -> "Trainer":
         """
@@ -287,7 +287,7 @@ class DPO(Trainer):
 
     @staticmethod
     def list() -> List["Trainer"]:
-        local_trainer_ppl = g_persister.list(Pipeline)
+        local_trainer_ppl = FilePersister.list(Pipeline)
         trainer_list: List["Trainer"] = []
         for task_ppl in local_trainer_ppl:
             try:
@@ -308,9 +308,9 @@ class DPO(Trainer):
             with open(file=file, mode="rb") as f:
                 task_ppl = Pipeline.load(f.read())
             # load完save到本地
-            g_persister.save(task_ppl)
+            FilePersister.save(task_ppl)
         elif id:
-            task_ppl = cast(Pipeline, g_persister.load(id, Pipeline))
+            task_ppl = cast(Pipeline, FilePersister.load(id, Pipeline))
         else:
             raise InvalidArgumentError("invalid id or file to load")
         assert isinstance(task_ppl, Pipeline)
@@ -328,10 +328,10 @@ class DPO(Trainer):
             with open(file=file, mode="w", encoding=encoding()) as f:
                 f.write(self.ppls[0].persist().decode(encoding=encoding()))
         else:
-            g_persister.save(self.ppls[0])
+            FilePersister.save(self.ppls[0])
 
     def info(self) -> Dict:
-        tmp = cast(Pipeline, g_persister.load(self.id, Pipeline))
+        tmp = cast(Pipeline, FilePersister.load(self.id, Pipeline))
         return tmp._action_dict()
 
     @property

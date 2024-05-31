@@ -26,6 +26,7 @@ import pyarrow
 from qianfan.config import encoding, get_config
 from qianfan.dataset.consts import (
     QianfanDatasetDownloadingCacheDir,
+    _merge_custom_path,
 )
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.file import FileDataSource
@@ -329,7 +330,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def _get_cache_folder_path(self) -> str:
         return os.path.join(
-            QianfanDatasetDownloadingCacheDir,
+            _merge_custom_path(QianfanDatasetDownloadingCacheDir),
             str(self.group_id),
             str(self.id),
             str(self.version),

@@ -123,6 +123,8 @@ class GlobalConfig(BaseSettings):
     PROXY: str = Field(default=DefaultValue.Proxy)
 
     FILE_ENCODING: str = Field(default=DefaultValue.FileEncoding)
+    # 缓存文件路径配置
+    CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
 
 
 _GLOBAL_CONFIG: Optional[GlobalConfig] = None

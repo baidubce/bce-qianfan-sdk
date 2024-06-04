@@ -164,6 +164,7 @@ class VersionBase(object):
     ) -> None:
         self._version = str(version) if version else "1"
         self._real = self._real_base(self._version)(**kwargs)
+        self._backup = self._real_base("1")(**kwargs)
 
     @classmethod
     def _real_base(cls, version: str) -> Type[BaseResource]:
@@ -194,13 +195,57 @@ class VersionBase(object):
 
         return self._real.get_model_info(model)
 
+    def _need_downgrade(self) -> bool:
+        """
+        check if the model need to be downgrade
+        """
+        return get_config().V2_INFER_API_DOWNGRADE and self._version != "1"
+
     def _do(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
+        if self._need_downgrade():
+            return self._do_downgrade(**kwargs)
         # assert self._real has function `do`
         return self._real.do(**kwargs)  # type: ignore
 
     async def _ado(self, **kwargs: Any) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if self._need_downgrade():
+            return await self._ado_downgrade(**kwargs)
         # assert self._real has function `ado`
         return await self._real.ado(**kwargs)  # type: ignore
+
+    def _do_downgrade(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
+        resp = self._backup.do(**kwargs)  # type: ignore
+        if "stream" not in kwargs or kwargs["stream"] is False:
+            return self._convert_v2_response_to_v1(resp)
+
+        return self._convert_v2_response_to_v1_stream(resp)
+
+    async def _ado_downgrade(
+        self, **kwargs: Any
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        resp = await self._backup.ado(**kwargs)  # type: ignore
+        if "stream" not in kwargs or kwargs["stream"] is False:
+            return self._convert_v2_response_to_v1(resp)
+
+        return self._convert_v2_response_to_v1_async_stream(resp)
+
+    def _convert_v2_request_to_v1(self, request: Any) -> Any:
+        return request
+
+    def _convert_v2_response_to_v1(self, response: QfResponse) -> QfResponse:
+        return response
+
+    def _convert_v2_response_to_v1_stream(
+        self, iterator: Iterator[QfResponse]
+    ) -> Iterator[QfResponse]:
+        for i in iterator:
+            yield i
+
+    async def _convert_v2_response_to_v1_async_stream(
+        self, iterator: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[QfResponse]:
+        async for i in iterator:
+            yield i
 
 
 class BaseResource(object):

@@ -96,6 +96,7 @@ class Env:
     ConsoleRetryCount: str = "QIANFAN_CONSOLE_API_RETRY_COUNT"
     ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
+    V2InferApiDowngrade: str = "QIANFAN_V2_INFER_API_DOWNGRADE"
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
     Proxy: str = "QIANFAN_PROXY"
@@ -153,6 +154,7 @@ class DefaultValue:
     BatchRunStatusPollingInterval: float = 30
     DeployStatusPollingInterval: float = 30
     DefaultFinetuneTrainType: str = "ERNIE-Speed"
+    V2InferApiDowngrade: bool = False
 
     # 目前可直接下载到本地的千帆数据集解压后的大小上限
     # 后期研究更换为用户机内存大小的上限

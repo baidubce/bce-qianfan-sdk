@@ -1702,3 +1702,34 @@ class ChatCompletion(VersionBase):
 
         tasks = [task() for task in task_list]
         return await self._real._abatch_request(tasks, worker_num)
+
+    def _convert_v2_request_to_v1(self, request: Any) -> Any:
+        # TODO: V2 model to V1 model
+        return request
+
+    def _convert_v2_response_to_v1(self, response: QfResponse) -> QfResponse:
+        response.body["choices"] = [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": response["result"],
+                },
+                "need_clear_history": response["need_clear_history"],
+            }
+        ]
+        return response
+
+    def _convert_v2_response_to_v1_stream(
+        self, iterator: Iterator[QfResponse]
+    ) -> Iterator[QfResponse]:
+        for i in iterator:
+            i.body["choices"] = [{"index": 0, "delta": {"content": i["result"]}}]
+            yield i
+
+    async def _convert_v2_response_to_v1_async_stream(
+        self, iterator: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[QfResponse]:
+        async for i in iterator:
+            i.body["choices"] = [{"index": 0, "delta": {"content": i["result"]}}]
+            yield i

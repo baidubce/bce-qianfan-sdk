@@ -115,6 +115,7 @@ class GlobalConfig(BaseSettings):
         default=DefaultValue.EvaluationOnlinePollingInterval
     )
     BOS_HOST_REGION: str = Field(default=DefaultValue.BosHostRegion)
+    V2_INFER_API_DOWNGRADE: bool = Field(default=DefaultValue.V2InferApiDowngrade)
 
     # Warning
     # 这个配置项会关闭 SSL 证书校验功能，可能会导致潜在的不安全访问

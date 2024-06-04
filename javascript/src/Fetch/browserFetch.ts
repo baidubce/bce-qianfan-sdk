@@ -1,24 +1,22 @@
-import {RequestInit, Response} from 'node-fetch';
+// Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import {Readable} from 'stream';
-import {RateLimiter, TokenLimiter} from '../Limiter';
 import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
-import {isOpenTpm, getCurrentEnvironment, parseHeaders} from '../utils';
-import {Resp, RespBase, AsyncIterableType} from '../interface';
+import {parseHeaders} from '../utils';
 
-let fetchInstance;
-if (getCurrentEnvironment() === 'node') {
-    fetchInstance = require('node-fetch');
-}
-else {
-    fetchInstance = window.fetch.bind(window);
-}
-export interface FetchConfig {
-    retries: number;
-    timeout: number;
-    backoffFactor?: number | undefined;
-    retryMaxWaitInterval: number | undefined;
-}
 export type Headers = Record<string, string | null | undefined>;
 export interface RequestOptions extends RequestInit {
     maxRetries?: number; // 最大重试次数
@@ -99,8 +97,6 @@ export const safeJSON = (text: string) => {
 };
 
 export class Fetch {
-    private rateLimiter: RateLimiter;
-    private tokenLimiter: TokenLimiter;
     maxRetries?: number;
     timeout?: number;
     retryMaxWaitInterval?: number;
@@ -126,8 +122,6 @@ export class Fetch {
         this.timeout = validatePositiveInteger('timeout', timeout);
         this.backoffFactor = backoffFactor;
         this.retryMaxWaitInterval = retryMaxWaitInterval;
-        this.rateLimiter = new RateLimiter();
-        this.tokenLimiter = new TokenLimiter();
     }
     async fetchWithTimeout(
         url: string,
@@ -142,39 +136,20 @@ export class Fetch {
 
         const timeout = setTimeout(() => controller.abort(), ms);
 
-        return this.rateLimiter.schedule(() =>
-            fetchInstance(url, {signal: controller.signal as any, ...(options as any)})
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error, status = ${response.status}`);
-                    }
-                    return response;
-                })
-                .catch(error => {
-                    console.error('Fetch request failed:', error.message);
-                    throw error;
-                })
-                .finally(() => {
-                    clearTimeout(timeout);
-                })
-        );
-    }
-
-    /**
-     * 获取TPM头部信息
-     *
-     * @param headers HTTP请求头对象
-     * @returns 返回字符串类型的令牌限制数量
-     */
-    getTpmHeader(headers: any): void {
-        const val = headers.get('x-ratelimit-limit-tokens') ?? '0';
-        this.tokenLimiter.resetTokens(val);
-        return val;
-    }
-
-    getUsedTokens(data: Resp): number {
-        const usage = data?.usage?.total_tokens;
-        return usage ?? 0;
+        return fetch(url, {signal: controller.signal as any, ...(options as any)})
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error, status = ${response.status}`);
+                }
+                return response;
+            })
+            .catch(error => {
+                console.error('Fetch request failed:', error.message);
+                throw error;
+            })
+            .finally(() => {
+                clearTimeout(timeout);
+            });
     }
 
     /**
@@ -194,73 +169,44 @@ export class Fetch {
         }
         const timeout = options.timeout ?? this.timeout;
         const controller = new AbortController();
-
-        // 计算请求token
-        const tokens = this.tokenLimiter.calculateTokens(options.body as string ?? '');
-        const hasToken = await this.tokenLimiter.acquireTokens(tokens);
-        if (hasToken) {
-            const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);
-            let usedTokens = 0;
-            if (response instanceof Error) {
-                if (options.signal?.aborted) {
-                    throw new Error('Request was aborted.');
-                }
-                if (response.name === 'AbortError') {
-                    throw new Error('Request timed out.');
-                }
-                throw new Error('Request timed out.' + response.message);
+        const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);
+        if (response instanceof Error) {
+            if (options.signal?.aborted) {
+                throw new Error('Request was aborted.');
             }
-
-            if (!response.ok) {
-                if (retriesRemaining && this.shouldRetry(response)) {
-                    const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
-                    console.log(retryMessage);
-                    return this.retryRequest(url, options, retriesRemaining, response.headers as any);
-                }
-                const retryMessage = retriesRemaining ? '(error; no more retries left)' : '(error; not retryable)';
-                throw new Error(retryMessage);
+            if (response.name === 'AbortError') {
+                throw new Error('Request timed out.');
             }
-            const res = await handleResponse({response, options, controller});
-            if (typeof res === 'object' && res !== null && 'error_code' in res) {
-                const resWithError = res as {error_code: number; error_description?: string};
-                // 如果存在错误码且不需要重试，则直接抛出错误
-                if (!RETRY_CODE.includes(resWithError.error_code)) {
-                    throw new Error(JSON.stringify(res));
-                }
-                // 网络正常的情况下API 336100（ServerHighLoad）、18 (QPSIimit)、336501（RPMLimitReached）、336502（TPMLimitReached）进行重试
-                if (retriesRemaining && this.shouldRetryWithErrorCode(resWithError)) {
-                    return this.retryRequest(url, options, retriesRemaining, response.headers as any);
-                }
-            }
-            const rpm = response?.headers?.get('x-ratelimit-limit-requests');
-            const tmp = response?.headers?.get('x-ratelimit-limit-tokens') ?? '0';
-            if (rpm) {
-                this.rateLimiter.updateLimits(Number(rpm));
-            }
-            if (tmp) {
-                this.tokenLimiter.resetTokens(Number(tmp));
-            }
-            const val = this.getTpmHeader(response.headers);
-            // 流式
-            if (options.stream && res instanceof Readable) {
-                const [stream1, stream2] = (res as any).tee();
-                if (isOpenTpm(val)) {
-                    const updateTokensAsync = async () => {
-                        for await (const data of (stream1 as unknown as AsyncIterableType)) {
-                            const typedData = data as RespBase;
-                            if (typedData.is_end) {
-                                usedTokens = typedData?.usage?.total_tokens;
-                                await this.tokenLimiter.acquireTokens(usedTokens - tokens);
-                                break;
-                            }
-                        }
-                    };
-                    setTimeout(updateTokensAsync, 0);
-                }
-                return stream2;
-            }
-            return res;
+            throw new Error('Request timed out.' + response.message);
         }
+
+        if (!response.ok) {
+            if (retriesRemaining && this.shouldRetry(response)) {
+                const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
+                console.log(retryMessage);
+                return this.retryRequest(url, options, retriesRemaining, response.headers as any);
+            }
+            const retryMessage = retriesRemaining ? '(error; no more retries left)' : '(error; not retryable)';
+            throw new Error(retryMessage);
+        }
+        const res = await handleResponse({response, options, controller});
+        if (typeof res === 'object' && res !== null && 'error_code' in res) {
+            const resWithError = res as {error_code: number; error_description?: string};
+            // 如果存在错误码且不需要重试，则直接抛出错误
+            if (!RETRY_CODE.includes(resWithError.error_code)) {
+                throw new Error(JSON.stringify(res));
+            }
+            // 网络正常的情况下API 336100（ServerHighLoad）、18 (QPSIimit)、336501（RPMLimitReached）、336502（TPMLimitReached）进行重试
+            if (retriesRemaining && this.shouldRetryWithErrorCode(resWithError)) {
+                return this.retryRequest(url, options, retriesRemaining, response.headers as any);
+            }
+        }
+        // 流式
+        if (options.stream && res instanceof Readable) {
+            const [stream1, stream2] = (res as any).tee();
+            return stream2;
+        }
+        return res;
     }
 
     /**
@@ -300,7 +246,7 @@ export class Fetch {
      */
     private shouldRetryWithErrorCode(data: {error_code?: number; error_description?: string}): boolean {
         // 对于已识别为可重试的错误码继续重试
-        return RETRY_CODE.includes(data?.error_code);
+        return RETRY_CODE.includes(data?.error_code ?? 0);
     }
 
     /**
@@ -338,7 +284,7 @@ export class Fetch {
         }
         if (!(timeoutMillis && 0 <= timeoutMillis && timeoutMillis < 60 * 1000)) {
             const maxRetries = options.maxRetries ?? this.maxRetries;
-            timeoutMillis = this.calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries);
+            timeoutMillis = this.calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries ?? 0);
         }
         await sleep(timeoutMillis);
         return this.makeRequest(url, options, retriesRemaining - 1);

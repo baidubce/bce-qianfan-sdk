@@ -39,11 +39,15 @@ public class ModelEndpointRetriever {
     private static final String DEFAULT_EMBEDDING_MODEL = "embedding-v1";
     private static final String DEFAULT_TEXT_2_IMAGE_MODEL = "stable-diffusion-xl";
     private static final String DEFAULT_IMAGE_2_TEXT_MODEL = "fuyu-8b";
+    private static final String DEFAULT_RERANKER_MODEL = "bce-reranker-base_v1";
 
     private static final String LIST_MODEL_SERVICE_URL = "%s/wenxinworkshop/service/list";
     private static final String ENDPOINT_TEMPLATE = "/%s/%s";
     private static final int DYNAMIC_MAP_REFRESH_INTERVAL = 3600;
-    private static final String[] MODEL_TYPES = {ModelType.CHAT, ModelType.COMPLETIONS, ModelType.EMBEDDINGS, ModelType.TEXT_2_IMAGE, ModelType.IMAGE_2_TEXT};
+    private static final String[] MODEL_TYPES = {
+            ModelType.CHAT, ModelType.COMPLETIONS, ModelType.EMBEDDINGS,
+            ModelType.TEXT_2_IMAGE, ModelType.IMAGE_2_TEXT, ModelType.RERANKER
+    };
 
     // type -> (model -> endpoint)
     private final Map<String, Map<String, String>> typeModelEndpointMap = new HashMap<>();
@@ -62,6 +66,7 @@ public class ModelEndpointRetriever {
         defaultTypeModelMap.put(ModelType.EMBEDDINGS, DEFAULT_EMBEDDING_MODEL);
         defaultTypeModelMap.put(ModelType.TEXT_2_IMAGE, DEFAULT_TEXT_2_IMAGE_MODEL);
         defaultTypeModelMap.put(ModelType.IMAGE_2_TEXT, DEFAULT_IMAGE_2_TEXT_MODEL);
+        defaultTypeModelMap.put(ModelType.RERANKER, DEFAULT_RERANKER_MODEL);
 
         for (String type : MODEL_TYPES) {
             typeModelEndpointMap.put(type, new HashMap<>());
@@ -71,6 +76,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preemptible", "completions_pro_preemptible");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview", "ernie-4.0-8k-preview");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview-0518", "completions_adv_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0329", "ernie-4.0-8k-0329");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0104", "ernie-4.0-8k-0104");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k", "completions");
@@ -80,6 +86,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preemptible", "completions_preemptible");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-preview", "ernie-3.5-8k-preview");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0329", "ernie-3.5-8k-0329");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-128k", "ernie-3.5-128k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-8k", "ernie_speed");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-128k", "ernie-speed-128k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-8k-0321", "ernie-char-8k");
@@ -113,6 +120,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.EMBEDDINGS).put("tao-8k", "tao_8k");
         typeModelEndpointMap.get(ModelType.TEXT_2_IMAGE).put("stable-diffusion-xl", "sd_xl");
         typeModelEndpointMap.get(ModelType.IMAGE_2_TEXT).put("fuyu-8b", "fuyu_8b");
+        typeModelEndpointMap.get(ModelType.RERANKER).put("bce-reranker-base_v1", "bce_reranker_base");
         // Compatibility for old model names
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-turbo", "eb-instant");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot", "completions");

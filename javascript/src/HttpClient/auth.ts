@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import crypto from 'crypto-browserify';
+import * as CryptoJS from 'crypto-js';
 
 import * as H from './headers';
 import {normalize, trim} from './strings';
-import {getCurrentEnvironment} from '../utils';
-
-let cryptoClass;
-if (getCurrentEnvironment() === 'node') {
-    cryptoClass = require('crypto');
-}
-else {
-    cryptoClass = crypto;
-}
 
 class Auth {
     private ak: string;
@@ -165,9 +156,8 @@ class Auth {
     }
 
     private hash(data: string, key: string): string {
-        const sha256Hmac = cryptoClass.createHmac('sha256', key);
-        sha256Hmac.update(data);
-        return sha256Hmac.digest('hex');
+        const sha256Hmac = CryptoJS.HmacSHA256(data, key);
+        return sha256Hmac.toString(CryptoJS.enc.Hex);
     }
 }
 

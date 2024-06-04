@@ -16,11 +16,7 @@
 
 package com.baidubce.qianfan;
 
-import com.baidubce.qianfan.core.builder.ChatBuilder;
-import com.baidubce.qianfan.core.builder.CompletionBuilder;
-import com.baidubce.qianfan.core.builder.EmbeddingBuilder;
-import com.baidubce.qianfan.core.builder.Image2TextBuilder;
-import com.baidubce.qianfan.core.builder.Text2ImageBuilder;
+import com.baidubce.qianfan.core.builder.*;
 import com.baidubce.qianfan.model.BaseRequest;
 import com.baidubce.qianfan.model.BaseResponse;
 import com.baidubce.qianfan.model.RateLimitConfig;
@@ -35,6 +31,8 @@ import com.baidubce.qianfan.model.image.Image2TextRequest;
 import com.baidubce.qianfan.model.image.Image2TextResponse;
 import com.baidubce.qianfan.model.image.Text2ImageRequest;
 import com.baidubce.qianfan.model.image.Text2ImageResponse;
+import com.baidubce.qianfan.model.rerank.RerankRequest;
+import com.baidubce.qianfan.model.rerank.RerankResponse;
 
 import java.util.Iterator;
 
@@ -116,6 +114,14 @@ public class Qianfan {
     public Iterator<Image2TextResponse> image2TextStream(Image2TextRequest request) {
         request.setStream(true);
         return requestStream(request, Image2TextResponse.class);
+    }
+
+    public RerankBuilder rerank() {
+        return new RerankBuilder(this);
+    }
+
+    public RerankResponse rerank(RerankRequest request) {
+        return request(request, RerankResponse.class);
     }
 
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {

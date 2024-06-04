@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Plugin, setEnvVariable} from '../index';
+import {Plugin, setEnvVariable} from '../src/index';
 
 // 修改env文件
 // setEnvVariable('QIANFAN_AK','***');

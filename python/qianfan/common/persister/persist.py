@@ -14,10 +14,11 @@
 import glob
 from abc import ABC, abstractmethod
 from os import makedirs, path
+from pathlib import Path
 from typing import List, Type, TypeVar
 
 from qianfan.common.persister.base import Persistent
-from qianfan.consts import Consts
+from qianfan.config import get_config
 from qianfan.utils.logging import log_debug
 
 _T = TypeVar("_T", bound=Type["Persistent"])
@@ -40,18 +41,19 @@ class Persister(ABC):
         ...
 
 
-FileTmpPath = Consts.QianfanCacheDir / "file_tmp/"
-
-
 class FilePersister(Persister):
-    def __init__(self) -> None:
+    @classmethod
+    def _ensure_cache_existed(cls) -> Path:
+        FileTmpPath = Path(get_config().CACHE_DIR) / "file_tmp/"
         if not path.exists(FileTmpPath):
             makedirs(FileTmpPath)
+        return FileTmpPath
 
     @classmethod
     def save(cls, p: Persistent) -> None:
         b = p.persist()
-        f_path_dir = path.join(FileTmpPath, p._space())
+        cache_files_path = cls._ensure_cache_existed()
+        f_path_dir = path.join(cache_files_path, p._space())
         if not path.exists(f_path_dir):
             makedirs(f_path_dir, exist_ok=True)
         f_path = path.join(f_path_dir, p._identity())
@@ -61,15 +63,16 @@ class FilePersister(Persister):
 
     @classmethod
     def load(cls, id: str, t: _T) -> Persistent:
-        f_path_dir = path.join(FileTmpPath, t._space())
+        cache_files_path = cls._ensure_cache_existed()
+        f_path_dir = path.join(cache_files_path, t._space())
         if not path.exists(f_path_dir):
             makedirs(f_path_dir)
-        with open(path.join(FileTmpPath, t._space(), id), "rb") as f:
+        with open(path.join(cache_files_path, t._space(), id), "rb") as f:
             return t.load(f.read())
 
     @classmethod
     def list(cls, t: _T) -> List[Persistent]:
-        space_path = path.join(FileTmpPath, t._space())
+        space_path = path.join(cls._ensure_cache_existed(), t._space())
         res = []
         if not path.exists(space_path):
             makedirs(space_path)
@@ -77,21 +80,3 @@ class FilePersister(Persister):
             with open(file_path, "rb") as f:
                 res.append(t.load(f.read()))
         return res
-
-
-g_persister = FilePersister()
-# from qianfan.utils.cache import global_disk_cache, Cache
-# class DiskCachePersister(Persister):
-
-#     _instance: "Cache" = None
-
-#     @classmethod
-#     def save(cls, p: Persistent) -> None:
-#        global_disk_cache.set(p._space, )
-#        global_disk_cache.get()
-
-#     @staticmethod
-#     def get_instance() -> :
-#         if DiskCachePersister._instance is None:
-#             DiskCachePersister._instance = global_disk_cache
-#         return DiskCachePersister._instance

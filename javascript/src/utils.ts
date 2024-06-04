@@ -26,7 +26,6 @@ export function getCurrentEnvironment() {
         return 'browser';
     }
     else if (typeof process !== 'undefined' && process.release.name === 'node') {
-        require('dotenv').config();
         return 'node';
     }
     return 'unknown';
@@ -62,11 +61,14 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  * @returns 返回JSON格式的字符串
  */
 export function getRequestBody(body: ReqBody, version: string): string {
+    const request_source
+        = (getCurrentEnvironment() === 'browser') ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
+
     const modifiedBody = {
         ...body,
         extra_parameters: {
             ...body.extra_parameters,
-            request_source: `qianfan_js_sdk_v${version}`,
+            request_source,
         },
     };
     return JSON.stringify(modifiedBody);
@@ -144,6 +146,7 @@ export function getDefaultConfig(): Record<string, string> {
     if (getCurrentEnvironment() === 'browser') {
         return {...DEFAULT_CONFIG};
     }
+    require('dotenv').config();
     const obj: Record<string, string> = {};
     for (const key of envVariables) {
         const value = process.env[key];

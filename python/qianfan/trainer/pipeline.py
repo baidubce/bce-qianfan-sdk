@@ -17,7 +17,7 @@ import threading
 import time
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
 
-from qianfan.common.persister.persist import g_persister
+from qianfan.common.persister.persist import FilePersister
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.trainer.actions import (
     DeployAction,
@@ -106,12 +106,12 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         t.start()
 
         while True:
-            g_persister.save(self)
+            FilePersister.save(self)
             if isinstance(res[0], Exception):
-                g_persister.save(self)
+                FilePersister.save(self)
                 raise res[0]
             if self._stop:
-                g_persister.save(self)
+                FilePersister.save(self)
                 break
             time.sleep(10)
 
@@ -132,7 +132,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 "pipeline start must be index of sequence or key of action"
             )
         self._stop = False
-        g_persister.save(self)
+        FilePersister.save(self)
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for i, k in enumerate(self.seq):
             if self._stop:
@@ -145,7 +145,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 )
             self.current_action = k
             output = self.actions[k].exec(input=output, **kwargs)
-            g_persister.save(self)
+            FilePersister.save(self)
             if output is not None:
                 err = output.get("error")
                 if err is not None:

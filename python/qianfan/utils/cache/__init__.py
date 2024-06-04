@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.utils.cache.base import global_disk_cache
+from qianfan.utils.cache.base import KvCache
 
 __all__ = [
-    "global_disk_cache",
+    "KvCache",
 ]

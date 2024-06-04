@@ -3,7 +3,7 @@
         "outDir": "./dist",
         "target": "ES2020",
         "lib": ["ES2020", "DOM", "DOM.Iterable", "ESNext"],
-        "module": "CommonJS",
+        "module": "ESNext",
         "sourceMap": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,

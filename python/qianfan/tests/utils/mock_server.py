@@ -681,7 +681,6 @@ def chat_v2():
                     },
                     "need_clear_history": False,
                 }
-             
             ],
             "usage": {"prompt_tokens": 2, "completion_tokens": 21, "total_tokens": 23},
             "_for_ut": {

@@ -140,6 +140,42 @@ def chat_completion_stream_response(model, messages):
         ) + "\n\n"
 
 
+def chat_completion_stream_response_v2(model, messages):
+    """
+    mock stream chat response
+    """
+    for i in range(0, STREAM_COUNT):
+        is_end = i == STREAM_COUNT - 1
+        yield "data: " + json.dumps(
+            {
+                "id": "as-5j1w2wzna2",
+                "object": "chat.completion",
+                "created": 1717488564,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": ret_msg(model, str(i) + merge_messages(messages))
+                        },
+                        "is_end": is_end,
+                        "need_clear_history": False,
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 2,
+                    "completion_tokens": 0,
+                    "total_tokens": 2,
+                },
+                "_for_ut": {
+                    "model": model,
+                    "turn": i,
+                    "stream": True,
+                    "type": "chatv2",
+                },
+            }
+        ) + "\n\n"
+
+
 def check_messages(messages):
     """
     check whether the received messages are valid
@@ -157,6 +193,33 @@ def check_messages(messages):
                 "error_code": APIErrorCode.InvalidParam.value,
                 "error_msg": f"invalid role in message {i}",
             }
+    return None
+
+
+def check_messages_v2(messages):
+    """
+    check whether the received messages are valid
+    """
+    if len(messages) % 2 != 1:
+        return {
+            "error": {
+                "code": "invalid_argument",
+                "message": "the length of messages must be an odd number",
+            },
+            "id": "as-qdb51n76w1",
+        }
+    for i, m in enumerate(messages):
+        if (i % 2 == 0 and m["role"] != "user") or (
+            i % 2 == 1 and m["role"] != "assistant"
+        ):
+            return {
+                "error": {
+                    "code": "invalid_argument",
+                    "message": f"invalid role in message {i}",
+                },
+                "id": "as-qdb51n76w1",
+            }
+
     return None
 
 
@@ -200,6 +263,33 @@ def access_token_checker(func):
             time.sleep(delay)
         except Exception:
             pass
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def iam_auth_checker(func):
+    """
+    decorator for checking access token
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """
+        wrapper for function
+        if "expired" in access_token, return token expired error
+        """
+        bce_date = request.headers.get("x-bce-date")
+        authorization = request.headers.get("authorization")
+        if bce_date is None or authorization is None:
+            return flask.Response(
+                status=403,
+                headers={
+                    "X-Bce-Error-Message": (
+                        "mock server error, authorization or bce_date not found"
+                    )
+                },
+            )
         return func(*args, **kwargs)
 
     return wrapper
@@ -532,6 +622,79 @@ def chat(model_name):
     )
 
 
+@app.route(Consts.ChatV2API, methods=["POST"])
+@iam_auth_checker
+def chat_v2():
+    """
+    mock chat completion v2 api
+    """
+    r = request.json
+    request_header = request.headers
+    request_id = request_header.get(Consts.XRequestID)
+    model_name = r["model"]
+    if model_name.startswith("test_retry"):
+        global retry_cnt
+        print("mock retry cnt", retry_cnt)
+        if model_name not in retry_cnt:
+            retry_cnt[model_name] = 1
+        if retry_cnt[model_name] % 3 != 0:
+            # need retry
+            retry_cnt[model_name] = (retry_cnt[model_name] + 1) % 3
+            return json_response(
+                {
+                    "error": {
+                        "code": "internal_error",
+                        "message": "high load",
+                    }
+                }
+            )
+    check_result = check_messages_v2(r["messages"])
+    if check_result is not None:
+        return json_response(check_result, status_code=400)
+    if model_name == "error":
+        return json_response(
+            {
+                "error": {
+                    "code": "invalid_model",
+                    "message": "No permission to use the model",
+                }
+            },
+            status_code=400,
+        )
+    if "stream" in r and r["stream"]:
+        return flask.Response(
+            chat_completion_stream_response_v2(model_name, r["messages"]),
+            mimetype="text/event-stream",
+        )
+
+    return json_response(
+        {
+            "id": "as-sq01fe52em",
+            "object": "chat.completion",
+            "created": 1717487283,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": ret_msg(model_name, merge_messages(r["messages"])),
+                    },
+                    "need_clear_history": False,
+                }
+             
+            ],
+            "usage": {"prompt_tokens": 2, "completion_tokens": 21, "total_tokens": 23},
+            "_for_ut": {
+                "model": model_name,
+                "turn": None,
+                "stream": False,
+                "type": "chatv2",
+            },
+        },
+        request_id=request_id,
+    )
+
+
 retry_cnt = {}
 
 
@@ -755,33 +918,6 @@ def auth():
             "session_secret": "6a29xxxxx671cc",
         }
     )
-
-
-def iam_auth_checker(func):
-    """
-    decorator for checking access token
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        """
-        wrapper for function
-        if "expired" in access_token, return token expired error
-        """
-        bce_date = request.headers.get("x-bce-date")
-        authorization = request.headers.get("authorization")
-        if bce_date is None or authorization is None:
-            return flask.Response(
-                status=403,
-                headers={
-                    "X-Bce-Error-Message": (
-                        "mock server error, authorization or bce_date not found"
-                    )
-                },
-            )
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 finetune_task_call_times = {}
@@ -4135,7 +4271,7 @@ def _start_mock_server():
     run mock server
     """
     try:
-        requests.get("http://127.0.0.1:8865")
+        requests.get("http://127.0.0.1:8866")
     except Exception:
         # mock server is not running, start it
         app.run(host="0.0.0.0", port=8866, debug=True, use_reloader=False)

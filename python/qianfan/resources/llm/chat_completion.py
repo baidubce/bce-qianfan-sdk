@@ -1438,6 +1438,8 @@ class ChatCompletionV2(BaseResourceV2):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
         return self._do(
             messages=messages,
             model=model,
@@ -1460,6 +1462,8 @@ class ChatCompletionV2(BaseResourceV2):
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
         return await self._ado(
             messages=messages,
             model=model,
@@ -1498,7 +1502,7 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
-        return self._real.do(
+        return self._do(
             messages=messages,
             endpoint=endpoint,
             model=model,
@@ -1528,7 +1532,7 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        return await self._real.ado(
+        return await self._ado(
             messages=messages,
             model=model,
             endpoint=endpoint,

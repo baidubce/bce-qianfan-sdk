@@ -40,8 +40,10 @@ import qianfan.errors as errors
 from qianfan import get_config
 from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
-from qianfan.resources.requestor.console_requestor import ConsoleInferAPIRequestor
-from qianfan.resources.requestor.openapi_requestor import create_api_requestor
+from qianfan.resources.requestor.openapi_requestor import (
+    QfAPIV2Requestor,
+    create_api_requestor,
+)
 from qianfan.resources.typing import (
     JsonBody,
     Literal,
@@ -158,9 +160,9 @@ class BatchRequestFuture(object):
 
 class VersionBase(object):
     def __init__(
-        self, version: Optional[Literal["1", "2"]] = None, **kwargs: Any
+        self, version: Optional[Literal["1", "2", 1, 2]] = None, **kwargs: Any
     ) -> None:
-        self._version = version if version else "1"
+        self._version = str(version) if version else "1"
         self._real = self._real_base(self._version)(**kwargs)
 
     @classmethod
@@ -191,6 +193,14 @@ class VersionBase(object):
         """
 
         return self._real.get_model_info(model)
+
+    def _do(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
+        # assert self._real has function `do`
+        return self._real.do(**kwargs)  # type: ignore
+
+    async def _ado(self, **kwargs: Any) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        # assert self._real has function `ado`
+        return await self._real.ado(**kwargs)  # type: ignore
 
 
 class BaseResource(object):
@@ -832,7 +842,7 @@ class BaseResourceV1(BaseResource):
 class BaseResourceV2(BaseResource):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self._client = ConsoleInferAPIRequestor(**kwargs)
+        self._client = QfAPIV2Requestor(**kwargs)
 
     def _request(
         self,
@@ -850,7 +860,7 @@ class BaseResourceV2(BaseResource):
         """
 
         resp = self._client.llm(
-            model_type=self.api_type(),
+            endpoint=self.api_type(),
             header=self._generate_header(model, stream, **kwargs),
             query=self._generate_query(model, stream, **kwargs),
             body=self._generate_body(model, stream, **kwargs),
@@ -867,8 +877,8 @@ class BaseResourceV2(BaseResource):
         retry_config: RetryConfig,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        resp = await self._client.llm_async(
-            model_type=self.api_type(),
+        resp = await self._client.async_llm(
+            endpoint=self.api_type(),
             header=self._generate_header(model, stream, **kwargs),
             query=self._generate_query(model, stream, **kwargs),
             body=self._generate_body(model, stream, **kwargs),

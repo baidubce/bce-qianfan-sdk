@@ -573,6 +573,47 @@ class QfAPIRequestor(BaseAPIRequestor):
         return self._async_with_retry(req.retry_config, _helper)
 
 
+class QfAPIV2Requestor(QfAPIRequestor):
+    def _llm_api_url(self, model_type: str) -> str:
+        """
+        convert endpoint to llm api url
+        """
+        if model_type == "chat":
+            path = Consts.ChatV2API
+        else:
+            raise errors.InternalError("Unexpected type when calling LLM v2 API")
+        return "{}{}".format(
+            get_config().CONSOLE_API_BASE_URL,
+            path,
+        )
+
+    def _add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        """
+        add access token to QfRequest
+        """
+        if auth is None:
+            auth = self._auth
+
+        # use IAM auth
+        access_key = auth._access_key
+        secret_key = auth._secret_key
+        if access_key is None or secret_key is None:
+            raise errors.AccessTokenExpiredError
+        self._sign(req, access_key, secret_key)
+
+        return req
+
+    async def _async_add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        """
+        async add access token to QfRequest
+        """
+        return self._add_access_token(req, auth)
+
+
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
     if get_config().ENABLE_PRIVATE:
         return PrivateAPIRequestor(**kwargs)

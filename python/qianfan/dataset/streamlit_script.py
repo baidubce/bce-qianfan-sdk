@@ -88,12 +88,18 @@ if isinstance(insight_table, pd.DataFrame):
             ["grade", "column_name"]
         ).reset_index(name="count")
 
-        col1.bar_chart(table_for_show, x="grade", y="count", color="column_name")
+        col1.bar_chart(
+            table_for_show,
+            x="grade",
+            y="count",
+            color="column_name",
+            use_container_width=True,
+        )
 
 if isinstance(mean_table, pd.DataFrame):
-    col2.data_editor(mean_table)
+    col2.data_editor(mean_table, use_container_width=True)
 
-col2.data_editor(pd_table, key="table")
+col2.data_editor(pd_table, key="table", use_container_width=True)
 
 
 button_quit = st.button("退出", on_click=on_quit_button_clicked)

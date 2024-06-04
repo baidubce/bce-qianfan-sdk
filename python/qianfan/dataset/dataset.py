@@ -2208,17 +2208,16 @@ class Dataset(Table):
                 " if you want to start a stress test task."
             )
 
-    def open_in_streamlit(self, column_names: List[Optional[str]] = [None]) -> None:
+    def show_in_data_insight_mode(
+        self, column_names: List[Optional[str]] = [None]
+    ) -> None:
         from multiprocessing import Process
 
         is_column_nullable = self.is_dataset_packed() and isinstance(self.list(0), str)
-
-        if (not column_names or not all(column_names)) and not is_column_nullable:
-            err_msg = "must specify column names of you want to do with insight"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-        insight_data = self._get_insight_data(column_names)
+        if not column_names or not all(column_names) or is_column_nullable:
+            insight_data = None
+        else:
+            insight_data = self._get_insight_data(column_names)
 
         # 子进程
         child_process = Process(

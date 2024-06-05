@@ -26,7 +26,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
-from qianfan.consts import DefaultLLMModel, DefaultValue
+from qianfan.consts import Consts, DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResourceV1,
@@ -1426,6 +1426,9 @@ class ChatCompletionV2(BaseResourceV2):
     @classmethod
     def api_type(cls) -> str:
         return "chat"
+
+    def _api_path(self) -> str:
+        return Consts.ChatV2API
 
     def do(
         self,

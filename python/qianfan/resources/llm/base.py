@@ -907,7 +907,7 @@ class BaseResourceV2(BaseResource):
         """
 
         resp = self._client.llm(
-            endpoint=self.api_type(),
+            endpoint=self._api_path(),
             header=self._generate_header(model, stream, **kwargs),
             query=self._generate_query(model, stream, **kwargs),
             body=self._generate_body(model, stream, **kwargs),
@@ -925,7 +925,7 @@ class BaseResourceV2(BaseResource):
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         resp = await self._client.async_llm(
-            endpoint=self.api_type(),
+            endpoint=self._api_path(),
             header=self._generate_header(model, stream, **kwargs),
             query=self._generate_query(model, stream, **kwargs),
             body=self._generate_body(model, stream, **kwargs),
@@ -945,6 +945,9 @@ class BaseResourceV2(BaseResource):
     @classmethod
     def _default_model(cls) -> str:
         return "ernie-speed-8k"
+
+    def _api_path(self) -> str:
+        raise NotImplementedError
 
 
 # {api_type: {model_name: QfLLMInfo}}

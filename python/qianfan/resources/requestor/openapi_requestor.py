@@ -574,17 +574,13 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 
 class QfAPIV2Requestor(QfAPIRequestor):
-    def _llm_api_url(self, model_type: str) -> str:
+    def _llm_api_url(self, endpoint: str) -> str:
         """
         convert endpoint to llm api url
         """
-        if model_type == "chat":
-            path = Consts.ChatV2API
-        else:
-            raise errors.InternalError("Unexpected type when calling LLM v2 API")
         return "{}{}".format(
             get_config().CONSOLE_API_BASE_URL,
-            path,
+            endpoint,
         )
 
     def _add_access_token(

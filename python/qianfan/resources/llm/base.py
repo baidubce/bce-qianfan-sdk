@@ -796,8 +796,10 @@ class BaseResourceV1(BaseResource):
     def _generate_body(
         self, model: str | None, stream: bool, **kwargs: Any
     ) -> Dict[str, Any]:
-        body = super()._generate_body(model, stream, **kwargs)
         endpoint = self._extract_endpoint(**kwargs)
+        if "endpoint" in kwargs:
+            kwargs.pop("endpoint")
+        body = super()._generate_body(model, stream, **kwargs)
         model_info: Optional[QfLLMInfo] = None
         if model is not None:
             try:

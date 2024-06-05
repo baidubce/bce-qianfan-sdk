@@ -889,8 +889,9 @@ class BaseResourceV1(BaseResource):
 
 
 class BaseResourceV2(BaseResource):
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, model: Optional[str] = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self._model = model
         self._client = QfAPIV2Requestor(**kwargs)
 
     def _request(
@@ -941,12 +942,17 @@ class BaseResourceV2(BaseResource):
         self, model: str | None, stream: bool, **kwargs: Any
     ) -> Dict[str, Any]:
         body = super()._generate_body(model, stream, **kwargs)
-        body["model"] = model if model else self._default_model()
+        if model is not None:
+            body["model"] = model
+        elif self._model is not None:
+            body["model"] = self._model
+        else:
+            body["model"] = self._default_model()
         return body
 
     @classmethod
     def _default_model(cls) -> str:
-        return "ernie-speed-8k"
+        raise NotImplementedError
 
     def _api_path(self) -> str:
         raise NotImplementedError

@@ -313,6 +313,7 @@ class DefaultLLMModel:
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
+    ChatCompletionV2 = "ernie-speed-8k"
 
 
 class PromptSceneType(int, enum.Enum):

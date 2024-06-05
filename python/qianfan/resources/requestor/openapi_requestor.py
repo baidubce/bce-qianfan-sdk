@@ -609,6 +609,27 @@ class QfAPIV2Requestor(QfAPIRequestor):
         """
         return self._add_access_token(req, auth)
 
+    def _check_error(self, body: Dict[str, Any]) -> None:
+        """
+        check whether error_code in response body
+        if there is an APITokenExpired error,
+        raise AccessTokenExpiredError
+        """
+        if "error" in body:
+            req_id = body.get("id", "")
+            error_code = body["error"]["code"]
+            err_msg = body["error"].get(
+                "message", "no error message found in response body"
+            )
+
+            log_error(
+                f"api request req_id: {req_id} failed with error code: {error_code},"
+                f" err msg: {err_msg}, please check"
+                " https://cloud.baidu.com/doc/WENXINWORKSHOP/s/tlmyncueh"
+            )
+
+            raise errors.APIError(error_code, err_msg, req_id)
+
 
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
     if get_config().ENABLE_PRIVATE:

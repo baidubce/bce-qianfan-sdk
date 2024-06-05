@@ -1434,11 +1434,15 @@ class ChatCompletionV2(BaseResourceV2):
         self,
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
+        endpoint: Optional[str] = None,
         stream: bool = False,
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         if isinstance(messages, QfMessages):
@@ -1458,11 +1462,15 @@ class ChatCompletionV2(BaseResourceV2):
         self,
         messages: Union[List[Dict], QfMessages],
         model: Optional[str] = None,
+        endpoint: Optional[str] = None,
         stream: bool = False,
         retry_count: int = DefaultValue.RetryCount,
         request_timeout: float = DefaultValue.RetryTimeout,
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         if isinstance(messages, QfMessages):
@@ -1477,6 +1485,10 @@ class ChatCompletionV2(BaseResourceV2):
             backoff_factor=backoff_factor,
             **kwargs,
         )
+
+    @classmethod
+    def _default_model(cls) -> str:
+        return DefaultLLMModel.ChatCompletionV2
 
 
 class ChatCompletion(VersionBase):

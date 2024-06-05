@@ -15,6 +15,7 @@
 
 import json
 from concurrent.futures import ThreadPoolExecutor, wait
+from enum import Enum
 from typing import Any, List, Optional, Tuple
 
 import typer
@@ -38,8 +39,12 @@ from qianfan.common.client.utils import (
 )
 from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
-from qianfan.resources.llm.chat_completion import ChatCompletionV1
-from qianfan.resources.typing import QfMessages, QfResponse
+from qianfan.resources.llm.chat_completion import (
+    ChatCompletion,
+    ChatCompletionV1,
+    ChatCompletionV2,
+)
+from qianfan.resources.typing import Literal, QfMessages, QfResponse
 
 
 class ChatClient(object):
@@ -66,18 +71,19 @@ class ChatClient(object):
         endpoint: Optional[str],
         multi_line: bool,
         debug: bool,
+        version: Literal["1", "2"],
         **kwargs: Any,
     ) -> None:
         """
         Init the chat client
         """
-        self.clients: List[ChatCompletionV1] = []
+        self.clients: List[ChatCompletion] = []
         models = model.split(",") if model else []
         endpoints = endpoint.split(",") if endpoint else []
         for m in models:
-            self.clients.append(ChatCompletionV1(model=m))
+            self.clients.append(ChatCompletion(model=m, version=version))
         for e in endpoints:
-            self.clients.append(ChatCompletionV1(endpoint=e))
+            self.clients.append(ChatCompletion(endpoint=e, version=version))
         self.msg_history: List[Optional[QfMessages]] = [
             QfMessages() for _ in range(len(self.clients))
         ]
@@ -86,6 +92,7 @@ class ChatClient(object):
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
         self.debug = debug
+        self.version = version
 
     def single_model_response(
         self, msg: Tuple[str, bool, Optional[QfResponse]]
@@ -131,9 +138,7 @@ class ChatClient(object):
             *render_list,
         )
 
-    def _client_name(
-        self, client: ChatCompletionV1, markup: Optional[str] = None
-    ) -> str:
+    def _client_name(self, client: ChatCompletion, markup: Optional[str] = None) -> str:
         """
         Generate client name
         """
@@ -145,12 +150,23 @@ class ChatClient(object):
                 return s
 
         name: str
-        if client._model is not None:
-            name = f"Model {_markup(client._model)}"
-        elif client._endpoint is not None:
-            name = f"Endpoint {_markup(client._endpoint)}"
+        _client = client._real
+        if self.version == "1":
+            assert isinstance(_client, ChatCompletionV1)
+            if _client._model is not None:
+                name = f"Model {_markup(_client._model)}"
+            elif _client._endpoint is not None:
+                name = f"Endpoint {_markup(_client._endpoint)}"
+            else:
+                raise InternalError("No model or endpoint specified in ChatCompletion.")
+        elif self.version == "2":
+            assert isinstance(_client, ChatCompletionV2)
+            if _client._model is not None:
+                name = f"Model {_markup(_client._model)}"
+            else:
+                raise InternalError("No model or endpoint specified in ChatCompletion.")
         else:
-            raise InternalError("No model or endpoint specified in ChatCompletion.")
+            raise InternalError("Unexpected version.")
         return name
 
     def render_model_response(
@@ -248,7 +264,7 @@ class ChatClient(object):
                 console=self.console,
             ) as live:
 
-                def model_response_worker(client: ChatCompletionV1, i: int) -> None:
+                def model_response_worker(client: ChatCompletion, i: int) -> None:
                     """
                     Worker for each client to recevie message
                     """
@@ -270,9 +286,18 @@ class ChatClient(object):
                             **self.inference_args,
                         )
                         for resp in response:
+                            res: str
+                            is_end: bool
+                            if self.version == "1":
+                                res = resp["result"]
+                                is_end = resp["is_end"]
+                            else:
+                                res = resp["choices"][0]["delta"]["content"]
+                                is_end = resp["choices"][0]["is_end"]
+
                             msg_list[i] = (
-                                msg_list[i][0] + resp["result"],
-                                resp["is_end"],
+                                msg_list[i][0] + res,
+                                is_end,
                                 resp,
                             )
                             live.update(self.render_model_response(msg_list))
@@ -303,6 +328,11 @@ class ChatClient(object):
                         msg_history.append(msg[0], role=QfRole.Assistant)
 
 
+class APIVersion(str, Enum):
+    V1 = "1"
+    V2 = "2"
+
+
 MODEL_ARGUMENTS_PANEL = (
     "Model Arguments (Some arguments are not supported by every model)"
 )
@@ -317,7 +347,7 @@ def chat_entry(
             " used if no model and endpoint are specified. Use comma(,) to split"
             " multiple models."
         ),
-        autocompletion=ChatCompletionV1.models,
+        # autocompletion=ChatCompletion.models,
     ),
     endpoint: Optional[str] = typer.Option(
         None,
@@ -388,17 +418,42 @@ def chat_entry(
     enable_citation: Optional[bool] = typer.Option(
         None, help="Enable citation", rich_help_panel=MODEL_ARGUMENTS_PANEL
     ),
+    appid: Optional[str] = typer.Option(
+        None,
+        help="App ID.",
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    preemptible: Optional[bool] = typer.Option(
+        None,
+        help=(
+            "Enable preemptible. The response timeout may be longer than usual if"
+            " enabled."
+        ),
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
     extra_parameters: Optional[str] = typer.Option(
         None,
         help="Extra parameters for the model. This should be a json string.",
         rich_help_panel=MODEL_ARGUMENTS_PANEL,
     ),
+    addtional_arguments: Optional[str] = typer.Option(
+        None,
+        help=(
+            "Additional input arguments. This should be a json string and will be"
+            " included in the request."
+        ),
+        rich_help_panel=MODEL_ARGUMENTS_PANEL,
+    ),
+    version: APIVersion = typer.Option(APIVersion.V1, help="API version"),
 ) -> None:
     """
     Chat with the LLM in the terminal.
     """
     if model is None and endpoint is None:
-        model = DefaultLLMModel.ChatCompletion
+        if version == APIVersion.V1:
+            model = DefaultLLMModel.ChatCompletion
+        elif version == APIVersion.V2:
+            model = DefaultLLMModel.ChatCompletionV2
 
     extra_args = {}
 
@@ -415,13 +470,29 @@ def chat_entry(
     add_if_not_none("response_format", response_format)
     add_if_not_none("disable_search", disable_search)
     add_if_not_none("enable_citation", enable_citation)
+    add_if_not_none("appid", appid)
+    add_if_not_none("preemptible", preemptible)
 
     if stop is not None:
         extra_args["stop"] = stop.split(",")
     if extra_parameters is not None:
         extra_args["extra_parameters"] = json.loads(extra_parameters)
+    if addtional_arguments is not None:
+        extra_args = {
+            **extra_args,
+            **json.loads(addtional_arguments),
+        }
 
-    client = ChatClient(model, endpoint, multi_line, debug=debug, **extra_args)
+    _version: Literal["1", "2"]
+    if version == APIVersion.V1:
+        _version = "1"
+    elif version == APIVersion.V2:
+        _version = "2"
+    else:
+        raise InternalError("Invalid API version")
+    client = ChatClient(
+        model, endpoint, multi_line, debug=debug, version=_version, **extra_args
+    )
     client.chat_in_terminal()
 
     # if not tui:

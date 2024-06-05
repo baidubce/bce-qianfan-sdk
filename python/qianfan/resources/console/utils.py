@@ -17,14 +17,12 @@ Utils for console api
 """
 import copy
 import functools
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 from qianfan import get_config
 from qianfan.consts import Consts
-from qianfan.resources.requestor.console_requestor import (
-    ConsoleAPIRequestor,
-    _get_console_ak_sk,
-)
+from qianfan.errors import InvalidArgumentError
+from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
 from qianfan.version import VERSION
 
@@ -65,11 +63,9 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         )
         req = func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
-        resp = ConsoleAPIRequestor(**kwargs)._request_console_api(
-            req, ak, sk, retry_config, stream=False
+        return ConsoleAPIRequestor(**kwargs)._request_console_api(
+            req, ak, sk, retry_config
         )
-        assert isinstance(resp, QfResponse)
-        return resp
 
     return inner
 
@@ -107,11 +103,9 @@ def async_console_api_request(
         )
         req = await func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
-        resp = await ConsoleAPIRequestor(**kwargs)._async_request_console_api(
-            req, ak, sk, retry_config, stream=False
+        return await ConsoleAPIRequestor(**kwargs)._async_request_console_api(
+            req, ak, sk, retry_config
         )
-        assert isinstance(resp, QfResponse)
-        return resp
 
     return inner
 
@@ -123,3 +117,24 @@ def _get_console_v2_query(
     if action is not None:
         res[Consts.ConsoleAPIQueryAction] = action
     return res
+
+
+def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
+    """
+    extract ak and sk from kwargs
+    if not found in kwargs, will return value from global config and env variable
+    if `pop` is True, remove ak and sk from kwargs
+    """
+    ak = kwargs.get("ak", None) or get_config().ACCESS_KEY
+    sk = kwargs.get("sk", None) or get_config().SECRET_KEY
+    if ak is None or sk is None:
+        raise InvalidArgumentError(
+            "access_key and secret_key must be provided! 未提供 access_key 或"
+            " secret_key ！"
+        )
+    if pop:
+        # remove ak and sk from kwargs
+        for key in ("ak", "sk"):
+            if key in kwargs:
+                del kwargs[key]
+    return ak, sk

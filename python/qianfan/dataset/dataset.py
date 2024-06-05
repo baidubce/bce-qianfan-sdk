@@ -1951,9 +1951,9 @@ class Dataset(Table):
                 for prompt in input_str_list
             ], []
 
-        assert self.input_columns
+        input_columns = self.input_columns if self.input_columns else ["prompt"]
 
-        if len(self.input_columns) > 1:
+        if len(input_columns) > 1:
             err_msg = (
                 "input column list should only have 1 column name when your Service"
                 " is ChatCompletion"
@@ -1961,13 +1961,15 @@ class Dataset(Table):
             log_error(err_msg)
             raise TypeError(err_msg)
 
-        reference_column = self.reference_column
-        if not reference_column:
-            err_msg = "no reference column has been set"
+        reference_column = (
+            self.reference_column if self.reference_column else "response"
+        )
+        if not self.list(0)[0].get(reference_column, ""):
+            err_msg = "no reference column"
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        input_column = self.input_columns[0]
+        input_column = input_columns[0]
 
         dataset = deepcopy(self)
         if dataset.is_dataset_grouped():

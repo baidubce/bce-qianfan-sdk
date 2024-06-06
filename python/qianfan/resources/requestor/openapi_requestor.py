@@ -596,7 +596,17 @@ class QfAPIV2Requestor(QfAPIRequestor):
         access_key = auth._access_key
         secret_key = auth._secret_key
         if access_key is None or secret_key is None:
-            raise errors.AccessTokenExpiredError
+            extra_msg = ""
+            if get_config().AK is not None or get_config().SK is not None:
+                extra_msg = (
+                    " AK and SK cannot be used in V2 API. V2 推理 API 不支持通过 AK 和"
+                    " SK 进行鉴权，请换用 access_key 和 secret_key。"
+                )
+            raise errors.InvalidArgumentError(
+                "access_key and secret_key must be provided! 未提供 access_key 或"
+                " secret_key！"
+                + extra_msg
+            )
         self._sign(req, access_key, secret_key)
 
         return req

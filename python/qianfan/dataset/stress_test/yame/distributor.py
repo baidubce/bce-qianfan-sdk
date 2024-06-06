@@ -86,10 +86,14 @@ class Distributor(Iterator):
                     self.environment.runner.quit()
             return
 
+        msg_kwargs = {}
+        if isinstance(self.environment.runner, MasterRunner):
+            msg_kwargs["client_id"] = client_id
+        assert isinstance(self.environment.runner, (MasterRunner, LocalRunner))
         self.environment.runner.send_message(
             f"_{self.name}_response",
             {"item": item, "gid": gid},
-            client_id=client_id,
+            **msg_kwargs,
         )
 
     def __next__(self) -> Any:
@@ -109,7 +113,14 @@ class Distributor(Iterator):
         assert isinstance(self.environment.runner, (WorkerRunner, LocalRunner))
         self.environment.runner.send_message(
             f"_{self.name}_request",
-            {"gid": gid, "client_id": self.environment.runner.client_id},
+            {
+                "gid": gid,
+                "client_id": (
+                    self.environment.runner.client_id
+                    if isinstance(self.environment.runner, WorkerRunner)
+                    else "0"
+                ),
+            },
         )
         item = _results[gid].get()["item"]  # this waits for the reply
         del _results[gid]

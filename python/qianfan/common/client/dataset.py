@@ -419,3 +419,29 @@ def predict(
             result = ds.test_using_llm(service_model=model)
     result.save(data_file=str(output.absolute()))
     print_success_msg("Prediction result has been saved to: " + str(output.absolute()))
+
+
+@dataset_app.command()
+def insight(
+    dataset_file: str = typer.Argument(
+        ...,
+        help="The dataset to insight. The value must be a file path or a folder",
+    ),
+    columns: Optional[str] = typer.Option(
+        None,
+        "--columns",
+        "-c",
+        help=(
+            "The columns you want to have dedicated statistic metrics, split by comma"
+            " (,).Needed for non-txt file"
+        ),
+    ),
+) -> None:
+    """Insight the dataset using a file path or file folder."""
+    ds = Dataset.load(data_file=dataset_file)
+    column_names: List[Optional[str]] = [None]
+
+    if columns:
+        column_names = columns.split(",")  # type: ignore
+
+    ds.show_in_data_insight_mode(column_names=column_names)

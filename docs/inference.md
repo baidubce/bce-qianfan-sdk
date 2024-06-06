@@ -134,6 +134,34 @@ async for r in resp:
   - `json_body`：请求体
   - `retry_config`：请求使用的重试信息
 
+##### V2 版本
+
+千帆平台推出了 V2 版本的推理 API，SDK 也支持对 V2 版本的 API 进行调用，只需要创建对象时传入 `version="2"` 即可，其余使用方法与上述一致，差异点主要在于字段名称，具体字段名请参考 API 文档
+
+```python
+# 在创建时传入 version 以使用 V2 版本
+# model 字段为可选，默认为 ernie-speed-8k，也可以指定其他模型，后续调用均会使用该模型
+chat = qianfan.ChatCompletion(version="2", model="ernie-speed-8k")
+
+# 调用方式与 V1 版本一致，具体字段名参考 API 文档
+resp = chat.do(
+    messages=[{"role": "user", "content": "你好"}],
+    model="ernie-3.5-8k",  # 可选，此处指定模型，将在该次调用覆盖之前设置的 model
+    preemptable=True,
+    top_p=0.5,
+)
+print(resp["choices"][0]["message"]["content"])
+
+# 也支持流式与异步调用方式
+resp = c.do(
+    messages=[{"role": "user", "content": "你好"}],
+    stream=True,
+)
+
+for r in resp:
+    print(r["choices"][0]["delta"]["content"])
+```
+
 #### **Completion 续写**
 
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `qianfan.Completion` 来完成这一任务。

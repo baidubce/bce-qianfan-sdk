@@ -57,6 +57,7 @@
 | | [千帆sdk调用一言插件](./plugin.ipynb) |                                                                                                                                |
 | | [文生图示例](./text2image.ipynb)| 展示了如何使用千帆 SDK 完成文生图任务。                                                                                                         | | 
 | Prompt | [Prompt使用](./prompt.ipynb) | 千帆提供了 Prompt 管理功能，可以快速地使用平台预置的优质 Prompt，或者保存用户自定义的 Prompt。SDK 也为用户快速使用 Prompt 提供了辅助。                                           |
+|   | [SDXL Prompt优化](./sdxl_prompt_optimize/prompt_optimize.ipynb) | 展示了如何使用LLM进行文生图模型SDXL的Prompt优化以获得更好的图片质量和query关联度                                           |
 | 其他 | [千帆 Hub](./hub.ipynb) |                                                                                                                                |
 | | [ERNIE Bot 搜索能力](./eb_search.ipynb) |                                                                                                                                |
 | | [SDK 自动遗忘过长的对话历史](./auto_truncate_msg.ipynb) |                                                                                                                                |

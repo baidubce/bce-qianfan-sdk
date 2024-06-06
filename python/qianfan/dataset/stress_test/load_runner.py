@@ -3,6 +3,7 @@ QianfanLocustRunner
 """
 import logging
 import os
+import traceback
 from typing import Any, Dict, Optional
 
 from qianfan.dataset import Dataset
@@ -61,8 +62,9 @@ class QianfanLocustRunner(LocustRunner):
         """
         ret = super(QianfanLocustRunner, self).run()
         logger.info("Log path: %s" % ret["logfile"])
-        if ret["exitcode"] == 0:
+        try:
             gen_brief(ret["record_dir"])
-        else:
-            logger.error("Task error! Please check the log.")
+        except Exception:
+            traceback.print_exc()
+            logger.error("Error happens when statisticizing.")
         return ret

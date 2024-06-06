@@ -13,6 +13,7 @@ from locust.stats import RequestStats
 from urllib3 import PoolManager
 
 import qianfan
+from qianfan import QfResponse
 from qianfan.dataset.stress_test.yame import GlobalData
 from qianfan.dataset.stress_test.yame.distributor import Distributor
 from qianfan.dataset.stress_test.yame.listeners import CustomHandler
@@ -214,55 +215,64 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
         start_time = time.time()
         start_perf_counter = time.perf_counter()
-        responses = self.chat_comp.do(messages=messages, **kwargs)
-
-        for resp in responses:
-            setattr(resp, "url", self.model)
-            setattr(resp, "reason", None)
-            setattr(resp, "status_code", resp["code"])
-
-            stream_json = resp["body"]
-            clear_history = stream_json.get("need_clear_history", False)
-            if first_flag:
-                request_meta["first_token_latency"] = (
-                    time.perf_counter() - start_perf_counter
-                ) * 1000  # 首Token延迟
-                first_flag = False
-            content = ""
-            if "result" in stream_json:
-                content = stream_json["result"]
-            else:
-                self.exc = Exception("ERROR CODE 结果无法解析")
-                break
-            if "error_code" in stream_json and stream_json["error_code"] > 0:
-                self.exc = Exception(
-                    "ERROR CODE {}".format(str(stream_json["error_code"]))
-                )
-                break
-            if len(content) != 0:
-                all_empty = False
-            # 计算token数, 有usage的累加，没有的直接计算content
-            if "usage" in stream_json:
-                request_meta["input_tokens"] = int(
-                    stream_json["usage"]["prompt_tokens"]
-                )
-                request_meta["output_tokens"] = int(
-                    stream_json["usage"]["completion_tokens"]
-                )
-            else:
-                request_meta["input_tokens"] = request_meta["request_length"]
-                request_meta["output_tokens"] = request_meta["response_length"]
+        try:
+            responses = self.chat_comp.do(messages=messages, **kwargs)
+        except Exception as e:
+            self.exc = e
+            resp = QfResponse(-1)
             last_resp = resp
+            setattr(resp, "url", self.model)
+            setattr(resp, "reason", str(e))
+            setattr(resp, "status_code", 500)
 
-        assert last_resp is not None
-        if all_empty and not clear_history:
-            self.exc = Exception("Response is empty")
-        elif last_resp is None and self.exc is None:
-            self.exc = Exception("Response is null")
-        elif "is_end" not in last_resp["body"]:
-            self.exc = Exception("Response not finished")
-        elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
-            self.exc = Exception("NOT 200 OR is_end is False")
+        if self.exc is None:
+            for resp in responses:
+                setattr(resp, "url", self.model)
+                setattr(resp, "reason", None)
+                setattr(resp, "status_code", resp["code"])
+
+                stream_json = resp["body"]
+                clear_history = stream_json.get("need_clear_history", False)
+                if first_flag:
+                    request_meta["first_token_latency"] = (
+                        time.perf_counter() - start_perf_counter
+                    ) * 1000  # 首Token延迟
+                    first_flag = False
+                content = ""
+                if "result" in stream_json:
+                    content = stream_json["result"]
+                else:
+                    self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+                if "error_code" in stream_json and stream_json["error_code"] > 0:
+                    self.exc = Exception(
+                        "ERROR CODE {}".format(str(stream_json["error_code"]))
+                    )
+                    break
+                if len(content) != 0:
+                    all_empty = False
+                # 计算token数, 有usage的累加，没有的直接计算content
+                if "usage" in stream_json:
+                    request_meta["input_tokens"] = int(
+                        stream_json["usage"]["prompt_tokens"]
+                    )
+                    request_meta["output_tokens"] = int(
+                        stream_json["usage"]["completion_tokens"]
+                    )
+                else:
+                    request_meta["input_tokens"] = request_meta["request_length"]
+                    request_meta["output_tokens"] = request_meta["response_length"]
+                last_resp = resp
+
+            assert last_resp is not None
+            if all_empty and not clear_history:
+                self.exc = Exception("Response is empty")
+            elif last_resp is None and self.exc is None:
+                self.exc = Exception("Response is null")
+            elif "is_end" not in last_resp["body"]:
+                self.exc = Exception("Response not finished")
+            elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
+                self.exc = Exception("NOT 200 OR is_end is False")
 
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:

@@ -61,7 +61,7 @@ def test_generate():
             ut_meta = resp["_for_ut"]
             assert (
                 "/chat/" + ut_meta["model"]
-                == qianfan.ChatCompletion._supported_models()[model].endpoint
+                == qianfan.ChatCompletion().get_model_info(model).endpoint
             )
             assert ut_meta["type"] == "chat"
             assert ut_meta["stream"] is False
@@ -202,7 +202,7 @@ async def test_generate_async():
             ut_meta = resp["_for_ut"]
             assert (
                 "/chat/" + ut_meta["model"]
-                == qianfan.ChatCompletion._supported_models()[model].endpoint
+                == qianfan.ChatCompletion().get_model_info(model).endpoint
             )
             assert ut_meta["type"] == "chat"
             assert ut_meta["stream"] is False

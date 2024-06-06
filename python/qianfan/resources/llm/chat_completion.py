@@ -21,23 +21,25 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Type,
     Union,
 )
 
 import qianfan.errors as errors
-from qianfan.config import get_config
-from qianfan.consts import DefaultLLMModel, DefaultValue
+from qianfan.consts import Consts, DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
+    BaseResourceV2,
     BatchRequestFuture,
+    VersionBase,
 )
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_error, log_info
 
 
-class ChatCompletion(BaseResource):
+class _ChatCompletionV1(BaseResourceV1):
     """
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
     """
@@ -1023,33 +1025,18 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-        if (
-            not get_config().DISABLE_EB_SDK
-            and get_config().EB_SDK_INSTALLED
-            and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
-        ):
-            import erniebot
 
-            erniebot.ak = self._client._auth._ak
-            erniebot.sk = self._client._auth._sk
-            erniebot.access_token = self._client._auth.access_token()
-            # compat with eb sdk
-            if model == "ERNIE-Bot":
-                model = "ernie-bot-3.5"
-            return erniebot.ChatCompletion.create(  # type: ignore
-                model=model.lower(), stream=stream, **kwargs
-            )
         if request_id is not None:
             kwargs["request_id"] = request_id
         kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         if not auto_concat_truncate:
@@ -1084,11 +1071,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = msgs
             resp = self._do(
                 model,
-                endpoint,
                 False,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, QfResponse)
@@ -1156,11 +1143,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages
             resp = self._do(
                 model,
-                endpoint,
                 True,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
 
@@ -1238,33 +1225,18 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = messages._to_list()
         else:
             kwargs["messages"] = messages
-        if (
-            not get_config().DISABLE_EB_SDK
-            and get_config().EB_SDK_INSTALLED
-            and model in ["ERNIE-Bot-turbo", "ERNIE-Bot"]
-        ):
-            import erniebot
 
-            erniebot.ak = self._client._auth._ak
-            erniebot.sk = self._client._auth._sk
-            erniebot.access_token = self._client._auth.access_token()
-            # compat with eb sdk
-            if model == "ERNIE-Bot":
-                model = "ernie-bot-3.5"
-            return await erniebot.ChatCompletion.acreate(  # type: ignore
-                model=model.lower(), stream=stream, **kwargs
-            )
         if request_id is not None:
             kwargs["request_id"] = request_id
         kwargs["_auto_truncate"] = truncate_overlong_msgs
 
         resp = await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         if not auto_concat_truncate:
@@ -1299,11 +1271,11 @@ class ChatCompletion(BaseResource):
             kwargs["messages"] = msgs
             resp = await self._ado(
                 model,
-                endpoint,
                 stream,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, QfResponse)
@@ -1347,11 +1319,11 @@ class ChatCompletion(BaseResource):
 
             resp = await self._ado(
                 model,
-                endpoint,
                 True,
                 retry_count,
                 request_timeout,
                 backoff_factor,
+                endpoint=endpoint,
                 **kwargs,
             )
             assert isinstance(resp, AsyncIterator)
@@ -1359,6 +1331,236 @@ class ChatCompletion(BaseResource):
                 cur_content += r["result"]
                 is_truncated = r["is_truncated"]
                 yield r
+
+    def _generate_body(
+        self, model: Optional[str], stream: bool, **kwargs: Any
+    ) -> JsonBody:
+        """
+        generate body
+        """
+        truncate_msg = kwargs["_auto_truncate"]
+        del kwargs["_auto_truncate"]
+
+        body = super()._generate_body(model, stream, **kwargs)
+        if not truncate_msg or len(body["messages"]) <= 1:
+            return body
+
+        # truncate the messages if the length is too long
+        model_info: Optional[QfLLMInfo] = None
+        if model is not None:
+            try:
+                model_info = self.get_model_info(model)
+            except errors.InvalidArgumentError:
+                ...
+        endpoint = self._extract_endpoint(**kwargs)
+        if model_info is None:
+            # 使用默认模型
+            try:
+                default_model_info = self.get_model_info(self._default_model())
+                if default_model_info.endpoint == endpoint:
+                    model_info = default_model_info
+            except errors.InvalidArgumentError:
+                ...
+
+        # 非默认模型
+        if model_info is None:
+            model_info = self._supported_models()[UNSPECIFIED_MODEL]
+
+        if model_info.max_input_chars is not None:
+            chars_limit = model_info.max_input_chars
+            if "system" in body:
+                chars_limit -= len(body["system"])
+            msg_list = body["messages"]
+            last_msg = msg_list[-1]
+            cur_length = len(last_msg["content"]) if last_msg.get("content") else 0
+            new_messages = [last_msg]
+            for m in reversed(body["messages"][:-1]):
+                cur_length += len(m["content"]) if m.get("content") else 0
+                if cur_length > chars_limit:
+                    break
+                new_messages = [m] + new_messages
+            if len(new_messages) % 2 != 1:
+                new_messages = new_messages[1:]
+            if len(body["messages"]) != len(new_messages):
+                log_info(
+                    "Top {} messages are truncated due to max_input_chars limit".format(
+                        len(body["messages"]) - len(new_messages)
+                    )
+                )
+            body["messages"] = new_messages
+
+        if model_info.max_input_tokens is not None:
+            token_limit = model_info.max_input_tokens
+            if "system" in body:
+                token_limit -= Tokenizer.count_tokens(body["system"], mode="local")
+            msg_list = body["messages"]
+            last_msg = msg_list[-1]
+            cur_length = (
+                Tokenizer.count_tokens(last_msg["content"], mode="local")
+                if last_msg.get("content")
+                else 0
+            )
+            new_messages = [last_msg]
+            for m in reversed(body["messages"][:-1]):
+                cur_length += (
+                    Tokenizer.count_tokens(m["content"], mode="local")
+                    if m.get("content")
+                    else 0
+                )
+                if cur_length > token_limit:
+                    break
+                new_messages = [m] + new_messages
+            if len(new_messages) % 2 != 1:
+                new_messages = new_messages[1:]
+            if len(body["messages"]) != len(new_messages):
+                log_info(
+                    "Top {} messages are truncated due to max_input_tokens limit"
+                    .format(len(body["messages"]) - len(new_messages))
+                )
+            body["messages"] = new_messages
+
+        return body
+
+
+class _ChatCompletionV2(BaseResourceV2):
+    @classmethod
+    def api_type(cls) -> str:
+        return "chat"
+
+    def _api_path(self) -> str:
+        return Consts.ChatV2API
+
+    def do(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
+        return self._do(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
+        return await self._ado(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    @classmethod
+    def _default_model(cls) -> str:
+        return DefaultLLMModel.ChatCompletionV2
+
+
+class ChatCompletion(VersionBase):
+    _real: Union[_ChatCompletionV1, _ChatCompletionV2]
+
+    @classmethod
+    def _real_base(cls, version: str) -> Type:
+        if version == "1":
+            return _ChatCompletionV1
+        elif version == "2":
+            return _ChatCompletionV2
+        raise errors.InvalidArgumentError("Invalid version")
+
+    def do(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        return self._do(
+            messages=messages,
+            endpoint=endpoint,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        return await self._ado(
+            messages=messages,
+            model=model,
+            endpoint=endpoint,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
+            **kwargs,
+        )
 
     def batch_do(
         self,
@@ -1438,7 +1640,7 @@ class ChatCompletion(BaseResource):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        return self._batch_request(task_list, worker_num)
+        return self._real._batch_request(task_list, worker_num)
 
     async def abatch_do(
         self,
@@ -1514,93 +1716,35 @@ class ChatCompletion(BaseResource):
             raise ValueError(err_msg)
 
         tasks = [task() for task in task_list]
-        return await self._abatch_request(tasks, worker_num)
+        return await self._real._abatch_request(tasks, worker_num)
 
-    def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
-    ) -> JsonBody:
-        """
-        generate body
-        """
-        truncate_msg = kwargs["_auto_truncate"]
-        del kwargs["_auto_truncate"]
+    def _convert_v2_request_to_v1(self, request: Any) -> Any:
+        # TODO: V2 model to V1 model
+        return request
 
-        body = super()._generate_body(model, endpoint, stream, **kwargs)
-        if not truncate_msg or len(body["messages"]) <= 1:
-            return body
+    def _convert_v2_response_to_v1(self, response: QfResponse) -> QfResponse:
+        response.body["choices"] = [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": response["result"],
+                },
+                "need_clear_history": response["need_clear_history"],
+            }
+        ]
+        return response
 
-        # truncate the messages if the length is too long
-        model_info: Optional[QfLLMInfo] = None
-        if model is not None:
-            try:
-                model_info = self.get_model_info(model)
-            except errors.InvalidArgumentError:
-                ...
+    def _convert_v2_response_to_v1_stream(
+        self, iterator: Iterator[QfResponse]
+    ) -> Iterator[QfResponse]:
+        for i in iterator:
+            i.body["choices"] = [{"index": 0, "delta": {"content": i["result"]}}]
+            yield i
 
-        if model_info is None:
-            # 使用默认模型
-            try:
-                default_model_info = self.get_model_info(self._default_model())
-                if default_model_info.endpoint == endpoint:
-                    model_info = default_model_info
-            except errors.InvalidArgumentError:
-                ...
-
-        # 非默认模型
-        if model_info is None:
-            model_info = self._supported_models()[UNSPECIFIED_MODEL]
-
-        if model_info.max_input_chars is not None:
-            chars_limit = model_info.max_input_chars
-            if "system" in body:
-                chars_limit -= len(body["system"])
-            msg_list = body["messages"]
-            last_msg = msg_list[-1]
-            cur_length = len(last_msg["content"]) if last_msg.get("content") else 0
-            new_messages = [last_msg]
-            for m in reversed(body["messages"][:-1]):
-                cur_length += len(m["content"]) if m.get("content") else 0
-                if cur_length > chars_limit:
-                    break
-                new_messages = [m] + new_messages
-            if len(new_messages) % 2 != 1:
-                new_messages = new_messages[1:]
-            if len(body["messages"]) != len(new_messages):
-                log_info(
-                    "Top {} messages are truncated due to max_input_chars limit".format(
-                        len(body["messages"]) - len(new_messages)
-                    )
-                )
-            body["messages"] = new_messages
-
-        if model_info.max_input_tokens is not None:
-            token_limit = model_info.max_input_tokens
-            if "system" in body:
-                token_limit -= Tokenizer.count_tokens(body["system"], mode="local")
-            msg_list = body["messages"]
-            last_msg = msg_list[-1]
-            cur_length = (
-                Tokenizer.count_tokens(last_msg["content"], mode="local")
-                if last_msg.get("content")
-                else 0
-            )
-            new_messages = [last_msg]
-            for m in reversed(body["messages"][:-1]):
-                cur_length += (
-                    Tokenizer.count_tokens(m["content"], mode="local")
-                    if m.get("content")
-                    else 0
-                )
-                if cur_length > token_limit:
-                    break
-                new_messages = [m] + new_messages
-            if len(new_messages) % 2 != 1:
-                new_messages = new_messages[1:]
-            if len(body["messages"]) != len(new_messages):
-                log_info(
-                    "Top {} messages are truncated due to max_input_tokens limit"
-                    .format(len(body["messages"]) - len(new_messages))
-                )
-            body["messages"] = new_messages
-
-        return body
+    async def _convert_v2_response_to_v1_async_stream(
+        self, iterator: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[QfResponse]:
+        async for i in iterator:
+            i.body["choices"] = [{"index": 0, "delta": {"content": i["result"]}}]
+            yield i

@@ -19,14 +19,14 @@ import qianfan.errors as errors
 from qianfan.consts import DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse
 from qianfan.utils.logging import log_warn
 
 
-class Plugin(BaseResource):
+class Plugin(BaseResourceV1):
     """
     QianFan Plugin API Resource
 
@@ -114,46 +114,21 @@ class Plugin(BaseResource):
             assert model_info is not None
             return model_info.endpoint
 
-    def _check_params(
-        self,
-        model: Optional[str],
-        endpoint: Optional[str],
-        stream: bool,
-        retry_count: int,
-        request_timeout: float,
-        backoff_factor: float,
-        **kwargs: Any,
-    ) -> None:
-        """
-        check params
-        plugin does not support model and endpoint arguments
-        """
-        return super()._check_params(
-            model,
-            endpoint,
-            stream,
-            retry_count,
-            request_timeout,
-            backoff_factor,
-            **kwargs,
-        )
-
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         Plugin needs to transform body (`_query` -> `query`)
         """
         if model is None:
-            print("mode", model, endpoint)
-            body = super()._generate_body(model, endpoint, stream, **kwargs)
+            body = super()._generate_body(model, stream, **kwargs)
             # "query" is conflict with QfRequest.query in params, so "_query" is
             # the argument in SDK so we need to change "_query" back to "query" here
             body["query"] = body["_query"]
             del body["_query"]
             return body
         else:
-            return super()._generate_body(model, endpoint, stream, **kwargs)
+            return super()._generate_body(model, stream, **kwargs)
 
     def do(
         self,
@@ -220,11 +195,11 @@ class Plugin(BaseResource):
             kwargs["plugins"] = plugins
         return self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 
@@ -295,11 +270,11 @@ class Plugin(BaseResource):
 
         return await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 

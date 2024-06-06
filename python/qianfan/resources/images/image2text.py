@@ -12,21 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, Union
 
-import qianfan.errors as errors
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
-from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
-from qianfan.utils.logging import log_warn
+from qianfan.resources.typing import QfLLMInfo, QfResponse
 
 
-class Image2Text(BaseResource):
+class Image2Text(BaseResourceV1):
     """
     QianFan Image2Text API Resource
 
@@ -106,49 +103,6 @@ class Image2Text(BaseResource):
         """
         return f"/image2text/{endpoint}"
 
-    def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
-    ) -> JsonBody:
-        """
-        generate body
-        """
-        kwargs = copy.deepcopy(kwargs)
-        IGNORED_KEYS = {"headers", "query", "input"}
-        for key in IGNORED_KEYS:
-            if key in kwargs:
-                del kwargs[key]
-        if model is not None and self.get_model_info(model):
-            model_info = self.get_model_info(model)
-            # warn if user provide unexpected arguments
-            if model_info.deprecated:
-                # 动态获取的模型暂时不做字段校验：
-                for key in kwargs:
-                    if (
-                        key not in model_info.required_keys
-                        and key not in model_info.optional_keys
-                    ):
-                        log_warn(
-                            f"This key `{key}` does not seem to be a parameter that the"
-                            f" model `{model}` will accept"
-                        )
-        else:
-            default_model_info = self.get_model_info(self._default_model())
-            if endpoint == default_model_info.endpoint:
-                model_info = default_model_info
-            else:
-                model_info = self._supported_models()[UNSPECIFIED_MODEL]
-
-        if model_info.deprecated:
-            # 动态获取的模型暂时不做字段校验：
-            for key in model_info.required_keys:
-                if key not in kwargs:
-                    raise errors.ArgumentNotFoundError(
-                        f"The required key `{key}` is not provided."
-                    )
-        if stream is True:
-            kwargs["stream"] = True
-        return kwargs
-
     def do(
         self,
         prompt: str,
@@ -202,11 +156,11 @@ class Image2Text(BaseResource):
 
         resp = self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         return resp
@@ -265,11 +219,11 @@ class Image2Text(BaseResource):
 
         resp = await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         return resp

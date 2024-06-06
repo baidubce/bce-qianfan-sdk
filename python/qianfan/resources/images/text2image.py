@@ -13,22 +13,19 @@
 # limitations under the License.
 
 import base64
-import copy
 from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
-import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
-from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
-from qianfan.utils.logging import log_warn
+from qianfan.resources.typing import QfLLMInfo, QfResponse
 
 
-class Text2Image(BaseResource):
+class Text2Image(BaseResourceV1):
     """
     QianFan Text2Image API Resource
 
@@ -107,43 +104,6 @@ class Text2Image(BaseResource):
         """
         return f"/text2image/{endpoint}"
 
-    def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
-    ) -> JsonBody:
-        """
-        generate body
-        """
-        kwargs = copy.deepcopy(kwargs)
-        IGNORED_KEYS = {"headers", "query", "input"}
-        for key in IGNORED_KEYS:
-            if key in kwargs:
-                del kwargs[key]
-        if model is not None and model in self._supported_models():
-            model_info = self._supported_models()[model]
-            # warn if user provide unexpected arguments
-            for key in kwargs:
-                if (
-                    key not in model_info.required_keys
-                    and key not in model_info.optional_keys
-                ):
-                    log_warn(
-                        f"This key `{key}` does not seem to be a parameter that the"
-                        f" model `{model}` will accept"
-                    )
-        else:
-            default_model_info = self._supported_models()[self._default_model()]
-            if endpoint == default_model_info.endpoint:
-                model_info = default_model_info
-            else:
-                model_info = self._supported_models()[UNSPECIFIED_MODEL]
-
-        for key in model_info.required_keys:
-            if key not in kwargs:
-                raise errors.ArgumentNotFoundError(
-                    f"The required key `{key}` is not provided."
-                )
-        return kwargs
-
     def do(
         self,
         prompt: str,
@@ -195,11 +155,11 @@ class Text2Image(BaseResource):
 
         resp = self._do(
             model,
-            endpoint,
             False,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         assert isinstance(resp, QfResponse)
@@ -260,11 +220,11 @@ class Text2Image(BaseResource):
 
         resp = await self._ado(
             model,
-            endpoint,
             False,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         assert isinstance(resp, QfResponse)

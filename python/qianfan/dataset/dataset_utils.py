@@ -225,7 +225,7 @@ def _batch_do_on_service(
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
-            output_list.append(result.body["result"])
+            output_list.append(_get_returned_content(result))
             latencies = log_latency_info(result, idx)
             request_latency_list[idx] = latencies[0]
         elif isinstance(result, Exception):
@@ -241,7 +241,7 @@ def _batch_do_on_service(
             first_token_latency: float = 0
             total_latency: float = 0
             for r in result:
-                result_str += r.body["result"]
+                result_str += _get_returned_content(r)
                 index += 1
                 latencies = log_latency_info(r, idx, index)
                 first_token_latency, total_latency = latencies[1], latencies[2]
@@ -270,7 +270,7 @@ async def _async_batch_do_on_service(
     for idx in range(len(results)):
         result = results[idx]
         if isinstance(result, QfResponse):
-            output_list.append(result.body["result"])
+            output_list.append(_get_returned_content(result))
             latencies = log_latency_info(result, idx)
             request_latency_list.append(latencies[0])
         elif isinstance(result, Exception):
@@ -286,7 +286,7 @@ async def _async_batch_do_on_service(
             first_token_latency: float = 0
             total_latency: float = 0
             async for r in result:
-                result_str += r.body["result"]
+                result_str += _get_returned_content(r)
                 index += 1
                 latencies = log_latency_info(r, idx, index)
                 first_token_latency, total_latency = latencies[1], latencies[2]
@@ -295,6 +295,17 @@ async def _async_batch_do_on_service(
             first_token_latency_list.append(first_token_latency)
 
     return output_list, request_latency_list, first_token_latency_list
+
+
+def _get_returned_content(data: QfResponse) -> str:
+    if "result" in data.body:
+        return data.body["result"]
+
+    choices = data.body["choices"][0]
+    if "message" in choices:
+        return choices["message"]["content"]
+
+    return choices["delta"]["content"]
 
 
 def _list_cloud_data(
@@ -450,7 +461,9 @@ def _check_and_generate_service(
 
     service: Union[ChatCompletion, Completion]
     if is_chat_service:
-        service = ChatCompletion(service_model, service_endpoint, **kwargs)
+        service = ChatCompletion(
+            model=service_model, endpoint=service_endpoint, **kwargs
+        )
     else:
         service = Completion(service_model, service_endpoint, **kwargs)
 

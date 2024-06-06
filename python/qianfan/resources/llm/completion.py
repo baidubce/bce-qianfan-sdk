@@ -26,14 +26,14 @@ from typing import (
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
-from qianfan.resources.llm.chat_completion import ChatCompletion
+from qianfan.resources.llm.chat_completion import _ChatCompletionV1
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
-class Completion(BaseResource):
+class Completion(BaseResourceV1):
     """
     QianFan Completion is an agent for calling QianFan completion API.
     """
@@ -99,7 +99,7 @@ class Completion(BaseResource):
                 info_list[m].endpoint = latest_models_list[m].endpoint
 
         # chat兼容
-        chat_model_info = ChatCompletion._supported_models()
+        chat_model_info = _ChatCompletionV1._supported_models()
         for model, info in chat_model_info.items():
             if model not in info_list:
                 info.required_keys.discard("messages")
@@ -126,16 +126,17 @@ class Completion(BaseResource):
         return DefaultLLMModel.Completion
 
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         generate body
         """
+        endpoint = self._extract_endpoint(**kwargs)
         if endpoint[1:].startswith("chat"):
             # is using chat to simulate completion
             kwargs["messages"] = [{"role": "user", "content": kwargs["prompt"]}]
             del kwargs["prompt"]
-        body = super()._generate_body(model, endpoint, stream, **kwargs)
+        body = super()._generate_body(model, stream, **kwargs)
 
         return body
 
@@ -152,8 +153,8 @@ class Completion(BaseResource):
         """
         convert endpoint to Completion API endpoint
         """
-        if model is not None and model in ChatCompletion._supported_models():
-            return ChatCompletion()._convert_endpoint(model, endpoint)
+        if model is not None and model in _ChatCompletionV1._supported_models():
+            return _ChatCompletionV1()._convert_endpoint(model, endpoint)
         return f"/completions/{endpoint}"
 
     def do(
@@ -207,11 +208,11 @@ class Completion(BaseResource):
 
         return self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 
@@ -266,11 +267,11 @@ class Completion(BaseResource):
 
         return await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 

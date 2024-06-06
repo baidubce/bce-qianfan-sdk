@@ -30,6 +30,7 @@ from qianfan.common.client.utils import (
     replace_logger_handler,
 )
 from qianfan.consts import DefaultLLMModel
+from qianfan.resources.llm.chat_completion import _ChatCompletionV1
 
 
 class CompletionClient(object):
@@ -83,7 +84,7 @@ class CompletionClient(object):
                 msg_history.append(message, role=QfRole.User)
             else:
                 msg_history.append(message, role=QfRole.Assistant)
-        client = create_client(qianfan.ChatCompletion, self.model, self.endpoint)
+        client = create_client(_ChatCompletionV1, self.model, self.endpoint)
 
         if self.plain:
             res = client.do(messages=msg_history, **self.inference_args)

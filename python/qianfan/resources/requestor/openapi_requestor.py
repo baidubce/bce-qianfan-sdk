@@ -573,6 +573,74 @@ class QfAPIRequestor(BaseAPIRequestor):
         return self._async_with_retry(req.retry_config, _helper)
 
 
+class QfAPIV2Requestor(QfAPIRequestor):
+    def _llm_api_url(self, endpoint: str) -> str:
+        """
+        convert endpoint to llm api url
+        """
+        return "{}{}".format(
+            get_config().CONSOLE_API_BASE_URL,
+            endpoint,
+        )
+
+    def _add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        """
+        add access token to QfRequest
+        """
+        if auth is None:
+            auth = self._auth
+
+        # use IAM auth
+        access_key = auth._access_key
+        secret_key = auth._secret_key
+        if access_key is None or secret_key is None:
+            extra_msg = ""
+            if get_config().AK is not None or get_config().SK is not None:
+                extra_msg = (
+                    " AK and SK cannot be used in V2 API. V2 推理 API 不支持通过 AK 和"
+                    " SK 进行鉴权，请换用 access_key 和 secret_key。"
+                )
+            raise errors.InvalidArgumentError(
+                "access_key and secret_key must be provided! 未提供 access_key 或"
+                " secret_key！"
+                + extra_msg
+            )
+        self._sign(req, access_key, secret_key)
+
+        return req
+
+    async def _async_add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        """
+        async add access token to QfRequest
+        """
+        return self._add_access_token(req, auth)
+
+    def _check_error(self, body: Dict[str, Any]) -> None:
+        """
+        check whether error_code in response body
+        if there is an APITokenExpired error,
+        raise AccessTokenExpiredError
+        """
+        if "error" in body:
+            req_id = body.get("id", "")
+            error_code = body["error"]["code"]
+            err_msg = body["error"].get(
+                "message", "no error message found in response body"
+            )
+
+            log_error(
+                f"api request req_id: {req_id} failed with error code: {error_code},"
+                f" err msg: {err_msg}, please check"
+                " https://cloud.baidu.com/doc/WENXINWORKSHOP/s/tlmyncueh"
+            )
+
+            raise errors.APIError(error_code, err_msg, req_id)
+
+
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
     if get_config().ENABLE_PRIVATE:
         return PrivateAPIRequestor(**kwargs)

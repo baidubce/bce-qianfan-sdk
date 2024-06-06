@@ -41,8 +41,8 @@ from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
 from qianfan.resources.llm.chat_completion import (
     ChatCompletion,
-    ChatCompletionV1,
-    ChatCompletionV2,
+    _ChatCompletionV1,
+    _ChatCompletionV2,
 )
 from qianfan.resources.typing import Literal, QfMessages, QfResponse
 
@@ -152,7 +152,7 @@ class ChatClient(object):
         name: str
         _client = client._real
         if self.version == "1":
-            assert isinstance(_client, ChatCompletionV1)
+            assert isinstance(_client, _ChatCompletionV1)
             if _client._model is not None:
                 name = f"Model {_markup(_client._model)}"
             elif _client._endpoint is not None:
@@ -160,7 +160,7 @@ class ChatClient(object):
             else:
                 raise InternalError("No model or endpoint specified in ChatCompletion.")
         elif self.version == "2":
-            assert isinstance(_client, ChatCompletionV2)
+            assert isinstance(_client, _ChatCompletionV2)
             if _client._model is not None:
                 name = f"Model {_markup(_client._model)}"
             else:

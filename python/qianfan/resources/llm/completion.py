@@ -29,7 +29,7 @@ from qianfan.resources.llm.base import (
     BaseResourceV1,
     BatchRequestFuture,
 )
-from qianfan.resources.llm.chat_completion import ChatCompletionV1
+from qianfan.resources.llm.chat_completion import _ChatCompletionV1
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
@@ -99,7 +99,7 @@ class Completion(BaseResourceV1):
                 info_list[m].endpoint = latest_models_list[m].endpoint
 
         # chat兼容
-        chat_model_info = ChatCompletionV1._supported_models()
+        chat_model_info = _ChatCompletionV1._supported_models()
         for model, info in chat_model_info.items():
             if model not in info_list:
                 info.required_keys.discard("messages")
@@ -153,8 +153,8 @@ class Completion(BaseResourceV1):
         """
         convert endpoint to Completion API endpoint
         """
-        if model is not None and model in ChatCompletionV1._supported_models():
-            return ChatCompletionV1()._convert_endpoint(model, endpoint)
+        if model is not None and model in _ChatCompletionV1._supported_models():
+            return _ChatCompletionV1()._convert_endpoint(model, endpoint)
         return f"/completions/{endpoint}"
 
     def do(

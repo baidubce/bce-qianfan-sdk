@@ -39,7 +39,7 @@ from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse
 from qianfan.utils.logging import log_error, log_info
 
 
-class ChatCompletionV1(BaseResourceV1):
+class _ChatCompletionV1(BaseResourceV1):
     """
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
     """
@@ -1422,7 +1422,7 @@ class ChatCompletionV1(BaseResourceV1):
         return body
 
 
-class ChatCompletionV2(BaseResourceV2):
+class _ChatCompletionV2(BaseResourceV2):
     @classmethod
     def api_type(cls) -> str:
         return "chat"
@@ -1492,14 +1492,14 @@ class ChatCompletionV2(BaseResourceV2):
 
 
 class ChatCompletion(VersionBase):
-    _real: Union[ChatCompletionV1, ChatCompletionV2]
+    _real: Union[_ChatCompletionV1, _ChatCompletionV2]
 
     @classmethod
     def _real_base(cls, version: str) -> Type:
         if version == "1":
-            return ChatCompletionV1
+            return _ChatCompletionV1
         elif version == "2":
-            return ChatCompletionV2
+            return _ChatCompletionV2
         raise errors.InvalidArgumentError("Invalid version")
 
     def do(

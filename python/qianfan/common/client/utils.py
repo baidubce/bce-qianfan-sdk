@@ -42,7 +42,7 @@ from qianfan.utils.utils import camel_to_snake, snake_to_camel
 
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 command_to_resource_type: Dict[str, Type[BaseResource]] = {
-    "chat": qianfan.resources.llm.chat_completion.ChatCompletionV1,
+    "chat": qianfan.resources.llm.chat_completion._ChatCompletionV1,
     "txt2img": qianfan.Text2Image,
     "completion": qianfan.Completion,
     "embedding": qianfan.Embedding,

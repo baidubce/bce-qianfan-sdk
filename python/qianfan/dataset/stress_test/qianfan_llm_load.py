@@ -216,6 +216,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         try:
+            kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
         except Exception as e:
             self.exc = e

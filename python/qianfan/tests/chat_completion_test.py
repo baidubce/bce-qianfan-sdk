@@ -81,7 +81,7 @@ def test_generate():
         assert "id" in resp["body"]
         assert resp["object"] == "chat.completion"
         ut_res = resp["body"]["_for_ut"]
-        assert "/chat/" + ut_res["model"] == qfg._supported_models()[model].endpoint
+        assert "/chat/" + ut_res["model"] == qfg.get_model_info(model).endpoint
         assert ut_res["type"] == "chat"
         assert ut_res["stream"] is False
         assert ut_res["turn"] is None
@@ -181,9 +181,7 @@ def test_generate_stream():
             assert "sentence_id" in result["body"]
             assert result["object"] == "chat.completion"
             ut_res = result["body"]["_for_ut"]
-            assert (
-                "/chat/" + ut_res["model"] == sqfg._supported_models()[model].endpoint
-            )
+            assert "/chat/" + ut_res["model"] == sqfg.get_model_info(model).endpoint
             assert ut_res["type"] == "chat"
             assert ut_res["stream"] is True
             assert ut_res["turn"] == turn
@@ -217,10 +215,7 @@ def test_generate_multiturn_stream():
                 assert result["object"] == "chat.completion"
                 next_msg += result["result"]
                 ut_res = result["body"]["_for_ut"]
-                assert (
-                    "/chat/" + ut_res["model"]
-                    == sqfg._supported_models()[model].endpoint
-                )
+                assert "/chat/" + ut_res["model"] == sqfg.get_model_info(model).endpoint
                 assert ut_res["type"] == "chat"
                 assert ut_res["stream"] is True
             turn += 1
@@ -252,7 +247,7 @@ async def test_generate_async():
         assert "id" in resp.body
         assert resp["object"] == "chat.completion"
         ut_res = resp["body"]["_for_ut"]
-        assert "/chat/" + ut_res["model"] == qfg._supported_models()[model].endpoint
+        assert "/chat/" + ut_res["model"] == qfg.get_model_info(model).endpoint
         assert ut_res["type"] == "chat"
         assert ut_res["stream"] is False
 
@@ -276,9 +271,7 @@ async def test_generate_stream_async():
             assert "sentence_id" in result["body"]
             assert result["object"] == "chat.completion"
             ut_res = result["body"]["_for_ut"]
-            assert (
-                "/chat/" + ut_res["model"] == sqfg._supported_models()[model].endpoint
-            )
+            assert "/chat/" + ut_res["model"] == sqfg.get_model_info(model).endpoint
             assert ut_res["type"] == "chat"
             assert ut_res["stream"] is True
             assert ut_res["turn"] == turn
@@ -313,10 +306,7 @@ async def test_generate_multiturn_stream_async():
                 assert result["object"] == "chat.completion"
                 messages[-1]["content"] += result["result"]
                 ut_res = result["body"]["_for_ut"]
-                assert (
-                    "/chat/" + ut_res["model"]
-                    == sqfg._supported_models()[model].endpoint
-                )
+                assert "/chat/" + ut_res["model"] == sqfg.get_model_info(model).endpoint
                 assert ut_res["type"] == "chat"
                 assert ut_res["stream"] is True
             messages.append(
@@ -647,7 +637,7 @@ def test_auth_using_iam():
 
 def test_keyword_arguments_passing():
     cc = qianfan.ChatCompletion(ssl=False)
-    assert not cc._client._client.ssl
+    assert not cc._real._client._client.ssl
 
 
 def test_truncated_message():
@@ -783,10 +773,10 @@ def test_truncated_message():
 
 
 def test_auto_model_list():
-    model_list = qianfan.ChatCompletion._supported_models()
+    model_list = qianfan.ChatCompletion().models()
 
-    assert model_list.get("ERNIE-99")
-    assert qianfan.ChatCompletion.get_model_info("ernie-99")
+    assert "ERNIE-99" in model_list
+    assert qianfan.ChatCompletion().get_model_info("ernie-99")
 
 
 def test_function_chat():

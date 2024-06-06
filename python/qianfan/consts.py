@@ -97,6 +97,7 @@ class Env:
     ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
     CacheDir: str = "QIANFAN_CACHE_DIR"
+    V2InferApiDowngrade: str = "QIANFAN_V2_INFER_API_DOWNGRADE"
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
     Proxy: str = "QIANFAN_PROXY"
@@ -154,6 +155,7 @@ class DefaultValue:
     BatchRunStatusPollingInterval: float = 30
     DeployStatusPollingInterval: float = 30
     DefaultFinetuneTrainType: str = "ERNIE-Speed"
+    V2InferApiDowngrade: bool = False
 
     # 目前可直接下载到本地的千帆数据集解压后的大小上限
     # 后期研究更换为用户机内存大小的上限
@@ -287,6 +289,8 @@ class Consts:
     PrivateResourceGetResourceListParam: str = "DescribeServiceResourceList"
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
 
+    ChatV2API: str = "/v2/chat"
+
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
     XRequestID: str = "Request_id"
@@ -309,6 +313,7 @@ class DefaultLLMModel:
     ChatCompletion = "ERNIE-Bot-turbo"
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
+    ChatCompletionV2 = "ernie-speed-8k"
 
 
 class PromptSceneType(int, enum.Enum):

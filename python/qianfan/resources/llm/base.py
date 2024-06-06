@@ -32,6 +32,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
     Union,
 )
 
@@ -39,8 +40,17 @@ import qianfan.errors as errors
 from qianfan import get_config
 from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
-from qianfan.resources.requestor.openapi_requestor import create_api_requestor
-from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse, RetryConfig
+from qianfan.resources.requestor.openapi_requestor import (
+    QfAPIV2Requestor,
+    create_api_requestor,
+)
+from qianfan.resources.typing import (
+    JsonBody,
+    Literal,
+    QfLLMInfo,
+    QfResponse,
+    RetryConfig,
+)
 from qianfan.utils import log_info, log_warn, utils
 from qianfan.utils.cache.base import KvCache
 from qianfan.version import VERSION
@@ -148,286 +158,102 @@ class BatchRequestFuture(object):
         return len(self._future_list)
 
 
-class BaseResource(object):
-    """
-    base class of Qianfan object
-    """
+class VersionBase(object):
+    def __init__(
+        self, version: Optional[Literal["1", "2", 1, 2]] = None, **kwargs: Any
+    ) -> None:
+        self._version = str(version) if version else "1"
+        self._real = self._real_base(self._version)(**kwargs)
+        self._backup = self._real_base("1")(**kwargs)
 
+    @classmethod
+    def _real_base(cls, version: str) -> Type[BaseResource]:
+        """
+        return the real base class
+        """
+        raise NotImplementedError
+
+    def access_token(self) -> str:
+        """
+        get access token
+        """
+        return self._real.access_token()
+
+    def models(self) -> Set[str]:
+        return self._real.models()
+
+    def get_model_info(self, model: str) -> QfLLMInfo:
+        """
+        Get the model info of `model`
+
+        Args:
+            model (str): the name of the model,
+
+        Return:
+            Information of the model
+        """
+
+        return self._real.get_model_info(model)
+
+    def _need_downgrade(self) -> bool:
+        """
+        check if the model need to be downgrade
+        """
+        return get_config().V2_INFER_API_DOWNGRADE and self._version != "1"
+
+    def _do(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
+        if self._need_downgrade():
+            return self._do_downgrade(**kwargs)
+        # assert self._real has function `do`
+        return self._real.do(**kwargs)  # type: ignore
+
+    async def _ado(self, **kwargs: Any) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if self._need_downgrade():
+            return await self._ado_downgrade(**kwargs)
+        # assert self._real has function `ado`
+        return await self._real.ado(**kwargs)  # type: ignore
+
+    def _do_downgrade(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
+        resp = self._backup.do(**kwargs)  # type: ignore
+        if "stream" not in kwargs or kwargs["stream"] is False:
+            return self._convert_v2_response_to_v1(resp)
+
+        return self._convert_v2_response_to_v1_stream(resp)
+
+    async def _ado_downgrade(
+        self, **kwargs: Any
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        resp = await self._backup.ado(**kwargs)  # type: ignore
+        if "stream" not in kwargs or kwargs["stream"] is False:
+            return self._convert_v2_response_to_v1(resp)
+
+        return self._convert_v2_response_to_v1_async_stream(resp)
+
+    def _convert_v2_request_to_v1(self, request: Any) -> Any:
+        return request
+
+    def _convert_v2_response_to_v1(self, response: QfResponse) -> QfResponse:
+        return response
+
+    def _convert_v2_response_to_v1_stream(
+        self, iterator: Iterator[QfResponse]
+    ) -> Iterator[QfResponse]:
+        for i in iterator:
+            yield i
+
+    async def _convert_v2_response_to_v1_async_stream(
+        self, iterator: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[QfResponse]:
+        async for i in iterator:
+            yield i
+
+
+class BaseResource(object):
     def __init__(
         self,
-        model: Optional[str] = None,
-        endpoint: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        """
-        init resource
-        """
-        self._model = model
-        self._endpoint = endpoint
-        self._client = create_api_requestor(**kwargs)
-
-    def _update_model_and_endpoint(
-        self, model: Optional[str], endpoint: Optional[str]
-    ) -> Tuple[Optional[str], str]:
-        """
-        update model and endpoint from constructor
-        """
-        # if user do not provide new model and endpoint,
-        # use the model and endpoint from constructor
-        if model is None and endpoint is None:
-            model = self._model
-            endpoint = self._endpoint
-        if endpoint is None:
-            model_name = self._default_model() if model is None else model
-            model_info = self.get_model_info(model_name)
-            if model_info is None:
-                raise errors.InvalidArgumentError(
-                    f"The provided model `{model}` is not in the list of supported"
-                    " models. If this is a recently added model, try using the"
-                    " `endpoint` arguments and create an issue to tell us. Supported"
-                    f" models: {self.models()}"
-                )
-            endpoint = model_info.endpoint
-        else:
-            endpoint = self._convert_endpoint(model, endpoint)
-        return model, endpoint
-
-    def _do(
-        self,
-        model: Optional[str] = None,
-        endpoint: Optional[str] = None,
-        stream: bool = False,
-        retry_count: int = DefaultValue.RetryCount,
-        request_timeout: float = DefaultValue.RetryTimeout,
-        backoff_factor: float = DefaultValue.RetryBackoffFactor,
-        retry_jitter: float = DefaultValue.RetryJitter,
-        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
-        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
-        **kwargs: Any,
-    ) -> Union[QfResponse, Iterator[QfResponse]]:
-        """
-        qianfan resource basic do
-
-        Args:
-            **kwargs (dict): kv dict data。
-
-        """
-        config = get_config()
-        if (
-            retry_count == DefaultValue.RetryCount
-            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
-        ):
-            retry_count = config.LLM_API_RETRY_COUNT
-        if (
-            request_timeout == DefaultValue.RetryTimeout
-            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
-        ):
-            request_timeout = config.LLM_API_RETRY_TIMEOUT
-        if (
-            backoff_factor == DefaultValue.RetryBackoffFactor
-            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
-        ):
-            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
-        if (
-            retry_jitter == DefaultValue.RetryJitter
-            and config.LLM_API_RETRY_JITTER != DefaultValue.RetryJitter
-        ):
-            retry_jitter = config.LLM_API_RETRY_JITTER
-        if (
-            retry_err_codes == DefaultValue.RetryErrCodes
-            and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
-        ):
-            retry_err_codes = config.LLM_API_RETRY_ERR_CODES
-        if (
-            retry_max_wait_interval == DefaultValue.RetryMaxWaitInterval
-            and config.LLM_API_RETRY_MAX_WAIT_INTERVAL
-            != DefaultValue.RetryMaxWaitInterval
-        ):
-            retry_max_wait_interval = config.LLM_API_RETRY_MAX_WAIT_INTERVAL
-
-        model, endpoint = self._update_model_and_endpoint(model, endpoint)
-        self._check_params(
-            model,
-            endpoint,
-            stream,
-            retry_count,
-            request_timeout,
-            backoff_factor,
-            **kwargs,
-        )
-        retry_config = RetryConfig(
-            retry_count=retry_count,
-            timeout=request_timeout,
-            backoff_factor=backoff_factor,
-            jitter=retry_jitter,
-            retry_err_codes=retry_err_codes,
-            max_wait_interval=retry_max_wait_interval,
-        )
-        endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
-        refreshed_model_list: bool = False
-        while True:
-            try:
-                resp = self._client.llm(
-                    endpoint=endpoint,
-                    header=self._generate_header(model, endpoint, stream, **kwargs),
-                    query=self._generate_query(model, endpoint, stream, **kwargs),
-                    body=self._generate_body(model, endpoint, stream, **kwargs),
-                    stream=stream,
-                    data_postprocess=self._data_postprocess,
-                    retry_config=retry_config,
-                )
-            except errors.APIError as e:
-                if (
-                    e.error_code == APIErrorCode.UnsupportedMethod
-                    and not refreshed_model_list
-                ):
-                    list = get_latest_supported_models(True)
-                    endpoint = list.get(self.api_type(), {}).get(model)
-                    refreshed_model_list = True
-                    continue
-                else:
-                    raise e
-            break
-
-        return resp
-
-    async def _ado(
-        self,
-        model: Optional[str] = None,
-        endpoint: Optional[str] = None,
-        stream: bool = False,
-        retry_count: int = DefaultValue.RetryCount,
-        request_timeout: float = DefaultValue.RetryTimeout,
-        backoff_factor: float = DefaultValue.RetryBackoffFactor,
-        retry_jitter: float = DefaultValue.RetryJitter,
-        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
-        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
-        **kwargs: Any,
-    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        """
-        qianfan aio resource basic do
-
-        Args:
-            **kwargs: kv dict data
-
-        Returns:
-            None
-
-        """
-        config = get_config()
-        if (
-            retry_count == DefaultValue.RetryCount
-            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
-        ):
-            retry_count = config.LLM_API_RETRY_COUNT
-        if (
-            request_timeout == DefaultValue.RetryTimeout
-            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
-        ):
-            request_timeout = config.LLM_API_RETRY_TIMEOUT
-        if (
-            backoff_factor == DefaultValue.RetryBackoffFactor
-            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
-        ):
-            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
-        if (
-            retry_jitter == DefaultValue.RetryJitter
-            and config.LLM_API_RETRY_JITTER != DefaultValue.RetryJitter
-        ):
-            retry_jitter = config.LLM_API_RETRY_JITTER
-        if (
-            retry_err_codes == DefaultValue.RetryErrCodes
-            and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
-        ):
-            retry_err_codes = config.LLM_API_RETRY_ERR_CODES
-        if (
-            retry_max_wait_interval == DefaultValue.RetryMaxWaitInterval
-            and config.LLM_API_RETRY_MAX_WAIT_INTERVAL
-            != DefaultValue.RetryMaxWaitInterval
-        ):
-            retry_max_wait_interval = config.LLM_API_RETRY_MAX_WAIT_INTERVAL
-        model, endpoint = self._update_model_and_endpoint(model, endpoint)
-        self._check_params(
-            model,
-            endpoint,
-            stream,
-            retry_count,
-            request_timeout,
-            backoff_factor,
-            **kwargs,
-        )
-
-        retry_config = RetryConfig(
-            retry_count=retry_count,
-            timeout=request_timeout,
-            backoff_factor=backoff_factor,
-            jitter=retry_jitter,
-            retry_err_codes=retry_err_codes,
-            max_wait_interval=retry_max_wait_interval,
-        )
-        endpoint = self._get_endpoint_from_dict(model, endpoint, stream, **kwargs)
-        refreshed_model_list: bool = False
-        while True:
-            try:
-                resp = await self._client.async_llm(
-                    endpoint=endpoint,
-                    header=self._generate_header(model, endpoint, stream, **kwargs),
-                    query=self._generate_query(model, endpoint, stream, **kwargs),
-                    body=self._generate_body(model, endpoint, stream, **kwargs),
-                    stream=stream,
-                    data_postprocess=self._data_postprocess,
-                    retry_config=retry_config,
-                )
-            except errors.APIError as e:
-                if (
-                    e.error_code == APIErrorCode.UnsupportedMethod
-                    and not refreshed_model_list
-                ):
-                    list = get_latest_supported_models(True)
-                    endpoint = list.get(self.api_type(), {}).get(model)
-                    refreshed_model_list = True
-                    continue
-                else:
-                    raise e
-            break
-        return resp
-
-    def _check_params(
-        self,
-        model: Optional[str],
-        endpoint: Optional[str],
-        stream: bool,
-        retry_count: int,
-        request_timeout: float,
-        backoff_factor: float,
-        **kwargs: Any,
-    ) -> None:
-        """
-        check user provide params
-        """
         pass
-
-    @classmethod
-    def api_type(cls) -> str:
-        return ""
-
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
-        """
-        get preset model list
-
-        Args:
-            None
-
-        Returns:
-            a dict which key is preset model and value is the endpoint
-
-        """
-        # raise NotImplementedError
-        if cls.api_type == "":
-            return {}
-        else:
-            return get_latest_supported_models().get(cls.api_type(), {})
 
     @classmethod
     def _default_model(cls) -> str:
@@ -453,51 +279,7 @@ class BaseResource(object):
         Return:
             Information of the model
         """
-        # try update with local cache
-        cls.update_with_cache_model_infos()
-        # get the supported_models list
-        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
-        model_info = model_info_list.get(model.lower())
-        if model_info is None:
-            use_iam_aksk_msg = ""
-            if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
-                use_iam_aksk_msg = (
-                    "might use `QIANFAN_ACCESS_KEY` and `QIANFAN_SECRET_KEY` instead to"
-                    " get complete features supported."
-                )
-            raise errors.InvalidArgumentError(
-                f"The provided model `{model}` is not in the list of supported models."
-                " If this is a recently added model, try using the `endpoint`"
-                " arguments and create an issue to tell us. Supported models:"
-                f" {cls.models()} {use_iam_aksk_msg}"
-            )
-        return model_info
-
-    @staticmethod
-    def format_model_infos_cache(
-        type_model_list: Dict[str, Dict[str, QfLLMInfo]], update_time: datetime
-    ) -> Any:
-        """
-        format the model info to cache format
-        Args:
-            model_list (Dict[str, QfLLMInfo]): model infos list
-            expired_time (float): expire time of the cache
-        Returns:
-            a dict which key is preset model and value is the endpoint
-        """
-        return {"models": type_model_list, "update_time": update_time}
-
-    @staticmethod
-    def _merge_models(
-        merged: Dict[str, Dict[str, QfLLMInfo]],
-        new: Dict[str, Dict[str, QfLLMInfo]],
-    ) -> Dict[str, Dict[str, QfLLMInfo]]:
-        for model_type, list in new.items():
-            if model_type not in merged:
-                merged[model_type] = {}
-            merged[model_type] = {**merged[model_type], **list}
-
-        return merged
+        raise NotImplementedError
 
     @classmethod
     def update_with_cache_model_infos(cls) -> Dict[str, Dict[str, QfLLMInfo]]:
@@ -523,7 +305,7 @@ class BaseResource(object):
                             datetime(1970, 1, 1, second=1, tzinfo=timezone.utc),
                         )
 
-                        _runtime_models_info = BaseResource._merge_models(
+                        _runtime_models_info = cls._merge_models(
                             _runtime_models_info, value.get("models", {})
                         )
                 except TypeError:
@@ -537,60 +319,44 @@ class BaseResource(object):
                     )
         return _runtime_models_info
 
-    def _get_endpoint(self, model: str) -> QfLLMInfo:
-        """
-        get the endpoint of the given `model`
+    @staticmethod
+    def _merge_models(
+        merged: Dict[str, Dict[str, QfLLMInfo]],
+        new: Dict[str, Dict[str, QfLLMInfo]],
+    ) -> Dict[str, Dict[str, QfLLMInfo]]:
+        for model_type, list in new.items():
+            if model_type not in merged:
+                merged[model_type] = {}
+            merged[model_type] = {**merged[model_type], **list}
 
+        return merged
+
+    @staticmethod
+    def format_model_infos_cache(
+        type_model_list: Dict[str, Dict[str, QfLLMInfo]], update_time: datetime
+    ) -> Any:
+        """
+        format the model info to cache format
         Args:
-            model (str): the name of the model,
-                         must be defined in self._supported_models()
-
+            model_list (Dict[str, QfLLMInfo]): model infos list
+            expired_time (float): expire time of the cache
         Returns:
-            str: the endpoint of the input `model`
-
-        Raises:
-            QianfanError: if the input is not in self._supported_models()
+            a dict which key is preset model and value is the endpoint
         """
-        try:
-            model_info = self.get_model_info(model)
-        except errors.InvalidArgumentError:
-            if self._endpoint is not None:
-                return QfLLMInfo(endpoint=self._endpoint)
-            else:
-                raise
-        return model_info
-
-    def _get_endpoint_from_dict(
-        self, model: Optional[str], endpoint: Optional[str], stream: bool, **kwargs: Any
-    ) -> str:
-        """
-        extract the endpoint of the model in kwargs, or use the endpoint defined in
-        __init__
-
-        Args:
-            **kwargs (dict): any dict
-
-        Returns:
-            str: the endpoint of the model in kwargs
-
-        """
-        if endpoint is not None:
-            return endpoint
-        if model is not None:
-            return self._get_endpoint(model).endpoint
-        return self._get_endpoint(self._default_model()).endpoint
+        return {"models": type_model_list, "update_time": update_time}
 
     def _generate_header(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         generate header
         """
+        kwargs = copy.deepcopy(kwargs)
         if "headers" not in kwargs:
             kwargs["headers"] = {}
         kwargs["headers"][Consts.XRequestID] = (
             kwargs["request_id"]
-            if "request_id" in kwargs
+            if kwargs.get("request_id")
             else (
                 f"{Consts.QianfanRequestIdDefaultPrefix}-{utils.generate_letter_num_random_id(16)}"
             )
@@ -598,7 +364,7 @@ class BaseResource(object):
         return kwargs["headers"]
 
     def _generate_query(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         generate query
@@ -608,7 +374,7 @@ class BaseResource(object):
         return {}
 
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         generate body
@@ -618,43 +384,7 @@ class BaseResource(object):
         for key in IGNORED_KEYS:
             if key in kwargs:
                 del kwargs[key]
-        model_info: Optional[QfLLMInfo] = None
-        if model is not None:
-            try:
-                model_info = self.get_model_info(model)
-                # warn if user provide unexpected arguments
-                for key in kwargs:
-                    if (
-                        len(model_info.required_keys) > 0
-                        and key not in model_info.required_keys
-                    ) and (
-                        len(model_info.optional_keys) > 0
-                        and key not in model_info.optional_keys
-                    ):
-                        log_warn(
-                            f"This key `{key}` does not seem to be a parameter that the"
-                            f" model `{model}` will accept"
-                        )
-            except errors.InvalidArgumentError:
-                ...
 
-        if model_info is None:
-            # 使用默认模型
-            try:
-                default_model_info = self.get_model_info(self._default_model())
-                if default_model_info.endpoint == endpoint:
-                    model_info = default_model_info
-            except errors.InvalidArgumentError:
-                ...
-
-        # 非默认模型
-        if model_info is None:
-            model_info = self._supported_models()[UNSPECIFIED_MODEL]
-        for key in model_info.required_keys:
-            if key not in kwargs:
-                raise errors.ArgumentNotFoundError(
-                    f"The required key `{key}` is not provided."
-                )
         kwargs["stream"] = stream
         if "extra_parameters" not in kwargs:
             kwargs["extra_parameters"] = {}
@@ -667,26 +397,16 @@ class BaseResource(object):
         """
         return data
 
-    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
-        """
-        convert user-provided endpoint to real endpoint
-        """
-        raise NotImplementedError
-
     @classmethod
     def models(cls) -> Set[str]:
         """
         get all supported model names
         """
-        models = set(cls._supported_models().keys())
-        models.remove(UNSPECIFIED_MODEL)
-        return models
+        raise NotImplementedError
 
-    def access_token(self) -> str:
-        """
-        get access token
-        """
-        return self._client._auth.access_token()
+    @classmethod
+    def api_type(cls) -> str:
+        raise NotImplementedError
 
     def _batch_request(
         self,
@@ -730,6 +450,512 @@ class BaseResource(object):
             *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
             return_exceptions=True,
         )
+
+    def access_token(self) -> str:
+        """
+        get access token
+        """
+        raise NotImplementedError
+
+    def generate_retry_config(
+        self,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        retry_jitter: float = DefaultValue.RetryJitter,
+        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
+        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
+    ) -> RetryConfig:
+        """
+        generate retry config
+        """
+        config = get_config()
+        if (
+            retry_count == DefaultValue.RetryCount
+            and config.LLM_API_RETRY_COUNT != DefaultValue.RetryCount
+        ):
+            retry_count = config.LLM_API_RETRY_COUNT
+        if (
+            request_timeout == DefaultValue.RetryTimeout
+            and config.LLM_API_RETRY_TIMEOUT != DefaultValue.RetryTimeout
+        ):
+            request_timeout = config.LLM_API_RETRY_TIMEOUT
+        if (
+            backoff_factor == DefaultValue.RetryBackoffFactor
+            and config.LLM_API_RETRY_BACKOFF_FACTOR != DefaultValue.RetryBackoffFactor
+        ):
+            backoff_factor = config.LLM_API_RETRY_BACKOFF_FACTOR
+        if (
+            retry_jitter == DefaultValue.RetryJitter
+            and config.LLM_API_RETRY_JITTER != DefaultValue.RetryJitter
+        ):
+            retry_jitter = config.LLM_API_RETRY_JITTER
+        if (
+            retry_err_codes == DefaultValue.RetryErrCodes
+            and config.LLM_API_RETRY_ERR_CODES != DefaultValue.RetryErrCodes
+        ):
+            retry_err_codes = config.LLM_API_RETRY_ERR_CODES
+        if (
+            retry_max_wait_interval == DefaultValue.RetryMaxWaitInterval
+            and config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+            != DefaultValue.RetryMaxWaitInterval
+        ):
+            retry_max_wait_interval = config.LLM_API_RETRY_MAX_WAIT_INTERVAL
+
+        retry_config = RetryConfig(
+            retry_count=retry_count,
+            timeout=request_timeout,
+            backoff_factor=backoff_factor,
+            jitter=retry_jitter,
+            retry_err_codes=retry_err_codes,
+            max_wait_interval=retry_max_wait_interval,
+        )
+        return retry_config
+
+    def _do(
+        self,
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        retry_jitter: float = DefaultValue.RetryJitter,
+        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
+        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        """
+        qianfan resource basic do
+
+        Args:
+            **kwargs (dict): kv dict data。
+
+        """
+        retry_config = self.generate_retry_config(
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            backoff_factor=backoff_factor,
+            retry_jitter=retry_jitter,
+            retry_err_codes=retry_err_codes,
+            retry_max_wait_interval=retry_max_wait_interval,
+        )
+
+        return self._request(model, stream, retry_config, **kwargs)
+
+    async def _ado(
+        self,
+        model: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        retry_jitter: float = DefaultValue.RetryJitter,
+        retry_err_codes: Set[int] = DefaultValue.RetryErrCodes,
+        retry_max_wait_interval: float = DefaultValue.RetryMaxWaitInterval,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        """
+        qianfan resource basic do
+
+        Args:
+            **kwargs (dict): kv dict data。
+
+        """
+        retry_config = self.generate_retry_config(
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            backoff_factor=backoff_factor,
+            retry_jitter=retry_jitter,
+            retry_err_codes=retry_err_codes,
+            retry_max_wait_interval=retry_max_wait_interval,
+        )
+
+        return await self._arequest(model, stream, retry_config, **kwargs)
+
+    def _request(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        raise NotImplementedError
+
+    async def _arequest(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        raise NotImplementedError
+
+
+class BaseResourceV1(BaseResource):
+    """
+    base class of Qianfan object
+    """
+
+    def __init__(
+        self,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        init resource
+        """
+        self._model = model
+        self._endpoint = endpoint
+        self._client = create_api_requestor(**kwargs)
+
+    def _update_model_and_endpoint(
+        self, model: Optional[str], endpoint: Optional[str]
+    ) -> Tuple[Optional[str], str]:
+        """
+        update model and endpoint from constructor
+        """
+        # if user do not provide new model and endpoint,
+        # use the model and endpoint from constructor
+        if model is None and endpoint is None:
+            model = self._model
+            endpoint = self._endpoint
+        if endpoint is None:
+            model_name = self._default_model() if model is None else model
+            model_info = self.get_model_info(model_name)
+            if model_info is None:
+                raise errors.InvalidArgumentError(
+                    f"The provided model `{model}` is not in the list of supported"
+                    " models. If this is a recently added model, try using the"
+                    " `endpoint` arguments and create an issue to tell us. Supported"
+                    f" models: {self.models()}"
+                )
+            endpoint = model_info.endpoint
+        else:
+            endpoint = self._convert_endpoint(model, endpoint)
+        return model, endpoint
+
+    def _request(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        """
+        qianfan resource basic do
+
+        Args:
+            **kwargs (dict): kv dict data。
+
+        """
+        endpoint = self._extract_endpoint(**kwargs)
+
+        model, endpoint = self._update_model_and_endpoint(model, endpoint)
+
+        endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
+        refreshed_model_list: bool = False
+        kwargs["endpoint"] = endpoint
+        while True:
+            try:
+                resp = self._client.llm(
+                    endpoint=endpoint,
+                    header=self._generate_header(model, stream, **kwargs),
+                    query=self._generate_query(model, stream, **kwargs),
+                    body=self._generate_body(model, stream, **kwargs),
+                    stream=stream,
+                    data_postprocess=self._data_postprocess,
+                    retry_config=retry_config,
+                )
+            except errors.APIError as e:
+                if (
+                    e.error_code == APIErrorCode.UnsupportedMethod
+                    and not refreshed_model_list
+                ):
+                    list = get_latest_supported_models(True)
+                    endpoint = list.get(self.api_type(), {}).get(model)
+                    refreshed_model_list = True
+                    continue
+                else:
+                    raise e
+            break
+
+        return resp
+
+    async def _arequest(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        endpoint = self._extract_endpoint(**kwargs)
+        model, endpoint = self._update_model_and_endpoint(model, endpoint)
+
+        endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
+        refreshed_model_list: bool = False
+        kwargs["endpoint"] = endpoint
+        while True:
+            try:
+                resp = await self._client.async_llm(
+                    endpoint=endpoint,
+                    header=self._generate_header(model, stream, **kwargs),
+                    query=self._generate_query(model, stream, **kwargs),
+                    body=self._generate_body(model, stream, **kwargs),
+                    stream=stream,
+                    data_postprocess=self._data_postprocess,
+                    retry_config=retry_config,
+                )
+            except errors.APIError as e:
+                if (
+                    e.error_code == APIErrorCode.UnsupportedMethod
+                    and not refreshed_model_list
+                ):
+                    list = get_latest_supported_models(True)
+                    endpoint = list.get(self.api_type(), {}).get(model)
+                    refreshed_model_list = True
+                    continue
+                else:
+                    raise e
+            break
+        return resp
+
+    @classmethod
+    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
+        """
+        get preset model list
+
+        Args:
+            None
+
+        Returns:
+            a dict which key is preset model and value is the endpoint
+
+        """
+        return get_latest_supported_models().get(cls.api_type(), {})
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "chat"
+
+    def _get_endpoint(self, model: str) -> QfLLMInfo:
+        """
+        get the endpoint of the given `model`
+
+        Args:
+            model (str): the name of the model,
+                         must be defined in self._supported_models()
+
+        Returns:
+            str: the endpoint of the input `model`
+
+        Raises:
+            QianfanError: if the input is not in self._supported_models()
+        """
+        try:
+            model_info = self.get_model_info(model)
+        except errors.InvalidArgumentError:
+            if self._endpoint is not None:
+                return QfLLMInfo(endpoint=self._endpoint)
+            else:
+                raise
+        return model_info
+
+    def _get_endpoint_from_dict(
+        self, model: Optional[str], endpoint: Optional[str], stream: bool
+    ) -> str:
+        """
+        extract the endpoint of the model in kwargs, or use the endpoint defined in
+        __init__
+
+        Args:
+            **kwargs (dict): any dict
+
+        Returns:
+            str: the endpoint of the model in kwargs
+
+        """
+        if endpoint is not None:
+            return endpoint
+        if model is not None:
+            return self._get_endpoint(model).endpoint
+        return self._get_endpoint(self._default_model()).endpoint
+
+    def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
+        """
+        convert user-provided endpoint to real endpoint
+        """
+        raise NotImplementedError
+
+    def access_token(self) -> str:
+        """
+        get access token
+        """
+        return self._client._auth.access_token()
+
+    def _generate_body(
+        self, model: str | None, stream: bool, **kwargs: Any
+    ) -> Dict[str, Any]:
+        endpoint = self._extract_endpoint(**kwargs)
+        if "endpoint" in kwargs:
+            kwargs.pop("endpoint")
+        body = super()._generate_body(model, stream, **kwargs)
+        model_info: Optional[QfLLMInfo] = None
+        if model is not None:
+            try:
+                model_info = self.get_model_info(model)
+                # warn if user provide unexpected arguments
+                for key in kwargs:
+                    if (
+                        len(model_info.required_keys) > 0
+                        and key not in model_info.required_keys
+                    ) and (
+                        len(model_info.optional_keys) > 0
+                        and key not in model_info.optional_keys
+                    ):
+                        log_warn(
+                            f"This key `{key}` does not seem to be a parameter that the"
+                            f" model `{model}` will accept"
+                        )
+            except errors.InvalidArgumentError:
+                ...
+
+        if model_info is None:
+            # 使用默认模型
+            try:
+                default_model_info = self.get_model_info(self._default_model())
+                if default_model_info.endpoint == endpoint:
+                    model_info = default_model_info
+            except errors.InvalidArgumentError:
+                ...
+
+        # 非默认模型
+        if model_info is None:
+            model_info = self._supported_models()[UNSPECIFIED_MODEL]
+        for key in model_info.required_keys:
+            if key not in kwargs:
+                raise errors.ArgumentNotFoundError(
+                    f"The required key `{key}` is not provided."
+                )
+        return body
+
+    @classmethod
+    def _extract_endpoint(cls, **kwargs: Any) -> str:
+        """
+        extract endpoint from kwargs
+        """
+        return kwargs.get("endpoint", None)
+
+    @classmethod
+    def models(cls) -> Set[str]:
+        """
+        get all supported model names
+        """
+        ...
+        models = set(cls._supported_models().keys())
+        models.remove(UNSPECIFIED_MODEL)
+        return models
+
+    @classmethod
+    def get_model_info(cls, model: str) -> QfLLMInfo:
+        """
+        Get the model info of `model`
+
+        Args:
+            model (str): the name of the model,
+
+        Return:
+            Information of the model
+        """
+        # try update with local cache
+        cls.update_with_cache_model_infos()
+        # get the supported_models list
+        model_info_list = {k.lower(): v for k, v in cls._supported_models().items()}
+        model_info = model_info_list.get(model.lower())
+        if model_info is None:
+            use_iam_aksk_msg = ""
+            if get_config().ACCESS_KEY is None or get_config().SECRET_KEY is None:
+                use_iam_aksk_msg = (
+                    "might use `QIANFAN_ACCESS_KEY` and `QIANFAN_SECRET_KEY` instead to"
+                    " get complete features supported."
+                )
+            raise errors.InvalidArgumentError(
+                f"The provided model `{model}` is not in the list of supported models."
+                " If this is a recently added model, try using the `endpoint`"
+                " arguments and create an issue to tell us. Supported models:"
+                f" {cls.models()} {use_iam_aksk_msg}"
+            )
+        return model_info
+
+
+class BaseResourceV2(BaseResource):
+    def __init__(self, model: Optional[str] = None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._model = model
+        self._client = QfAPIV2Requestor(**kwargs)
+
+    def _request(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        """
+        qianfan resource basic do
+
+        Args:
+            **kwargs (dict): kv dict data。
+
+        """
+
+        resp = self._client.llm(
+            endpoint=self._api_path(),
+            header=self._generate_header(model, stream, **kwargs),
+            query=self._generate_query(model, stream, **kwargs),
+            body=self._generate_body(model, stream, **kwargs),
+            stream=stream,
+            retry_config=retry_config,
+        )
+
+        return resp
+
+    async def _arequest(
+        self,
+        model: Optional[str],
+        stream: bool,
+        retry_config: RetryConfig,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        resp = await self._client.async_llm(
+            endpoint=self._api_path(),
+            header=self._generate_header(model, stream, **kwargs),
+            query=self._generate_query(model, stream, **kwargs),
+            body=self._generate_body(model, stream, **kwargs),
+            stream=stream,
+            retry_config=retry_config,
+        )
+
+        return resp
+
+    def _generate_body(
+        self, model: str | None, stream: bool, **kwargs: Any
+    ) -> Dict[str, Any]:
+        body = super()._generate_body(model, stream, **kwargs)
+        if model is not None:
+            body["model"] = model
+        elif self._model is not None:
+            body["model"] = self._model
+        else:
+            body["model"] = self._default_model()
+        return body
+
+    @classmethod
+    def _default_model(cls) -> str:
+        raise NotImplementedError
+
+    def _api_path(self) -> str:
+        raise NotImplementedError
 
 
 # {api_type: {model_name: QfLLMInfo}}

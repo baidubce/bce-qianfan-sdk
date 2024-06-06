@@ -19,13 +19,13 @@ import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
     BatchRequestFuture,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
-class Embedding(BaseResource):
+class Embedding(BaseResourceV1):
     """
     QianFan Embedding is an agent for calling QianFan embedding API.
     """
@@ -105,7 +105,7 @@ class Embedding(BaseResource):
         return DefaultLLMModel.Embedding
 
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         need to check whether stream is set in Embedding
@@ -116,7 +116,7 @@ class Embedding(BaseResource):
             raise errors.ArgumentNotFoundError("input not found in kwargs")
         kwargs["input"] = kwargs["texts"]
         del kwargs["texts"]
-        return super()._generate_body(model, endpoint, stream, **kwargs)
+        return super()._generate_body(model, stream, **kwargs)
 
     def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
         """
@@ -175,11 +175,11 @@ class Embedding(BaseResource):
 
         return self._do(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 
@@ -234,11 +234,11 @@ class Embedding(BaseResource):
 
         return await self._ado(
             model,
-            endpoint,
             stream,
             retry_count,
             request_timeout,
             backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 

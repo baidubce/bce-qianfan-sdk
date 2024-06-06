@@ -17,12 +17,12 @@ from typing import Any, Dict, List, Optional
 from qianfan.consts import DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
-class Reranker(BaseResource):
+class Reranker(BaseResourceV1):
     """
     QianFan Reranker is an agent for calling QianFan reranker API.
     """
@@ -72,12 +72,12 @@ class Reranker(BaseResource):
         return "bce-reranker-base_v1"
 
     def _generate_body(
-        self, model: Optional[str], endpoint: str, stream: bool, **kwargs: Any
+        self, model: Optional[str], stream: bool, **kwargs: Any
     ) -> JsonBody:
         """
         Reranker needs to transform body (`_query` -> `query`)
         """
-        body = super()._generate_body(model, endpoint, stream, **kwargs)
+        body = super()._generate_body(model, stream, **kwargs)
         # "query" is conflict with QfRequest.query in params, so "_query" is
         # the argument in SDK so we need to change "_query" back to "query" here
         body["query"] = body["_query"]
@@ -141,10 +141,10 @@ class Reranker(BaseResource):
             kwargs["top_n"] = top_n
         resp = self._do(
             model,
-            endpoint,
             retry_count=retry_count,
             request_timeout=request_timeout,
             backoff_factor=backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
         assert isinstance(resp, QfResponse)
@@ -201,10 +201,10 @@ class Reranker(BaseResource):
             kwargs["top_n"] = top_n
         resp = await self._ado(
             model,
-            endpoint,
             retry_count=retry_count,
             request_timeout=request_timeout,
             backoff_factor=backoff_factor,
+            endpoint=endpoint,
             **kwargs,
         )
 

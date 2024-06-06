@@ -18,7 +18,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, List, Union
 import qianfan.errors as errors
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
+    BaseResourceV1,
 )
 from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
 
@@ -48,7 +48,7 @@ _SPLIT_FUNCTIONS_SCHEMAS = """\n-"""
 _PROMPT_IDENTIFIER = "{}"
 
 
-class Function(BaseResource):
+class Function(BaseResourceV1):
     """
     QianFan Function is an agent for calling QianFan
     ChatCompletion with function call API.

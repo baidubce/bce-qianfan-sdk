@@ -31,6 +31,8 @@ import com.baidubce.qianfan.model.image.Image2TextRequest;
 import com.baidubce.qianfan.model.image.Image2TextResponse;
 import com.baidubce.qianfan.model.image.Text2ImageRequest;
 import com.baidubce.qianfan.model.image.Text2ImageResponse;
+import com.baidubce.qianfan.model.plugin.PluginRequest;
+import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.model.rerank.RerankRequest;
 import com.baidubce.qianfan.model.rerank.RerankResponse;
 
@@ -122,6 +124,19 @@ public class Qianfan {
 
     public RerankResponse rerank(RerankRequest request) {
         return request(request, RerankResponse.class);
+    }
+
+    public PluginBuilder plugin() {
+        return new PluginBuilder(this);
+    }
+
+    public PluginResponse plugin(PluginRequest request) {
+        return request(request, PluginResponse.class);
+    }
+
+    public Iterator<PluginResponse> pluginStream(PluginRequest request) {
+        request.setStream(true);
+        return requestStream(request, PluginResponse.class);
     }
 
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {

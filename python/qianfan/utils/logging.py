@@ -16,6 +16,7 @@
 import logging
 import sys
 from functools import partial
+from logging.handlers import RotatingFileHandler
 from typing import Any, Union
 
 TRACE_LEVEL = 5
@@ -25,10 +26,10 @@ logging.addLevelName(TRACE_LEVEL, "TRACE")
 
 class Logger(object):
     _DEFAULT_MSG_FORMAT = (
-        "[%(levelname)s] [%(asctime)s] %(filename)s:%(lineno)d [t:%(thread)d]:"
-        " %(message)s"
+        "[%(levelname)s][%(asctime)s.%(msecs)03d]"
+        " %(filename)s:%(lineno)d [t:%(thread)d]: %(message)s"
     )
-    _DEFAULT_DATE_FORMAT = "%m-%d %H:%M:%S"
+    _DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def __init__(
         self,
@@ -45,7 +46,7 @@ class Logger(object):
         Returns:
             None
         """
-        # 创建一个loggger
+        # 创建一个logger
         self.__name = name
         self._logger = logging.getLogger(self.__name)
         self._logger.setLevel(logging.INFO)
@@ -143,7 +144,11 @@ def redirect_log_to_file(file_path: str) -> None:
         file_path (str): local file path
     """
     logger._logger.removeHandler(logger.handler)
-    file_handler = logging.FileHandler(file_path)
+    file_handler = RotatingFileHandler(
+        file_path,
+        maxBytes=100 * 1024 * 1024,
+        backupCount=7,
+    )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logger.formatter)
     logger._logger.addHandler(file_handler)

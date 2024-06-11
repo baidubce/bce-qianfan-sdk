@@ -51,6 +51,9 @@ class FilePersister(Persister):
 
     @classmethod
     def save(cls, p: Persistent) -> None:
+        if get_config().DISABLE_CACHE:
+            log_debug("cache is disabled, skip save")
+            return
         b = p.persist()
         cache_files_path = cls._ensure_cache_existed()
         f_path_dir = path.join(cache_files_path, p._space())
@@ -63,6 +66,10 @@ class FilePersister(Persister):
 
     @classmethod
     def load(cls, id: str, t: _T) -> Persistent:
+        if get_config().DISABLE_CACHE:
+            raise ValueError(
+                "cache is disabled, reset `QIANFAN_DISABLE_CACHE` if needed"
+            )
         cache_files_path = cls._ensure_cache_existed()
         f_path_dir = path.join(cache_files_path, t._space())
         if not path.exists(f_path_dir):

@@ -97,6 +97,7 @@ class Env:
     ConsoleRetryTimeout: str = "QIANFAN_CONSOLE_API_RETRY_TIMEOUT"
     ConsoleRetryBackoffFactor: str = "QIANFAN_CONSOLE_API_RETRY_BACKOFF_FACTOR"
     CacheDir: str = "QIANFAN_CACHE_DIR"
+    DisableCache: str = "QIANFAN_DISABLE_CACHE"
     V2InferApiDowngrade: str = "QIANFAN_V2_INFER_API_DOWNGRADE"
 
     SSLVerificationEnabled: str = "QIANFAN_SSL_VERIFICATION_ENABLED"
@@ -177,6 +178,7 @@ class DefaultValue:
     Proxy: str = ""
     FileEncoding: str = "utf-8"
     CacheDir: str = str(Path.home() / ".qianfan_cache")
+    DisableCache: bool = False
 
 
 class Consts:

@@ -125,6 +125,7 @@ class GlobalConfig(BaseSettings):
 
     FILE_ENCODING: str = Field(default=DefaultValue.FileEncoding)
     # 缓存文件路径配置
+    DISABLE_CACHE: bool = Field(default=DefaultValue.DisableCache)
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
 
 

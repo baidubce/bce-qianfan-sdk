@@ -139,88 +139,91 @@ type inputLimitInfo struct {
 }
 
 // 定义包含所需信息的 map
-var limitMap = map[string]inputLimitInfo{
-	"ERNIE-Lite-8K-0922":                 {MaxInputChars: 11200, MaxInputTokens: 7168},
+var limitMapInModelName = map[string]inputLimitInfo{
+	"ERNIE-Lite-8K-0922":           {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Lite-8K-0308":           {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-3.5-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-0329":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-0104":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-preemptible":        {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-Preview-0518":    {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-preemptible":     {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-128K":               {MaxInputChars: 516096, MaxInputTokens: 126976},
+	"ERNIE-3.5-8K-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-Bot-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-4K-0205":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"ERNIE-3.5-8K-0205":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-1222":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-0329":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"ERNIE-Speed-8K":               {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Speed-128K":             {MaxInputChars: 507904, MaxInputTokens: 126976},
+	"ERNIE Speed-AppBuilder":       {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Tiny-8K":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"ERNIE-Function-8K":            {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"ERNIE-Character-8K":           {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"BLOOMZ-7B":                    {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-7B-Chat":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-13B-Chat":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-70B-Chat":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Meta-Llama-3-8B":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Meta-Llama-3-70B":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-BLOOMZ-7B-compressed": {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-7B":   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"ChatGLM2-6B-32K":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"AquilaChat-7B":                {MaxInputChars: 4800, MaxInputTokens: 0},
+	"XuanYuan-70B-Chat-4bit":       {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-13B":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-70B":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"ChatLaw":                      {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Yi-34B-Chat":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Mixtral-8x7B-Instruct":        {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Gemma-7B-it":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"UNSPECIFIED_MODEL":            {MaxInputChars: 0, MaxInputTokens: 0},
+}
+
+var limitMapInEndpoint = map[string]inputLimitInfo{
 	"/chat/eb-instant":                   {MaxInputChars: 11200, MaxInputTokens: 7168},
-	"ERNIE-Lite-8K-0308":                 {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"/chat/ernie-lite-8k":                {MaxInputChars: 11200, MaxInputTokens: 7168},
-	"ERNIE-3.5-8K":                       {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/completions":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-8K":                       {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/completions_pro":              {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-8K-0329":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-4.0-8k-0329":            {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-8K-0104":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-4.0-8k-0104":            {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-preemptible":              {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/completions_pro_preemptible":  {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-8K-Preview-0518":          {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/completions_adv_pro":          {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-4.0-8K-preview":               {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-4.0-8k-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-3.5-8K-preemptible":           {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/completions_preemptible":      {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-3.5-128K":                     {MaxInputChars: 516096, MaxInputTokens: 126976},
 	"/chat/ernie-3.5-128k":               {MaxInputChars: 516096, MaxInputTokens: 126976},
-	"ERNIE-3.5-8K-preview":               {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-3.5-8k-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-Bot-8K":                       {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie_bot_8k":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-3.5-4K-0205":                  {MaxInputChars: 8000, MaxInputTokens: 2048},
 	"/chat/ernie-3.5-4k-0205":            {MaxInputChars: 8000, MaxInputTokens: 2048},
-	"ERNIE-3.5-8K-0205":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-3.5-8k-0205":            {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-3.5-8K-1222":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/ernie-3.5-8k-1222":            {MaxInputChars: 20000, MaxInputTokens: 5120},
-	"ERNIE-3.5-8K-0329":                  {MaxInputChars: 8000, MaxInputTokens: 2048},
 	"/chat/ernie-3.5-8k-0329":            {MaxInputChars: 8000, MaxInputTokens: 2048},
-	"ERNIE-Speed-8K":                     {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"/chat/ernie_speed":                  {MaxInputChars: 11200, MaxInputTokens: 7168},
-	"ERNIE-Speed-128K":                   {MaxInputChars: 507904, MaxInputTokens: 126976},
 	"/chat/ernie-speed-128k":             {MaxInputChars: 507904, MaxInputTokens: 126976},
-	"ERNIE Speed-AppBuilder":             {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"/chat/ai_apaas":                     {MaxInputChars: 11200, MaxInputTokens: 7168},
-	"ERNIE-Tiny-8K":                      {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/ernie-tiny-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
-	"ERNIE-Function-8K":                  {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/ernie-func-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
-	"ERNIE-Character-8K":                 {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/ernie-char-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
-	"BLOOMZ-7B":                          {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/bloomz_7b1":                   {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Llama-2-7B-Chat":                    {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_2_7b":                   {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Llama-2-13B-Chat":                   {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_2_13b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Llama-2-70B-Chat":                   {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_2_70b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Meta-Llama-3-8B":                    {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_3_8b":                   {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Meta-Llama-3-70B":                   {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_3_70b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Qianfan-BLOOMZ-7B-compressed":       {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/qianfan_bloomz_7b_compressed": {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Qianfan-Chinese-Llama-2-7B":         {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/qianfan_chinese_llama_2_7b":   {MaxInputChars: 4800, MaxInputTokens: 0},
-	"ChatGLM2-6B-32K":                    {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/chatglm2_6b_32k":              {MaxInputChars: 4800, MaxInputTokens: 0},
-	"AquilaChat-7B":                      {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/aquilachat_7b":                {MaxInputChars: 4800, MaxInputTokens: 0},
-	"XuanYuan-70B-Chat-4bit":             {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/xuanyuan_70b_chat":            {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Qianfan-Chinese-Llama-2-13B":        {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/qianfan_chinese_llama_2_13b":  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Qianfan-Chinese-Llama-2-70B":        {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/qianfan_chinese_llama_2_70b":  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"ChatLaw":                            {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/chatlaw":                      {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Yi-34B-Chat":                        {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/yi_34b_chat":                  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Mixtral-8x7B-Instruct":              {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/mixtral_8x7b_instruct":        {MaxInputChars: 4800, MaxInputTokens: 0},
-	"Gemma-7B-it":                        {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/gemma_7b_it":                  {MaxInputChars: 4800, MaxInputTokens: 0},
-	"UNSPECIFIED_MODEL":                  {MaxInputChars: 0, MaxInputTokens: 0},
 }
 
 // 创建一个 User 的消息
@@ -296,7 +299,7 @@ func (c *ChatCompletion) do(ctx context.Context, request *ChatCompletionRequest)
 			return nil, err
 		}
 
-		c.processWithInputLimit(ctx, request)
+		c.processWithInputLimit(ctx, request, url)
 
 		req, err := newModelRequest("POST", url, request)
 		if err != nil {
@@ -347,7 +350,7 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 			return nil, err
 		}
 
-		c.processWithInputLimit(ctx, request)
+		c.processWithInputLimit(ctx, request, url)
 
 		request.SetStream()
 		req, err := newModelRequest("POST", url, request)
@@ -375,12 +378,12 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 	return resp, err
 }
 
-func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *ChatCompletionRequest) {
-	limit, ok := limitMap[c.Model]
+func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *ChatCompletionRequest, url string) {
+	limit, ok := limitMapInModelName[c.Model]
 	if !ok {
-		limit, ok = limitMap[c.Endpoint]
+		limit, ok = limitMapInEndpoint[url]
 		if !ok {
-			limit = limitMap["UNSPECIFIED_MODEL"]
+			limit = limitMapInModelName["UNSPECIFIED_MODEL"]
 		}
 	}
 

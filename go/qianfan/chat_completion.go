@@ -291,16 +291,20 @@ func (c *ChatCompletion) ModelList() []string {
 
 // 创建一个 ChatCompletion 对象
 //
-//	chat := qianfan.NewChatCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
+// chat := qianfan.NewChatCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
 //
-//	// 可以通过 WithModel 指定模型
-//	chat := qianfan.NewChatCompletion(
-//	    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
-//	)
-//	// 或者通过 WithEndpoint 指定 endpoint
-//	chat := qianfan.NewChatCompletion(
-//	    qianfan.WithEndpoint("your_custom_endpoint"),
-//	)
+// 可以通过 WithModel 指定模型
+// chat := qianfan.NewChatCompletion(
+//
+//	qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
+//
+// )
+// 或者通过 WithEndpoint 指定 endpoint
+// chat := qianfan.NewChatCompletion(
+//
+//	qianfan.WithEndpoint("your_custom_endpoint"),
+//
+// )
 func NewChatCompletion(optionList ...Option) *ChatCompletion {
 	options := makeOptions(optionList...)
 	return newChatCompletion(options)

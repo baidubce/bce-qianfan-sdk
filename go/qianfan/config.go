@@ -52,7 +52,7 @@ type Config struct {
 	InferResourceRefreshInterval  int     `mapstructure:"QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"`
 }
 
-func setConfigDeafultValue(vConfig *viper.Viper) {
+func setConfigDefaultValue(vConfig *viper.Viper) {
 	// 因为 viper 自动绑定无法在 unmarshal 时使用，所以这里要手动设置默认值
 	for k, v := range defaultConfig {
 		vConfig.SetDefault(k, v)
@@ -65,7 +65,7 @@ func loadConfigFromEnv() *Config {
 	vConfig.SetConfigFile(".env")
 	vConfig.SetConfigType("dotenv")
 	vConfig.AutomaticEnv()
-	setConfigDeafultValue(vConfig)
+	setConfigDefaultValue(vConfig)
 
 	// ignore error if config file not found
 	_ = vConfig.ReadInConfig()

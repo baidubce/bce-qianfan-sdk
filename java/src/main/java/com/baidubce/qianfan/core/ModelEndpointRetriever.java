@@ -46,7 +46,8 @@ public class ModelEndpointRetriever {
     private static final int DYNAMIC_MAP_REFRESH_INTERVAL = 3600;
     private static final String[] MODEL_TYPES = {
             ModelType.CHAT, ModelType.COMPLETIONS, ModelType.EMBEDDINGS,
-            ModelType.TEXT_2_IMAGE, ModelType.IMAGE_2_TEXT, ModelType.RERANKER
+            ModelType.TEXT_2_IMAGE, ModelType.IMAGE_2_TEXT, ModelType.RERANKER,
+            ModelType.PLUGIN
     };
 
     // type -> (model -> endpoint)
@@ -164,6 +165,10 @@ public class ModelEndpointRetriever {
         }
 
         if (StringUtils.isNotEmpty(endpoint)) {
+            if (ModelType.PLUGIN.equals(type)) {
+                // Plugin endpoint ends with "/"
+                endpoint += "/";
+            }
             return String.format(ENDPOINT_TEMPLATE, type, endpoint);
         }
 

@@ -291,6 +291,12 @@ class BaseAPIRequestor(object):
         self._client = HTTPClient(**kwargs)
         self._rate_limiter = VersatileRateLimiter(**kwargs)
 
+    def _preprocess_request(self, request: QfRequest) -> QfRequest:
+        return request
+
+    async def _async_preprocess_request(self, request: QfRequest) -> QfRequest:
+        return request
+
     @_with_latency
     def _request(
         self,
@@ -300,6 +306,7 @@ class BaseAPIRequestor(object):
         """
         simple sync request
         """
+        request = self._preprocess_request(request)
         response = self._client.request(request)
         _check_if_status_code_is_200(response)
         try:
@@ -328,6 +335,7 @@ class BaseAPIRequestor(object):
         """
         async request
         """
+        request = self._preprocess_request(request)
         start = time.perf_counter()
         response, session = await self._client.arequest(request)
         request_latency = time.perf_counter() - start

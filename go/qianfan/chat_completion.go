@@ -140,6 +140,7 @@ type inputLimitInfo struct {
 // 定义包含所需信息的 map
 var limitMapInModelName = map[string]inputLimitInfo{
 	"ERNIE-Lite-8K-0922":           {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Lite-8K":                {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"ERNIE-Lite-8K-0308":           {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"ERNIE-3.5-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"ERNIE-4.0-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},

@@ -401,7 +401,7 @@ func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *Cha
 
 	truncatedIndex := len(messages) - 1
 
-	for truncatedIndex >= 0 {
+	for truncatedIndex > 0 {
 		tokens, _ := tokenizer.CountTokens(messages[truncatedIndex].Content, TokenizerModeLocal, "", additionalArguments)
 
 		totalMessageChars += utf8.RuneCountInString(messages[truncatedIndex].Content)

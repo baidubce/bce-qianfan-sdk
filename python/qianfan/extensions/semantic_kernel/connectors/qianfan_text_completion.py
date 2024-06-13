@@ -36,7 +36,7 @@ class QianfanTextCompletion(TextCompletionClientBase, AIServiceClientBase):
 
     def __init__(
         self,
-        model: str = "ERNIE-Bot-turbo",
+        model: str = "ERNIE-Lite-8K",
         endpoint: Optional[str] = None,
         **kwargs: Any,
     ):

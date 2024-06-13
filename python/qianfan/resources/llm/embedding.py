@@ -144,7 +144,7 @@ class Embedding(BaseResourceV1):
             A list of input texts for which embeddings need to be generated.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
@@ -203,7 +203,7 @@ class Embedding(BaseResourceV1):
             A list of input texts for which embeddings need to be generated.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.

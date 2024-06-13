@@ -14,6 +14,7 @@
 from qianfan.resources.console.charge import Charge
 from qianfan.resources.console.data import Data
 from qianfan.resources.console.finetune import FineTune
+from qianfan.resources.console.memory import Memory
 from qianfan.resources.console.model import Model
 from qianfan.resources.console.prompt import Prompt
 from qianfan.resources.console.service import Service
@@ -47,4 +48,5 @@ __all__ = [
     "QfRole",
     "QfMessages",
     "QfResponse",
+    "Memory",
 ]

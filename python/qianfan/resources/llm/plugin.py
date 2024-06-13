@@ -156,7 +156,7 @@ class Plugin(BaseResourceV1):
             A list of plugins to be used.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
@@ -230,7 +230,7 @@ class Plugin(BaseResourceV1):
             A list of plugins to be used.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.

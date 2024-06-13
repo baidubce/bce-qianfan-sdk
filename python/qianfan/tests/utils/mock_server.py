@@ -2203,13 +2203,6 @@ def list_service():
             "versionList": [{"trainType": "ernieBot_4", "serviceStatus": "Done"}],
         },
         {
-            "name": "ERNIE-Bot-8K",
-            "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_bot_8k",
-            "apiType": "chat",
-            "chargeStatus": "NOTOPEN",
-            "versionList": [{"trainType": "ernieBot_8k", "serviceStatus": "Done"}],
-        },
-        {
             "name": "ERNIE-Bot",
             "url": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
             "apiType": "chat",

@@ -218,6 +218,13 @@ class Consts:
     ServiceListAction: str = "DescribeServices"
     ServiceDetailAction: str = "DescribeService"
     ServiceMetricAction: str = "DescribeServiceMetric"
+    ServiceModifyAction: str = "ModifyService"
+    MemoryBaseRouteAPI: str = "/v2/memory"
+    MemoryCreateSystemMemoryAction: str = "CreateSystemMemory"
+    MemoryDescribeSystemMemoriesAction: str = "DescribeSystemMemories"
+    MemoryDeleteSystemMemoryAction: str = "DeleteSystemMemory"
+    MemoryDescribeSystemMemoryAction: str = "DescribeSystemMemory"
+    MemoryModifySystemMemoryAction: str = "ModifySystemMemory"
     ModelDetailAPI: str = "/wenxinworkshop/modelrepo/modelDetail"
     ModelVersionDetailAPI: str = "/wenxinworkshop/modelrepo/modelVersionDetail"
     ModelPublishAPI: str = "/wenxinworkshop/modelrepo/publishTrainModel"
@@ -309,11 +316,11 @@ class DefaultLLMModel:
     Defualt LLM model in qianfan sdk
     """
 
-    Completion = "ERNIE-Bot-turbo"
-    ChatCompletion = "ERNIE-Bot-turbo"
+    Completion = "ERNIE-Lite-8K"
+    ChatCompletion = "ERNIE-Lite-8K"
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
-    ChatCompletionV2 = "ernie-speed-8k"
+    ChatCompletionV2 = "ernie-lite-8k"
 
 
 class PromptSceneType(int, enum.Enum):

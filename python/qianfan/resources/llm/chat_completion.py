@@ -85,6 +85,10 @@ class _ChatCompletionV1(BaseResourceV1):
                     "penalty_score",
                     "user_id",
                     "system",
+                    "max_output_tokens",
+                    "min_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
@@ -110,6 +114,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "tool_choice",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -133,6 +139,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "max_output_tokens",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -156,6 +164,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "max_output_tokens",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -179,34 +189,13 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "max_output_tokens",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
                 input_price_per_1k_tokens=0.12,
                 output_price_per_1k_tokens=0.12,
-            ),
-            "ERNIE-4.0-preemptible": QfLLMInfo(
-                endpoint="/chat/completions_pro_preemptible",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "functions",
-                    "system",
-                    "user_id",
-                    "stop",
-                    "disable_search",
-                    "enable_citation",
-                    "response_format",
-                    "max_output_tokens",
-                    "enable_trace",
-                },
-                max_input_chars=20000,
-                max_input_tokens=5120,
-                input_price_per_1k_tokens=0.048,
-                output_price_per_1k_tokens=0.048,
             ),
             "ERNIE-4.0-8K-Preview-0518": QfLLMInfo(
                 endpoint="/chat/completions_adv_pro",
@@ -225,6 +214,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "max_output_tokens",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -248,36 +239,13 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "max_output_tokens",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
                 input_price_per_1k_tokens=0.12,
                 output_price_per_1k_tokens=0.12,
-            ),
-            "ERNIE-3.5-8K-preemptible": QfLLMInfo(
-                endpoint="/chat/completions_preemptible",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "functions",
-                    "system",
-                    "user_id",
-                    "user_setting",
-                    "stop",
-                    "disable_search",
-                    "enable_citation",
-                    "max_output_tokens",
-                    "response_format",
-                    "tool_choice",
-                    "enable_trace",
-                },
-                max_input_chars=20000,
-                max_input_tokens=5120,
-                input_price_per_1k_tokens=0.0048,
-                output_price_per_1k_tokens=0.0048,
             ),
             "ERNIE-3.5-128K": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-128k",
@@ -298,6 +266,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "tool_choice",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=516096,
                 max_input_tokens=126976,
@@ -323,61 +293,13 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "tool_choice",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
                 input_price_per_1k_tokens=0.024,
                 output_price_per_1k_tokens=0.048,
-            ),
-            "ERNIE-Bot-8K": QfLLMInfo(
-                endpoint="/chat/ernie_bot_8k",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "functions",
-                    "system",
-                    "user_id",
-                    "user_setting",
-                    "stop",
-                    "disable_search",
-                    "enable_citation",
-                    "max_output_tokens",
-                    "response_format",
-                    "tool_choice",
-                    "enable_trace",
-                },
-                max_input_chars=20000,
-                max_input_tokens=5120,
-                input_price_per_1k_tokens=0.012,
-                output_price_per_1k_tokens=0.012,
-            ),
-            "ERNIE-3.5-4K-0205": QfLLMInfo(
-                endpoint="/chat/ernie-3.5-4k-0205",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "functions",
-                    "system",
-                    "user_id",
-                    "user_setting",
-                    "stop",
-                    "disable_search",
-                    "enable_citation",
-                    "max_output_tokens",
-                    "response_format",
-                    "tool_choice",
-                    "enable_trace",
-                },
-                max_input_chars=8000,
-                max_input_tokens=2048,
-                input_price_per_1k_tokens=0.012,
-                output_price_per_1k_tokens=0.012,
             ),
             "ERNIE-3.5-8K-0205": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-0205",
@@ -398,36 +320,13 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "tool_choice",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
                 input_price_per_1k_tokens=0.024,
                 output_price_per_1k_tokens=0.048,
-            ),
-            "ERNIE-3.5-8K-1222": QfLLMInfo(
-                endpoint="/chat/ernie-3.5-8k-1222",
-                required_keys={"messages"},
-                optional_keys={
-                    "stream",
-                    "temperature",
-                    "top_p",
-                    "penalty_score",
-                    "functions",
-                    "system",
-                    "user_id",
-                    "user_setting",
-                    "stop",
-                    "disable_search",
-                    "enable_citation",
-                    "max_output_tokens",
-                    "response_format",
-                    "tool_choice",
-                    "enable_trace",
-                },
-                max_input_chars=20000,
-                max_input_tokens=5120,
-                input_price_per_1k_tokens=0.012,
-                output_price_per_1k_tokens=0.012,
             ),
             "ERNIE-3.5-8K-0329": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-0329",
@@ -448,6 +347,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "response_format",
                     "tool_choice",
                     "enable_trace",
+                    "enable_system_memory",
+                    "system_memory_id",
                 },
                 max_input_chars=8000,
                 max_input_tokens=2048,
@@ -468,6 +369,9 @@ class _ChatCompletionV1(BaseResourceV1):
                     "system",
                     "stop",
                     "max_output_tokens",
+                    "min_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
@@ -488,6 +392,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "system",
                     "stop",
                     "max_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
                 },
                 max_input_chars=507904,
                 max_input_tokens=126976,
@@ -526,6 +432,9 @@ class _ChatCompletionV1(BaseResourceV1):
                     "system",
                     "stop",
                     "max_output_tokens",
+                    "min_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
                 },
                 max_input_chars=24000,
                 max_input_tokens=6144,
@@ -941,14 +850,7 @@ class _ChatCompletionV1(BaseResourceV1):
     @classmethod
     def _default_model(cls) -> str:
         """
-        default model of ChatCompletion `ERNIE-Bot-turbo`
-
-        Args:
-            None
-
-        Returns:
-           "ERNIE-Bot-turbo"
-
+        default model of ChatCompletion
         """
         return DefaultLLMModel.ChatCompletion
 
@@ -985,7 +887,7 @@ class _ChatCompletionV1(BaseResourceV1):
             for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used(ERNIE-Lite-8K).
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
@@ -1105,7 +1007,7 @@ class _ChatCompletionV1(BaseResourceV1):
         Parameters:
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
@@ -1185,7 +1087,7 @@ class _ChatCompletionV1(BaseResourceV1):
             for convenience.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used(ERNIE-Lite-8K).
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.

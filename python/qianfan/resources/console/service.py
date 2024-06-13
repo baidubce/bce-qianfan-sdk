@@ -365,3 +365,43 @@ class Service(object):
                 else:
                     req.json_body["endTime"] = end_time
             return req
+
+        @classmethod
+        @console_api_request
+        def modify_service(
+            cls,
+            service_id: str,
+            model_id: str,
+            model_version_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            update service with a specified model version.
+
+            Parameters:
+            service_id: str,
+                service id. svco-xxx
+            model_id: str,
+                model id. am-xxx
+            model_version_id: str,
+                model version id. amv-xxx
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceModifyAction),
+            )
+            req.json_body = {
+                "serviceId": service_id,
+                "modelId": model_id,
+                "modelVersionId": model_version_id,
+            }
+            return req

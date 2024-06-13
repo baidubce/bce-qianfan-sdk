@@ -114,14 +114,7 @@ class Completion(BaseResourceV1):
     @classmethod
     def _default_model(cls) -> str:
         """
-        default model of Completion: ERNIE-Bot-turbo
-
-        Args:
-            None
-
-        Returns:
-           ERNIE-Bot-turbo
-
+        default model of Completion
         """
         return DefaultLLMModel.Completion
 
@@ -177,7 +170,7 @@ class Completion(BaseResourceV1):
             The input prompt to generate the continuation from.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.
@@ -236,7 +229,7 @@ class Completion(BaseResourceV1):
             The input prompt to generate the continuation from.
           model (Optional[str]):
             The name or identifier of the language model to use. If not specified, the
-            default model is used(ERNIE-Bot-turbo).
+            default model is used.
           endpoint (Optional[str]):
             The endpoint for making API requests. If not provided, the default endpoint
             is used.

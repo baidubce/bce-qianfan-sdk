@@ -28,7 +28,7 @@ from qianfan.version import VERSION
 
 QIANFAN_SUPPORT_COMPLETION_MOCK_MODEL = {
     "ERNIE-Bot",
-    "ERNIE-Bot-turbo",
+    "ERNIE-Lite-8K",
     "BLOOMZ-7B",
     "Qianfan-BLOOMZ-7B-compressed",
     "Llama-2-7B-Chat",
@@ -151,7 +151,7 @@ def test_priority():
     assert resp["_for_ut"]["type"] == "completion"
     # cls.None
     resp = qianfan.Completion().do(prompt=prompt)
-    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["model"] == "ernie-lite-8k"
     assert resp["_for_ut"]["type"] == "chat"
     # cls.CM
     resp = qianfan.Completion(model="ERNIE-Bot").do(prompt=prompt)
@@ -318,7 +318,7 @@ async def test_async_priority():
     assert resp["_for_ut"]["type"] == "completion"
     # cls.None
     resp = await qianfan.Completion().ado(prompt=prompt)
-    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["model"] == "ernie-lite-8k"
     assert resp["_for_ut"]["type"] == "chat"
     # cls.CM
     resp = await qianfan.Completion(model="ERNIE-Bot").ado(prompt=prompt)

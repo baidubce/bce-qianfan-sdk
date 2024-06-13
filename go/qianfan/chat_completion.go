@@ -379,9 +379,10 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 }
 
 func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *ChatCompletionRequest, url string) {
-	limit, ok := limitMapInModelName[c.Model]
+	url = url[len(modelAPIPrefix):]
+	limit, ok := limitMapInEndpoint[url]
 	if !ok {
-		limit, ok = limitMapInEndpoint[url]
+		limit, ok = limitMapInModelName[c.Model]
 		if !ok {
 			limit = limitMapInModelName["UNSPECIFIED_MODEL"]
 		}
@@ -408,13 +409,13 @@ func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *Cha
 
 		if (limit.MaxInputTokens > 0 && totalMessageTokens > limit.MaxInputTokens) ||
 			(limit.MaxInputChars > 0 && totalMessageChars > limit.MaxInputChars) {
-			return
+			break
 		}
 
 		truncatedIndex--
 	}
 
-	request.Messages = request.Messages[truncatedIndex+1:]
+	request.Messages = request.Messages[truncatedIndex:]
 }
 
 // chat 支持的模型列表

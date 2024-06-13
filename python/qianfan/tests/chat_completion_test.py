@@ -30,7 +30,7 @@ from qianfan.tests.utils import EnvHelper, fake_access_token
 
 QIANFAN_SUPPORT_CHAT_MODEL = {
     "ERNIE-Bot",
-    "ERNIE-Bot-turbo",
+    "ERNIE-Lite-8K",
     "BLOOMZ-7B",
     "Qianfan-BLOOMZ-7B-compressed",
     "Llama-2-7B-Chat",
@@ -428,7 +428,7 @@ def test_priority():
             pass
         # do.M+E
         resp = qfg.do(
-            model="ERNIE-Bot-turbo",
+            model="ERNIE-Lite-8K",
             endpoint="custom_endpoint_2",
             messages=TEST_MESSAGE[:1],
         )
@@ -471,7 +471,7 @@ def test_priority():
     assert resp["_for_ut"]["model"] == "custom_endpoint"
     # cls.None
     resp = qianfan.ChatCompletion().do(messages=TEST_MESSAGE[:1])
-    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["model"] == "ernie-lite-8k"
 
 
 @pytest.mark.asyncio
@@ -512,7 +512,7 @@ async def test_async_priority():
             pass
         # do.M+E
         resp = await qfg.ado(
-            model="ERNIE-Bot-turbo",
+            model="ERNIE-Lite-8K",
             endpoint="custom_endpoint_2",
             messages=TEST_MESSAGE[:1],
         )
@@ -557,7 +557,7 @@ async def test_async_priority():
     assert resp["_for_ut"]["model"] == "custom_endpoint"
     # cls.None
     resp = await qianfan.ChatCompletion().ado(messages=TEST_MESSAGE[:1])
-    assert resp["_for_ut"]["model"] == "eb-instant"
+    assert resp["_for_ut"]["model"] == "ernie-lite-8k"
 
 
 def test_in_other_thread():
@@ -696,7 +696,7 @@ def test_truncated_message():
         {"role": "assistant", "content": "s4"},
         {"role": "user", "content": "s5"},
     ]
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages, truncate_overlong_msgs=True
     )
     req_messages = resp["_request"]["messages"]
@@ -705,7 +705,7 @@ def test_truncated_message():
     assert req_messages[1]["content"] == "s4"
     assert req_messages[2]["content"] == "s5"
 
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages, truncate_overlong_msgs=False
     )
     # no cut
@@ -739,13 +739,13 @@ def test_truncated_message():
         {"role": "user", "content": "s5"},
     ]
     system = "s " * 3000
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages, truncate_overlong_msgs=True
     )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 5
 
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages, truncate_overlong_msgs=True, system=system
     )
     req_messages = resp["_request"]["messages"]
@@ -759,13 +759,13 @@ def test_truncated_message():
         {"role": "assistant", "content": "s4"},
         {"role": "user", "content": "s " * 10000},
     ]
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages, truncate_overlong_msgs=True, system=system
     )
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 1
 
-    resp = qianfan.ChatCompletion(model="ERNIE-Bot-8k").do(
+    resp = qianfan.ChatCompletion(model="ERNIE-3.5-8K").do(
         messages=messages[-1:], truncate_overlong_msgs=True, system=system
     )
     req_messages = resp["_request"]["messages"]

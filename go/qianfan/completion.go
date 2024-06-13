@@ -222,7 +222,7 @@ func (c *Completion) stream(ctx context.Context, request *CompletionRequest) (*M
 
 // 创建一个 Completion 实例
 //
-//	completion := qianfan.NewCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
+//	completion := qianfan.NewCompletion()  // 默认使用 ERNIE-Lite-8K 模型
 //
 //	// 可以通过 WithModel 指定模型
 //	completion := qianfan.NewCompletion(

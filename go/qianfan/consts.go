@@ -27,8 +27,8 @@ const (
 
 // 默认使用的模型
 const (
-	DefaultChatCompletionModel = "ERNIE-Bot-turbo"
-	DefaultCompletionModel     = "ERNIE-Bot-turbo"
+	DefaultChatCompletionModel = "ERNIE-Lite-8K"
+	DefaultCompletionModel     = "ERNIE-Lite-8K"
 	DefaultEmbeddingModel      = "Embedding-V1"
 	DefaultText2ImageModel     = "Stable-Diffusion-XL"
 )

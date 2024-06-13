@@ -84,6 +84,7 @@ type ChatCompletionRequest struct {
 var ChatModelEndpoint = map[string]string{
 	"ERNIE-Bot-turbo":              "/chat/eb-instant",
 	"ERNIE-Lite-8K-0922":           "/chat/eb-instant",
+	"ERNIE-Lite-8K":                "/chat/ernie-lite-8k",
 	"ERNIE-Lite-8K-0308":           "/chat/ernie-lite-8k",
 	"ERNIE-3.5-8K":                 "/chat/completions",
 	"ERNIE-Bot":                    "/chat/completions",

@@ -352,3 +352,12 @@ class CreateCustomModelSourceType(str, Enum):
     """训练模型"""
     Import: str = "Import"
     """外部导入模型"""
+
+
+class FinetuneCorpusType(int, Enum):
+    QianfanCommon: int = 1
+    """千帆混合训练语料"""
+    YiyanCommon: int = 2
+    """一言通用混合训练语料"""
+    YiyanVertical: int = 3
+    """一言垂直领域混合训练语料"""

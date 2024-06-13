@@ -35,13 +35,21 @@ class DatasetConfig(BaseModel):
     """
     datasets
     """
-    eval_split_ratio: float = 20
+    eval_split_ratio: Optional[float] = None
     """
     training evaluation split ratio
     """
     corpus_proportion: Optional[float] = None
     """
-    corpus proportion
+    corpus proportion, only support in `QianfanCommon` Corpus
+    """
+    corpus_type: Optional[console_consts.FinetuneCorpusType] = None
+    """
+    corpus type, including qianfan/yiyan common/yiyan vertical
+    """
+    corpus_labels: Optional[List[str]] = None
+    """
+    corpus vertical labels
     """
     sampling_rate: Optional[float] = None
     """

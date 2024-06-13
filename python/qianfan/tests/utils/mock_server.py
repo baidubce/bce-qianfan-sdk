@@ -978,7 +978,8 @@ def finetune_v2_create_job(body):
 def finetune_v2_create_task(body):
     task_id = f"task-{generate_letter_num_random_id(12)}"
     job_id = body["jobId"]
-    if not body.get("datasetConfig", {}).get("splitRatio"):
+    split_ratio = body.get("datasetConfig", {}).get("splitRatio")
+    if split_ratio is None or split_ratio < 0 or split_ratio > 100:
         return json_response(
             {
                 "requestId": "bfad9ba9-9fc2-406d-ae84-c9e1ea92140a",

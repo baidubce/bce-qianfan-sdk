@@ -88,28 +88,36 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     bos_path: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     corpus_proportion: Optional[float] = None
+    corpus_type: Optional[console_consts.FinetuneCorpusType] = None
+    corpus_labels: Optional[List[str]] = None
     eval_split_ratio: Optional[float] = None
     sampling_rate: Optional[float] = None
 
     def __init__(
         self,
-        dataset: Optional[Union[DatasetConfig, Dataset, str]] = None,
+        dataset: Union[DatasetConfig, Dataset, str],
         dataset_template: Optional[console_consts.DataTemplateType] = None,
-        eval_split_ratio: float = 20,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
-        self.eval_split_ratio = eval_split_ratio
+        self.eval_split_ratio = kwargs.get("eval_split_ratio", 20)
         self.corpus_proportion = kwargs.get("corpus_proportion")
+        self.corpus_type = kwargs.get("corpus_type")
+        self.corpus_labels = kwargs.get("corpus_labels")
         self.sampling_rate = kwargs.get("sampling_rate")
-        if dataset is None:
-            raise InvalidArgumentError("dataset must be set")
         if isinstance(dataset, DatasetConfig):
             assert isinstance(dataset.datasets[0], Dataset)
             self.dataset = dataset.datasets[0]
-            self.corpus_proportion = dataset.corpus_proportion or self.corpus_proportion
-            self.eval_split_ratio = dataset.eval_split_ratio or self.eval_split_ratio
-            self.sampling_rate = dataset.sampling_rate or self.sampling_rate
+            if dataset.corpus_proportion is not None:
+                self.corpus_proportion = dataset.corpus_proportion
+            if dataset.corpus_type is not None:
+                self.corpus_type = dataset.corpus_type
+            if dataset.corpus_labels is not None:
+                self.corpus_labels = dataset.corpus_labels
+            if dataset.eval_split_ratio is not None:
+                self.eval_split_ratio = dataset.eval_split_ratio
+            if dataset.sampling_rate is not None:
+                self.sampling_rate = dataset.sampling_rate
         elif isinstance(dataset, str):
             if is_valid_bos_path(dataset):
                 self.bos_path = dataset
@@ -144,13 +152,17 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         resp = self._exec(input, **kwargs)
         if resp.get("datasets") is None:
             return resp
-        if self.eval_split_ratio:
+        if self.eval_split_ratio is not None:
             resp["datasets"]["splitRatio"] = self.eval_split_ratio
         if self.corpus_proportion:
             resp["datasets"]["corpusProportion"] = f"{self.corpus_proportion}%"
         if self.sampling_rate:
             for d in resp["datasets"]["versions"]:
                 d["samplingRate"] = self.sampling_rate
+        if self.corpus_type:
+            resp["datasets"]["corpusProportionType"] = int(self.corpus_type)
+        if self.corpus_labels:
+            resp["datasets"]["corpusProportionLabels"] = self.corpus_labels
         return resp
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -262,14 +274,21 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "ds_id": qf_ds,
             "dataset_bos": self.bos_path,
             "output": self.result,
+            "eval_split_ratio": self.eval_split_ratio,
+            "sampling_rate": self.sampling_rate,
+            "corpus_proportion": self.corpus_proportion,
+            "corpus_labels": self.corpus_labels,
+            "corpus_type": self.corpus_type,
         }
         return meta
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
+        dataset = meta.get("ds_id") or meta.get("dataset_bos")
+        assert dataset is not None
         action = cls(
             id=meta.get("id"),
-            dataset=meta.get("ds_id") or meta.get("dataset_bos"),
+            dataset=dataset,
         )
         action.result = meta.get("output")
         return action

@@ -379,6 +379,10 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 }
 
 func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *ChatCompletionRequest, url string) {
+	if len(request.Messages) == 0 {
+		return
+	}
+
 	url = url[len(modelAPIPrefix):]
 	limit, ok := limitMapInEndpoint[url]
 	if !ok {

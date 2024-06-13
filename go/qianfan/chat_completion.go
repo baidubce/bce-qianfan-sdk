@@ -16,6 +16,7 @@ package qianfan
 
 import (
 	"context"
+	"unicode/utf8"
 )
 
 // 表示对话内容的结构体
@@ -131,6 +132,100 @@ var ChatModelEndpoint = map[string]string{
 	"Gemma-7B-it":                  "/chat/gemma_7b_it",
 }
 
+// inputLimitInfo 结构体包含 maxInputChars 和 maxInputTokens
+type inputLimitInfo struct {
+	MaxInputChars  int
+	MaxInputTokens int
+}
+
+// 定义包含所需信息的 map
+var limitMapInModelName = map[string]inputLimitInfo{
+	"ERNIE-Lite-8K-0922":           {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Lite-8K-0308":           {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-3.5-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-0329":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-0104":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-preemptible":        {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-Preview-0518":    {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-4.0-8K-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-preemptible":     {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-128K":               {MaxInputChars: 516096, MaxInputTokens: 126976},
+	"ERNIE-3.5-8K-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-Bot-8K":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-4K-0205":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"ERNIE-3.5-8K-0205":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-1222":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"ERNIE-3.5-8K-0329":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"ERNIE-Speed-8K":               {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Speed-128K":             {MaxInputChars: 507904, MaxInputTokens: 126976},
+	"ERNIE Speed-AppBuilder":       {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"ERNIE-Tiny-8K":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"ERNIE-Function-8K":            {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"ERNIE-Character-8K":           {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"BLOOMZ-7B":                    {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-7B-Chat":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-13B-Chat":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Llama-2-70B-Chat":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Meta-Llama-3-8B":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Meta-Llama-3-70B":             {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-BLOOMZ-7B-compressed": {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-7B":   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"ChatGLM2-6B-32K":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"AquilaChat-7B":                {MaxInputChars: 4800, MaxInputTokens: 0},
+	"XuanYuan-70B-Chat-4bit":       {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-13B":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Qianfan-Chinese-Llama-2-70B":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"ChatLaw":                      {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Yi-34B-Chat":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Mixtral-8x7B-Instruct":        {MaxInputChars: 4800, MaxInputTokens: 0},
+	"Gemma-7B-it":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"UNSPECIFIED_MODEL":            {MaxInputChars: 0, MaxInputTokens: 0},
+}
+
+var limitMapInEndpoint = map[string]inputLimitInfo{
+	"/chat/eb-instant":                   {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"/chat/ernie-lite-8k":                {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"/chat/completions":                  {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/completions_pro":              {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-4.0-8k-0329":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-4.0-8k-0104":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/completions_pro_preemptible":  {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/completions_adv_pro":          {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-4.0-8k-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/completions_preemptible":      {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-3.5-128k":               {MaxInputChars: 516096, MaxInputTokens: 126976},
+	"/chat/ernie-3.5-8k-preview":         {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie_bot_8k":                 {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-3.5-4k-0205":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"/chat/ernie-3.5-8k-0205":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-3.5-8k-1222":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+	"/chat/ernie-3.5-8k-0329":            {MaxInputChars: 8000, MaxInputTokens: 2048},
+	"/chat/ernie_speed":                  {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"/chat/ernie-speed-128k":             {MaxInputChars: 507904, MaxInputTokens: 126976},
+	"/chat/ai_apaas":                     {MaxInputChars: 11200, MaxInputTokens: 7168},
+	"/chat/ernie-tiny-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"/chat/ernie-func-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"/chat/ernie-char-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"/chat/bloomz_7b1":                   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/llama_2_7b":                   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/llama_2_13b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/llama_2_70b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/llama_3_8b":                   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/llama_3_70b":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/qianfan_bloomz_7b_compressed": {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/qianfan_chinese_llama_2_7b":   {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/chatglm2_6b_32k":              {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/aquilachat_7b":                {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/xuanyuan_70b_chat":            {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/qianfan_chinese_llama_2_13b":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/qianfan_chinese_llama_2_70b":  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/chatlaw":                      {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/yi_34b_chat":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/mixtral_8x7b_instruct":        {MaxInputChars: 4800, MaxInputTokens: 0},
+	"/chat/gemma_7b_it":                  {MaxInputChars: 4800, MaxInputTokens: 0},
+}
+
 // 创建一个 User 的消息
 func ChatCompletionUserMessage(message string) ChatCompletionMessage {
 	return ChatCompletionMessage{
@@ -203,6 +298,9 @@ func (c *ChatCompletion) do(ctx context.Context, request *ChatCompletionRequest)
 		if err != nil {
 			return nil, err
 		}
+
+		c.processWithInputLimit(ctx, request, url)
+
 		req, err := newModelRequest("POST", url, request)
 		if err != nil {
 			return nil, err
@@ -251,6 +349,9 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 		if err != nil {
 			return nil, err
 		}
+
+		c.processWithInputLimit(ctx, request, url)
+
 		request.SetStream()
 		req, err := newModelRequest("POST", url, request)
 		if err != nil {
@@ -277,6 +378,50 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 	return resp, err
 }
 
+func (c *ChatCompletion) processWithInputLimit(ctx context.Context, request *ChatCompletionRequest, url string) {
+	if len(request.Messages) == 0 {
+		return
+	}
+
+	url = url[len(modelAPIPrefix):]
+	limit, ok := limitMapInEndpoint[url]
+	if !ok {
+		limit, ok = limitMapInModelName[c.Model]
+		if !ok {
+			limit = limitMapInModelName["UNSPECIFIED_MODEL"]
+		}
+	}
+
+	if limit.MaxInputTokens == 0 && limit.MaxInputChars == 0 {
+		return
+	}
+
+	messages := request.Messages
+	totalMessageChars := 0
+	totalMessageTokens := 0
+
+	tokenizer := NewTokenizer()
+	additionalArguments := make(map[string]interface{})
+
+	truncatedIndex := len(messages) - 1
+
+	for truncatedIndex > 0 {
+		tokens, _ := tokenizer.CountTokens(messages[truncatedIndex].Content, TokenizerModeLocal, "", additionalArguments)
+
+		totalMessageChars += utf8.RuneCountInString(messages[truncatedIndex].Content)
+		totalMessageTokens += tokens
+
+		if (limit.MaxInputTokens > 0 && totalMessageTokens > limit.MaxInputTokens) ||
+			(limit.MaxInputChars > 0 && totalMessageChars > limit.MaxInputChars) {
+			break
+		}
+
+		truncatedIndex--
+	}
+
+	request.Messages = request.Messages[truncatedIndex:]
+}
+
 // chat 支持的模型列表
 func (c *ChatCompletion) ModelList() []string {
 	i := 0
@@ -291,16 +436,20 @@ func (c *ChatCompletion) ModelList() []string {
 
 // 创建一个 ChatCompletion 对象
 //
-//	chat := qianfan.NewChatCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
+// chat := qianfan.NewChatCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
 //
-//	// 可以通过 WithModel 指定模型
-//	chat := qianfan.NewChatCompletion(
-//	    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
-//	)
-//	// 或者通过 WithEndpoint 指定 endpoint
-//	chat := qianfan.NewChatCompletion(
-//	    qianfan.WithEndpoint("your_custom_endpoint"),
-//	)
+// 可以通过 WithModel 指定模型
+// chat := qianfan.NewChatCompletion(
+//
+//	qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
+//
+// )
+// 或者通过 WithEndpoint 指定 endpoint
+// chat := qianfan.NewChatCompletion(
+//
+//	qianfan.WithEndpoint("your_custom_endpoint"),
+//
+// )
 func NewChatCompletion(optionList ...Option) *ChatCompletion {
 	options := makeOptions(optionList...)
 	return newChatCompletion(options)

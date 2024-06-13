@@ -96,6 +96,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         stream sync request
         """
+        request = self._preprocess_request(request)
         responses = self._client.request_stream(request)
 
         _, resp = next(responses)
@@ -188,6 +189,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async stream request
         """
+        request = await self._async_preprocess_request(request)
         responses = self._client.arequest_stream(request)
 
         _, resp = await responses.__anext__()
@@ -357,6 +359,12 @@ class QfAPIRequestor(BaseAPIRequestor):
 
             return resp
 
+    def _preprocess_request(self, request: QfRequest) -> QfRequest:
+        return self._add_access_token(request)
+
+    async def _async_preprocess_request(self, request: QfRequest) -> QfRequest:
+        return await self._async_add_access_token(request)
+
     async def _async_compensate_token_usage_stream(
         self, resp: AsyncIterator[QfResponse], token_count: int
     ) -> AsyncIterator[QfResponse]:
@@ -398,7 +406,6 @@ class QfAPIRequestor(BaseAPIRequestor):
                 body=body,
                 retry_config=retry_config,
             )
-            req = self._add_access_token(req)
 
             token_count = self._get_token_count_from_body(body)
             self._token_limiter.decline(token_count)
@@ -410,7 +417,11 @@ class QfAPIRequestor(BaseAPIRequestor):
                 )
             else:
                 return self._compensate_token_usage_non_stream(
-                    self._request(req, data_postprocess=data_postprocess), token_count
+                    self._request(
+                        req,
+                        data_postprocess=data_postprocess,
+                    ),
+                    token_count,
                 )
 
         return self._with_retry(retry_config, _helper)
@@ -439,7 +450,6 @@ class QfAPIRequestor(BaseAPIRequestor):
                 body=body,
                 retry_config=retry_config,
             )
-            req = await self._async_add_access_token(req)
 
             token_count = self._get_token_count_from_body(body)
             await self._async_token_limiter.decline(token_count)

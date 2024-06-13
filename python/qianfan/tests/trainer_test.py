@@ -119,6 +119,9 @@ def test_service_deploy_action():
 
 
 def test_trainer_sft_run():
+    from qianfan.utils.logging import TRACE_LEVEL, enable_log
+
+    enable_log(TRACE_LEVEL)
     train_config = TrainConfig(
         epoch=1,
         learning_rate=0.00002,
@@ -576,7 +579,7 @@ def test_trainer_dataset_config():
     sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
     qf_ds_conf = DatasetConfig(
         datasets=[sft_ds],
-        eval_split_ratio=20,
+        eval_split_ratio=0,
         corpus_proportion=0.03,
         sampling_rate=0.01,
     )

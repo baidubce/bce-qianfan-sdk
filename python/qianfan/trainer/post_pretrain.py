@@ -101,6 +101,7 @@ class PostPreTrain(Trainer):
 
         actions: List[BaseAction] = []
         # 初始化load action
+        assert dataset is not None
         self.load_data_action = LoadDataSetAction(
             dataset,
             console_consts.DataTemplateType.GenericText,

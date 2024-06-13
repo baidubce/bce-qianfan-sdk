@@ -14,17 +14,34 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.constant;
+package com.baidubce.qianfan.model.plugin;
 
-public class ModelType {
-    public static final String CHAT = "chat";
-    public static final String COMPLETIONS = "completions";
-    public static final String EMBEDDINGS = "embeddings";
-    public static final String TEXT_2_IMAGE = "text2image";
-    public static final String IMAGE_2_TEXT = "image2text";
-    public static final String RERANKER = "reranker";
-    public static final String PLUGIN = "plugin";
+public class PluginHistory {
+    /**
+     * 角色，可选 "user", "assistant"
+     */
+    private String role;
 
-    private ModelType() {
+    /**
+     * 对话内容
+     */
+    private String content;
+
+    public String getRole() {
+        return role;
+    }
+
+    public PluginHistory setRole(String role) {
+        this.role = role;
+        return this;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public PluginHistory setContent(String content) {
+        this.content = content;
+        return this;
     }
 }

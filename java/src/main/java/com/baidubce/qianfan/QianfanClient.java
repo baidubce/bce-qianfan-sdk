@@ -25,6 +25,8 @@ import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
+import com.baidubce.qianfan.model.plugin.PluginMetaInfo;
+import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.StringUtils;
 import com.baidubce.qianfan.util.function.ThrowingFunction;
@@ -163,6 +165,8 @@ class QianfanClient {
         private final Iterator<String> sseIterator;
         private final Class<T> responseClass;
 
+        private PluginMetaInfo metaInfo;
+
         public StreamIterator(Map<String, String> headers, Iterator<String> sseIterator, Class<T> responseClass) {
             this.headers = headers;
             this.sseIterator = sseIterator;
@@ -181,6 +185,15 @@ class QianfanClient {
             // Skip sse empty line
             sseIterator.next();
             T response = Json.deserialize(event, responseClass);
+
+            // Set meta info for PluginResponse
+            if (responseClass.equals(PluginResponse.class)) {
+                if (metaInfo == null) {
+                    metaInfo = Json.deserialize(event, PluginMetaInfo.class);
+                }
+                ((PluginResponse) response).setMetaInfo(metaInfo);
+            }
+
             return (T) response.setHeaders(headers);
         }
     }

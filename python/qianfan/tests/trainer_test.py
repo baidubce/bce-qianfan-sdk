@@ -206,7 +206,12 @@ def test_trainer_sft_with_deploy():
 
 def test_model_deploy():
     svc = Model(id="1", version_id="1").deploy(
-        DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
+        DeployConfig(
+            endpoint_suffix="xxx",
+            replicas=1,
+            pool_type=2,
+            service_type=ServiceType.Chat,
+        )
     )
 
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})

@@ -62,3 +62,32 @@ em = EvaluationManager(
 )
 result = em.eval([m], ds)
 ```
+
+## 基于`Model`进行部署
+
+千帆SDK支持了代码层面将模型的部署成服务的能力，开发者在训练后或是希望使用预置模型自行发布的服务的时候可以使用`Model.deploy()`完成，以下是一个使用预付费发布指定`model_version_id`模型服务的例子：
+
+```python
+from qianfan import ChatCompletion
+from qianfan.model import Model, Service
+from qianfan.model.consts import ServiceType
+from qianfan.resources.console.consts import DeployPoolType
+
+m = Model(version_id="amv-xxx")
+#m.auto_complete_info() to fix if model id not found
+sft_svc: Service = m.deploy(DeployConfig(
+    name="your_service_name",
+    endpoint_suffix="your_sdk_suffix",
+    replicas=1, # 副本数， 与qps强绑定
+    pool_type=DeployPoolType.PrivateResource, # 私有资源池
+    service_type=ServiceType.Chat,
+    hours=1, # 预付费购买的时长
+))
+
+### 使用Service调用部署好的模型服务
+problem="your problem"
+#获取服务对象，即ChatCompletion等类型的对象
+chat_comp: ChatCompletion = sft_svc.get_res()
+sft_chat_resp = chat_comp.do(messages=[{"content": problem, "role": "user"}])
+sft_chat_resp["result"]
+```

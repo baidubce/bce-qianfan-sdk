@@ -90,11 +90,11 @@ txt格式示例
     Latency Max: 6.59
     Latency 50%: 5.0
     Latency 80%: 6.6
-    FirstSentenceLatency Avg: 1.14
-    FirstSentenceLatency Min: 1.12
-    FirstSentenceLatency Max: 1.18
-    FirstSentenceLatency 50%: 1.12
-    FirstSentenceLatency 80%: 1.2
+    FirstTokenLatency Avg: 1.14
+    FirstTokenLatency Min: 1.12
+    FirstTokenLatency Max: 1.18
+    FirstTokenLatency 50%: 1.12
+    FirstTokenLatency 80%: 1.2
     InputTokens Avg: 3.0
     OutputTokens Avg: 61.0
     SuccessRate: 100.0%
@@ -103,7 +103,7 @@ txt格式示例
 
 - **QPS**：服务每秒实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
-- **FirstSentenceLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
+- **FirstTokenLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
 - **SuccessRate**：请求成功率；

@@ -53,7 +53,7 @@ os.environ["QIANFAN_SECRET_KEY"] = "YOUR_SECRET_KEY"
 
 lm = QianfanAICompletion()
 
-print(lm + gen("委内瑞拉的首都是"))
+print(lm + "委内瑞拉的首都是" + gen())
 ```
 
 # 初始化参数与超参的传递

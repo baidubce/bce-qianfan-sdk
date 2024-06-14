@@ -17,8 +17,22 @@ from diskcache import Cache
 
 from qianfan.config import get_config
 from qianfan.utils.helper import Singleton
+from qianfan.utils.logging import log_info
 
 
 class KvCache(Cache, metaclass=Singleton):
     def __init__(self, **kwargs: Any) -> None:
+        if get_config().DISABLE_CACHE:
+            log_info("cache is disabled, reset `QIANFAN_DISABLE_CACHE` if needed")
+            return
         super().__init__(directory=get_config().CACHE_DIR, **kwargs)
+
+    def get(self, **kwargs: Any) -> Any:
+        if get_config().DISABLE_CACHE:
+            return None
+        return super().get(**kwargs)
+
+    def set(self, **kwargs: Any) -> Any:
+        if get_config().DISABLE_CACHE:
+            return None
+        return super().set(**kwargs)

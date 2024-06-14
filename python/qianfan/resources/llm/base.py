@@ -294,9 +294,8 @@ class BaseResource(object):
         global _model_infos_access_lock
         if _last_update_time.timestamp() == 0:
             # 首次加载本地缓存
-
             cache = KvCache()
-            value = cache.get(Consts.QianfanLLMModelsListCacheKey)
+            value = cache.get(key=Consts.QianfanLLMModelsListCacheKey)
             if value is not None:
                 try:
                     with _model_infos_access_lock:
@@ -1027,8 +1026,8 @@ def get_latest_supported_models(
             _last_update_time = datetime.now(timezone.utc)
         cache = KvCache()
         cache.set(
-            Consts.QianfanLLMModelsListCacheKey,
-            BaseResource.format_model_infos_cache(
+            key=Consts.QianfanLLMModelsListCacheKey,
+            value=BaseResource.format_model_infos_cache(
                 _runtime_models_info, _last_update_time
             ),
         )

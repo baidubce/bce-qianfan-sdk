@@ -1145,3 +1145,195 @@ class Model(object):
                 },
             )
             return req
+
+        @classmethod
+        @console_api_request
+        def create_model_comp_task(
+            cls,
+            name: str,
+            source_model_id: str,
+            config: Dict[str, Any],
+            model_set_id: str,
+            description: Optional[str] = None,
+        ) -> QfRequest:
+            """
+            create a model compression task
+
+            Parameters:
+            name: str,
+                compression task name
+            source_model_id: str,
+                source_model version id, e.g. amv-xxxx
+            config: dict,
+                configuration for compressing
+            model_set_id: str,
+                target model set id, e.g. am-xxx
+            description: str, optional
+                description about the compression task
+
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ModelCreateModelCompTaskAction),
+                json_body={
+                    "name": name,
+                    "sourceModelId": source_model_id,
+                    "modelSetId": model_set_id,
+                    "config": config,
+                },
+            )
+            if description is not None:
+                req.json_body["description"] = description
+            return req
+
+        @classmethod
+        @console_api_request
+        def describe_model_comp_tasks(
+            cls,
+            marker: Optional[str] = None,
+            max_keys: Optional[int] = None,
+            page_reverse: Optional[bool] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            get model compression tasks list.
+
+            Parameters:
+            job: str
+                job_id of tasks.
+            marker: Optional[str] = None,
+                job_id, the marker of the first page.
+            max_keys: Optional[int] = None,
+                max keys of the page.
+            page_reverse: Optional[bool] = None,
+                page reverse or not.
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ModelDescribeModelCompTasksAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "maker": marker,
+                    "maxKeys": max_keys,
+                    "pageReverse": page_reverse,
+                }.items()
+                if v is not None
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def describe_model_comp_task(
+            cls,
+            model_comp_task_id: str,
+        ) -> QfRequest:
+            """
+            get model compression tasks list.
+
+            Parameters:
+            model_comp_task_id: str,
+                compression task id
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ModelDescribeModelCompTaskAction),
+                json_body={
+                    "modelCompTaskId": model_comp_task_id,
+                },
+            )
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def cancel_model_comp_task(
+            cls,
+            model_comp_task_id: str,
+        ) -> QfRequest:
+            """
+            cancel a model compression task.
+
+            Parameters:
+            model_comp_task_id: str,
+                compression task id
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ModelCancelModelCompTaskAction),
+                json_body={
+                    "modelCompTaskId": model_comp_task_id,
+                },
+            )
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def delete_model_comp_task(
+            cls,
+            model_comp_task_id: str,
+        ) -> QfRequest:
+            """
+            delete a model compression task.
+
+            Parameters:
+            model_comp_task_id: str,
+                compression task id
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ModelDeleteModelCompTaskAction),
+                json_body={
+                    "modelCompTaskId": model_comp_task_id,
+                },
+            )
+
+            return req

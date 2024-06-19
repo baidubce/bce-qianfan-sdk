@@ -73,8 +73,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "disable_search",
                     "enable_citation",
                     "enable_trace",
-                    "max_output_tokens"
-                    "response_format"
+                    "max_output_tokens",
+                    "response_format",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -97,8 +97,8 @@ class _ChatCompletionV1(BaseResourceV1):
                     "disable_search",
                     "enable_citation",
                     "enable_trace",
-                    "max_output_tokens"
-                    "response_format"
+                    "max_output_tokens",
+                    "response_format",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,
@@ -121,10 +121,10 @@ class _ChatCompletionV1(BaseResourceV1):
                     "disable_search",
                     "enable_citation",
                     "enable_trace",
-                    "max_output_tokens"
+                    "max_output_tokens",
                     "response_format",
                     "functions",
-                    "tool_choice"
+                    "tool_choice",
                 },
                 max_input_chars=20000,
                 max_input_tokens=5120,

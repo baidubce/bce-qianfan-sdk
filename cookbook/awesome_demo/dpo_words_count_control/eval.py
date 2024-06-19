@@ -3,11 +3,9 @@ from qianfan.common import Prompt
 from qianfan import Completion
 import re
 from qianfan.dataset import Dataset
-#eval("amv-dc5ktcrd54ts",ds)
 
-def eval(version_id, ds):
-    result_ds = ds.test_using_llm(model_version_id=version_id)
-    
+def eval(version_id, ds_id):
+    result_ds = Dataset.test_using_llm(model_version_id=ds_id)
     res = []
     for i in result_ds:
         
@@ -17,9 +15,6 @@ def eval(version_id, ds):
             raise ValueError("输入中未找到字数限制")
         
         limit = int(char_limit_match.group(1))
-
-
-        
         fact = len(i['llm_output'])
 
         # 计算比例

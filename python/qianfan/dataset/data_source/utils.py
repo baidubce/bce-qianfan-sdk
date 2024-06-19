@@ -218,7 +218,7 @@ def _read_all_file_content_in_an_folder(
     path: str, format_type: FormatType, **kwargs: Any
 ) -> pyarrow.Table:
     """从文件夹里读取所有指定类型的的文件"""
-    og_table: Optional[pyarrow.Table] = None
+    og_table_list: List[pyarrow.Table] = []
 
     # 如果是文件夹，则遍历读取
     for root, dirs, files in os.walk(path):
@@ -227,12 +227,10 @@ def _read_all_file_content_in_an_folder(
                 continue
             file_path = os.path.join(root, file_name)
 
-            table = _get_a_memory_mapped_pyarrow_table(file_path, format_type, **kwargs)
-            if og_table is None:
-                og_table = table
-            else:
-                og_table = pyarrow.concat_tables([og_table, table])
+            table = _get_a_pyarrow_table(file_path, format_type, **kwargs)
+            og_table_list.append(table)
 
+    og_table = pyarrow.concat_tables(og_table_list)
     assert isinstance(og_table, pyarrow.Table)
     og_table.combine_chunks()
     return og_table
@@ -268,17 +266,26 @@ def _get_reader_class(format_type: FormatType) -> Type[BaseReader]:
         raise ValueError(err_msg)
 
 
-def _get_a_memory_mapped_pyarrow_table(
+def _has_cache_been_disabled(**kwargs: Any) -> bool:
+    return kwargs.get("disable_cache", False) or get_config().DISABLE_CACHE
+
+
+def _get_a_pyarrow_table(
     path: str, format_type: FormatType, **kwargs: Any
 ) -> pyarrow.Table:
     reader = _get_reader_class(format_type)(file_path=path, **kwargs)
+
+    if _has_cache_been_disabled(**kwargs):
+        log_info("has got a non-memory-mapped table")
+        return _read_table_and_concat(reader)
+
     cache_file_path = _get_cache_file_path_and_check_cache_validity(path, reader)
     table = _read_mmap_table_from_arrow_file(cache_file_path)
     log_info("has got a memory-mapped table")
     return table
 
 
-def _create_map_arrow_file(
+def _create_mapped_arrow_table(
     path: str,
     mapper_closure: Callable,
     batch_size: int,
@@ -290,6 +297,9 @@ def _create_map_arrow_file(
     reader = MapperReader(
         mapper_closure=task_dispatcher.mapper_closure(mapper_closure), **kwargs
     )
+
+    if _has_cache_been_disabled(**kwargs):
+        return _read_table_and_concat(reader)
 
     tmp_folder_path, file_name = _construct_buffer_folder_path_and_file_name(
         _merge_custom_path(QianfanMapperCacheDir), path
@@ -455,6 +465,15 @@ def _calculate_file_hash(file_path: str, hash_algorithm: str = "md5") -> str:
 
     # 返回计算得到的哈希值
     return hasher.hexdigest()
+
+
+def _read_table_and_concat(reader: BaseReader) -> pyarrow.Table:
+    returned_table_list: List[pyarrow.Table] = []
+
+    for table in _build_table_from_reader(reader):
+        returned_table_list.append(table)
+
+    return pyarrow.concat_tables(returned_table_list)
 
 
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:

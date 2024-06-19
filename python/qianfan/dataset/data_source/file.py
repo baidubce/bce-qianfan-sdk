@@ -26,7 +26,7 @@ from qianfan.config import encoding
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
     _collect_all_images_and_annotations_in_one_folder,
-    _get_a_memory_mapped_pyarrow_table,
+    _get_a_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
     _read_all_image_from_zip,
@@ -240,9 +240,7 @@ class FileDataSource(DataSource, BaseModel):
 
         # 如果是单个文件，直接读取
         if not os.path.isdir(self.path):
-            return _get_a_memory_mapped_pyarrow_table(
-                self.path, self.file_format, **kwargs
-            )
+            return _get_a_pyarrow_table(self.path, self.file_format, **kwargs)
 
         # 如果是个压缩包，则需要先解压再读取
         if zipfile.is_zipfile(self.path):

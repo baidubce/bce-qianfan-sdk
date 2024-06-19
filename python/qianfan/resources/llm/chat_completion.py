@@ -57,6 +57,80 @@ class _ChatCompletionV1(BaseResourceV1):
 
         """
         info_list = {
+            "ERNIE-4.0-8K-Latest": QfLLMInfo(
+                endpoint="/chat/ernie-4.0-8k-latest",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                    "stop",
+                    "enable_system_memory",
+                    "system_memory_id",
+                    "disable_search",
+                    "enable_citation",
+                    "enable_trace",
+                    "max_output_tokens"
+                    "response_format"
+                },
+                max_input_chars=20000,
+                max_input_tokens=5120,
+                input_price_per_1k_tokens=0.12,
+                output_price_per_1k_tokens=0.12,
+            ),
+            "ERNIE-4.0-8K-0613": QfLLMInfo(
+                endpoint="/chat/ernie-4.0-8k-0613",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                    "stop",
+                    "enable_system_memory",
+                    "system_memory_id",
+                    "disable_search",
+                    "enable_citation",
+                    "enable_trace",
+                    "max_output_tokens"
+                    "response_format"
+                },
+                max_input_chars=20000,
+                max_input_tokens=5120,
+                input_price_per_1k_tokens=0.12,
+                output_price_per_1k_tokens=0.12,
+            ),
+            "ERNIE-3.5-8K-0613": QfLLMInfo(
+                endpoint="/chat/ernie-3.5-8k-0613",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                    "stop",
+                    "enable_system_memory",
+                    "system_memory_id",
+                    "disable_search",
+                    "enable_citation",
+                    "enable_trace",
+                    "max_output_tokens"
+                    "response_format",
+                    "functions",
+                    "tool_choice"
+                },
+                max_input_chars=20000,
+                max_input_tokens=5120,
+                input_price_per_1k_tokens=0.012,
+                output_price_per_1k_tokens=0.012,
+            ),
             "ERNIE-Lite-8K-0922": QfLLMInfo(
                 endpoint="/chat/eb-instant",
                 required_keys={"messages"},

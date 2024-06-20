@@ -33,7 +33,7 @@ from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
     _collect_all_images_and_annotations_in_one_folder,
-    _get_a_memory_mapped_pyarrow_table,
+    _get_a_pyarrow_table,
     _read_all_file_from_zip,
     _read_all_image_from_zip,
     zip_file_or_folder,
@@ -281,9 +281,7 @@ class BosDataSource(DataSource, BaseModel):
                 cache_content_path, self.format_type(), **kwargs
             )
 
-        return _get_a_memory_mapped_pyarrow_table(
-            cache_content_path, self.format_type(), **kwargs
-        )
+        return _get_a_pyarrow_table(cache_content_path, self.format_type(), **kwargs)
 
     def fetch(self, read_from_zip: bool = False, **kwargs: Any) -> pyarrow.Table:
         """

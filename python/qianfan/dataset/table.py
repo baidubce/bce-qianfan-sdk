@@ -378,9 +378,9 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
 
                     yield returned_data
 
-        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+        from qianfan.dataset.data_source.utils import _create_mapped_arrow_table
 
-        return _create_map_arrow_file(
+        return _create_mapped_arrow_table(
             path=path,
             **kwargs,
             mapper_closure=_mapper_closure,
@@ -920,9 +920,9 @@ class Table(Addable, Listable, Processable):
                     # 如果是最后一组，则不合并，抛出
                     yield group_data
 
-        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+        from qianfan.dataset.data_source.utils import _create_mapped_arrow_table
 
-        self.inner_table = _create_map_arrow_file(
+        self.inner_table = _create_mapped_arrow_table(
             path=path,
             **kwargs,
             mapper_closure=_pack_closure,
@@ -982,9 +982,9 @@ class Table(Addable, Listable, Processable):
                 for data in returned_data:
                     yield data
 
-        from qianfan.dataset.data_source.utils import _create_map_arrow_file
+        from qianfan.dataset.data_source.utils import _create_mapped_arrow_table
 
-        self.inner_table = _create_map_arrow_file(
+        self.inner_table = _create_mapped_arrow_table(
             path=path,
             **kwargs,
             mapper_closure=_unpack_closure,

@@ -38,7 +38,7 @@ from qianfan.dataset.data_source.utils import (
     _create_release_data_task_and_wait_for_success,
     _datetime_parse_hook,
     _download_file_from_url_streamly,
-    _get_a_memory_mapped_pyarrow_table,
+    _get_a_pyarrow_table,
     _get_data_format_from_template_type,
     _get_latest_export_record,
     _get_qianfan_dataset_type_tuple,
@@ -386,7 +386,7 @@ class QianfanDataSource(DataSource, BaseModel):
             return _read_all_image_in_an_folder(content_path)
 
         if os.path.isfile(content_path):
-            return _get_a_memory_mapped_pyarrow_table(content_path, self.format_type())
+            return _get_a_pyarrow_table(content_path, self.format_type())
 
         else:
             return _read_all_file_content_in_an_folder(content_path, self.format_type())

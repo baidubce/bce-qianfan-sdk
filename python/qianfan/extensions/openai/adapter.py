@@ -456,7 +456,9 @@ class OpenAIApdater(object):
                     "delta": {"content": res["result"]},
                     "logprobs": None,
                     "finish_reason": (
-                        None if not res["is_end"] else res["finish_reason"]
+                        None
+                        if not res["is_end"]
+                        else res.get("finish_reason", "normal")
                     ),
                 }
             ]

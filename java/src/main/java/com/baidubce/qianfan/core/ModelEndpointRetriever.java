@@ -74,6 +74,9 @@ public class ModelEndpointRetriever {
             dynamicTypeModelEndpointMap.put(type, new HashMap<>());
         }
 
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-latest", "ernie-4.0-8k-latest");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-0613", "ernie-4.0-8k-0613");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0613", "ernie-3.5-8k-0613");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preemptible", "completions_pro_preemptible");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview", "ernie-4.0-8k-preview");

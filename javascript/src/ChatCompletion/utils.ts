@@ -18,6 +18,9 @@ import {QfLLMInfoMap} from '../interface';
  * 对话请求公共服务模型列表
  */
 export type ChatModel =
+    | 'ERNIE-4.0-8K-Latest'
+    | 'ERNIE-4.0-8K-0613'
+    | 'ERNIE-3.5-8K-0613'
     | 'ERNIE-4.0-8K'
     | 'ERNIE-3.5-8K'
     | 'ERNIE-3.5-8K-0205'
@@ -51,6 +54,68 @@ export type ChatModel =
     | 'Yi-34B-Chat'
 
 export const modelInfoMap: QfLLMInfoMap = {
+    "ERNIE-4.0-8K-Latest": {
+        endpoint: "/chat/ernie-4.0-8k-latest",
+        required_keys: ["messages"],
+        optional_keys: [
+            "stream",
+            "temperature",
+            "top_p",
+            "penalty_score",
+            "user_id",
+            "system",
+            "stop",
+            "enable_system_memory",
+            "system_memory_id",
+            "disable_search",
+            "enable_citation",
+            "enable_trace",
+            "max_output_tokens",
+            "response_format",
+        ],
+    },
+    "ERNIE-4.0-8K-0613": {
+        endpoint: "/chat/ernie-4.0-8k-0613",
+        required_keys: ["messages"],
+        optional_keys: [
+            "stream",
+            "temperature",
+            "top_p",
+            "penalty_score",
+            "user_id",
+            "system",
+            "stop",
+            "enable_system_memory",
+            "system_memory_id",
+            "disable_search",
+            "enable_citation",
+            "enable_trace",
+            "max_output_tokens",
+            "response_format",
+        ],
+    },
+    "ERNIE-3.5-8K-0613": {
+        endpoint: "/chat/ernie-3.5-8k-0613",
+        required_keys: ["messages"],
+        optional_keys: [
+            "stream",
+            "temperature",
+            "top_p",
+            "penalty_score",
+            "user_id",
+            "system",
+            "stop",
+            "enable_system_memory",
+            "system_memory_id",
+            "disable_search",
+            "enable_citation",
+            "enable_trace",
+            "max_output_tokens",
+            "response_format",
+            "functions",
+            "tool_choice",
+        ],
+    },
     'ERNIE-4.0-8K': {
         endpoint: '/chat/completions_pro',
         required_keys: ['messages'],

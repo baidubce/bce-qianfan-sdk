@@ -83,6 +83,9 @@ type ChatCompletionRequest struct {
 
 // 内置 chat 模型的 endpoint
 var ChatModelEndpoint = map[string]string{
+    "ERNIE-4.0-8K-Latest":          "/chat/ernie-4.0-8k-latest",
+    "ERNIE-4.0-8K-0613":            "/chat/ernie-4.0-8k-0613",
+    "ERNIE-3.5-8K-0613":            "/chat/ernie-3.5-8k-0613",
 	"ERNIE-Bot-turbo":              "/chat/eb-instant",
 	"ERNIE-Lite-8K-0922":           "/chat/eb-instant",
 	"ERNIE-Lite-8K":                "/chat/ernie-lite-8k",
@@ -139,6 +142,9 @@ type inputLimitInfo struct {
 
 // 定义包含所需信息的 map
 var limitMapInModelName = map[string]inputLimitInfo{
+    "ERNIE-4.0-8K-Latest":          {MaxInputChars: 20000, MaxInputTokens: 5120},
+    "ERNIE-4.0-8K-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+    "ERNIE-3.5-8K-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"ERNIE-Lite-8K-0922":           {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"ERNIE-Lite-8K":                {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"ERNIE-Lite-8K-0308":           {MaxInputChars: 11200, MaxInputTokens: 7168},
@@ -184,6 +190,9 @@ var limitMapInModelName = map[string]inputLimitInfo{
 }
 
 var limitMapInEndpoint = map[string]inputLimitInfo{
+    "/chat/ernie-4.0-8k-latest":          {MaxInputChars: 20000, MaxInputTokens: 5120},
+    "/chat/ernie-4.0-8k-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
+    "/chat/ernie-3.5-8k-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
 	"/chat/eb-instant":                   {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"/chat/ernie-lite-8k":                {MaxInputChars: 11200, MaxInputTokens: 7168},
 	"/chat/completions":                  {MaxInputChars: 20000, MaxInputTokens: 5120},

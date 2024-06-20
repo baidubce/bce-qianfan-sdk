@@ -20,6 +20,9 @@ const typeModelEndpointMap: ModelEndpointMap = new Map();
 
 // 定义 "CHAT" 类型的模型及其 endpoints
 const chatModelEndpoints = new Map<string, string>([
+    ['ernie-4.0-8k-latest', 'ernie-4.0-8k-latest'],
+    ['ernie-4.0-8k-0613', 'ernie-4.0-8k-0613'],
+    ['ernie-3.5-8k-0613', 'ernie-3.5-8k-0613'],
     ['ernie-4.0-8k', 'completions_pro'],
     ['ernie-4.0-8k-preemptible', 'completions_pro_preemptible'],
     ['ernie-4.0-8k-preview', 'ernie-4.0-8k-preview'],

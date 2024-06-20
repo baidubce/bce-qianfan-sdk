@@ -361,3 +361,31 @@ class FinetuneCorpusType(int, Enum):
     """一言通用混合训练语料"""
     YiyanVertical: int = 3
     """一言垂直领域混合训练语料"""
+
+
+class ModelCompStrategy(str, Enum):
+    Quantization: str = "Quantization"
+    """量化压缩"""
+    Sparsity: str = "Sparsity"
+    """稀疏化压缩"""
+
+
+class ModelQuantizationWeight(str, Enum):
+    INT8PTQ: str = "INT8-PTQ"
+    W8A16C16: str = "W8A16C16"
+    W4A16C16: str = "W4A16C16"
+
+
+class ModelCompTaskStatus(str, Enum):
+    Creating: str = "creating"
+    """创建中"""
+    Running: str = "running"
+    """运行中"""
+    Succeeded: str = "succeeded"
+    """已完成"""
+    Failed: str = "failed"
+    """已失败"""
+    Stopping: str = "stopping"
+    """终止中"""
+    Stopped: str = "stopped"
+    """已终止"""

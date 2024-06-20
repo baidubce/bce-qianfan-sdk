@@ -344,6 +344,88 @@ class Model(
 
         return dataset.test_using_llm(self.version_id, **kwargs)
 
+    def compress(
+        self,
+        strategy: Union[console_const.ModelCompStrategy, str],
+        weight: Optional[Union[console_const.ModelQuantizationWeight, str]] = None,
+    ) -> "Model":
+        """
+        try compress model and return a new 'Model' or raise an exception
+
+        Parameters:
+            strategy Union[ModelCompStrategy, str]:
+                a compression strategy, please refer to ModelCompStrategy
+            weight Optional[Union[ModelQuantizationWeight, str]] = None:
+                a weight of quantization, only supported when strategy is
+                ModelCompStrategy.Quantization
+
+        Returns:
+            Model: new compressed model
+
+        """
+        self.auto_complete_info()
+        assert self.version_id is not None
+        assert self.id is not None
+        model_detail_resp = ResourceModel.V2.describe_model(model_id=self.version_id)
+        if not model_detail_resp["result"].get("isSupportModelComp"):
+            log_error(f"model {self.version_id} is not supported to compress")
+            raise InvalidArgumentError(
+                f"model {self.version_id} is not supported to compress"
+            )
+        strategy = console_const.ModelCompStrategy(strategy)
+        config = {"strategy": strategy.value}
+        if strategy == console_const.ModelCompStrategy.Quantization:
+            if weight is None:
+                log_error("weight parameter required when quantization compression.")
+                raise InvalidArgumentError(
+                    "weight parameter required when quantization compression."
+                )
+            else:
+                config["weight"] = console_const.ModelQuantizationWeight(weight).value
+        model_comp_task_resp = ResourceModel.V2.create_model_comp_task(
+            name=f"mco_{generate_letter_num_random_id(12)}",
+            source_model_id=self.version_id,
+            config=config,
+            model_set_id=self.id,
+            description=f"mcomp_{self.version_id}_{strategy.value}_{weight}",
+        )
+        model_comp_task_id = model_comp_task_resp["result"]
+        log_info(f"started compressing task: {model_comp_task_id}")
+        while True:
+            time.sleep(15)
+            comp_task_detail_resp = ResourceModel.V2.describe_model_comp_task(
+                model_comp_task_id
+            )
+            if comp_task_detail_resp["result"]["status"] in [
+                console_const.ModelCompTaskStatus.Running.value,
+                console_const.ModelCompTaskStatus.Creating.value,
+            ]:
+                log_info(f"model compress running with task: {model_comp_task_id}")
+            elif (
+                comp_task_detail_resp["result"]["status"]
+                == console_const.ModelCompTaskStatus.Succeeded.value
+            ):
+                new_model_version_id = comp_task_detail_resp["result"].get("modelId")
+                log_info(
+                    f"compress task {model_comp_task_id} run with status"
+                    f" {comp_task_detail_resp['result']['status']}"
+                    f" new model_version_id: {new_model_version_id}"
+                )
+                new_model = Model(version_id=new_model_version_id)
+                new_model.auto_complete_info()
+                return new_model
+            else:
+                log_error(
+                    f"compress task {model_comp_task_id} run with status"
+                    f" {comp_task_detail_resp['result']['status']}, please check it"
+                    " manually"
+                )
+                raise InternalError(
+                    f"compress task {model_comp_task_id} run with status"
+                    f" {comp_task_detail_resp['result']['status']}, failed reason:"
+                    f" {comp_task_detail_resp['result'].get('failedReason')}"
+                )
+
 
 class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]):
     id: Optional[str]

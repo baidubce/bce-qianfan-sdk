@@ -75,7 +75,6 @@ def gen_brief(report_dir: str) -> None:
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
         + "SuccessRate: %s%%" % round(rate, 2)
-        # +模型信息，参数，blabla
     )
     logger.info(text)
 

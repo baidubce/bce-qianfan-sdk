@@ -3,6 +3,20 @@
 千帆 Python SDK 提供了基于locust工具的对大模型服务进行快速压测以及性能评估的功能。
 该功能入口在Dataset对象的stress_test方法中。
 
+> 当前无法使用notebook进行stress_test调用
+
+## 安装准备
+
+压测需要使用以下方式进行依赖安装：
+```bash
+pip install 'qianfan[dataset_base]'
+```
+
+> 对于mac用户可能碰到的以下问题，请在运行的终端中运行以下命令可临时解决：`export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
+
+<img width="982" alt="751ac7d37657b4ea97c1a7d260746135" src="https://github.com/baidubce/bce-qianfan-sdk/assets/5894042/28979f39-e7b1-42d5-8ebd-66ee95ec73f4">
+
+
 ## 目录
 
 - [启动压测](#启动压测)

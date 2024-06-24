@@ -179,7 +179,16 @@ class VersionBase(object):
         """
         return self._real.access_token()
 
-    def models(self) -> Set[str]:
+    @utils.class_or_instancemethod  # type: ignore
+    def models(
+        self_or_cls, version: Optional[Literal["1", "2", 1, 2]] = None
+    ) -> Set[str]:
+        if version is not None:
+            return self_or_cls._real_base(str(version)).models()
+        if isinstance(self_or_cls, type):
+            cls = self_or_cls
+            return cls._real_base(version="1").models()
+        self = self_or_cls
         return self._real.models()
 
     def get_model_info(self, model: str) -> QfLLMInfo:

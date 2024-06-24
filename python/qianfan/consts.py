@@ -310,7 +310,7 @@ class Consts:
 
     PrivateResourceAPI: str = "/v2/charge"
     PrivateResourcePurchaseParam: str = "PurchaseServiceResource"
-    PrivateResourceGetResourceListParam: str = "DescribeServiceResourceList"
+    PrivateResourceGetResourceListParam: str = "DescribeServiceResources"
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
 
     ChatV2API: str = "/v2/chat"

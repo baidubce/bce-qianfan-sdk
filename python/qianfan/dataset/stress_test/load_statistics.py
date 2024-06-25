@@ -92,6 +92,7 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
     )
     logger.info(text)
 
+
 if __name__ == "__main__":
     report_dir = sys.argv[1]
     time = float(sys.argv[2])

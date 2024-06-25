@@ -25,7 +25,7 @@ import time
 import zipfile
 from concurrent.futures import ALL_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Optional, Sequence, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Union
 
 import pyarrow
 
@@ -42,6 +42,7 @@ from qianfan.dataset.data_source.chunk_reader import JsonLineReader
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
+from qianfan.dataset.local_data_operators.base import BaseLocalMapOperator
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
@@ -105,6 +106,10 @@ class EvaluationManager(BaseModel):
     """logic control center of evaluation"""
 
     local_evaluators: Optional[List[LocalEvaluator]] = Field(default=None)
+    pre_processors: Optional[List[Union[BaseLocalMapOperator, Callable]]] = Field(
+        default=None
+    )
+
     qianfan_evaluators: Optional[List[QianfanEvaluator]] = Field(default=None)
     task_id: Optional[str] = Field(default=None)
 
@@ -162,8 +167,20 @@ class EvaluationManager(BaseModel):
         assert self.local_evaluators
         for i in range(start, end):
             result: Dict[str, Any] = {}
+            (single_input, single_reference, single_output) = (
+                input[i],
+                reference[i],
+                output[i],
+            )
+            for pre_processor in self.pre_processors if self.pre_processors else []:
+                single_reference = pre_processor(  # type: ignore
+                    single_output, input=single_input, reference=reference
+                )
+
             for evaluator in self.local_evaluators:
-                result.update(evaluator.evaluate(input[i], reference[i], output[i]))
+                result.update(
+                    evaluator.evaluate(single_input, single_reference, single_output)
+                )
             result_list.append(result)
         return result_list
 

@@ -403,7 +403,7 @@ $ qianfan evaluation list-evaluable-models [OPTIONS]
 * `--name`: 过滤模型名称，可以通过 `,` 分隔多个名称
 * `--help`: 展示帮助信息
 
-### OpenAI 接口模拟
+### 千帆 OpenAI 适配器
 
 对于已经适配 OpenAI 而千帆 SDK 尚未适配的第三方库，可以通过该功能模拟出 OpenAI 格式的接口，从而实现快速接入千帆功能。
 

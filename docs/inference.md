@@ -10,7 +10,7 @@
 ### OpenAI迁移
 如果您已经使用了OpenAI SDK 或集成了 OpenAI API，那么您可以直接使用千帆Python SDK提供的OpenAI适配器，以快速接入千帆大模型平台：
 
-[QuickLink](./cli.md#千帆-OpenAI-适配器)
+[QuickLink](./cli.md#千帆-openai-适配器)
 
 #### **Chat 对话**
 

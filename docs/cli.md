@@ -429,7 +429,7 @@ export OPENAI_BASE_URL='http://127.0.0.1:8001/v1'  # 模拟 OpenAI 接口的地�
 * `--detach / -d`: 后台运行
 * `--log-file`: 日志文件路径，默认不输出至文件
 * `--ignore-system / --no-ignore-system`: 是否忽略消息中的 system 字段，默认忽略
-* `--config-file / -c`: 配置文件路径，具体文件格式请参考下方配置文件说明
+* `--config-file`: 配置文件路径，具体文件格式请参考下方配置文件说明
 * `--help`: 展示帮助信息
 
 #### 配置文件

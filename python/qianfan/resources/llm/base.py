@@ -179,9 +179,13 @@ class VersionBase(object):
         """
         return self._real.access_token()
 
-    @utils.class_or_instancemethod  # type: ignore
+    @utils.class_or_instancemethod
     def models(
-        self_or_cls, version: Optional[Literal["1", "2", 1, 2]] = None
+        self_or_cls,
+        /,
+        version: Optional[Literal["1", "2", 1, 2]] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> Set[str]:
         if version is not None:
             return self_or_cls._real_base(str(version)).models()

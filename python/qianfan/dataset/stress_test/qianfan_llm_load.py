@@ -454,7 +454,7 @@ def test_start(environment: Environment, **kwargs: Any) -> None:
     dataset = GlobalData.data["dataset"]
     distributor = Distributor(
         environment, iter(dataset)
-    )  # Quite runner when iterator raises StopIteration.
+    )  # Quite runner when iterator raising StopIteration.
 
 
 class QianfanLLMLoadUser(CustomUser):

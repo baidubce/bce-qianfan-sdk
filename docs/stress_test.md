@@ -3,20 +3,6 @@
 千帆 Python SDK 提供了基于locust工具的对大模型服务进行快速压测以及性能评估的功能。
 该功能入口在Dataset对象的stress_test方法中。
 
-> 当前无法使用notebook进行stress_test调用
-
-## 安装准备
-
-压测需要使用以下方式进行依赖安装：
-```bash
-pip install 'qianfan[dataset_base]'
-```
-
-> 对于mac用户可能碰到的以下问题，请在运行的终端中运行以下命令可临时解决：`export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
-
-<img width="982" alt="751ac7d37657b4ea97c1a7d260746135" src="https://github.com/baidubce/bce-qianfan-sdk/assets/5894042/28979f39-e7b1-42d5-8ebd-66ee95ec73f4">
-
-
 ## 目录
 
 - [启动压测](#启动压测)
@@ -53,6 +39,7 @@ ds.stress_test(
     spawn_rate=128,
     model="ERNIE-Bot",
     model_type="ChatCompletion"
+    total_count = len(ds)
 )
 
 ```
@@ -67,6 +54,7 @@ stress_test支持以下参数：
 - **endpoint (str)**：指定需要压测服务的url路径。该参数与model只能指定一个；
 - **model_type (str)**：指定被测服务的模型类型。 目前只支持'ChatCompletion'与'Completion两类'；默认值为'ChatCompletion'；
 - **hyperparameters (Optional[Dict[str, Any]])**：指定压测时使用的超参数；
+- **total_count (int)**：传入压测时使用的数据集总条数；
 
 
 ## 数据格式
@@ -98,26 +86,34 @@ txt格式示例
 运行结束后会输出任务的日志路径，以及整体的聚合数据。
 整体聚合数据内容示例：
 
-    QPS: 0.35
-    Latency Avg: 5.39
-    Latency Min: 4.58
-    Latency Max: 6.59
-    Latency 50%: 5.0
-    Latency 80%: 6.6
-    FirstTokenLatency Avg: 1.14
-    FirstTokenLatency Min: 1.12
-    FirstTokenLatency Max: 1.18
-    FirstTokenLatency 50%: 1.12
-    FirstTokenLatency 80%: 1.2
-    InputTokens Avg: 3.0
-    OutputTokens Avg: 61.0
-    SuccessRate: 100.0%
+    QPS: 4.02
+    RPM: 55.46
+    Latency Avg: 3.61
+    Latency Min: 2.45
+    Latency Max: 4.7
+    Latency 50%: 3.6
+    Latency 80%: 4.2
+    FirstTokenLatency Avg: 1.54
+    FirstTokenLatency Min: 0.85
+    FirstTokenLatency Max: 2.62
+    FirstTokenLatency 50%: 1.6
+    FirstTokenLatency 80%: 1.9
+    InputTokens Avg: 78.0
+    OutputTokens Avg: 49.6
+    total_count: 11100
+    success_count: 58
+    failure_count: 11042
+    total_time: 62.75
+    SuccessRate: 0.52%
 
 各项指标含义如下：
 
 - **QPS**：服务每秒实际处理的请求数；
+- **RPM**：每分钟实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
 - **FirstTokenLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
+- **total_count/success_count/failure_count**：总请求数/成功请求数/失败请求数；
+- **total_time**：总运行时间；
 - **SuccessRate**：请求成功率；

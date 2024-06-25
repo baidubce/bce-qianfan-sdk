@@ -84,13 +84,6 @@ def output_tokens_request_handler(
         stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到输出token数")
 
-
-# (1) 上文统计ttft的方法request_handler 是CustomHandler的默认行为；
-#     如需此场景 可无需传入request_handler参数，即：CustomHandler()
-# (2) 上文平均时间的阈值判断方法condition_handler
-#     是CustomHandler.add_listener的默认行为；
-#     如需此场景 可无需传入condition_handler参数，
-#     即：CustomHandler(xxx).add_listener(thresholds=xxx)
 CustomHandler(
     name="首token延迟时间统计",
     request_handler=first_token_latency_request_handler,
@@ -107,13 +100,13 @@ CustomHandler(
     csv_suffix="output_tokens",
 )
 
-
 class QianfanCustomHttpSession(CustomHttpSession):
     """
     custom http session class
     """
 
     exc: Optional[Exception] = None
+    global tsc, tfc, tt
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -129,9 +122,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
         """
         context = context or {}
         self.exc = None
-
         request_meta = self._request_internal(context=context, **kwargs)
-
         with ResponseContextManager(
             request_meta["response"],
             request_event=self.request_event,
@@ -194,7 +185,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             self.chat_comp = qianfan.ChatCompletion(endpoint=model)
         else:
             self.chat_comp = qianfan.ChatCompletion(model=model)
-
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
@@ -204,6 +194,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         else:
             messages = []
         first_flag = True
+        
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -212,9 +203,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         }
         last_resp = None
         all_empty = True
-
         start_time = time.time()
         start_perf_counter = time.perf_counter()
+        
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
@@ -274,21 +265,24 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 self.exc = Exception("Response not finished")
             elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
                 self.exc = Exception("NOT 200 OR is_end is False")
-
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:
             context = {**self.user.context(), **context}
-
-        # store meta data that is used when reporting the request to locust's statistics
-        request_meta["request_type"] = "POST"
-        request_meta["response_time"] = response_time
-        request_meta["name"] = self.model
-        request_meta["context"] = context
-        request_meta["exception"] = self.exc
-        request_meta["start_time"] = start_time
-        request_meta["url"] = self.model
-        request_meta["response"] = last_resp
+        if self.exc is None:
+            # store meta data that is used when the request is succeed and reported to locust's statistics
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = response_time
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        else:
+            # reporting the request to locust's statistics by setting response_time to None when the request is failed
+            request_meta["response_time"] = None
         return request_meta
+    
 
     def _transfer_jsonl(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
@@ -415,16 +409,19 @@ class CompletionClient(QianfanCustomHttpSession):
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:
             context = {**self.user.context(), **context}
-
-        # store meta data that is used when reporting the request to locust's statistics
-        request_meta["request_type"] = "POST"
-        request_meta["response_time"] = response_time
-        request_meta["name"] = self.model
-        request_meta["context"] = context
-        request_meta["exception"] = self.exc
-        request_meta["start_time"] = start_time
-        request_meta["url"] = self.model
-        request_meta["response"] = last_resp
+        if self.exc is None:
+            # store meta data that is used when the request is succeed and reported to locust's statistics
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = response_time
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        else:
+            # reporting the request to locust's statistics by setting response_time to None when the request is failed
+            request_meta["response_time"] = None
         return request_meta
 
     def _transfer_jsonl(
@@ -460,7 +457,6 @@ def test_start(environment: Environment, **kwargs: Any) -> None:
 
 class QianfanLLMLoadUser(CustomUser):
     """示例：统计ttft"""
-
     wait_time = constant(0)
 
     def __init__(self, *args: Any, **kwargs: Any):

@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from qianfan.dataset import Dataset
 from qianfan.dataset.stress_test.load_statistics import gen_brief
 from qianfan.dataset.stress_test.yame.runner import LocustRunner
-
+import time
 logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 
@@ -18,11 +18,12 @@ class QianfanLocustRunner(LocustRunner):
     """
     QianfanLocustRunner
     """
-
+    print("loading...")
     locust_file = os.path.abspath(os.path.dirname(__file__)) + "/qianfan_llm_load.py"
 
     def __init__(
         self,
+        total_count: int,
         dataset: Dataset,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -54,16 +55,20 @@ class QianfanLocustRunner(LocustRunner):
             model_type=model_type,
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
+            total_count = total_count
         )
-
+        self.total_count = total_count
     def run(self) -> Dict[str, Any]:
         """
         run
         """
+        start_time = time.time()
         ret = super(QianfanLocustRunner, self).run()
+        end_time = time.time()
+        total_time = end_time - start_time  # count the total time of running
         logger.info("Log path: %s" % ret["logfile"])
         try:
-            gen_brief(ret["record_dir"])
+            gen_brief(ret["record_dir"], total_time, self.total_count)
         except Exception:
             traceback.print_exc()
             logger.error("Error happens when statisticizing.")

@@ -3,13 +3,14 @@ QianfanLocustRunner
 """
 import logging
 import os
+import time
 import traceback
 from typing import Any, Dict, Optional
 
 from qianfan.dataset import Dataset
 from qianfan.dataset.stress_test.load_statistics import gen_brief
 from qianfan.dataset.stress_test.yame.runner import LocustRunner
-import time
+
 logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 
@@ -18,6 +19,7 @@ class QianfanLocustRunner(LocustRunner):
     """
     QianfanLocustRunner
     """
+
     print("loading...")
     locust_file = os.path.abspath(os.path.dirname(__file__)) + "/qianfan_llm_load.py"
 
@@ -55,9 +57,10 @@ class QianfanLocustRunner(LocustRunner):
             model_type=model_type,
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
-            total_count = total_count
+            total_count=total_count,
         )
         self.total_count = total_count
+
     def run(self) -> Dict[str, Any]:
         """
         run

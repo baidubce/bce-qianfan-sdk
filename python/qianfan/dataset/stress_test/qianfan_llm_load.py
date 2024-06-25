@@ -84,6 +84,7 @@ def output_tokens_request_handler(
         stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到输出token数")
 
+
 CustomHandler(
     name="首token延迟时间统计",
     request_handler=first_token_latency_request_handler,
@@ -99,6 +100,7 @@ CustomHandler(
     request_handler=output_tokens_request_handler,
     csv_suffix="output_tokens",
 )
+
 
 class QianfanCustomHttpSession(CustomHttpSession):
     """
@@ -185,6 +187,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             self.chat_comp = qianfan.ChatCompletion(endpoint=model)
         else:
             self.chat_comp = qianfan.ChatCompletion(model=model)
+
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
@@ -194,7 +197,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         else:
             messages = []
         first_flag = True
-        
+
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -205,7 +208,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         all_empty = True
         start_time = time.time()
         start_perf_counter = time.perf_counter()
-        
+
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
@@ -269,7 +272,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
-            # store meta data that is used when the request is succeed and reported to locust's statistics
+            # store meta data that is used when the request is succeeded
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -279,10 +282,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             request_meta["url"] = self.model
             request_meta["response"] = last_resp
         else:
-            # reporting the request to locust's statistics by setting response_time to None when the request is failed
+            # Setting response_time to None when the request is failed
             request_meta["response_time"] = None
         return request_meta
-    
 
     def _transfer_jsonl(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
@@ -410,7 +412,7 @@ class CompletionClient(QianfanCustomHttpSession):
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
-            # store meta data that is used when the request is succeed and reported to locust's statistics
+            # store meta data that is used when the request is succeeded
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -420,7 +422,7 @@ class CompletionClient(QianfanCustomHttpSession):
             request_meta["url"] = self.model
             request_meta["response"] = last_resp
         else:
-            # reporting the request to locust's statistics by setting response_time to None when the request is failed
+            # setting response_time to None when the request is failed
             request_meta["response_time"] = None
         return request_meta
 
@@ -457,6 +459,7 @@ def test_start(environment: Environment, **kwargs: Any) -> None:
 
 class QianfanLLMLoadUser(CustomUser):
     """示例：统计ttft"""
+
     wait_time = constant(0)
 
     def __init__(self, *args: Any, **kwargs: Any):

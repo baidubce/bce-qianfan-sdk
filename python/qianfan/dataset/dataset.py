@@ -2203,7 +2203,7 @@ class Dataset(Table):
                 model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,
-                total_count = total_count
+                total_count=total_count,
             )
             runner.run()
         else:

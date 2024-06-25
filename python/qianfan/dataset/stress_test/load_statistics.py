@@ -6,10 +6,11 @@ brief.py
 import logging
 import sys
 from typing import List
+
 logger = logging.getLogger("yame.runner")
 
 
-def get_qps_and_rate(path: str) -> List[float]:
+def get_qps(path: str) -> float:
     """
     get_duration
     """
@@ -18,22 +19,16 @@ def get_qps_and_rate(path: str) -> List[float]:
             if line.startswith("Type"):
                 continue
             line_splits = line.split(",")
-            qps = float(line_splits[-13])-float(line_splits[-12])
-            total_count = int(line_splits[2])
-            error_count = int(line_splits[3])
+            qps = float(line_splits[-13]) - float(line_splits[-12])
             break
-        if total_count != 0:
-            rate = (total_count - error_count) / total_count * 100
-        else:
-            rate = 0
-        return [qps, rate]
+        return qps
 
 
 def get_statistics(path: str) -> List[float]:
     """
     get_statistics
     """
-    with open(path) as fd:  
+    with open(path) as fd:
         for line in fd:
             if line.startswith("Type"):
                 continue
@@ -47,14 +42,23 @@ def get_statistics(path: str) -> List[float]:
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])
             break
-    return [lat_avg, lat_min, lat_max, lat_50p, lat_80p, total_count, failure_count, total_time]
+    return [
+        lat_avg,
+        lat_min,
+        lat_max,
+        lat_50p,
+        lat_80p,
+        total_count,
+        failure_count,
+        total_time,
+    ]
 
 
-def gen_brief(report_dir: str, time:float, count: int) -> None:
+def gen_brief(report_dir: str, time: float, count: int) -> None:
     """
     gen_brief
     """
-    qps, rate = get_qps_and_rate(report_dir + "/statistics_stats.csv")
+    qps = get_qps(report_dir + "/statistics_stats.csv")
     lat_tuple = get_statistics(report_dir + "/statistics_stats.csv")
     first_lat_tuple = get_statistics(
         report_dir + "/statistics_first_token_latency_stats.csv"
@@ -91,4 +95,6 @@ def gen_brief(report_dir: str, time:float, count: int) -> None:
 
 if __name__ == "__main__":
     report_dir = sys.argv[1]
-    gen_brief(report_dir)
+    time = float(sys.argv[2])
+    count = int(sys.argv[3])
+    gen_brief(report_dir, time, count)

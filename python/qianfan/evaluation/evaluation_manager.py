@@ -42,7 +42,7 @@ from qianfan.dataset.data_source.chunk_reader import JsonLineReader
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
-from qianfan.dataset.local_data_operators import BaseLocalMapOperator
+from qianfan.dataset.local_data_operators.base import BaseLocalMapOperator
 from qianfan.errors import QianfanError
 from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult

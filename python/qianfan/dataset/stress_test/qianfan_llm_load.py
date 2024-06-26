@@ -272,7 +272,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
-            # report the request to locust's statistics when success
+            # report to locust's statistics
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -412,7 +412,7 @@ class CompletionClient(QianfanCustomHttpSession):
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
-            # report the request to locust's statistics when success
+            # report to locust's statistics
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model

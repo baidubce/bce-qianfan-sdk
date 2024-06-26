@@ -114,10 +114,10 @@ txt格式示例
     FirstTokenLatency 80%: 1.9
     InputTokens Avg: 78.0
     OutputTokens Avg: 49.6
-    total_count: 11100
-    success_count: 58
-    failure_count: 11042
-    total_time: 62.75
+    TotalQuery: 11100
+    SuccessQuery: 5800
+    FailureQuery: 11042
+    TotalTime: 62.75
     SuccessRate: 0.52%
 
 各项指标含义如下：
@@ -128,6 +128,6 @@ txt格式示例
 - **FirstTokenLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
-- **total_count/success_count/failure_count**：总请求数/成功请求数/失败请求数；
-- **total_time**：总运行时间；
+- **TotalQuery/SuccessQuery/FailureQuery**：总请求数/成功请求数/失败请求数；
+- **TotalTime**：总运行时间；
 - **SuccessRate**：请求成功率；

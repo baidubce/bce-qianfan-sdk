@@ -108,7 +108,6 @@ class QianfanCustomHttpSession(CustomHttpSession):
     """
 
     exc: Optional[Exception] = None
-    global tsc, tfc, tt
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any

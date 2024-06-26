@@ -1,6 +1,7 @@
 """
 QianfanLocustRunner
 """
+
 import logging
 import os
 import time
@@ -20,7 +21,6 @@ class QianfanLocustRunner(LocustRunner):
     QianfanLocustRunner
     """
 
-    print("loading...")
     locust_file = os.path.abspath(os.path.dirname(__file__)) + "/qianfan_llm_load.py"
 
     def __init__(

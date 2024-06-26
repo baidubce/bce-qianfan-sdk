@@ -65,8 +65,8 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
     )
     input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
     output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
-    total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
-    failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
+    total_count = lat_tuple[5]
+    failure_count = lat_tuple[6]
     success_count = total_count - failure_count
     text = (
         "Load Test Statistics\n"
@@ -84,10 +84,10 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
         + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
-        + "total_count: %s\n" % round(count, 2)
-        + "success_count: %s\n" % round(success_count, 2)
-        + "failure_count: %s\n" % round(count - success_count, 2)
-        + "total_time: %s\n" % round(time, 2)
+        + "TotalQuery: %s\n" % round(count, 2)
+        + "SuccessQuery: %s\n" % round(success_count, 2)
+        + "FailureQuery: %s\n" % round(count - success_count, 2)
+        + "TotalTime: %s\n" % round(time, 2)
         + "SuccessRate: %s%%" % round(success_count / count * 100, 2)
     )
     logger.info(text)

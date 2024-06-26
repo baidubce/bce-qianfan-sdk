@@ -2141,6 +2141,7 @@ class Dataset(Table):
         workers: int,
         users: int,
         spawn_rate: int,
+        total_count: int,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         runtime: str = "0s",
@@ -2165,6 +2166,8 @@ class Dataset(Table):
                 e.g. (300s, 20m, 3h, 1h30m, etc.).
             spawn_rate (int):
                 Rate to spawn users at (users per second).
+            total_count (int):
+                total count of queries to send.
             model (str):
                 Name of the model service you want to test.
             endpoint (str):
@@ -2200,6 +2203,7 @@ class Dataset(Table):
                 model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,
+                total_count=total_count,
             )
             runner.run()
         else:

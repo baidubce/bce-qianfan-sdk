@@ -3,6 +3,7 @@ QianfanLocustRunner
 """
 import logging
 import os
+import time
 import traceback
 from typing import Any, Dict, Optional
 
@@ -19,10 +20,12 @@ class QianfanLocustRunner(LocustRunner):
     QianfanLocustRunner
     """
 
+    print("loading...")
     locust_file = os.path.abspath(os.path.dirname(__file__)) + "/qianfan_llm_load.py"
 
     def __init__(
         self,
+        total_count: int,
         dataset: Dataset,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -54,16 +57,21 @@ class QianfanLocustRunner(LocustRunner):
             model_type=model_type,
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
+            total_count=total_count,
         )
+        self.total_count = total_count
 
     def run(self) -> Dict[str, Any]:
         """
         run
         """
+        start_time = time.time()
         ret = super(QianfanLocustRunner, self).run()
+        end_time = time.time()
+        total_time = end_time - start_time
         logger.info("Log path: %s" % ret["logfile"])
         try:
-            gen_brief(ret["record_dir"])
+            gen_brief(ret["record_dir"], total_time, self.total_count)
         except Exception:
             traceback.print_exc()
             logger.error("Error happens when statisticizing.")

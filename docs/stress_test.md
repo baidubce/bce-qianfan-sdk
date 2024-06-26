@@ -53,7 +53,6 @@ ds.stress_test(
     spawn_rate=128,
     model="ERNIE-Bot",
     model_type="ChatCompletion"
-    total_count = len(ds)
 )
 
 ```

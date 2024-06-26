@@ -25,7 +25,6 @@ class QianfanLocustRunner(LocustRunner):
 
     def __init__(
         self,
-        total_count: int,
         dataset: Dataset,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -57,9 +56,8 @@ class QianfanLocustRunner(LocustRunner):
             model_type=model_type,
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
-            total_count=total_count,
         )
-        self.total_count = total_count
+        self.dataset = dataset
 
     def run(self) -> Dict[str, Any]:
         """
@@ -71,7 +69,7 @@ class QianfanLocustRunner(LocustRunner):
         total_time = end_time - start_time
         logger.info("Log path: %s" % ret["logfile"])
         try:
-            gen_brief(ret["record_dir"], total_time, self.total_count)
+            gen_brief(ret["record_dir"], total_time, len(self.dataset))
         except Exception:
             traceback.print_exc()
             logger.error("Error happens when statisticizing.")

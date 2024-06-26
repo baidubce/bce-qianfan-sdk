@@ -68,7 +68,6 @@ stress_test支持以下参数：
 - **endpoint (str)**：指定需要压测服务的url路径。该参数与model只能指定一个；
 - **model_type (str)**：指定被测服务的模型类型。 目前只支持'ChatCompletion'与'Completion两类'；默认值为'ChatCompletion'；
 - **hyperparameters (Optional[Dict[str, Any]])**：指定压测时使用的超参数；
-- **total_count (int)**：传入压测时使用的数据集总条数；
 
 
 ## 数据格式

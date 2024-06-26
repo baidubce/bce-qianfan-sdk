@@ -258,6 +258,9 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
         ):
             raise ValueError("cannot get row from table by str")
 
+        if isinstance(by, int) and by >= self.table.num_rows:
+            raise IndexError(f"Index {by} out of range")
+
         if self._inner_table_is_packed():
             if by is None:
                 return self.table.to_pydict()[QianfanDatasetPackColumnName]
@@ -765,6 +768,9 @@ class Table(Addable, Listable, Processable):
         """
         # 内部使用的 pyarrow.Table 对象
         self.inner_table: PyarrowTable = inner_table
+
+        # 用于内部 __next__ 函数使用的迭代索引
+        self._index = 0
 
     def _row_op(self) -> _PyarrowRowManipulator:
         return _PyarrowRowManipulator(table=self.inner_table)
@@ -1496,6 +1502,17 @@ class Table(Addable, Listable, Processable):
 
     def __len__(self) -> int:
         return self.row_number()
+
+    def __iter__(self) -> "Self":
+        return self
+
+    def __next__(self) -> Union[Dict[str, Any], List[Dict[str, Any]], str]:
+        if self._index >= self.inner_table.num_rows:
+            self._index = 0
+            raise StopIteration()
+
+        self._index += 1
+        return self[self._index - 1]
 
     def row_number(self) -> int:
         """

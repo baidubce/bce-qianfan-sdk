@@ -85,6 +85,12 @@ def output_tokens_request_handler(
         stats.log_error(request_type, name, "未找到输出token数")
 
 
+# (1) 上文统计ttft的方法request_handler 是CustomHandler的默认行为；
+#     如需此场景 可无需传入request_handler参数，即：CustomHandler()
+# (2) 上文平均时间的阈值判断方法condition_handler
+#     是CustomHandler.add_listener的默认行为；
+#     如需此场景 可无需传入condition_handler参数，
+#     即：CustomHandler(xxx).add_listener(thresholds=xxx)
 CustomHandler(
     name="首token延迟时间统计",
     request_handler=first_token_latency_request_handler,

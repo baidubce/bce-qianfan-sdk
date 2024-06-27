@@ -181,3 +181,16 @@ response.getResults().forEach(data -> {
     System.out.println(data.getRelevanceScore());
 });
 ```
+
+### 插件编排
+
+千帆 SDK 支持调用插件编排后的服务，用于大模型 + 插件能力的组合。
+
+```java
+PluginResponse response = new Qianfan().plugin()
+        .endpoint("plugin-service-endpoint")
+        .fileurl("https://www.baidu.com/img/flexible/logo/pc/result@2.png")
+        .query("这个图片是什么")
+        .execute();
+System.out.println(response.getResult());
+```

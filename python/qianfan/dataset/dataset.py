@@ -998,12 +998,16 @@ class Dataset(Table):
         else:
             try:
                 return super().list(by)
-            except Exception:
+            except Exception as e:
                 err_msg = (
                     "can't list dataset from data source:"
                     f" {type(self.inner_data_source_cache)}"
+                    f"and something happened: {e}"
                 )
                 log_error(err_msg)
+                if isinstance(e, IndexError):
+                    return e
+
                 raise ValueError(err_msg)
 
     def row_number(self) -> int:
@@ -2179,6 +2183,10 @@ class Dataset(Table):
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
+            urllib_env = os.environ.get("no_proxy")
+            if urllib_env != "*":
+                os.environ["no_proxy"] = "*"
+
             if model is None and endpoint is None:
                 raise Exception(
                     "These two arguments: model/endpoint cannot both be null."
@@ -2202,6 +2210,10 @@ class Dataset(Table):
                 hyperparameters=hyperparameters,
             )
             runner.run()
+            if isinstance(urllib_env, str):
+                os.environ["no_proxy"] = urllib_env
+            else:
+                del os.environ["no_proxy"]
         else:
             raise Exception(
                 "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"

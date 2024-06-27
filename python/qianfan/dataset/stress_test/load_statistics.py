@@ -1,4 +1,5 @@
 # -- encoding: utf-8 --
+
 """
 brief.py
 """
@@ -9,7 +10,7 @@ from typing import List
 logger = logging.getLogger("yame.runner")
 
 
-def get_qps_and_rate(path: str) -> List[float]:
+def get_qps(path: str) -> float:
     """
     get_duration
     """
@@ -18,15 +19,9 @@ def get_qps_and_rate(path: str) -> List[float]:
             if line.startswith("Type"):
                 continue
             line_splits = line.split(",")
-            qps = float(line_splits[-13])
-            total_count = int(line_splits[2])
-            error_count = int(line_splits[3])
+            qps = float(line_splits[-13]) - float(line_splits[-12])
             break
-        if total_count != 0:
-            rate = (total_count - error_count) / total_count * 100
-        else:
-            rate = 0
-        return [qps, rate]
+        return qps
 
 
 def get_statistics(path: str) -> List[float]:
@@ -43,25 +38,40 @@ def get_statistics(path: str) -> List[float]:
             lat_max = float(line_splits[7])
             lat_50p = float(line_splits[4])
             lat_80p = float(line_splits[-8])
+            total_count = int(line_splits[2])
+            failure_count = int(line_splits[3])
+            total_time = float(line_splits[2]) * float(line_splits[5])
             break
-    return [lat_avg, lat_min, lat_max, lat_50p, lat_80p]
+    return [
+        lat_avg,
+        lat_min,
+        lat_max,
+        lat_50p,
+        lat_80p,
+        total_count,
+        failure_count,
+        total_time,
+    ]
 
 
-def gen_brief(report_dir: str) -> None:
+def gen_brief(report_dir: str, time: float, count: int) -> None:
     """
     gen_brief
     """
-    qps, rate = get_qps_and_rate(report_dir + "/statistics_stats.csv")
+    qps = get_qps(report_dir + "/statistics_stats.csv")
     lat_tuple = get_statistics(report_dir + "/statistics_stats.csv")
     first_lat_tuple = get_statistics(
         report_dir + "/statistics_first_token_latency_stats.csv"
     )
     input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
     output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
-
+    total_count = lat_tuple[5]
+    failure_count = lat_tuple[6]
+    success_count = total_count - failure_count
     text = (
         "Load Test Statistics\n"
         + "QPS: %s\n" % round(qps, 2)
+        + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
         + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
         + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 2)
@@ -74,11 +84,17 @@ def gen_brief(report_dir: str) -> None:
         + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
-        + "SuccessRate: %s%%" % round(rate, 2)
+        + "TotalQuery: %s\n" % round(count, 2)
+        + "SuccessQuery: %s\n" % round(success_count, 2)
+        + "FailureQuery: %s\n" % round(count - success_count, 2)
+        + "TotalTime: %s\n" % round(time, 2)
+        + "SuccessRate: %s%%" % round(success_count / count * 100, 2)
     )
     logger.info(text)
 
 
 if __name__ == "__main__":
     report_dir = sys.argv[1]
-    gen_brief(report_dir)
+    time = float(sys.argv[2])
+    count = int(sys.argv[3])
+    gen_brief(report_dir, time, count)

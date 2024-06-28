@@ -734,3 +734,13 @@ class PrivateAPIRequestor(QfAPIRequestor):
             return self._request(req, data_postprocess=data_postprocess)
 
         return self._with_retry(retry_config, _helper)
+
+    def _add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        return req
+
+    async def _async_add_access_token(
+        self, req: QfRequest, auth: Optional[Auth] = None
+    ) -> QfRequest:
+        return req

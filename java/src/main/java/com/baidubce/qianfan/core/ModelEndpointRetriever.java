@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ModelEndpointRetriever {
-    private static final String DEFAULT_CHAT_MODEL = "ernie-bot-turbo";
+    private static final String DEFAULT_CHAT_MODEL = "ernie-lite-8k";
     private static final String DEFAULT_COMPLETION_MODEL = "codellama-7b-instruct";
     private static final String DEFAULT_EMBEDDING_MODEL = "embedding-v1";
     private static final String DEFAULT_TEXT_2_IMAGE_MODEL = "stable-diffusion-xl";
@@ -96,6 +96,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-8k-0321", "ernie-char-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k-0922", "eb-instant");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k-0308", "ernie-lite-8k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k", "ernie-lite-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-functions-8k", "ernie-func-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-tiny-8k", "ernie-tiny-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie speed-appbuilder", "ai_apaas");

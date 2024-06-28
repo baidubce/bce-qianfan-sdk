@@ -129,9 +129,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
         """
         context = context or {}
         self.exc = None
-
         request_meta = self._request_internal(context=context, **kwargs)
-
         with ResponseContextManager(
             request_meta["response"],
             request_event=self.request_event,
@@ -204,6 +202,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         else:
             messages = []
         first_flag = True
+
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -212,9 +211,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         }
         last_resp = None
         all_empty = True
-
         start_time = time.time()
         start_perf_counter = time.perf_counter()
+
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
@@ -274,20 +273,22 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 self.exc = Exception("Response not finished")
             elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
                 self.exc = Exception("NOT 200 OR is_end is False")
-
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:
             context = {**self.user.context(), **context}
-
-        # store meta data that is used when reporting the request to locust's statistics
-        request_meta["request_type"] = "POST"
-        request_meta["response_time"] = response_time
-        request_meta["name"] = self.model
-        request_meta["context"] = context
-        request_meta["exception"] = self.exc
-        request_meta["start_time"] = start_time
-        request_meta["url"] = self.model
-        request_meta["response"] = last_resp
+        if self.exc is None:
+            # report to locust's statistics
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = response_time
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        else:
+            # setting response_time to None when the request is failed
+            request_meta["response_time"] = None
         return request_meta
 
     def _transfer_jsonl(
@@ -415,16 +416,19 @@ class CompletionClient(QianfanCustomHttpSession):
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:
             context = {**self.user.context(), **context}
-
-        # store meta data that is used when reporting the request to locust's statistics
-        request_meta["request_type"] = "POST"
-        request_meta["response_time"] = response_time
-        request_meta["name"] = self.model
-        request_meta["context"] = context
-        request_meta["exception"] = self.exc
-        request_meta["start_time"] = start_time
-        request_meta["url"] = self.model
-        request_meta["response"] = last_resp
+        if self.exc is None:
+            # report to locust's statistics
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = response_time
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        else:
+            # setting response_time to None when the request is failed
+            request_meta["response_time"] = None
         return request_meta
 
     def _transfer_jsonl(

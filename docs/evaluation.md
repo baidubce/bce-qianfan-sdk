@@ -123,6 +123,18 @@ em = EvaluationManager(local_evaluators=local_evaluators)
 result = em.eval([Model(version_id="amv-qb8ijukaish3")], ds)
 ```
 
+### 评估前预处理 Hook
+
+`EvaluationManager` 对象提供了 `pre_processors` 成员，用户可以设置包含 `Callable` 对象或者 `BaseLocalMapOperator` 对象的数组，以在拿到模型输出之后、评估开始之前，进行一些简单的预处理操作。例如：在大模型输出中提取选择题的答案，方便后续判断是否与选择题的答案一致。
+
+`pre_processors` 数组的对象必须能够接收一个 `str` 对象作为入参，这个对象表示大模型的输出。同时，我们还以命名参数的形式提供了 `input` 与 `reference` 两个入参，代表大模型的输入，以及预期的输出。
+
+调用如下所示：
+
+`pre_processor(single_output, input=single_input, reference=reference)`
+
+预处理器应该返回被处理后的模型输出。
+
 ### 获取评估结果
 
 和在线评估一样，完成离线评估后，评估得到的数据集会被保存在返回的 `EvaluationResult` 对象的 `result_dataset` 成员中。

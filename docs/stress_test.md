@@ -3,7 +3,7 @@
 千帆 Python SDK 提供了基于locust工具的对大模型服务进行快速压测以及性能评估的功能。
 该功能入口在Dataset对象的stress_test方法中。
 
-> 当前无法使用notebook进行stress_test调用
+> 当前使用notebook进行stress_test调用需要先设置环境变量，具体见下文以及cookbook/dataset/stress_test.ipynb。                                                                    
 
 ## 安装准备
 
@@ -12,9 +12,6 @@
 pip install 'qianfan[dataset_base]'
 ```
 
-> 对于mac用户可能碰到的以下问题，请在运行的终端中运行以下命令可临时解决：`export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
-
-<img width="982" alt="751ac7d37657b4ea97c1a7d260746135" src="https://github.com/baidubce/bce-qianfan-sdk/assets/5894042/28979f39-e7b1-42d5-8ebd-66ee95ec73f4">
 
 
 ## 目录
@@ -26,11 +23,10 @@ pip install 'qianfan[dataset_base]'
 
 ## 启动压测
 
-如果用户想要对大模型服务进行性能测试，需要在导入 `qianfan` 模块之前设置环境变量 `QIANFAN_ENABLE_STRESS_TEST` 为 `true`
 
-然后准备好测试用的数据集。数据集就绪后，可调用数据集的stress_test接口启动压测任务。
+以下为Python环境和Notebook环境的示例代码：
 
-以下为一个调用的示例：
+Python环境：
 
 ```python
 
@@ -55,6 +51,35 @@ ds.stress_test(
     model_type="ChatCompletion"
 )
 
+```
+
+Notebook环境：
+
+```python
+from gevent import monkey
+monkey.patch_all()
+```
+```python
+import os
+
+os.environ['QIANFAN_ENABLE_STRESS_TEST'] = "true"
+
+from qianfan.dataset import Dataset
+
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
+
+# 需要初始化一个数据集对象
+
+ds = Dataset.load(data_file="...")
+
+ds.stress_test(
+    users=1,
+    workers=1,
+    spawn_rate=128,
+    model="ERNIE-Bot",
+    model_type="ChatCompletion"
+)
 ```
 ## 方法参数
 stress_test支持以下参数：
@@ -98,26 +123,40 @@ txt格式示例
 运行结束后会输出任务的日志路径，以及整体的聚合数据。
 整体聚合数据内容示例：
 
-    QPS: 0.35
-    Latency Avg: 5.39
-    Latency Min: 4.58
-    Latency Max: 6.59
-    Latency 50%: 5.0
-    Latency 80%: 6.6
-    FirstTokenLatency Avg: 1.14
-    FirstTokenLatency Min: 1.12
-    FirstTokenLatency Max: 1.18
-    FirstTokenLatency 50%: 1.12
-    FirstTokenLatency 80%: 1.2
-    InputTokens Avg: 3.0
-    OutputTokens Avg: 61.0
-    SuccessRate: 100.0%
+    QPS: 4.02
+    RPM: 55.46
+    Latency Avg: 3.61
+    Latency Min: 2.45
+    Latency Max: 4.7
+    Latency 50%: 3.6
+    Latency 80%: 4.2
+    FirstTokenLatency Avg: 1.54
+    FirstTokenLatency Min: 0.85
+    FirstTokenLatency Max: 2.62
+    FirstTokenLatency 50%: 1.6
+    FirstTokenLatency 80%: 1.9
+    InputTokens Avg: 78.0
+    OutputTokens Avg: 49.6
+    TotalQuery: 11100
+    SuccessQuery: 5800
+    FailureQuery: 11042
+    TotalTime: 62.75
+    SuccessRate: 0.52%
 
 各项指标含义如下：
 
 - **QPS**：服务每秒实际处理的请求数；
+- **RPM**：每分钟实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
 - **FirstTokenLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
+- **TotalQuery/SuccessQuery/FailureQuery**：总请求数/成功请求数/失败请求数；
+- **TotalTime**：总运行时间；
 - **SuccessRate**：请求成功率；
+
+## Q&A
+
+- Q: 为什么要先执行`monkey.patch_all()`？
+- A: 由于Locust中使用了gevent库来保证高并发性能，而gevent的高并发依赖于monkey patching的非阻塞I/O机制，但该机制在Notebook环境中默认未开启。因此，在开始测试前，需要进行monkey patching操作。这样做是为了确保整个环境，包括IPython/Jupyter自己的组件，都使用gevent兼容的非阻塞版本，从而避免因混合使用阻塞和非阻塞操作导致的不一致性和潜在的死锁问题。
+

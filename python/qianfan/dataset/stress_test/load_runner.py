@@ -1,8 +1,10 @@
 """
 QianfanLocustRunner
 """
+
 import logging
 import os
+import time
 import traceback
 from typing import Any, Dict, Optional
 
@@ -55,15 +57,19 @@ class QianfanLocustRunner(LocustRunner):
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
         )
+        self.dataset = dataset
 
     def run(self) -> Dict[str, Any]:
         """
         run
         """
+        start_time = time.time()
         ret = super(QianfanLocustRunner, self).run()
+        end_time = time.time()
+        total_time = end_time - start_time
         logger.info("Log path: %s" % ret["logfile"])
         try:
-            gen_brief(ret["record_dir"])
+            gen_brief(ret["record_dir"], total_time, len(self.dataset))
         except Exception:
             traceback.print_exc()
             logger.error("Error happens when statisticizing.")

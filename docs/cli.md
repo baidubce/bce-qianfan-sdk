@@ -403,7 +403,7 @@ $ qianfan evaluation list-evaluable-models [OPTIONS]
 * `--name`: 过滤模型名称，可以通过 `,` 分隔多个名称
 * `--help`: 展示帮助信息
 
-### OpenAI 接口模拟
+### 千帆 OpenAI 适配器
 
 对于已经适配 OpenAI 而千帆 SDK 尚未适配的第三方库，可以通过该功能模拟出 OpenAI 格式的接口，从而实现快速接入千帆功能。
 
@@ -429,7 +429,7 @@ export OPENAI_BASE_URL='http://127.0.0.1:8001/v1'  # 模拟 OpenAI 接口的地�
 * `--detach / -d`: 后台运行
 * `--log-file`: 日志文件路径，默认不输出至文件
 * `--ignore-system / --no-ignore-system`: 是否忽略消息中的 system 字段，默认忽略
-* `--config-file / -c`: 配置文件路径，具体文件格式请参考下方配置文件说明
+* `--config-file`: 配置文件路径，具体文件格式请参考下方配置文件说明
 * `--help`: 展示帮助信息
 
 #### 配置文件

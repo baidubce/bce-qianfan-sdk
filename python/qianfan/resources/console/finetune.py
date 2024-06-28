@@ -234,6 +234,8 @@ class FineTune(object):
             dataset_config: Dict[str, Any],
             increment_task_id: Optional[str] = None,
             increment_checkpoint_step: Optional[int] = None,
+            model_config: Optional[Dict[str, Any]] = None,
+            resource_config: Optional[Dict[str, Any]] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -255,6 +257,11 @@ class FineTune(object):
                 The task id of the increment task.
             increment_checkpoint_step (Optional[int]):
                 The checkpoint step for the increment task.
+            model_config (Optional[Dict[str, Any]]):
+                The model config of the fine-tuning task for custom_mode training.
+            resource_config (Optional[Dict[str, Any]]):
+                The resource config of the fine-tuning task, which can indicates
+                the specific private resources.
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -283,6 +290,10 @@ class FineTune(object):
                 req.json_body["incrementTaskId"] = increment_task_id
                 if increment_checkpoint_step is not None:
                     req.json_body["incrementCheckpointStep"] = increment_checkpoint_step
+            if model_config is not None:
+                req.json_body["modelConfig"] = model_config
+            if resource_config is not None:
+                req.json_body["resourceConfig"] = resource_config
             return req
 
         @classmethod

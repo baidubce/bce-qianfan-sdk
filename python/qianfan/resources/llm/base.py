@@ -387,7 +387,8 @@ class BaseResource(object):
         kwargs["stream"] = stream
         if "extra_parameters" not in kwargs:
             kwargs["extra_parameters"] = {}
-        kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
+        if kwargs["extra_parameters"].get("request_source") is not None:
+            kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
         return kwargs
 
     def _data_postprocess(self, data: QfResponse) -> QfResponse:

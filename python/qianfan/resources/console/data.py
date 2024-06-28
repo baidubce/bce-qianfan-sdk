@@ -875,9 +875,10 @@ class Data:
     def create_offline_batch_inference_task(
         cls,
         name: str,
-        endpoint: str,
         input_bos_uri: str,
         output_bos_uri: str,
+        model_id: Optional[str] = None,
+        endpoint: Optional[str] = None,
         inference_params: Dict[str, Any] = {},
         description: Optional[str] = None,
         **kwargs: Any,
@@ -888,8 +889,10 @@ class Data:
         Parameters:
             name (str):
                 Name of the batch inference task
+            model_id (Optional[str]):
+                model id of the model to be used for inference.
             endpoint (str):
-                Endpoint of the model to be used for inference
+                Endpoint of the model to be used for inference.
             input_bos_uri (str):
                 BOS URI of the input data
             output_bos_uri (str):

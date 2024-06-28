@@ -83,6 +83,7 @@ type ChatCompletionRequest struct {
 
 // 内置 chat 模型的 endpoint
 var ChatModelEndpoint = map[string]string{
+    "ERNIE-4.0-Turbo-8K":           "/chat/ernie-4.0-turbo-8k",
     "ERNIE-4.0-8K-Latest":          "/chat/ernie-4.0-8k-latest",
     "ERNIE-4.0-8K-0613":            "/chat/ernie-4.0-8k-0613",
     "ERNIE-3.5-8K-0613":            "/chat/ernie-3.5-8k-0613",
@@ -113,6 +114,7 @@ var ChatModelEndpoint = map[string]string{
 	"ERNIE-Tiny-8K":                "/chat/ernie-tiny-8k",
 	"ERNIE-Function-8K":            "/chat/ernie-func-8k",
 	"ERNIE-Character-8K":           "/chat/ernie-char-8k",
+	"ERNIE-Character-Fiction-8K"    "/chat/ernie-char-fiction-8k",
 	"ERNIE-Bot-turbo-AI":           "/chat/ai_apaas",
 	"EB-turbo-AppBuilder":          "/chat/ai_apaas",
 	"BLOOMZ-7B":                    "/chat/bloomz_7b1",
@@ -142,6 +144,7 @@ type inputLimitInfo struct {
 
 // 定义包含所需信息的 map
 var limitMapInModelName = map[string]inputLimitInfo{
+    "ERNIE-4.0-Turbo-8K":           {MaxInputChars: 20000, MaxInputTokens: 5120},
     "ERNIE-4.0-8K-Latest":          {MaxInputChars: 20000, MaxInputTokens: 5120},
     "ERNIE-4.0-8K-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
     "ERNIE-3.5-8K-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
@@ -169,6 +172,7 @@ var limitMapInModelName = map[string]inputLimitInfo{
 	"ERNIE-Tiny-8K":                {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"ERNIE-Function-8K":            {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"ERNIE-Character-8K":           {MaxInputChars: 24000, MaxInputTokens: 6144},
+	"ERNIE-Character-Fiction-8K":   {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"BLOOMZ-7B":                    {MaxInputChars: 4800, MaxInputTokens: 0},
 	"Llama-2-7B-Chat":              {MaxInputChars: 4800, MaxInputTokens: 0},
 	"Llama-2-13B-Chat":             {MaxInputChars: 4800, MaxInputTokens: 0},
@@ -190,6 +194,7 @@ var limitMapInModelName = map[string]inputLimitInfo{
 }
 
 var limitMapInEndpoint = map[string]inputLimitInfo{
+    "/chat/ernie-4.0-turbo-8k":           {MaxInputChars: 20000, MaxInputTokens: 5120},
     "/chat/ernie-4.0-8k-latest":          {MaxInputChars: 20000, MaxInputTokens: 5120},
     "/chat/ernie-4.0-8k-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
     "/chat/ernie-3.5-8k-0613":            {MaxInputChars: 20000, MaxInputTokens: 5120},
@@ -216,6 +221,7 @@ var limitMapInEndpoint = map[string]inputLimitInfo{
 	"/chat/ernie-tiny-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/ernie-func-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/ernie-char-8k":                {MaxInputChars: 24000, MaxInputTokens: 6144},
+    "/chat/ernie-char-fiction-8k":        {MaxInputChars: 24000, MaxInputTokens: 6144},
 	"/chat/bloomz_7b1":                   {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_2_7b":                   {MaxInputChars: 4800, MaxInputTokens: 0},
 	"/chat/llama_2_13b":                  {MaxInputChars: 4800, MaxInputTokens: 0},

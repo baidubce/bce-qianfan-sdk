@@ -608,8 +608,8 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.deploy_config.qps is not None:
             res_config["qps"] = self.deploy_config.qps
         svc_publish_resp = api.Service.V2.create_service(
-            model_id=model.id,
-            model_version_id=model.version_id,
+            model_set_id=model.id,
+            model_id=model.version_id,
             name=self.deploy_config.name or f"svc{model.id}_{model.version_id}",
             url_suffix=self.deploy_config.endpoint_suffix
             or f"svc{model.id}_{model.version_id}",

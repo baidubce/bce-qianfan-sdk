@@ -219,8 +219,8 @@ class Service(object):
         @console_api_request
         def create_service(
             cls,
+            model_set_id: str,
             model_id: str,
-            model_version_id: str,
             name: str,
             url_suffix: str,
             resource_config: Dict,
@@ -232,9 +232,9 @@ class Service(object):
             get service list .
 
             Parameters:
+            model_set_id: str,
+                model set id.
             model_id: str,
-                model id.
-            model_version_id: str,
                 model version id.
             name: str,
                 service name.
@@ -264,8 +264,8 @@ class Service(object):
                 k: v
                 for k, v in {
                     **kwargs,
+                    "modelSetId": model_set_id,
                     "modelId": model_id,
-                    "modelVersionId": model_version_id,
                     "name": name,
                     "urlSuffix": url_suffix,
                     "description": description,
@@ -371,8 +371,8 @@ class Service(object):
         def modify_service(
             cls,
             service_id: str,
+            model_set_id: str,
             model_id: str,
-            model_version_id: str,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -381,9 +381,9 @@ class Service(object):
             Parameters:
             service_id: str,
                 service id. svco-xxx
+            model_set_id: str,
+                model set id. am-xxx
             model_id: str,
-                model id. am-xxx
-            model_version_id: str,
                 model version id. amv-xxx
 
             kwargs:
@@ -401,7 +401,7 @@ class Service(object):
             )
             req.json_body = {
                 "serviceId": service_id,
+                "modelSetId": model_set_id,
                 "modelId": model_id,
-                "modelVersionId": model_version_id,
             }
             return req

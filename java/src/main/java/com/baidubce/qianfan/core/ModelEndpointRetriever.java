@@ -74,6 +74,7 @@ public class ModelEndpointRetriever {
             dynamicTypeModelEndpointMap.put(type, new HashMap<>());
         }
 
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-turbo-8k", "ernie-4.0-turbo-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview", "ernie-4.0-8k-preview");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-4.0-8k-preview-0518", "completions_adv_pro");
@@ -89,13 +90,14 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-3.5-8k-0613", "ernie-3.5-8k-0613");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-8k", "ernie_speed");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-128k", "ernie-speed-128k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed-appbuilder", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-8k", "ernie-char-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-character-fiction-8k", "ernie-char-fiction-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k-0922", "eb-instant");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-8k", "ernie-lite-8k");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie-lite-appbuilder-8k-0614", "ai_apaas_lite");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-functions-8k", "ernie-func-8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-tiny-8k", "ernie-tiny-8k");
-        typeModelEndpointMap.get(ModelType.CHAT).put("ernie speed-appbuilder", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("gemma-7b-it", "gemma_7b_it");
         typeModelEndpointMap.get(ModelType.CHAT).put("yi-34b-chat", "yi_34b_chat");
         typeModelEndpointMap.get(ModelType.CHAT).put("bloomz-7b", "bloomz_7b1");
@@ -134,6 +136,7 @@ public class ModelEndpointRetriever {
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-4", "completions_pro");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-8k", "ernie_bot_8k");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-speed", "ernie_speed");
+        typeModelEndpointMap.get(ModelType.CHAT).put("ernie speed-appbuilder", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("ernie-bot-turbo-ai", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("eb-turbo-appbuilder", "ai_apaas");
         typeModelEndpointMap.get(ModelType.CHAT).put("qianfan-chinese-llama-2-13b", "qianfan_chinese_llama_2_13b");

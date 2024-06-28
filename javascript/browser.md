@@ -314,42 +314,6 @@ async function main() {
 main();
 ```
 
-### 返回示例
-
-```bash
-
-{
-    id: 'as-4teyam0huy',
-  object: 'chat.completion',
-  created: 1718782862,
-  result: 'To list all text files in the current directory (excluding subdirectories) that have been modified in the last month, you can use the following command:
-' +
-    '```
-' +
-    'find . -type f -name "*.txt" -mtime -1
-' +
-    '```
-' +
-    'Explanation:
-' +
-    '
-' +
-    '* `.` represents the current directory.
-' +
-    '* `-type f` specifies that we are looking for files.
-' +
-    '* `-name "*.txt"` specifies that we are looking for files with the ".txt" extension.
-' +
-    '* `-mtime -1` specifies that we are looking for files that have been modified in the last month.
-' +
-    '
-' +
-    'Note: The `-mtime` option is a GNU extension, and may not be available on all systems. If you are using a different operating system, you may need to use a different command to achieve the same result.',
-  is_safe: 1,
-  usage: { prompt_tokens: 29, completion_tokens: 158, total_tokens: 187 }
-}
-```
-
 #### 指定预置模型
 
 ```ts
@@ -505,72 +469,6 @@ main();
 
 ```bash
 [0.13463850319385529,  -0.010635782964527607,   0.024348171427845955...]
-```
-
-bge-large-zh
-
-```ts
-import {Eembedding} from "@baiducloud/qianfan";
-
-const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
-async function main() {
-    const resp = await client.embedding({
-        input: ['介绍下你自己吧', '你有什么爱好吗？'],
-    }, 'bge-large-zh');
-    const data = resp.data[0] as any;
-    console.log(data.embedding);
-}
-
-main();
-```
-
-```bash
-[0.13463850319385529,  -0.010635782964527607,   0.024348171427845955...]
-```
-
-bge-large-en
-
-```ts
-import {Eembedding} from "@baiducloud/qianfan";
-
-const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
-async function main() {
-    const resp = await client.embedding({
-        input: ['recommend some food for me, please','Tell me a fairy tale'],
-    }, 'bge-large-en');
-    const data = resp.data[0] as any;
-    console.log(data.embedding);
-}
-
-main();
-```
-
-```bash
-[0.13463850319385529,  -0.010635782964527607,   0.024348171427845955...]
-```
-
-tao-8k
-
-```ts
-import {Eembedding} from "@baiducloud/qianfan";
-
-const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
-async function main() {
-    const resp = await client.embedding({
-        input: ['介绍下你自己吧'],
-    }, 'tao-8k');
-    const data = resp.data[0] as any;
-    console.log(data.embedding);
-}
-
-main();
-```
-
-返回示例
-
-```bash
-[0.13463850319385529,  -0.010635782964527607,   0.024348171427845955...]
-
 ```
 
 ### 图像-Images

@@ -114,7 +114,7 @@ var ChatModelEndpoint = map[string]string{
 	"ERNIE-Tiny-8K":                "/chat/ernie-tiny-8k",
 	"ERNIE-Function-8K":            "/chat/ernie-func-8k",
 	"ERNIE-Character-8K":           "/chat/ernie-char-8k",
-	"ERNIE-Character-Fiction-8K"    "/chat/ernie-char-fiction-8k",
+	"ERNIE-Character-Fiction-8K":    "/chat/ernie-char-fiction-8k",
 	"ERNIE-Bot-turbo-AI":           "/chat/ai_apaas",
 	"EB-turbo-AppBuilder":          "/chat/ai_apaas",
 	"BLOOMZ-7B":                    "/chat/bloomz_7b1",

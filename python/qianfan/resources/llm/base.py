@@ -387,7 +387,7 @@ class BaseResource(object):
         kwargs["stream"] = stream
         if "extra_parameters" not in kwargs:
             kwargs["extra_parameters"] = {}
-        if kwargs["extra_parameters"].get("request_source") is not None:
+        if kwargs["extra_parameters"].get("request_source") is None:
             kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
         return kwargs
 

@@ -25,7 +25,7 @@ export function getCurrentEnvironment() {
     if (typeof window !== 'undefined') {
         return 'browser';
     }
-    else if (typeof process !== 'undefined' && process.release.name === 'node') {
+    else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
         return 'node';
     }
     return 'unknown';

@@ -69,6 +69,8 @@ const chatModelEndpoints = new Map<string, string>([
     ['ernie-bot-turbo-ai', 'ai_apaas'],
     ['eb-turbo-appbuilder', 'ai_apaas'],
     ['qianfan-chinese-llama-2-13b', 'qianfan_chinese_llama_2_13b'],
+    ['ernie-4.0-turbo-8k', 'ernie-4.0-turbo-8k'],
+    ['ernie-lite-appbuilder-8k-0614', 'ai_apaas_lite'],
 ]);
 // 定义 "COMPLETIONS" 类型的模型及其 endpoints
 const completionsModelEndpoints = new Map<string, string>([

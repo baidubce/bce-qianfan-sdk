@@ -75,7 +75,7 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
             }
         } catch (Exception e) {
             try {
-                this.close();
+                sseIterator.close();
             } catch (IOException ignored) {
                 // ignored
             }

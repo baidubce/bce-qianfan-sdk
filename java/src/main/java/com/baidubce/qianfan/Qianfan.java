@@ -37,8 +37,6 @@ import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.model.rerank.RerankRequest;
 import com.baidubce.qianfan.model.rerank.RerankResponse;
 
-import java.util.Iterator;
-
 public class Qianfan {
     private final QianfanClient client;
 

@@ -21,7 +21,6 @@ import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class CompletionBuilder extends BaseBuilder<CompletionBuilder> {

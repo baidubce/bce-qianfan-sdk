@@ -28,7 +28,6 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

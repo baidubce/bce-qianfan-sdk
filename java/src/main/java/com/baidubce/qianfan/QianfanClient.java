@@ -26,15 +26,10 @@ import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
-import com.baidubce.qianfan.model.plugin.PluginMetaInfo;
-import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.StringUtils;
 import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
-
-import java.util.Iterator;
-import java.util.Map;
 
 class QianfanClient {
     private static final String SDK_VERSION = "0.0.8";

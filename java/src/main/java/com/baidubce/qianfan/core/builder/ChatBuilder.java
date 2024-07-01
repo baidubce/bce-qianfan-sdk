@@ -20,7 +20,6 @@ import com.baidubce.qianfan.Qianfan;
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.chat.*;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class ChatBuilder extends BaseBuilder<ChatBuilder> {

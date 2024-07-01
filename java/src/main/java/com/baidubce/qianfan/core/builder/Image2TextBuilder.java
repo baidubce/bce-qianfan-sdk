@@ -21,7 +21,6 @@ import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.image.Image2TextRequest;
 import com.baidubce.qianfan.model.image.Image2TextResponse;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class Image2TextBuilder extends BaseBuilder<Image2TextBuilder> {

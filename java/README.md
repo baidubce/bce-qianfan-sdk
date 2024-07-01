@@ -12,7 +12,7 @@
 <dependency>
     <groupId>com.baidubce</groupId>
     <artifactId>qianfan</artifactId>
-    <version>0.0.8</version>
+    <version>0.0.9</version>
 </dependency>
 ```
 
@@ -21,13 +21,13 @@
 对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖
 
 ```kotlin
-implementation("com.baidubce:qianfan:0.0.8")
+implementation("com.baidubce:qianfan:0.0.9")
 ```
 
 对于Groovy DSL，在build.gradle的dependencies中添加依赖
 
 ```groovy
-implementation 'com.baidubce:qianfan:0.0.8'
+implementation 'com.baidubce:qianfan:0.0.9'
 ```
 
 > 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。

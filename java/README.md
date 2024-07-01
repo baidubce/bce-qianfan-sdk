@@ -2,11 +2,11 @@
 
 ## 安装
 
-> 使用千帆JavaSDK，需要Java版本>=8
+> 使用千帆JavaSDK，需要Java版本>=8。
 
 ### Maven
 
-在pom.xml的dependencies中添加依赖
+在pom.xml的dependencies中添加依赖。
 
 ```xml
 <dependency>
@@ -18,13 +18,13 @@
 
 ### Gradle
 
-对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖
+对于Kotlin DSL，在build.gradle.kts的dependencies中添加依赖。
 
 ```kotlin
 implementation("com.baidubce:qianfan:0.0.9")
 ```
 
-对于Groovy DSL，在build.gradle的dependencies中添加依赖
+对于Groovy DSL，在build.gradle的dependencies中添加依赖。
 
 ```groovy
 implementation 'com.baidubce:qianfan:0.0.9'
@@ -60,7 +60,7 @@ export QIANFAN_AK=your_ak
 export QIANFAN_SK=your_sk
 ```
 
-也可以在代码中通过如下方式配置
+也可以在代码中通过如下方式配置。
 
 ```java
 Qianfan qianfan = new Qianfan(Auth.TYPE_OAUTH, "your_ak", "your_sk");
@@ -82,7 +82,9 @@ ChatResponse response = new Qianfan().chatCompletion()
 System.out.println(response.getResult());
 ```
 
-也可以调用 `executeStream` 方法发起流式请求，会返回`Iterator<ChatResponse>`，即`ChatResponse`的迭代器，通过`hasNext`检查是否有新的消息片段，并通过`next`获取下一个消息片段。
+也可以调用 `executeStream` 方法发起流式请求，会返回`StreamIterator<ChatResponse>`，即`ChatResponse`的迭代器，推荐使用`forEachRemaining`来迭代流式数据。
+
+**注意**：在使用`hasNext`/`next`迭代数据时，如果希望提前停止迭代，**必须**显式调用`close`方法，否则可能导致**连接泄露**。
 
 示例如下：
 
@@ -107,15 +109,16 @@ CompletionResponse response = new Qianfan().completion()
 System.out.println(response.getResult());
 ```
 
-也可以调用 `executeStream` 方法实现流式返回
+也可以调用 `executeStream` 方法实现流式返回。
 
 ```java
-Iterator<CompletionResponse> response = new Qianfan().completion()
+try (StreamIterator<CompletionResponse> response = new Qianfan().completion()
         .model("CodeLlama-7b-Instruct")
         .prompt("hello")
-        .executeStream();
-while (response.hasNext()) {
-    System.out.print(response.next().getResult());
+        .executeStream()) {
+    while (response.hasNext()) {
+        System.out.print(response.next().getResult());
+    }
 }
 ```
 

@@ -26,6 +26,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, Closeable {
     private final Map<String, String> headers;
@@ -62,6 +64,23 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
         }
 
         return (T) response.setHeaders(headers);
+    }
+
+    @Override
+    public void forEachRemaining(Consumer<? super T> action) {
+        Objects.requireNonNull(action);
+        try {
+            while (hasNext()) {
+                action.accept(next());
+            }
+        } catch (Exception e) {
+            try {
+                this.close();
+            } catch (IOException ignored) {
+                // ignored
+            }
+            throw e;
+        }
     }
 
     @Override

@@ -120,7 +120,7 @@ public class HttpRequest {
         return HttpClient.executeString(toClassicHttpRequest());
     }
 
-    public HttpResponse<Iterator<String>> executeSSE() throws IOException {
+    public HttpResponse<SSEIterator> executeSSE() throws IOException {
         return HttpClient.executeSSE(toClassicHttpRequest());
     }
 

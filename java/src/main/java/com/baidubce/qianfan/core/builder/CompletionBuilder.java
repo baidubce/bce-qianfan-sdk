@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
 
@@ -92,7 +93,7 @@ public class CompletionBuilder extends BaseBuilder<CompletionBuilder> {
         return super.getQianfan().completion(build());
     }
 
-    public Iterator<CompletionResponse> executeStream() {
+    public StreamIterator<CompletionResponse> executeStream() {
         return super.getQianfan().completionStream(build());
     }
 }

@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.plugin.PluginHistory;
 import com.baidubce.qianfan.model.plugin.PluginLLM;
 import com.baidubce.qianfan.model.plugin.PluginRequest;
@@ -102,7 +103,7 @@ public class PluginBuilder extends BaseBuilder<PluginBuilder> {
         return super.getQianfan().plugin(build());
     }
 
-    public Iterator<PluginResponse> executeStream() {
+    public StreamIterator<PluginResponse> executeStream() {
         return super.getQianfan().pluginStream(build());
     }
 }

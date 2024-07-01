@@ -19,6 +19,7 @@ package com.baidubce.qianfan;
 import com.baidubce.qianfan.core.ModelEndpointRetriever;
 import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.*;
@@ -83,7 +84,7 @@ class QianfanClient {
         );
     }
 
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return request(
                 request,
                 HttpRequest::executeSSE,
@@ -157,44 +158,6 @@ class QianfanClient {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RequestException("Request failed: retry delay interrupted", e);
-        }
-    }
-
-    private static class StreamIterator<T extends BaseResponse<T>> implements Iterator<T> {
-        private final Map<String, String> headers;
-        private final Iterator<String> sseIterator;
-        private final Class<T> responseClass;
-
-        private PluginMetaInfo metaInfo;
-
-        public StreamIterator(Map<String, String> headers, Iterator<String> sseIterator, Class<T> responseClass) {
-            this.headers = headers;
-            this.sseIterator = sseIterator;
-            this.responseClass = responseClass;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return sseIterator.hasNext();
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public T next() {
-            String event = sseIterator.next().replaceFirst("data: ", "");
-            // Skip sse empty line
-            sseIterator.next();
-            T response = Json.deserialize(event, responseClass);
-
-            // Set meta info for PluginResponse
-            if (responseClass.equals(PluginResponse.class)) {
-                if (metaInfo == null) {
-                    metaInfo = Json.deserialize(event, PluginMetaInfo.class);
-                }
-                ((PluginResponse) response).setMetaInfo(metaInfo);
-            }
-
-            return (T) response.setHeaders(headers);
         }
     }
 }

@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.model.chat.*;
 
 import java.util.Iterator;
@@ -175,7 +176,7 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
         return super.getQianfan().chatCompletion(build());
     }
 
-    public Iterator<ChatResponse> executeStream() {
+    public StreamIterator<ChatResponse> executeStream() {
         return super.getQianfan().chatCompletionStream(build());
     }
 }

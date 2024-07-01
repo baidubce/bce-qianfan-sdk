@@ -73,13 +73,12 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
             while (hasNext()) {
                 action.accept(next());
             }
-        } catch (Exception e) {
+        } finally {
             try {
-                sseIterator.close();
-            } catch (IOException ignored) {
+                close();
+            } catch (Exception e) {
                 // ignored
             }
-            throw e;
         }
     }
 

@@ -892,8 +892,8 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 **input,
                 "task_id": self.task_id,
                 "job_id": self.job_id,
+                "model_set_id": self.model.set_id,
                 "model_id": self.model.id,
-                "model_version_id": self.model.version_id,
                 "model": self.model,
             }
             return self.result
@@ -923,7 +923,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             },
         }
         if self.model:
-            meta["model_version_id"] = self.model.version_id
+            meta["model_version_id"] = self.model.id
         if self.result:
             res = copy.deepcopy(self.result)
             if "model" in res:
@@ -971,14 +971,11 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     deploy_config: Optional[DeployConfig] = None
     """deploy config include replicas and so on"""
-    model_id: Optional[int] = None
     """model id"""
-    model_id_str: Optional[str] = None
-    """model str id"""
-    model_version_id: Optional[int] = None
-    """model version id"""
-    model_version_id_str: Optional[str] = None
-    """model version str id """
+    model_set_id: Optional[str] = None
+    """model set id"""
+    model_id: Optional[str] = None
+    """model id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
@@ -1004,12 +1001,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("deploy_config must be set")
         if input.get("model") is None:
             self.model_id = input.get("model_id")
-            self.model_version_id = input.get("model_version_id")
+            self.model_set_id = input.get("model_set_id")
             # TODO 迁移成str id
-            if self.model_id is None or self.model_version_id is None:
-                raise InvalidArgumentError("model_id or model_version_id must be set")
+            if self.model_id is None or self.model_set_id is None:
+                raise InvalidArgumentError("model_id or model_set_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model = Model(self.model_set_id, self.model_id, auto_complete=True)
             self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
@@ -1018,8 +1015,6 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     "must input with model or model id and version id"
                 )
             self.model.auto_complete_info()
-            self.model_id = self.model.old_id
-            self.model_version_id = self.model.old_version_id
         # 自动补全
 
         return self._exec(**kwargs)
@@ -1029,7 +1024,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("deploy_config must be set in deploy._exec")
         assert self.model is not None
         log_debug(
-            f"[deploy_action] try deploy model {self.model.id}_{self.model.version_id}"
+            f"[deploy_action] try deploy model {self.model.set_id}_{self.model.id}"
         )
         self.action_event(
             ActionState.Running,
@@ -1043,7 +1038,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if self.model.service is not None:
             log_debug(
                 "[deploy_action] model"
-                f" {self.model_id}_{self.model_version_id} deployed successfully with"
+                f" {self.model_set_id}_{self.model_id} deployed successfully with"
                 " service:"
                 f" {self.model.service.id} endpoint:{self.model.service.endpoint}"
             )
@@ -1067,13 +1062,11 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 input args for action resume
 
         """
-        if self.model_id is not None and self.model_version_id is not None:
-            self.model = Model(self.model_id_str, self.model_version_id_str)
+        if self.model_id is not None and self.model_set_id is not None:
+            self.model = Model(self.model_set_id, self.model_id)
             self.model.auto_complete_info()
         elif self.model is None:
-            raise InvalidArgumentError(
-                "either (model_id and version_id) or model must be set"
-            )
+            raise InvalidArgumentError("either (set_id and id) or model must be set")
         return self._exec()
 
     def _action_dict(self) -> Dict[str, Any]:
@@ -1086,8 +1079,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 ),
             },
             "input": {
+                "model_set_id": self.model_set_id,
                 "model_id": self.model_id,
-                "model_version_id": self.model_version_id,
             },
         }
         if self.model is not None and self.model.service is not None:
@@ -1212,8 +1205,8 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             llm = input.get("service")
         elif input.get("model"):
             llm = input.get("model")
-        elif input.get("model_id") and input.get("model_version_id"):
-            llm = Model(input["model_id"], input["model_version_id"])
+        elif input.get("model_set_id") and input.get("model_id"):
+            llm = Model(input["model_set_id"], input["model_id"])
         else:
             log_error(f"[evaluation_action] invalid llm input error {self._input}")
             raise InvalidArgumentError(

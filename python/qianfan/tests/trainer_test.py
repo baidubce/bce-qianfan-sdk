@@ -205,7 +205,7 @@ def test_trainer_sft_with_deploy():
 
 
 def test_model_deploy():
-    svc = Model(id="1", version_id="1").deploy(
+    svc = Model(set_id="1", version_id="1").deploy(
         DeployConfig(
             endpoint_suffix="xxx",
             replicas=1,
@@ -276,8 +276,8 @@ def test__parse_from_input():
     input = {"model": Model("17000", "12333")}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == "17000"
-    assert result.version_id == "12333"
+    assert result.set_id == "17000"
+    assert result.id == "12333"
     input = {"service": Service(model="ERNIE-Bot")}
     result = action._parse_from_input(input)
     assert isinstance(
@@ -286,8 +286,8 @@ def test__parse_from_input():
     input = {"model_id": "17001", "model_version_id": "12666"}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == "17001"
-    assert result.version_id == "12666"
+    assert result.set_id == "17001"
+    assert result.id == "12666"
     input = {}
     with pytest.raises(InvalidArgumentError):
         action._parse_from_input(input)

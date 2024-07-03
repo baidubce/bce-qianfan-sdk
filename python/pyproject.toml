@@ -46,11 +46,7 @@ rich = ">=13.0.0"
 typer = ">=0.9.0"
 pyyaml = "^6.0.1"
 prompt-toolkit = ">=3.0.38"
-torch = [
-    { version = "<=1.13.1", python = "<3.8", optional = true},
-    { version = "*", python = ">=3.8", optional = true }
-]
-ltp = { version = "*", optional = true }
+
 emoji = { version = "*", optional = true }
 sentencepiece = { version = "*", optional = true }
 diskcache = "^5.6.3"
@@ -86,10 +82,10 @@ ipykernel = {version = "^6.29.4", python = ">=3.8 <4"}
 
 [tool.poetry.extras]
 dataset_base = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock"]
-local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "ltp", "emoji", "sentencepiece", "torch"]
+local_data_clean = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "emoji", "sentencepiece"]
 langchain = ["langchain", "langchain-community"]
 openai = ["fastapi", "uvicorn"]
-all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "langchain-community", "ltp", "emoji", "sentencepiece", "torch", "fastapi", "uvicorn"]
+all = ["numpy", "pyarrow", "locust", "tabulate", "python-dateutil", "ijson", "filelock", "langchain", "langchain-community", "emoji", "sentencepiece", "fastapi", "uvicorn"]
 
 [tool.ruff.lint]
 extend-select = ["PLW1514"]

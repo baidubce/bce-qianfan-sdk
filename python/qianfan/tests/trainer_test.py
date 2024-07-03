@@ -104,7 +104,7 @@ def test_model_publish_action():
 
     output = publish_action.exec(input={"task_id": 47923, "job_id": 33512})
     assert isinstance(output, dict)
-    assert "model_version_id" in output and "model_id" in output
+    assert "model_id" in output and "model_set_id" in output
 
 
 def test_service_deploy_action():
@@ -112,7 +112,7 @@ def test_service_deploy_action():
     deploy_action = DeployAction(deploy_config=deploy_config)
 
     output = deploy_action.exec(
-        input={"task_id": 47923, "job_id": 33512, "model_id": 1, "model_version_id": 39}
+        input={"task_id": 47923, "job_id": 33512, "model_set_id": "1", "model_id": "39"}
     )
     assert isinstance(output, dict)
     assert "service_id" in output and "service_endpoint" in output
@@ -147,7 +147,7 @@ def test_trainer_sft_run():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
     assert len(eh.events) > 0
 
 
@@ -166,7 +166,7 @@ def test_trainer_sft_run_from_bos():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
 
 
 def test_trainer_sft_with_deploy():
@@ -250,7 +250,7 @@ def test_trainer_resume():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
 
 
 def test_batch_run_on_qianfan():
@@ -283,7 +283,7 @@ def test__parse_from_input():
     assert isinstance(
         result, Service
     )  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
-    input = {"model_id": "17001", "model_version_id": "12666"}
+    input = {"model_set_id": "17001", "model_id": "12666"}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
     assert result.set_id == "17001"
@@ -356,7 +356,7 @@ def test_trainer_sft_with_eval():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
     assert len(eh.events) > 0
     assert res[0].get("eval_res") is not None
 
@@ -449,7 +449,7 @@ def test_ppt_with_sft():
         dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
     )
     sft_trainer.run()
-    assert "model_version_id" in sft_trainer.output and "model_id" in sft_trainer.output
+    assert "model_id" in sft_trainer.output and "model_set_id" in sft_trainer.output
 
 
 def test_all_default_config():
@@ -508,7 +508,7 @@ def test_increment_sft():
     res = trainer.output
     assert res is not None
     assert isinstance(res, dict)
-    assert "model_version_id" in res
+    assert "model_id" in res
 
 
 def test_persist():

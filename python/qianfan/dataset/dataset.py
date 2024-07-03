@@ -1592,7 +1592,7 @@ class Dataset(Table):
 
         Parameters:
             model_id (str):
-                version id of your own model, default to None
+                model id of your own model, default to None
             output_prettified (bool):
                 whether prettified output dataset content
             **kwargs (Any):

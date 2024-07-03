@@ -148,7 +148,9 @@ class Model(
             model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
             self.set_id = model_detail_resp["result"].get("modelIdStr")
         elif self.set_id:
-            list_resp = ResourceModel.V2.describe_model_set(model_set_id=self.set_id, **kwargs)
+            list_resp = ResourceModel.V2.describe_model_set(
+                model_set_id=self.set_id, **kwargs
+            )
             if len(list_resp["result"]["modelIds"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
@@ -180,7 +182,9 @@ class Model(
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
         elif self.set_id:
-            list_resp = ResourceModel.V2.describe_model_set(model_set_id=self.set_id, **kwargs)
+            list_resp = ResourceModel.V2.describe_model_set(
+                model_set_id=self.set_id, **kwargs
+            )
             if len(list_resp["result"]["modelIds"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
@@ -241,7 +245,9 @@ class Model(
         if self.set_id is None:
             raise InvalidArgumentError("model id not found")
         # 获取模型版本信息：
-        model_list_resp = ResourceModel.V2.describe_model_set(model_set_id=self.set_id, **kwargs)
+        model_list_resp = ResourceModel.V2.describe_model_set(
+            model_set_id=self.set_id, **kwargs
+        )
         model_version_list = model_list_resp["result"]["modelIds"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")

@@ -961,6 +961,7 @@ class BaseResourceV2(BaseResource):
             body["model"] = self._model
         else:
             body["model"] = self._default_model()
+        body["model"] = body["model"].lower()
         return body
 
     @classmethod

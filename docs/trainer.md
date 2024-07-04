@@ -87,7 +87,7 @@ from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, Co
 from qianfan.resources.console import consts as console_consts
 
 
-ds = Dataset.load(qianfan_dataset_id="ds-zcs8yzfmkdf1dabv")
+ds = Dataset.load(qianfan_dataset_id="ds-pt19ixpeqrhtgc92")
 trainer = LLMFinetune(
     train_type="ERNIE-Speed-8K",
     dataset=DatasetConfig(

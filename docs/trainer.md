@@ -83,7 +83,7 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
-from qianfan.trainer.configs import TrainConfig, DatasetConfig
+from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem
 
 
 ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
@@ -92,13 +92,26 @@ trainer = LLMFinetune(
     dataset=DatasetConfig(
         datasets=[sft_ds],
         eval_split_ratio=20,
-        corpus_proportion=0.03,
         sampling_rate=0.01,
     ),
     train_config=TrainConfig(
         epochs=1, # 迭代轮次（Epoch），控制训练过程中的迭代轮数。
         batch_size=32, # 批处理大小（BatchSize）表示在每次训练迭代中使用的样本数。较大的批处理大小可以加速训练.
         learning_rate=0.00002, # 学习率（LearningRate）是在梯度下降的过程中更新权重时的超参数，过高会导致模型难以收敛，过低则会导致模型收敛速度过慢，
+    ),
+    corpus_config=CorpusConfig(
+        data_copy=True,
+        corpus_configs=[
+            CorpusConfigItem(
+                corpus_labels=["文本创作"],
+                corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,
+                corpus_proportion="1:2",
+            ),
+            CorpusConfigItem(
+                corpus_type=console_consts.FinetuneCorpusType.YiyanCommon,
+                corpus_proportion="1:1",
+            ),
+        ],
     )
 )
 trainer.run()

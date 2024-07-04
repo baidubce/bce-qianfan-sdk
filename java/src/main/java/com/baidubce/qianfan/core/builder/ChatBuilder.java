@@ -31,6 +31,10 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
 
     private Double penaltyScore;
 
+    private Boolean enableSystemMemory;
+
+    private String systemMemoryId;
+
     private String system;
 
     private List<String> stop;
@@ -38,6 +42,8 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
     private Boolean disableSearch;
 
     private Boolean enableCitation;
+
+    private Boolean enableTrace;
 
     private Integer maxOutputTokens;
 
@@ -110,6 +116,16 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
         return this;
     }
 
+    public ChatBuilder enableSystemMemory(Boolean enableSystemMemory) {
+        this.enableSystemMemory = enableSystemMemory;
+        return this;
+    }
+
+    public ChatBuilder systemMemoryId(String systemMemoryId) {
+        this.systemMemoryId = systemMemoryId;
+        return this;
+    }
+
     public ChatBuilder system(String system) {
         this.system = system;
         return this;
@@ -127,6 +143,11 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
 
     public ChatBuilder enableCitation(Boolean enableCitation) {
         this.enableCitation = enableCitation;
+        return this;
+    }
+
+    public ChatBuilder enableTrace(Boolean enableTrace) {
+        this.enableTrace = enableTrace;
         return this;
     }
 

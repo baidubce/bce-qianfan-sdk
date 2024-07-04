@@ -16,6 +16,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 
 from qianfan.extensions.openai.adapter import OpenAIApdater
@@ -85,6 +86,17 @@ def entry(
             async for data in resp:
                 yield "data: " + json.dumps(data) + "\n\n"
             yield "data: [DONE]\n\n"
+
+        # 添加CORS中间件，允许跨域以及OPTIONS请求
+        openai_apps.add_middleware(
+            CORSMiddleware,
+            allow_origins=[
+                "*"
+            ],  # 允许所有来源，或者你可以指定特定的来源，例如：["https://example.com"]
+            allow_credentials=True,
+            allow_methods=["POST", "OPTIONS"],
+            allow_headers=["*"],  # 允许所有头部，或者你可以指定特定的头部
+        )
 
         @openai_apps.post("/v1/chat/completions")
         async def chat_completion(request: Request) -> Response:

@@ -31,6 +31,8 @@ from qianfan.trainer.base import (
     with_event,
 )
 from qianfan.trainer.configs import (
+    CorpusConfig,
+    CorpusConfigItem,
     DatasetConfig,
     DefaultDPOTrainConfigMapping,
     DefaultPostPretrainTrainConfigMapping,
@@ -87,33 +89,37 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     dataset: Optional[Dataset] = None
     bos_path: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
-    corpus_proportion: Optional[float] = None
-    corpus_type: Optional[console_consts.FinetuneCorpusType] = None
-    corpus_labels: Optional[List[str]] = None
     eval_split_ratio: Optional[float] = None
     sampling_rate: Optional[float] = None
+    corpus_config: Optional[CorpusConfig] = None
 
     def __init__(
         self,
         dataset: Union[DatasetConfig, Dataset, str],
         dataset_template: Optional[console_consts.DataTemplateType] = None,
+        corpus_config: Optional[CorpusConfig] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.eval_split_ratio = kwargs.get("eval_split_ratio", 20)
-        self.corpus_proportion = kwargs.get("corpus_proportion")
-        self.corpus_type = kwargs.get("corpus_type")
-        self.corpus_labels = kwargs.get("corpus_labels")
+
         self.sampling_rate = kwargs.get("sampling_rate")
+        if kwargs.get("corpus_type"):
+            self.corpus_config = CorpusConfig()
+            self.corpus_config.corpus_configs.append(CorpusConfigItem(**kwargs))
         if isinstance(dataset, DatasetConfig):
             assert isinstance(dataset.datasets[0], Dataset)
             self.dataset = dataset.datasets[0]
-            if dataset.corpus_proportion is not None:
-                self.corpus_proportion = dataset.corpus_proportion
-            if dataset.corpus_type is not None:
-                self.corpus_type = dataset.corpus_type
-            if dataset.corpus_labels is not None:
-                self.corpus_labels = dataset.corpus_labels
+            if self.corpus_config is None:
+                self.corpus_config = CorpusConfig()
+            if dataset.corpus_type:
+                self.corpus_config.corpus_configs.append(
+                    CorpusConfigItem(  # type:ignore
+                        corpus_proportion=dataset.corpus_proportion,
+                        corpus_type=dataset.corpus_type,
+                        corpus_labels=dataset.corpus_labels,
+                    )
+                )
             if dataset.eval_split_ratio is not None:
                 self.eval_split_ratio = dataset.eval_split_ratio
             if dataset.sampling_rate is not None:
@@ -147,6 +153,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 " BosDataSource or a bos path"
             )
 
+        if corpus_config is not None:
+            self.corpus_config = corpus_config
+
     @with_event
     def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         resp = self._exec(input, **kwargs)
@@ -154,15 +163,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             return resp
         if self.eval_split_ratio is not None:
             resp["datasets"]["splitRatio"] = self.eval_split_ratio
-        if self.corpus_proportion:
-            resp["datasets"]["corpusProportion"] = f"{self.corpus_proportion}%"
+        if self.corpus_config:
+            tmp = self.corpus_config.dict(by_alias=True, exclude_none=True)
+            resp["corpus_config"] = tmp
         if self.sampling_rate:
             for d in resp["datasets"]["versions"]:
                 d["samplingRate"] = self.sampling_rate
-        if self.corpus_type:
-            resp["datasets"]["corpusProportionType"] = int(self.corpus_type)
-        if self.corpus_labels:
-            resp["datasets"]["corpusProportionLabels"] = self.corpus_labels
         return resp
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -239,7 +245,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         resume method for load dataset action.
 
         Returns:
-            Dict[str, Any]: datasets metainfo including
+            Dict[str, Any]: datasets meta_info including
             dataset_id and dataset_type.
         """
         if self.qf_dataset_id:
@@ -268,6 +274,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ):
             assert isinstance(self.dataset.inner_data_source_cache, QianfanDataSource)
             qf_ds = self.dataset.inner_data_source_cache.id
+        assert self.corpus_config
         meta = {
             "id": self.id,
             "type": LoadDataSetAction.__name__,
@@ -276,9 +283,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "output": self.result,
             "eval_split_ratio": self.eval_split_ratio,
             "sampling_rate": self.sampling_rate,
-            "corpus_proportion": self.corpus_proportion,
-            "corpus_labels": self.corpus_labels,
-            "corpus_type": self.corpus_type,
+            "corpus_config": self.corpus_config.dict(by_alias=True, exclude_none=True),
         }
         return meta
 
@@ -615,6 +620,9 @@ class TrainAction(
                 f" { self._last_task_step}"
             )
         assert self.train_config.peft_type is not None
+        # 语料混合配置
+        if input.get("corpus_config"):
+            kwargs["corpus_config"] = input.get("corpus_config")
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
             params_scale=self.train_config.peft_type,

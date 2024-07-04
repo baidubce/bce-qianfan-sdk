@@ -33,7 +33,13 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.configs import DatasetConfig, TrainConfig, TrainLimit
+from qianfan.trainer.configs import (
+    CorpusConfig,
+    CorpusConfigItem,
+    DatasetConfig,
+    TrainConfig,
+    TrainLimit,
+)
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import Finetune, LLMFinetune
@@ -592,5 +598,35 @@ def test_trainer_dataset_config():
     trainer = Finetune(
         train_type="ERNIE-Speed",
         dataset=qf_ds_conf,
+    )
+    trainer.run()
+
+
+def test_trainer_corpus_config():
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    qf_ds_conf = DatasetConfig(
+        datasets=[sft_ds],
+        eval_split_ratio=0,
+        corpus_proportion=0.03,
+        sampling_rate=0.01,
+    )
+
+    trainer = Finetune(
+        train_type="ERNIE-Speed",
+        dataset=qf_ds_conf,
+        corpus_config=CorpusConfig(
+            data_copy=True,
+            corpus_configs=[
+                CorpusConfigItem(
+                    corpus_labels=["文本创作"],
+                    corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,
+                    corpus_proportion="1:2",
+                ),
+                CorpusConfigItem(
+                    corpus_type=console_consts.FinetuneCorpusType.YiyanCommon,
+                    corpus_proportion="1:1",
+                ),
+            ],
+        ),
     )
     trainer.run()

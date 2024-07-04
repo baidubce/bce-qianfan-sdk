@@ -21,7 +21,7 @@ from qianfan.resources import FineTune
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.consts import PeftType
 from qianfan.utils import log_error, log_warn
-from qianfan.utils.pydantic import BaseModel, Field, create_model
+from qianfan.utils.pydantic import BaseModel, Field, create_model, validator
 from qianfan.utils.utils import camel_to_snake
 
 T = TypeVar("T")
@@ -54,6 +54,43 @@ class DatasetConfig(BaseModel):
     sampling_rate: Optional[float] = None
     """
     sampling rate
+    """
+
+
+class BaseJsonModel(BaseModel):
+    class Config:
+        allow_population_by_field_name = True
+
+
+class CorpusConfigItem(BaseJsonModel):
+    corpus_proportion: Optional[Any] = Field(default=None, alias="proportion")
+    """
+    corpus proportion, only support in `QianfanCommon` Corpus
+    """
+    corpus_type: Optional[int] = Field(default=None, alias="corpusType")
+    """
+    corpus type, including qianfan/yiyan common/yiyan vertical
+    """
+    corpus_labels: Optional[List[str]] = Field(default=None, alias="labels")
+    """
+    corpus vertical labels
+    """
+
+    @validator("corpus_type", pre=True)
+    def convert_enum_to_int(cls, v: Any) -> Any:
+        if isinstance(v, console_consts.FinetuneCorpusType):
+            return v.value
+        return v
+
+
+class CorpusConfig(BaseJsonModel):
+    copy_data: Optional[bool] = Field(default=None, alias="copyData")
+    """
+    copy data when exceed maximum number of data
+    """
+    corpus_configs: List[CorpusConfigItem] = Field(default=[], alias="config")
+    """
+    corpus configs
     """
 
 

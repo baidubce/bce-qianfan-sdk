@@ -84,6 +84,7 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
 from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem
+from qianfan.resources.console import consts as console_consts
 
 
 ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
@@ -100,12 +101,12 @@ trainer = LLMFinetune(
         learning_rate=0.00002, # 学习率（LearningRate）是在梯度下降的过程中更新权重时的超参数，过高会导致模型难以收敛，过低则会导致模型收敛速度过慢，
     ),
     corpus_config=CorpusConfig(
-        data_copy=True,
+        data_copy=False, # 仅一言语料使用，如果为True，则当语料库不足以混入时，则拷贝重复数据混入
         corpus_configs=[
-            CorpusConfigItem( # 千帆通用语料
-                corpus_type=console_consts.FinetuneCorpusType.QianfanCommon,
-                corpus_proportion="1%", # 总通用语料共n条，混入比例的取值范围x%为[0-100]%， 则混入n * x%
-            ),
+            # CorpusConfigItem( # 千帆通用语料
+            #     corpus_type=console_consts.FinetuneCorpusType.QianfanCommon,
+            #     corpus_proportion="1%", # 总通用语料共n条，混入比例的取值范围x%为[0-100]%， 则混入n * x%
+            # ),
             CorpusConfigItem( # 一言垂类
                 corpus_labels=["文本创作"],
                 corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,

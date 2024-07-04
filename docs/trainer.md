@@ -89,7 +89,7 @@ from qianfan.resources.console import consts as console_consts
 
 ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
 trainer = LLMFinetune(
-    train_type="ERNIE-Speed",
+    train_type="ERNIE-Speed-8K",
     dataset=DatasetConfig(
         datasets=[sft_ds],
         eval_split_ratio=20, 
@@ -122,6 +122,12 @@ trainer = LLMFinetune(
 )
 trainer.run()
 ```
+
+- `train_type`: 训练模型类型
+- `dataset`: 训练数据集，支持传入DatasetConfig或Dataset或千帆数据集id
+- `data_copy` 是否数据拷贝，如果在配置的混合比例下，需要混合的数据量超出了平台混合数据的总量，默认不重复选择数据训练。如果要重复选择数据，请打开开关。只有一言通用和一言垂直混合方式支持此参数，且两者共用此参数。
+- `corpus_labels` 支持以下取值：'主观知识问答','客观知识问答','文本创作','表格问答','信息抽取','指令理解','标题生成','问题生成','示例学习','文本属性分析','摘要','语言推理','阅读理解','文本分类','Json转文本','代码生成','代码纠错','代码解释','理科试题','多轮对话','角色扮演（多轮）','风格定制（多轮）','翻译','文科试题','Agent','NL2SQL'，每一个`CorpusConfigItem` 最多指定5个Labels。
+
 
 ### 事件回调
 

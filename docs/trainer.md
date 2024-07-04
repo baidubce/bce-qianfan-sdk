@@ -123,10 +123,14 @@ trainer = LLMFinetune(
 trainer.run()
 ```
 
-- `train_type`: 训练模型类型
+- `train_type`: 训练model名，可参考：[训练模型支持列表](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clwgbz367)中的model字段
+- `train_config`: 训练超参，具体以API文档为准。
 - `dataset`: 训练数据集，支持传入DatasetConfig或Dataset或千帆数据集id
 - `data_copy` 是否数据拷贝，如果在配置的混合比例下，需要混合的数据量超出了平台混合数据的总量，默认不重复选择数据训练。如果要重复选择数据，请打开开关。只有一言通用和一言垂直混合方式支持此参数，且两者共用此参数。
-- `corpus_labels` 支持以下取值：'主观知识问答','客观知识问答','文本创作','表格问答','信息抽取','指令理解','标题生成','问题生成','示例学习','文本属性分析','摘要','语言推理','阅读理解','文本分类','Json转文本','代码生成','代码纠错','代码解释','理科试题','多轮对话','角色扮演（多轮）','风格定制（多轮）','翻译','文科试题','Agent','NL2SQL'，每一个`CorpusConfigItem` 最多指定5个Labels。
+- `corpus_config`: 语料库配置
+    - `corpus_type` 用于指定模型混合的类型
+    - `corpus_labels` 每一个`CorpusConfigItem` 最多指定5个Labels。
+    - `corpus_proportion` 语料库的混入比例， 千帆使用"x%"，一言使用"1:n"
 
 
 ### 事件回调

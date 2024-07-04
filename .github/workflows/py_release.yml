@@ -31,7 +31,7 @@ jobs:
           cache: "pip"
       - name: Install
         run: |
-          pip3 install 'poetry==1.6.1'
+          pip3 install poetry
       - name: run lint
         run: make lint
       - name: run UT

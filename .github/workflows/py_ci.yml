@@ -55,9 +55,8 @@ jobs:
           cache: "pip"
       - name: Install Poetry
         run: |
-          pip3 install 'poetry==1.6.1'
+          pip3 install poetry
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry lock
       - name: Get Poetry version
         run: poetry --version
       - name: Setup Python Poetry Cache

@@ -34,11 +34,11 @@ from qianfan.trainer.actions import (
     TrainAction,
 )
 from qianfan.trainer.configs import (
+    CorpusConfig,
+    CorpusConfigItem,
     DatasetConfig,
     TrainConfig,
     TrainLimit,
-    CorpusConfig,
-    CorpusConfigItem,
 )
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler

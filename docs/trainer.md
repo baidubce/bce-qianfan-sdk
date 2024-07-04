@@ -83,7 +83,7 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
-from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem
+from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem, PeftType
 from qianfan.resources.console import consts as console_consts
 
 
@@ -91,14 +91,20 @@ ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
 trainer = LLMFinetune(
     train_type="ERNIE-Speed-8K",
     dataset=DatasetConfig(
-        datasets=[sft_ds],
-        eval_split_ratio=20, 
-        sampling_rate=0.01,
+        datasets=[ds],
+        eval_split_ratio=10, 
+        sampling_rate=1,
     ),
     train_config=TrainConfig(
-        epochs=1, # 迭代轮次（Epoch），控制训练过程中的迭代轮数。
-        batch_size=32, # 批处理大小（BatchSize）表示在每次训练迭代中使用的样本数。较大的批处理大小可以加速训练.
-        learning_rate=0.00002, # 学习率（LearningRate）是在梯度下降的过程中更新权重时的超参数，过高会导致模型难以收敛，过低则会导致模型收敛速度过慢，
+        peft_type=PeftType.LoRA, # 必传，指定SFT or LoRA
+        epoch=1,
+        learning_rate=0.0003,
+        max_seq_len=4096,
+        logging_steps=1,
+        warmup_ratio=0.10,
+        weight_decay=0.0100,
+        lora_rank=8,
+        lora_all_linear="True",
     ),
     corpus_config=CorpusConfig(
         data_copy=False, # 仅一言语料使用，如果为True，则当语料库不足以混入时，则拷贝重复数据混入
@@ -124,10 +130,12 @@ trainer.run()
 ```
 
 - `train_type`: 训练model名，可参考：[训练模型支持列表](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clwgbz367)中的model字段
-- `train_config`: 训练超参，具体以API文档为准。
+- `train_config`: 训练超参，具体以[训练模型支持列表](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clwgbz367)为准。
 - `dataset`: 训练数据集，支持传入DatasetConfig或Dataset或千帆数据集id
+    - `sampling_rate`: 采样率，取值范围为[0.01,10]
+    - `eval_split_ratio`: 验证集比例，取值范围为[0,100]
 - `data_copy` 是否数据拷贝，如果在配置的混合比例下，需要混合的数据量超出了平台混合数据的总量，默认不重复选择数据训练。如果要重复选择数据，请打开开关。只有一言通用和一言垂直混合方式支持此参数，且两者共用此参数。
-- `corpus_config`: 语料库配置
+- `corpus_config`: 语料库配置，使用千帆 or 一言混合语料（无法同时使用）
     - `corpus_type` 用于指定模型混合的类型
     - `corpus_labels` 每一个`CorpusConfigItem` 最多指定5个Labels。
     - `corpus_proportion` 语料库的混入比例， 千帆使用"x%"，一言使用"1:n"

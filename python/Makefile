@@ -21,7 +21,7 @@ format: install
 	poetry run ruff --select I --fix ./qianfan
 
 lint: install
-	makedir -p  .mypy_cache/
+	makedir .mypy_cache
 	poetry run black ./qianfan --check 
 	poetry run ruff check ./qianfan
 	poetry run mypy ./qianfan --install-types --non-interactive

@@ -164,7 +164,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if self.eval_split_ratio is not None:
             resp["datasets"]["splitRatio"] = self.eval_split_ratio
         if self.corpus_config:
-            resp["corpus_config"] = self.corpus_config.dict(by_alias=True, exclude_none=True)
+            resp["corpus_config"] = self.corpus_config.dict(
+                by_alias=True, exclude_none=True
+            )
         if self.sampling_rate:
             for d in resp["datasets"]["versions"]:
                 d["samplingRate"] = self.sampling_rate
@@ -283,7 +285,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "sampling_rate": self.sampling_rate,
         }
         if self.corpus_config:
-            meta["corpus_config"] = self.corpus_config.dict(by_alias=True, exclude_none=True),
+            meta["corpus_config"] = (
+                self.corpus_config.dict(by_alias=True, exclude_none=True),
+            )
         return meta
 
     @classmethod

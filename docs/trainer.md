@@ -91,7 +91,7 @@ trainer = LLMFinetune(
     train_type="ERNIE-Speed",
     dataset=DatasetConfig(
         datasets=[sft_ds],
-        eval_split_ratio=20,
+        eval_split_ratio=20, 
         sampling_rate=0.01,
     ),
     train_config=TrainConfig(
@@ -102,15 +102,20 @@ trainer = LLMFinetune(
     corpus_config=CorpusConfig(
         data_copy=True,
         corpus_configs=[
-            CorpusConfigItem(
+            CorpusConfigItem( # 千帆通用语料
+                corpus_type=console_consts.FinetuneCorpusType.QianfanCommon,
+                corpus_proportion="1%", # 总通用语料共n条，混入比例的取值范围x%为[0-100]%， 则混入n * x%
+            ),
+            CorpusConfigItem( # 一言垂类
                 corpus_labels=["文本创作"],
                 corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,
-                corpus_proportion="1:2",
+                corpus_proportion="1:2", # 1:x 表示一条用户数据对应x条一言语料数据
             ),
-            CorpusConfigItem(
+            CorpusConfigItem( # 一言通用
                 corpus_type=console_consts.FinetuneCorpusType.YiyanCommon,
-                corpus_proportion="1:1",
+                corpus_proportion="1:1", # 1:x 表示一条用户数据对应x条一言语料数据
             ),
+            
         ],
     )
 )

@@ -84,7 +84,7 @@ class CorpusConfigItem(BaseJsonModel):
 
 
 class CorpusConfig(BaseJsonModel):
-    copy_data: Optional[bool] = Field(default=False, alias="copyData")
+    copy_data: Optional[bool] = Field(default=None, alias="copyData")
     """
     copy data when exceed maximum number of data
     """

@@ -385,7 +385,6 @@ class OpenAIApdater(object):
         """
         stream = request.get("stream", False)
         qianfan_request = self.openai_chat_request_to_qianfan(request)
-        print(json.dumps(qianfan_request, indent=2))
         n = request.get("n", 1)
         if stream:
             return self._chat_stream(n, request, qianfan_request)

@@ -168,6 +168,8 @@ class OpenAIApdater(object):
                     "type": "function",
                     "function": function_call,
                 }
+        if qianfan_request.get("tool_choice") == "auto":
+            qianfan_request.pop("tool_choice")
         if "response_format" in openai_request:
             response_format = openai_request["response_format"]
             if not isinstance(response_format, str):
@@ -383,6 +385,7 @@ class OpenAIApdater(object):
         """
         stream = request.get("stream", False)
         qianfan_request = self.openai_chat_request_to_qianfan(request)
+        print(json.dumps(qianfan_request, indent=2))
         n = request.get("n", 1)
         if stream:
             return self._chat_stream(n, request, qianfan_request)

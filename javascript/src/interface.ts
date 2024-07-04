@@ -26,6 +26,7 @@ export interface DefaultConfig {
     QIANFAN_QPS_LIMIT: string;
     QIANFAN_RPM_LIMIT: string;
     QIANFAN_TPM_LIMIT: string;
+    version: string;
 }
 
 /**
@@ -106,16 +107,16 @@ export interface ChatMessage {
     function_call?: FunctionCall;
 }
 
-interface baseReq{
+interface baseReq {
     /**
      * 埋点信息
      */
-   extra_parameters?: {
+    extra_parameters?: {
         /**
-        * 用户信息，用于识别用户身份，如手机号、身份证号等
-        */
+         * 用户信息，用于识别用户身份，如手机号、身份证号等
+         */
         request_source?: string;
-   };
+    };
     /**
      * 表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用
      */
@@ -268,6 +269,175 @@ export interface RespBase {
     usage: TokenUsage;
 }
 
+export interface SearchResult {
+    /**
+     * 序号
+     */
+    index?: number;
+    /**
+     * 搜索结果 URL
+     */
+    url?: string;
+    /**
+     * 搜索结果标题
+     */
+    title?: string;
+    /**
+     * 搜索来源 id 大搜解决死链问题需要透传的字段
+     */
+    datasource_id?: string;
+}
+
+export interface SearchInfo {
+    /**
+     * 是否飞线
+     */
+    is_beset?: number;
+    /**
+     * 改写后的搜索 query
+     */
+    rewrite_query?: string;
+    /**
+     * 改写后的搜索 query
+     */
+    search_results?: SearchResult[];
+}
+
+export interface BaiduSearchResult {
+    /**
+     * 结果序号，从1开始
+     */
+    index?: number;
+    /**
+     * 搜索结果页面 url
+     */
+    url?: string;
+    /**
+     * 搜索结果页面url
+     */
+    title?: string;
+}
+
+export interface ToolsInfo {
+    /**
+     * 工具名，目前支持 baidu_search
+     */
+    name?: string;
+    /**
+     * query 改写结果，表示在使用工具时使用的 query
+     */
+    rewrite_query?: string;
+    /**
+     * 当使用 baidu_search 会返回检索结果
+     */
+    baidu_search?: BaiduSearchResult[];
+    /**
+     * qianfan
+     */
+    usage_agent?: string;
+}
+
+export interface Choices {
+    /**
+     * choice 列表中的序号
+     */
+    index?: number;
+    /**
+     * 响应信息
+     */
+    message?: ChatMessage;
+    /**
+     * 值为 true 表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
+     */
+    need_clear_history?: boolean;
+    /**
+     * 当 need_clear_history 为 true 时，次字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round = -1
+     */
+    ban_round?: number;
+    /**
+     * 由模型生成的函数调用，包含函数名称，和调用参数
+     */
+    function_call?: FunctionCall;
+    /**
+     * 搜索数据，请求参数 enable_citation 置 true 并且触发搜索时，会返回对应内容
+     */
+    search_info?: SearchInfo;
+    /**
+     * 输出内容标识，取值访问及定义如下：
+     * normal：输出内容完全由大模型生成，未触发截断、替换；
+     * stop：输出结果命中入参 stop 中指定的字段后被截断；
+     * length：达到了最大的 token 数，根据 EB 返回结果 is_truncated 来截断；
+     * content_filter：输出内容被截断、兜底、替换为**等；
+     * function_call：调用了 funtion call 功能；
+     */
+    finish_reason?: string;
+    /**
+     * 返回 flag 表示触发安全
+     */
+    flag?: number;
+    /**
+     * tool 使用信息，例如当使用 baidu_search 会返回
+     */
+    tools_info?: ToolsInfo;
+}
+
+export interface SseChoices {
+    /**
+     * choice 列表中的序号
+     */
+    index?: number;
+    /**
+     * 响应信息
+     */
+    delta?: ChatMessage;
+    /**
+     * 流式接口模式下会返回，表示当前子句是否是最后一句
+     */
+    is_end?: boolean;
+    /**
+     * 值为 true 表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
+     */
+    need_clear_history?: boolean;
+    /**
+     * 当 need_clear_history 为 true 时，次字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round = -1
+     */
+    ban_round?: number;
+    /**
+     * 由模型生成的函数调用，包含函数名称，和调用参数
+     */
+    function_call?: FunctionCall;
+    /**
+     * 搜索数据，请求参数 enable_citation 置 true 并且触发搜索时，会返回对应内容
+     */
+    search_info?: SearchInfo;
+    /**
+     * 输出内容标识，取值访问及定义如下：
+     * normal：输出内容完全由大模型生成，未触发截断、替换；
+     * stop：输出结果命中入参 stop 中指定的字段后被截断；
+     * length：达到了最大的 token 数，根据 EB 返回结果 is_truncated 来截断；
+     * content_filter：输出内容被截断、兜底、替换为**等；
+     * function_call：调用了 funtion call 功能；
+     */
+    finish_reason?: string;
+    /**
+     * 返回 flag 表示触发安全
+     */
+    flag?: number;
+    /**
+     * tool 使用信息，例如当使用 baidu_search 会返回
+     */
+    tools_info?: ToolsInfo;
+}
+
+export interface ChatRespV2 {
+    /**
+     * 响应列表
+     * strem = false 时为 choices
+     * stream = true 时为 sse_choices
+     */
+    choices?: Choices | SseChoices;
+}
+
 export interface ChatResp extends RespBase {
     /**
      * 当前生成的结果是否被截断
@@ -300,7 +470,27 @@ export interface ChatRespError {
     error_msg: string;
 }
 
-export interface CompletionBody extends baseReq{
+export interface CompletionBodyV2 {
+    /**
+     * appid 应用ID ，不传使用静默 appid
+     */
+    appid?: string;
+    /**
+     * 是否开启排队抢占，错峰使用，开启后响应时间会有所增加，不保证 SLA，默认 false
+     * true 开启抢占
+     */
+    preemptible?: boolean;
+    /**
+     * 用户画像，仅千亿EB支持，需要开白名单权限
+     */
+    user_setting?: string;
+    /**
+     * 返回搜索溯源信息的数量，默认由系统内部指定
+     */
+    trace_number?: number;
+}
+
+export interface CompletionBody extends baseReq, CompletionBodyV2 {
     /**
      * 聊天上下文信息 兼容Chat模型
      * 1. messages 成员不能为空，1 个成员表示单轮对话，多个成员表示多轮对话
@@ -391,7 +581,7 @@ export interface EmbeddingResp {
     usage: TokenUsage;
 }
 
-export interface Text2ImageBody extends baseReq{
+export interface Text2ImageBody extends baseReq {
     /**
      * 提示词
      * 即用户希望图片包含的元素。长度限制为1024字符，建议中文或者英文单词总数量不超过150个
@@ -446,7 +636,7 @@ export interface Text2ImageResp {
     data: ImageData[]; // 生成图片结果
     usage: TokenUsage; // token统计信息
 }
-export interface PluginsBody extends baseReq{
+export interface PluginsBody extends baseReq {
     /**
      * 查询信息
      * 成员不能为空，长度不能超过1000个字符
@@ -500,8 +690,7 @@ export interface PluginsBody extends baseReq{
     verbose?: boolean;
 }
 
-
-export interface YiYanPluginBody extends baseReq{
+export interface YiYanPluginBody extends baseReq {
     /**
      * 聊天上下文信息
      * messages成员不能为空，1个成员表示单轮对话，多个成员表示多轮对话；
@@ -527,7 +716,7 @@ export interface YiYanPluginBody extends baseReq{
      * 表示最终用户的唯一标识符，可以监视和检测滥用行为，防止接口恶意调用。
      */
     user_id?: string;
-  }
+}
 
 interface MetaInfo {
     plugin_id: string; // 插件 Id，为“uuid-zhishiku”
@@ -588,8 +777,7 @@ export interface PluginsResp {
     meta_info?: MetaInfo; // 根据实际meta_info的结构进一步定义
 }
 
-
-export interface Image2TextBody extends baseReq{
+export interface Image2TextBody extends baseReq {
     /**
      * 请求信息
      */
@@ -624,7 +812,7 @@ export interface Image2TextBody extends baseReq{
     stop?: string[];
 }
 
-export interface RerankerBody extends baseReq{
+export interface RerankerBody extends baseReq {
     /**
      * 查询文本
      * 长度不超过1600个字符，token数若超过400做截断
@@ -657,7 +845,7 @@ type RerankerData = {
      * 序号
      */
     index: number;
-}
+};
 type UsageType = {
     /**
      * 问题tokens数（包含历史QA）
@@ -667,7 +855,7 @@ type UsageType = {
      * tokens总数
      */
     total_tokens: number;
-}
+};
 
 export interface RerankerResp {
     /**

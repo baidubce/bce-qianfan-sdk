@@ -152,7 +152,7 @@ export class Fetch {
                     return response;
                 })
                 .catch(error => {
-                    console.error('Fetch request failed:', error.message);
+                    // console.error('Fetch request failed:', error.message);
                     throw error;
                 })
                 .finally(() => {

@@ -501,3 +501,57 @@ for prompt, result in zip(prompt_list, results):
     if not isinstance(result, Exception):
         print(prompt, result)
 ```
+
+#### 记忆系统：
+千帆平台提供了基于知识图谱的记忆系统，用户可以通过调用 `qianfan.Memory` 接口来使用。
+
+##### 创建系统记忆：
+```python
+from qianfan import resources
+
+resp = resources.Memory.create_system_memory(app_id="111111", description="xiaodu role play")
+print(resp.body)
+```
+
+##### 更新系统记忆:
+```python
+from qianfan import resources
+
+update_resp = resources.Memory.modify_system_memory(system_memory_id='sm-xxxx', memories=[
+    [
+        {
+            "role": "user",
+            "content": "你叫什么?"
+        },
+        {
+            "role": "system",
+            "content": "你好，我叫小度!"
+        }
+    ],
+])
+print(update_resp.body)
+```
+
+##### 查询系统记忆：
+```python
+from qianfan import resources
+
+detail_resp = resources.Memory.describe_system_memory(system_memory_id='sm-xxxx')
+print(detail_resp.body)
+```
+
+##### 查询记系统忆list：
+```python
+from qianfan import resources
+
+list_sm_resp = resources.Memory.describe_system_memories(app_id="26217442")
+print(list_sm_resp.body)
+```
+
+##### 删除系统记忆
+```python
+from qianfan import resources
+
+delete_resp = resources.Memory.delete_system_memory(system_memory_id="sm-kajdc8ar052kva1g")
+print(delete_resp.body)
+```

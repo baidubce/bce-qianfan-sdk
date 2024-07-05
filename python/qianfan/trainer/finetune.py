@@ -99,6 +99,8 @@ class Finetune(Trainer):
                 An optional previous task id for incremental training.
             name: Optional[str]
                 An optional name for the training task.
+            corpus_config: Optional[CorpusConfig] = None,
+                An optional corpus config for training.
 
             **kwargs: Any additional keyword arguments.
 

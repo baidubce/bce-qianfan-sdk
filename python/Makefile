@@ -18,7 +18,7 @@ doc: install
 
 format: install
 	poetry run black ./qianfan
-	poetry run ruff --select I --fix ./qianfan
+	poetry run ruff check --select I --fix ./qianfan
 
 lint: install
 	poetry run black ./qianfan --check 

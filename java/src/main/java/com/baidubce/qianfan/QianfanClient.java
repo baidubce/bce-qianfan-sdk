@@ -19,24 +19,20 @@ package com.baidubce.qianfan;
 import com.baidubce.qianfan.core.ModelEndpointRetriever;
 import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
-import com.baidubce.qianfan.model.plugin.PluginMetaInfo;
-import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.StringUtils;
 import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
 
-import java.util.Iterator;
-import java.util.Map;
-
 class QianfanClient {
-    private static final String SDK_VERSION = "0.0.8";
+    private static final String SDK_VERSION = "0.0.9";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
@@ -83,7 +79,7 @@ class QianfanClient {
         );
     }
 
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return request(
                 request,
                 HttpRequest::executeSSE,
@@ -157,44 +153,6 @@ class QianfanClient {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RequestException("Request failed: retry delay interrupted", e);
-        }
-    }
-
-    private static class StreamIterator<T extends BaseResponse<T>> implements Iterator<T> {
-        private final Map<String, String> headers;
-        private final Iterator<String> sseIterator;
-        private final Class<T> responseClass;
-
-        private PluginMetaInfo metaInfo;
-
-        public StreamIterator(Map<String, String> headers, Iterator<String> sseIterator, Class<T> responseClass) {
-            this.headers = headers;
-            this.sseIterator = sseIterator;
-            this.responseClass = responseClass;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return sseIterator.hasNext();
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public T next() {
-            String event = sseIterator.next().replaceFirst("data: ", "");
-            // Skip sse empty line
-            sseIterator.next();
-            T response = Json.deserialize(event, responseClass);
-
-            // Set meta info for PluginResponse
-            if (responseClass.equals(PluginResponse.class)) {
-                if (metaInfo == null) {
-                    metaInfo = Json.deserialize(event, PluginMetaInfo.class);
-                }
-                ((PluginResponse) response).setMetaInfo(metaInfo);
-            }
-
-            return (T) response.setHeaders(headers);
         }
     }
 }

@@ -334,8 +334,9 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
-        huggingface_dataset: Optional[Any] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
+        huggingface_dataset: Optional[Any] = None,
+        dataframe: Optional[Any] = None,
         schema: Optional[Schema] = None,
         organize_data_as_group: bool = False,
         **kwargs: Any,
@@ -357,12 +358,14 @@ class Dataset(Table):
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
                 from args
-            huggingface_dataset (Optional[Dict[str, Any], Any]):
-                Huggingface dataset object, only support
-                DatasetDict and Dataset of Huggingface datasets.
             bos_source_args: (Optional[Dict[str, Any]]):
                 create arguments for creating a file on specific bos
                 default to None
+            huggingface_dataset (Optional[Any]):
+                Huggingface dataset object, only support
+                DatasetDict and Dataset of Huggingface datasets.
+            dataframe (Optional[Any]):
+                Pandas dataframe object.
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
             organize_data_as_group (bool):
@@ -404,6 +407,19 @@ class Dataset(Table):
                 )
                 log_error(err_msg)
                 raise TypeError(err_msg)
+
+            if dataframe is not None:
+                log_info("construct dataset from pandas dataframe")
+                if not hasattr(dataframe, "to_dict"):
+                    err_msg = (
+                        'a Dataframe object without "to_dict" function has been passed '
+                        "and it cant be used as arguments"
+                    )
+                    log_error(err_msg)
+                    raise ValueError(err_msg)
+
+                dataframe_dict = dataframe.to_dict("list")
+                return cls.create_from_pyobj(dataframe_dict)
 
             log_info("no data source was provided, construct")
             source = cls._from_args_to_source(

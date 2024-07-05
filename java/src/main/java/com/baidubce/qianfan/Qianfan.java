@@ -16,6 +16,7 @@
 
 package com.baidubce.qianfan;
 
+import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.builder.*;
 import com.baidubce.qianfan.model.BaseRequest;
 import com.baidubce.qianfan.model.BaseResponse;
@@ -35,8 +36,6 @@ import com.baidubce.qianfan.model.plugin.PluginRequest;
 import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.model.rerank.RerankRequest;
 import com.baidubce.qianfan.model.rerank.RerankResponse;
-
-import java.util.Iterator;
 
 public class Qianfan {
     private final QianfanClient client;
@@ -71,7 +70,7 @@ public class Qianfan {
         return request(request, ChatResponse.class);
     }
 
-    public Iterator<ChatResponse> chatCompletionStream(ChatRequest request) {
+    public StreamIterator<ChatResponse> chatCompletionStream(ChatRequest request) {
         request.setStream(true);
         return requestStream(request, ChatResponse.class);
     }
@@ -84,7 +83,7 @@ public class Qianfan {
         return request(request, CompletionResponse.class);
     }
 
-    public Iterator<CompletionResponse> completionStream(CompletionRequest request) {
+    public StreamIterator<CompletionResponse> completionStream(CompletionRequest request) {
         request.setStream(true);
         return requestStream(request, CompletionResponse.class);
     }
@@ -113,7 +112,7 @@ public class Qianfan {
         return request(request, Image2TextResponse.class);
     }
 
-    public Iterator<Image2TextResponse> image2TextStream(Image2TextRequest request) {
+    public StreamIterator<Image2TextResponse> image2TextStream(Image2TextRequest request) {
         request.setStream(true);
         return requestStream(request, Image2TextResponse.class);
     }
@@ -134,7 +133,7 @@ public class Qianfan {
         return request(request, PluginResponse.class);
     }
 
-    public Iterator<PluginResponse> pluginStream(PluginRequest request) {
+    public StreamIterator<PluginResponse> pluginStream(PluginRequest request) {
         request.setStream(true);
         return requestStream(request, PluginResponse.class);
     }
@@ -143,7 +142,7 @@ public class Qianfan {
         return client.request(request, responseClass);
     }
 
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> Iterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
+    public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return client.requestStream(request, responseClass);
     }
 }

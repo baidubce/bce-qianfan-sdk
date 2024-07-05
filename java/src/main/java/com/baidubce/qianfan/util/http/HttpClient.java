@@ -27,12 +27,11 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HttpClient {
-    private static final int MAX_CONNECTIONS = 128;
+    private static final int MAX_CONNECTIONS = 512;
 
     private static final CloseableHttpClient client;
 
@@ -94,7 +93,7 @@ public class HttpClient {
         });
     }
 
-    public static HttpResponse<Iterator<String>> executeSSE(ClassicHttpRequest request) throws IOException {
+    public static HttpResponse<SSEIterator> executeSSE(ClassicHttpRequest request) throws IOException {
         // Use legacy API to avoid auto-closing the response
         CloseableHttpResponse resp = client.execute(request);
 
@@ -103,12 +102,12 @@ public class HttpClient {
             headers.put(header.getName(), header.getValue());
         }
 
-        Iterator<String> body = null;
+        SSEIterator body = null;
         String stringBody = null;
 
         String contentType = headers.getOrDefault(ContentType.HEADER, "");
         if (contentType.startsWith(ContentType.TEXT_EVENT_STREAM)) {
-            body = SSEWrapper.wrap(resp.getEntity().getContent(), resp);
+            body = new SSEIterator(resp.getEntity().getContent(), resp);
         } else {
             try {
                 // If the response is not an SSE stream, read the whole body as a string
@@ -118,7 +117,7 @@ public class HttpClient {
             }
         }
 
-        return new HttpResponse<Iterator<String>>()
+        return new HttpResponse<SSEIterator>()
                 .setCode(resp.getCode())
                 .setHeaders(headers)
                 .setBody(body)

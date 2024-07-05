@@ -13,12 +13,12 @@
 # limitations under the License.
 import copy
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
 from qianfan import resources as api
 from qianfan.config import get_config
 from qianfan.dataset import BosDataSource, Dataset, QianfanDataSource
+from qianfan.dataset.data_source import DataSource
 from qianfan.errors import InternalError, InvalidArgumentError
 from qianfan.evaluation import EvaluationManager
 from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvaluator
@@ -51,7 +51,7 @@ from qianfan.utils import (
     log_warn,
     utils,
 )
-from qianfan.utils.bos_uploader import is_valid_bos_path
+from qianfan.utils.bos_uploader import is_valid_bos_path, parse_bos_path
 from qianfan.utils.utils import first_lower_case, snake_to_camel
 
 
@@ -84,18 +84,15 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
     """
 
-    from qianfan.dataset.dataset import Dataset
-
-    dataset: Optional[Dataset] = None
-    bos_path: Optional[str] = None
+    datasets: List[DataSource] = []
+    sampling_rates: List[float] = []
     result: Optional[Dict[str, Any]] = None
     eval_split_ratio: Optional[float] = None
-    sampling_rate: Optional[float] = None
     corpus_config: Optional[CorpusConfig] = None
 
     def __init__(
         self,
-        dataset: Union[DatasetConfig, Dataset, str],
+        dataset: Union[DatasetConfig, Dataset, str, List[str]],
         dataset_template: Optional[console_consts.DataTemplateType] = None,
         corpus_config: Optional[CorpusConfig] = None,
         **kwargs: Any,
@@ -103,13 +100,21 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         super().__init__(**kwargs)
         self.eval_split_ratio = kwargs.get("eval_split_ratio", 20)
 
-        self.sampling_rate = kwargs.get("sampling_rate")
+        global_sampling_rate = kwargs.get("sampling_rate")
         if kwargs.get("corpus_type"):
             self.corpus_config = CorpusConfig()
             self.corpus_config.corpus_configs.append(CorpusConfigItem(**kwargs))
+        if isinstance(dataset, str):
+            dataset = [dataset]
+
         if isinstance(dataset, DatasetConfig):
-            assert isinstance(dataset.datasets[0], Dataset)
-            self.dataset = dataset.datasets[0]
+            global_sampling_rate = global_sampling_rate or dataset.sampling_rate
+            if isinstance(dataset.datasets[0], Dataset):
+                self.datasets = [ds.inner_data_source_cache for ds in dataset.datasets]
+            elif isinstance(dataset.datasets[0], DataSource):
+                self.datasets = dataset.datasets
+            if dataset.sampling_rates:
+                self.sampling_rates = dataset.sampling_rates
             if self.corpus_config is None:
                 self.corpus_config = CorpusConfig()
             if dataset.corpus_type:
@@ -122,17 +127,28 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 )
             if dataset.eval_split_ratio is not None:
                 self.eval_split_ratio = dataset.eval_split_ratio
-            if dataset.sampling_rate is not None:
-                self.sampling_rate = dataset.sampling_rate
-        elif isinstance(dataset, str):
-            if is_valid_bos_path(dataset):
-                self.bos_path = dataset
-                self._dataset_str = dataset
-            elif dataset.startswith("ds-"):
-                self.dataset = Dataset.load(qianfan_dataset_id=dataset)
-                self._dataset_str = dataset
-            else:
-                raise InvalidArgumentError(f"invalid dataset_str: {dataset}")
+
+            if dataset.sampling_rates is None and global_sampling_rate:
+                self.sampling_rates = [
+                    global_sampling_rate for i in range(len(self.datasets))
+                ]
+            if self.sampling_rates and len(self.datasets) != len(self.sampling_rates):
+                raise ValueError("sampling_rates not with the same counts to datasets")
+        elif isinstance(dataset, list):
+            if len(dataset) > 0:
+                if isinstance(dataset[0], str):
+                    for ds_str in dataset:
+                        if is_valid_bos_path(ds_str):
+                            bos_ds_src = LoadDataSetAction.create_bos_ds_src(ds_str)
+                            self.datasets.append(bos_ds_src)
+                        elif ds_str.startswith("ds-"):
+                            self.datasets.append(
+                                QianfanDataSource.get_existed_dataset(ds_str)
+                            )
+                        else:
+                            raise InvalidArgumentError(f"invalid dataset_str: {ds_str}")
+                elif isinstance(dataset[0], Dataset):
+                    self.datasets = dataset
         elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
             qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
             if (
@@ -142,17 +158,18 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 raise InvalidArgumentError(
                     f"dataset must be `{dataset_template}` template."
                 )
-            self.dataset = dataset
-            self._dataset_str = dataset.inner_data_source_cache.id
+            self.datasets = [dataset.inner_data_source_cache]
         elif isinstance(dataset.inner_data_source_cache, BosDataSource):
-            self.dataset = dataset
-            self.bos_path = dataset.inner_data_source_cache.bos_file_path
+            self.datasets = [dataset.inner_data_source_cache]
         else:
             raise InvalidArgumentError(
                 "dataset must be either implemented with QianfanDataSource or"
                 " BosDataSource or a bos path"
             )
-
+        if global_sampling_rate and self.sampling_rates is None:
+            self.sampling_rates = [
+                global_sampling_rate for i in range(len(self.datasets))
+            ]
         if corpus_config is not None:
             self.corpus_config = corpus_config
 
@@ -163,82 +180,123 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             return resp
         if self.eval_split_ratio is not None:
             resp["datasets"]["splitRatio"] = self.eval_split_ratio
-        if self.corpus_config:
+        if self.corpus_config and len(self.corpus_config.corpus_configs) > 0:
             resp["corpus_config"] = self.corpus_config.dict(
                 by_alias=True, exclude_none=True
             )
-        if self.sampling_rate:
-            for d in resp["datasets"]["versions"]:
-                d["samplingRate"] = self.sampling_rate
+        if self.sampling_rates:
+            for i, d in enumerate(resp["datasets"]["versions"]):
+                d["samplingRate"] = self.sampling_rates[i]
         return resp
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
         """
         Load dataset implementation, may called by exec and resume.
         """
-        if self.bos_path is not None:
-            if not self.bos_path.endswith("/"):
-                bos_path = f'{Path(f"/{self.bos_path}").parent}'
+        result = self.get_action_result(**kwargs)
+        if len(result["datasets"]["versions"]) == 0:
+            raise InvalidArgumentError(
+                "dataset must be set or input dataset is invalid"
+            )
+        self.result = result
+        return result
+
+    def get_action_result(self, **kwargs: Any) -> Dict[str, Any]:
+        result: Dict[str, Any] = {"sourceType": None}
+        versions: List[Dict[str, Any]] = []
+        for i, dataset in enumerate(self.datasets):
+            sub_res = self.get_dataset_result(dataset, **kwargs)
+            if sub_res is None:
+                log_warn(f"invalid dataset {dataset}")
+                continue
+            if result.get("sourceType") and sub_res.get("sourceType") != result.get(
+                "sourceType"
+            ):
                 log_warn(
-                    f"input bos_path {self.bos_path} is a file, auto_convert to dir:"
-                    f" {bos_path}"
+                    "[load_dataset_action] dataset sourceType conflict, should all be"
+                    " with one source type"
+                    f"{sub_res}"
                 )
             else:
-                bos_path = self.bos_path
-            self.result = {
-                "datasets": {
-                    "sourceType": (
-                        console_consts.TrainDatasetSourceType.PrivateBos.value
-                    ),
-                    "versions": [{"versionBosUri": bos_path}],
-                }
-            }
-            return self.result
+                result["sourceType"] = sub_res.get("sourceType")
+            version = sub_res.get("version", {})
+            if self.sampling_rates:
+                version["samplingRate"] = self.sampling_rates[i]
+            if isinstance(version, dict):
+                versions.append(version)
+
+        result["versions"] = versions
+        return {"datasets": result}
+
+    def get_dataset_result(
+        self,
+        data_src: DataSource,
+        **kwargs: Any,
+    ) -> Optional[Dict[str, Any]]:
         from qianfan.dataset.data_source import BosDataSource, QianfanDataSource
 
-        if self.dataset is None:
-            raise InvalidArgumentError("dataset or bos_path must be set")
-        if self.dataset.inner_data_source_cache is None:
-            raise InvalidArgumentError("invalid dataset")
-        if isinstance(self.dataset.inner_data_source_cache, QianfanDataSource):
+        if isinstance(data_src, QianfanDataSource):
             log_debug("[load_dataset_action] prepare train-set")
-            qf_data_src = cast(QianfanDataSource, self.dataset.inner_data_source_cache)
+            qf_data_src = cast(QianfanDataSource, data_src)
             is_released = qf_data_src.release_dataset(**kwargs)
             if not is_released:
                 log_error("[load_dataset_action] dataset not released")
                 raise InvalidArgumentError("dataset must be released")
             log_debug("[load_dataset_action] dataset loaded successfully")
-            self.qf_dataset_id = qf_data_src.id
-            self.result = {
-                "datasets": {
-                    "sourceType": console_consts.TrainDatasetSourceType.Platform.value,
-                    "versions": [
-                        {
-                            "versionId": qf_data_src.id,
-                        }
-                    ],
-                }
+            return {
+                "sourceType": console_consts.TrainDatasetSourceType.Platform.value,
+                "version": {
+                    "versionId": qf_data_src.id,
+                },
             }
-        elif isinstance(self.dataset.inner_data_source_cache, BosDataSource):
+        elif isinstance(data_src, BosDataSource):
             log_debug("[load_dataset_action] prepare train-set in BOS")
-            bos_data_src = cast(BosDataSource, self.dataset.inner_data_source_cache)
-            self.result = {
-                "datasets": {
-                    "sourceType": (
-                        console_consts.TrainDatasetSourceType.PrivateBos.value
-                    ),
-                    "versions": [
-                        {
-                            "versionBosUri": bos_uploader.generate_bos_file_parent_path(
-                                bos_data_src.bucket, bos_data_src.bos_file_path
-                            )
-                        }
-                    ],
-                }
+            bos_data_src = cast(BosDataSource, data_src)
+            log_warn(f"hhh{bos_data_src.bucket}, {bos_data_src.bos_file_path}")
+            return {
+                "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
+                "version": {
+                    "versionBosUri": bos_uploader.generate_bos_file_path(
+                        bos_data_src.bucket, bos_data_src.bos_file_path
+                    )
+                },
             }
         else:
-            raise InvalidArgumentError("dataset must be set")
-        return self.result
+            return None
+
+    @staticmethod
+    def create_bos_ds_src(bos_uri: str) -> BosDataSource:
+        bucket, bos_path = parse_bos_path(bos_uri)
+        return BosDataSource(
+            region=get_config().BOS_HOST_REGION,
+            bucket=bucket,
+            bos_file_path=bos_path,
+        )
+
+    @staticmethod
+    def get_data_src_from_action_result(
+        dataset_result: Dict[str, Any]
+    ) -> List[DataSource]:
+        res = []
+        dataset_src_type = dataset_result.get("sourceType")
+        for ds_dict in dataset_result.get("versions", []):
+            if dataset_src_type == console_consts.TrainDatasetSourceType.Platform.value:
+                ds = Dataset.load(qianfan_dataset_id=ds_dict.get("versionId"))
+                if ds.inner_data_source_cache:
+                    res.append(
+                        ds.inner_data_source_cache,
+                    )
+            elif (
+                dataset_src_type
+                == console_consts.TrainDatasetSourceType.PrivateBos.value
+            ):
+                bos_ds_src = LoadDataSetAction.create_bos_ds_src(
+                    ds_dict.get("versionBosUri")
+                )
+                res.append(bos_ds_src)
+            else:
+                log_warn("[load_dataset_action] invalid dataset source: {ds_dict}")
+        return res
 
     @with_event
     def resume(self, **kwargs: Dict) -> Dict[str, Any]:
@@ -249,16 +307,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             Dict[str, Any]: datasets meta_info including
             dataset_id and dataset_type.
         """
-        if self.qf_dataset_id:
-            log_debug("[load_dataset_action] dataset loading already done")
-            return {
-                "datasets": [
-                    {
-                        "id": self.qf_dataset_id,
-                        "type": console_consts.TrainDatasetType.Platform.value,
-                    }
-                ]
-            }
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)
 
@@ -266,23 +314,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return self.serialize_helper.serialize(self._action_dict())
 
     def _action_dict(self) -> Dict[str, Any]:
-        qf_ds: Optional[Any] = None
-        if isinstance(self.dataset, str):
-            qf_ds = self.dataset
-        elif (
-            self.dataset is not None
-            and self.dataset.inner_data_source_cache is not None
-        ):
-            assert isinstance(self.dataset.inner_data_source_cache, QianfanDataSource)
-            qf_ds = self.dataset.inner_data_source_cache.id
         meta = {
             "id": self.id,
             "type": LoadDataSetAction.__name__,
-            "ds_id": qf_ds,
-            "dataset_bos": self.bos_path,
+            "datasets": self.get_action_result().get("datasets"),
             "output": self.result,
             "eval_split_ratio": self.eval_split_ratio,
-            "sampling_rate": self.sampling_rate,
         }
         if self.corpus_config:
             meta["corpus_config"] = (
@@ -293,11 +330,29 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
         dataset = meta.get("ds_id") or meta.get("dataset_bos")
-        assert dataset is not None
-        action = cls(
-            id=meta.get("id"),
-            dataset=dataset,
-        )
+        if dataset is not None:
+            action = cls(
+                id=meta.get("id"),
+                dataset=dataset,
+            )
+        elif meta.get("datasets") or meta.get("output"):
+            ds_dicts = meta.get("datasets")
+            if ds_dicts is None:
+                ds_output = meta.get("output")
+                assert isinstance(ds_output, dict)
+                ds_dicts = ds_output.get("datasets")
+            assert isinstance(ds_dicts, dict)
+            datasets = LoadDataSetAction.get_data_src_from_action_result(ds_dicts)
+            action = cls(
+                id=meta.get("id"),
+                dataset=DatasetConfig(
+                    datasets=datasets,
+                ),
+                corpus_config=CorpusConfig(),
+            )
+        else:
+            log_error(f"unknown load_dataset_action: {meta}")
+            raise ValueError("unknown action meta")
         action.result = meta.get("output")
         return action
 
@@ -903,8 +958,8 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 **input,
                 "task_id": self.task_id,
                 "job_id": self.job_id,
+                "model_set_id": self.model.set_id,
                 "model_id": self.model.id,
-                "model_version_id": self.model.version_id,
                 "model": self.model,
             }
             return self.result
@@ -934,7 +989,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             },
         }
         if self.model:
-            meta["model_version_id"] = self.model.version_id
+            meta["model_version_id"] = self.model.id
         if self.result:
             res = copy.deepcopy(self.result)
             if "model" in res:
@@ -982,14 +1037,11 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     deploy_config: Optional[DeployConfig] = None
     """deploy config include replicas and so on"""
-    model_id: Optional[int] = None
     """model id"""
-    model_id_str: Optional[str] = None
-    """model str id"""
-    model_version_id: Optional[int] = None
-    """model version id"""
-    model_version_id_str: Optional[str] = None
-    """model version str id """
+    model_set_id: Optional[str] = None
+    """model set id"""
+    model_id: Optional[str] = None
+    """model id """
     _input: Optional[Dict[str, Any]] = None
     """input of action"""
     result: Optional[Dict[str, Any]] = None
@@ -1015,12 +1067,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("deploy_config must be set")
         if input.get("model") is None:
             self.model_id = input.get("model_id")
-            self.model_version_id = input.get("model_version_id")
+            self.model_set_id = input.get("model_set_id")
             # TODO 迁移成str id
-            if self.model_id is None or self.model_version_id is None:
-                raise InvalidArgumentError("model_id or model_version_id must be set")
+            if self.model_id is None or self.model_set_id is None:
+                raise InvalidArgumentError("model_id or model_set_id must be set")
 
-            self.model = Model(self.model_id, self.model_version_id, auto_complete=True)
+            self.model = Model(self.model_set_id, self.model_id, auto_complete=True)
             self.model.auto_complete_info()
         else:
             self.model = cast(Model, input.get("model"))
@@ -1029,8 +1081,6 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     "must input with model or model id and version id"
                 )
             self.model.auto_complete_info()
-            self.model_id = self.model.old_id
-            self.model_version_id = self.model.old_version_id
         # 自动补全
 
         return self._exec(**kwargs)
@@ -1040,7 +1090,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             raise InvalidArgumentError("deploy_config must be set in deploy._exec")
         assert self.model is not None
         log_debug(
-            f"[deploy_action] try deploy model {self.model.id}_{self.model.version_id}"
+            f"[deploy_action] try deploy model {self.model.set_id}_{self.model.id}"
         )
         self.action_event(
             ActionState.Running,
@@ -1054,7 +1104,7 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if self.model.service is not None:
             log_debug(
                 "[deploy_action] model"
-                f" {self.model_id}_{self.model_version_id} deployed successfully with"
+                f" {self.model_set_id}_{self.model_id} deployed successfully with"
                 " service:"
                 f" {self.model.service.id} endpoint:{self.model.service.endpoint}"
             )
@@ -1078,13 +1128,11 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 input args for action resume
 
         """
-        if self.model_id is not None and self.model_version_id is not None:
-            self.model = Model(self.model_id_str, self.model_version_id_str)
+        if self.model_id is not None and self.model_set_id is not None:
+            self.model = Model(self.model_set_id, self.model_id)
             self.model.auto_complete_info()
         elif self.model is None:
-            raise InvalidArgumentError(
-                "either (model_id and version_id) or model must be set"
-            )
+            raise InvalidArgumentError("either (set_id and id) or model must be set")
         return self._exec()
 
     def _action_dict(self) -> Dict[str, Any]:
@@ -1097,8 +1145,8 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 ),
             },
             "input": {
+                "model_set_id": self.model_set_id,
                 "model_id": self.model_id,
-                "model_version_id": self.model_version_id,
             },
         }
         if self.model is not None and self.model.service is not None:
@@ -1223,8 +1271,8 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             llm = input.get("service")
         elif input.get("model"):
             llm = input.get("model")
-        elif input.get("model_id") and input.get("model_version_id"):
-            llm = Model(input["model_id"], input["model_version_id"])
+        elif input.get("model_set_id") and input.get("model_id"):
+            llm = Model(input["model_set_id"], input["model_id"])
         else:
             log_error(f"[evaluation_action] invalid llm input error {self._input}")
             raise InvalidArgumentError(

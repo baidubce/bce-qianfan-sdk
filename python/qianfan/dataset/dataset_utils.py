@@ -401,8 +401,8 @@ def _wait_evaluation_finished(eval_id: str) -> str:
 
 def _start_an_evaluation_task_for_model_batch_inference(
     data_source: Optional[DataSource],
+    model_set_id: str,
     model_id: str,
-    model_version_id: str,
     **kwargs: Any,
 ) -> str:
     assert isinstance(data_source, QianfanDataSource)
@@ -413,8 +413,8 @@ def _start_an_evaluation_task_for_model_batch_inference(
         name=f"model_run_{generate_letter_num_random_id()}",
         version_info=[
             {
-                "modelId": model_id,
-                "modelVersionId": model_version_id,
+                "modelId": model_set_id,
+                "modelVersionId": model_id,
             }
         ],
         dataset_id=data_source.id,

@@ -303,7 +303,13 @@ class Dataset(Table):
             return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
-            return BosDataSource(**bos_source_args, **kwargs)
+            bos_ds = BosDataSource(**bos_source_args, **kwargs)
+            if bos_ds.file_format is None:
+                err_msg = (
+                    f"failed to create bos dataset file path {bos_ds.bos_file_path}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
         log_info("no datasource was constructed")
         return None
@@ -1447,7 +1453,7 @@ class Dataset(Table):
 
     def test_using_llm(
         self,
-        model_version_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1461,7 +1467,7 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_version_id (Optional[int]):
+            model_id (Optional[int]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1489,10 +1495,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_version_id:
-            return self._batch_inference_on_model(
-                model_version_id, output_prettified, **kwargs
-            )
+        if model_id:
+            return self._batch_inference_on_model(model_id, output_prettified, **kwargs)
         elif service_model or service_endpoint:
             return self._batch_on_service_in_slice_mode(
                 service_model=service_model,
@@ -1508,7 +1512,7 @@ class Dataset(Table):
 
     async def atest_using_llm(
         self,
-        model_version_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1522,7 +1526,7 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_version_id (Optional[str]):
+            model_id (Optional[str]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1550,10 +1554,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_version_id:
-            return self._batch_inference_on_model(
-                model_version_id, output_prettified, **kwargs
-            )
+        if model_id:
+            return self._batch_inference_on_model(model_id, output_prettified, **kwargs)
         elif service_model or service_endpoint:
             return await self._async_batch_on_service_in_slice_mode(
                 service_model=service_model,
@@ -1604,15 +1606,15 @@ class Dataset(Table):
         return result_ds_list[0].concat_table(result_ds_list[1:])
 
     def _batch_inference_on_model(
-        self, model_version_id: str, output_prettified: bool, **kwargs: Any
+        self, model_id: str, output_prettified: bool, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
 
         Parameters:
-            model_version_id (str):
-                version id of your own model, default to None
+            model_id (str):
+                model id of your own model, default to None
             output_prettified (bool):
                 whether prettified output dataset content
             **kwargs (Any):
@@ -1632,10 +1634,10 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        model_id = Model.detail(model_version_id)["result"]["modelIdStr"]
+        model_id = Model.detail(model_id)["result"]["modelIdStr"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
-            self.inner_data_source_cache, model_id, model_version_id
+            self.inner_data_source_cache, model_id, model_id
         )
 
         result_dataset = Dataset.load(

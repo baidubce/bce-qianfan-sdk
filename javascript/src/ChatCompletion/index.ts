@@ -28,10 +28,14 @@ class ChatCompletion extends BaseClient {
      */
     public async chat(body: ChatBody, model = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
+        const {modelInfoMapUppercase, modelUppercase, modelLowercase} = getUpperCaseModelAndModelMap(
+            model,
+            modelInfoMap
+        );
         const type = ModelType.CHAT;
+
         const {AKPath, requestBody} = getPathAndBody({
-            model: modelUppercase,
+            model: Number(this.version) === 2 ? modelLowercase : modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,

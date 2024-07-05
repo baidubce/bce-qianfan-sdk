@@ -64,6 +64,7 @@ jobs:
           poetry lock --no-update
           make install
       - name: run lint
+        if: ${{ matrix.python-version != '3.7'}}
         run: make lint
       - name: Disable ntp on MacOS
         if: runner.os == 'macOS'

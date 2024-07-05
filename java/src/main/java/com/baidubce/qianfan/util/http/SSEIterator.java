@@ -59,20 +59,20 @@ public class SSEIterator implements Iterator<String>, Closeable {
         }
     }
 
-    private void silentlyClose() {
-        try {
-            closeable.close();
-        } catch (Exception ignored) {
-            // ignored
-        }
-    }
-
     @Override
     public void close() throws IOException {
         try {
             closeable.close();
         } catch (Exception e) {
             throw new IOException("Failed to close sseIterator", e);
+        }
+    }
+
+    public void silentlyClose() {
+        try {
+            closeable.close();
+        } catch (Exception ignored) {
+            // ignored
         }
     }
 }

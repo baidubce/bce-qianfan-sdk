@@ -125,9 +125,6 @@ def test_service_deploy_action():
 
 
 def test_trainer_sft_run():
-    from qianfan.utils.logging import TRACE_LEVEL, enable_log
-
-    enable_log(TRACE_LEVEL)
     train_config = TrainConfig(
         epoch=1,
         learning_rate=0.00002,
@@ -518,9 +515,6 @@ def test_increment_sft():
 
 
 def test_persist():
-    from qianfan.utils.logging import TRACE_LEVEL, enable_log
-
-    enable_log(TRACE_LEVEL)
     train_config = TrainConfig(
         epoch=1,
         learning_rate=0.00002,
@@ -540,12 +534,12 @@ def test_persist():
     )
     trainer.run()
 
-    # trainers = Finetune.list()
-    # assert len(trainers) >= 1
+    trainers = Finetune.list()
+    assert len(trainers) >= 1
 
-    # pre_id = trainers[0].id
-    # sft = Finetune.load(pre_id)
-    # assert sft.info().get("id") == pre_id
+    pre_id = trainers[0].id
+    sft = Finetune.load(pre_id)
+    assert sft.info().get("id") == pre_id
 
     json_config_path = "./ppl.json"
     try:

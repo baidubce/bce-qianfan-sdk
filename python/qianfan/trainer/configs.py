@@ -35,6 +35,10 @@ class DatasetConfig(BaseModel):
     """
     datasets
     """
+    sampling_rates: Optional[List[float]] = None
+    """
+    sampling_rates for each dataset
+    """
     eval_split_ratio: Optional[float] = None
     """
     training evaluation split ratio
@@ -53,7 +57,7 @@ class DatasetConfig(BaseModel):
     """
     sampling_rate: Optional[float] = None
     """
-    sampling rate
+    sampling rate in global
     """
 
 

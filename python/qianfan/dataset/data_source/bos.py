@@ -372,9 +372,7 @@ class BosDataSource(DataSource, BaseModel):
 
         bos_file_path = values["bos_file_path"]
         if bos_file_path[-1] == "/":
-            err_msg = f"bos file path {bos_file_path} end with '/'"
-            log_error(err_msg)
-            raise ValueError(err_msg)
+            return values
 
         if values.get("file_format", None):
             return values

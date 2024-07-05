@@ -303,7 +303,13 @@ class Dataset(Table):
             return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
-            return BosDataSource(**bos_source_args, **kwargs)
+            bos_ds = BosDataSource(**bos_source_args, **kwargs)
+            if bos_ds.file_format is None:
+                err_msg = (
+                    f"failed to create bos dataset file path {bos_ds.bos_file_path}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
         log_info("no datasource was constructed")
         return None

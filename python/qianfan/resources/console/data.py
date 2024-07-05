@@ -550,9 +550,7 @@ class Data:
         name: str,
         source_dataset_id: str,
         destination_dataset_id: str,
-        service_name: str,
         dev_api_id: str,
-        service_url: str,
         app_id: int,
         num_seed_fewshot: int,
         num_instances_to_generate: int,
@@ -569,12 +567,8 @@ class Data:
                 dataset id need to be augmented.
             destination_dataset_id (str):
                 where dataset should be stored after augmentation
-            service_name (str):
-                which LLM should be used for augmenting task
             dev_api_id (str):
                 fixed field with value depends on service_name.
-            service_url (str):
-                service url related to service_name
             app_id (int):
                 app id
             num_seed_fewshot (int):
@@ -606,9 +600,7 @@ class Data:
             "isSelfInstruct": True,
             "sourceDatasetId": source_dataset_id,
             "destDatasetId": destination_dataset_id,
-            "serviceName": service_name,
             "devApiId": dev_api_id,
-            "serviceUrl": service_url,
             "appId": app_id,
             "numSeedFewshot": num_seed_fewshot,
             "numInstancesToGenerate": num_instances_to_generate,

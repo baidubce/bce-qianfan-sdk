@@ -137,7 +137,7 @@ class DynamicModelEndpoint {
             }
         }
         catch (error) {
-            console.log('Failed to update dynamic model endpoint map', error);
+            // console.log('Failed to update dynamic model endpoint map', error);
         }
     }
 

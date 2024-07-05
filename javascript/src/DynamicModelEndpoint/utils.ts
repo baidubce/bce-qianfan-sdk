@@ -61,7 +61,7 @@ const chatModelEndpoints = new Map<string, string>([
     ['chatlaw', 'chatlaw'],
     ['aquilachat-7b', 'aquilachat_7b'],
     // Compatibility for old model names
-    ['ernie-bot-turbo', 'eb-instant'],
+    // ['ernie-bot-turbo', 'eb-instant'],
     ['ernie-bot', 'completions'],
     ['ernie-bot-4', 'completions_pro'],
     ['ernie-bot-8k', 'ernie_bot_8k'],
@@ -73,6 +73,7 @@ const chatModelEndpoints = new Map<string, string>([
     ['ernie-lite-appbuilder-8k-0614', 'ai_apaas_lite'],
     ['ernie-character-fiction-8k', 'ernie-char-fiction-8k'],
     ['ernie-3.5-128k', 'ernie-3.5-128k'],
+    ['ernie-lite-8k', 'ernie-lite-8k'],
 ]);
 // 定义 "COMPLETIONS" 类型的模型及其 endpoints
 const completionsModelEndpoints = new Map<string, string>([

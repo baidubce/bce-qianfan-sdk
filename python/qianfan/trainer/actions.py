@@ -164,8 +164,9 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         if self.eval_split_ratio is not None:
             resp["datasets"]["splitRatio"] = self.eval_split_ratio
         if self.corpus_config:
-            tmp = self.corpus_config.dict(by_alias=True, exclude_none=True)
-            resp["corpus_config"] = tmp
+            resp["corpus_config"] = self.corpus_config.dict(
+                by_alias=True, exclude_none=True
+            )
         if self.sampling_rate:
             for d in resp["datasets"]["versions"]:
                 d["samplingRate"] = self.sampling_rate
@@ -274,7 +275,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ):
             assert isinstance(self.dataset.inner_data_source_cache, QianfanDataSource)
             qf_ds = self.dataset.inner_data_source_cache.id
-        assert self.corpus_config
         meta = {
             "id": self.id,
             "type": LoadDataSetAction.__name__,
@@ -283,8 +283,11 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "output": self.result,
             "eval_split_ratio": self.eval_split_ratio,
             "sampling_rate": self.sampling_rate,
-            "corpus_config": self.corpus_config.dict(by_alias=True, exclude_none=True),
         }
+        if self.corpus_config:
+            meta["corpus_config"] = (
+                self.corpus_config.dict(by_alias=True, exclude_none=True),
+            )
         return meta
 
     @classmethod

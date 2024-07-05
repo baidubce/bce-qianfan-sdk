@@ -61,6 +61,7 @@ jobs:
           cache: "poetry"
       - name: Install deps
         run: |
+          poetry lock --no-update
           make install
       - name: run lint
         run: make lint

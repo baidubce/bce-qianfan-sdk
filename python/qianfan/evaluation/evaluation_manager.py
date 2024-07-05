@@ -173,8 +173,8 @@ class EvaluationManager(BaseModel):
                 output[i],
             )
             for pre_processor in self.pre_processors if self.pre_processors else []:
-                single_reference = pre_processor(  # type: ignore
-                    single_output, input=single_input, reference=reference
+                single_output = pre_processor(  # type: ignore
+                    single_output, input=single_input, reference=single_reference
                 )
 
             for evaluator in self.local_evaluators:

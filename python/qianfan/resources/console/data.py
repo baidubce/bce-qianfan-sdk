@@ -898,7 +898,7 @@ class Data:
             output_bos_uri (str):
                 BOS URI of the output data
             inference_params (Dict[str, Any]):
-                The inferece parameters used in the model
+                The inference parameters used in the model
             description (Optional[str]):
                 Description of the batch inference task
 
@@ -916,12 +916,15 @@ class Data:
         )
         request_json: Dict[str, Any] = {
             "name": name,
-            "endpoint": endpoint,
             "inferenceParams": inference_params,
             "inputBosUri": input_bos_uri,
             "outputBosUri": output_bos_uri,
             **kwargs,
         }
+        if model_id:
+            request_json["modelId"] = model_id
+        elif endpoint:
+            request_json["endpoint"] = endpoint
 
         if description is not None:
             request_json["description"] = description

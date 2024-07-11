@@ -2,18 +2,34 @@
 QianfanLocustRunner
 """
 
+
 import logging
 import os
 import time
+import time
 import traceback
+from multiprocessing import Value
 from typing import Any, Dict, Optional
 
+from qianfan import resources
 from qianfan.dataset import Dataset
-from qianfan.dataset.stress_test.load_statistics import gen_brief
+from qianfan.dataset.stress_test.load_statistics import gen_brief, generate_html_table
+from qianfan.dataset.stress_test.yame import GlobalData
 from qianfan.dataset.stress_test.yame.runner import LocustRunner
 
 logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
+GlobalData.data["threshold_first"] = Value("i", 0)
+GlobalData.data["total_requests"] = Value("i", 0)
+GlobalData.data["success_requests"] = Value("i", 0)
+
+
+def model_details(endpoint):
+    info = resources.Service.V2.service_list()
+    for inf in info.body["result"]["serviceList"]:
+        temp = inf["url"].split("/")
+        if temp[-1] == endpoint:
+            return inf
 
 
 class QianfanLocustRunner(LocustRunner):
@@ -36,6 +52,12 @@ class QianfanLocustRunner(LocustRunner):
         recording: bool = True,
         record_dir: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
+        rounds: int = 1,
+        interval: int = 0,
+        first_latency_threshold: Optional[float] = None,
+        round_latency_threshold: Optional[float] = None,
+        success_rate_threshold: Optional[float] = None,
+        model_info: Optional[Dict[str, Any]] = None,
     ):
         if model is not None:
             host = model
@@ -56,21 +78,129 @@ class QianfanLocustRunner(LocustRunner):
             model_type=model_type,
             hyperparameters=hyperparameters,
             is_endpoint=is_endpoint,
+            rounds=rounds,
+            interval=interval,
+            first_latency_threshold=first_latency_threshold,
+            round_latency_threshold=round_latency_threshold,
+            success_rate_threshold=success_rate_threshold,
+            model_info=model_info,
         )
+        self.first_latency_threshold = first_latency_threshold
+        self.round_latency_threshold = round_latency_threshold * 1000
+        self.success_rate_threshold = success_rate_threshold * 100
+        GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
         self.dataset = dataset
+        self.model_type = model_type
+        self.hyperparameters = hyperparameters
+        self.user_num = user_num
+        self.worker_num = worker_num
+        self.spawn_rate = spawn_rate
+        self.rounds = rounds
+        self.interval = interval
+        self.total_requests = Value("i", 0)
+        if is_endpoint:
+            model_info = model_details(endpoint)
+            if model_info is not None:
+                modelVersionId = model_info['modelId']
+                serviceId = model_info["serviceId"]
+                serviceUrl = model_info["url"]
+                computer = model_info["resourceConfig"]["type"]
+                replicasCount = model_info["resourceConfig"]["replicasCount"]
+                modelname = model_info["name"]
+                self.model_info = {
+                    "modelname": modelname,
+                    "modelVersionId": modelVersionId,
+                    "serviceId": serviceId,
+                    "serviceUrl": serviceUrl,
+                    "computer": computer,
+                    "replicasCount": replicasCount,
+                    "origin_user_num": self.user_num,
+                    "worker": self.worker_num,
+                    "rounds": self.rounds,
+                    "spawn_rate": self.spawn_rate,
+                    "hyperparameters": self.hyperparameters,
+                    "interval": self.interval,
+                }
+        else:
+            model_info = None
+            self.model_info = {
+                "modelname": None,
+                "modelVersionId": None,
+                "serviceId": None,
+                "serviceUrl": None,
+                "computer": None,
+                "replicasCount": None,
+                "origin_user_num": self.user_num,
+                "worker": self.worker_num,
+                "rounds": self.rounds,
+                "spawn_rate": self.spawn_rate,
+                "hyperparameters": self.hyperparameters,
+                "interval": self.interval,
+            }
 
     def run(self) -> Dict[str, Any]:
         """
         run
         """
-        start_time = time.time()
-        ret = super(QianfanLocustRunner, self).run()
+        ret = {"logfile": [], "record_dir": []}
+        current_user_num = self.user_num
+        html = []
+        for round in range(self.rounds):
+            start_time = time.time()
+            round_result = super(QianfanLocustRunner, self).run(
+                user_num=current_user_num
+            )  # 启动单轮并发
+            end_time = time.time()
+            t = end_time - start_time
+            total_requests = len(self.dataset)
+            ret["logfile"].append(round_result["logfile"])
+            ret["record_dir"].append(round_result["record_dir"])
+            log_info = None
+            self.model_info["log_info"] = log_info
+            html_path = round_result["record_dir"] + "/performance_table.html"
+            try:
+                round_html = gen_brief(
+                    round_result["record_dir"],
+                    t,
+                    len(self.dataset),
+                    current_user_num,
+                    self.worker_num,
+                    self.spawn_rate,
+                    self.model_type,
+                    self.hyperparameters,
+                    total_requests,
+                )
+                html.append(round_html)
+            except Exception:
+                traceback.print_exc()
+                logger.error("Error happens when generating brief.")
+            if GlobalData.data["threshold_first"].value == 1:
+                log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
+                self.model_info["log_info"] = log_info
+                print("首token超时，超时token:", self.dataset[0][0]["prompt"])
+                html_table = generate_html_table(html, self.model_info)
+                with open(html_path, "w", encoding="utf-8") as f:
+                    f.write(html_table)
+                return ret
+            if t > self.round_latency_threshold:
+                html_table = generate_html_table(html, self.model_info)
+                with open(html_path, "w", encoding="utf-8") as f:
+                    f.write(html_table)
+                print("整句时延超时")
+                return ret
+            if round_html["SuccessRate"] < self.success_rate_threshold:
+                html_table = generate_html_table(html, self.model_info)
+                with open(html_path, "w", encoding="utf-8") as f:
+                    f.write(html_table)
+                print("成功率低于阈值")
+                return ret
+            current_user_num += self.interval
+            GlobalData.data["total_requests"].value = 0
+
+        html_table = generate_html_table(html, self.model_info)
+        html_path = round_result["record_dir"] + "/performance_table.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_table)
         end_time = time.time()
-        total_time = end_time - start_time
         logger.info("Log path: %s" % ret["logfile"])
-        try:
-            gen_brief(ret["record_dir"], total_time, len(self.dataset))
-        except Exception:
-            traceback.print_exc()
-            logger.error("Error happens when statisticizing.")
-        return ret
+        return ret  # ret似乎没有实际返回作用

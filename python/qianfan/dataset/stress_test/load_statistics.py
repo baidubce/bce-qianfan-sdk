@@ -12,7 +12,6 @@ logger = logging.getLogger("yame.runner")
 
 
 def get_qps(path: str) -> float:
-def get_qps(path: str) -> float:
     """
     get_duration
     """

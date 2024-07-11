@@ -2208,6 +2208,103 @@ class Dataset(Table):
                 " if you want to start a stress test task."
             )
 
+    def concurrent_stress_test(
+        self,
+        workers: int,
+        origin_users: int,
+        spawn_rate: int,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        runtime: str = "0s",
+        model_type: str = "ChatCompletion",
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        rounds: int = 1,
+        interval: int = 1,
+        first_latency_threshold: Optional[float] = None,
+        round_latency_threshold: Optional[float] = None,
+        success_rate_threshold: Optional[float] = None,
+        safety_level: Optional[bool] = None,
+    ) -> None:
+        """
+        Start a load test task with current dataset.
+        The task stops after the specified amount of time, or
+        all queries of current dataset are sent.
+        Only works when environment variable QIANFAN_ENABLE_STRESS_TEST is set true.
+        Otherwise an exception will be thrown.
+
+        Args:
+            workers (int):
+                Number of workers. Each worker refers a process.
+            origin_users (int):
+                Origin number of concurrent users, must be greater than workers.
+                Each worker simulated at least one user.
+            runtime (str):
+                Stop after the specified amount of time,
+                e.g. (300s, 20m, 3h, 1h30m, etc.).
+            spawn_rate (int):
+                Rate to spawn users at (users per second).
+            concurrent_round (int):
+                Number of rounds to run concurrently.
+            model (str):
+                Name of the model service you want to test.
+            endpoint (str):
+                Endpoint of the model service you want to test.
+            model_type (str):
+                Type of model service you want to test.
+                Must be one of following values: ChatCompletion / Completions.
+                Default value is 'ChatCompletion'.
+            hyperparameters (Optional[Dict[str, Any]]):
+                Specify the hyperparameters in your request.
+            rounds (int):
+                Number of rounds to run concurrently.
+            interval (int):
+                Interval concurrent number between rounds.
+        """
+        import os
+
+        if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
+            urllib_env = os.environ.get("no_proxy")
+            if urllib_env != "*":
+                os.environ["no_proxy"] = "*"
+
+            if model is None and endpoint is None:
+                raise Exception(
+                    "These two arguments: model/endpoint cannot both be null."
+                )
+            if model is not None and endpoint is not None:
+                raise Exception(
+                    "Only one of these two arguments: model/endpoint can be non-null."
+                )
+            from qianfan.dataset.stress_test.load_runner import QianfanLocustRunner
+
+            runner = QianfanLocustRunner(
+                user_num=origin_users,
+                worker_num=workers,
+                runtime=runtime,
+                spawn_rate=spawn_rate,
+                model=model,
+                endpoint=endpoint,
+                model_type=model_type,
+                dataset=self,
+                hyperparameters=hyperparameters,
+                rounds=rounds,
+                interval=interval,
+                first_latency_threshold=first_latency_threshold,
+                round_latency_threshold=round_latency_threshold,
+                success_rate_threshold=success_rate_threshold,
+                safety_level=safety_level,
+            )
+            runner.run()
+            if isinstance(urllib_env, str):
+                os.environ["no_proxy"] = urllib_env
+            else:
+                del os.environ["no_proxy"]
+        else:
+            raise Exception(
+                "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"
+                " if you want to start a stress test task."
+            )
+
     def show_in_data_insight_mode(
         self, column_names: List[Optional[str]] = [None]
     ) -> None:

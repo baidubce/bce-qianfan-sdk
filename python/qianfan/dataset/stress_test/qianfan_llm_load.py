@@ -196,13 +196,15 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
+        safety_level = GlobalData.data["safety_level"]
+        if GlobalData.data["threshold_first"].value == 1:
+            return
         context = context or {}
         if "messages" in kwargs:
             messages = kwargs.pop("messages")
         else:
             messages = []
         first_flag = True
-
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -211,12 +213,15 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         }
         last_resp = None
         all_empty = True
+
         start_time = time.time()
         start_perf_counter = time.perf_counter()
-
         try:
             kwargs["retry_count"] = 0
-            responses = self.chat_comp.do(messages=messages, **kwargs)
+            responses = self.chat_comp.do(
+                messages=messages, safety_level=safety_level, **kwargs
+            )
+            GlobalData.data["total_requests"].value += 1
         except Exception as e:
             self.exc = e
             resp = QfResponse(-1)
@@ -237,6 +242,12 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     request_meta["first_token_latency"] = (
                         time.perf_counter() - start_perf_counter
                     ) * 1000  # 首Token延迟
+                    if (
+                        request_meta["first_token_latency"]
+                        > GlobalData.data["first_latency_threshold"]
+                    ):
+                        GlobalData.data["threshold_first"].value = 1
+                        return
                     first_flag = False
                 content = ""
                 if "result" in stream_json:
@@ -277,7 +288,8 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
-            # report to locust's statistics
+            # report succeed to locust's statistics
+            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -289,6 +301,13 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         else:
             # setting response_time to None when the request is failed
             request_meta["response_time"] = None
+            request_meta["request_type"] = "POST"
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
         return request_meta
 
     def _transfer_jsonl(
@@ -348,6 +367,9 @@ class CompletionClient(QianfanCustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
+        safety_level = GlobalData.data["safety_level"]
+        if GlobalData.data["threshold_first"].value == 1:
+            return
         context = context or {}
         if "prompt" in kwargs:
             prompt = kwargs.pop("prompt")
@@ -365,7 +387,8 @@ class CompletionClient(QianfanCustomHttpSession):
 
         start_time = time.time()
         start_perf_counter = time.perf_counter()
-        responses = self.comp.do(prompt=prompt, **kwargs)
+        responses = self.comp.do(prompt=prompt, safety_level=safety_level, **kwargs)
+        GlobalData.data["total_requests"].value += 1
         for resp in responses:
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)
@@ -376,6 +399,12 @@ class CompletionClient(QianfanCustomHttpSession):
                 request_meta["first_token_latency"] = (
                     time.perf_counter() - start_perf_counter
                 ) * 1000  # 首Token延迟
+                if (
+                    request_meta["first_token_latency"]
+                    > GlobalData.data["first_latency_threshold"]
+                ):
+                    GlobalData.data["threshold_first"].value = 1
+                    return
                 first_flag = False
             content = ""
             if "result" in stream_json:
@@ -418,6 +447,7 @@ class CompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report to locust's statistics
+            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -429,6 +459,14 @@ class CompletionClient(QianfanCustomHttpSession):
         else:
             # setting response_time to None when the request is failed
             request_meta["response_time"] = None
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = response_time
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
         return request_meta
 
     def _transfer_jsonl(
@@ -457,6 +495,7 @@ def test_start(environment: Environment, **kwargs: Any) -> None:
     """
     global distributor
     dataset = GlobalData.data["dataset"]
+    dataset = dataset.list()
     distributor = Distributor(
         environment, iter(dataset)
     )  # Quite runner when iterator raises StopIteration.
@@ -476,6 +515,9 @@ class QianfanLLMLoadUser(CustomUser):
                 " User class, "
                 + "or on the command line using the --host option."
             )
+        from threading import Lock
+
+        self.lock = Lock()
 
         model_type = GlobalData.data["model_type"]
         is_endpoint = GlobalData.data["is_endpoint"]
@@ -510,7 +552,10 @@ class QianfanLLMLoadUser(CustomUser):
     def mytask(self) -> None:
         hyperparameters = GlobalData.data["hyperparameters"]
         assert distributor is not None
-        data = next(distributor)
+        with self.lock:
+            data = next(distributor)
+
+        self.query_idx += 1
         body = self.client.transfer_data(data, self.input_column, self.output_column)
         if hyperparameters is None:
             hyperparameters = {}

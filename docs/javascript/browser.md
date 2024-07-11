@@ -25,78 +25,72 @@
 [ticket-image]: https://img.shields.io/badge/%E8%81%94%E7%B3%BB%E6%88%91%E4%BB%AC-%E7%99%BE%E5%BA%A6%E6%99%BA%E8%83%BD%E4%BA%91%E5%B7%A5%E5%8D%95-brightgreen
 [ticket-url]: https://console.bce.baidu.com/ticket/#/ticket/create?productId=279
 
-浏览器环境使用请参考 [文档](../docs/javascript/browser.md)
-
-## 快速使用
-
-## 第一步：安装node.js sdk
+## 如何安装
 
 ```bash
-#如果使用npm：
 npm install @baiducloud/qianfan
-#如果使用yarn：
+# or
 yarn add @baiducloud/qianfan
 ```
 
-## 第二步：获得鉴权
+## 快速使用
 
-在使用千帆 SDK 之前，用户需要 [百度智能云控制台 - 安全认证](https://console.bce.baidu.com/iam/#/iam/accesslist) 页面获取 Access Key 与 Secret Key，并在 [千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application) 中创建应用，选择需要启用的服务，具体流程参见平台 [说明文档](https://cloud.baidu.com/doc/Reference/s/9jwvz2egb)。
+在执行qianfan proxy的同级目录下，新建 .env文件，设置 QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY 即可
 
-### 选择一：使用安全认证AK/SK鉴权   【推荐】
+1. 需要先安装python>=3.8
+2. pip install qianfan
+3. qianfan proxy
 
-（1）登录百度智能云千帆控制台，点击“用户账号->安全认证”进入Access Key管理界面。
+![proxy](../docs/imgs/proxy.png)
 
-（2）查看安全认证页面的Access Key/Secret Key
+注意：浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 
-注意：
-初始化鉴权时，使用“安全认证/Access Key”中的Access Key和 Secret Key进行鉴权，更多鉴权认证机制请参考鉴权认证机制。
-安全认证Access Key(AK)/Secret Key(SK)，和使用的获取AcessToken的应用API Key(AK) 和 Secret Key(SK)不同
+### env 文件示例
 
-### 选择二：使用应用AK/SK鉴权调用 【不推荐，后续可能出现新功能不兼容的情况】
-
-（1）登录百度智能云千帆控制台。
-   注意：为保障服务稳定运行，账户最好不处于欠费状态。
-
-（2）创建千帆应用。
-如果已有应用，此步骤可跳过。如果无应用，进入控制台创建应用 ，如何创建应用也可以参考应用接入使用。
-
-（3）在应用接入页，获取应用的API Key、Secret Key。
-
-## 第三步：初始化AK和SK
-
-### 选择一：通过配置文件初始化 【推荐】
-
-在项目的根目录中创建一个名为 .env 的文件，并添加以下内容，SDK从当前目录的 .env 中读取配置。
+在你项目的根目录中创建一个名为 .env 的文件，并添加以下内容：
 
 ```bash
-QIANFAN_AK=your_access_key
-QIANFAN_SK=your_secret_key
 QIANFAN_ACCESS_KEY=another_access_key
 QIANFAN_SECRET_KEY=another_secret_key
 ```
 
-### 选择二：通过环境变量初始化
+### HTML 中使用, 引入 dist 文件中的 bundle.iife.js 即可使用，参考example/index.html
 
-```bash
-setEnvVariable('QIANFAN_AK','your_api_key');
-setEnvVariable('QIANFAN_SK','your_secret_key');
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Qianfan SDK</h1>
+    <script src="../dist/bundle.iife.js"></script>
+    <script>
+        const {ChatCompletion} = QianfanSDK;
+        const client =  new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.178.105:8002', QIANFAN_CONSOLE_API_BASE_URL: ' http://172.18.178.105:8003'})
+     async function main() {
+    const stream =  await client.chat({
+        messages: [
+            {
+                role: 'user',
+                content: '等额本金和等额本息有什么区别？',
+            },
+        ],
+        stream: true,
+    }, 'ERNIE-Bot-turbo');
+    console.log('流式返回结果');
+    for await (const chunk of stream) {
+        console.log(chunk);
+    }
+}
+
+main();
+    </script>
+</body>
+</html>
 ```
-
-### 选择三：通过参数初始化（以ChatCompletion为例）
-
-```js
-import {ChatCompletion} from "@baiducloud/qianfan";
-
-// 通过参数初始化，应用API Key替换your_api_key，应用Secret Key替换your_secret_key，以对话Chat为例，调用如下
-const client = new ChatCompletion({ QIANFAN_AK: 'your_api_key', QIANFAN_SK: 'your_secret_key' });
-// 通过参数初始化， ACCESS_KEY / SECRET_KEY
-const client = new ChatCompletion({ QIANFAN_ACCESS_KEY: 'your_api_key', QIANFAN_SECRET_KEY: 'your_secret_key' });
-```
-
-## 第四步：使用SDK
-
-> 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
-功能如下：
 
 ### Chat 单轮对话
 
@@ -105,10 +99,8 @@ const client = new ChatCompletion({ QIANFAN_ACCESS_KEY: 'your_api_key', QIANFAN_
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-setEnvVariable('QIANFAN_ACCESS_KEY','***');
-setEnvVariable('QIANFAN_SECRET_KEY','***');
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
-const client = new  ChatCompletion();
 async function main() {
     const resp = await client.chat({
         messages: [
@@ -141,7 +133,7 @@ main();
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new  ChatCompletion();
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.chat({
         messages: [
@@ -162,7 +154,8 @@ main();
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new  ChatCompletion({Endpoint: '***'});
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003', {Endpoint: '***'}});
+
 async function main() {
     const resp = await client.chat({
         messages: [
@@ -183,7 +176,7 @@ main
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new  ChatCompletion();  
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {    // 调用默认模型，即 ERNIE-Bot-turbo
     const resp = await client.chat({
         messages: [
@@ -246,7 +239,7 @@ main();
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new  ChatCompletion();
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const stream = await client.chat({
         messages: [
@@ -310,7 +303,7 @@ main();
 ```ts
 import {Completions, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new Completions({ QIANFAN_ACCESS_KEY: 'your_iam_ak', QIANFAN_SECRET_KEY: 'your_iam_sk' });
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.completions({
         prompt: 'In Bash, how do I list all text files in the current directory (excluding subdirectories) that have been modified in the last month',
@@ -326,7 +319,7 @@ main();
 ```ts
 import {Completions, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new Completions();
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.completions({
         prompt: '你好',
@@ -344,7 +337,7 @@ main();
 ```ts
 import {Completions, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new Completions({QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***', Endpoint: '***'});
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003', Endpoint: '***'});
 async function main() {
     const resp = await client.completions({
         prompt: '你好，你是谁',
@@ -375,7 +368,7 @@ main();
 ```ts
 import {Completions, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new Completions({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
+const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const stream = await client.completions({
         prompt: '你好，你是谁',
@@ -437,7 +430,7 @@ main();
 ```ts
 import {Embedding} from "@baiducloud/qianfan";
 
-const client = new Embedding();
+const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.embedding({
         input: ['介绍下你自己吧', '你有什么爱好吗？'],
@@ -462,7 +455,7 @@ Embedding-V1
 
 import {Eembedding} from "@baiducloud/qianfan";
 
-const client = new Eembedding({ QIANFAN_ACCESS_KEY: '***', QIANFAN_SECRET_KEY: '***' });
+const client = Eembedding({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.embedding({
         input: ['介绍下你自己吧', '你有什么爱好吗？'],
@@ -485,12 +478,16 @@ main();
 ```ts
 import * as http from 'http';
 import {Text2Image, setEnvVariable} from "@baiducloud/qianfan";
-const client = new Text2Image({Endpoint：'***'});
+const client = Text2Image({QIANFAN_BASE_URL: '***', QIANFAN_CONSOLE_API_BASE_URL: '***'});
 
 async function main() {
     const resp = await client.text2Image({
-        prompt: 'A Ragdoll cat with a bowtie.',
-    });
+        prompt: '生成爱莎公主的图片',
+        size: '768x768',
+        n: 1,
+        steps: 20,
+        sampler_index: 'Euler a',
+    }, 'Stable-Diffusion-XL');
 
     const base64Image = resp.data[0].b64_image;
     // 创建一个简单的服务器
@@ -518,7 +515,7 @@ import {setEnvVariable} from '@baiducloud/qianfan'
 import {Image2Text} from "@baiducloud/qianfan";
 
 // 调用大模型
-const client = new Image2Text();
+Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 async function main() {
     const resp = await client.image2Text({
         prompt: '分析一下图片画了什么',
@@ -537,7 +534,7 @@ import {setEnvVariable} from '@baiducloud/qianfan'
 import {Image2Text} from "@baiducloud/qianfan";
 
 // 调用大模型
-const client = new Image2Text({Endpoint: '***'});
+Image2Text({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003', Endpoint: '***'});
 async function main() {
     const resp = await client.image2Text({
         prompt: '分析一下图片画了什么',
@@ -558,7 +555,7 @@ SDK支持使用平台插件能力，以帮助用户快速构建 LLM 应用或将
 ```ts
 import {Plugin} from "@baiducloud/qianfan";
 // 注意：千帆插件需要传入Endpoint， 一言插件不用
-const client = new Plugin({Endpoint: '***'});
+const client = new Plugin({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003', Endpoint: '***'});
 
 // 天气插件
 async function main() {
@@ -663,7 +660,7 @@ yiYanChatFileMain();
 ```ts
 import {Reranker} from "@baiducloud/qianfan";
 // 直接读取 env  
-const client = new Reranker();
+const client = new Reranker({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
 
 async function main() {
      const resp = await client.reranker({

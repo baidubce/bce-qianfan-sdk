@@ -168,6 +168,8 @@ class OpenAIApdater(object):
                     "type": "function",
                     "function": function_call,
                 }
+        if qianfan_request.get("tool_choice") == "auto":
+            qianfan_request.pop("tool_choice")
         if "response_format" in openai_request:
             response_format = openai_request["response_format"]
             if not isinstance(response_format, str):
@@ -201,6 +203,7 @@ class OpenAIApdater(object):
             if "tool_calls" in item:
                 item["function_call"] = item["tool_calls"][0]["function"]
         qianfan_request["messages"] = messages
+        self.qianfan_req_post_process(qianfan_request)
         return qianfan_request
 
     def openai_completion_request_to_qianfan(
@@ -214,6 +217,7 @@ class OpenAIApdater(object):
         if isinstance(prompt, list):
             prompt = "".join(prompt)
         qianfan_request["prompt"] = prompt
+        self.qianfan_req_post_process(qianfan_request)
         return qianfan_request
 
     def convert_openai_embedding_request(
@@ -232,15 +236,28 @@ class OpenAIApdater(object):
         request_list = []
         i = 0
         while i < len(input):
+            self.qianfan_req_post_process(qianfan_request)
             request_list.append(
-                {
-                    "texts": input[i : min(i + self.EmbeddingBatchSize, len(input))],
-                    **qianfan_request,
-                },
+                self.qianfan_req_post_process(
+                    {
+                        "texts": input[
+                            i : min(i + self.EmbeddingBatchSize, len(input))
+                        ],
+                        **qianfan_request,
+                    }
+                )
             )
             i += self.EmbeddingBatchSize
 
         return request_list
+
+    def qianfan_req_post_process(
+        self, qianfan_request: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        qianfan_request["extra_parameters"] = {
+            "request_source": f"qianfan_py_sdk_v{qianfan.VERSION}_openai"
+        }
+        return qianfan_request
 
     @classmethod
     def qianfan_chat_response_to_openai(

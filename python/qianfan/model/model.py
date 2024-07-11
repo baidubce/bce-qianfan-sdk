@@ -40,14 +40,10 @@ from qianfan.utils.utils import generate_letter_num_random_id
 class Model(
     ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]],
 ):
+    set_id: Optional[str]
+    """remote model set id"""
     id: Optional[str]
-    """remote model id"""
-    version_id: Optional[str]
     """remote model version id"""
-    old_id: Optional[int]
-    """deprecated old model id"""
-    old_version_id: Optional[int]
-    """deprecated old model version id"""
     name: Optional[str] = None
     """model name"""
     service: Optional["Service"] = None
@@ -61,8 +57,8 @@ class Model(
 
     def __init__(
         self,
+        set_id: Optional[str] = None,
         id: Optional[str] = None,
-        version_id: Optional[str] = None,
         task_id: Optional[str] = None,
         job_id: Optional[str] = None,
         name: Optional[str] = None,
@@ -73,10 +69,10 @@ class Model(
         get a custom model service.
 
         Parameters:
+            set_id (Optional[str], optional):
+                qianfan model remote set id. Defaults to None.
             id (Optional[str], optional):
-                qianfan model remote id. Defaults to None.
-            version_id (Optional[str], optional):
-                model version id. Defaults to None.
+                model id. Defaults to None.
             task_id (Optional[int], optional):
                 model train task id. Defaults to None.
             job_id (Optional[int], optional):
@@ -84,15 +80,15 @@ class Model(
             auto_complete (Optional[bool], optional):
                 if call auto_complete() to complete model info. Defaults to None.
         """
+        self.set_id = set_id
         self.id = id
-        self.version_id = version_id
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
-        if version_id is None or id is None:
+        if id is None or set_id is None:
             self.auto_complete_info()
-        if version_id is None and id is None:
-            log_warn("model id or version_id should be provided")
+        if id is None and set_id is None:
+            log_warn("set id or id should be provided")
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -148,28 +144,20 @@ class Model(
             **kwargs (Any):
                 arbitrary arguments
         """
-        if self.version_id:
-            model_detail_resp = ResourceModel.detail(
-                model_version_id=self.version_id, **kwargs
+        if self.id:
+            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
+            self.set_id = model_detail_resp["result"].get("modelIdStr")
+        elif self.set_id:
+            list_resp = ResourceModel.V2.describe_model_set(
+                model_set_id=self.set_id, **kwargs
             )
-            self.id = model_detail_resp["result"].get("modelIdStr")
-            self.old_id = model_detail_resp["result"].get("modelId")
-            self.old_version_id = model_detail_resp["result"].get("modelVersionId")
-        elif self.id:
-            list_resp = ResourceModel.list(self.id, **kwargs)
-            if len(list_resp["result"]["modelVersionList"]) == 0:
+            if len(list_resp["result"]["modelIds"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
                 )
             log_info("model publish get the first version in model list as default")
-            self.version_id = list_resp["result"]["modelVersionList"][0].get(
-                "modelVersionIdStr"
-            )
-            self.old_id = list_resp["result"]["modelVersionList"][0].get("modelId")
-            self.old_version_id = list_resp["result"]["modelVersionList"][0].get(
-                "modelVersionId"
-            )
-            if self.version_id is None:
+            self.id = list_resp["result"]["modelIds"][0]
+            if self.id is None:
                 raise InvalidArgumentError("model version id not found")
 
     def publish(self, name: str = "", **kwargs: Any) -> "Model":
@@ -180,36 +168,32 @@ class Model(
             name str:
                 model name. Defaults to "m_{task_id}{job_id}".
         """
-        if self.version_id:
+        if self.id:
             # already released
-            model_detail_resp = ResourceModel.detail(
-                model_version_id=self.version_id, **kwargs
-            )
-            self.id = model_detail_resp["result"]["modelIdStr"]
+            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
+            self.set_id = model_detail_resp["result"]["modelIdStr"]
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["taskId"]
             self.job_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["runId"]
-            log_info(f"check model {self.id}/{self.version_id} published...")
+            log_info(f"check model {self.set_id}/{self.id} published...")
             if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
                 self._wait_for_publish(**kwargs)
-        elif self.id:
-            list_resp = ResourceModel.list(self.id, **kwargs)
-            if len(list_resp["result"]["modelVersionList"]) == 0:
+        elif self.set_id:
+            list_resp = ResourceModel.V2.describe_model_set(
+                model_set_id=self.set_id, **kwargs
+            )
+            if len(list_resp["result"]["modelIds"]) == 0:
                 raise InvalidArgumentError(
                     "not model version matched, please train and publish first"
                 )
             log_info("model publish get the first version in model list as default")
-            self.version_id = list_resp["result"]["modelVersionList"][0][
-                "modelVersionIdStr"
-            ]
-            if self.version_id is None:
+            self.id = list_resp["result"]["modelIds"][0]
+            if self.id is None:
                 raise InvalidArgumentError("model version id not found")
-            model_detail_resp = ResourceModel.detail(
-                model_version_id=self.version_id, **kwargs
-            )
+            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
             self.task_id = model_detail_resp["result"]["sourceExtra"][
                 "trainSourceExtra"
             ]["taskId"]
@@ -256,26 +240,27 @@ class Model(
             version_meta=model_version_meta,
             **kwargs,
         )
-        self.id = model_publish_resp["result"]["modelIDStr"]
-        self.old_id = model_publish_resp["result"]["modelId"]
+        self.set_id = model_publish_resp["result"]["modelIDStr"]
 
-        if self.id is None:
+        if self.set_id is None:
             raise InvalidArgumentError("model id not found")
         # 获取模型版本信息：
-        model_list_resp = ResourceModel.list(model_id=self.id, **kwargs)
-        model_version_list = model_list_resp["result"]["modelVersionList"]
+        model_list_resp = ResourceModel.V2.describe_model_set(
+            model_set_id=self.set_id, **kwargs
+        )
+        model_version_list = model_list_resp["result"]["modelIds"]
         if model_version_list is None or len(model_version_list) == 0:
             raise InvalidArgumentError("not model version matched")
-        self.version_id = model_version_list[0]["modelVersionIdStr"]
+        self.id = model_version_list[0]
 
-        if self.version_id is None:
+        if self.id is None:
             raise InvalidArgumentError("model version id not found")
         log_info(
             f"publishing train task: {self.job_id}/{self.task_id} to model:"
-            f" {self.id}/{self.version_id}"
+            f" {self.set_id}/{self.id}"
         )
         self._wait_for_publish(**kwargs)
-        log_info(f"publish successfully to model: {self.id}/{self.version_id}")
+        log_info(f"publish successfully to model: {self.set_id}/{self.id}")
         return self
 
     def _wait_for_publish(self, **kwargs: Any) -> None:
@@ -286,16 +271,14 @@ class Model(
             InternalError: _description_
         """
         # 获取模型版本详情
-        if self.version_id is None:
+        if self.id is None:
             raise InvalidArgumentError("model version id not found")
         while True:
-            model_detail_info = ResourceModel.detail(
-                model_version_id=self.version_id, **kwargs
-            )
+            model_detail_info = ResourceModel.detail(model_version_id=self.id, **kwargs)
             model_version_state = model_detail_info["result"]["state"]
             log_debug(f"check model publish status: {model_version_state}")
             if model_version_state == console_const.ModelState.Ready:
-                log_info(f"model {self.id}/{self.version_id} published successfully")
+                log_info(f"model {self.set_id}/{self.id} published successfully")
                 break
             elif model_version_state == console_const.ModelState.Fail:
                 raise InternalError(
@@ -342,7 +325,7 @@ class Model(
             Dataset: batch result contained in dataset
         """
 
-        return dataset.test_using_llm(self.version_id, **kwargs)
+        return dataset.test_using_llm(self.id, **kwargs)
 
     def compress(
         self,
@@ -364,14 +347,12 @@ class Model(
 
         """
         self.auto_complete_info()
-        assert self.version_id is not None
         assert self.id is not None
-        model_detail_resp = ResourceModel.V2.describe_model(model_id=self.version_id)
+        assert self.set_id is not None
+        model_detail_resp = ResourceModel.V2.describe_model(model_id=self.id)
         if not model_detail_resp["result"].get("isSupportModelComp"):
-            log_error(f"model {self.version_id} is not supported to compress")
-            raise InvalidArgumentError(
-                f"model {self.version_id} is not supported to compress"
-            )
+            log_error(f"model {self.id} is not supported to compress")
+            raise InvalidArgumentError(f"model {self.id} is not supported to compress")
         strategy = console_const.ModelCompStrategy(strategy)
         config = {"strategy": strategy.value}
         if strategy == console_const.ModelCompStrategy.Quantization:
@@ -384,10 +365,10 @@ class Model(
                 config["weight"] = console_const.ModelQuantizationWeight(weight).value
         model_comp_task_resp = ResourceModel.V2.create_model_comp_task(
             name=f"mco_{generate_letter_num_random_id(12)}",
-            source_model_id=self.version_id,
+            source_model_id=self.id,
             config=config,
-            model_set_id=self.id,
-            description=f"mcomp_{self.version_id}_{strategy.value}_{weight}",
+            model_set_id=self.set_id,
+            description=f"mcomp_{self.id}_{strategy.value}_{weight}",
         )
         model_comp_task_id = model_comp_task_resp["result"]
         log_info(f"started compressing task: {model_comp_task_id}")
@@ -411,7 +392,7 @@ class Model(
                     f" {comp_task_detail_resp['result']['status']}"
                     f" new model_version_id: {new_model_version_id}"
                 )
-                new_model = Model(version_id=new_model_version_id)
+                new_model = Model(id=new_model_version_id)
                 new_model.auto_complete_info()
                 return new_model
             else:
@@ -593,14 +574,12 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.model is None:
             raise InvalidArgumentError("model not found")
         model = self.model
-        if model.id is None or model.version_id is None:
-            raise InvalidArgumentError("model id | model version id not found")
+        if model.set_id is None or model.id is None:
+            raise InvalidArgumentError("model set id | model id not found")
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy config not found")
-        log_info(f"ready to deploy service with model {model.id}/{model.version_id}")
+        log_info(f"ready to deploy service with model {model.set_id}/{model.id}")
         model.auto_complete_info()
-        assert model.old_id is not None
-        assert model.old_version_id is not None
         res_config: Dict[str, Any] = {
             "type": self.deploy_config.resource_type,
             "replicasCount": self.deploy_config.replicas,
@@ -608,11 +587,11 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.deploy_config.qps is not None:
             res_config["qps"] = self.deploy_config.qps
         svc_publish_resp = api.Service.V2.create_service(
+            model_set_id=model.set_id,
             model_id=model.id,
-            model_version_id=model.version_id,
-            name=self.deploy_config.name or f"svc{model.id}_{model.version_id}",
+            name=self.deploy_config.name or f"svc{model.set_id}_{model.id}",
             url_suffix=self.deploy_config.endpoint_suffix
-            or f"svc{model.id}_{model.version_id}",
+            or f"svc{model.set_id}_{model.id}",
             resource_config=res_config,
             billing={
                 "paymentTiming": "Prepaid",

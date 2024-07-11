@@ -198,8 +198,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
-        if GlobalData.data["threshold_first"].value == 1:
-            return
         context = context or {}
         if "messages" in kwargs:
             messages = kwargs.pop("messages")
@@ -214,7 +212,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         }
         last_resp = None
         all_empty = True
-
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         try:
@@ -363,8 +360,6 @@ class CompletionClient(QianfanCustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
-        if GlobalData.data["threshold_first"].value == 1:
-            return
         context = context or {}
         if "prompt" in kwargs:
             prompt = kwargs.pop("prompt")

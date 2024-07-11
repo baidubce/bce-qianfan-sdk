@@ -179,7 +179,19 @@ class VersionBase(object):
         """
         return self._real.access_token()
 
-    def models(self) -> Set[str]:
+    @utils.class_or_instancemethod
+    def models(
+        self_or_cls,
+        version: Optional[Literal["1", "2", 1, 2]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Set[str]:
+        if version is not None:
+            return self_or_cls._real_base(str(version)).models()
+        if isinstance(self_or_cls, type):
+            cls = self_or_cls
+            return cls._real_base(version="1").models()
+        self = self_or_cls
         return self._real.models()
 
     def get_model_info(self, model: str) -> QfLLMInfo:
@@ -387,7 +399,8 @@ class BaseResource(object):
         kwargs["stream"] = stream
         if "extra_parameters" not in kwargs:
             kwargs["extra_parameters"] = {}
-        kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
+        if kwargs["extra_parameters"].get("request_source") is None:
+            kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
         return kwargs
 
     def _data_postprocess(self, data: QfResponse) -> QfResponse:
@@ -947,6 +960,7 @@ class BaseResourceV2(BaseResource):
             body["model"] = self._model
         else:
             body["model"] = self._default_model()
+        body["model"] = body["model"].lower()
         return body
 
     @classmethod

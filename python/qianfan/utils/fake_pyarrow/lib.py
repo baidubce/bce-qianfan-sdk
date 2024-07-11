@@ -19,6 +19,3 @@ fake pyarrow lib
 class ArrowInvalid(Exception):
     # do nothing
     ...
-
-
-

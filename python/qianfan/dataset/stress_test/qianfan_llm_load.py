@@ -242,7 +242,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     ) * 1000  # 首Token延迟
                     if request_meta["first_token_latency"] > GlobalData.data["first_latency_threshold"]:
                         GlobalData.data["threshold_first"].value = 1
-                        return
                     first_flag = False
                 content = ""
                 if "result" in stream_json:
@@ -393,7 +392,6 @@ class CompletionClient(QianfanCustomHttpSession):
                 ) * 1000  # 首Token延迟
                 if request_meta["first_token_latency"] > GlobalData.data["first_latency_threshold"]:
                         GlobalData.data["threshold_first"].value = 1
-                        return
                 first_flag = False
             content = ""
             if "result" in stream_json:

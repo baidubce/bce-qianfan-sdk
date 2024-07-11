@@ -27,7 +27,6 @@ def model_details(endpoint):
     for inf in info.body["result"]["serviceList"]:
         temp = inf["url"].split("/")
         if temp[-1] == endpoint:
-            print(inf["resourceConfig"])
             return inf
 
 
@@ -56,7 +55,6 @@ class QianfanLocustRunner(LocustRunner):
         first_latency_threshold: Optional[float] = None,
         round_latency_threshold: Optional[float] = None,
         success_rate_threshold: Optional[float] = None,
-        safety_level: Optional[bool] = None,
         model_info: Optional[Dict[str, Any]] = None,
     ):
         if model is not None:
@@ -83,15 +81,12 @@ class QianfanLocustRunner(LocustRunner):
             first_latency_threshold=first_latency_threshold,
             round_latency_threshold=round_latency_threshold,
             success_rate_threshold=success_rate_threshold,
-            safety_level=safety_level,
             model_info=model_info,
         )
         self.first_latency_threshold = first_latency_threshold
         self.round_latency_threshold = round_latency_threshold * 1000
         self.success_rate_threshold = success_rate_threshold * 100
-        self.safety_level = safety_level
         GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
-        GlobalData.data["safety_level"] = self.safety_level
         self.dataset = dataset
         self.model_type = model_type
         self.hyperparameters = hyperparameters
@@ -123,11 +118,11 @@ class QianfanLocustRunner(LocustRunner):
                     "spawn_rate": self.spawn_rate,
                     "hyperparameters": self.hyperparameters,
                     "interval": self.interval,
-                    "safetylevel": self.safety_level,
                 }
         else:
             model_info = None
             self.model_info = {
+                "modelname": None,
                 "modelVersionId": None,
                 "serviceId": None,
                 "serviceUrl": None,
@@ -139,7 +134,6 @@ class QianfanLocustRunner(LocustRunner):
                 "spawn_rate": self.spawn_rate,
                 "hyperparameters": self.hyperparameters,
                 "interval": self.interval,
-                "safetylevel": self.safety_level,
             }
 
     def run(self) -> Dict[str, Any]:
@@ -161,6 +155,7 @@ class QianfanLocustRunner(LocustRunner):
             ret["record_dir"].append(round_result["record_dir"])
             log_info = None
             self.model_info["log_info"] = log_info
+            html_path = round_result["record_dir"] + "/performance_table.html"
             try:
                 round_html = gen_brief(
                     round_result["record_dir"],
@@ -178,24 +173,21 @@ class QianfanLocustRunner(LocustRunner):
                 traceback.print_exc()
                 logger.error("Error happens when generating brief.")
             if GlobalData.data["threshold_first"].value == 1:
-                log_info = "首token超时, 超时token:" + self.dataset[0][0]["prompt"]
+                log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
                 self.model_info["log_info"] = log_info
                 print("首token超时，超时token:", self.dataset[0][0]["prompt"])
                 html_table = generate_html_table(html, self.model_info)
-                html_path = "performance_table.html"
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 return ret
             if t > self.round_latency_threshold:
                 html_table = generate_html_table(html, self.model_info)
-                html_path = round_result["record_dir"] + "/performance_table.html"
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 print("整句时延超时")
                 return ret
             if round_html["SuccessRate"] < self.success_rate_threshold:
                 html_table = generate_html_table(html, self.model_info)
-                html_path = round_result["record_dir"] + "/performance_table.html"
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 print("成功率低于阈值")

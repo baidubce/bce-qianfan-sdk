@@ -88,7 +88,6 @@ def generate_html_table(data_rows, model_info):
             <p><strong>Spawn Rate:</strong> {model_info['spawn_rate']}</p>
             <p><strong>Rounds:</strong> {model_info['rounds']}</p>
             <p><strong>Interval:</strong> {model_info['interval']}</p>
-            <p><strong>Safety Level:</strong> {model_info['safetylevel']}</p>
             <p><strong>Hyperparameters:</strong> {model_info['hyperparameters']}</p>
         </div>
 

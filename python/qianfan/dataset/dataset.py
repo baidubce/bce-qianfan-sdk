@@ -2223,7 +2223,6 @@ class Dataset(Table):
         first_latency_threshold: Optional[float] = None,
         round_latency_threshold: Optional[float] = None,
         success_rate_threshold: Optional[float] = None,
-        safety_level: Optional[bool] = None,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2261,7 +2260,6 @@ class Dataset(Table):
                 Interval concurrent number between rounds.
         """
         import os
-
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
             urllib_env = os.environ.get("no_proxy")
             if urllib_env != "*":
@@ -2289,10 +2287,9 @@ class Dataset(Table):
                 hyperparameters=hyperparameters,
                 rounds=rounds,
                 interval=interval,
-                first_latency_threshold=first_latency_threshold,
-                round_latency_threshold=round_latency_threshold,
-                success_rate_threshold=success_rate_threshold,
-                safety_level=safety_level,
+                first_latency_threshold = first_latency_threshold,
+                round_latency_threshold = round_latency_threshold,
+                success_rate_threshold = success_rate_threshold,
             )
             runner.run()
             if isinstance(urllib_env, str):

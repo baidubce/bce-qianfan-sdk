@@ -2226,6 +2226,11 @@ class Dataset(Table):
                 model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,
+                rounds=1,
+                interval=0,
+                first_latency_threshold = 100,
+                round_latency_threshold = 100,
+                success_rate_threshold = 0,
             )
             runner.run()
             if isinstance(urllib_env, str):
@@ -2249,7 +2254,7 @@ class Dataset(Table):
         model_type: str = "ChatCompletion",
         hyperparameters: Optional[Dict[str, Any]] = None,
         rounds: int = 1,
-        interval: int = 1,
+        interval: Optional[int] = 0,
         first_latency_threshold: Optional[float] = None,
         round_latency_threshold: Optional[float] = None,
         success_rate_threshold: Optional[float] = None,

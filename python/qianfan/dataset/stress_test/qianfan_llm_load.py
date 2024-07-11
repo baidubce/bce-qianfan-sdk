@@ -204,6 +204,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         else:
             messages = []
         first_flag = True
+
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -214,6 +215,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         all_empty = True
         start_time = time.time()
         start_perf_counter = time.perf_counter()
+
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)

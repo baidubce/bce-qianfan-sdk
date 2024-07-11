@@ -1,5 +1,6 @@
 # -- encoding: utf-8 --
 
+
 """
 brief.py
 """
@@ -11,6 +12,7 @@ logger = logging.getLogger("yame.runner")
 
 
 def get_qps(path: str) -> float:
+def get_qps(path: str) -> float:
     """
     get_duration
     """
@@ -20,7 +22,9 @@ def get_qps(path: str) -> float:
                 continue
             line_splits = line.split(",")
             qps = float(line_splits[-13]) - float(line_splits[-12])
+            qps = float(line_splits[-13]) - float(line_splits[-12])
             break
+        return qps
         return qps
 
 
@@ -41,7 +45,20 @@ def get_statistics(path: str) -> List[float]:
             total_count = int(line_splits[2])
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])
+            total_count = int(line_splits[2])
+            failure_count = int(line_splits[3])
+            total_time = float(line_splits[2]) * float(line_splits[5])
             break
+    return [
+        lat_avg,
+        lat_min,
+        lat_max,
+        lat_50p,
+        lat_80p,
+        total_count,
+        failure_count,
+        total_time,
+    ]
     return [
         lat_avg,
         lat_min,
@@ -68,9 +85,13 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
     total_count = lat_tuple[5]
     failure_count = lat_tuple[6]
     success_count = total_count - failure_count
+    total_count = lat_tuple[5]
+    failure_count = lat_tuple[6]
+    success_count = total_count - failure_count
     text = (
         "Load Test Statistics\n"
         + "QPS: %s\n" % round(qps, 2)
+        + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
         + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
@@ -84,6 +105,11 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
         + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
+        + "TotalQuery: %s\n" % round(count, 2)
+        + "SuccessQuery: %s\n" % round(success_count, 2)
+        + "FailureQuery: %s\n" % round(count - success_count, 2)
+        + "TotalTime: %s\n" % round(time, 2)
+        + "SuccessRate: %s%%" % round(success_count / count * 100, 2)
         + "TotalQuery: %s\n" % round(count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
         + "FailureQuery: %s\n" % round(count - success_count, 2)

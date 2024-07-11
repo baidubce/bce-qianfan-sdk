@@ -74,16 +74,12 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
                 action.accept(next());
             }
         } finally {
-            try {
-                close();
-            } catch (Exception e) {
-                // ignored
-            }
+            sseIterator.silentlyClose();
         }
     }
 
     @Override
-    public void close() throws IOException {
-        sseIterator.close();
+    public void close() {
+        sseIterator.silentlyClose();
     }
 }

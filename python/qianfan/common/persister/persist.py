@@ -78,12 +78,16 @@ class FilePersister(Persister):
             return t.load(f.read())
 
     @classmethod
-    def list(cls, t: _T) -> List[Persistent]:
+    def list(cls, t: _T, skip_if_error: bool = True) -> List[Persistent]:
         space_path = path.join(cls._ensure_cache_existed(), t._space())
         res = []
         if not path.exists(space_path):
             makedirs(space_path)
         for file_path in glob.glob(path.join(space_path, "*")):
-            with open(file_path, "rb") as f:
-                res.append(t.load(f.read()))
+            try:
+                with open(file_path, "rb") as f:
+                    res.append(t.load(f.read()))
+            except Exception:
+                if skip_if_error:
+                    continue
         return res

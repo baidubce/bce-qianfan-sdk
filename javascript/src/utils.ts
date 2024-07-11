@@ -60,12 +60,13 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  * @param version 版本号
  * @returns 返回JSON格式的字符串
  */
-export function getRequestBody(body: ReqBody, version: string): string {
+export function getRequestBody(body: ReqBody, model, version: string): string {
     const request_source
         = (getCurrentEnvironment() === 'browser') ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
 
     const modifiedBody = {
         ...body,
+        model,
         extra_parameters: {
             ...body.extra_parameters,
             request_source,
@@ -199,7 +200,7 @@ export function getPathAndBody({
         endpoint,
         type,
     });
-    const requestBody = getRequestBody(body, packageJson.version);
+    const requestBody = getRequestBody(body, model, packageJson.version);
     return {
         AKPath,
         requestBody,
@@ -263,9 +264,11 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
     }
     const modelInfoMapUppercase = convertKeysToUppercase(modelMap);
     const modelUppercase = model.toUpperCase();
+    const modelLowercase = model.toLowerCase();
     return {
         modelInfoMapUppercase,
         modelUppercase,
+        modelLowercase,
     };
 }
 

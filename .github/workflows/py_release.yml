@@ -31,6 +31,7 @@ jobs:
       - name: Install
         run: |
           pip3 install poetry
+          poetry lock --no-update
       - name: run lint
         run: make lint
       - name: run UT

@@ -182,7 +182,6 @@ class VersionBase(object):
     @utils.class_or_instancemethod
     def models(
         self_or_cls,
-        /,
         version: Optional[Literal["1", "2", 1, 2]] = None,
         *args: Any,
         **kwargs: Any,
@@ -961,6 +960,7 @@ class BaseResourceV2(BaseResource):
             body["model"] = self._model
         else:
             body["model"] = self._default_model()
+        body["model"] = body["model"].lower()
         return body
 
     @classmethod

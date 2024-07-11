@@ -165,7 +165,7 @@ class Charge(object):
         req.json_body = {
             "serviceId": service_id,
             "billing": billing,
-            "replicas": replicas,
+            "replicasCount": replicas,
         }
 
         return req

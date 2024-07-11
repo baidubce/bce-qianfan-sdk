@@ -83,6 +83,9 @@ def openai(
         show_default=False,
     ),
     log_file: Optional[str] = typer.Option(None, help="Log file path."),
+    api_key: Optional[str] = typer.Option(
+        None, help="API key used for authentication in proxy server."
+    ),
     config_file: Optional[str] = typer.Option(
         None, help="Config file path.", show_default=False
     ),
@@ -100,6 +103,7 @@ def openai(
         "ignore_system": True,
         "log_file": None,
         "model_mapping": None,
+        "api_key": None,
     }
     adapter_config = {}
     if config_file is not None:
@@ -131,6 +135,7 @@ def openai(
             else merged_config["ignore_system"]
         ),
         model_mapping=merged_config["model_mapping"],
+        api_key=api_key if api_key is not None else merged_config["api_key"],
     )
 
 

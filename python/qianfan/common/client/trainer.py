@@ -266,7 +266,9 @@ def print_trainer_config(config: ModelInfo) -> None:
     from qianfan.trainer.configs import TrainConfig
 
     limit_fields = (
-        TrainConfig().dict(exclude={"peft_type", "trainset_rate", "extras"}).keys()
+        TrainConfig()
+        .dict(exclude={"peft_type", "trainset_rate", "extras", "resource_config"})
+        .keys()
     )
     for k in limit_fields:
         row_objs = []

@@ -2228,9 +2228,9 @@ class Dataset(Table):
                 hyperparameters=hyperparameters,
                 rounds=1,
                 interval=0,
-                first_latency_threshold = 100,
-                round_latency_threshold = 100,
-                success_rate_threshold = 0,
+                first_latency_threshold=100,
+                round_latency_threshold=100,
+                success_rate_threshold=0,
             )
             runner.run()
             if isinstance(urllib_env, str):
@@ -2255,9 +2255,9 @@ class Dataset(Table):
         hyperparameters: Optional[Dict[str, Any]] = None,
         rounds: int = 1,
         interval: Optional[int] = 0,
-        first_latency_threshold: Optional[float] = None,
-        round_latency_threshold: Optional[float] = None,
-        success_rate_threshold: Optional[float] = None,
+        first_latency_threshold: Optional[float] = 100,
+        round_latency_threshold: Optional[float] = 1000,
+        success_rate_threshold: Optional[float] = 0,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2295,6 +2295,7 @@ class Dataset(Table):
                 Interval concurrent number between rounds.
         """
         import os
+
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
             urllib_env = os.environ.get("no_proxy")
             if urllib_env != "*":
@@ -2322,9 +2323,9 @@ class Dataset(Table):
                 hyperparameters=hyperparameters,
                 rounds=rounds,
                 interval=interval,
-                first_latency_threshold = first_latency_threshold,
-                round_latency_threshold = round_latency_threshold,
-                success_rate_threshold = success_rate_threshold,
+                first_latency_threshold=first_latency_threshold,
+                round_latency_threshold=round_latency_threshold,
+                success_rate_threshold=success_rate_threshold,
             )
             runner.run()
             if isinstance(urllib_env, str):
@@ -2336,7 +2337,6 @@ class Dataset(Table):
                 "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"
                 " if you want to start a stress test task."
             )
-
 
     def show_in_data_insight_mode(
         self, column_names: List[Optional[str]] = [None]

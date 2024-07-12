@@ -2,9 +2,8 @@
 """
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
-import time,os
+import time
 from typing import Any, Dict, Optional
-from qianfan.resources.typing import QfRequest
 
 from locust import constant, events, task
 from locust.clients import ResponseContextManager
@@ -12,7 +11,7 @@ from locust.env import Environment
 from locust.exception import LocustError
 from locust.stats import RequestStats
 from urllib3 import PoolManager
-from multiprocessing import Manager,Pipe, Value
+
 import qianfan
 from qianfan import QfResponse
 from qianfan.dataset.stress_test.yame import GlobalData
@@ -23,8 +22,6 @@ from qianfan.dataset.stress_test.yame.users.custom_user import (
     CustomUser,
 )
 from qianfan.utils import disable_log
-
-
 
 disable_log()
 
@@ -109,6 +106,7 @@ CustomHandler(
     request_handler=output_tokens_request_handler,
     csv_suffix="output_tokens",
 )
+
 
 class QianfanCustomHttpSession(CustomHttpSession):
     """
@@ -219,7 +217,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
-            GlobalData.data["total_requests"].value += 1 
+            GlobalData.data["total_requests"].value += 1
         except Exception as e:
             self.exc = e
             resp = QfResponse(-1)
@@ -240,8 +238,12 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     request_meta["first_token_latency"] = (
                         time.perf_counter() - start_perf_counter
                     ) * 1000  # 首Token延迟
-                    if request_meta["first_token_latency"] > GlobalData.data["first_latency_threshold"]:
-                        GlobalData.data["threshold_first"].value = 1
+                    if "first_latency_threshold" in GlobalData.data:
+                        if (
+                            request_meta["first_token_latency"]
+                            > GlobalData.data["first_latency_threshold"]
+                        ):
+                            GlobalData.data["threshold_first"].value = 1
                     first_flag = False
                 content = ""
                 if "result" in stream_json:
@@ -379,7 +381,7 @@ class CompletionClient(QianfanCustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
-        GlobalData.data["total_requests"].value += 1 
+        GlobalData.data["total_requests"].value += 1
         for resp in responses:
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)
@@ -390,8 +392,11 @@ class CompletionClient(QianfanCustomHttpSession):
                 request_meta["first_token_latency"] = (
                     time.perf_counter() - start_perf_counter
                 ) * 1000  # 首Token延迟
-                if request_meta["first_token_latency"] > GlobalData.data["first_latency_threshold"]:
-                        GlobalData.data["threshold_first"].value = 1
+                if (
+                    request_meta["first_token_latency"]
+                    > GlobalData.data["first_latency_threshold"]
+                ):
+                    GlobalData.data["threshold_first"].value = 1
                 first_flag = False
             content = ""
             if "result" in stream_json:
@@ -481,7 +486,7 @@ def test_start(environment: Environment, **kwargs: Any) -> None:
     """
     global distributor
     dataset = GlobalData.data["dataset"]
-    dataset =dataset.list()
+    dataset = dataset.list()
     distributor = Distributor(
         environment, iter(dataset)
     )  # Quite runner when iterator raises StopIteration.

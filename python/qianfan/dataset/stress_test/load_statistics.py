@@ -4,9 +4,9 @@
 """
 brief.py
 """
+import html
 import logging
-import sys
-from typing import List
+from typing import Any, Dict, List
 
 logger = logging.getLogger("yame.runner")
 
@@ -21,9 +21,7 @@ def get_qps(path: str) -> float:
                 continue
             line_splits = line.split(",")
             qps = float(line_splits[-13]) - float(line_splits[-12])
-            qps = float(line_splits[-13]) - float(line_splits[-12])
             break
-        return qps
         return qps
 
 
@@ -44,9 +42,6 @@ def get_statistics(path: str) -> List[float]:
             total_count = int(line_splits[2])
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])
-            total_count = int(line_splits[2])
-            failure_count = int(line_splits[3])
-            total_time = float(line_splits[2]) * float(line_splits[5])
             break
     return [
         lat_avg,
@@ -58,19 +53,19 @@ def get_statistics(path: str) -> List[float]:
         failure_count,
         total_time,
     ]
-    return [
-        lat_avg,
-        lat_min,
-        lat_max,
-        lat_50p,
-        lat_80p,
-        total_count,
-        failure_count,
-        total_time,
-    ]
 
 
-def gen_brief(report_dir: str, time: float, count: int) -> None:
+def gen_brief(
+    report_dir: str,
+    time: float,
+    count: int,
+    user_num: int,
+    worker_num: int,
+    spawn_rate: int,
+    model_type: str,
+    hyperparameters: Any,
+    total_requests: int,
+) -> Dict[str, Any]:
     """
     gen_brief
     """
@@ -81,16 +76,17 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
     )
     input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
     output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
-    total_count = lat_tuple[5]
-    failure_count = lat_tuple[6]
-    success_count = total_count - failure_count
-    total_count = lat_tuple[5]
-    failure_count = lat_tuple[6]
+    total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
+    failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
     success_count = total_count - failure_count
     text = (
         "Load Test Statistics\n"
+        + "user_num: %s\n" % user_num
+        + "worker_num: %s\n" % worker_num
+        + "spawn_rate: %s\n" % spawn_rate
+        + "model_type: %s\n" % model_type
+        + "hyperparameters: %s\n" % hyperparameters
         + "QPS: %s\n" % round(qps, 2)
-        + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
         + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
@@ -104,39 +100,42 @@ def gen_brief(report_dir: str, time: float, count: int) -> None:
         + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
-        + "TotalQuery: %s\n" % round(count, 2)
+        + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
+        + "TotalOutputTokens Avg: %s\n" % round(output_tk_tuple[0] * success_count, 2)
+        + "TotalQuery: %s\n" % round(total_requests, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
-        + "FailureQuery: %s\n" % round(count - success_count, 2)
+        + "FailureQuery: %s\n" % round(total_requests - success_count, 2)
         + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / count * 100, 2)
-        + "TotalQuery: %s\n" % round(count, 2)
-        + "SuccessQuery: %s\n" % round(success_count, 2)
-        + "FailureQuery: %s\n" % round(count - success_count, 2)
-        + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / count * 100, 2)
+        + "SuccessRate: %s%%" % round(success_count / total_requests * 100, 2)
     )
+    statistics = {
+        "QPS": round(qps, 2),
+        "RPM": round(success_count / time * 60, 2),
+        "latency_avg": round(lat_tuple[0] / 1000, 2),
+        "latency_min": round(lat_tuple[1] / 1000, 2),
+        "latency_max": round(lat_tuple[2] / 1000, 2),
+        "latency_50%": round(lat_tuple[3] / 1000, 2),
+        "latency_80%": round(lat_tuple[4] / 1000, 2),
+        "FirstTokenLatency_avg": round(first_lat_tuple[0] / 1000, 2),
+        "FirstTokenLatency_min": round(first_lat_tuple[1] / 1000, 2),
+        "FirstTokenLatency_max": round(first_lat_tuple[2] / 1000, 2),
+        "FirstTokenLatency_50%": round(first_lat_tuple[3] / 1000, 2),
+        "FirstTokenLatency_80%": round(first_lat_tuple[4] / 1000, 2),
+        "Input_tokens_avg": round(input_tk_tuple[0], 2),
+        "Output_tokens_avg": round(output_tk_tuple[0], 2),
+        "TotalTime": round(time, 2),
+        "SuccessRate": round(success_count / total_requests * 100, 2),
+        "concurrency": user_num,
+    }
+
     logger.info(text)
+    return statistics
 
 
-if __name__ == "__main__":
-    report_dir = sys.argv[1]
-    time = float(sys.argv[2])
-    count = int(sys.argv[3])
-    gen_brief(report_dir, time, count)
-
-# -- encoding: utf-8 --
-"""
-brief.py
-"""
-import html
-import logging
-import sys
-from typing import Any, List
-
-logger = logging.getLogger("yame.runner")
-
-
-def generate_html_table(data_rows, model_info):
+def generate_html_table(data_rows: Any, model_info: Any) -> str:
+    """
+    generate_html_table
+    """
     css_styles = """
         body {
             font-family: Arial, sans-serif;
@@ -300,133 +299,3 @@ def generate_html_table(data_rows, model_info):
     </html>
     """
     return html_content
-
-
-def get_qps(path: str) -> float:
-    """
-    get_duration
-    """
-    with open(path) as fd:
-        for line in fd:
-            if line.startswith("Type"):
-                continue
-            line_splits = line.split(",")
-            qps = float(line_splits[-13]) - float(line_splits[-12])
-            break
-        return qps
-
-
-def get_statistics(path: str) -> List[float]:
-    """
-    get_statistics
-    """
-    with open(path) as fd:
-        for line in fd:
-            if line.startswith("Type"):
-                continue
-            line_splits = line.split(",")
-            if "N/A" in line_splits:
-                break
-            lat_avg = float(line_splits[5])
-            lat_min = float(line_splits[6])
-            lat_max = float(line_splits[7])
-            lat_50p = float(line_splits[4])
-            lat_80p = float(line_splits[-8])
-            total_count = int(line_splits[2])
-            failure_count = int(line_splits[3])
-            total_time = float(line_splits[2]) * float(line_splits[5])
-            break
-    return [
-        lat_avg,
-        lat_min,
-        lat_max,
-        lat_50p,
-        lat_80p,
-        total_count,
-        failure_count,
-        total_time,
-    ]
-
-
-def gen_brief(
-    report_dir: str,
-    time: float,
-    count: int,
-    user_num: int,
-    worker_num: int,
-    spawn_rate: int,
-    model_type: str,
-    hyperparameters: Any,
-    total_requests: int,
-) -> None:
-    """
-    gen_brief
-    """
-    qps = get_qps(report_dir + "/statistics_stats.csv")
-    lat_tuple = get_statistics(report_dir + "/statistics_stats.csv")
-    first_lat_tuple = get_statistics(
-        report_dir + "/statistics_first_token_latency_stats.csv"
-    )
-    input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
-    output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
-    total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
-    failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
-    success_count = total_count - failure_count
-    text = (
-        "Load Test Statistics\n"
-        + "user_num: %s\n" % user_num
-        + "worker_num: %s\n" % worker_num
-        + "spawn_rate: %s\n" % spawn_rate
-        + "model_type: %s\n" % model_type
-        + "hyperparameters: %s\n" % hyperparameters
-        + "QPS: %s\n" % round(qps, 2)
-        + "RPM: %s\n" % round(success_count / time * 60, 2)
-        + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
-        + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
-        + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 2)
-        + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 2)
-        + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 2)
-        + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0] / 1000, 2)
-        + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1] / 1000, 2)
-        + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2] / 1000, 2)
-        + "FirstTokenLatency 50%%: %s\n" % round(first_lat_tuple[3] / 1000, 2)
-        + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
-        + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
-        + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
-        + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
-        + "TotalOutputTokens Avg: %s\n" % round(output_tk_tuple[0] * success_count, 2)
-        + "TotalQuery: %s\n" % round(total_requests, 2)
-        + "SuccessQuery: %s\n" % round(success_count, 2)
-        + "FailureQuery: %s\n" % round(total_requests - success_count, 2)
-        + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / total_requests * 100, 2)
-    )
-    statistics = {
-        "QPS": round(qps, 2),
-        "RPM": round(success_count / time * 60, 2),
-        "latency_avg": round(lat_tuple[0] / 1000, 2),
-        "latency_min": round(lat_tuple[1] / 1000, 2),
-        "latency_max": round(lat_tuple[2] / 1000, 2),
-        "latency_50%": round(lat_tuple[3] / 1000, 2),
-        "latency_80%": round(lat_tuple[4] / 1000, 2),
-        "FirstTokenLatency_avg": round(first_lat_tuple[0] / 1000, 2),
-        "FirstTokenLatency_min": round(first_lat_tuple[1] / 1000, 2),
-        "FirstTokenLatency_max": round(first_lat_tuple[2] / 1000, 2),
-        "FirstTokenLatency_50%": round(first_lat_tuple[3] / 1000, 2),
-        "FirstTokenLatency_80%": round(first_lat_tuple[4] / 1000, 2),
-        "Input_tokens_avg": round(input_tk_tuple[0], 2),
-        "Output_tokens_avg": round(output_tk_tuple[0], 2),
-        "TotalTime": round(time, 2),
-        "SuccessRate": round(success_count / total_requests * 100, 2),
-        "concurrency": user_num,
-    }
-    logger.info(text)
-    return statistics
-
-
-if __name__ == "__main__":
-    print("Loading statistics...")
-    report_dir = sys.argv[1]
-    time = float(sys.argv[2])
-    count = int(sys.argv[3])
-    statistics = gen_brief(report_dir, time, count)

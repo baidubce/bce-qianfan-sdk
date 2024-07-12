@@ -6,7 +6,6 @@ QianfanLocustRunner
 import logging
 import os
 import time
-import time
 import traceback
 from multiprocessing import Value
 from typing import Any, Dict, Optional
@@ -22,14 +21,16 @@ logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
 GlobalData.data["total_requests"] = Value("i", 0)
 GlobalData.data["success_requests"] = Value("i", 0)
+GlobalData.data["first_latency_threshold"] = 0
 
 
-def model_details(endpoint):
+def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
     info = resources.Service.V2.service_list()
     for inf in info.body["result"]["serviceList"]:
         temp = inf["url"].split("/")
         if temp[-1] == endpoint:
             return inf
+    return None
 
 
 class QianfanLocustRunner(LocustRunner):
@@ -53,10 +54,10 @@ class QianfanLocustRunner(LocustRunner):
         record_dir: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
         rounds: int = 1,
-        interval: int = 0,
-        first_latency_threshold: Optional[float] = None,
-        round_latency_threshold: Optional[float] = None,
-        success_rate_threshold: Optional[float] = None,
+        interval: Optional[int] = 0,
+        first_latency_threshold: Optional[float] = 100,
+        round_latency_threshold: Optional[float] = 1000,
+        success_rate_threshold: Optional[float] = 0,
         model_info: Optional[Dict[str, Any]] = None,
     ):
         if model is not None:
@@ -85,10 +86,12 @@ class QianfanLocustRunner(LocustRunner):
             success_rate_threshold=success_rate_threshold,
             model_info=model_info,
         )
-        self.first_latency_threshold = first_latency_threshold
-        self.round_latency_threshold = round_latency_threshold * 1000
-        self.success_rate_threshold = success_rate_threshold * 100
+
+        self.first_latency_threshold = first_latency_threshold or 100
         GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
+        self.round_latency_threshold = (round_latency_threshold or 1000) * 1000
+        self.success_rate_threshold = (success_rate_threshold or 0) * 100
+
         self.dataset = dataset
         self.model_type = model_type
         self.hyperparameters = hyperparameters
@@ -98,10 +101,10 @@ class QianfanLocustRunner(LocustRunner):
         self.rounds = rounds
         self.interval = interval
         self.total_requests = Value("i", 0)
-        if is_endpoint:
+        if is_endpoint and endpoint is not None:
             model_info = model_details(endpoint)
             if model_info is not None:
-                modelVersionId = model_info['modelId']
+                modelVersionId = model_info["modelId"]
                 serviceId = model_info["serviceId"]
                 serviceUrl = model_info["url"]
                 computer = model_info["resourceConfig"]["type"]
@@ -138,11 +141,15 @@ class QianfanLocustRunner(LocustRunner):
                 "interval": self.interval,
             }
 
-    def run(self) -> Dict[str, Any]:
+    def run(self, user_num: Optional[int] = None) -> Dict[str, Any]:
         """
         run
         """
-        ret = {"logfile": [], "record_dir": []}
+        if user_num is not None:
+            current_user_num = user_num
+        else:
+            current_user_num = self.user_num
+        ret: Dict[str, list[str]] = {"logfile": [], "record_dir": []}
         current_user_num = self.user_num
         html = []
         for round in range(self.rounds):
@@ -177,7 +184,7 @@ class QianfanLocustRunner(LocustRunner):
             if GlobalData.data["threshold_first"].value == 1:
                 log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
                 self.model_info["log_info"] = log_info
-                print("首token超时，超时token:", self.dataset[0][0]["prompt"])
+                print("首token超时, 超时token:", self.dataset[0][0]["prompt"])
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
@@ -194,7 +201,7 @@ class QianfanLocustRunner(LocustRunner):
                     f.write(html_table)
                 print("成功率低于阈值")
                 return ret
-            current_user_num += self.interval
+            current_user_num += self.interval if self.interval is not None else 0
             GlobalData.data["total_requests"].value = 0
 
         html_table = generate_html_table(html, self.model_info)

@@ -87,7 +87,6 @@ def gen_brief(
         + "model_type: %s\n" % model_type
         + "hyperparameters: %s\n" % hyperparameters
         + "QPS: %s\n" % round(qps, 2)
-        + "RPM: %s\n" % round(success_count / time * 60, 2)
         + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
         + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
         + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 2)
@@ -110,7 +109,6 @@ def gen_brief(
     )
     statistics = {
         "QPS": round(qps, 2),
-        "RPM": round(success_count / time * 60, 2),
         "latency_avg": round(lat_tuple[0] / 1000, 2),
         "latency_min": round(lat_tuple[1] / 1000, 2),
         "latency_max": round(lat_tuple[2] / 1000, 2),
@@ -227,7 +225,6 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
     columns = [
         "并发",
         "QPS",
-        "RPM",
         "Latency Avg",
         "Latency Min",
         "Latency Max",
@@ -259,8 +256,6 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
                 value = row.get("concurrency", "")
             elif column == "QPS":
                 value = row.get("QPS", "")
-            elif column == "RPM":
-                value = row.get("RPM", "")
             elif column == "Latency Avg":
                 value = row.get("latency_avg", "")
             elif column == "Latency Min":

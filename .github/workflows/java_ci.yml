@@ -3,6 +3,8 @@ name: Java CI
 on:
   push:
     branches: ["main"]
+    paths:
+      - "java/**"
   pull_request:
     paths:
       - "java/**"

@@ -217,7 +217,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         try:
             kwargs["retry_count"] = 0
             responses = self.chat_comp.do(messages=messages, **kwargs)
-            GlobalData.data["total_requests"].value += 1
         except Exception as e:
             self.exc = e
             resp = QfResponse(-1)
@@ -381,7 +380,6 @@ class CompletionClient(QianfanCustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
-        GlobalData.data["total_requests"].value += 1
         for resp in responses:
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)

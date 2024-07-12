@@ -210,4 +210,4 @@ class QianfanLocustRunner(LocustRunner):
             f.write(html_table)
         end_time = time.time()
         logger.info("Log path: %s" % ret["logfile"])
-        return ret  # ret似乎没有实际返回作用
+        return ret

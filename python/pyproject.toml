@@ -76,7 +76,7 @@ mypy = ">=1.4.0"
 myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
-setuptools = ">=42.0.0"
+setuptools = "*"
 
 [tool.poetry.group.cookbook.dependencies]
 nbformat = {version = "^5.10.3", python = ">=3.8 <4"}
@@ -116,7 +116,6 @@ exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py", "qi
 
 [build-system]
 requires = [
-    "poetry-core",
-    "setuptools >= 42.0.0",
+    "poetry-core"
 ]
 build-backend = "poetry.core.masonry.api"

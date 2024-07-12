@@ -32,7 +32,6 @@ def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
                 return inf
         return None
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
         return None
 
 

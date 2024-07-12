@@ -8,7 +8,7 @@ import os
 import time
 import traceback
 from multiprocessing import Value
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from qianfan import resources
 from qianfan.dataset import Dataset
@@ -149,7 +149,7 @@ class QianfanLocustRunner(LocustRunner):
             current_user_num = user_num
         else:
             current_user_num = self.user_num
-        ret: Dict[str, list[str]] = {"logfile": [], "record_dir": []}
+        ret: Dict[str, List[str]] = {"logfile": [], "record_dir": []}
         current_user_num = self.user_num
         html = []
         for round in range(self.rounds):

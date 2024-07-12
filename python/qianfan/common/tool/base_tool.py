@@ -229,6 +229,6 @@ class BaseTool:
             args_schema: Type[PydanticV1BaseModel] = tool_schema
 
             def _run(self, **kwargs: Any) -> Any:
-                return tool_run(kwargs)
+                return tool_run(**kwargs)
 
         return Tool()

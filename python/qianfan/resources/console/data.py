@@ -965,6 +965,7 @@ class Data:
         marker: Optional[str] = None,
         max_keys: Optional[int] = None,
         page_reverse: Optional[bool] = None,
+        run_status: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -996,6 +997,7 @@ class Data:
                 "maker": marker,
                 "maxKeys": max_keys,
                 "pageReverse": page_reverse,
+                "runStatus": run_status,
             }.items()
             if v is not None
         }

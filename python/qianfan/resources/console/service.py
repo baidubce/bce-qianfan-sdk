@@ -405,3 +405,40 @@ class Service(object):
                 "modelId": model_id,
             }
             return req
+
+        @classmethod
+        @console_api_request
+        def describe_preset_services(
+            cls,
+            service_ids: Optional[List[str]] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            list preset service with a list of service ids.
+
+            Parameters:
+            service_ids: Optional[List[str]] = None,
+                service ids.
+
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.ServiceDescribePresetServicesAction),
+            )
+            req.json_body = {
+                k: v
+                for k, v in {
+                    **kwargs,
+                    "serviceIds": service_ids,
+                }.items()
+                if v is not None
+            }
+            return req

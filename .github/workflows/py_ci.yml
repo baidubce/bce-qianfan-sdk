@@ -60,7 +60,7 @@ jobs:
           python-version: ${{matrix.python-version}}
           cache: "poetry"
       - name: config max installers
-        if: ${{ matrix.python-version != '3.7'}}
+        if: ${{ matrix.python-version == '3.7'}}
           poetry config installer.max-workers 1
       - name: Install deps
         run: |

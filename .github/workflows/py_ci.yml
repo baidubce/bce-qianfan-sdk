@@ -59,13 +59,15 @@ jobs:
         with:
           python-version: ${{matrix.python-version}}
           cache: "poetry"
+      - name: resolving deps
+        run: |
+          poetry lock --no-update
       - name: config max installers
         if: ${{ matrix.python-version == '3.7'}}
         run: |
           poetry config installer.max-workers 1
       - name: Install deps
         run: |
-          poetry lock --no-update
           make install
       - name: run lint
         if: ${{ matrix.python-version != '3.7'}}

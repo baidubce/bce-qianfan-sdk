@@ -128,7 +128,7 @@ export class BaseClient {
             Endpoint: this.Endpoint,
             expires_in: this.expires_in,
             access_token: this.access_token,
-            getAccessToken: this.getAccessToken,
+            getAccessToken: this.getAccessToken.bind(this),
         };
         const fetchOptions
             = Number(this.version) === 2

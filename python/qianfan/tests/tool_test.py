@@ -137,15 +137,15 @@ def test_tool_from_langchain_tool():
     assert tool.parameters[2] == ToolParameter(
         name="prefix", type="string", description="prefix description", required=False
     )
-    assert tool.run({"a": 1, "b": 2}) == 3
-    assert tool.run({"a": 1, "b": 2, "prefix": "result: "}) == "result: 3"
+    assert tool.run(tool_input={"a": 1, "b": 2}) == 3
+    assert tool.run(tool_input={"a": 1, "b": 2, "prefix": "result: "}) == "result: 3"
 
 
 def test_tool_from_langchain_func_tool():
     if not check_package_installed("langchain"):
         return
 
-    from langchain.tools.base import Tool as LangchainTool
+    from langchain_core.tools import StructuredTool as LangchainTool
 
     from qianfan.utils.pydantic import BaseModel, Field
 
@@ -174,7 +174,7 @@ def test_tool_from_langchain_func_tool():
     assert tool.parameters[1] == ToolParameter(
         name="b", type="string", description="b description", required=True
     )
-    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
+    assert tool.run(tool_input={"a": "1", "b": "2"}) == "hello 1 2"
 
 
 def test_tool_from_langchain_decorator_tool():
@@ -201,7 +201,7 @@ def test_tool_from_langchain_decorator_tool():
     assert len(tool.parameters) == 2
     assert tool.parameters[0] == ToolParameter(name="a", type="string", required=True)
     assert tool.parameters[1] == ToolParameter(name="b", type="string", required=True)
-    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
+    assert tool.run(tool_input={"a": "1", "b": "2"}) == "hello 1 2"
 
 
 def test_tool_to_langchain_tool():

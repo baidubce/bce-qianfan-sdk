@@ -156,7 +156,7 @@ class QianfanLocustRunner(LocustRunner):
             start_time = time.time()
             round_result = super(QianfanLocustRunner, self).run(
                 user_num=current_user_num
-            )  # 启动单轮并发
+            )  # 启动本轮并发
             end_time = time.time()
             t = end_time - start_time
             total_requests = len(self.dataset)

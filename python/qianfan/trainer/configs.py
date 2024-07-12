@@ -98,6 +98,17 @@ class CorpusConfig(BaseJsonModel):
     """
 
 
+class ResourceConfig(BaseJsonModel):
+    resource_id: str = Field(default=[], alias="resourceId")
+    """
+    resource ids
+    """
+    node_num: Optional[int] = Field(default=None, alias="nodeNum")
+    """
+    node num
+    """
+
+
 class BaseTrainConfig(BaseModel):
     peft_type: Optional[Union[str, PeftType]] = None
     """
@@ -111,6 +122,7 @@ class BaseTrainConfig(BaseModel):
     """
     extra fields for train_config
     """
+    resource_config: Optional[ResourceConfig] = None
 
     def validate_config(self, train_limit: "TrainLimit") -> bool:
         schema = self.schema()

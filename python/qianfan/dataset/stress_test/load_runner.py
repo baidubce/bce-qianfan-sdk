@@ -19,7 +19,6 @@ from qianfan.dataset.stress_test.yame.runner import LocustRunner
 logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
-GlobalData.data["total_requests"] = Value("i", 0)
 GlobalData.data["success_requests"] = Value("i", 0)
 GlobalData.data["first_latency_threshold"] = 0
 
@@ -100,7 +99,6 @@ class QianfanLocustRunner(LocustRunner):
         self.spawn_rate = spawn_rate
         self.rounds = rounds
         self.interval = interval
-        self.total_requests = Value("i", 0)
         if is_endpoint and endpoint is not None:
             model_info = model_details(endpoint)
             if model_info is not None:
@@ -202,7 +200,6 @@ class QianfanLocustRunner(LocustRunner):
                 logger.info("成功率低于阈值")
                 return ret
             current_user_num += self.interval if self.interval is not None else 0
-            GlobalData.data["total_requests"].value = 0
 
         html_table = generate_html_table(html, self.model_info)
         html_path = round_result["record_dir"] + "/performance_table.html"

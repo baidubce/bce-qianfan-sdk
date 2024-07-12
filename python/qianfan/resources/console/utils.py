@@ -138,3 +138,36 @@ def _get_console_ak_sk(pop: bool = True, **kwargs: Any) -> Tuple[str, str]:
             if key in kwargs:
                 del kwargs[key]
     return ak, sk
+
+
+@console_api_request
+def call_action(base_url_route: str, action: str, params: Dict[str, Any]) -> QfRequest:
+    """
+    unified interface for calling console api.
+    for example: calling model v2 get model detail:
+
+    call_action(
+        base_url_route="/v2/model",
+        action=DescribeModel,
+        params={"modelId": "amv-xxxx"},
+    )
+
+    Args:
+        base_url_route (str):
+            a model specific url route,
+            for example: /v2/model for model management
+        action (str):
+            an api action field
+        params (Dict[str, Any]):
+            params passed into http body
+
+    Returns:
+        QfResponse: the qianfan console request or response object
+    """
+    req = QfRequest(
+        method="POST",
+        url=base_url_route,
+        query=_get_console_v2_query(action),
+    )
+    req.json_body = {**params}
+    return req

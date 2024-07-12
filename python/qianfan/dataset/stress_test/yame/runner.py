@@ -214,7 +214,6 @@ class LocustRunner(object):
         """
         run load test job
         """
-        # print("start run load test job.")
         self.user_num = user_num
         if self.host:
             os.environ["HOST"] = (

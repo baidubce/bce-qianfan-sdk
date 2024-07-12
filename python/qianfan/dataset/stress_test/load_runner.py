@@ -184,7 +184,7 @@ class QianfanLocustRunner(LocustRunner):
             if GlobalData.data["threshold_first"].value == 1:
                 log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
                 self.model_info["log_info"] = log_info
-                print("首token超时, 超时token:", self.dataset[0][0]["prompt"])
+                logger.info("首token超时, 超时token:", self.dataset[0][0]["prompt"])
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
@@ -193,13 +193,13 @@ class QianfanLocustRunner(LocustRunner):
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
-                print("整句时延超时")
+                logger.info("整句时延超时")
                 return ret
             if round_html["SuccessRate"] < self.success_rate_threshold:
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
-                print("成功率低于阈值")
+                logger.info("成功率低于阈值")
                 return ret
             current_user_num += self.interval if self.interval is not None else 0
             GlobalData.data["total_requests"].value = 0

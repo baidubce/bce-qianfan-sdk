@@ -2160,9 +2160,9 @@ class Dataset(Table):
 
     def stress_test(
         self,
-        workers: int,
-        users: int,
-        spawn_rate: int,
+        workers: int = 1,
+        users: Optional[int] = None,
+        spawn_rate: Optional[int] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         runtime: str = "0s",
@@ -2198,6 +2198,12 @@ class Dataset(Table):
             hyperparameters (Optional[Dict[str, Any]]):
                 Specify the hyperparameters in your request.
         """
+        if users is None:
+            raise Exception("users must be specified.")
+        if users < workers:
+            workers = users
+        if spawn_rate is None:
+            spawn_rate = users
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
@@ -2243,11 +2249,11 @@ class Dataset(Table):
                 " if you want to start a stress test task."
             )
 
-    def concurrent_stress_test(
+    def multi_stress_test(
         self,
-        workers: int,
         origin_users: int,
-        spawn_rate: int,
+        workers: int = 1,
+        spawn_rate: Optional[int] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         runtime: str = "0s",
@@ -2294,6 +2300,10 @@ class Dataset(Table):
             interval (int):
                 Interval concurrent number between rounds.
         """
+        if origin_users < workers:
+            workers = origin_users
+        if spawn_rate is None:
+            spawn_rate = origin_users
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":

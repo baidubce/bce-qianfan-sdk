@@ -31,7 +31,7 @@ def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
             if temp[-1] == endpoint:
                 return inf
         return None
-    except Exception as e:
+    except Exception:
         return None
 
 

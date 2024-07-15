@@ -176,7 +176,7 @@ class QianfanLocustRunner(LocustRunner):
             if GlobalData.data["threshold_first"].value == 1:
                 log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
                 self.model_info["log_info"] = log_info
-                logger.info("首token超时, 超时token:", self.dataset[0][0]["prompt"])
+                logger.info(f"首token超时, 超时token: {self.dataset[0][0]['prompt']}")
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
@@ -200,5 +200,5 @@ class QianfanLocustRunner(LocustRunner):
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_table)
         end_time = time.time()
-        logger.info("Log path: %s" % ret["logfile"])
+        logger.info(f"Log path: {ret['logfile']}")
         return ret

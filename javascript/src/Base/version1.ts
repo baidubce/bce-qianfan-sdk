@@ -70,17 +70,9 @@ export interface FetchOptionsProps {
      */
     Endpoint: string;
     /**
-     * 过期时间（秒）
-     */
-    expires_in: number;
-    /**
      * 访问令牌
      */
-    access_token: string;
-    /**
-     * 获取访问令牌函数
-     */
-    getAccessToken: Function;
+    accessToken: string;
 }
 
 /**
@@ -108,9 +100,7 @@ export const getVersion1FetchOptions = async (props: FetchOptionsProps) => {
         qianfanBaseUrl,
         qianfanConsoleApiBaseUrl,
         Endpoint,
-        expires_in,
-        access_token,
-        getAccessToken,
+        accessToken,
     } = props;
 
     if (env === 'node') {
@@ -148,10 +138,7 @@ export const getVersion1FetchOptions = async (props: FetchOptionsProps) => {
         }
         // AK/SK 鉴权
         if (qianfanAk && qianfanSk) {
-            if (expires_in < Date.now() / 1000) {
-                await getAccessToken();
-            }
-            const url = `${AKPath}?access_token=${access_token}`;
+            const url = `${AKPath}?access_token=${accessToken}`;
             const options = {
                 url,
                 method: 'POST',

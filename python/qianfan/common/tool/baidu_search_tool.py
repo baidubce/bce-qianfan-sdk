@@ -60,7 +60,7 @@ class BaiduSearchTool(BaseTool):
             self.client = client
         self.with_reference = with_reference
 
-    def run(self, parameters: Dict[str, str] = {}) -> Union[str, Dict[str, Any]]:
+    def run(self, **parameters: Any) -> Union[str, Dict[str, Any]]:
         """
         Run the tool and get the summary and reference of the search query
         """

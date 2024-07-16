@@ -484,14 +484,19 @@ def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None
     log_info(f"start to write arrow table to {cache_file_path}")
 
     file_lock = filelock.FileLock(cache_file_path + ".lock")
-
     file_lock.acquire()
-    for table in _build_table_from_reader(reader):
-        assert isinstance(table, pyarrow.Table)
-        if stream_writer is None:
-            stream_writer = pyarrow.ipc.new_stream(cache_file_path, table.schema)
 
-        stream_writer.write_table(table)
+    try:
+        for table in _build_table_from_reader(reader):
+            assert isinstance(table, pyarrow.Table)
+            if stream_writer is None:
+                stream_writer = pyarrow.ipc.new_stream(cache_file_path, table.schema)
+
+            stream_writer.write_table(table)
+    except pyarrow.lib.ArrowInvalid:
+        err_info = "multi-schema has been found between dataset entries"
+        log_error(err_info)
+        raise Exception(err_info)
 
     assert stream_writer
     stream_writer.close()

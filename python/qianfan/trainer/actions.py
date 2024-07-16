@@ -654,7 +654,9 @@ class TrainAction(
 
         assert self.train_config is not None
         hyper_params_dict = {
-            **self.train_config.dict(exclude={"peft_type", "trainset_rate", "extras"}),
+            **self.train_config.dict(
+                exclude={"peft_type", "trainset_rate", "extras", "resource_config"}
+            ),
             **self.train_config.extras,
         }
         hyper_params_dict = {
@@ -681,6 +683,11 @@ class TrainAction(
         # 语料混合配置
         if input.get("corpus_config"):
             kwargs["corpus_config"] = input.get("corpus_config")
+        # 训练资源配置
+        if self.train_config.resource_config:
+            kwargs["resource_config"] = self.train_config.resource_config.dict(
+                by_alias=True, exclude_none=True
+            )
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
             params_scale=self.train_config.peft_type,

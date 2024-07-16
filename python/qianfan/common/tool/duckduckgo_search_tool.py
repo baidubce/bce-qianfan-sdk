@@ -15,7 +15,7 @@
 duck duck go search tool
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 from qianfan.utils.utils import assert_package_installed
@@ -63,7 +63,7 @@ class DuckDuckGoSearchTool(BaseTool):
         self.timelimit: Optional[str] = timelimit
         self.max_results = max_results
 
-    def run(self, parameters: Dict[str, str] = {}) -> List[Dict[str, str]]:
+    def run(self, **parameters: Any) -> List[Dict[str, str]]:
         from duckduckgo_search import DDGS
 
         with DDGS() as client:

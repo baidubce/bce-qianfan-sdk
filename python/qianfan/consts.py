@@ -221,6 +221,7 @@ class Consts:
     ServiceDetailAction: str = "DescribeService"
     ServiceMetricAction: str = "DescribeServiceMetric"
     ServiceModifyAction: str = "ModifyService"
+    ServiceDescribePresetServicesAction: str = "DescribePresetServices"
     MemoryBaseRouteAPI: str = "/v2/memory"
     MemoryCreateSystemMemoryAction: str = "CreateSystemMemory"
     MemoryDescribeSystemMemoriesAction: str = "DescribeSystemMemories"

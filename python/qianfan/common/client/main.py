@@ -183,6 +183,7 @@ def proxy(
         "--ssl-ciphers",
         help="Ciphers to use (see stdlib ssl module's) [default: TLSv1]",
     ),
+    access_token: str = typer.Option("", "--access-token", help="Access token"),
 ) -> None:
     """
     Create a proxy server.
@@ -204,7 +205,6 @@ def proxy(
         ssl_config["ssl_version"] = ssl_version
         ssl_config["ssl_cert_reqs"] = ssl_cert_reqs
         ssl_config["ssl_ciphers"] = ssl_ciphers
-
     proxy_entry(
         host=host,
         base_port=base_port,
@@ -213,6 +213,7 @@ def proxy(
         log_file=log_file,
         mock_port=mock_port,
         ssl_config=ssl_config,
+        access_token=access_token,
     )
 
 

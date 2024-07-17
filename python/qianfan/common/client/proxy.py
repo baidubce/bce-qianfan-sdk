@@ -10,14 +10,13 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
 from typing import Any, AsyncIterator, Callable, Dict, Optional, Tuple
 
 from aiohttp import ClientResponse
 from fastapi import FastAPI, Request
+from starlette.requests import Request as StarletteRequest
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response, StreamingResponse
-
 from qianfan.consts import DefaultValue
 from qianfan.extensions.proxy.proxy import ClientProxy
 from qianfan.utils.utils import get_ip_address
@@ -53,8 +52,32 @@ async def base_iam(request: Request, callback: Callable) -> Response:
     Returns:
         Response: 处理后的响应对象。
     """
-    resp = await proxy.get_response(request, DefaultValue.BaseURL)
+    if "access_token" in request.url._url:
+        key = request.url._url.split("?access_token=")[1]
+        if key != proxy.access_token:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": (
+                            f"Incorrect ACCESS_TOKEN provided: {key}, please check"
+                        ),
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "invalid_ACCESS_TOKEN",
+                    }
+                },
+                status_code=401,
+            )
+        else:
+            new_scope = request.scope.copy()
+            new_scope['query_string'] = b''
+            request = StarletteRequest(scope=new_scope, receive=request.receive)
 
+    else:
+        pass
+    
+
+    resp = await proxy.get_response(request, DefaultValue.BaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(get_stream(resp), media_type="text/event-stream")
 
@@ -74,7 +97,6 @@ async def console_iam(request: Request, callback: Callable) -> Response:
         Response: 处理后的响应对象。
     """
     resp = await proxy.get_response(request, DefaultValue.ConsoleAPIBaseURL)
-
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(resp, media_type="text/event-stream")
 
@@ -89,6 +111,7 @@ def entry(
     log_file: Optional[str],
     mock_port: int,
     ssl_config: Dict[str, Any],
+    access_token: Optional[str],
 ) -> None:
     import os
 
@@ -102,6 +125,9 @@ def entry(
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("DEBUG")
+
+    if access_token is not None:
+        proxy.access_token = access_token
 
     proxy.mock_port = mock_port
 
@@ -126,6 +152,7 @@ def entry(
 
     messages.append(f"- base: {http_header}://{display_host}:{base_port}")
     messages.append(f"- console: {http_header}://{display_host}:{console_port}")
+    messages.append(f"- access_token: {http_header}://{display_host}:{base_port+2}")
 
     rich.print(Markdown("\n".join(messages)))
     rich.print()
@@ -146,16 +173,16 @@ def entry(
         uvicorn.run(
             app, host=display_host, port=port, log_config=log_config, **ssl_config
         )
-
+    
     set_cors(base_app)
     set_cors(console_app)
+    
 
     # close stderr output
     if detach:
         logger._logger.removeHandler(logger.handler)
         log_config["loggers"]["uvicorn.access"]["handlers"].remove("access")
         log_config["loggers"]["uvicorn"]["handlers"].remove("default")
-
     process_base = Process(target=start_server, args=(base_app, base_port))
     process_console = Process(target=start_server, args=(console_app, console_port))
     process_base.start()
@@ -167,6 +194,7 @@ def entry(
     rich.print(
         f"Proxy console server is running in background with PID {process_console.pid}."
     )
+
     if detach:
         os._exit(0)
     else:

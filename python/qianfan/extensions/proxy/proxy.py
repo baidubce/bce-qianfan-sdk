@@ -24,9 +24,19 @@ class ClientProxy(object):
     _rate_limiter: VersatileRateLimiter = VersatileRateLimiter()
     _retry_base_config: Optional[RetryConfig] = None
     _retry_console_config: Optional[RetryConfig] = None
+    _access_token: Optional[str] = None
 
     def __init__(self) -> None:
         pass
+    
+    @property
+    def access_token(self) -> Optional[str]:
+        return self._access_token
+
+    @access_token.setter
+    def access_token(self, access_token: str) -> None:
+        self._access_token = access_token
+        self._auth._access_token = access_token
 
     @property
     def mock_port(self) -> int:
@@ -79,8 +89,8 @@ class ClientProxy(object):
         request.url = path
         iam_sign(str(self._config.ACCESS_KEY), str(self._config.SECRET_KEY), request)
         request.url = url
-
         if not request.headers.get("Authorization", None):
+            print(self._auth.access_token())
             request.query["access_token"] = self._auth.access_token()
 
     async def get_request(self, request: Request, url_route: str) -> QfRequest:

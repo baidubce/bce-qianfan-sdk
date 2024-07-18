@@ -29,6 +29,8 @@ from qianfan.utils import log_debug, log_error, utils
 Input = TypeVar("Input")
 Output = TypeVar("Output")
 
+print("###")
+
 
 class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
     """

@@ -386,13 +386,13 @@ class Model(
                 comp_task_detail_resp["result"]["status"]
                 == console_const.ModelCompTaskStatus.Succeeded.value
             ):
-                new_model_version_id = comp_task_detail_resp["result"].get("modelId")
+                new_model_id = comp_task_detail_resp["result"].get("modelId")
                 log_info(
                     f"compress task {model_comp_task_id} run with status"
                     f" {comp_task_detail_resp['result']['status']}"
-                    f" new model_version_id: {new_model_version_id}"
+                    f" new model_id: {new_model_id}"
                 )
-                new_model = Model(id=new_model_version_id)
+                new_model = Model(id=new_model_id)
                 new_model.auto_complete_info()
                 return new_model
             else:

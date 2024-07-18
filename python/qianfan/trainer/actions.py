@@ -34,12 +34,10 @@ from qianfan.trainer.configs import (
     CorpusConfig,
     CorpusConfigItem,
     DatasetConfig,
-    DefaultDPOTrainConfigMapping,
-    DefaultPostPretrainTrainConfigMapping,
-    DefaultTrainConfigMapping,
     PeftType,
     TrainConfig,
     TrainLimit,
+    get_default_train_config,
     get_model_info,
 )
 from qianfan.trainer.consts import ServiceStatus, TrainStatus
@@ -53,6 +51,8 @@ from qianfan.utils import (
 )
 from qianfan.utils.bos_uploader import is_valid_bos_path, parse_bos_path
 from qianfan.utils.utils import first_lower_case, snake_to_camel
+
+log_warn("===?11111")
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -252,7 +252,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         elif isinstance(data_src, BosDataSource):
             log_debug("[load_dataset_action] prepare train-set in BOS")
             bos_data_src = cast(BosDataSource, data_src)
-            log_warn(f"hhh{bos_data_src.bucket}, {bos_data_src.bos_file_path}")
             return {
                 "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
                 "version": {
@@ -826,18 +825,9 @@ class TrainAction(
         train_mode: console_consts.TrainMode,
         peft_type: Optional[PeftType] = None,
     ) -> TrainConfig:
-        if train_mode == console_consts.TrainMode.PostPretrain:
-            model_info = DefaultPostPretrainTrainConfigMapping.get(
-                model_type,
-            )
-        elif train_mode == console_consts.TrainMode.DPO:
-            model_info = DefaultDPOTrainConfigMapping.get(
-                model_type,
-            )
-        else:
-            model_info = DefaultTrainConfigMapping.get(
-                model_type,
-            )
+        model_info = get_default_train_config(train_mode).get(
+            model_type,
+        )
         if model_info is None or len(model_info) == 0:
             raise InvalidArgumentError(f"can not find default config for {model_type}")
         if peft_type is None:
@@ -996,7 +986,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             },
         }
         if self.model:
-            meta["model_version_id"] = self.model.id
+            meta["model_id"] = self.model.id
         if self.result:
             res = copy.deepcopy(self.result)
             if "model" in res:
@@ -1014,7 +1004,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         )
         action._input = meta.get("input")  # type: ignore
         action.result = meta.get("output")
-        action.model = Model(version_id=meta.get("model_version_id"))
+        action.model = Model(id=meta.get("model_id") or meta.get("model_version_id"))
         action.model.auto_complete_info()
         return action
 

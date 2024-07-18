@@ -32,9 +32,9 @@ from qianfan.trainer.base import (
     EventHandler,
 )
 from qianfan.trainer.configs import (
-    DPOTrainModelInfoMapping,
     ModelInfo,
     TrainConfig,
+    get_trainer_model_list,
 )
 from qianfan.trainer.consts import (
     TrainStatus,
@@ -283,7 +283,7 @@ class DPO(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return DPOTrainModelInfoMapping
+        return get_trainer_model_list(console_consts.TrainMode.DPO)
 
     @staticmethod
     def list() -> List["Trainer"]:

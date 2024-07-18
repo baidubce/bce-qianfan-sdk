@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
@@ -41,7 +42,7 @@ from qianfan.errors import InternalError
 from qianfan.model.configs import DeployConfig
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console.consts import DeployPoolType, FinetuneSupportModelType
-from qianfan.trainer import DPO, LLMFinetune, PostPreTrain
+from qianfan.trainer import DPO, Finetune, PostPreTrain, Trainer
 from qianfan.trainer.actions import (
     DeployAction,
     EvaluateAction,
@@ -220,7 +221,7 @@ def list_train_type(
         if cmd == "postpretrain":
             model_list = PostPreTrain.train_type_list()
         elif cmd in ["finetune", "run"]:
-            model_list = LLMFinetune.train_type_list()
+            model_list = Finetune.train_type_list()
         elif cmd in ["dpo"]:
             model_list = DPO.train_type_list()
         else:
@@ -306,7 +307,7 @@ def show_config_limit(
         if cmd == "postpretrain":
             model_list = PostPreTrain.train_type_list()
         elif cmd in ["finetune", "run"]:
-            model_list = LLMFinetune.train_type_list()
+            model_list = Finetune.train_type_list()
         elif cmd in ["dpo"]:
             model_list = DPO.train_type_list()
         else:
@@ -366,6 +367,9 @@ def finetune(
     list_train_type: Optional[bool] = list_train_type_option,
     show_config_limit: Optional[str] = typer.Option(
         None,
+        "--show-config-limit",
+        "--show",
+        "-s",
         callback=show_config_limit,
         is_eager=True,
         help="Show config limit for specified train type.",
@@ -445,7 +449,7 @@ def finetune(
     callback = MyEventHandler(console=console)
 
     if trainer_pipeline_file is not None:
-        trainer = LLMFinetune.load(file=trainer_pipeline_file)
+        trainer = Finetune.load(file=trainer_pipeline_file)
         trainer.register_event_handler(callback)
     else:
         ds = None
@@ -465,7 +469,7 @@ def finetune(
                 pool_type=DeployPoolType[deploy_pool_type],
                 service_type=ServiceType[deploy_service_type],
             )
-        trainer = LLMFinetune(
+        trainer = Finetune(
             dataset=ds,
             train_type=train_type,
             event_handler=callback,
@@ -510,6 +514,36 @@ def finetune(
         trainer.run()
         console.log("Trainer finished!")
         console.log(Pretty(trainer.output))
+
+    # wait a second for the log to be flushed
+    time.sleep(0.1)
+
+
+@trainer_app.command()
+@credential_required
+def info(
+    trainer_id: Optional[str] = typer.Option(None, help="trainer id"),
+    task_id: Optional[str] = typer.Option(None, help="task id"),
+) -> None:
+    """
+    get a trainer info.
+    """
+    console = replace_logger_handler()
+    trainer: Optional[Trainer] = None
+    if trainer_id:
+        trainer = Finetune.load(id=trainer_id)
+    elif task_id:
+        trainers = Finetune.list()
+        for t in trainers:
+            for action in t.actions:
+                if isinstance(action, TrainAction) and action.task_id == task_id:
+                    trainer = t
+                    break
+    else:
+        console.log("Must provide either trainer id or task id.")
+    if trainer:
+        json_str = json.dumps(trainer.info(), ensure_ascii=False, indent=2)
+        print(json_str)
 
     # wait a second for the log to be flushed
     time.sleep(0.1)
@@ -665,11 +699,6 @@ def postpretrain(
     time.sleep(0.1)
 
 
-@trainer_app.command(
-    "run",
-    deprecated=True,
-    help="Run a dpo trainer task.",
-)
 @trainer_app.command()
 @credential_required
 def dpo(
@@ -768,7 +797,7 @@ def dpo(
     callback = MyEventHandler(console=console)
 
     if trainer_pipeline_file is not None:
-        trainer = LLMFinetune.load(file=trainer_pipeline_file)
+        trainer = Finetune.load(file=trainer_pipeline_file)
         trainer.register_event_handler(callback)
     else:
         ds = None
@@ -788,7 +817,7 @@ def dpo(
                 pool_type=DeployPoolType[deploy_pool_type],
                 service_type=ServiceType[deploy_service_type],
             )
-        trainer = LLMFinetune(
+        trainer = Finetune(
             dataset=ds,
             train_type=train_type,
             event_handler=callback,

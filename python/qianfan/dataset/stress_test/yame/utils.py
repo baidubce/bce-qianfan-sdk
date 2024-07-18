@@ -13,7 +13,12 @@ def is_port_in_use(host: str, port: int) -> bool:
     判断port是否被占用
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex((host, port)) == 0
+        try:
+            s.bind((host, port))
+            s.close()
+            return False
+        except OSError:
+            return True
 
 
 def select_a_free_port(

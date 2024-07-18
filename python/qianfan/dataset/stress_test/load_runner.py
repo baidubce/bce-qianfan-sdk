@@ -91,8 +91,8 @@ class QianfanLocustRunner(LocustRunner):
 
         self.first_latency_threshold = first_latency_threshold or 100
         GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
-        self.round_latency_threshold = (round_latency_threshold or 1000) * 1000
-        self.success_rate_threshold = (success_rate_threshold or 0) * 100
+        self.round_latency_threshold = round_latency_threshold or 1000
+        self.success_rate_threshold = success_rate_threshold or 0
 
         self.dataset = dataset
         self.model_type = model_type

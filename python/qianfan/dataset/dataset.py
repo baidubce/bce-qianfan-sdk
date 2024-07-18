@@ -2283,8 +2283,6 @@ class Dataset(Table):
                 e.g. (300s, 20m, 3h, 1h30m, etc.).
             spawn_rate (int):
                 Rate to spawn users at (users per second).
-            concurrent_round (int):
-                Number of rounds to run concurrently.
             model (str):
                 Name of the model service you want to test.
             endpoint (str):
@@ -2299,6 +2297,12 @@ class Dataset(Table):
                 Number of rounds to run concurrently.
             interval (int):
                 Interval concurrent number between rounds.
+            first_latency_threshold (float):
+                First latency threshold.
+            round_latency_threshold (float):
+                Round latency threshold.
+            success_rate_threshold (float):
+                Success rate threshold.
         """
         if origin_users < workers:
             workers = origin_users

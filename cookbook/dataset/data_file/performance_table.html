@@ -1,0 +1,192 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Performance Test Report</title>
+        <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .info-section {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-section h2 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e9ecef;
+        }
+    
+        </style>
+    </head>
+    <body>
+        <h1>Performance Test Report</h1>
+        
+        <div class="info-section">
+            <h2>Model Information</h2>
+            <p><strong>Model name:</strong> None</p>
+            <p><strong>Model Version:</strong> None</p>
+            <p><strong>serviceId:</strong> None</p>
+            <p><strong>serviceUrl:</strong> None</p>
+            <p><strong>GPU:</strong> None</p>
+            <p><strong>replicasCount:</strong> None</p>
+        </div>
+        
+        <div class="info-section">
+            <h2>Stress Test Configuration</h2>
+            <p><strong>Origin User Number:</strong> 2</p>
+            <p><strong>Worker Number:</strong> 2</p>
+            <p><strong>Spawn Rate:</strong> 2</p>
+            <p><strong>Rounds:</strong> 5</p>
+            <p><strong>Interval:</strong> 2</p>
+            <p><strong>Hyperparameters:</strong> None</p>
+        </div>
+
+        <div class="log-info">
+            <h2>Log Information</h2>
+            <p><strong>First Token Latency log:</strong> None</p>
+        </div>
+        
+        <h2>Performance Results</h2>
+    <table>
+  <tr>
+    <th>并发</th>
+    <th>QPS</th>
+    <th>Latency Avg</th>
+    <th>Latency Min</th>
+    <th>Latency Max</th>
+    <th>Latency 50</th>
+    <th>Latency 80</th>
+    <th>FirstTokenLatency Avg</th>
+    <th>FirstTokenLatency Min</th>
+    <th>FirstTokenLatency Max</th>
+    <th>FirstTokenLatency 50</th>
+    <th>FirstTokenLatency 80</th>
+    <th>InputTokens avg</th>
+    <th>OutputTokens avg</th>
+    <th>SuccessRate</th>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>0.52</td>
+    <td>3.26</td>
+    <td>2.59</td>
+    <td>4.07</td>
+    <td>3.1</td>
+    <td>4.1</td>
+    <td>0.75</td>
+    <td>0.47</td>
+    <td>0.88</td>
+    <td>0.88</td>
+    <td>0.88</td>
+    <td>72.0</td>
+    <td>32.67</td>
+    <td>100.0</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>0.75</td>
+    <td>2.82</td>
+    <td>2.74</td>
+    <td>2.93</td>
+    <td>2.8</td>
+    <td>2.9</td>
+    <td>0.72</td>
+    <td>0.65</td>
+    <td>0.83</td>
+    <td>0.69</td>
+    <td>0.83</td>
+    <td>72.0</td>
+    <td>30.33</td>
+    <td>100.0</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>0.8</td>
+    <td>2.68</td>
+    <td>2.39</td>
+    <td>2.98</td>
+    <td>2.7</td>
+    <td>3.0</td>
+    <td>0.76</td>
+    <td>0.75</td>
+    <td>0.78</td>
+    <td>0.76</td>
+    <td>0.78</td>
+    <td>72.0</td>
+    <td>33.0</td>
+    <td>100.0</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>0.82</td>
+    <td>2.77</td>
+    <td>2.58</td>
+    <td>3.01</td>
+    <td>2.7</td>
+    <td>3.0</td>
+    <td>0.73</td>
+    <td>0.58</td>
+    <td>1.04</td>
+    <td>0.58</td>
+    <td>1.0</td>
+    <td>72.0</td>
+    <td>30.67</td>
+    <td>100.0</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>0.58</td>
+    <td>4.1</td>
+    <td>3.83</td>
+    <td>4.34</td>
+    <td>4.1</td>
+    <td>4.3</td>
+    <td>0.88</td>
+    <td>0.64</td>
+    <td>1.02</td>
+    <td>1.0</td>
+    <td>1.0</td>
+    <td>72.0</td>
+    <td>30.67</td>
+    <td>100.0</td>
+  </tr>
+
+        </table>
+    </body>
+    </html>
+    

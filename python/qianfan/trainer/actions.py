@@ -52,8 +52,6 @@ from qianfan.utils import (
 from qianfan.utils.bos_uploader import is_valid_bos_path, parse_bos_path
 from qianfan.utils.utils import first_lower_case, snake_to_camel
 
-log_warn("===?11111")
-
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """LoadDataSetAction

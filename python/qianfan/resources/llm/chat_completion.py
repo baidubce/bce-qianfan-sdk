@@ -1543,7 +1543,7 @@ class ChatCompletion(VersionBase):
         if kwargs.get("use_function"):
             return Function
         else:
-            model = kwargs.get("model", "")
+            model = kwargs.get("model") or ""
             func_model_info_list = {
                 k.lower(): v for k, v in Function._supported_models().items()
             }

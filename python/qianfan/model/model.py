@@ -531,22 +531,18 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             log_warn("service status unknown, service could be unavailable.")
         if self.service_type == ServiceType.Chat:
             return ChatCompletion(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Completion:
             return Completion(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Embedding:
             return Embedding(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Text2Image:
             return Text2Image(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         else:

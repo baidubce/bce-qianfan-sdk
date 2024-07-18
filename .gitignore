@@ -52,8 +52,6 @@ coverage.xml
 # Sphinx documentation
 /docs/_build/
 
-poetry.lock
-
 .vscode
 .*_cache
 .env*

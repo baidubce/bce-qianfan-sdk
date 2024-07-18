@@ -144,7 +144,7 @@ class MyEventHandler(EventHandler):
                 self.progress.update(self.current_task, total=100, completed=100)
                 self.progress.log(
                     "Model has been published successfully. Model id:"
-                    f" {data['model_id']}. Model version id: {data['model_version_id']}"
+                    f" {data['model_set_id']}. Model version id: {data['model_id']}"
                 )
 
     def handle_deploy(self, event: Event) -> None:
@@ -266,7 +266,9 @@ def print_trainer_config(config: ModelInfo) -> None:
     from qianfan.trainer.configs import TrainConfig
 
     limit_fields = (
-        TrainConfig().dict(exclude={"peft_type", "trainset_rate", "extras"}).keys()
+        TrainConfig()
+        .dict(exclude={"peft_type", "trainset_rate", "extras", "resource_config"})
+        .keys()
     )
     for k in limit_fields:
         row_objs = []

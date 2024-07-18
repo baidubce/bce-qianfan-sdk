@@ -3,6 +3,8 @@ name: JS CI
 on:
   push:
     branches: ["main"]
+    paths:
+      - "javascript/**"
   pull_request:
     paths:
       - "javascript/**"

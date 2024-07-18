@@ -26,7 +26,7 @@ class ChatCompletion extends BaseClient {
      * @param stream 是否开启流模式，默认为 false
      * @returns Promise<ChatResp | AsyncIterable<ChatResp>>
      */
-    public async chat(body: ChatBody, model = 'ERNIE-Bot-turbo'): Promise<Resp | AsyncIterable<Resp>> {
+    public async chat(body: ChatBody, model = 'ERNIE-Lite-8K'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
         const {modelInfoMapUppercase, modelUppercase, modelLowercase} = getUpperCaseModelAndModelMap(
             model,

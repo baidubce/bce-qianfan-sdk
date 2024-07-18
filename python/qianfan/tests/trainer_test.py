@@ -33,7 +33,13 @@ from qianfan.trainer.actions import (
     ModelPublishAction,
     TrainAction,
 )
-from qianfan.trainer.configs import DatasetConfig, TrainConfig, TrainLimit
+from qianfan.trainer.configs import (
+    CorpusConfig,
+    CorpusConfigItem,
+    DatasetConfig,
+    TrainConfig,
+    TrainLimit,
+)
 from qianfan.trainer.consts import PeftType
 from qianfan.trainer.event import Event, EventHandler
 from qianfan.trainer.finetune import Finetune, LLMFinetune
@@ -104,7 +110,7 @@ def test_model_publish_action():
 
     output = publish_action.exec(input={"task_id": 47923, "job_id": 33512})
     assert isinstance(output, dict)
-    assert "model_version_id" in output and "model_id" in output
+    assert "model_id" in output and "model_set_id" in output
 
 
 def test_service_deploy_action():
@@ -112,16 +118,13 @@ def test_service_deploy_action():
     deploy_action = DeployAction(deploy_config=deploy_config)
 
     output = deploy_action.exec(
-        input={"task_id": 47923, "job_id": 33512, "model_id": 1, "model_version_id": 39}
+        input={"task_id": 47923, "job_id": 33512, "model_set_id": "1", "model_id": "39"}
     )
     assert isinstance(output, dict)
     assert "service_id" in output and "service_endpoint" in output
 
 
 def test_trainer_sft_run():
-    from qianfan.utils.logging import TRACE_LEVEL, enable_log
-
-    enable_log(TRACE_LEVEL)
     train_config = TrainConfig(
         epoch=1,
         learning_rate=0.00002,
@@ -147,7 +150,7 @@ def test_trainer_sft_run():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
     assert len(eh.events) > 0
 
 
@@ -166,7 +169,7 @@ def test_trainer_sft_run_from_bos():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
 
 
 def test_trainer_sft_with_deploy():
@@ -205,7 +208,7 @@ def test_trainer_sft_with_deploy():
 
 
 def test_model_deploy():
-    svc = Model(id="1", version_id="1").deploy(
+    svc = Model(set_id="1", version_id="1").deploy(
         DeployConfig(
             endpoint_suffix="xxx",
             replicas=1,
@@ -250,7 +253,7 @@ def test_trainer_resume():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
 
 
 def test_batch_run_on_qianfan():
@@ -276,18 +279,18 @@ def test__parse_from_input():
     input = {"model": Model("17000", "12333")}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == "17000"
-    assert result.version_id == "12333"
+    assert result.set_id == "17000"
+    assert result.id == "12333"
     input = {"service": Service(model="ERNIE-Bot")}
     result = action._parse_from_input(input)
     assert isinstance(
         result, Service
     )  # 服务对象也可以被解析为模型对象，这里假设Model类有一个从服务对象解析的方法
-    input = {"model_id": "17001", "model_version_id": "12666"}
+    input = {"model_set_id": "17001", "model_id": "12666"}
     result = action._parse_from_input(input)
     assert isinstance(result, Model)
-    assert result.id == "17001"
-    assert result.version_id == "12666"
+    assert result.set_id == "17001"
+    assert result.id == "12666"
     input = {}
     with pytest.raises(InvalidArgumentError):
         action._parse_from_input(input)
@@ -356,7 +359,7 @@ def test_trainer_sft_with_eval():
     assert isinstance(res, list)
     assert len(res) > 0
     assert isinstance(res[0], dict)
-    assert "model_version_id" in res[0]
+    assert "model_id" in res[0]
     assert len(eh.events) > 0
     assert res[0].get("eval_res") is not None
 
@@ -449,7 +452,7 @@ def test_ppt_with_sft():
         dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
     )
     sft_trainer.run()
-    assert "model_version_id" in sft_trainer.output and "model_id" in sft_trainer.output
+    assert "model_id" in sft_trainer.output and "model_set_id" in sft_trainer.output
 
 
 def test_all_default_config():
@@ -508,7 +511,7 @@ def test_increment_sft():
     res = trainer.output
     assert res is not None
     assert isinstance(res, dict)
-    assert "model_version_id" in res
+    assert "model_id" in res
 
 
 def test_persist():
@@ -546,7 +549,10 @@ def test_persist():
         "actions": [
             {
                 "type": "LoadDataSetAction",
-                "ds_id": "ds-xx"
+                "datasets": {
+                    "sourceType": "Platform",
+                    "versions": [{"versionId":"ds-xxx"}]
+                }
             },
             {
                 "type": "TrainAction",
@@ -582,15 +588,47 @@ def test_persist():
 
 def test_trainer_dataset_config():
     sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    # test multiple dataset
+    sft_ds2 = Dataset.load(qianfan_dataset_id="ds-222")
     qf_ds_conf = DatasetConfig(
-        datasets=[sft_ds],
+        datasets=[sft_ds, sft_ds2],
         eval_split_ratio=0,
         corpus_proportion=0.03,
-        sampling_rate=0.01,
+        sampling_rates=[0.01, 0.02],
     )
 
     trainer = Finetune(
         train_type="ERNIE-Speed",
         dataset=qf_ds_conf,
+    )
+    trainer.run()
+
+
+def test_trainer_corpus_config():
+    sft_ds = Dataset.load(qianfan_dataset_id="ds-144")
+    sft_ds1 = Dataset.load(qianfan_dataset_id="ds-123")
+    qf_ds_conf = DatasetConfig(
+        datasets=[sft_ds, sft_ds1],
+        eval_split_ratio=0,
+        sampling_rates=[0.1, 0.2],
+    )
+
+    trainer = Finetune(
+        train_type="ERNIE-Speed",
+        dataset=qf_ds_conf,
+        corpus_config=CorpusConfig(
+            data_copy=True,
+            corpus_configs=[
+                CorpusConfigItem(
+                    corpus_labels=["文本创作"],
+                    corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,
+                    corpus_proportion="1:2",
+                ),
+                CorpusConfigItem(
+                    corpus_type=console_consts.FinetuneCorpusType.YiyanCommon,
+                    corpus_proportion="1:1",
+                ),
+            ],
+        ),
     )
     trainer.run()

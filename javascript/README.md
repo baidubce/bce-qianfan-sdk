@@ -25,7 +25,7 @@
 [ticket-image]: https://img.shields.io/badge/%E8%81%94%E7%B3%BB%E6%88%91%E4%BB%AC-%E7%99%BE%E5%BA%A6%E6%99%BA%E8%83%BD%E4%BA%91%E5%B7%A5%E5%8D%95-brightgreen
 [ticket-url]: https://console.bce.baidu.com/ticket/#/ticket/create?productId=279
 
-浏览器环境使用请参考 [文档](./browser.md)
+浏览器环境使用请参考 [文档](../docs/javascript/browser.md)
 
 ## 快速使用
 
@@ -95,6 +95,7 @@ const client = new ChatCompletion({ QIANFAN_ACCESS_KEY: 'your_api_key', QIANFAN_
 
 ## 第四步：使用SDK
 
+> 我们提供了一些 [示例](./examples)，可以帮助快速了解 SDK 的使用方法并完成常见功能。
 功能如下：
 
 ### Chat 单轮对话

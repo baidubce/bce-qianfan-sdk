@@ -43,6 +43,18 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
     private Double penaltyScore;
 
     /**
+     * 是否开启系统记忆，说明：
+     * （1）false：未开启，默认false
+     * （2）true：表示开启，开启后，system_memory_id字段必填
+     */
+    private Boolean enableSystemMemory;
+
+    /**
+     * 系统记忆ID，用于读取对应ID下的系统记忆，读取到的记忆文本内容会拼接message参与请求推理
+     */
+    private String systemMemoryId;
+
+    /**
      * 模型人设，主要用于人设设定
      */
     private String system;
@@ -61,6 +73,13 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
      * 是否开启上角标返回
      */
     private Boolean enableCitation;
+
+    /**
+     * 是否返回搜索溯源信息，说明：
+     * （1）如果开启，在触发了搜索增强的场景下，会返回搜索溯源信息search_info，search_info内容见响应参数介绍
+     * （2）默认false，表示不开启
+     */
+    private Boolean enableTrace;
 
     /**
      * 指定模型最大输出token数
@@ -128,6 +147,24 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
         return this;
     }
 
+    public Boolean getEnableSystemMemory() {
+        return enableSystemMemory;
+    }
+
+    public ChatRequest setEnableSystemMemory(Boolean enableSystemMemory) {
+        this.enableSystemMemory = enableSystemMemory;
+        return this;
+    }
+
+    public String getSystemMemoryId() {
+        return systemMemoryId;
+    }
+
+    public ChatRequest setSystemMemoryId(String systemMemoryId) {
+        this.systemMemoryId = systemMemoryId;
+        return this;
+    }
+
     public String getSystem() {
         return system;
     }
@@ -161,6 +198,15 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
 
     public ChatRequest setEnableCitation(Boolean enableCitation) {
         this.enableCitation = enableCitation;
+        return this;
+    }
+
+    public Boolean getEnableTrace() {
+        return enableTrace;
+    }
+
+    public ChatRequest setEnableTrace(Boolean enableTrace) {
+        this.enableTrace = enableTrace;
         return this;
     }
 

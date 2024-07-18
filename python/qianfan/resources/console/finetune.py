@@ -236,6 +236,7 @@ class FineTune(object):
             increment_checkpoint_step: Optional[int] = None,
             model_config: Optional[Dict[str, Any]] = None,
             resource_config: Optional[Dict[str, Any]] = None,
+            corpus_config: Optional[Dict[str, Any]] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -262,6 +263,8 @@ class FineTune(object):
             resource_config (Optional[Dict[str, Any]]):
                 The resource config of the fine-tuning task, which can indicates
                 the specific private resources.
+            corpus_config (Optional[Dict[str, Any]]):
+                The corpus config of the fine-tuning task for data enhancement.
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -294,6 +297,8 @@ class FineTune(object):
                 req.json_body["modelConfig"] = model_config
             if resource_config is not None:
                 req.json_body["resourceConfig"] = resource_config
+            if corpus_config is not None:
+                req.json_body["corpusConfig"] = corpus_config
             return req
 
         @classmethod

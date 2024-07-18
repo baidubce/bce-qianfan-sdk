@@ -16,6 +16,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 
 from qianfan.extensions.openai.adapter import OpenAIApdater
@@ -29,6 +30,7 @@ def entry(
     log_file: Optional[str],
     ignore_system: bool,
     model_mapping: Dict[str, str],
+    api_key: Optional[str],
 ) -> None:
     import rich
     import uvicorn
@@ -61,7 +63,7 @@ def entry(
 
     messages.append("\nRemember to set the environment variables:")
     messages.append(f"""```shell
-    export OPENAI_API_KEY='any-content-you-want'
+    export OPENAI_API_KEY='{api_key or "any-content-you-want"}'
     export OPENAI_BASE_URL='http://{display_host}:{port}/v1'
     """)
 
@@ -85,6 +87,40 @@ def entry(
             async for data in resp:
                 yield "data: " + json.dumps(data) + "\n\n"
             yield "data: [DONE]\n\n"
+
+        @openai_apps.middleware("http")
+        async def check_header(request: Request, call_next: Any) -> Any:
+            if api_key is not None:
+                key = request.headers.get("Authorization")
+                if key != f"Bearer {api_key}":
+                    return JSONResponse(
+                        {
+                            "error": {
+                                "message": (
+                                    f"Incorrect API key provided: {key}. You can find"
+                                    " your API key at"
+                                    " https://platform.openai.com/account/api-keys."
+                                ),
+                                "type": "invalid_request_error",
+                                "param": None,
+                                "code": "invalid_api_key",
+                            }
+                        },
+                        status_code=401,
+                    )
+
+            return await call_next(request)
+
+        # 添加CORS中间件，允许跨域以及OPTIONS请求
+        openai_apps.add_middleware(
+            CORSMiddleware,
+            allow_origins=[
+                "*"
+            ],  # 允许所有来源，或者你可以指定特定的来源，例如：["https://example.com"]
+            allow_credentials=True,
+            allow_methods=["POST", "OPTIONS"],
+            allow_headers=["*"],  # 允许所有头部，或者你可以指定特定的头部
+        )
 
         @openai_apps.post("/v1/chat/completions")
         async def chat_completion(request: Request) -> Response:

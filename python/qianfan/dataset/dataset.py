@@ -303,7 +303,13 @@ class Dataset(Table):
             return QianfanDataSource.create_from_bos_file(**bos_load_args, **kwargs)
 
         if bos_source_args:
-            return BosDataSource(**bos_source_args, **kwargs)
+            bos_ds = BosDataSource(**bos_source_args, **kwargs)
+            if bos_ds.file_format is None:
+                err_msg = (
+                    f"failed to create bos dataset file path {bos_ds.bos_file_path}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
         log_info("no datasource was constructed")
         return None
@@ -334,8 +340,9 @@ class Dataset(Table):
         data_file: Optional[str] = None,
         qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
-        huggingface_dataset: Optional[Any] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
+        huggingface_dataset: Optional[Any] = None,
+        dataframe: Optional[Any] = None,
         schema: Optional[Schema] = None,
         organize_data_as_group: bool = False,
         **kwargs: Any,
@@ -357,12 +364,14 @@ class Dataset(Table):
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
                 from args
-            huggingface_dataset (Optional[Dict[str, Any], Any]):
-                Huggingface dataset object, only support
-                DatasetDict and Dataset of Huggingface datasets.
             bos_source_args: (Optional[Dict[str, Any]]):
                 create arguments for creating a file on specific bos
                 default to None
+            huggingface_dataset (Optional[Any]):
+                Huggingface dataset object, only support
+                DatasetDict and Dataset of Huggingface datasets.
+            dataframe (Optional[Any]):
+                Pandas dataframe object.
             schema (Optional[Schema]):
                 schema used to validate loaded data, default to None
             organize_data_as_group (bool):
@@ -404,6 +413,19 @@ class Dataset(Table):
                 )
                 log_error(err_msg)
                 raise TypeError(err_msg)
+
+            if dataframe is not None:
+                log_info("construct dataset from pandas dataframe")
+                if not hasattr(dataframe, "to_dict"):
+                    err_msg = (
+                        'a Dataframe object without "to_dict" function has been passed '
+                        "and it cant be used as arguments"
+                    )
+                    log_error(err_msg)
+                    raise ValueError(err_msg)
+
+                dataframe_dict = dataframe.to_dict("list")
+                return cls.create_from_pyobj(dataframe_dict)
 
             log_info("no data source was provided, construct")
             source = cls._from_args_to_source(
@@ -1431,7 +1453,7 @@ class Dataset(Table):
 
     def test_using_llm(
         self,
-        model_version_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1445,7 +1467,7 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_version_id (Optional[int]):
+            model_id (Optional[int]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1473,10 +1495,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_version_id:
-            return self._batch_inference_on_model(
-                model_version_id, output_prettified, **kwargs
-            )
+        if model_id:
+            return self._batch_inference_on_model(model_id, output_prettified, **kwargs)
         elif service_model or service_endpoint:
             return self._batch_on_service_in_slice_mode(
                 service_model=service_model,
@@ -1492,7 +1512,7 @@ class Dataset(Table):
 
     async def atest_using_llm(
         self,
-        model_version_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         service_model: Optional[str] = None,
         service_endpoint: Optional[str] = None,
         is_chat_service: bool = True,
@@ -1506,7 +1526,7 @@ class Dataset(Table):
         set only model arguments our service arguments to instantiating
 
         Args:
-            model_version_id (Optional[str]):
+            model_id (Optional[str]):
                 version id of your own model, default to None
             service_model (Optional[str]):
                 name of model you want to use as service, default to None
@@ -1534,10 +1554,8 @@ class Dataset(Table):
             Dataset: A dataset contains inputs, reference outputs and llm outputs
         """
 
-        if model_version_id:
-            return self._batch_inference_on_model(
-                model_version_id, output_prettified, **kwargs
-            )
+        if model_id:
+            return self._batch_inference_on_model(model_id, output_prettified, **kwargs)
         elif service_model or service_endpoint:
             return await self._async_batch_on_service_in_slice_mode(
                 service_model=service_model,
@@ -1588,15 +1606,15 @@ class Dataset(Table):
         return result_ds_list[0].concat_table(result_ds_list[1:])
 
     def _batch_inference_on_model(
-        self, model_version_id: str, output_prettified: bool, **kwargs: Any
+        self, model_id: str, output_prettified: bool, **kwargs: Any
     ) -> "Dataset":
         """
         create batch run using specific dataset on qianfan
         by evaluation ability of platform
 
         Parameters:
-            model_version_id (str):
-                version id of your own model, default to None
+            model_id (str):
+                model id of your own model, default to None
             output_prettified (bool):
                 whether prettified output dataset content
             **kwargs (Any):
@@ -1616,10 +1634,10 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        model_id = Model.detail(model_version_id)["result"]["modelIdStr"]
+        model_id = Model.detail(model_id)["result"]["modelIdStr"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
-            self.inner_data_source_cache, model_id, model_version_id
+            self.inner_data_source_cache, model_id, model_id
         )
 
         result_dataset = Dataset.load(
@@ -2142,9 +2160,9 @@ class Dataset(Table):
 
     def stress_test(
         self,
-        workers: int,
-        users: int,
-        spawn_rate: int,
+        workers: int = 1,
+        users: Optional[int] = None,
+        spawn_rate: Optional[int] = None,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         runtime: str = "0s",
@@ -2180,6 +2198,12 @@ class Dataset(Table):
             hyperparameters (Optional[Dict[str, Any]]):
                 Specify the hyperparameters in your request.
         """
+        if users is None:
+            raise Exception("users must be specified.")
+        if users < workers:
+            workers = users
+        if spawn_rate is None:
+            spawn_rate = users
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
@@ -2208,6 +2232,110 @@ class Dataset(Table):
                 model_type=model_type,
                 dataset=self,
                 hyperparameters=hyperparameters,
+                rounds=1,
+                interval=0,
+                first_latency_threshold=100,
+                round_latency_threshold=100,
+                success_rate_threshold=0,
+            )
+            runner.run()
+            if isinstance(urllib_env, str):
+                os.environ["no_proxy"] = urllib_env
+            else:
+                del os.environ["no_proxy"]
+        else:
+            raise Exception(
+                "Value of environment variable QIANFAN_ENABLE_STRESS_TEST must be true"
+                " if you want to start a stress test task."
+            )
+
+    def multi_stress_test(
+        self,
+        origin_users: int,
+        workers: int = 1,
+        spawn_rate: Optional[int] = None,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        runtime: str = "0s",
+        model_type: str = "ChatCompletion",
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        rounds: int = 1,
+        interval: Optional[int] = 0,
+        first_latency_threshold: Optional[float] = 100,
+        round_latency_threshold: Optional[float] = 1000,
+        success_rate_threshold: Optional[float] = 0,
+    ) -> None:
+        """
+        Start a load test task with current dataset.
+        The task stops after the specified amount of time, or
+        all queries of current dataset are sent.
+        Only works when environment variable QIANFAN_ENABLE_STRESS_TEST is set true.
+        Otherwise an exception will be thrown.
+
+        Args:
+            workers (int):
+                Number of workers. Each worker refers a process.
+            origin_users (int):
+                Origin number of concurrent users, must be greater than workers.
+                Each worker simulated at least one user.
+            runtime (str):
+                Stop after the specified amount of time,
+                e.g. (300s, 20m, 3h, 1h30m, etc.).
+            spawn_rate (int):
+                Rate to spawn users at (users per second).
+            concurrent_round (int):
+                Number of rounds to run concurrently.
+            model (str):
+                Name of the model service you want to test.
+            endpoint (str):
+                Endpoint of the model service you want to test.
+            model_type (str):
+                Type of model service you want to test.
+                Must be one of following values: ChatCompletion / Completions.
+                Default value is 'ChatCompletion'.
+            hyperparameters (Optional[Dict[str, Any]]):
+                Specify the hyperparameters in your request.
+            rounds (int):
+                Number of rounds to run concurrently.
+            interval (int):
+                Interval concurrent number between rounds.
+        """
+        if origin_users < workers:
+            workers = origin_users
+        if spawn_rate is None:
+            spawn_rate = origin_users
+        import os
+
+        if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
+            urllib_env = os.environ.get("no_proxy")
+            if urllib_env != "*":
+                os.environ["no_proxy"] = "*"
+
+            if model is None and endpoint is None:
+                raise Exception(
+                    "These two arguments: model/endpoint cannot both be null."
+                )
+            if model is not None and endpoint is not None:
+                raise Exception(
+                    "Only one of these two arguments: model/endpoint can be non-null."
+                )
+            from qianfan.dataset.stress_test.load_runner import QianfanLocustRunner
+
+            runner = QianfanLocustRunner(
+                user_num=origin_users,
+                worker_num=workers,
+                runtime=runtime,
+                spawn_rate=spawn_rate,
+                model=model,
+                endpoint=endpoint,
+                model_type=model_type,
+                dataset=self,
+                hyperparameters=hyperparameters,
+                rounds=rounds,
+                interval=interval,
+                first_latency_threshold=first_latency_threshold,
+                round_latency_threshold=round_latency_threshold,
+                success_rate_threshold=success_rate_threshold,
             )
             runner.run()
             if isinstance(urllib_env, str):

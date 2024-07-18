@@ -112,6 +112,13 @@ export class BaseClient {
     ): Promise<Resp | AsyncIterableType> {
         // 判断当前环境，node需要鉴权，浏览器不需要鉴权（需要设置proxy的baseUrl、consoleUrl）·
         const env = getCurrentEnvironment();
+
+        let accessToken = this.access_token;
+        if (!accessToken || this.expires_in < Date.now() / 1000) {
+            const {access_token} = await this.getAccessToken();
+            accessToken = access_token;
+        }
+
         const params = {
             env,
             type,
@@ -126,10 +133,9 @@ export class BaseClient {
             qianfanBaseUrl: this.qianfanBaseUrl,
             qianfanConsoleApiBaseUrl: this.qianfanConsoleApiBaseUrl,
             Endpoint: this.Endpoint,
-            expires_in: this.expires_in,
-            access_token: this.access_token,
-            getAccessToken: this.getAccessToken,
+            accessToken,
         };
+
         const fetchOptions
             = Number(this.version) === 2
                 ? await getVersion2FetchOptions(params)

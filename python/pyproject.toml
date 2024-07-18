@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qianfan"
-version = "0.3.18"
+version = "0.4.1.1"
 description = "文心千帆大模型平台 Python SDK"
 authors = []
 license = "Apache-2.0"
@@ -30,7 +30,7 @@ python-dotenv = [
 tenacity = "^8.2.3"
 multiprocess = "*"
 langchain = { version = ">=0.1.10", python = ">=3.8.1", optional = true }
-langchain-community = { version = "*", python = ">=3.8.1", optional = true}
+langchain-community = { version = ">=0.2.0", python = ">=3.8.1", optional = true}
 numpy = [
     { version = "<1.22.0", python = ">=3.7 <3.8", optional = true },
     { version = ">=1.22.0", python = ">=3.8", optional = true }
@@ -48,11 +48,11 @@ pyyaml = "^6.0.1"
 prompt-toolkit = ">=3.0.38"
 torch = [
     { version = "<=1.13.1", python = "<3.8", optional = true},
-    { version = "*", python = ">=3.8", optional = true }
+    { version = ">=1.4.0", python = ">=3.8", optional = true }
 ]
-ltp = { version = "*", optional = true }
-emoji = { version = "*", optional = true }
-sentencepiece = { version = "*", optional = true }
+ltp = { version = ">=4.2.0", optional = true }
+emoji = { version = ">=2.2.0", optional = true }
+sentencepiece = { version = ">=0.1.98", optional = true }
 diskcache = "^5.6.3"
 
 ijson = { version = "*", optional = true }
@@ -115,5 +115,7 @@ exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py", "qi
 
 
 [build-system]
-requires = ["poetry-core"]
+requires = [
+    "poetry-core"
+]
 build-backend = "poetry.core.masonry.api"

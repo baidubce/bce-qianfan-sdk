@@ -943,6 +943,31 @@ def create_finetune_task():
     )
 
 
+@app.route(Consts.ModelV2BaseRouteAPI, methods=["POST"])
+def model_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.ModelDescribeModelSetAction: model_v2_model_set_detail,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+def model_v2_model_set_detail(body):
+    return {
+        "requestId": "fe0268a7-0d07-46ac-b195-36ca5be2d761",
+        "result": {
+            "modelSetId": "am-m0t1zde3x111",
+            "modelSetName": "ad111",
+            "source": "UserCreate",
+            "modelType": "Text2Text",
+            "createTime": "2024-06-04T18:38:59+08:00",
+            "modifyTime": "2024-06-04T18:38:59+08:00",
+            "modelIds": ["amv-34qkndzjf111"],
+        },
+    }
+
+
 @app.route(Consts.FineTuneV2BaseRouteAPI, methods=["POST"])
 def finetune_v2():
     action = request.args.get(Consts.ConsoleAPIQueryAction)
@@ -1110,7 +1135,7 @@ def finetune_v2_task_detail(body):
             }
         )
     else:
-        MAX_CALL_TIMES = 10
+        MAX_CALL_TIMES = 5
         finetune_task_call_times[task_id] += 1
         is_done = call_times >= MAX_CALL_TIMES
         resp = {

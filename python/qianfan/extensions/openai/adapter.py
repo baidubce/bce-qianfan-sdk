@@ -168,6 +168,8 @@ class OpenAIApdater(object):
                     "type": "function",
                     "function": function_call,
                 }
+        if qianfan_request.get("tool_choice") == "auto":
+            qianfan_request.pop("tool_choice")
         if "response_format" in openai_request:
             response_format = openai_request["response_format"]
             if not isinstance(response_format, str):

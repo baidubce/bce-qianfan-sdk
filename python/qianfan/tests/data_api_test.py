@@ -269,25 +269,23 @@ def test_create_dataset_augmenting_task():
     test Data.create_dataset_augmenting_task
     """
     with pytest.raises(ValueError, match="num_seed_fewshot should be between 1 to 10"):
-        Data.create_dataset_augmenting_task("1", "1", "2", "", "1", "", 1, 90, 1, 1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "1", 1, 90, 1, 1)
 
     with pytest.raises(
         ValueError, match="num_instances_to_generate should be between 1 to 5000"
     ):
-        Data.create_dataset_augmenting_task("1", "1", "2", "", "1", "", 1, 1, 5001, 1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "1", 1, 1, 5001, 1)
 
     with pytest.raises(
         ValueError, match="similarity_threshold should be between 0 to 1"
     ):
-        Data.create_dataset_augmenting_task("1", "1", "2", "", "1", "", 1, 1, 1, -1)
+        Data.create_dataset_augmenting_task("1", "1", "2", "1", 1, 1, 1, -1)
 
     resp = Data.create_dataset_augmenting_task(
         "test",
         "12",
         "34",
-        "ERNIE-Bot-turbo",
         "1",
-        "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant",
         12,
         1,
         1,
@@ -298,11 +296,6 @@ def test_create_dataset_augmenting_task():
     assert reqs["name"] == "test"
     assert reqs["sourceDatasetId"] == "12"
     assert reqs["destDatasetId"] == "34"
-    assert reqs["serviceName"] == "ERNIE-Bot-turbo"
-    assert (
-        reqs["serviceUrl"]
-        == "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant"
-    )
     assert reqs["appId"] == 12
     assert reqs["numSeedFewshot"] == 1
     assert reqs["numInstancesToGenerate"] == 1

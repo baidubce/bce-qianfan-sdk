@@ -173,8 +173,8 @@ class EvaluationManager(BaseModel):
                 output[i],
             )
             for pre_processor in self.pre_processors if self.pre_processors else []:
-                single_reference = pre_processor(  # type: ignore
-                    single_output, input=single_input, reference=reference
+                single_output = pre_processor(  # type: ignore
+                    single_output, input=single_input, reference=single_reference
                 )
 
             for evaluator in self.local_evaluators:
@@ -240,7 +240,7 @@ class EvaluationManager(BaseModel):
                     llm_key_str = f"{llm.id}_{llm.endpoint}"
             elif isinstance(llm, Model):
                 llm.auto_complete_info()
-                llm_key_str = f"{llm.id}_{llm.version_id}_{llm.name}"
+                llm_key_str = f"{llm.set_id}_{llm.id}_{llm.name}"
             else:
                 llm_key_str = ""
             llm_tags.append(llm_key_str)
@@ -257,7 +257,7 @@ class EvaluationManager(BaseModel):
             if isinstance(llm, Model):
                 future_dict[index] = pool.submit(
                     dataset.test_using_llm,
-                    model_version_id=llm.version_id,
+                    model_version_id=llm.id,
                     **kwargs,
                 )
             elif isinstance(llm, Service):
@@ -361,7 +361,7 @@ class EvaluationManager(BaseModel):
         resp_body = ResourceModel.create_evaluation_task(
             name=f"sdk_eval_{generate_letter_num_random_id(11)}",
             version_info=[
-                {"modelId": model.id, "modelVersionId": model.version_id}
+                {"modelId": model.set_id, "modelVersionId": model.id}
                 for model in model_objs
             ],
             dataset_id=dataset_id,

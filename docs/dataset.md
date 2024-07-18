@@ -13,6 +13,7 @@
     + 将本地数据集通过私人 BOS 存储上传到千帆平台
   + 内存
     + 从 HuggingFace 数据集创建 
+    + 从 Pandas Dataframe 创建
     + 从 Python 对象创建数据集
     + 从  `pyarrow.Table`  创建数据集
 + 数据集处理
@@ -363,6 +364,21 @@ huggingface_ds = load_dataset(
 
 qianfan_ds = Dataset.load(huggingface_dataset=huggingface_ds)
 print(qianfan_ds.list())
+```
+
+### 从 Pandas Dataframe 导入
+
+如果你使用的是 Pandas 的 Dataframe 格式处理好了数据，`load` 方法中也提供了 `dataframe` 参数可供使用。
+
+```python
+import pandas as pd
+
+from qianfan.dataset import Dataset
+
+df = pd.read_excel("path/to/your/excel.xlsx")
+
+ds = Dataset.load(dataframe=df)
+print(ds.list())
 ```
 
 ### 从 Bos 导入

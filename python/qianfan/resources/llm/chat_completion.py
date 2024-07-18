@@ -34,6 +34,7 @@ from qianfan.resources.llm.base import (
     BatchRequestFuture,
     VersionBase,
 )
+from qianfan.resources.llm.function import Function
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_error, log_info
@@ -1537,7 +1538,24 @@ class ChatCompletion(VersionBase):
     _real: Union[_ChatCompletionV1, _ChatCompletionV2]
 
     @classmethod
-    def _real_base(cls, version: str) -> Type:
+    def _real_base(cls, version: str, **kwargs: Any) -> Type:
+        # convert to qianfan.Function
+        if kwargs.get("use_function"):
+            return Function
+        else:
+            model = kwargs.get("model", "")
+            func_model_info_list = {
+                k.lower(): v for k, v in Function._supported_models().items()
+            }
+            func_model_info = func_model_info_list.get(model.lower())
+            if model and func_model_info:
+                if func_model_info and func_model_info.endpoint:
+                    return Function
+            endpoint = kwargs.get("endpoint", "")
+            for m in func_model_info_list.values():
+                if endpoint and m.endpoint == endpoint:
+                    return Function
+
         if version == "1":
             return _ChatCompletionV1
         elif version == "2":

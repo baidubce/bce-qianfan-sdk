@@ -163,11 +163,11 @@ class VersionBase(object):
         self, version: Optional[Literal["1", "2", 1, 2]] = None, **kwargs: Any
     ) -> None:
         self._version = str(version) if version else "1"
-        self._real = self._real_base(self._version)(**kwargs)
-        self._backup = self._real_base("1")(**kwargs)
+        self._real = self._real_base(self._version, **kwargs)(**kwargs)
+        self._backup = self._real_base("1", **kwargs)(**kwargs)
 
     @classmethod
-    def _real_base(cls, version: str) -> Type[BaseResource]:
+    def _real_base(cls, version: str, **kwargs: Any) -> Type[BaseResource]:
         """
         return the real base class
         """

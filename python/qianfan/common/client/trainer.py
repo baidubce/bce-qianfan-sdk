@@ -526,7 +526,7 @@ def info(
     task_id: Optional[str] = typer.Option(None, help="task id"),
 ) -> None:
     """
-    get a trainer info.
+    get a trainer info from local cache
     """
     console = replace_logger_handler()
     trainer: Optional[Trainer] = None

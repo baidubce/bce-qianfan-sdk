@@ -54,7 +54,6 @@ _enable_traceback = False
 
 
 @app.command(name="cache")
-@credential_required
 def clear(
     clear: Optional[bool] = typer.Option(
         None,

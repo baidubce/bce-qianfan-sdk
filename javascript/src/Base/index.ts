@@ -140,7 +140,6 @@ export class BaseClient {
         requestBody: string,
         stream = false
     ): Promise<Resp | AsyncIterableType> {
-        // 判断当前环境，node需要鉴权，浏览器不需要鉴权（需要设置proxy的baseUrl、consoleUrl）·
         let fetchOptions;
         // 如果baseUrl是aip.baidubce.com，证明用户未配置proxy url，则认为需要放开鉴权
         if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
@@ -195,9 +194,6 @@ export class BaseClient {
         }
         else {
             // 设置了proxy url走prxoy
-            if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
-                throw new Error('请设置proxy的baseUrl');
-            }
             const IAMPath = await this.getIAMPath(type, model);
             if (!IAMPath) {
                 throw new Error(`${model} is not supported`);

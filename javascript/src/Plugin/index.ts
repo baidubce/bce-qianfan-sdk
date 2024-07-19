@@ -13,9 +13,9 @@
 // limitations under the License.
 
 import {BaseClient} from '../Base';
-import {modelInfoMap} from './utilts';
 import {PluginsBody, PluginsResp, YiYanPluginBody} from '../interface';
-import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {getPathAndBody} from '../utils';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
 class Plugin extends BaseClient {
@@ -30,15 +30,17 @@ class Plugin extends BaseClient {
         model = 'EBPluginV2'
     ): Promise<PluginsResp | AsyncIterable<PluginsResp>> {
         const stream = body.stream ?? false;
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const type = ModelType.PLUGIN;
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
-            model: modelUppercase,
-            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
+            endpoint: endPoint,
             body,
             type,
         });
+        console.log(AKPath);
         return (await this.sendRequest(type, model, AKPath, requestBody, stream)) as
             | PluginsResp
             | AsyncIterable<PluginsResp>;

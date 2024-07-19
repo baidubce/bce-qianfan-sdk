@@ -14,10 +14,11 @@
 
 import {BaseClient} from '../Base';
 import {ChatBody, Resp} from '../interface';
-import {modelInfoMap} from './utils';
-import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {getPathAndBody} from '../utils';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
+const type = ModelType.CHAT;
 class ChatCompletion extends BaseClient {
     /**
      * chat
@@ -28,21 +29,20 @@ class ChatCompletion extends BaseClient {
      */
     public async chat(body: ChatBody, model = 'ERNIE-Lite-8K'): Promise<Resp | AsyncIterable<Resp>> {
         const stream = body.stream ?? false;
-        const {modelInfoMapUppercase, modelUppercase, modelLowercase} = getUpperCaseModelAndModelMap(
-            model,
-            modelInfoMap
-        );
-        const type = ModelType.CHAT;
-
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
-            model: Number(this.version) === 2 ? modelLowercase : modelUppercase,
-            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
+            endpoint: this.Endpoint ?? endPoint,
             type,
         });
         return this.sendRequest(type, model, AKPath, requestBody, stream);
+    }
+
+    public async getModels(): Promise<string[]> {
+        return this.getAllModels(type);
     }
 }
 

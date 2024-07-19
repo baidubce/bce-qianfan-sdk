@@ -122,6 +122,7 @@ export const getPath = ({
             ? `${BASE_PATH}${modelEndpoint}`
             : `${api_base}${modelEndpoint}`;
     }
+    throw new Error('Model is not supported');
 };
 
 

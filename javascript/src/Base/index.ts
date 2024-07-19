@@ -15,7 +15,7 @@
 import HttpClient from '../HttpClient';
 import Fetch, {FetchConfig} from '../Fetch/index';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath, getCurrentEnvironment} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 import DynamicModelEndpoint from '../DynamicModelEndpoint';
 
@@ -100,6 +100,39 @@ export class BaseClient {
         }
     }
 
+    /**
+     * 获取 IAM 路径 （配置proxy情况下）
+     *
+     * @param type 路径类型
+     * @param model 模型名称
+     * @returns 返回 IAM 路径
+     * @throws 当 qianfanBaseUrl 包含 'aip.baidubce.com' 时，抛出错误提示设置 proxy 的 baseUrl
+     * @throws 当 qianfanConsoleApiBaseUrl 未设置时，抛出错误提示未设置 qianfanConsoleApiBaseUrl
+     * @throws 当 Endpoint 未设置且 qianfanConsoleApiBaseUrl 不包含 'qianfan.baidubce.com' 时，抛出错误提示未设置 Endpoint
+     */
+    private async getIAMPath(type, model) {
+        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
+            throw new Error('请设置proxy的baseUrl');
+        }
+        const dynamicModelEndpoint = new DynamicModelEndpoint(
+            null,
+            this.qianfanConsoleApiBaseUrl,
+            this.qianfanBaseUrl
+        );
+        return await dynamicModelEndpoint.getEndpoint(type, model);
+    }
+
+    public async getAllModels(type): Promise<string[]> {
+        const dynamicModelEndpoint = new DynamicModelEndpoint(
+            null,
+            this.qianfanConsoleApiBaseUrl,
+            this.qianfanBaseUrl
+        );
+        const map = await dynamicModelEndpoint.getDynamicMap(type);
+        const keysArray: string[] = Array.from(map.keys()); // 将Map的键转换为数组
+        return keysArray;
+    }
+
     protected async sendRequest(
         type: string,
         model: string,
@@ -107,10 +140,9 @@ export class BaseClient {
         requestBody: string,
         stream = false
     ): Promise<Resp | AsyncIterableType> {
-        // 判断当前环境，node需要鉴权，浏览器不需要鉴权（需要设置proxy的baseUrl、consoleUrl）·
-        const env =  getCurrentEnvironment();
         let fetchOptions;
-        if (env === 'node') {
+        // 如果baseUrl是aip.baidubce.com，证明用户未配置proxy url，则认为需要放开鉴权
+        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
                 throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
@@ -160,49 +192,18 @@ export class BaseClient {
                 };
             }
         }
-        else if (env === 'browser') {
-            // 浏览器环境 需要设置proxy
-            if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
-                throw new Error('请设置proxy的baseUrl');
+        else {
+            // 设置了proxy url走prxoy
+            const IAMPath = await this.getIAMPath(type, model);
+            if (!IAMPath) {
+                throw new Error(`${model} is not supported`);
             }
-            // 如果设置了管控api,则使用管控api获取最新模型
-            if (this.qianfanConsoleApiBaseUrl && !this.qianfanConsoleApiBaseUrl.includes('qianfan.baidubce.com')) {
-                const dynamicModelEndpoint = new DynamicModelEndpoint(
-                    null,
-                    this.qianfanConsoleApiBaseUrl,
-                    this.qianfanBaseUrl
-                );
-                let IAMPath = '';
-                if (this.Endpoint) {
-                    IAMPath = getPath({
-                        Authentication: 'IAM',
-                        api_base: this.qianfanBaseUrl,
-                        endpoint: this.Endpoint,
-                        type,
-                    });
-                }
-                else {
-                    IAMPath = await dynamicModelEndpoint.getEndpoint(type, model);
-                }
-                if (!IAMPath) {
-                    throw new Error(`${model} is not supported`);
-                }
-                fetchOptions = {
-                    url: `${this.qianfanBaseUrl}${IAMPath}`,
-                    method: 'POST',
-                    headers: this.headers,
-                    body: requestBody,
-                };
-            }
-            else {
-                const url = `${AKPath}`;
-                fetchOptions = {
-                    url: url,
-                    method: 'POST',
-                    headers: this.headers,
-                    body: requestBody,
-                };
-            }
+            fetchOptions = {
+                url: `${this.qianfanBaseUrl}${IAMPath}`,
+                method: 'POST',
+                headers: this.headers,
+                body: requestBody,
+            };
         }
         try {
             const {url, ...rest} = fetchOptions;

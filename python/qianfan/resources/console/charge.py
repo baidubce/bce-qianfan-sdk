@@ -234,3 +234,35 @@ class Charge(object):
         }
 
         return req
+
+    @classmethod
+    @console_api_request
+    def release_service_resource_instance_info(
+        cls, service_id: str, instance_id: str, **kwargs: Any
+    ) -> QfRequest:
+        """
+        release purchase private service resource from qianfan
+
+        Parameters:
+            service_id (str):
+                The service id which needs to buy private service resource
+            instance_id (str):
+                The resource instance id.
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lvuk0kxi
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourceReleaseServiceResourceParam}
+        req.json_body = {
+            "serviceId": service_id,
+            "instanceId": instance_id,
+        }
+
+        return req

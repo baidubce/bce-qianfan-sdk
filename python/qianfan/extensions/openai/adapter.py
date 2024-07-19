@@ -282,7 +282,9 @@ class OpenAIApdater(object):
                 if "function_call" in openai_request:
                     choice["message"]["function_call"] = resp["function_call"]
                 if "tool_choice" in openai_request:
-                    choice["message"]["tool_calls"] = resp["function_call"]
+                    choice["message"]["tool_calls"] = [
+                        {"type": "function", "function": resp["function_call"]}
+                    ]
             resp_list.append(choice)
 
             completion_tokens += resp["usage"]["completion_tokens"]

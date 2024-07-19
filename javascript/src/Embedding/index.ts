@@ -14,8 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {EmbeddingBody, EmbeddingResp} from '../interface';
-import {modelInfoMap} from './utils';
-import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {getPathAndBody} from '../utils';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
 class Eembedding extends BaseClient {
@@ -26,14 +26,14 @@ class Eembedding extends BaseClient {
      * @returns Promise<Resp | AsyncIterable<Resp>>
      */
     public async embedding(body: EmbeddingBody, model = 'Embedding-V1'): Promise<EmbeddingResp> {
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const type = ModelType.EMBEDDINGS;
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
-            model: modelUppercase,
-            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
+            endpoint: this.Endpoint ?? endPoint,
             type,
         });
         const resp = await this.sendRequest(type, model, AKPath, requestBody);

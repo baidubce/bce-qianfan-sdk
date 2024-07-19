@@ -15,7 +15,7 @@
 import HttpClient from '../HttpClient';
 import Fetch, {FetchConfig} from '../Fetch/index';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath, getCurrentEnvironment} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 import DynamicModelEndpoint from '../DynamicModelEndpoint';
 
@@ -108,9 +108,9 @@ export class BaseClient {
         stream = false
     ): Promise<Resp | AsyncIterableType> {
         // 判断当前环境，node需要鉴权，浏览器不需要鉴权（需要设置proxy的baseUrl、consoleUrl）·
-        const env =  getCurrentEnvironment();
         let fetchOptions;
-        if (env === 'node') {
+        // 如果baseUrl是aip.baidubce.com，证明用户未配置proxy url，则认为需要放开鉴权
+        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
                 throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
@@ -160,8 +160,8 @@ export class BaseClient {
                 };
             }
         }
-        else if (env === 'browser') {
-            // 浏览器环境 需要设置proxy
+        else {
+            // 设置了proxy url走prxoy
             if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
                 throw new Error('请设置proxy的baseUrl');
             }
@@ -189,15 +189,6 @@ export class BaseClient {
                 }
                 fetchOptions = {
                     url: `${this.qianfanBaseUrl}${IAMPath}`,
-                    method: 'POST',
-                    headers: this.headers,
-                    body: requestBody,
-                };
-            }
-            else {
-                const url = `${AKPath}`;
-                fetchOptions = {
-                    url: url,
                     method: 'POST',
                     headers: this.headers,
                     body: requestBody,

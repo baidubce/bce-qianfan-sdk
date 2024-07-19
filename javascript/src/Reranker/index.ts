@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {modelInfoMap} from './utilts';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
 import {RerankerBody, RerankerResp} from '../interface';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
 class Reranker extends BaseClient {
@@ -23,12 +24,15 @@ class Reranker extends BaseClient {
     public async reranker(body: RerankerBody, model = 'bce-reranker-base_v1'): Promise<RerankerResp> {
         const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, modelInfoMap);
         const type = ModelType.RERANKER;
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
+            endpoint: this.Endpoint ?? endPoint,
             type,
         });
         const resp = await this.sendRequest(type, model, AKPath, requestBody);

@@ -16,6 +16,7 @@ import {BaseClient} from '../Base';
 import {ChatBody, CompletionBody, Resp} from '../interface';
 import {modelInfoMap, isCompletionBody} from './utils';
 import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
 class Completions extends BaseClient {
@@ -50,12 +51,15 @@ class Completions extends BaseClient {
         else {
             reqBody = body;
         }
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
             model: modelUppercase,
             modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body: reqBody,
-            endpoint: this.Endpoint,
+            endpoint: this.Endpoint ?? endPoint,
             type,
         });
         return this.sendRequest(type, model, AKPath, requestBody, stream);

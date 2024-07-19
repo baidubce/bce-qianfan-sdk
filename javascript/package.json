@@ -1,6 +1,6 @@
 {
-    "name": "@baiducloud/qianfan",
-    "version": "0.1.5-beta.2",
+    "name": "qianfan-wt",
+    "version": "0.0.21",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"
@@ -34,6 +34,7 @@
         "crypto-js": "^4.2.0",
         "dotenv": "^16.4.5",
         "node-fetch": "2.7.0",
+        "qianfan-wt": "^0.0.20",
         "rollup": "^3.29.4",
         "typescript": "^5.3.3",
         "web-streams-polyfill": "^4.0.0"

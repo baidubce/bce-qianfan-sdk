@@ -40,6 +40,7 @@ class Plugin extends BaseClient {
             body,
             type,
         });
+        console.log(AKPath);
         return (await this.sendRequest(type, model, AKPath, requestBody, stream)) as
             | PluginsResp
             | AsyncIterable<PluginsResp>;

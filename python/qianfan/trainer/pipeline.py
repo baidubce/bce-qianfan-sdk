@@ -241,7 +241,14 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def load(cls, b: bytes) -> "Pipeline":
         meta = cls.serialize_helper.deserialize(b)
         assert isinstance(meta, dict)
-        return cls._load_from_dict(meta)
+        try:
+            return cls._load_from_dict(meta)
+        except Exception as e:
+            log_error(e)
+            raise ValueError(
+                "load pipeline error, please update qianfan or use `qianfan cache"
+                " --clear` to clear all"
+            )
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "Pipeline":

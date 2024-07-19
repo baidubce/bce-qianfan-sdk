@@ -169,9 +169,6 @@ export class Stream<Item> implements AsyncIterable<Item> {
             const iter = readableStreamAsyncIterable<Bytes>(response.body);
 
             for await (const chunk of iter) {
-                if (chunk[0] === 10) {
-                    continue;
-                }
                 if (previousChunkLastByte === 10) {
                     buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
 

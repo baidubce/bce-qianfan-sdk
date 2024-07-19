@@ -338,7 +338,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             corpus_config_meta = meta.get("corpus_config")
             init_params["dataset"] = DatasetConfig(datasets=datasets)
             if corpus_config_meta:
-                print("corpus_config_meta", corpus_config_meta)
                 init_params["corpus_config"] = CorpusConfig.parse_obj(
                     corpus_config_meta
                 )

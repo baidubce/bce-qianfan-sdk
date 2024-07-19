@@ -72,9 +72,9 @@ def clear(
     # 删除目录
     try:
         shutil.rmtree(dir_path)
-        print(f"目录 {dir_path} 已删除")
+        print_info_msg(f"目录 {dir_path} 已删除")
     except OSError as e:
-        print(f"删除目录 {dir_path} 失败: {e}")
+        print_info_msg(f"删除目录 {dir_path} 失败: {e}")
 
 
 @app.command(name="openai")

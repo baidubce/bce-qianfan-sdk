@@ -1,6 +1,6 @@
 {
-    "name": "qianfan-wt",
-    "version": "0.0.21",
+    "name": "@baiducloud/qianfan",
+    "version": "0.1.5",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"

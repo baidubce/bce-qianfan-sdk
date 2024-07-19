@@ -90,7 +90,6 @@ class ClientProxy(object):
         iam_sign(str(self._config.ACCESS_KEY), str(self._config.SECRET_KEY), request)
         request.url = url
         if not request.headers.get("Authorization", None):
-            print(self._auth.access_token())
             request.query["access_token"] = self._auth.access_token()
 
     async def get_request(self, request: Request, url_route: str) -> QfRequest:

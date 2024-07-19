@@ -137,15 +137,15 @@ def test_tool_from_langchain_tool():
     assert tool.parameters[2] == ToolParameter(
         name="prefix", type="string", description="prefix description", required=False
     )
-    assert tool.run({"a": 1, "b": 2}) == 3
-    assert tool.run({"a": 1, "b": 2, "prefix": "result: "}) == "result: 3"
+    assert tool.run(tool_input={"a": 1, "b": 2}) == 3
+    assert tool.run(tool_input={"a": 1, "b": 2, "prefix": "result: "}) == "result: 3"
 
 
 def test_tool_from_langchain_func_tool():
     if not check_package_installed("langchain"):
         return
 
-    from langchain.tools.base import Tool as LangchainTool
+    from langchain_core.tools import StructuredTool as LangchainTool
 
     from qianfan.utils.pydantic import BaseModel, Field
 
@@ -174,7 +174,7 @@ def test_tool_from_langchain_func_tool():
     assert tool.parameters[1] == ToolParameter(
         name="b", type="string", description="b description", required=True
     )
-    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
+    assert tool.run(tool_input={"a": "1", "b": "2"}) == "hello 1 2"
 
 
 def test_tool_from_langchain_decorator_tool():
@@ -201,7 +201,7 @@ def test_tool_from_langchain_decorator_tool():
     assert len(tool.parameters) == 2
     assert tool.parameters[0] == ToolParameter(name="a", type="string", required=True)
     assert tool.parameters[1] == ToolParameter(name="b", type="string", required=True)
-    assert tool.run({"a": "1", "b": "2"}) == "hello 1 2"
+    assert tool.run(tool_input={"a": "1", "b": "2"}) == "hello 1 2"
 
 
 def test_tool_to_langchain_tool():
@@ -220,7 +220,7 @@ def test_tool_to_langchain_tool():
             )
         ]
 
-        def run(self, parameters=None):
+        def run(self, **parameters):
             return parameters["test_param"]
 
     tool = TestTool()
@@ -243,7 +243,7 @@ def test_tool_to_langchain_tool():
         "required": ["test_param"],
     }
 
-    assert tool.run({"test_param": "value"}) == "value"
+    assert tool.run(**{"test_param": "value"}) == "value"
     assert langchain_tool.invoke({"test_param": "value"}) == "value"
 
 
@@ -307,7 +307,7 @@ def test_complex_args_tool_to_langchain_tool():
             ),
         ]
 
-        def run(self, parameters=None):
+        def run(self, **parameters):
             return (
                 parameters["required_integer"] if parameters["required_boolean"] else 0
             )
@@ -395,8 +395,8 @@ def test_complex_args_tool_to_langchain_tool():
         "required_boolean": False,
         "required_object": {"required_nested_string": "required_nested_string"},
     }
-    assert tool.run(args_one) == 1
-    assert tool.run(args_zero) == 0
+    assert tool.run(**args_one) == 1
+    assert tool.run(**args_zero) == 0
     assert langchain_tool.invoke(args_one) == 1
     assert langchain_tool.invoke(args_zero) == 0
 
@@ -487,7 +487,7 @@ def test_nested_parameter_to_json_schema():
 
 def test_baidu_search_tool():
     tool = BaiduSearchTool(with_reference=True)
-    res = tool.run({"search_query": "上海天气"})
+    res = tool.run(**{"search_query": "上海天气"})
     assert (
         res["summary"]
         == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
@@ -507,7 +507,7 @@ def test_baidu_search_tool():
     ]
 
     tool = BaiduSearchTool()
-    res = tool.run({"search_query": "上海天气"})
+    res = tool.run(**{"search_query": "上海天气"})
     assert (
         res
         == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"
@@ -515,12 +515,12 @@ def test_baidu_search_tool():
     )
 
     tool = BaiduSearchTool(with_reference=True)
-    res = tool.run({"search_query": "no_search"})
+    res = tool.run(**{"search_query": "no_search"})
     assert res["reference"] == []
 
     client = qianfan.Completion()
     tool = BaiduSearchTool(client=client, with_reference=True)
-    res = tool.run({"search_query": "上海天气"})
+    res = tool.run(**{"search_query": "上海天气"})
     assert (
         res["summary"]
         == "**上海今天天气是晴转阴，气温在-4℃到1℃之间，风向无持续风向，"

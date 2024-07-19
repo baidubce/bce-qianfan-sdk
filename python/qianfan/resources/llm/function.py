@@ -80,6 +80,8 @@ class Function(BaseResourceV1):
                     "user_id",
                     "stop",
                     "max_output_tokens",
+                    "enable_user_memory",
+                    "user_memory_extract_level",
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,

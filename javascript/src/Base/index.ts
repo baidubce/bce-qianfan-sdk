@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import HttpClient from '../HttpClient';
 import Fetch, {FetchConfig} from '../Fetch/index';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getDefaultConfig, getCurrentEnvironment} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
-import {getVersion1FetchOptions} from './version1';
-import {getVersion2FetchOptions} from './version2';
+import DynamicModelEndpoint from '../DynamicModelEndpoint';
 
 export class BaseClient {
     protected controller: AbortController;
@@ -35,7 +35,6 @@ export class BaseClient {
     protected headers = DEFAULT_HEADERS;
     protected fetchInstance;
     protected fetchConfig: FetchConfig;
-    protected version?: string | number;
     access_token = '';
     expires_in = 0;
 
@@ -51,7 +50,6 @@ export class BaseClient {
         QIANFAN_LLM_API_RETRY_COUNT?: string;
         QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL?: string;
         Endpoint?: string;
-        version?: string | number;
     }) {
         const defaultConfig = getDefaultConfig();
         this.qianfanAk = options?.QIANFAN_AK ?? defaultConfig.QIANFAN_AK;
@@ -68,7 +66,6 @@ export class BaseClient {
             = options?.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR ?? defaultConfig.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR;
         this.qianfanLlmApiRetryCount
             = options?.QIANFAN_LLM_API_RETRY_COUNT ?? defaultConfig.QIANFAN_LLM_API_RETRY_COUNT;
-        this.version = options?.version ?? defaultConfig.version;
         this.controller = new AbortController();
         this.fetchInstance = new Fetch({
             maxRetries: Number(this.qianfanLlmApiRetryCount),
@@ -103,6 +100,39 @@ export class BaseClient {
         }
     }
 
+    /**
+     * 获取 IAM 路径 （配置proxy情况下）
+     *
+     * @param type 路径类型
+     * @param model 模型名称
+     * @returns 返回 IAM 路径
+     * @throws 当 qianfanBaseUrl 包含 'aip.baidubce.com' 时，抛出错误提示设置 proxy 的 baseUrl
+     * @throws 当 qianfanConsoleApiBaseUrl 未设置时，抛出错误提示未设置 qianfanConsoleApiBaseUrl
+     * @throws 当 Endpoint 未设置且 qianfanConsoleApiBaseUrl 不包含 'qianfan.baidubce.com' 时，抛出错误提示未设置 Endpoint
+     */
+    private async getIAMPath(type, model) {
+        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
+            throw new Error('请设置proxy的baseUrl');
+        }
+        const dynamicModelEndpoint = new DynamicModelEndpoint(
+            null,
+            this.qianfanConsoleApiBaseUrl,
+            this.qianfanBaseUrl
+        );
+        return await dynamicModelEndpoint.getEndpoint(type, model);
+    }
+
+    public async getAllModels(type): Promise<string[]> {
+        const dynamicModelEndpoint = new DynamicModelEndpoint(
+            null,
+            this.qianfanConsoleApiBaseUrl,
+            this.qianfanBaseUrl
+        );
+        const map = await dynamicModelEndpoint.getDynamicMap(type);
+        const keysArray: string[] = Array.from(map.keys()); // 将Map的键转换为数组
+        return keysArray;
+    }
+
     protected async sendRequest(
         type: string,
         model: string,
@@ -110,30 +140,71 @@ export class BaseClient {
         requestBody: string,
         stream = false
     ): Promise<Resp | AsyncIterableType> {
-        // 判断当前环境，node需要鉴权，浏览器不需要鉴权（需要设置proxy的baseUrl、consoleUrl）·
-        const env = getCurrentEnvironment();
-        const params = {
-            env,
-            type,
-            model,
-            AKPath,
-            requestBody,
-            headers: this.headers,
-            qianfanAccessKey: this.qianfanAccessKey,
-            qianfanSecretKey: this.qianfanSecretKey,
-            qianfanAk: this.qianfanAk,
-            qianfanSk: this.qianfanSk,
-            qianfanBaseUrl: this.qianfanBaseUrl,
-            qianfanConsoleApiBaseUrl: this.qianfanConsoleApiBaseUrl,
-            Endpoint: this.Endpoint,
-            expires_in: this.expires_in,
-            access_token: this.access_token,
-            getAccessToken: this.getAccessToken,
-        };
-        const fetchOptions
-            = Number(this.version) === 2
-                ? await getVersion2FetchOptions(params)
-                : await getVersion1FetchOptions(params);
+        let fetchOptions;
+        // 如果baseUrl是aip.baidubce.com，证明用户未配置proxy url，则认为需要放开鉴权
+        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
+            // 检查鉴权信息
+            if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
+                throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+            }
+            // IAM鉴权
+            if (this.qianfanAccessKey && this.qianfanSecretKey) {
+                const config = getIAMConfig(this.qianfanAccessKey, this.qianfanSecretKey, this.qianfanBaseUrl);
+                const client = new HttpClient(config);
+                const dynamicModelEndpoint = new DynamicModelEndpoint(
+                    client,
+                    this.qianfanConsoleApiBaseUrl,
+                    this.qianfanBaseUrl
+                );
+                let IAMPath = '';
+                if (this.Endpoint) {
+                    IAMPath = getPath({
+                        Authentication: 'IAM',
+                        api_base: this.qianfanBaseUrl,
+                        endpoint: this.Endpoint,
+                        type,
+                    });
+                }
+                else {
+                    IAMPath = await dynamicModelEndpoint.getEndpoint(type, model);
+                }
+                if (!IAMPath) {
+                    throw new Error(`${model} is not supported`);
+                }
+                fetchOptions = await client.getSignature({
+                    httpMethod: 'POST',
+                    path: IAMPath,
+                    body: requestBody,
+                    headers: this.headers,
+                });
+            }
+            // AK/SK鉴权
+            if (this.qianfanAk && this.qianfanSk) {
+                if (this.expires_in < Date.now() / 1000) {
+                    await this.getAccessToken();
+                }
+                const url = `${AKPath}?access_token=${this.access_token}`;
+                fetchOptions = {
+                    url: url,
+                    method: 'POST',
+                    headers: this.headers,
+                    body: requestBody,
+                };
+            }
+        }
+        else {
+            // 设置了proxy url走prxoy
+            const IAMPath = await this.getIAMPath(type, model);
+            if (!IAMPath) {
+                throw new Error(`${model} is not supported`);
+            }
+            fetchOptions = {
+                url: `${this.qianfanBaseUrl}${IAMPath}`,
+                method: 'POST',
+                headers: this.headers,
+                body: requestBody,
+            };
+        }
         try {
             const {url, ...rest} = fetchOptions;
             const resp = await this.fetchInstance.makeRequest(url, {...rest, stream});

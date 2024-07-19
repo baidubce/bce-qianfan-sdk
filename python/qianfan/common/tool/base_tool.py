@@ -166,7 +166,7 @@ class BaseTool:
     describing the parameters needed when invoking the tool to the model.
     """
 
-    def run(self, parameters: Any = None) -> Any:
+    def run(self, **parameters: Any) -> Any:
         """
         Runs the tool.
         :param parameters: The input parameters for the tool
@@ -191,7 +191,7 @@ class BaseTool:
     @staticmethod
     def from_langchain_tool(langchain_tool: Any) -> "BaseTool":
         assert_package_installed("langchain")
-        from langchain.tools.base import BaseTool as LangchainBaseTool
+        from langchain_core.tools import BaseTool as LangchainBaseTool
 
         if not isinstance(langchain_tool, LangchainBaseTool):
             raise TypeError(
@@ -209,8 +209,8 @@ class BaseTool:
             description = langchain_tool.description
             parameters = root_properties
 
-            def run(self, parameters: Any = None) -> Any:
-                return langchain_tool._run(**parameters)
+            def run(self, **parameters: Any) -> Any:
+                return langchain_tool.run(**parameters)
 
         return Tool()
 
@@ -229,6 +229,7 @@ class BaseTool:
             args_schema: Type[PydanticV1BaseModel] = tool_schema
 
             def _run(self, **kwargs: Any) -> Any:
-                return tool_run(kwargs)
+                print(kwargs)
+                return tool_run(**kwargs)
 
         return Tool()

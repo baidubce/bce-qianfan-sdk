@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from typing import Any, Dict, Optional
 
 import click
@@ -33,7 +32,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
 )
-from qianfan.config import encoding
+from qianfan.config import encoding, get_config
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
@@ -52,6 +51,29 @@ app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")
 
 _enable_traceback = False
+
+
+@app.command(name="cache")
+def clear(
+    clear: Optional[bool] = typer.Option(
+        None,
+        "--clear",
+        help="clear qianfan cache",
+    ),
+) -> None:
+    """
+    clear qianfan cache.
+    """
+    import shutil
+
+    # 要删除的目录路径
+    dir_path = get_config().CACHE_DIR
+    # 删除目录
+    try:
+        shutil.rmtree(dir_path)
+        print_info_msg(f"目录 {dir_path} 已删除")
+    except OSError as e:
+        print_info_msg(f"删除目录 {dir_path} 失败: {e}")
 
 
 @app.command(name="openai")
@@ -83,6 +105,9 @@ def openai(
         show_default=False,
     ),
     log_file: Optional[str] = typer.Option(None, help="Log file path."),
+    api_key: Optional[str] = typer.Option(
+        None, help="API key used for authentication in proxy server."
+    ),
     config_file: Optional[str] = typer.Option(
         None, help="Config file path.", show_default=False
     ),
@@ -100,6 +125,7 @@ def openai(
         "ignore_system": True,
         "log_file": None,
         "model_mapping": None,
+        "api_key": None,
     }
     adapter_config = {}
     if config_file is not None:
@@ -131,6 +157,7 @@ def openai(
             else merged_config["ignore_system"]
         ),
         model_mapping=merged_config["model_mapping"],
+        api_key=api_key if api_key is not None else merged_config["api_key"],
     )
 
 
@@ -178,6 +205,7 @@ def proxy(
         "--ssl-ciphers",
         help="Ciphers to use (see stdlib ssl module's) [default: TLSv1]",
     ),
+    access_token: str = typer.Option("", "--access-token", help="Access token"),
 ) -> None:
     """
     Create a proxy server.
@@ -199,7 +227,6 @@ def proxy(
         ssl_config["ssl_version"] = ssl_version
         ssl_config["ssl_cert_reqs"] = ssl_cert_reqs
         ssl_config["ssl_ciphers"] = ssl_ciphers
-
     proxy_entry(
         host=host,
         base_port=base_port,
@@ -208,6 +235,7 @@ def proxy(
         log_file=log_file,
         mock_port=mock_port,
         ssl_config=ssl_config,
+        access_token=access_token,
     )
 
 

@@ -165,10 +165,11 @@ export class Stream<Item> implements AsyncIterable<Item> {
 
             const lineDecoder = new LineDecoder();
             let buffer = new Uint8Array(); // 初始化缓存的 Buffer
+            let previousChunkLastByte: number | null = null;
             const iter = readableStreamAsyncIterable<Bytes>(response.body);
 
             for await (const chunk of iter) {
-                if (endsWith1010(chunk as Uint8Array)) {
+                if (previousChunkLastByte === 10) {
                     buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
 
                     for (const line of lineDecoder.decode(buffer)) {
@@ -183,6 +184,8 @@ export class Stream<Item> implements AsyncIterable<Item> {
                 else {
                     buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
                 }
+                // 保存当前 chunk 的最后一个字节
+                previousChunkLastByte = chunk[chunk.length - 1] as number; ;
             }
 
             for (const line of lineDecoder.flush()) {
@@ -363,15 +366,6 @@ function partition(str: string, delimiter: string): [string, string, string] {
     }
 
     return [str, '', ''];
-}
-
-// 判断 Uint8Array 是否以 10，10 结尾
-function endsWith1010(uintArray: Uint8Array): boolean {
-    const len = uintArray.length;
-    if (len < 2) {
-        return false;
-    }
-    return uintArray[len - 2] === 10 && uintArray[len - 1] === 10;
 }
 
 // 合并两个 Uint8Array

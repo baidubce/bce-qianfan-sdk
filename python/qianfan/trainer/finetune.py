@@ -18,6 +18,7 @@ from qianfan.config import encoding, get_config
 from qianfan.errors import InvalidArgumentError
 from qianfan.evaluation.evaluator import Evaluator
 from qianfan.model.configs import DeployConfig
+from qianfan.model.model import Model
 from qianfan.resources.console import consts as console_consts
 from qianfan.trainer.actions import (
     DeployAction,
@@ -33,8 +34,8 @@ from qianfan.trainer.base import (
 )
 from qianfan.trainer.configs import (
     ModelInfo,
-    ModelInfoMapping,
     TrainConfig,
+    get_trainer_model_list,
 )
 from qianfan.trainer.consts import (
     TrainStatus,
@@ -64,6 +65,7 @@ class Finetune(Trainer):
         dataset_bos_path: Optional[str] = None,
         previous_trainer: Optional[Trainer] = None,
         previous_task_id: Optional[str] = None,
+        previous_model: Optional[Any] = None,
         name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -73,7 +75,7 @@ class Finetune(Trainer):
         Parameters:
             train_type: str
                 A string representing the model version type.
-                like 'ERNIE-Bot-turbo-0725', 'ChatGLM2-6b'
+                like 'ERNIE-Speed-8K', 'ChatGLM2-6b'
             dataset: Dataset
                 A dataset instance.
             train_config: TrainConfig
@@ -95,8 +97,16 @@ class Finetune(Trainer):
                 this will be ignored when dataset is provided.
             previous_trainer: Optional[Trainer]
                 An optional previous trainer instance for incremental training.
+                incremental training will try to load the model from
+                `previous_trainer`, `previous_model` or `previous_task_id`
+            previous_model: Optional[Any]
+                previous model objet or model_id for incremental training.
+                incremental training will try to load the model from
+                `previous_trainer`, `previous_model` or `previous_task_id`
             previous_task_id: Optional[str]
                 An optional previous task id for incremental training.
+                incremental training will try to load the model from
+                `previous_trainer`, `previous_model` or `previous_task_id`
             name: Optional[str]
                 An optional name for the training task.
             corpus_config: Optional[CorpusConfig] = None,
@@ -107,7 +117,7 @@ class Finetune(Trainer):
         for calling example:
         ```
         sft_task = LLMFinetune(
-            train_type="ERNIE-Bot-turbo-0725",
+            train_type="ERNIE-Speed-8K",
             dataset={"datasets": [{"type": 1, "id": ds_id}]},
             train_config=TrainConfig(...),
             event_handler=eh,
@@ -166,6 +176,24 @@ class Finetune(Trainer):
                 is_incr=True,
                 **kwargs,
             )
+        elif previous_model:
+            if isinstance(previous_model, str):
+                previous_model = Model(id=previous_model)
+            if isinstance(previous_model, Model):
+                from qianfan import resources
+            assert isinstance(previous_model.id, str)
+            resp = resources.Model.V2.describe_model(model_id=previous_model.id)
+            if resp["result"]["sourceInfo"].get("trainTaskId"):
+                previous_task_id = resp["result"]["sourceInfo"]["trainTaskId"]
+                self.train_action = TrainAction(
+                    train_config=train_config,
+                    task_id=previous_task_id,
+                    train_mode=console_consts.TrainMode.SFT,
+                    event_handler=event_handler,
+                    job_name=name,
+                    previous_model=previous_model,
+                    **kwargs,
+                )
         else:
             # init train action from base model
             self.train_action = TrainAction(
@@ -286,7 +314,7 @@ class Finetune(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return ModelInfoMapping
+        return get_trainer_model_list(console_consts.TrainMode.SFT)
 
     @staticmethod
     def list() -> List["Trainer"]:

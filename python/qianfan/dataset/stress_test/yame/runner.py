@@ -210,10 +210,11 @@ class LocustRunner(object):
             for worker in workers:
                 LocustRunner._kill_process(worker)
 
-    def run(self) -> Dict[str, Any]:
+    def run(self, user_num: int) -> Dict[str, Any]:
         """
         run load test job
         """
+        self.user_num = user_num
         if self.host:
             os.environ["HOST"] = (
                 urlparse(self.host).scheme + "://" + urlparse(self.host).netloc

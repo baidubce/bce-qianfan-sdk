@@ -34,12 +34,10 @@ from qianfan.trainer.configs import (
     CorpusConfig,
     CorpusConfigItem,
     DatasetConfig,
-    DefaultDPOTrainConfigMapping,
-    DefaultPostPretrainTrainConfigMapping,
-    DefaultTrainConfigMapping,
     PeftType,
     TrainConfig,
     TrainLimit,
+    get_default_train_config,
     get_model_info,
 )
 from qianfan.trainer.consts import ServiceStatus, TrainStatus
@@ -252,7 +250,6 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         elif isinstance(data_src, BosDataSource):
             log_debug("[load_dataset_action] prepare train-set in BOS")
             bos_data_src = cast(BosDataSource, data_src)
-            log_warn(f"hhh{bos_data_src.bucket}, {bos_data_src.bos_file_path}")
             return {
                 "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
                 "version": {
@@ -322,20 +319,15 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             "eval_split_ratio": self.eval_split_ratio,
         }
         if self.corpus_config:
-            meta["corpus_config"] = (
-                self.corpus_config.dict(by_alias=True, exclude_none=True),
+            meta["corpus_config"] = self.corpus_config.dict(
+                by_alias=True, exclude_none=True
             )
         return meta
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "LoadDataSetAction":
-        dataset = meta.get("ds_id") or meta.get("dataset_bos")
-        if dataset is not None:
-            action = cls(
-                id=meta.get("id"),
-                dataset=dataset,
-            )
-        elif meta.get("datasets") or meta.get("output"):
+        init_params: Dict[str, Any] = {}
+        if meta.get("datasets") or meta.get("output"):
             ds_dicts = meta.get("datasets")
             if ds_dicts is None:
                 ds_output = meta.get("output")
@@ -343,16 +335,22 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 ds_dicts = ds_output.get("datasets")
             assert isinstance(ds_dicts, dict)
             datasets = LoadDataSetAction.get_data_src_from_action_result(ds_dicts)
-            action = cls(
-                id=meta.get("id"),
-                dataset=DatasetConfig(
-                    datasets=datasets,
-                ),
-                corpus_config=CorpusConfig(),
-            )
+            corpus_config_meta = meta.get("corpus_config")
+            init_params["dataset"] = DatasetConfig(datasets=datasets)
+            if corpus_config_meta:
+                init_params["corpus_config"] = CorpusConfig.parse_obj(
+                    corpus_config_meta
+                )
+            if meta.get("id"):
+                init_params["id"] = meta.get("id")
+            if meta.get("eval_split_ratio"):
+                init_params["dataset"].eval_split_ratio = meta.get("eval_split_ratio")
         else:
             log_error(f"unknown load_dataset_action: {meta}")
             raise ValueError("unknown action meta")
+        action = cls(
+            **init_params,
+        )
         action.result = meta.get("output")
         return action
 
@@ -654,7 +652,9 @@ class TrainAction(
 
         assert self.train_config is not None
         hyper_params_dict = {
-            **self.train_config.dict(exclude={"peft_type", "trainset_rate", "extras"}),
+            **self.train_config.dict(
+                exclude={"peft_type", "trainset_rate", "extras", "resource_config"}
+            ),
             **self.train_config.extras,
         }
         hyper_params_dict = {
@@ -681,6 +681,11 @@ class TrainAction(
         # 语料混合配置
         if input.get("corpus_config"):
             kwargs["corpus_config"] = input.get("corpus_config")
+        # 训练资源配置
+        if self.train_config.resource_config:
+            kwargs["resource_config"] = self.train_config.resource_config.dict(
+                by_alias=True, exclude_none=True
+            )
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
             params_scale=self.train_config.peft_type,
@@ -709,7 +714,12 @@ class TrainAction(
         while True:
             task_status_resp = api.FineTune.V2.task_detail(
                 task_id=self.task_id,
-                **kwargs,
+                retry_count=kwargs.get(
+                    "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
+                ),
+                backoff_factor=kwargs.get(
+                    "backoff_factor", get_config().TRAINER_STATUS_POLLING_BACKOFF_FACTOR
+                ),
             )
             task_status_result = task_status_resp.get("result", {})
             task_status = task_status_result.get("runStatus")
@@ -753,6 +763,8 @@ class TrainAction(
                 )
                 if job_progress >= 50:
                     log_info(f" check vdl report in {self.vdl_link}")
+                time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
+            elif task_status == "":
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             else:
                 raise InternalError(
@@ -819,18 +831,9 @@ class TrainAction(
         train_mode: console_consts.TrainMode,
         peft_type: Optional[PeftType] = None,
     ) -> TrainConfig:
-        if train_mode == console_consts.TrainMode.PostPretrain:
-            model_info = DefaultPostPretrainTrainConfigMapping.get(
-                model_type,
-            )
-        elif train_mode == console_consts.TrainMode.DPO:
-            model_info = DefaultDPOTrainConfigMapping.get(
-                model_type,
-            )
-        else:
-            model_info = DefaultTrainConfigMapping.get(
-                model_type,
-            )
+        model_info = get_default_train_config(train_mode).get(
+            model_type,
+        )
         if model_info is None or len(model_info) == 0:
             raise InvalidArgumentError(f"can not find default config for {model_type}")
         if peft_type is None:
@@ -989,7 +992,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             },
         }
         if self.model:
-            meta["model_version_id"] = self.model.id
+            meta["model_id"] = self.model.id
         if self.result:
             res = copy.deepcopy(self.result)
             if "model" in res:
@@ -1007,7 +1010,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         )
         action._input = meta.get("input")  # type: ignore
         action.result = meta.get("output")
-        action.model = Model(version_id=meta.get("model_version_id"))
+        action.model = Model(id=meta.get("model_id") or meta.get("model_version_id"))
         action.model.auto_complete_info()
         return action
 

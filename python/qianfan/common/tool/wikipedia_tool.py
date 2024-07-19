@@ -15,7 +15,7 @@
 wikipedia tool
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from qianfan.common.tool.base_tool import BaseTool, ToolParameter
 from qianfan.utils.utils import assert_package_installed
@@ -57,7 +57,7 @@ class WikipediaTool(BaseTool):
         self.wiki_max_length = wiki_max_length
         self.result_max_length = result_max_length
 
-    def run(self, parameters: Dict[str, str] = {}) -> List[Dict[str, str]]:
+    def run(self, **parameters: Any) -> List[Dict[str, str]]:
         import wikipedia
 
         query = parameters["search_keyword"][: self.WIKIPEDIA_MAX_QUERY_LENGTH]

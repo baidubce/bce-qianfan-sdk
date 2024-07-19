@@ -34,8 +34,8 @@ from qianfan.trainer.base import (
 )
 from qianfan.trainer.configs import (
     ModelInfo,
-    ModelInfoMapping,
     TrainConfig,
+    get_trainer_model_list,
 )
 from qianfan.trainer.consts import (
     TrainStatus,
@@ -314,7 +314,7 @@ class Finetune(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return ModelInfoMapping
+        return get_trainer_model_list(console_consts.TrainMode.SFT)
 
     @staticmethod
     def list() -> List["Trainer"]:

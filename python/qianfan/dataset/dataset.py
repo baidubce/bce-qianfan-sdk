@@ -1634,10 +1634,10 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        model_id = Model.detail(model_id)["result"]["modelIdStr"]
+        model_set_id = Model.detail(model_id)["result"]["modelIdStr"]
 
         result_dataset_id = _start_an_evaluation_task_for_model_batch_inference(
-            self.inner_data_source_cache, model_id, model_id
+            self.inner_data_source_cache, model_set_id, model_id
         )
 
         result_dataset = Dataset.load(

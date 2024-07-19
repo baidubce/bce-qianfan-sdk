@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from typing import Any, Dict, Optional
 
 import click
@@ -33,7 +32,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
 )
-from qianfan.config import encoding
+from qianfan.config import encoding, get_config
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
@@ -52,6 +51,30 @@ app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")
 
 _enable_traceback = False
+
+
+@app.command(name="cache")
+@credential_required
+def clear(
+    clear: Optional[bool] = typer.Option(
+        None,
+        "--clear",
+        help="clear qianfan cache",
+    ),
+) -> None:
+    """
+    clear qianfan cache.
+    """
+    import shutil
+
+    # 要删除的目录路径
+    dir_path = get_config().CACHE_DIR
+    # 删除目录
+    try:
+        shutil.rmtree(dir_path)
+        print(f"目录 {dir_path} 已删除")
+    except OSError as e:
+        print(f"删除目录 {dir_path} 失败: {e}")
 
 
 @app.command(name="openai")

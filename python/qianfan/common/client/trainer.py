@@ -114,18 +114,18 @@ class MyEventHandler(EventHandler):
             elif status == "Stopped":
                 self.progress.log("Task stopped.")
                 return
-
             if not self.vdl_printed:
                 self.progress.log(
                     f"{result['trainMode']} task id: {resp['result']['taskId']}, job"
                     f" id: {resp['result']['jobId']}, jobName:"
                     f" {resp['result']['jobName']}"
                 )
-                self.progress.log(
-                    "Check this vdl link to view training progress: "
-                    + resp["result"]["vdlLink"]
-                )
-                self.vdl_printed = True
+                vdl_link = resp["result"].get("vdlLink")
+                if vdl_link:
+                    self.progress.log(
+                        "Check this vdl link to view training progress: " + vdl_link
+                    )
+                    self.vdl_printed = True
 
         if event.action_state == ActionState.Done:
             if self.current_task is not None:
@@ -361,7 +361,7 @@ def finetune(
         None, help="Task id of previous trainer output."
     ),
     trainer_pipeline_file: Optional[str] = typer.Option(
-        None, help="Trainer pipeline file path"
+        None, "--trainer-pipeline-file", "-f", help="Trainer pipeline file path"
     ),
     daemon: Optional[bool] = daemon_option,
     list_train_type: Optional[bool] = list_train_type_option,

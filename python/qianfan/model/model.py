@@ -87,8 +87,12 @@ class Model(
         self.name = name
         if id is None or set_id is None:
             self.auto_complete_info()
-        if id is None and set_id is None:
-            log_warn("set id or id should be provided")
+        if (
+            (id is None and set_id is None)
+            or self.task_id is None
+            or self.job_id is None
+        ):
+            log_warn("set_id/id or job_id/task_id should be provided")
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict

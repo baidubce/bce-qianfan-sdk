@@ -278,7 +278,9 @@ class OpenAIApdater(object):
                 },
                 "finish_reason": resp.get("finish_reason", "normal"),
             }
-            if "function_call" in resp and ("functions" in openai_request or "tools" in openai_request):
+            if "function_call" in resp and (
+                "functions" in openai_request or "tools" in openai_request
+            ):
                 choice["message"]["tool_calls"] = [
                     {
                         "id": resp["function_call"]["name"],
@@ -487,7 +489,9 @@ class OpenAIApdater(object):
                     ),
                 }
             ]
-            if "function_call" in res and ("functions" in openai_request or "tools" in openai_request):
+            if "function_call" in res and (
+                "functions" in openai_request or "tools" in openai_request
+            ):
                 choices[0]["delta"]["tool_calls"] = [
                     {
                         "index": 0,

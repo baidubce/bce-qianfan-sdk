@@ -43,7 +43,7 @@ async def get_stream(
 
 
 @base_app.middleware("http")
-async def base_iam(request: Request, callback: Callable) -> Response:
+async def base_openapi(request: Request, callback: Callable) -> Response:
     """
     用于向base请求中添加访问令牌。
 
@@ -54,7 +54,7 @@ async def base_iam(request: Request, callback: Callable) -> Response:
     Returns:
         Response: 处理后的响应对象。
     """
-    if "access_token" in request.url._url:
+    if not proxy.direct and "access_token" in request.url._url:
         key = request.url._url.split("?access_token=")[1]
         if key != proxy.access_token:
             return JSONResponse(
@@ -72,14 +72,15 @@ async def base_iam(request: Request, callback: Callable) -> Response:
             )
         else:
             new_scope = dict(request.scope)
-            new_scope["query_string"] = b""
+            if proxy._config.ACCESS_KEY and proxy._config.SECRET_KEY:
+                new_scope["query_string"] = b""
+            else:
+                proxy._direct = True
             request = StarletteRequest(scope=new_scope, receive=request.receive)
 
     else:
         pass
-
     resp = await proxy.get_response(request, DefaultValue.BaseURL)
-
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(get_stream(resp), media_type="text/event-stream")
 
@@ -115,6 +116,7 @@ def entry(
     mock_port: int,
     ssl_config: Dict[str, Any],
     access_token: Optional[str],
+    direct: bool,
 ) -> None:
     import os
 
@@ -131,6 +133,8 @@ def entry(
 
     if access_token is not None:
         proxy.access_token = access_token
+    if direct:
+        proxy._direct = True
 
     proxy.mock_port = mock_port
 

@@ -25,9 +25,14 @@ class ClientProxy(object):
     _retry_base_config: Optional[RetryConfig] = None
     _retry_console_config: Optional[RetryConfig] = None
     _access_token: Optional[str] = None
+    _direct: bool = False
 
     def __init__(self) -> None:
         pass
+
+    @property
+    def direct(self) -> Optional[bool]:
+        return self._direct
 
     @property
     def access_token(self) -> Optional[str]:
@@ -87,9 +92,14 @@ class ClientProxy(object):
         url, path = request.url, urlparse(request.url).path
 
         request.url = path
-        iam_sign(str(self._config.ACCESS_KEY), str(self._config.SECRET_KEY), request)
+        if not (request.query.get("client_id") or request.query.get("client_secret")):
+            iam_sign(
+                str(self._config.ACCESS_KEY), str(self._config.SECRET_KEY), request
+            )
         request.url = url
         if not request.headers.get("Authorization", None):
+            self._auth._ak = request.query.get("client_id")
+            self._auth._sk = request.query.get("client_secret")
             request.query["access_token"] = self._auth.access_token()
 
     async def get_request(self, request: Request, url_route: str) -> QfRequest:
@@ -112,14 +122,15 @@ class ClientProxy(object):
         # 获取请求头
         if self.mock_port != -1:
             url_route = f"http://127.0.0.1:{self.mock_port}"
-
         url = url_route + request.url.path
         host = urlparse(url_route).netloc
-        headers = {
-            "Content-Type": "application/json",
-            "Host": host,
-        }
-
+        if not self._direct:
+            headers = {
+                "Content-Type": "application/json",
+                "Host": host,
+            }
+        else:
+            headers = request.headers
         # 获取请求体
         json_body = await request.json()
         return QfRequest(
@@ -149,9 +160,11 @@ class ClientProxy(object):
         try:
             async with self._rate_limiter:
                 qf_req = await self.get_request(request, url_route)
-                self._sign(qf_req)
+                if self._direct:
+                    pass
+                else:
+                    self._sign(qf_req)
                 logging.debug(f"request: {qf_req}")
-
                 if qf_req.json_body.get("stream", False):
                     return self._client.arequest_stream(qf_req)
                 else:

@@ -28,7 +28,7 @@ export interface DefaultConfig {
     QIANFAN_TPM_LIMIT: string;
     version: string;
     // 浏览器字段是否开启鉴权，是则使用鉴权，否则不使用鉴权
-    ENABLE_AUTHENTICATION: boolean;
+    ENABLE_OAUTH: boolean;
 }
 
 /**

@@ -35,6 +35,7 @@ export class BaseClient {
     protected headers = DEFAULT_HEADERS;
     protected fetchInstance;
     protected fetchConfig: FetchConfig;
+    protected enableAuthentication: boolean;
     access_token = '';
     expires_in = 0;
 
@@ -49,6 +50,7 @@ export class BaseClient {
         QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR?: string;
         QIANFAN_LLM_API_RETRY_COUNT?: string;
         QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL?: string;
+        ENABLE_AUTHENTICATION: boolean;
         Endpoint?: string;
     }) {
         const defaultConfig = getDefaultConfig();
@@ -66,6 +68,7 @@ export class BaseClient {
             = options?.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR ?? defaultConfig.QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR;
         this.qianfanLlmApiRetryCount
             = options?.QIANFAN_LLM_API_RETRY_COUNT ?? defaultConfig.QIANFAN_LLM_API_RETRY_COUNT;
+        this.enableAuthentication = options?.ENABLE_AUTHENTICATION ?? defaultConfig.ENABLE_AUTHENTICATION;
         this.controller = new AbortController();
         this.fetchInstance = new Fetch({
             maxRetries: Number(this.qianfanLlmApiRetryCount),
@@ -141,8 +144,8 @@ export class BaseClient {
         stream = false
     ): Promise<Resp | AsyncIterableType> {
         let fetchOptions;
-        // 如果baseUrl是aip.baidubce.com，证明用户未配置proxy url，则认为需要放开鉴权
-        if (this.qianfanBaseUrl.includes('aip.baidubce.com')) {
+        // 如果enableAuthentication开启， 则放开鉴权
+        if (this.enableAuthentication) {
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
                 throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');

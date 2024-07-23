@@ -144,7 +144,7 @@ export class BaseClient {
         stream = false
     ): Promise<Resp | AsyncIterableType> {
         let fetchOptions;
-        // 如果enableAuthentication开启， 则放开鉴权
+        // 如果enableOauth开启， 则放开鉴权
         if (this.enableOauth) {
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {

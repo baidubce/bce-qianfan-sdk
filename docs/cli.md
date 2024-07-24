@@ -295,22 +295,25 @@ $ qianfan trainer [OPTIONS] COMMAND [ARGS]...
 
 **Commands 命令**:
 
-* `run`：运行 trainer 任务
+* `finetune/postpretrain/dpo`：运行 trainer 任务
 
-#### run 发起训练任务
+#### 发起训练任务
 
 运行 trainer 任务
 
 **用法**:
 
 ```console
-$ qianfan trainer run [OPTIONS]
+$ qianfan trainer [finetune|postpretrain|dpo] [OPTIONS]
 ```
 
 **Options 选项**:
 
-* `--train-type TEXT`：训练类型  [required]
-* `--dataset-id INTEGER`：数据集 id  [required]
+* `--trainer-pipeline-file,-f TEXT`: trainer配置文件的路径，具体配置文件的写法可参考[trainer_pipeline.json](./trainer_ppl_file_tmpl.json) [optional]
+* `--train-type TEXT`: 训练模型名称，例如`ERNIE-Speed-8K`, 可以使用`qianfan trainer [finetune|postpretrain|dpo] -l` 进行查询 [optional]
+* `--dataset-id TEXT`: 数据集 id，例如`ds-xxx`  [optional]
+* `--list-train-type`: 展示支持训练的模型名称列表
+* `--show-config-limit,--show,-s TEXT`: 展示某个模型支持的训练超参
 * `--help`：展示帮助文档
 
 训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
@@ -335,6 +338,20 @@ $ qianfan trainer run [OPTIONS]
 * `--deploy-replicas INTEGER`：副本数  [default：1]
 * `--deploy-pool-type [public_resource|private_resource]`：资源池类型  [default：private_resource]
 * `--deploy-service-type [chat|completion|embedding|text2_image]`：服务类型  [default：chat]
+
+#### 查看trainer训练任务信息：
+
+**用法**:
+
+```console
+$ qianfan trainer info [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--trainer-id TEXT`：trainer id  [optional]
+* `--task-id TEXT` 千帆平台训练任务id [optional]
+* `--help`：展示帮助文档
 
 ### evaluation 评估
 

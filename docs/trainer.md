@@ -178,3 +178,12 @@ trainer = LLMFinetune(
 )
 trainer.run()
 ```
+
+## 使用命令行工具发起trainer训练：
+
+千帆SDK在命令行工具中提供了对trainer的封装，可以直接通过调用以下命令进行训练：
+
+```
+qianfan trainer finetune -f xx.json
+```
+命令详情请参考 [cli-trainer](./cli.md#trainer-训练)

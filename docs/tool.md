@@ -85,7 +85,7 @@ os.environ["QIANFAN_AK"] = "此处填写你的AK"
 os.environ["QIANFAN_SK"] = "此处填写你的SK"
 tools = [LightSwitchTool().to_langchain_tool()]
 
-llm = QianfanChatEndpoint(model="ERNIE-Bot")
+llm = QianfanChatEndpoint(model="ERNIE-3.5-8K")
 agent = QianfanSingleActionAgent.from_system_prompt(tools, llm)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 

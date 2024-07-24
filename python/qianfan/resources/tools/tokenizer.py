@@ -36,7 +36,7 @@ class Tokenizer(object):
         cls,
         text: str,
         mode: Literal["local", "remote"] = "local",
-        model: str = "ERNIE-Bot",
+        model: str = "ernie-3.5-8k",
         **kwargs: Any,
     ) -> int:
         """
@@ -51,10 +51,10 @@ class Tokenizer(object):
               (Chinese characters count * 0.625 + English word count * 1)
             `remote`:
               use qianfan api to calculate the token count. API will return accurate
-              token count, but only ERNIE-Bot series models are supported.
+              token count.
           model (str, optional):
             The name of the model to be used for token counting, which
-            may influence the counting strategy. Default is 'ERNIE-Bot'.
+            may influence the counting strategy. Default is 'ernie-3.5-8k'.
           kwargs (Any):
             Additional keyword arguments that can be passed to customize the request.
 
@@ -74,7 +74,7 @@ class Tokenizer(object):
 
     @staticmethod
     @qianfan_api_request
-    def _eb_tokenizer(text: str, model: str = "ERNIE-Bot", **kwargs: Any) -> QfRequest:
+    def _eb_tokenizer(text: str, model: str, **kwargs: Any) -> QfRequest:
         """
         create the request and use `qianfan_api_request` to get the response
         """
@@ -96,7 +96,7 @@ class Tokenizer(object):
     def _local_count_tokens(
         cls,
         text: str,
-        model: str = "ERNIE-Bot",
+        model: str = "ernie-3.5-8k",
         han_tokens: float = 0.625,
         word_tokens: float = 1,
     ) -> int:

@@ -79,7 +79,7 @@ QIANFAN_SECRET_KEY=another_secret_key
             },
         ],
         stream: true,
-    }, 'ERNIE-Bot-turbo');
+    }, 'ERNIE-Lite-8K');
     console.log('流式返回结果');
     for await (const chunk of stream) {
         console.log(chunk);
@@ -142,7 +142,7 @@ async function main() {
                 content: '今天深圳天气',
             },
         ],
-     }, "ERNIE-Bot-turbo");
+     }, "ERNIE-Lite-8K");
     console.log(resp);
 }
 
@@ -177,7 +177,7 @@ main
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
 const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
-async function main() {    // 调用默认模型，即 ERNIE-Bot-turbo
+async function main() {    // 调用默认模型
     const resp = await client.chat({
         messages: [
             {
@@ -323,7 +323,7 @@ const client = Completions({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANF
 async function main() {
     const resp = await client.completions({
         prompt: '你好',
-    }, 'ERNIE-Bot');
+    }, 'ERNIE-3.5-8K');
     console.log(resp);
 }
 

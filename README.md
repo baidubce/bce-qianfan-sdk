@@ -29,7 +29,7 @@
 
 千帆 SDK 提供大模型工具链最佳实践，让 AI 工作流和 AI 原生应用优雅且便捷地访问千帆大模型平台。SDK 核心能力包含三大部分：大模型推理，大模型训练，以及通用和扩展:
 
-- `大模型推理`：实现了对一言（ERNIE-Bot）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding 等。
+- `大模型推理`：实现了对一言（ERNIE）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding 等。
 - `大模型训练`：基于平台能力支持端到端的大模型训练过程，包括训练数据，精调/预训练，以及模型托管等。
 - `通用与扩展`：通用能力包括了 Prompt/Debug/Client 等常见的 AI 开发工具。扩展能力则基于千帆特性适配常见的中间层框架。
 
@@ -213,18 +213,18 @@ ds.save(qianfan_dataset_id="your_dataset_id")
 #### Trainer
 
 千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
-以下是一个快速实现ERNIE-Bot-turbo fine-tuning的例子：
+以下是一个快速实现ERNIE-Speed-8K fine-tuning的例子：
 ```python
 from qianfan.dataset import Dataset
-from qianfan.trainer import LLMFinetune
+from qianfan.trainer import Finetune
 
 # 加载千帆平台上的数据集
 ds: Dataset = Dataset.load(qianfan_dataset_id="ds-xxx")
 
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
-trainer = LLMFinetune(
-    train_type="ERNIE-Bot-turbo-0725",
+trainer = Finetune(
+    train_type="ERNIE-Speed-8K
     dataset=ds, 
 )
 

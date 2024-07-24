@@ -16,7 +16,7 @@ import asyncio
 TEST_MESSAGES = [{"role":"user", "content":"hi"}]
 
 async def run_chat():
-    qf_chat = QianfanChatCompletion(model="ERNIE-Bot")
+    qf_chat = QianfanChatCompletion(model="ERNIE-3.5-8K")
     # call chat with messages
     res = await qf_chat.complete_chat_async(
         TEST_MESSAGES,
@@ -58,7 +58,7 @@ import semantic_kernel as sk
 
 kernel = sk.Kernel()
 kernel.add_text_completion_service(
-    "qianfan_comp", QianfanChatCompletion(model="ERNIE-Bot"),
+    "qianfan_comp", QianfanChatCompletion(model="ERNIE-3.5-8K"),
 )
 
 prompt = """{{$input}}

@@ -74,7 +74,7 @@ Qianfan qianfan = new Qianfan(Auth.TYPE_OAUTH, "your_ak", "your_sk");
 
 ```java
 ChatResponse response = new Qianfan().chatCompletion()
-        .model("ERNIE-Bot-4") // 使用model指定预置模型
+        .model("ERNIE-4.0-8K") // 使用model指定预置模型
         // .endpoint("completions_pro") // 也可以使用endpoint指定任意模型 (二选一)
         .addMessage("user", "你好") // 添加用户消息 (此方法可以调用多次，以实现多轮对话的消息传递)
         .temperature(0.7) // 自定义超参数
@@ -90,7 +90,7 @@ System.out.println(response.getResult());
 
 ```java
 new Qianfan().chatCompletion()
-        .model("ERNIE-Bot-4")
+        .model("ERNIE-4.0-8K")
         .addMessage("user", "你好")
         .executeStream() // 发起流式请求
         .forEachRemaining(chunk -> System.out.print(chunk.getResult())); // 流式迭代，并打印消息

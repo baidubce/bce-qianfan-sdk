@@ -49,7 +49,7 @@ $ qianfan chat [OPTIONS]
 
 **Options 选项**:
 
-* `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：模型名称  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：模型的 endpoint
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
@@ -78,7 +78,7 @@ $ qianfan completion [OPTIONS] PROMPTS...
 
 **Options 选项**:
 
-* `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：模型名称  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：模型的 endpoint
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
@@ -182,7 +182,7 @@ $ qianfan dataset predict [OPTIONS] DATASET
 
 **Options 选项**:
 
-* `--model TEXT`：预测用的模型名称，可以用 `qianfan chat --list-model` 获取模型列表。  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：预测用的模型名称，可以用 `qianfan chat --list-model` 获取模型列表。  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：预测用的模型 endpoint，该选项会覆盖 `--model` 选项。
 * `--output PATH`：输出的文件路径。  [default：`%Y%m%d_%H%M%S.jsonl`]
 * `--input-columns TEXT`：输入的列名称。  [default：prompt]

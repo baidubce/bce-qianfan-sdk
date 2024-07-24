@@ -124,18 +124,17 @@ class ClientProxy(object):
             url_route = f"http://127.0.0.1:{self.mock_port}"
         url = url_route + request.url.path
         host = urlparse(url_route).netloc
-        if not self._direct:
-            headers = {
-                "Content-Type": "application/json",
-                "Host": host,
-            }
-        else:
-            headers = request.headers
+
+        headers = {
+            "Content-Type": "application/json",
+            "Host": host,
+        }
+
         # 获取请求体
         json_body = await request.json()
         return QfRequest(
             url=url,
-            headers=headers,
+            headers=headers if not self._direct else dict(request.headers),  # 出错行
             method=request.method,
             query=dict(request.query_params),
             json_body=json_body,

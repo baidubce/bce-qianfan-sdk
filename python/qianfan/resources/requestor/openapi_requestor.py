@@ -496,7 +496,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         url = request.url
         parsed_uri = urlparse(request.url)
         if os.environ.get("QIANFAN_IAM_HOST"):
-            host = os.environ.get("QIANFAN_IAM_HOST")
+            host = str(os.environ.get("QIANFAN_IAM_HOST"))
             parsed_uri = parsed_uri._replace(scheme="https", netloc=host)
         else:
             host = parsed_uri.netloc

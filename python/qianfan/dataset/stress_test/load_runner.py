@@ -20,6 +20,8 @@ logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
 GlobalData.data["success_requests"] = Value("i", 0)
+GlobalData.data["total_requests"] = Value("i", 0)
+GlobalData.data["failure_requests"] = Value("i", 0)
 GlobalData.data["first_latency_threshold"] = 0
 
 
@@ -151,12 +153,13 @@ class QianfanLocustRunner(LocustRunner):
             )  # 启动本轮并发
             end_time = time.time()
             t = end_time - start_time
-            total_requests = len(self.dataset)
+            total_requests = GlobalData.data["total_requests"].value
+            success_requests = GlobalData.data["success_requests"].value
             ret["logfile"].append(round_result["logfile"])
             ret["record_dir"].append(round_result["record_dir"])
             log_info = None
             self.model_info["log_info"] = log_info
-            html_path = round_result["record_dir"] + "/performance_table.html"
+            html_path = round_result["performance_dir"] + "/performance_table.html"
             try:
                 round_html = gen_brief(
                     round_result["record_dir"],
@@ -168,6 +171,7 @@ class QianfanLocustRunner(LocustRunner):
                     self.model_type,
                     self.hyperparameters,
                     total_requests,
+                    success_requests,
                 )
                 html.append(round_html)
             except Exception:
@@ -194,9 +198,12 @@ class QianfanLocustRunner(LocustRunner):
                 logger.info("成功率低于阈值")
                 return ret
             current_user_num += self.interval if self.interval is not None else 0
+            GlobalData.data["total_requests"].value = 0
+            GlobalData.data["success_requests"].value = 0
+            GlobalData.data["failure_requests"].value = 0
 
         html_table = generate_html_table(html, self.model_info)
-        html_path = round_result["record_dir"] + "/performance_table.html"
+
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_table)
         end_time = time.time()

@@ -84,7 +84,9 @@ class VersatileRateLimiter:
         self._inner_reset_once_lock = threading.Lock()
         self._inner_async_reset_once_lock: Optional[asyncio.Lock] = None
 
-        self.is_closed = forcing_disable or (request_per_minute <= 0 and query_per_second <= 0)
+        self.is_closed = forcing_disable or (
+            request_per_minute <= 0 and query_per_second <= 0
+        )
         if self.is_closed:
             return
 

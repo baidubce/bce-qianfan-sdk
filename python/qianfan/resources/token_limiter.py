@@ -141,7 +141,7 @@ class TokenLimiter(_BaseTokenLimiter):
         token_per_minute: int = 0,
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         Initialize a synchronous TokenLimiter instance
@@ -241,7 +241,7 @@ class AsyncTokenLimiter(_BaseTokenLimiter):
         token_per_minute: int = 0,
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         Initialize an asynchronous TokenLimiter instance

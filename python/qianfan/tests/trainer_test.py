@@ -222,7 +222,7 @@ def test_model_deploy():
 
 
 def test_service_exec():
-    svc = Service(model="ERNIE-Bot", service_type=ServiceType.Chat)
+    svc = Service(model="ERNIE-3.5-8K", service_type=ServiceType.Chat)
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
     assert resp is not None
     assert resp["result"] != ""
@@ -281,7 +281,7 @@ def test__parse_from_input():
     assert isinstance(result, Model)
     assert result.set_id == "17000"
     assert result.id == "12333"
-    input = {"service": Service(model="ERNIE-Bot")}
+    input = {"service": Service(model="ERNIE-4.0-8K")}
     result = action._parse_from_input(input)
     assert isinstance(
         result, Service

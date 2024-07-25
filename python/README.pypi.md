@@ -36,7 +36,7 @@ import qianfan
 os.environ["QIANFAN_ACCESS_KEY"]="..."
 os.environ["QIANFAN_SECRET_KEY"]="..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
+chat_comp = qianfan.ChatCompletion(model="ERNIE-4.0-8K")
 resp = chat_comp.do(messages=[{
     "role": "user",
     "content": "你好，千帆"
@@ -63,7 +63,7 @@ import qianfan
 os.environ["QIANFAN_AK"]="..."
 os.environ["QIANFAN_SK"]="..."
 
-chat_comp = qianfan.ChatCompletion(model="ERNIE-Bot")
+chat_comp = qianfan.ChatCompletion(model="ERNIE-4.0-8K")
 resp = chat_comp.do(messages=[{
     "role": "user",
     "content": "你好，千帆"

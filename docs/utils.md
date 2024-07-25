@@ -11,9 +11,9 @@ text = "这是待计算 token 数量的一段文本"
 count = qianfan.Tokenizer.count_tokens(text) 
 ```
 
-**远程精确计算** 依赖千帆平台所提供的 API，目前仅支持 `ERNIE-Bot` 系列模型，包括 `ERNIE-Bot`、`ERNIE-Bot-turbo`、`ERNIE-Bot-4`。SDK 侧使用方法相同，仅需额外传入 `mode = "remote"`，但由于需要调用远程接口，所以请按照上文先设置好 AK 与 SK，或者在该函数中传入。
+**远程精确计算** 依赖千帆平台所提供的 API。SDK 侧使用方法相同，仅需额外传入 `mode = "remote"`，但由于需要调用远程接口，所以请按照上文先设置好 AK 与 SK，或者在该函数中传入。
 
 ```python
-count = qianfan.Tokenizer.count_tokens(text, mode = "remote")
+count = qianfan.Tokenizer.count_tokens(text, mode = "remote", model='ernie-3.5-8k')
 print(count) # => 18 
 ```

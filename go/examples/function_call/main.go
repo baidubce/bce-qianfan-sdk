@@ -52,7 +52,7 @@ func main() {
 	// qianfan.GetConfig().SecretKey = "your_secret_key"
 
 	chat := qianfan.NewChatCompletion(
-		qianfan.WithModel("ERNIE-Bot"), // 利用 ERNIE-Bot 模型的 function call 能力
+		qianfan.WithModel("ERNIE-3.5-8K"), // 利用 ERNIE-3.5-8K 模型的 function call 能力
 	)
 	messages := []qianfan.ChatCompletionMessage{
 		qianfan.ChatCompletionUserMessage("请帮我查询一下上海今天的天气"),

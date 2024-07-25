@@ -770,7 +770,7 @@ class Prompt(HubSerializable):
                 "args": {"name": "Alice"},
                 "expected": "Hello, Alice!"
             }],
-            client=Completion(model="ERNIE-Bot-4"),
+            client=Completion(model="ERNIE-4.0-8K"),
             standard=PromptScoreStandard.Semantic
         )
         """

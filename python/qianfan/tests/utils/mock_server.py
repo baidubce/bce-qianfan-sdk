@@ -1820,7 +1820,7 @@ def get_evaluation_info():
                     "appId": 1483416585,
                     "appAk": "uiuj6hZY5HUrlFej1deMUAKM",
                     "appSk": "Imvaecl8UrUPTMOyFSraxpt1IpkGFTCp",
-                    "apiName": "ERNIE-Bot",
+                    "apiName": "ERNIE-3.5-8K",
                     "apiUrl": "/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
                     "prompt": {
                         "templateName": " 裁判员模型打分模板（含参考答案）",
@@ -1995,7 +1995,7 @@ def get_mock_eval_resul():
     sio.writelines(
         [
             (
-                '[{"模型名称": "ERNIE-Bot-turbo", "模型版本": "ERNIE-Bot-turbo-0922",'
+                '[{"模型名称": "ERNIE-Lite-8K", "模型版本": "ERNIE-Lite-8K",'
                 ' "Prompt问题": "请根据下面的新闻生成摘要, 内容如下：周末采摘杨桃助农，'
                 "游玩澄迈养生农庄自驾活动，快来报名~1月31日早上8点半出发哦，"
                 "前往澄迈杨桃园采摘，入园免费，"
@@ -2054,47 +2054,36 @@ def evaluable_model_list():
             "log_id": "2347238209",
             "result": [
                 {
-                    "modelId": 8,
-                    "modelIdStr": "am-ay2k0r83q9qr",
-                    "modelName": "ERNIE-Bot-turbo",
+                    "modelId": 2,
+                    "modelIdStr": "am-ju3hi4ts39u9",
+                    "modelName": "ERNIE Lite",
                     "source": "PlatformPreset",
                     "modelType": 0,
-                    "trainType": "ernieBotLite",
+                    "trainType": "",
                     "modelVersionList": [
                         {
-                            "modelVersionId": 600,
-                            "modelVersionIdStr": "amv-nsjesf9kasjt",
-                            "version": "ERNIE-Bot-turbo-0922",
+                            "modelVersionId": 26382,
+                            "modelVersionIdStr": "amv-k8npfy0yz90r",
+                            "version": "ERNIE-Lite-128K-0419",
                             "sourceType": "PlatformPreset",
                             "framework": "paddle",
-                            "algorithm": "ERNIE_EB-ERNIEBOT_V202_FUSE",
-                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V202_LORA_FUSE",
-                            "trainType": "ernieBotLite",
-                            "description": "通过数据和策略迭代，提升模型生成效果。",
+                            "algorithm": "ERNIE_EB-ERNIEBOT_LITE_128K",
+                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_LITE_128K",
+                            "trainType": "",
+                            "description": "2024年4月19日发布版本，优化模型效果，支持128K上下文长度",
                         },
                         {
-                            "modelVersionId": 492,
-                            "modelVersionIdStr": "amv-4u0rw8juur1p",
-                            "version": "ERNIE-Bot-turbo-0725",
+                            "modelVersionId": 19879,
+                            "modelVersionIdStr": "amv-irrrsmxabb6r",
+                            "version": "ERNIE-Lite-8K-0308",
                             "sourceType": "PlatformPreset",
                             "framework": "paddle",
-                            "algorithm": "ERNIE_EB-ERNIEBOT_V201_8K",
-                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V201_8K",
-                            "trainType": "ernieBotLite",
+                            "algorithm": "ERNIE_EB-ERNIEBOT_LITE_8K",
+                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_LITE_8K",
+                            "trainType": "ernieBotLite-8k",
                             "description": (
-                                "支持7K输入+1K输出，支持系统设置，新增推理参数"
+                                "2024年3月8日发布版本，优化模型效果，支持8K上下文长度"
                             ),
-                        },
-                        {
-                            "modelVersionId": 244,
-                            "modelVersionIdStr": "amv-70ahikpspjqs",
-                            "version": "ERNIE-Bot-turbo-0704",
-                            "sourceType": "PlatformPreset",
-                            "framework": "paddle",
-                            "algorithm": "ERNIE_EB-ERNIEBOT_V200",
-                            "modelNet": "paddlepaddle-ERNIE_EB-ERNIEBOT_V200",
-                            "trainType": "ernieBotLite",
-                            "description": "优化推理效果，修复部分问题",
                         },
                     ],
                 },
@@ -3335,7 +3324,7 @@ def get_dataset_aug_task_list():
                         "failReason": "对象存储访问异常",
                         "isSelfInstruct": True,
                         "name": "3334",
-                        "modelName": "ERNIE-Bot",
+                        "modelName": "ERNIE-3.5-8K",
                     },
                     {
                         "id": 240,
@@ -3353,7 +3342,7 @@ def get_dataset_aug_task_list():
                         "failReason": "",
                         "isSelfInstruct": True,
                         "name": "357",
-                        "modelName": "ERNIE-Bot",
+                        "modelName": "ERNIE-3.5-8K",
                     },
                 ],
             },

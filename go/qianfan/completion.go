@@ -226,7 +226,7 @@ func (c *Completion) stream(ctx context.Context, request *CompletionRequest) (*M
 //
 //	// 可以通过 WithModel 指定模型
 //	completion := qianfan.NewCompletion(
-//	    qianfan.WithModel("ERNIE-Bot-4"),
+//	    qianfan.WithModel("ERNIE-4.0-8K"),
 //	    // 支持的模型可以通过 completion.ModelList() 获取
 //	)
 //	// 或者通过 WithEndpoint 指定 endpoint

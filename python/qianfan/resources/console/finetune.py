@@ -76,9 +76,9 @@ class FineTune(object):
           name (str):
             The name of the fine-tuning task.
           base_train_type (str):
-            The base training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo"
+            The base training type of the fine-tuning task. e.g. "ERNIE-Speed-8K"
           train_type (str):
-            The training type of the fine-tuning task. e.g. "ERNIE-Bot-turbo-0922
+            The training type of the fine-tuning task. e.g. "ERNIE-Speed-8K
           description (Optional[str]):
             An optional description for the fine-tuning task.
           kwargs (Any):

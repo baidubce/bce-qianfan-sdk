@@ -14,7 +14,7 @@
 
 #### **Chat 对话**
 
-用户只需要提供预期使用的模型名称和对话内容，即可调用千帆大模型平台支持的，包括 ERNIE-Bot 在内的所有预置模型，如下所示：
+用户只需要提供预期使用的模型名称和对话内容，即可调用千帆大模型平台支持的，包括 ERNIE系列 在内的所有预置模型，如下所示：
 
 ```python
 import qianfan
@@ -22,7 +22,7 @@ import qianfan
 # 指定特定模型
 # 模型名称可以通过 qianfan.ChatCompletion.models() 获取
 # 也可以在命令行运行 qianfan chat --list-model 查看
-# 如果不设置 model，则使用默认模型 ERNIE-Bot-turbo
+# 如果不设置 model，则使用默认模型
 chat_comp = qianfan.ChatCompletion(model="ERNIE-Speed-8K")
 
 # 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
@@ -177,7 +177,7 @@ import qianfan
 # 指定特定模型
 # 模型名称可以通过 qianfan.Completion.models() 获取
 # 也可以在命令行运行 qianfan completion --list-model 查看
-# 如果不设置 model，则使用默认模型 ERNIE-Bot-turbo
+# 如果不设置 model，则使用默认模型 ERNIE-Lite-8K
 comp = qianfan.Completion(model="ERNIE-Speed-8K")
 
 # 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用

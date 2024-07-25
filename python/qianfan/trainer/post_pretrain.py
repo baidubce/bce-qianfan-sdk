@@ -82,7 +82,7 @@ class PostPreTrain(Trainer):
         ```
         ds = Dataset.load(qianfan_dataset_id="", ...)
         sft_task = PostPreTrain(
-            train_type="ERNIE-Bot-turbo-0725",
+            train_type="ERNIE-Speed-8K",
             dataset=ds,
             train_config=TrainConfig(...),
             event_handler=eh,

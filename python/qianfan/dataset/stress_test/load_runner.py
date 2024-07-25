@@ -8,7 +8,7 @@ import os
 import time
 import traceback
 from multiprocessing import Value
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from qianfan import resources
 from qianfan.dataset import Dataset
@@ -34,6 +34,38 @@ def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
                 return inf
         return None
     except Exception:
+        return None
+
+
+def determine_dataset_format(
+    dataset: List[Union[Dict[str, str], List[Dict[str, str]], str]]
+) -> Optional[str]:
+    try:
+        # 检查类型1：列表，包含字典，字典有 'prompt' 和 'response' 键
+        if isinstance(dataset, list) and all(
+            isinstance(item, dict) and "prompt" in item and "response" in item
+            for item in dataset
+        ):
+            return "json"
+
+        # 检查类型2：列表，包含列表，这些列表中包含字典，字典有 'prompt' 键
+        if isinstance(dataset, list) and all(
+            isinstance(item, list)
+            and all(
+                isinstance(sub_item, dict) and "prompt" in sub_item for sub_item in item
+            )
+            for item in dataset
+        ):
+            return "jsonl"
+
+        # 检查类型3：列表，包含字符串
+        if isinstance(dataset, list) and all(isinstance(item, str) for item in dataset):
+            return "txt"
+
+        # 如果不匹配任何类型
+        return None
+    except Exception:
+        logger.error("无法识别该数据集格式!")
         return None
 
 
@@ -118,6 +150,7 @@ class QianfanLocustRunner(LocustRunner):
             "spawn_rate": self.spawn_rate,
             "hyperparameters": self.hyperparameters,
             "interval": self.interval,
+            "log_info": "",
         }
         # 如果是端点且端点不为空，尝试获取模型信息
         if is_endpoint and endpoint is not None:
@@ -157,8 +190,6 @@ class QianfanLocustRunner(LocustRunner):
             success_requests = GlobalData.data["success_requests"].value
             ret["logfile"].append(round_result["logfile"])
             ret["record_dir"].append(round_result["record_dir"])
-            log_info = None
-            self.model_info["log_info"] = log_info
             html_path = round_result["performance_dir"] + "/performance_table.html"
             try:
                 round_html = gen_brief(
@@ -178,9 +209,18 @@ class QianfanLocustRunner(LocustRunner):
                 traceback.print_exc()
                 logger.error("Error happens when generating brief.")
             if GlobalData.data["threshold_first"].value == 1:
-                log_info = "首token超时, 超时token: " + self.dataset[0][0]["prompt"]
+                dataset = self.dataset.list()
+                prompt = ""
+                format = determine_dataset_format(dataset)
+                if format == "jsonl":
+                    prompt = dataset[0][0]["prompt"]
+                elif format == "json":
+                    prompt = dataset[0]["prompt"]
+                elif format == "txt":
+                    prompt = dataset[0]
+                log_info = f"首token超时, 超时token: {prompt}"
                 self.model_info["log_info"] = log_info
-                logger.info(f"首token超时, 超时token: {self.dataset[0][0]['prompt']}")
+                logger.info(f"首token超时, 超时token: {prompt}")
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
@@ -203,7 +243,6 @@ class QianfanLocustRunner(LocustRunner):
             GlobalData.data["failure_requests"].value = 0
 
         html_table = generate_html_table(html, self.model_info)
-
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_table)
         end_time = time.time()

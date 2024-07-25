@@ -199,7 +199,7 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
         
         <div class="info-section">
             <h2>Model Information</h2>
-            <p><strong>Model name:</strong> {model_info['modelname']}</p>
+            <p><strong>Service name:</strong> {model_info['modelname']}</p>
             <p><strong>Model Version:</strong> {model_info['modelVersionId']}</p>
             <p><strong>serviceId:</strong> {model_info['serviceId']}</p>
             <p><strong>serviceUrl:</strong> {model_info['serviceUrl']}</p>

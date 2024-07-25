@@ -165,8 +165,8 @@ class Function(BaseResourceV1):
                 del kwargs[k]
 
         for k in ["request_id"]:
-            if not kwargs.get("request_id"):
-                del kwargs["request_id"]
+            if k in kwargs and kwargs.get(k) is None:
+                del kwargs[k]
 
         if not functions:
             # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式

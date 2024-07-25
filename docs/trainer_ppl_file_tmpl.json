@@ -1,0 +1,57 @@
+{
+  "actions": [
+    {
+      "type": "LoadDataSetAction",
+      "datasets": {
+        "sourceType": "Platform",
+        "versions": [
+          {
+            "versionId": "ds-syeynswz2yxav8ix",
+            "samplingRate": 1 
+          }
+        ]
+      },
+      "eval_split_ratio": 10,
+      "corpus_config": {
+        "copy_data": true,
+        "config": [
+          {
+            "proportion": "1:2",
+            "corpus_type": 3,
+            "labels": [
+              "文本创作"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "TrainAction",
+      "init_params": {
+        "train_mode": "SFT",
+        "train_type": "ERNIE-Speed-8K",
+        "train_config": {
+          "peft_type": "LoRA",
+          "epoch": 1,
+          "learning_rate": 0.0003,
+          "max_seq_len": 4096,
+          "logging_steps": 1,
+          "warmup_ratio": 0.1,
+          "weight_decay": 0.01,
+          "lora_rank": 8,
+          "lora_all_linear": "True"
+        },
+        "is_incr": false,
+        "job_name": "speed_math02",
+        "task_description": "task_desc1",
+        "job_description": "job_desc1"
+      }
+    },
+    {
+      "type": "ModelPublishAction"
+    }
+  ],
+  "case_init_params": {
+    "case_type": "Finetune"
+  }
+}

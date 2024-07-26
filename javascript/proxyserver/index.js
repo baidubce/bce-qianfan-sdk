@@ -25,10 +25,8 @@ const createProxyServer = (port, accessKey, secretKey) => {
     try {
       const isTokenRequest = req.url.includes('access_token');
      combinedUrl = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${accessKey}&client_secret=${secretKey}`;
-     console.log(combinedUrl);
+   
 
-      
-      console.log(`proxy url is : ${combinedUrl}`);
 
       const next_req = {
         method: req.method,
@@ -38,12 +36,12 @@ const createProxyServer = (port, accessKey, secretKey) => {
         body: ['POST', 'PUT'].includes(req.method) ? JSON.stringify(req.body) : undefined,
       };
 
-      console.log('request body', next_req);
+     
       console.log(req.url);
 
       const apiRes = await fetch(combinedUrl, next_req);
       const responseBody = await apiRes.json();
-      console.log('response body', responseBody);
+      
 
       
       accessToken = responseBody.access_token;
@@ -52,7 +50,7 @@ const createProxyServer = (port, accessKey, secretKey) => {
         console.log(combinedUrls);
         const apiFin = await fetch(combinedUrls, next_req);
        const responseFinal = await apiFin.json();
-       console.log('response body2', responseFinal);
+      
 
 
 

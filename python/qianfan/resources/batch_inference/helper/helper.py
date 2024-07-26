@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 import time
-from typing import Any, List
+from typing import Any, Dict, List
 
 from qianfan import QfResponse, resources
 from qianfan.config import encoding
@@ -209,12 +209,28 @@ class BatchInferenceHelper:
         self.afs_client.cp(*[*remote_file_batch, target_dir])
 
     def _batch_group_remote_files(
-        self, data_path: str, remote_files: List[str]
+        self, data_path: str, remote_files: List[Dict]
     ) -> List:
-        grouped_files = [
-            remote_files[i : i + MAX_SUPPORTED_FILE_COUNT]
-            for i in range(0, len(remote_files), MAX_SUPPORTED_FILE_COUNT)
-        ]
+        grouped_files: List[List[Dict]] = []
+        remote_files.sort(key=lambda x: x["size"], reverse=True)
+
+        # 将文件分配到group中
+        for file in remote_files:
+            placed = False
+            for group in grouped_files:
+                # 检查是否可以将文件放入当前group
+                if (
+                    sum([item["size"] for item in group]) + file["size"]
+                    <= MAX_SUPPORTED_FILE_SIZE
+                    and len(group) < MAX_SUPPORTED_FILE_COUNT
+                ):
+                    group.append(file)
+                    placed = True
+                    break
+            if not placed:
+                # 如果没有可放置的group，创建一个新的group
+                grouped_files.append([file])
+
         split_files_dirs = [
             "/".join([data_path, "count_split", str(i)])
             for i in range(len(grouped_files))
@@ -222,7 +238,11 @@ class BatchInferenceHelper:
         # 使用多线程处理每个批次，并为每个批次分配组编号
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self._process_remote_batch, group, split_files_dirs[i])
+                executor.submit(
+                    self._process_remote_batch,
+                    [item["path"] for item in group],
+                    split_files_dirs[i],
+                )
                 for i, group in enumerate(grouped_files)
             ]
             for future in concurrent.futures.as_completed(futures):

@@ -568,7 +568,6 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._retry_if_token_expired
         def _helper() -> QfResponse:
-            self._add_access_token(req, auth)
             return self._request(req)
 
         return self._with_retry(req.retry_config, _helper)
@@ -582,7 +581,6 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._async_retry_if_token_expired
         async def _helper() -> QfResponse:
-            await self._async_add_access_token(req, auth)
             return await self._async_request(req)
 
         return self._async_with_retry(req.retry_config, _helper)

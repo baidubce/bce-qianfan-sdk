@@ -165,6 +165,14 @@ class ClientProxy(object):
                     self._sign(qf_req)
                 logging.debug(f"request: {qf_req}")
                 if qf_req.json_body.get("stream", False):
+                    try:
+                        resp, session = await self._client.arequest(qf_req)
+                        async with session:
+                            json_body = await resp.json()
+                            # print("\nthis is response",json_body)
+                        return json_body
+                    except:
+                        return self._client.arequest_stream(qf_req)
                     return self._client.arequest_stream(qf_req)
                 else:
                     resp, session = await self._client.arequest(qf_req)

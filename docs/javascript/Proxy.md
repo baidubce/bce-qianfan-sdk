@@ -8,7 +8,7 @@
 ```ts
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://172.18.184.85:8002', QIANFAN_CONSOLE_API_BASE_URL: 'http://172.18.184.85:8003'});
+const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://localhost:3001'});
 
 async function main() {
     const resp = await client.chat({

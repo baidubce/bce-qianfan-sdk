@@ -65,6 +65,7 @@ def gen_brief(
     model_type: str,
     hyperparameters: Any,
     total_requests: int,
+    success_requests: int,
 ) -> Dict[str, Any]:
     """
     gen_brief
@@ -101,11 +102,13 @@ def gen_brief(
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
         + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
         + "TotalOutputTokens Avg: %s\n" % round(output_tk_tuple[0] * success_count, 2)
-        + "TotalQuery: %s\n" % round(total_requests, 2)
+        + "SendQuery: %s\n" % round(total_count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
-        + "FailureQuery: %s\n" % round(total_requests - success_count, 2)
+        + "FailureQuery: %s\n" % round(failure_count, 2)
+        + "TotalQuery: %s\n" % round(count, 2)
+        + "SendQuery(by self): %s\n" % round(total_requests, 2)
         + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / total_requests * 100, 2)
+        + "SuccessRate: %s%%" % round(success_count / total_count * 100, 2)
     )
     statistics = {
         "QPS": round(qps, 2),
@@ -122,7 +125,7 @@ def gen_brief(
         "Input_tokens_avg": round(input_tk_tuple[0], 2),
         "Output_tokens_avg": round(output_tk_tuple[0], 2),
         "TotalTime": round(time, 2),
-        "SuccessRate": round(success_count / total_requests * 100, 2),
+        "SuccessRate": round(success_count / total_count * 100, 2),
         "concurrency": user_num,
     }
 
@@ -196,7 +199,7 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
         
         <div class="info-section">
             <h2>Model Information</h2>
-            <p><strong>Model name:</strong> {model_info['modelname']}</p>
+            <p><strong>Service name:</strong> {model_info['modelname']}</p>
             <p><strong>Model Version:</strong> {model_info['modelVersionId']}</p>
             <p><strong>serviceId:</strong> {model_info['serviceId']}</p>
             <p><strong>serviceUrl:</strong> {model_info['serviceUrl']}</p>

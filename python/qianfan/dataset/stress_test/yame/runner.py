@@ -96,13 +96,17 @@ class LocustRunner(object):
                 )
             if not os.path.exists(self.record_dir):
                 os.makedirs(self.record_dir)
-            if not self.logfile:
-                self.logfile = os.path.join(self.record_dir, "run.log")
-            if not self.report:
-                self.report = os.path.join(self.record_dir, "report.html")
-            if not self.csv_prefix:
-                self.csv_prefix = os.path.join(self.record_dir, "statistics")
-            return self.record_dir
+            sub_dir_name = f"round-user_num_{self.user_num}"
+            sub_dir = os.path.join(self.record_dir, sub_dir_name)
+            os.makedirs(sub_dir)
+            # if not self.logfile:
+            self.logfile = os.path.join(sub_dir, "run.log")
+            # if not self.report:
+            round_report_name = f"report_user_num_{self.user_num}.html"
+            self.report = os.path.join(sub_dir, round_report_name)
+            # if not self.csv_prefix:
+            self.csv_prefix = os.path.join(sub_dir, "statistics")
+            return sub_dir
         return None
 
     def generate_command(self, role: str) -> str:
@@ -225,7 +229,7 @@ class LocustRunner(object):
         if self.spawn_rate is None:
             self.spawn_rate = max(1, math.ceil(self.user_num / self.worker_num))
 
-        self.generate_record_path()
+        record_dir = self.generate_record_path()
 
         start_time = time.time()
         if self.worker_num == 1:
@@ -299,10 +303,11 @@ class LocustRunner(object):
             "spawn_rate": self.spawn_rate,
             "workers": self.worker_num,
             "users": self.user_num,
-            "record_dir": self.record_dir,
+            "record_dir": record_dir,
             "csv_prefix": self.csv_prefix,
             "html_report": self.report,
             "logfile": self.logfile,
+            "performance_dir": self.record_dir,
             "loglevel": self.loglevel or "INFO" if self.logfile else None,
             "stats_csv_file": None,
             "all_csv_files": [],

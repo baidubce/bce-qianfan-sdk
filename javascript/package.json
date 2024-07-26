@@ -18,6 +18,7 @@
         "start": "NODE_ENV=production ts-node src/test/chatCompletion",
         "build": "npx rollup -c rollup.config.mjs",
         "test": "jest --detectOpenHandles",
+        "proxy": "cd bce-qianfan-sdk/javascript/proxyServer && node proxy.js",
         "publish:main": "npm version patch && npm run build && npm publish --access public",
         "publish:beta": "npm version prerelease --preid=beta && npm run build && npm publish --access public"
     },

@@ -18,7 +18,7 @@
         "start": "NODE_ENV=production ts-node src/test/chatCompletion",
         "build": "npx rollup -c rollup.config.mjs",
         "test": "jest --detectOpenHandles",
-        
+        "proxy": "node proxyserver",
         "publish:main": "npm version patch && npm run build && npm publish --access public",
         "publish:beta": "npm version prerelease --preid=beta && npm run build && npm publish --access public"
     },
@@ -34,6 +34,7 @@
         "bottleneck": "^2.19.5",
         "crypto-js": "^4.2.0",
         "dotenv": "^16.4.5",
+        "express": "^4.19.2",
         "node-fetch": "2.7.0",
         "rollup": "^3.29.4",
         "typescript": "^5.3.3",

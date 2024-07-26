@@ -54,8 +54,21 @@ async def base_openapi(request: Request, callback: Callable) -> Response:
     Returns:
         Response: 处理后的响应对象。
     """
-    if not proxy.direct and "access_token" in request.url._url:
-        key = request.url._url.split("?access_token=")[1]
+    if not proxy.direct and proxy.access_token is not None:
+        try:
+            key = request.url._url.split("?access_token=")[1]
+        except Exception:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": "No ACCESS_TOKEN provided, please check",
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "NO_ACCESS_TOKEN",
+                    }
+                },
+                status_code=401,
+            )
         if key != proxy.access_token:
             return JSONResponse(
                 {

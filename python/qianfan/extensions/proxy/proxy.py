@@ -134,7 +134,7 @@ class ClientProxy(object):
         json_body = await request.json()
         return QfRequest(
             url=url,
-            headers=headers if not self._direct else dict(request.headers),  # 出错行
+            headers=headers if not self._direct else dict(request.headers), 
             method=request.method,
             query=dict(request.query_params),
             json_body=json_body,

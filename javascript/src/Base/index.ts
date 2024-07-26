@@ -146,6 +146,7 @@ export class BaseClient {
         let fetchOptions;
         // 如果enableOauth开启， 则放开鉴权
         if (getCurrentEnvironment() === 'node' || this.enableOauth) {
+
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
                 throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');

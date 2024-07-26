@@ -18,6 +18,7 @@ Qianfan API Requestor
 
 import copy
 import json
+import os
 from typing import (
     Any,
     AsyncIterator,
@@ -494,7 +495,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         url = request.url
         parsed_uri = urlparse(request.url)
-        host = parsed_uri.netloc
+        if os.environ.get("QIANFAN_IAM_HOST"):
+            host = str(os.environ.get("QIANFAN_IAM_HOST"))
+            parsed_uri = parsed_uri._replace(scheme="https", netloc=host)
+        else:
+            host = parsed_uri.netloc
         request.url = parsed_uri.path
         request.headers = {
             "Content-Type": "application/json",

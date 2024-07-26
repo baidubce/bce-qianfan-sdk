@@ -39,9 +39,9 @@ from qianfan.common.client.utils import (
 )
 from qianfan.consts import DefaultLLMModel
 from qianfan.errors import InternalError
+from qianfan.resources.llm.base import BaseResourceV1
 from qianfan.resources.llm.chat_completion import (
     ChatCompletion,
-    _ChatCompletionV1,
     _ChatCompletionV2,
 )
 from qianfan.resources.typing import Literal, QfMessages, QfResponse
@@ -152,7 +152,7 @@ class ChatClient(object):
         name: str
         _client = client._real
         if self.version == "1":
-            assert isinstance(_client, _ChatCompletionV1)
+            assert isinstance(_client, BaseResourceV1)
             if _client._model is not None:
                 name = f"Model {_markup(_client._model)}"
             elif _client._endpoint is not None:

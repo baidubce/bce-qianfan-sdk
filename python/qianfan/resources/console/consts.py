@@ -140,10 +140,12 @@ class TrainStatus(str, Enum):
     """训练完成"""
     Running = "Running"
     """训练进行中"""
-    Fail = "Fail"
+    Fail = "Failed"
     """训练失败"""
     Stop = "Stopped"
     """训练停止"""
+    Waiting = "Waiting"
+    """排队中"""
 
 
 class ModelState(str, Enum):

@@ -361,7 +361,9 @@ MODEL_ARGUMENTS_PANEL = (
 def plugin_entry(
     endpoint: Optional[str] = typer.Option(
         None,
-        help="Endpoint of the plugin. ERNIE-Bot plugin will be used if not specified.",
+        help=(
+            "Endpoint of the plugin. ERNIE-4.0-8K plugin will be used if not specified."
+        ),
     ),
     # tui: bool = typer.Option(False, help="Using Terminal UI"),
     multi_line: bool = typer.Option(

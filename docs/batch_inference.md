@@ -97,7 +97,7 @@ from qianfan.dataset import Dataset
 ds = Dataset.load(...)
 
 # 用户可以设置 service_model 为自己想要的模型名，来直接对数据进行批量推理，以 EB 4 为例
-result = ds.test_using_llm(service_model="ERNIE-Bot-4")
+result = ds.test_using_llm(service_model="ERNIE-4.0-8K")
 
 # 用户还可以设置 service_endpoint 来使用预置或自己的服务。
 result = ds.test_using_llm(service_endpoint="completions_pro")

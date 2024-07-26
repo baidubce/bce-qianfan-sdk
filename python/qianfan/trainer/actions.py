@@ -454,11 +454,9 @@ class TrainAction(
                 train mode, e.g. `SFT`, `PostPretrain`, `DPO`. Defaults to None.
             train_type (Optional[str], optional):
                 train_type, must be specified when it's not increment training
-                like 'ERNIE-Bot-turbo-0725'
+                like 'ERNIE-Speed-8K'
             train_config (Optional[TrainConfig], optional):
                 train_config, e.g. `epoch=10, batch_size=32`.
-            base_model (Optional[str], optional):
-                base_mode, like 'ERNIE-Bot-turbo'. Defaults to None.
             task_id (Optional[int], optional):
                 used in incr train, model train task_id. Defaults to None.
             job_id (Optional[int], optional):
@@ -765,6 +763,9 @@ class TrainAction(
                     log_info(f" check vdl report in {self.vdl_link}")
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             elif task_status == "":
+                time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
+            elif task_status == console_consts.TrainStatus.Waiting:
+                log_info(f"[train_action] {self.job_id}/{self.task_id} queueing...")
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             else:
                 raise InternalError(

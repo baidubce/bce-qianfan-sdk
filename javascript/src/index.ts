@@ -18,6 +18,16 @@ import Embedding from './Embedding';
 import Plugin from './Plugin';
 import {Text2Image, Image2Text} from './Images';
 import Reranker from './Reranker';
-import {setEnvVariable} from './utils';
+import {setEnvVariable, setBrowserVariable} from './utils';
 
-export {ChatCompletion, Completions, Embedding, Plugin, Text2Image, Image2Text, Reranker, setEnvVariable};
+export {
+    ChatCompletion,
+    Completions,
+    Embedding,
+    Plugin,
+    Text2Image,
+    Image2Text,
+    Reranker,
+    setEnvVariable,
+    setBrowserVariable,
+};

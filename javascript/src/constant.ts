@@ -34,6 +34,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     QIANFAN_RPM_LIMIT: '',
     QIANFAN_TPM_LIMIT: '',
     version: '1',
+    ENABLE_OAUTH: false,
 };
 
 export const RETRY_CODE = [

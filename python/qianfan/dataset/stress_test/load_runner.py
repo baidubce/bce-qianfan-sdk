@@ -172,10 +172,6 @@ class QianfanLocustRunner(LocustRunner):
         """
         run
         """
-        if user_num is not None:
-            current_user_num = user_num
-        else:
-            current_user_num = self.user_num
         ret: Dict[str, List[str]] = {"logfile": [], "record_dir": []}
         current_user_num = self.user_num
         html = []

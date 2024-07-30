@@ -64,8 +64,6 @@ def gen_brief(
     spawn_rate: int,
     model_type: str,
     hyperparameters: Any,
-    total_requests: int,
-    success_requests: int,
 ) -> Dict[str, Any]:
     """
     gen_brief
@@ -80,6 +78,9 @@ def gen_brief(
     total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
     failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
     success_count = total_count - failure_count
+    success_rate = (
+        0 if total_count == 0 else round(success_count / total_count * 100, 2)
+    )
     text = (
         "Load Test Statistics\n"
         + "user_num: %s\n" % user_num
@@ -107,7 +108,7 @@ def gen_brief(
         + "FailureQuery: %s\n" % round(failure_count, 2)
         + "TotalQuery: %s\n" % round(count, 2)
         + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / total_count * 100, 2)
+        + "SuccessRate: %s%%" % success_rate
     )
     statistics = {
         "QPS": round(qps, 2),
@@ -124,7 +125,7 @@ def gen_brief(
         "Input_tokens_avg": round(input_tk_tuple[0], 2),
         "Output_tokens_avg": round(output_tk_tuple[0], 2),
         "TotalTime": round(time, 2),
-        "SuccessRate": round(success_count / total_count * 100, 2),
+        "SuccessRate": success_rate,
         "concurrency": user_num,
     }
 

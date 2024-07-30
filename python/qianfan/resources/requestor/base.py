@@ -175,8 +175,10 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
         log_trace(f"raw request: {request}")
         with requestor._rate_limiter:
             start_time = time.perf_counter()
+            start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
+            resp.statistic["start_timestamp"] = start_timestamp
             return resp
 
     return wrapper
@@ -196,8 +198,10 @@ def _async_latency(
         log_trace(f"raw request: {request}")
         async with requestor._rate_limiter:
             start_time = time.perf_counter()
+            start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
+            resp.statistic["start_timestamp"] = start_timestamp
             return resp
 
     return wrapper
@@ -216,6 +220,7 @@ def _stream_latency(
     ) -> Iterator[QfResponse]:
         with requestor._rate_limiter:
             start_time = time.perf_counter()
+            start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
 
         def iter() -> Iterator[QfResponse]:
@@ -231,6 +236,7 @@ def _stream_latency(
                 is_first_block = False
 
                 r.statistic["total_latency"] = time.perf_counter() - start_time
+                r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
                 yield r
 
@@ -252,6 +258,7 @@ def _async_stream_latency(
     ) -> AsyncIterator[QfResponse]:
         async with requestor._rate_limiter:
             start_time = time.perf_counter()
+            start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)
             first_token_latency = time.perf_counter() - start_time
 
@@ -271,6 +278,7 @@ def _async_stream_latency(
 
                 r.statistic["first_token_latency"] = first_token_latency
                 r.statistic["total_latency"] = time.perf_counter() - start_time
+                r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
                 yield r
 

@@ -503,6 +503,7 @@ def finetune(
         if train_lora_all_linear is not None:
             trainer.train_action.train_config.lora_all_linear = train_lora_all_linear
 
+    console.log(f"trainer id: {trainer.id} is created")
     if daemon:
         trainer.start()
         console.print(
@@ -535,7 +536,7 @@ def info(
     elif task_id:
         trainers = Finetune.list()
         for t in trainers:
-            for action in t.actions:
+            for action in t.actions.values():
                 if isinstance(action, TrainAction) and action.task_id == task_id:
                     trainer = t
                     break

@@ -32,7 +32,7 @@ from qianfan.common.client.utils import (
     print_error_msg,
     print_info_msg,
 )
-from qianfan.config import encoding, get_config
+from qianfan.config import encoding
 from qianfan.utils.utils import check_dependency
 
 app = typer.Typer(
@@ -51,29 +51,6 @@ app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")
 
 _enable_traceback = False
-
-
-@app.command(name="cache")
-def clear(
-    clear: Optional[bool] = typer.Option(
-        None,
-        "--clear",
-        help="clear qianfan cache",
-    ),
-) -> None:
-    """
-    clear qianfan cache.
-    """
-    import shutil
-
-    # 要删除的目录路径
-    dir_path = get_config().CACHE_DIR
-    # 删除目录
-    try:
-        shutil.rmtree(dir_path)
-        print_info_msg(f"目录 {dir_path} 已删除")
-    except OSError as e:
-        print_info_msg(f"删除目录 {dir_path} 失败: {e}")
 
 
 @app.command(name="openai")
@@ -206,6 +183,7 @@ def proxy(
         help="Ciphers to use (see stdlib ssl module's) [default: TLSv1]",
     ),
     access_token: str = typer.Option("", "--access-token", help="Access token"),
+    direct: bool = typer.Option(False, "--direct", help="Direct connection to server"),
 ) -> None:
     """
     Create a proxy server.
@@ -236,6 +214,7 @@ def proxy(
         mock_port=mock_port,
         ssl_config=ssl_config,
         access_token=access_token,
+        direct=direct,
     )
 
 

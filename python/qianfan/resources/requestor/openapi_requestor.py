@@ -101,6 +101,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.request_stream(request)
 
         _, resp = next(responses)
+        if "X-Ratelimit-Limit-Requests" in resp.headers:
+            self._rate_limiter.reset_once(
+                float(resp.headers["X-Ratelimit-Limit-Requests"])
+            )
+
         if "json" in resp.headers.get("content-type", ""):
             body, resp = next(responses)
             self._check_error(json.loads(body))
@@ -194,6 +199,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.arequest_stream(request)
 
         _, resp = await responses.__anext__()
+        if "X-Ratelimit-Limit-Requests" in resp.headers:
+            await self._rate_limiter.async_reset_once(
+                float(resp.headers["X-Ratelimit-Limit-Requests"])
+            )
+
         if "json" in resp.headers.get("content-type", ""):
             body, _ = await responses.__anext__()
             self._check_error(json.loads(body))

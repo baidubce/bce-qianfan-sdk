@@ -150,7 +150,7 @@ async function main() {
                 content: '今天深圳天气',
             },
         ],
-     }, "ERNIE-Bot-turbo");
+     }, "ERNIE-Lite-8K");
     console.log(resp);
 }
 
@@ -184,7 +184,7 @@ main
 import {ChatCompletion, setEnvVariable} from "@baiducloud/qianfan";
 
 const client = new  ChatCompletion();  
-async function main() {    // 调用默认模型，即 ERNIE-Bot-turbo
+async function main() {    // 调用默认模型，即 ERNIE--turbo
     const resp = await client.chat({
         messages: [
             {
@@ -330,7 +330,7 @@ const client = new Completions();
 async function main() {
     const resp = await client.completions({
         prompt: '你好',
-    }, 'ERNIE-Bot');
+    }, 'ERNIE-3.5-8K');
     console.log(resp);
 }
 

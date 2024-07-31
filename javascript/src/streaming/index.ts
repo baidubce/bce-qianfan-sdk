@@ -35,21 +35,15 @@ class SSEDecoder {
     }
 
     decode(line: string) {
-        if (line.endsWith('\r')) {
-            line = line.substring(0, line.length - 1);
-        }
-
         if (!line) {
             if (!this.event && !this.data.length) {
                 return null;
             }
-
             const sse: ServerSentEvent = {
                 event: this.event,
-                data: this.data.join('\n'),
+                data: this.data.join(''),
                 raw: this.chunks,
             };
-
             this.event = null;
             this.data = [];
             this.chunks = [];
@@ -88,33 +82,12 @@ class LineDecoder {
     textDecoder: TextDecoder;
 
     constructor() {
-        this.buffer = [];
         this.textDecoder = new TextDecoder('utf-8');
     }
 
-    decode(chunk: Bytes): string[] {
+    decode(chunk: Bytes): string {
         let text = this.decodeText(chunk);
-        if (!text) {
-            return [];
-        }
-
-        const trailingNewline = text.endsWith('\n') || text.endsWith('\r');
-        let lines = text.split(LineDecoder.NEWLINE_REGEXP);
-
-        if (lines.length === 1 && !trailingNewline) {
-            this.buffer.push(lines[0]);
-            return [];
-        }
-        if (this.buffer.length > 0) {
-            lines = [this.buffer.join('') + lines[0], ...lines.slice(1)];
-            this.buffer = [];
-        }
-
-        if (!trailingNewline) {
-            this.buffer = [lines.pop() || ''];
-        }
-
-        return lines;
+        return text;
     }
 
     decodeText(bytes: Bytes): string {
@@ -164,38 +137,20 @@ export class Stream<Item> implements AsyncIterable<Item> {
             }
 
             const lineDecoder = new LineDecoder();
-            let buffer = new Uint8Array(); // 初始化缓存的 Buffer
-            let previousChunkLastByte: number | null = null;
+            let buffer = new Uint8Array();
             const iter = readableStreamAsyncIterable<Bytes>(response.body);
-
             for await (const chunk of iter) {
-                if (chunk[0] === 10) {
-                    continue;
-                }
-                if (previousChunkLastByte === 10) {
-                    buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
-
-                    for (const line of lineDecoder.decode(buffer)) {
-                        const sse = decoder.decode(line);
-                        if (sse) {
-                            yield sse;
-                        }
+                buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
+                // 按换行符（ASCII 码 10）分割 buffer
+                const [lines, remaining] = splitUint8Array(buffer, 10);
+                for (const line of lines) {
+                    const lineStr = lineDecoder.decode(line);
+                    const sse =  decoder.decode(lineStr);
+                    if (sse) {
+                        yield sse;
                     }
-
-                    buffer = new Uint8Array();
                 }
-                else {
-                    buffer = concatUint8Arrays(buffer, chunk as Uint8Array);
-                }
-                // 保存当前 chunk 的最后一个字节
-                previousChunkLastByte = chunk[chunk.length - 1] as number; ;
-            }
-
-            for (const line of lineDecoder.flush()) {
-                const sse = decoder.decode(line);
-                if (sse) {
-                    yield sse;
-                }
+                buffer = remaining;
             }
         }
 
@@ -210,7 +165,6 @@ export class Stream<Item> implements AsyncIterable<Item> {
                     if (done) {
                         continue;
                     }
-
                     if (sse.data.startsWith('[DONE]')) {
                         done = true;
                         continue;
@@ -230,8 +184,9 @@ export class Stream<Item> implements AsyncIterable<Item> {
                         if (data && data.error) {
                             throw new Error(data.error);
                         }
-
-                        yield data;
+                        if (data) {
+                            yield data;
+                        }
                     }
                 }
                 done = true;
@@ -415,4 +370,29 @@ export function readableStreamAsyncIterable<T>(stream: any): AsyncIterableIterat
             return this;
         },
     };
+}
+
+
+/**
+ * 使用指定的分隔符将 Uint8Array 数组拆分为多个子数组和剩余部分。
+ *
+ * @param array 要拆分的 Uint8Array 数组。
+ * @param delimiter 分隔符的数值。
+ * @returns 包含拆分后的多个子数组和剩余部分的数组。
+ *          第一个元素是拆分后的子数组列表，类型为 Uint8Array[]。
+ *          第二个元素是剩余部分的 Uint8Array 数组。
+ */
+function splitUint8Array(array: Uint8Array, delimiter: number): [Uint8Array[], Uint8Array] {
+    const result: Uint8Array[] = [];
+    let start = 0;
+
+    for (let i = 0; i < array.length; i++) {
+        if (array[i] === delimiter) {
+            result.push(array.subarray(start, i));
+            start = i + 1; // 跳过 delimiter
+        }
+    }
+
+    // 返回分割后的数组和剩余的部分
+    return [result, array.subarray(start)];
 }

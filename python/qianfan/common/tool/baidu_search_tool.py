@@ -55,7 +55,7 @@ class BaiduSearchTool(BaseTool):
         self.top_n = top_n
         self.channel = channel
         if client is None:
-            self.client = Completion(model="ERNIE-Bot-turbo")
+            self.client = Completion(model="ERNIE-Speed-8K")
         else:
             self.client = client
         self.with_reference = with_reference

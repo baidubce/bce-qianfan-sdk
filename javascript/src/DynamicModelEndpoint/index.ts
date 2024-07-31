@@ -140,6 +140,10 @@ class DynamicModelEndpoint {
             // console.log('Failed to update dynamic model endpoint map', error);
         }
     }
+    public async getDynamicMap(type: string): Promise<Map<string, string> | undefined> {
+        await this.updateDynamicModelEndpoint(type);
+        return this.getDynamicTypeModelEndpointMap().get(type);
+    }
 
     getDynamicMapExpireAt() {
         return this.dynamicMapExpireAt;

@@ -224,7 +224,9 @@ def credential_required(func: Callable) -> Callable:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        check_credential()
+        direct = kwargs.get("direct", False)
+        if not direct:
+            check_credential()
         return func(*args, **kwargs)
 
     return wrapper

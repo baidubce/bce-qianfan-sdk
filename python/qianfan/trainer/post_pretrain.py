@@ -30,8 +30,8 @@ from qianfan.trainer.base import (
 from qianfan.trainer.configs import (
     DatasetConfig,
     ModelInfo,
-    PostPreTrainModelInfoMapping,
     TrainConfig,
+    get_trainer_model_list,
 )
 from qianfan.trainer.consts import (
     TrainStatus,
@@ -82,7 +82,7 @@ class PostPreTrain(Trainer):
         ```
         ds = Dataset.load(qianfan_dataset_id="", ...)
         sft_task = PostPreTrain(
-            train_type="ERNIE-Bot-turbo-0725",
+            train_type="ERNIE-Speed-8K",
             dataset=ds,
             train_config=TrainConfig(...),
             event_handler=eh,
@@ -195,7 +195,7 @@ class PostPreTrain(Trainer):
 
     @classmethod
     def train_type_list(cls) -> Dict[str, ModelInfo]:
-        return PostPreTrainModelInfoMapping
+        return get_trainer_model_list(console_consts.TrainMode.PostPretrain)
 
     @staticmethod
     def list() -> List["Trainer"]:

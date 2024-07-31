@@ -278,11 +278,21 @@ class OpenAIApdater(object):
                 },
                 "finish_reason": resp.get("finish_reason", "normal"),
             }
-            if "function_call" in resp:
-                if "function_call" in openai_request:
-                    choice["message"]["function_call"] = resp["function_call"]
-                if "tool_choice" in openai_request:
-                    choice["message"]["tool_calls"] = resp["function_call"]
+            if "function_call" in resp and (
+                "functions" in openai_request or "tools" in openai_request
+            ):
+                choice["message"]["tool_calls"] = [
+                    {
+                        "id": resp["function_call"]["name"],
+                        "type": "function",
+                        "function": resp["function_call"],
+                    }
+                ]
+
+                choice["message"]["content"] = None
+                choice["message"]["function_call"] = resp["function_call"]
+                choice["finish_reason"] = "tool_calls"
+
             resp_list.append(choice)
 
             completion_tokens += resp["usage"]["completion_tokens"]
@@ -479,17 +489,21 @@ class OpenAIApdater(object):
                     ),
                 }
             ]
-            if "function_call" in res:
-                if "function_call" in openai_request:
-                    choices[0]["delta"]["function_call"] = res["function_call"]
-                if "tools" in openai_request:
-                    choices[0]["delta"]["tool_calls"] = [
-                        {
-                            "id": res["function_call"]["name"],
-                            "type": "function",
-                            "function": res["function_call"],
-                        }
-                    ]
+            if "function_call" in res and (
+                "functions" in openai_request or "tools" in openai_request
+            ):
+                choices[0]["delta"]["tool_calls"] = [
+                    {
+                        "index": 0,
+                        "id": res["function_call"]["name"],
+                        "type": "function",
+                        "function": res["function_call"],
+                    }
+                ]
+
+                choices[0]["delta"]["content"] = None
+                choices[0]["delta"]["finish_reason"] = "tool_calls"
+                choices[0]["delta"]["function_call"] = res["function_call"]
 
             yield {
                 "choices": choices,

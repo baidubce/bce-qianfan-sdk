@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {BASE_PATH, DEFAULT_CONFIG} from './constant';
-import {IAMConfig, QfLLMInfoMap, ReqBody} from './interface';
+import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
 
 /**
@@ -122,6 +122,7 @@ export const getPath = ({
             ? `${BASE_PATH}${modelEndpoint}`
             : `${api_base}${modelEndpoint}`;
     }
+    throw new Error('Model is not supported');
 };
 
 
@@ -142,7 +143,7 @@ export function readEnvVariable(key: string) {
  *
  * @returns 返回一个字符串类型的键值对对象，包含环境变量
  */
-export function getDefaultConfig(): Record<string, string> {
+export function getDefaultConfig(): DefaultConfig {
     const envVariables = Object.keys(DEFAULT_CONFIG);
     if (getCurrentEnvironment() === 'browser') {
         return {...DEFAULT_CONFIG};
@@ -284,4 +285,20 @@ export function parseHeaders(headers): {[key: string]: string} {
         headerObj[key] = value;
     });
     return headerObj;
+}
+
+interface Variables {
+    [key: string]: any;
+}
+
+/**
+ * 设置浏览器变量
+ *
+ * @param variables 要设置的变量对象，其中每个属性名对应一个变量名，属性值对应变量的值
+ * @returns 无返回值
+ */
+export function setBrowserVariable(variables: Variables): void {
+    Object.entries(variables).forEach(([key, value]) => {
+        DEFAULT_CONFIG[key] = value;
+    });
 }

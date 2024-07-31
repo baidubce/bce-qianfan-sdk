@@ -49,7 +49,7 @@ $ qianfan chat [OPTIONS]
 
 **Options 选项**:
 
-* `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：模型名称  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：模型的 endpoint
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
@@ -78,7 +78,7 @@ $ qianfan completion [OPTIONS] PROMPTS...
 
 **Options 选项**:
 
-* `--model TEXT`：模型名称  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：模型名称  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：模型的 endpoint
 * `--plain / --no-plain`：普通文本模式，不使用富文本  [default：no-plain]
 * `--list-model -l`：打印支持的模型名称列表
@@ -182,7 +182,7 @@ $ qianfan dataset predict [OPTIONS] DATASET
 
 **Options 选项**:
 
-* `--model TEXT`：预测用的模型名称，可以用 `qianfan chat --list-model` 获取模型列表。  [default：ERNIE-Bot-turbo]
+* `--model TEXT`：预测用的模型名称，可以用 `qianfan chat --list-model` 获取模型列表。  [default：ERNIE-Lite-8K]
 * `--endpoint TEXT`：预测用的模型 endpoint，该选项会覆盖 `--model` 选项。
 * `--output PATH`：输出的文件路径。  [default：`%Y%m%d_%H%M%S.jsonl`]
 * `--input-columns TEXT`：输入的列名称。  [default：prompt]
@@ -295,22 +295,25 @@ $ qianfan trainer [OPTIONS] COMMAND [ARGS]...
 
 **Commands 命令**:
 
-* `run`：运行 trainer 任务
+* `finetune/postpretrain/dpo`：运行 trainer 任务
 
-#### run 发起训练任务
+#### 发起训练任务
 
 运行 trainer 任务
 
 **用法**:
 
 ```console
-$ qianfan trainer run [OPTIONS]
+$ qianfan trainer [finetune|postpretrain|dpo] [OPTIONS]
 ```
 
 **Options 选项**:
 
-* `--train-type TEXT`：训练类型  [required]
-* `--dataset-id INTEGER`：数据集 id  [required]
+* `--trainer-pipeline-file,-f TEXT`: trainer配置文件的路径，具体配置文件的写法可参考[trainer_pipeline.json](./trainer_ppl_file_tmpl.json) [optional]
+* `--train-type TEXT`: 训练模型名称，例如`ERNIE-Speed-8K`, 可以使用`qianfan trainer [finetune|postpretrain|dpo] -l` 进行查询 [optional]
+* `--dataset-id TEXT`: 数据集 id，例如`ds-xxx`  [optional]
+* `--list-train-type`: 展示支持训练的模型名称列表
+* `--show-config-limit,--show,-s TEXT`: 展示某个模型支持的训练超参
 * `--help`：展示帮助文档
 
 训练相关配置，参数含义与 [训练 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlmrgo4yx#body%E5%8F%82%E6%95%B0) 中对应参数含义一致：
@@ -335,6 +338,20 @@ $ qianfan trainer run [OPTIONS]
 * `--deploy-replicas INTEGER`：副本数  [default：1]
 * `--deploy-pool-type [public_resource|private_resource]`：资源池类型  [default：private_resource]
 * `--deploy-service-type [chat|completion|embedding|text2_image]`：服务类型  [default：chat]
+
+#### 查看trainer训练任务信息：
+
+**用法**:
+
+```console
+$ qianfan trainer info [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--trainer-id TEXT`：trainer id  [optional]
+* `--task-id TEXT` 千帆平台训练任务id [optional]
+* `--help`：展示帮助文档
 
 ### evaluation 评估
 

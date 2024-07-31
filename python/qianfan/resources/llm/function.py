@@ -80,6 +80,8 @@ class Function(BaseResourceV1):
                     "user_id",
                     "stop",
                     "max_output_tokens",
+                    "enable_user_memory",
+                    "user_memory_extract_level",
                 },
                 max_input_chars=11200,
                 max_input_tokens=7168,
@@ -112,7 +114,7 @@ class Function(BaseResourceV1):
     def do(
         self,
         messages: Union[List[Dict], QfMessages],
-        functions: List[Dict],
+        functions: List[Dict] = [],
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -150,18 +152,29 @@ class Function(BaseResourceV1):
         ```
 
         """
-        if len(functions) <= 0:
-            raise errors.InvalidArgumentError(
-                "functions should be a list of functions, "
-                "each function is a dictionary with name and description."
-            )
-        if kwargs.get("stream") is True:
-            raise errors.InvalidArgumentError("Function does not support stream mode.")
-
         if isinstance(messages, QfMessages):
             temp_messages = messages._to_list()
         else:
             temp_messages = messages
+        for k in [
+            "auto_concat_truncate",
+            "truncated_continue_prompt",
+            "truncate_overlong_msgs",
+        ]:
+            if k in kwargs:
+                del kwargs[k]
+
+        for k in ["request_id"]:
+            if k in kwargs and kwargs.get(k) is None:
+                del kwargs[k]
+
+        if not functions:
+            # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式
+            kwargs["messages"] = temp_messages
+            return super()._do(**kwargs)
+
+        if kwargs.get("stream") is True:
+            raise errors.InvalidArgumentError("Function does not support stream mode.")
 
         functions_schemas = self._render_functions_prompt(functions)
         temp_messages[0] = self._render_user_query_msg(

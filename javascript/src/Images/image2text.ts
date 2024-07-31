@@ -14,8 +14,8 @@
 
 import {BaseClient} from '../Base';
 import {Image2TextBody, RespBase} from '../interface';
-import {image2TextModelInfoMap} from './utils';
-import {getPathAndBody, getUpperCaseModelAndModelMap} from '../utils';
+import {getPathAndBody} from '../utils';
+import {getTypeMap, typeModelEndpointMap} from '../DynamicModelEndpoint/utils';
 import {ModelType} from '../enum';
 
 class Image2Text extends BaseClient {
@@ -28,14 +28,14 @@ class Image2Text extends BaseClient {
         body: Image2TextBody,
         model = 'Fuyu-8B'
     ): Promise<RespBase> {
-        const {modelInfoMapUppercase, modelUppercase} = getUpperCaseModelAndModelMap(model, image2TextModelInfoMap);
         const type = ModelType.IMAGE_2_TEXT;
+        const modelKey = model.toLowerCase();
+        const typeMap = getTypeMap(typeModelEndpointMap, type) ?? new Map();
+        const endPoint = typeMap.get(modelKey) || '';
         const {AKPath, requestBody} = getPathAndBody({
-            model: modelUppercase,
-            modelInfoMap: modelInfoMapUppercase,
             baseUrl: this.qianfanBaseUrl,
             body,
-            endpoint: this.Endpoint,
+            endpoint: this.Endpoint ?? endPoint,
             type,
         });
         const resp = await this.sendRequest(type, model, AKPath, requestBody);

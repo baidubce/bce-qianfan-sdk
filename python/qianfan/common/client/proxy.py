@@ -10,12 +10,13 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+
 from typing import Any, AsyncIterator, Callable, Dict, Optional, Tuple
 
 from aiohttp import ClientResponse
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request as StarletteRequest
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from qianfan.consts import DefaultValue
@@ -42,7 +43,7 @@ async def get_stream(
 
 
 @base_app.middleware("http")
-async def base_iam(request: Request, callback: Callable) -> Response:
+async def base_openapi(request: Request, callback: Callable) -> Response:
     """
     用于向base请求中添加访问令牌。
 
@@ -53,8 +54,46 @@ async def base_iam(request: Request, callback: Callable) -> Response:
     Returns:
         Response: 处理后的响应对象。
     """
-    resp = await proxy.get_response(request, DefaultValue.BaseURL)
+    if not proxy.direct and proxy.access_token is not None:
+        try:
+            key = request.url._url.split("?access_token=")[1]
+        except Exception:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": "No ACCESS_TOKEN provided, please check",
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "NO_ACCESS_TOKEN",
+                    }
+                },
+                status_code=401,
+            )
+        if key != proxy.access_token:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": (
+                            f"Incorrect ACCESS_TOKEN provided: {key}, please check"
+                        ),
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "invalid_ACCESS_TOKEN",
+                    }
+                },
+                status_code=401,
+            )
+        else:
+            new_scope = dict(request.scope)
+            if proxy._config.ACCESS_KEY and proxy._config.SECRET_KEY:
+                new_scope["query_string"] = b""
+            else:
+                proxy._direct = True
+            request = StarletteRequest(scope=new_scope, receive=request.receive)
 
+    else:
+        pass
+    resp = await proxy.get_response(request, DefaultValue.BaseURL)
     if isinstance(resp, AsyncIterator):
         return StreamingResponse(get_stream(resp), media_type="text/event-stream")
 
@@ -89,6 +128,8 @@ def entry(
     log_file: Optional[str],
     mock_port: int,
     ssl_config: Dict[str, Any],
+    access_token: Optional[str],
+    direct: bool,
 ) -> None:
     import os
 
@@ -102,6 +143,11 @@ def entry(
     from qianfan.utils.logging import logger
 
     qianfan.enable_log("DEBUG")
+
+    if access_token is not None:
+        proxy.access_token = access_token
+    if direct:
+        proxy._direct = True
 
     proxy.mock_port = mock_port
 

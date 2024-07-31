@@ -116,7 +116,7 @@ monkey.patch_all()
 
 - **workers (int)**：指定发压使用的worker数目，每个worker为1个进程，默认为1个进程；
 - **origin_users (int)**：指定发压使用的初始user数，必须大于worker数目；每个worker负责模拟${users}/${workers}个虚拟用户；
-- **runtime (str)**：指定发压任务的最大运行时间，格式为带时间单位的字符串，例如（300s, 20m, 3h, 1h30m）；压测任务启动后会一直运行到数据集内所有数据都请求完毕，或到达该参数指定的最大运行时间；该参数默认值为'0s'，表示不设最大运行时间；
+- **runtime (str)**：指定发压任务的单轮最大运行时间，格式为带时间单位的字符串，例如（300s, 20m, 3h, 1h30m）；压测任务启动后会一直运行到数据集内所有数据都请求完毕，或到达该参数指定的最大运行时间；该参数默认值为'0s'，表示不设最大运行时间；
 - **spawn_rate (int)**：指定每秒启动的user数目；
 - **model (str)**：指定需要压测服务的模型名称。该参数与endpoint只能指定一个；
 - **endpoint (str)**：指定需要压测服务的url路径。该参数与model只能指定一个；
@@ -191,7 +191,7 @@ txt格式示例
 - **hyperparameters**: 压测使用的超参数；
 - **QPS**：服务每秒实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
-- **FirstTokenLatency Avg/Min/Max/50%/80%**：首句时延的平均值/最小值/最大值/50分位值/80分位值；
+- **FirstTokenLatency Avg/Min/Max/50%/80%**：首Token时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
 - **TotalQuery/SuccessQuery/FailureQuery**：总请求数/成功请求数/失败请求数；

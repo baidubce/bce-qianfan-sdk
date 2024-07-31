@@ -87,8 +87,6 @@ class Model(
         self.name = name
         if id is None or set_id is None:
             self.auto_complete_info()
-        if id is None and set_id is None:
-            log_warn("set id or id should be provided")
 
     def exec(
         self, input: Optional[Dict] = None, **kwargs: Dict
@@ -386,13 +384,13 @@ class Model(
                 comp_task_detail_resp["result"]["status"]
                 == console_const.ModelCompTaskStatus.Succeeded.value
             ):
-                new_model_version_id = comp_task_detail_resp["result"].get("modelId")
+                new_model_id = comp_task_detail_resp["result"].get("modelId")
                 log_info(
                     f"compress task {model_comp_task_id} run with status"
                     f" {comp_task_detail_resp['result']['status']}"
-                    f" new model_version_id: {new_model_version_id}"
+                    f" new model_id: {new_model_id}"
                 )
-                new_model = Model(id=new_model_version_id)
+                new_model = Model(id=new_model_id)
                 new_model.auto_complete_info()
                 return new_model
             else:
@@ -531,22 +529,18 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             log_warn("service status unknown, service could be unavailable.")
         if self.service_type == ServiceType.Chat:
             return ChatCompletion(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Completion:
             return Completion(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Embedding:
             return Embedding(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         elif self.service_type == ServiceType.Text2Image:
             return Text2Image(
-                model=(self.model.name if self.model is not None else None),
                 endpoint=self.endpoint,
             )
         else:

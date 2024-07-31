@@ -67,7 +67,7 @@ def test_sync_qianfan_single_agent():
 
     tools = get_tool_list()
     agent_qianfan = QianfanSingleActionAgent.from_system_prompt(
-        tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
+        tools, QianfanChatEndpoint(model="ERNIE-4.0-8K")
     )
     agent_executor_qianfan = AgentExecutor(agent=agent_qianfan, tools=tools)
     assert agent_executor_qianfan.run("帮我搜索一篇 physics 领域的论文") == "测试成功"
@@ -87,7 +87,7 @@ async def test_async_qianfan_single_agent():
 
     tools = get_tool_list()
     agent_qianfan = QianfanSingleActionAgent.from_system_prompt(
-        tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
+        tools, QianfanChatEndpoint(model="ERNIE-4.0-8K")
     )
     agent_executor_qianfan = AgentExecutor(agent=agent_qianfan, tools=tools)
     assert (
@@ -108,7 +108,7 @@ def test_sync_qianfan_multi_agent():
 
     tools = get_tool_list()
     agent_qianfan = QianfanMultiActionAgent.from_system_prompt(
-        tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
+        tools, QianfanChatEndpoint(model="ERNIE-4.0-8K")
     )
     agent_executor_qianfan = AgentExecutor(agent=agent_qianfan, tools=tools)
     assert agent_executor_qianfan.run("帮我搜索一篇 physics 领域的论文") == "测试成功"
@@ -128,7 +128,7 @@ async def test_async_qianfan_multi_agent():
 
     tools = get_tool_list()
     agent_qianfan = QianfanMultiActionAgent.from_system_prompt(
-        tools, QianfanChatEndpoint(model="ERNIE-Bot-4")
+        tools, QianfanChatEndpoint(model="ERNIE-4.0-8K")
     )
     agent_executor_qianfan = AgentExecutor(agent=agent_qianfan, tools=tools)
     assert (

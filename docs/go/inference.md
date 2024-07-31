@@ -2,12 +2,12 @@
  
 ## Chat 对话
 
-用户只需要提供预期使用的模型名称和对话内容，即可调用千帆大模型平台支持的，包括 ERNIE-Bot 在内的所有预置模型，如下所示：
+用户只需要提供预期使用的模型名称和对话内容，即可调用千帆大模型平台支持的，包括 ERNIE 系列在内的所有预置模型，如下所示：
 
 ```go
 chat := qianfan.NewChatCompletion() 
 
-// 调用默认模型，即 ERNIE-Bot-turbo
+// 调用默认模型，即 ERNIE-Lite-8K
 resp, err := chat.Do(
     context.TODO(),
     &qianfan.ChatCompletionRequest{
@@ -24,7 +24,7 @@ fmt.Print(resp.Result)
 
 // 指定特定模型
 chat := qianfan.NewChatCompletion(
-    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 chat.ModelList() 获取
+    qianfan.WithModel("ERNIE-4.0-8K"),  // 支持的模型可以通过 chat.ModelList() 获取
 )
 // 或者通过 WithEndpoint 指定自行发布的模型
 chat := qianfan.NewChatCompletion(
@@ -34,15 +34,13 @@ chat := qianfan.NewChatCompletion(
 
 目前，千帆大模型平台提供了一系列可供用户通过 SDK 直接使用的模型，模型清单如下所示：
 
-- [ERNIE-Bot-4](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t)
-- [ERNIE-Bot](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11)
-- [ERNIE-Bot-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/6lp69is2a)
+- [ERNIE-4.0-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t)
+- [ERNIE-3.5-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11)
 - [ERNIE-3.5-4K-0205](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Llsr67q8h)
 - [ERNIE-3.5-8K-0205](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/llsr6hjxo)
 - [ERNIE-3.5-8K-1222](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/mlt3vdi2j)
-- [ERNIE-Speed](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/klqx7b1xf)
-- [ERNIE-Bot-turbo](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/4lilb2lpf) （默认）
-- [ERNIE-Bot-turbo-AI](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Alp0kdm0n)
+- [ERNIE-Speed-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/klqx7b1xf)
+- [ERNIE-Lite-8K](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/dltgsna1o) （默认）
 - [BLOOMZ-7B](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Jljcadglj)
 - [Llama-2-7b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Rlki1zlai)
 - [Llama-2-13b-chat](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/2lki2us1e)
@@ -94,11 +92,11 @@ for {
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `Completion` 来完成这一任务。
 
 ```go
-completion := qianfan.NewCompletion()  // 默认使用 ERNIE-Bot-turbo 模型
+completion := qianfan.NewCompletion()  // 不传入使用默认模型
 
 // 可以通过 WithModel 指定模型
 completion := qianfan.NewCompletion(
-    qianfan.WithModel("ERNIE-Bot-4"),  
+    qianfan.WithModel("ERNIE-4.0-8K"),  
     // 支持的模型可以通过 completion.ModelList() 获取
 )
 // 或者通过 WithEndpoint 指定 endpoint
@@ -162,7 +160,7 @@ embed := qianfan.NewEmbedding()  // 默认使用 Embedding-V1 模型
 
 // 可以通过 WithModel 指定模型
 embed := qianfan.NewEmbedding(
-    qianfan.WithModel("ERNIE-Bot-4"),  // 支持的模型可以通过 embed.ModelList() 获取
+    qianfan.WithModel("ERNIE-4.0-8K"),  // 支持的模型可以通过 embed.ModelList() 获取
 )
 // 或者通过 WithEndpoint 指定 endpoint
 embed := qianfan.NewEmbedding(

@@ -141,7 +141,9 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 continue
             if self.event_dispatcher is not None:
                 self.action_event(
-                    ActionState.Running, "pipeline running", {"action": k}
+                    ActionState.Running,
+                    "pipeline running",
+                    {"action": k, "ppl_id": self.id},
                 )
             self.current_action = k
             output = self.actions[k].exec(input=output, **kwargs)
@@ -241,7 +243,14 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def load(cls, b: bytes) -> "Pipeline":
         meta = cls.serialize_helper.deserialize(b)
         assert isinstance(meta, dict)
-        return cls._load_from_dict(meta)
+        try:
+            return cls._load_from_dict(meta)
+        except Exception as e:
+            log_error(e)
+            raise ValueError(
+                "load pipeline error, please update qianfan or use `qianfan cache"
+                " --clear` to clear all"
+            )
 
     @classmethod
     def _load_from_dict(cls, meta: Dict[str, Any]) -> "Pipeline":

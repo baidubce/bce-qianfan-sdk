@@ -139,7 +139,7 @@ def test_trainer_sft_run():
 
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725",
+        train_type="ERNIE-Speed-8K",
         dataset=ds,
         train_config=train_config,
         event_handler=eh,
@@ -157,11 +157,11 @@ def test_trainer_sft_run():
 def test_trainer_sft_run_from_bos():
     with pytest.raises(InvalidArgumentError):
         sft_task = LLMFinetune(
-            train_type="ERNIE-Bot-turbo-0725",
+            train_type="ERNIE-Speed-8K",
         )
         sft_task.run()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725", dataset_bos_path="bos:/sdk-test/"
+        train_type="ERNIE-Speed-8K", dataset_bos_path="bos:/sdk-test/"
     )
     sft_task.run()
     res = sft_task.result
@@ -222,7 +222,7 @@ def test_model_deploy():
 
 
 def test_service_exec():
-    svc = Service(model="ERNIE-Bot", service_type=ServiceType.Chat)
+    svc = Service(model="ERNIE-3.5-8K", service_type=ServiceType.Chat)
     resp = svc.exec({"messages": [{"content": "hi", "role": "user"}]})
     assert resp is not None
     assert resp["result"] != ""
@@ -235,7 +235,7 @@ def test_trainer_resume():
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     sft_task = LLMFinetune(
-        train_type="ERNIE-Bot-turbo-0725",
+        train_type="ERNIE-Speed-8K",
         dataset=ds,
     )
     ppl = sft_task.ppls[0]
@@ -281,7 +281,7 @@ def test__parse_from_input():
     assert isinstance(result, Model)
     assert result.set_id == "17000"
     assert result.id == "12333"
-    input = {"service": Service(model="ERNIE-Bot")}
+    input = {"service": Service(model="ERNIE-4.0-8K")}
     result = action._parse_from_input(input)
     assert isinstance(
         result, Service

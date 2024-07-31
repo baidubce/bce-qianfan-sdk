@@ -19,7 +19,7 @@
 // 千帆SDK提供大模型工具链最佳实践，让AI工作流和AI原生应用优雅且便捷地访问千帆大模型平台。
 // 目前 SDK 提供了以下功能：
 //
-// - 大模型推理：实现了对一言（ERNIE-Bot）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding等。
+// - 大模型推理：实现了对一言（ERNIE）系列、开源大模型等模型推理的接口封装，支持对话、补全、Embedding等。
 //
 // 文档：https://github.com/baidubce/bce-qianfan-sdk/blob/main/go/README.md
 // 示例代码：https://github.com/baidubce/bce-qianfan-sdk/tree/main/go/examples

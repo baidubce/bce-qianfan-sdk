@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
+import datetime
 import hashlib
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+import threading
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union
+
+import cachetools
 
 from qianfan.config import encoding
 from qianfan.errors import InvalidArgumentError
@@ -206,7 +210,7 @@ class BaseTrainConfig(BaseModel):
         return True
 
 
-class TrainConfig(BaseTrainConfig):
+class TrainConfigImpl(BaseTrainConfig):
     epoch: Optional[int] = Field(default=None, limit_type=LimitType.Range)
     """
     epoch number: differ from models
@@ -244,26 +248,61 @@ class TrainConfig(BaseTrainConfig):
     )
     """LoRA参数层列表"""
 
+
+def _load_config(path: str) -> "TrainConfigImpl":
+    import yaml
+
+    try:
+        from pathlib import Path
+
+        path_obj = Path(path)
+        if path_obj.suffix == ".yaml":
+            with open(path_obj, "r", encoding=encoding()) as file:
+                data = yaml.safe_load(file)
+                return TrainConfigImpl.parse_obj(data)
+        elif path_obj.suffix == ".json":
+            return TrainConfigImpl.parse_file(path)
+        else:
+            raise InvalidArgumentError("unsupported file to parse: {path}")
+    except FileNotFoundError as e:
+        log_error(f"load train_config from file: {path} not found")
+        raise e
+    except Exception as e:
+        raise e
+
+
+class TrainConfig(object):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        need_update = kwargs.get("need_update", True)
+        if need_update:
+            update_all()
+        if kwargs.get("real_train_config"):
+            self.real_train_config = kwargs.get("real_train_config")
+        else:
+            self.real_train_config = TrainConfigImpl(*args, **kwargs)
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if __name in ["real_train_config", "load"]:
+            return super().__setattr__(__name, __value)
+        self.real_train_config.__setattr__(__name, __value)
+
+    def __getattribute__(self, __name: str) -> Any:
+        if __name == "real_train_config":
+            return super().__getattribute__(__name)
+        return self.real_train_config.__getattribute__(__name)
+
+    def __str__(self) -> str:
+        return self.real_train_config.__str__()
+
     @classmethod
     def load(cls, path: str) -> "TrainConfig":
-        import yaml
-
         try:
-            from pathlib import Path
+            update_all()
+            tc = TrainConfig(real_train_config=_load_config(path), need_update=False)
 
-            path_obj = Path(path)
-            if path_obj.suffix == ".yaml":
-                with open(path_obj, "r", encoding=encoding()) as file:
-                    data = yaml.safe_load(file)
-                    return TrainConfig.parse_obj(data)
-            elif path_obj.suffix == ".json":
-                return cls.parse_file(path)
-            else:
-                raise InvalidArgumentError("unsupported file to parse: {path}")
-        except FileNotFoundError as e:
-            log_error(f"load train_config from file: {path} not found")
-            raise e
+            return tc
         except Exception as e:
+            log_error(e)
             raise e
 
 
@@ -323,14 +362,7 @@ class ModelInfo(BaseModel):
 def get_model_info(
     train_mode: console_consts.TrainMode, model: str
 ) -> Optional[ModelInfo]:
-    if train_mode == console_consts.TrainMode.PostPretrain:
-        return PostPreTrainModelInfoMapping.get(model)
-    elif train_mode == console_consts.TrainMode.SFT:
-        return ModelInfoMapping.get(model)
-    elif train_mode == console_consts.TrainMode.DPO:
-        return DPOTrainModelInfoMapping.get(model)
-    else:
-        return None
+    return get_trainer_model_list(train_mode).get(model)
 
 
 def _get_online_supported_model_info_mapping(
@@ -378,8 +410,8 @@ type_mapping = {
 
 def _update_train_config(model_info_list: List[Dict]) -> Type:
     # 使用动态生成类的函数创建 TrainConfig 类
-    global TrainConfig
-    schema_dict = TrainConfig.schema()
+    global TrainConfigImpl
+    schema_dict = TrainConfigImpl.schema()
     # try:
     train_config_fields = {}
     params = schema_dict.get("properties", {})
@@ -414,14 +446,14 @@ def _update_train_config(model_info_list: List[Dict]) -> Type:
                         continue
 
     new_train_config_type = create_train_config_class(
-        "TrainConfig", train_config_fields
+        "TrainConfigImpl", train_config_fields
     )
     # except Exception as e:
     #     log_error(f"update train config failed, {e}")
     #     return TrainConfig
 
-    TrainConfig = new_train_config_type  # type: ignore
-    return TrainConfig
+    TrainConfigImpl = new_train_config_type  # type: ignore
+    return TrainConfigImpl
 
 
 def _update_default_config(model_info_list: List[Dict]) -> Dict:
@@ -443,7 +475,9 @@ def _update_default_config(model_info_list: List[Dict]) -> Dict:
                 for params in param_scale["supportHyperParameterConfig"]:
                     field_name = camel_to_snake(params["key"])
                     default_fields[field_name] = params["default"]
-                current[model][param_scale_peft] = TrainConfig(**default_fields)
+                current[model][param_scale_peft] = TrainConfig(
+                    **default_fields, need_update=False
+                )
     return train_mode_model_info_mappings
 
 
@@ -497,742 +531,131 @@ PostPreTrainModelInfoMapping: Dict[str, ModelInfo] = {
         model="ERNIE-Speed-8K",
         short_name="ERNIE_Speed",
         base_model_type="ERNIE Speed",
-        support_peft_types=[PeftType.ALL],
-        common_params_limit=TrainLimit(),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                epoch=(1, 10),
-                learning_rate=(0.00001, 0.00004),
-                max_seq_len=[4096, 8192],
-            ),
-        },
-        deprecated=True,
-    ),
-    "ERNIE-Bot-turbo-0922": ModelInfo(
-        model="ERNIE-Lite-8K-0922",
-        short_name="turbo_0922",
-        base_model_type="ERNIE-Bot-turbo",
-        support_peft_types=[PeftType.ALL],
-        common_params_limit=TrainLimit(),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                epoch=(1, 10),
-                learning_rate=(0.00001, 0.00004),
-                max_seq_len=[4096, 8192],
-            ),
-        },
         deprecated=True,
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
-        model="Qianfan-Chinese-Llama-2-13B-v1",
+        model="Qianfan-Chinese-Llama-2-13B-v2",
+        base_model_type="Llama",
         short_name="Llama2_13b",
-        base_model_type="Llama-2",
-        support_peft_types=[PeftType.ALL],
-        common_params_limit=TrainLimit(),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                batch_size=(48, 960),
-                epoch=(1, 1),
-                learning_rate=(0.0000002, 0.0002),
-                weight_decay=(0.0001, 0.05),
-            ),
-        },
-        deprecated=True,
+    ),
+    "Qianfan-Chinese-Llama-2-13B-v2": ModelInfo(
+        model="Qianfan-Chinese-Llama-2-13B-v2",
+        base_model_type="Llama",
+        short_name="Llama2_13b",
     ),
 }
 
 
 DPOTrainModelInfoMapping: Dict[str, ModelInfo] = {}
 
-# model train type -> default train config
+# model train type -> default train config, dynamic fetch from api
 ModelInfoMapping: Dict[str, ModelInfo] = {
     "ERNIE-Speed": ModelInfo(
         model="ERNIE-Speed-8K",
         short_name="ERNIE_Speed",
         base_model_type="ERNIE Speed",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
-            epoch=(1, 50),
-            logging_steps=(1, 100),
-            warmup_ratio=(0.01, 0.5),
-            weight_decay=(0.0001, 0.1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                learning_rate=(0.00001, 0.00004),
-            ),
-            PeftType.LoRA: TrainLimit(
-                learning_rate=(0.00003, 0.001),
-                lora_rank=[2, 4, 8],
-                lora_all_linear=["True", "False"],
-            ),
-        },
         deprecated=True,
-    ),
-    "ERNIE-Bot-turbo-0922": ModelInfo(
-        model="ERNIE-Lite-8K-0922",
-        short_name="turbo_0922",
-        base_model_type="ERNIE-Bot-turbo",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
-            epoch=(1, 50),
-            logging_steps=(1, 100),
-            warmup_ratio=(0.01, 0.5),
-            weight_decay=(0.0001, 0.1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                learning_rate=(0.00001, 0.00004),
-            ),
-            PeftType.LoRA: TrainLimit(
-                learning_rate=(0.00003, 0.001),
-                lora_rank=[2, 4, 8],
-            ),
-        },
-        deprecated=True,
-    ),
-    "ERNIE-Bot-turbo-0725": ModelInfo(
-        model="ERNIE-Lite-8K-0725",
-        short_name="turbo_0725",
-        base_model_type="ERNIE-Bot-turbo",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            max_seq_len=[4096, 8192],
-            epoch=(1, 50),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.ALL: TrainLimit(
-                learning_rate=(0.00001, 0.00004),
-            ),
-            PeftType.LoRA: TrainLimit(
-                learning_rate=(0.00003, 0.001),
-            ),
-        },
-        deprecated=True,
-    ),
-    "ERNIE-Bot-turbo-0704": ModelInfo(
-        model="ERNIE-Lite-8K-0704",
-        short_name="turbo_0704",
-        base_model_type="ERNIE-Bot-turbo",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
-        common_params_limit=TrainLimit(
-            epoch=(1, 50),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.PTuning: TrainLimit(
-                learning_rate=(0.003, 0.1),
-            ),
-            PeftType.ALL: TrainLimit(
-                learning_rate=(0.00001, 0.00004),
-            ),
-            PeftType.LoRA: TrainLimit(
-                learning_rate=(0.00003, 0.001),
-            ),
-        },
-        deprecated=True,
-    ),
-    "Qianfan-Chinese-Llama-2-7B": ModelInfo(
-        short_name="Llama2_7b",
-        base_model_type="Llama-2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            epoch=(1, 50),
-            learning_rate=(0.0000002, 0.0002),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-            weight_decay=(0.001, 1),
-            warmup_ratio=(0.01, 0.1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            ),
-        },
     ),
     "Qianfan-Chinese-Llama-2-13B": ModelInfo(
+        model="Qianfan-Chinese-Llama-2-13B-v2",
         short_name="Llama2_13b",
-        base_model_type="Llama-2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            epoch=(1, 50),
-            learning_rate=(0.0000002, 0.0002),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-            weight_decay=(0.001, 1),
-            warmup_ratio=(0.01, 0.1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            ),
-        },
+        base_model_type="Llama",
     ),
-    "Qianfan-Chinese-Llama-2-7B-32K": ModelInfo(
-        short_name="Llama2_13b_32K",
-        base_model_type="Llama-2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
-        common_params_limit=TrainLimit(
-            batch_size=[1, 1],
-            max_seq_len=[4096, 8192, 16384, 32768],
-            epoch=(1, 50),
-            learning_rate=(0.0000000001, 0.0002),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-            weight_decay=(0.001, 1),
-            warmup_ratio=(0.01, 0.1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            ),
-        },
-    ),
-    "SQLCoder-7B": ModelInfo(
-        short_name="SQLCoder_7B",
-        base_model_type="SQLCoder",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[4096, 8192],
-            epoch=(1, 50),
-            learning_rate=(0.0000002, 0.0002),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            ),
-        },
-    ),
-    "ChatGLM2-6B": ModelInfo(
-        short_name="GLM2_6B",
-        base_model_type="ChatGLM2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            epoch=(1, 50),
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-            learning_rate=(0.0000002, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            ),
-        },
-    ),
-    "ChatGLM2-6B-32K": ModelInfo(
-        short_name="GLM2_6B_32K",
-        base_model_type="ChatGLM2",
-        support_peft_types=[PeftType.ALL],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            epoch=(1, 50),
-            learning_rate=(0.0000002, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-        ),
-    ),
-    "Baichuan2-7B-Chat": ModelInfo(
-        short_name="Baichuan2_7B",
-        base_model_type="Baichuan2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            epoch=(1, 50),
-            learning_rate=(0.0000000001, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            )
-        },
-    ),
-    "Baichuan2-13B-Chat": ModelInfo(
-        short_name="Baichuan2_13B",
-        base_model_type="Baichuan2",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            max_seq_len=[1024, 2048, 4096],
-            epoch=(1, 50),
-            learning_rate=(0.0000000001, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            )
-        },
-    ),
-    "BLOOMZ-7B": ModelInfo(
-        short_name="BLOOMZ_7B",
-        base_model_type="BLOOMZ",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA, PeftType.PTuning],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            epoch=(1, 50),
-            learning_rate=(0.0000002, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-            )
-        },
-    ),
-    "CodeLlama-7B": ModelInfo(
-        short_name="CodeLlama_7B",
-        base_model_type="CodeLlama",
-        support_peft_types=[PeftType.ALL, PeftType.LoRA],
-        common_params_limit=TrainLimit(
-            batch_size=(1, 4),
-            epoch=(1, 50),
-            max_seq_len=[1024, 2048, 4096],
-            learning_rate=(0.0000000001, 0.0002),
-            warmup_ratio=(0.01, 0.1),
-            weight_decay=(0.001, 1),
-            scheduler_name=[
-                "linear",
-                "cosine",
-                "polynomial",
-                "constant",
-                "constant_with_warmup",
-            ],
-        ),
-        specific_peft_types_params_limit={
-            PeftType.LoRA: TrainLimit(
-                lora_rank=[8, 16, 32, 64],
-                lora_alpha=[8, 16, 32, 64],
-                lora_dropout=(0.1, 0.5),
-                lora_target_modules=[
-                    "self_attn.q_proj",
-                    "self_attn.k_proj",
-                    "self_attn.v_proj",
-                    "self_attn.o_proj",
-                    "mlp.gate_proj",
-                    "mlp.up_proj",
-                    "mlp.down_proj",
-                ],
-            )
-        },
+    "Qianfan-Chinese-Llama-2-13B-v2": ModelInfo(
+        model="Qianfan-Chinese-Llama-2-13B-v2",
+        short_name="Llama2_13b",
+        base_model_type="Llama",
     ),
 }
 
-DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
-    "ERNIE-Speed": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-            peft_type=PeftType.ALL,
-        )
-    },
-    "ERNIE-Bot-turbo-0922": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-        )
-    },
-    "Qianfan-Chinese-Llama-2-13B": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            batch_size=192,
-            learning_rate=0.000020,
-            weight_decay=0.01,
-        )
-    },
-}
+DefaultPostPretrainTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {}
 
 DefaultDPOTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {}
 
 # finetune model train type -> default finetune train config
-DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {
-    "ERNIE-Speed": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-            logging_steps=1,
-            warmup_ratio=0.1,
-            weight_decay=0.01,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.0003,
-            max_seq_len=4096,
-            logging_steps=1,
-            warmup_ratio=0.10,
-            weight_decay=0.0100,
-            lora_rank=8,
-            lora_all_linear="True",
-        ),
-    },
-    "ERNIE-Bot-turbo-0922": {
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.0003,
-            max_seq_len=4096,
-            logging_steps=1,
-            warmup_ratio=0.10,
-            weight_decay=0.0100,
-            lora_rank=8,
-            lora_all_linear="True",
-        ),
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-            logging_steps=1,
-            warmup_ratio=0.1,
-            weight_decay=0.01,
-        ),
-    },
-    "ERNIE-Bot-turbo-0725": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.0003,
-            max_seq_len=4096,
-        ),
-    },
-    "ERNIE-Bot-turbo-0704": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-        ),
-        PeftType.PTuning: TrainConfig(
-            epoch=1,
-            learning_rate=0.03,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.00003,
-        ),
-    },
-    "Qianfan-Chinese-Llama-2-7B": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.PTuning: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-    },
-    "Qianfan-Chinese-Llama-2-13B": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.PTuning: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-    },
-    "Qianfan-Chinese-Llama-2-7B-32K": {
-        PeftType.LoRA: TrainConfig(
-            epoch=3,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=32768,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-        PeftType.ALL: TrainConfig(
-            epoch=3,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=32768,
-        ),
-    },
-    "ChatGLM2-6B": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-    },
-    "ChatGLM2-6B-32K": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-        ),
-    },
-    "Baichuan2-7B-Chat": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-    },
-    "Baichuan2-13B-Chat": {
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-    },
-    "BLOOMZ-7B": {
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-        ),
-        PeftType.PTuning: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-        ),
-    },
-    "CodeLlama-7B": {
-        PeftType.LoRA: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-            lora_target_modules=["self_attn.q_proj", "self_attn.v_proj"],
-            lora_rank=32,
-            lora_alpha=32,
-            lora_dropout=0.1,
-        ),
-        PeftType.ALL: TrainConfig(
-            epoch=1,
-            learning_rate=0.000001,
-            batch_size=1,
-            scheduler_name="cosine",
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            max_seq_len=4096,
-        ),
-    },
-}
+DefaultTrainConfigMapping: Dict[str, Dict[PeftType, TrainConfig]] = {}
 
 
-def update_train_configs() -> None:
+ttl_cache: cachetools.Cache = cachetools.TTLCache(maxsize=200, ttl=7200)
+
+
+ModelInfoMappingCollection: Dict[str, Dict[str, ModelInfo]] = {}
+DefaultTrainConfigMappingCollection: Dict[
+    str, Dict[str, Dict[PeftType, TrainConfig]]
+] = {}
+
+
+def get_trainer_model_list(
+    train_mode: Union[str, console_consts.TrainMode]
+) -> Dict[str, ModelInfo]:
+    update_all()
+    return ModelInfoMappingCollection.get(
+        console_consts.TrainMode(train_mode).value, {}
+    )
+
+
+def get_default_train_config(
+    train_mode: Union[str, console_consts.TrainMode]
+) -> Dict[str, Dict[PeftType, TrainConfig]]:
+    update_all()
+    train_configs = DefaultTrainConfigMappingCollection.get(
+        console_consts.TrainMode(train_mode).value, {}
+    )
+    return train_configs
+
+
+@cachetools.cached(ttl_cache)
+def get_supported_models() -> Any:
+    return FineTune.V2.supported_models()["result"]
+
+
+last_update_time: Optional[datetime.datetime] = None
+lock = threading.Lock()
+
+
+def interval_call_checker(c: Callable, interval: int = 3000) -> Callable:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        need_call = False
+        with lock:
+            global last_update_time
+            if last_update_time is None:
+                last_update_time = datetime.datetime.now()
+                need_call = True
+            else:
+                now = datetime.datetime.now()
+                if (now - last_update_time).seconds > interval:
+                    last_update_time = now
+                    need_call = True
+        if need_call:
+            return c(*args, **kwargs)
+        else:
+            return None
+
+    return wrapper
+
+
+@interval_call_checker
+def update_all(*args: Any, **kwargs: Any) -> None:
+    update_train_configs()
+    update_model_list_configs()
+
+
+def update_train_configs() -> "Type":
     try:
         # 获取最新支持的配置：
-        model_info_list = FineTune.V2.supported_models()["result"]
+        model_info_list = get_supported_models()
         # 更新训练config
-        _update_train_config(model_info_list=model_info_list)
+        return _update_train_config(model_info_list=model_info_list)
     except Exception as e:
         log_warn(f"failed to get supported models: {e}")
-        return
+        return TrainConfig
 
 
-def update_all_train_configs() -> None:
+def update_model_list_configs() -> None:
     try:
         # 获取最新支持的配置：
-        model_info_list = FineTune.V2.supported_models()["result"]
-        # 更新训练config
-        _update_train_config(model_info_list=model_info_list)
-        # 更新模型的类型和校验参数
+        model_info_list = get_supported_models()
+        # 更新模型列表的类型和校验参数
         sft_model_info = _get_online_supported_model_info_mapping(
             model_info_list, console_consts.TrainMode.SFT
         )
@@ -1244,32 +667,71 @@ def update_all_train_configs() -> None:
         )
         # 更新模型默认配置：
         default_configs_mapping = _update_default_config(model_info_list)
-    except Exception:
+    except Exception as e:
+        raise e
         return
-    global ModelInfoMapping
+    # 更新
+    global ModelInfoMappingCollection, ModelInfoMapping
+    global PostPreTrainModelInfoMapping, DPOTrainModelInfoMapping
     ModelInfoMapping = {**ModelInfoMapping, **sft_model_info}
-    global PostPreTrainModelInfoMapping
     PostPreTrainModelInfoMapping = {
         **PostPreTrainModelInfoMapping,
         **ppt_model_info,
     }
-    global DPOTrainModelInfoMapping
     DPOTrainModelInfoMapping = {**DPOTrainModelInfoMapping, **dpo_model_info}
-    global DefaultTrainConfigMapping
+    ModelInfoMappingCollection[console_consts.TrainMode.SFT.value] = ModelInfoMapping
+    ModelInfoMappingCollection[console_consts.TrainMode.PostPretrain.value] = (
+        PostPreTrainModelInfoMapping
+    )
+    ModelInfoMappingCollection[console_consts.TrainMode.DPO.value] = (
+        DPOTrainModelInfoMapping
+    )
+
+    def fix_deprecated_model_infos(model_mapping: Dict[str, ModelInfo]) -> None:
+        for model, model_info in model_mapping.items():
+            if (
+                len(model_info.support_peft_types) == 0
+                and model_info.model in model_mapping
+            ):
+                model_mapping[model] = model_mapping[model_info.model]
+
+    def fix_deprecated_model_train_configs(
+        train_configs: Dict[str, Dict[PeftType, TrainConfig]]
+    ) -> None:
+        model_list = get_trainer_model_list(train_mode)
+        for model, model_info in model_list.items():
+            if model not in train_configs and model_info.model in train_configs:
+                train_configs[model] = train_configs[model_info.model]
+
+    # default train configs
+    global DefaultTrainConfigMappingCollection, DefaultTrainConfigMapping
+    global DefaultPostPretrainTrainConfigMapping, DefaultDPOTrainConfigMapping
     DefaultTrainConfigMapping = {
         **DefaultTrainConfigMapping,
         **default_configs_mapping[console_consts.TrainMode.SFT],
     }
-    global DefaultPostPretrainTrainConfigMapping
     DefaultPostPretrainTrainConfigMapping = {
         **DefaultPostPretrainTrainConfigMapping,
         **default_configs_mapping[console_consts.TrainMode.PostPretrain],
     }
-    global DefaultDPOTrainConfigMapping
     DefaultDPOTrainConfigMapping = {
         **DefaultDPOTrainConfigMapping,
         **default_configs_mapping[console_consts.TrainMode.DPO],
     }
+    DefaultTrainConfigMappingCollection[console_consts.TrainMode.SFT.value] = (
+        DefaultTrainConfigMapping
+    )
+    DefaultTrainConfigMappingCollection[console_consts.TrainMode.PostPretrain.value] = (
+        DefaultPostPretrainTrainConfigMapping
+    )
+    DefaultTrainConfigMappingCollection[console_consts.TrainMode.DPO.value] = (
+        DefaultDPOTrainConfigMapping
+    )
 
+    for train_mode in console_consts.TrainMode:
+        model_mapping = ModelInfoMappingCollection.get(train_mode.value, {})
+        fix_deprecated_model_infos(model_mapping)
 
-update_all_train_configs()
+        train_configs = DefaultTrainConfigMappingCollection.get(train_mode.value, {})
+        fix_deprecated_model_train_configs(train_configs)
+    return None

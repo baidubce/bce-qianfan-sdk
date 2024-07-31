@@ -39,6 +39,7 @@ class VersatileRateLimiter:
         query_per_second: float = 0,
         request_per_minute: float = 0,
         buffer_ratio: float = 0.1,
+        forcing_disable: bool = False,
         **kwargs: Any
     ) -> None:
         """
@@ -55,6 +56,9 @@ class VersatileRateLimiter:
                 remaining rate ratio for better practice in
                 production environment, default to 0.1,
                 means only apply 90% rate limitation
+            forcing_disable (bool):
+                Force to disable all functionality of rate limiter.
+                Default to False
         """
         if request_per_minute <= 0:
             request_per_minute = get_config().RPM_LIMIT
@@ -76,11 +80,13 @@ class VersatileRateLimiter:
         self._og_request_per_minute = request_per_minute
         self._og_query_per_second = query_per_second
         self._buffer_ratio = buffer_ratio
-        self._has_been_reset = False
+        self._has_been_reset = forcing_disable
         self._inner_reset_once_lock = threading.Lock()
         self._inner_async_reset_once_lock: Optional[asyncio.Lock] = None
 
-        self.is_closed = request_per_minute <= 0 and query_per_second <= 0
+        self.is_closed = forcing_disable or (
+            request_per_minute <= 0 and query_per_second <= 0
+        )
         if self.is_closed:
             return
 

@@ -152,18 +152,24 @@ print(resp['result'])
 在千帆平台创建一个数据增强任务，需要提供源数据集 ID `source_dataset_id` ，目标数据集 ID `destination_dataset_id` ，需要使用的大模型服务名 `service_name` ，对应的服务 url `service_url` ，应用 id `app_id` ，样本种子数 `num_seed_fewshot` ，生成实例数 `num_instances_to_generate` ，相似度阈值 `similarity_threshold`。详细方法和返回参数字段参见 [API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Dlp6iv0zw)
 
 ```python
-resp = Data.create_dataset_augmenting_task(
-    "name_of_aug_task",
-    12,
-    34,
-    "ERNIE-Bot",
-    "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
-    1234,
-    1,
-    1,
-    0.5,
+import os
+from qianfan import resources
+
+# 使用安全认证AK/SK鉴权，通过环境变量方式初始化；替换下列示例中参数，安全认证Access Key替换your_iam_ak，Secret Key替换your_iam_sk
+os.environ["QIANFAN_ACCESS_KEY"] = "your_iam_ak"
+os.environ["QIANFAN_SECRET_KEY"] = "your_iam_sk"
+
+resp = resources.Data.create_dataset_augmenting_task(
+    name='aug_task_01',
+    source_dataset_id="ds-in20jpw3if43xcpb",
+    destination_dataset_id="ds-8r6y2are3bb54tkr",
+    dev_api_id=1431,
+    app_id=26217111,
+    num_seed_fewshot=1,
+    num_instances_to_generate=1,
+    similarity_threshold=0.5,
 )
-print(resp['result'])
+print(resp.body)
 ```
 
 #### **查看数据增强详情**

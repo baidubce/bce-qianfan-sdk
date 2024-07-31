@@ -282,7 +282,7 @@ class BatchInferenceHelper:
         if small_files:
             res_ds_input_dirs.extend(
                 self._batch_group_remote_files(
-                    data_path, [f_meta["path"] for f_meta in small_files]
+                    data_path, [f_meta for f_meta in small_files]
                 )
             )
 

@@ -181,15 +181,15 @@ func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	if request.Type == authRequest {
 		return nil
 	}
-	if GetConfig().AccessToken != "" {
-		request.Params["access_token"] = GetConfig().AccessToken
-		return nil
-	} else if GetConfig().AK != "" && GetConfig().SK != "" {
+	if GetConfig().AK != "" && GetConfig().SK != "" {
 		return r.addAccessToken(ctx, request)
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)
+	} else if GetConfig().AccessToken != "" {
+		request.Params["access_token"] = GetConfig().AccessToken
+		return nil
 	}
-	logger.Error("no enough credential found. Please check whether (ak, sk) or (access_key, secret_key) is set in config")
+	logger.Error("no enough credential found. Please check whether (ak, sk) or (access_key, secret_key) or (access_token) is set in config")
 	return &CredentialNotFoundError{}
 }
 

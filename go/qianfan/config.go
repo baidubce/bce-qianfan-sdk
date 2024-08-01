@@ -42,6 +42,7 @@ type Config struct {
 	SK                            string  `mapstructure:"QIANFAN_SK"`
 	AccessKey                     string  `mapstructure:"QIANFAN_ACCESS_KEY"`
 	SecretKey                     string  `mapstructure:"QIANFAN_SECRET_KEY"`
+	AccessToken                   string  `mapstructure:"QIANFAN_ACCESS_TOKEN"`
 	BaseURL                       string  `mapstructure:"QIANFAN_BASE_URL"`
 	IAMSignExpirationSeconds      int     `mapstructure:"QIANFAN_IAM_SIGN_EXPIRATION_SEC"`
 	ConsoleBaseURL                string  `mapstructure:"QIANFAN_CONSOLE_BASE_URL"`

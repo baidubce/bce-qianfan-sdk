@@ -181,7 +181,10 @@ func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	if request.Type == authRequest {
 		return nil
 	}
-	if GetConfig().AK != "" && GetConfig().SK != "" {
+	if GetConfig().AccessToken != "" {
+		request.Params["access_token"] = GetConfig().AccessToken
+		return nil
+	} else if GetConfig().AK != "" && GetConfig().SK != "" {
 		return r.addAccessToken(ctx, request)
 	} else if GetConfig().AccessKey != "" && GetConfig().SecretKey != "" {
 		return r.sign(request)

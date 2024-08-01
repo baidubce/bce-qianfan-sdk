@@ -128,6 +128,7 @@ func TestAuthWhenUsing(t *testing.T) {
 	// 如果只设置了部分鉴权信息，则报错
 	GetConfig().AK = ""
 	GetConfig().AccessKey = ""
+	GetConfig().AccessToken = ""
 	_, err = chat.Do(
 		context.Background(),
 		&ChatCompletionRequest{

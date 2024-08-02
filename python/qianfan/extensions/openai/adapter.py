@@ -15,12 +15,14 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import re
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TypeVar, Union
 
 import qianfan
 from qianfan import QfResponse
+from qianfan.utils import log_debug
 
 _T = TypeVar("_T")
 OpenAIRequest = Dict[str, Any]
@@ -121,12 +123,15 @@ class OpenAIApdater(object):
         """
         Convert general arguments in OpenAI request to Qianfan request.
         """
-        qianfan_request = {}
+        qianfan_request = copy.deepcopy(openai_request)
 
         def add_if_exist(openai_key: str, qianfan_key: Optional[str] = None) -> None:
             qianfan_key = openai_key if qianfan_key is None else qianfan_key
             if openai_key in openai_request:
                 qianfan_request[qianfan_key] = openai_request[openai_key]
+            if qianfan_key is not None and qianfan_key != openai_key:
+                if openai_key in qianfan_request:
+                    del qianfan_request[openai_key]
 
         add_if_exist("max_tokens", "max_output_tokens")
         add_if_exist("response_format")
@@ -145,6 +150,7 @@ class OpenAIApdater(object):
             # [-2, 2] -> [-0.5, 0.5] -> [1, 2]
             penalty = penalty / 4 + 1.5
             qianfan_request["penalty_score"] = penalty
+            qianfan_request.pop("presence_penalty")
         if "temperature" in openai_request:
             temperature = openai_request["temperature"] / 2
             if temperature == 0:
@@ -394,7 +400,9 @@ class OpenAIApdater(object):
         Chat Wrapper API
         """
         stream = request.get("stream", False)
+        log_debug(f"recv openai request: {request}")
         qianfan_request = self.openai_chat_request_to_qianfan(request)
+        log_debug(f"convert to qianfan request: {qianfan_request}")
         n = request.get("n", 1)
         if stream:
             return self._chat_stream(n, request, qianfan_request)

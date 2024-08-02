@@ -37,10 +37,8 @@ def entry(
     import uvicorn.config
     from rich.markdown import Markdown
 
-    import qianfan
     from qianfan.utils.logging import logger
 
-    qianfan.enable_log("INFO")
     log_config = uvicorn.config.LOGGING_CONFIG
     if log_file is not None:
         log_config["handlers"]["file"] = {

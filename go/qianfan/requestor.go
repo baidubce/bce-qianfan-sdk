@@ -125,13 +125,27 @@ func newRequest(requestType string, method string, url string, body RequestBody)
 }
 
 // 创建一个 Request，body 是一个 map
-func newRequestFromMap(requestType string, method string, url string, body map[string]interface{}) (*QfRequest, error) {
+func newRequestFromMap(requestType string, method string, urlStr string, body map[string]interface{}) (*QfRequest, error) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// 提取params
+	params := u.Query()
+	paramsMap := make(map[string]string)
+	for key, values := range params {
+		if len(values) > 0 {
+			paramsMap[key] = values[0] // 只取第一个值
+		}
+	}
+
 	return &QfRequest{
 		Type:    requestType,
 		Method:  method,
-		URL:     url,
+		URL:     u.Path,
 		Body:    body,
-		Params:  map[string]string{},
+		Params:  paramsMap,
 		Headers: map[string]string{},
 	}, nil
 }

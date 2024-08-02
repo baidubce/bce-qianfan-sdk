@@ -302,7 +302,7 @@ class BatchInferenceHelper:
             return res
 
     def batch_inference(
-        self, input_uri: str, output_uri: str, wait_finished: bool, **kwargs: Any
+        self, input_uri: str, output_uri: str, wait_finished: bool = True, **kwargs: Any
     ) -> Any:
         """
         batch inference

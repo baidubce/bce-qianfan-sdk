@@ -33,6 +33,9 @@ class AFSClient(object):
         res = self._exec("get", remote_path, local_path)
         return res
 
+    def rmr(self, *params: Any) -> str:
+        return self._exec("rmr", *params)
+
     def _get_exec_cmd(self, cmd: str, *params: Any) -> str:
         log_debug(f"run cmd {cmd} {params}")
         exec_cmd = (
@@ -122,7 +125,7 @@ class BatchInferenceHelper:
     def split_file(self, input_file: str) -> List:
         file_rand_num = generate_letter_num_random_id(8)
         path, input_file_name = input_file.split(".")[0].split("/")
-        part_num = 1
+        part_num = 0
         output_files = []
         output_file = f"{path}/{file_rand_num}-{input_file_name}-part{part_num}.jsonl"
         output_files.append(output_file)
@@ -185,8 +188,7 @@ class BatchInferenceHelper:
         self, data_path: str, split_local_files: List[str]
     ) -> List:
         grouped_files = [
-            split_local_files[i : i + 1]
-            for i in range(0, len(split_local_files), MAX_SUPPORTED_FILE_COUNT)
+            split_local_files[i : i + 1] for i in range(0, len(split_local_files), 1)
         ]
         split_files_dirs = [
             "/".join([data_path, "size_split", str(i)])
@@ -299,7 +301,20 @@ class BatchInferenceHelper:
                 res.append(future.result())
             return res
 
-    def batch_inference(self, input_uri: str, output_uri: str, **kwargs: Any) -> Any:
+    def batch_inference(
+        self, input_uri: str, output_uri: str, wait_finished: bool, **kwargs: Any
+    ) -> Any:
+        """
+        batch inference
+        Args:
+            input_uri: input uri
+            output_uri: output uri
+            wait_finished: whether to wait for the task to finish
+            del_after_finished: whether to delete the input files after
+                the task is finished
+            **kwargs: other arguments
+        """
+        del_after_finished = kwargs.get("del_after_finished", False)
         bf_id = uuid()
         log_info(f"bf_id: {bf_id} batch inference inst created")
         ensure_directory_exists(bf_id)
@@ -322,15 +337,25 @@ class BatchInferenceHelper:
         log_info(f"batch inference id [{bf_id}] with api tasks: {task_list}")
         with open(f"{bf_id}/bf_task_ids.json", "w+", encoding=encoding()) as f:
             json.dump(task_list, f, ensure_ascii=False)
-        res = self.wait_for_tasks(task_list)
+        res = self.wait_for_tasks(task_list, wait_finished)
         for r in res:
             log_info(
                 f'task_id: {r["taskId"]} status: {r["runStatus"]}, output_dir:'
                 f' {"/".join([r["outputAfsUri"], r["outputDir"]])}'
             )
+        if del_after_finished:
+            self.afs_client.rmr(*input_group_uris)
+
         return {"bf_id": bf_id, "results": res}
 
     def status(self, bf_id: str, pooling: bool = False) -> List:
+        """
+        status of a batch inference
+        Args:
+            bf_id: batch inference id
+            pooling: whether to poll the status of tasks until they are
+                all finished
+        """
         with open(f"{bf_id}/bf_task_ids.json", "r", encoding=encoding()) as f:
             task_list = json.load(f)
             res = self.wait_for_tasks(task_list, pooling)

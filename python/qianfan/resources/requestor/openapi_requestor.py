@@ -563,7 +563,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         return "{}{}{}".format(
             get_config().BASE_URL,
-            Consts.ModelAPIPrefix,
+            get_config().MODEL_API_PREFIX,
             endpoint,
         )
 
@@ -695,7 +695,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         req = QfRequest(
             method="POST",
             url="{}{}".format(
-                Consts.ModelAPIPrefix,
+                get_config().MODEL_API_PREFIX,
                 endpoint,
             ),
         )

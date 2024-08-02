@@ -1026,7 +1026,7 @@ def get_latest_supported_models(
                 s["url"],
                 "{}{}/".format(
                     DefaultValue.BaseURL,
-                    Consts.ModelAPIPrefix,
+                    get_config().MODEL_API_PREFIX,
                 ),
             ).split("/")
             model_info = _runtime_models_info.get(api_type)

@@ -228,7 +228,7 @@ def test_reset_once():
     rpm_rl = VersatileRateLimiter(query_per_second=5)
 
     assert not rpm_rl._is_rpm
-    assert rpm_rl._internal_qps_rate_limiter._query_per_period == 4.5
+    assert rpm_rl._internal_qps_rate_limiter._sync_limiter._query_per_period == 4.5
 
     def _reset_once():
         rpm_rl.reset_once(200)
@@ -245,7 +245,7 @@ def test_reset_once():
     assert rpm_rl._has_been_reset
     assert not rpm_rl._is_rpm
     assert rpm_rl._new_query_per_second == 200 / 60
-    assert rpm_rl._internal_qps_rate_limiter._query_per_period == 3
+    assert rpm_rl._internal_qps_rate_limiter._sync_limiter._query_per_period == 3
 
 
 @pytest.mark.asyncio
@@ -253,7 +253,7 @@ async def test_reset_once_async():
     rpm_rl = VersatileRateLimiter(request_per_minute=300)
 
     assert rpm_rl._is_rpm
-    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 270
+    assert rpm_rl._internal_rpm_rate_limiter._async_limiter.max_rate == 270
 
     awaitable_list = []
     for i in range(5):
@@ -264,7 +264,7 @@ async def test_reset_once_async():
     assert rpm_rl._has_been_reset
     assert rpm_rl._is_rpm
     assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180
+    assert rpm_rl._internal_rpm_rate_limiter._async_limiter.max_rate == 180
 
 
 def test_reset_once_from_closed():
@@ -287,7 +287,7 @@ def test_reset_once_from_closed():
     assert rpm_rl._has_been_reset
     assert rpm_rl._is_rpm
     assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180
+    assert rpm_rl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
 
 
 @pytest.mark.asyncio
@@ -305,4 +305,4 @@ async def test_reset_once_async_from_closed():
     assert rpm_rl._has_been_reset
     assert rpm_rl._is_rpm
     assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._query_per_period == 180
+    assert rpm_rl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180

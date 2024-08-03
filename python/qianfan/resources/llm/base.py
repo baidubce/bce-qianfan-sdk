@@ -1022,22 +1022,25 @@ def get_latest_supported_models(
 
         # get preset services:
         for s in svc_list:
-            [api_type, model_endpoint] = trim_prefix(
-                s["url"],
-                "{}{}/".format(
-                    DefaultValue.BaseURL,
-                    Consts.ModelAPIPrefix,
-                ),
-            ).split("/")
-            model_info = _runtime_models_info.get(api_type)
-            if model_info is None:
-                model_info = {}
-            model_info[s["name"]] = QfLLMInfo(
-                endpoint="/{}/{}".format(api_type, model_endpoint),
-                api_type=api_type,
-            )
-            _runtime_models_info[api_type] = model_info
-            _last_update_time = datetime.now(timezone.utc)
+            try:
+                [api_type, model_endpoint] = trim_prefix(
+                    s["url"],
+                    "{}{}/".format(
+                        DefaultValue.BaseURL,
+                        Consts.ModelAPIPrefix,
+                    ),
+                ).split("/")
+                model_info = _runtime_models_info.get(api_type)
+                if model_info is None:
+                    model_info = {}
+                model_info[s["name"]] = QfLLMInfo(
+                    endpoint="/{}/{}".format(api_type, model_endpoint),
+                    api_type=api_type,
+                )
+                _runtime_models_info[api_type] = model_info
+                _last_update_time = datetime.now(timezone.utc)
+            except Exception:
+                continue
         cache = KvCache()
         cache.set(
             key=Consts.QianfanLLMModelsListCacheKey,

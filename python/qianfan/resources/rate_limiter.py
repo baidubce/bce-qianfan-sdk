@@ -446,6 +446,11 @@ class RateLimiter:
         query_per_period: float = 1,
         period_in_second: float = 1,
     ) -> None:
+        # 向上取整到 1，避免 SyncLimiter 失效
+        if query_per_period < 1:
+            period_in_second = period_in_second / query_per_period
+            query_per_period = 1
+
         self._sync_limiter.reset(query_per_period, period_in_second)
 
     async def async_reset(
@@ -453,6 +458,11 @@ class RateLimiter:
         query_per_period: float = 1,
         period_in_second: float = 1,
     ) -> None:
+        # 向上取整到 1，避免 AsyncLimiter 失效
+        if query_per_period < 1:
+            period_in_second = period_in_second / query_per_period
+            query_per_period = 1
+
         self._async_limiter.max_rate = query_per_period
         self._async_limiter.time_period = period_in_second
         self._async_limiter._rate_per_sec = query_per_period / period_in_second

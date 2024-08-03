@@ -39,7 +39,7 @@ jobs:
       - name: Install
         run: |
           pip3 install poetry
-          poetry lock --no-update
+          cd python && poetry lock --no-update
           make install
       - name: Build docs
         run: |

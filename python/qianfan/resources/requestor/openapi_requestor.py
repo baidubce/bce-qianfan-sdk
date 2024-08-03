@@ -26,6 +26,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    List,
     Optional,
     TypeVar,
     Union,
@@ -314,8 +315,13 @@ class QfAPIRequestor(BaseAPIRequestor):
                 content = message.get("content", None)
                 if not content:
                     continue
-
-                token_count += self._token_limiter.tokenizer.count_tokens(content)
+                if isinstance(content, str):
+                    token_count += self._token_limiter.tokenizer.count_tokens(content)
+                elif isinstance(content, List):
+                    for ct in content:
+                        token_count += self._token_limiter.tokenizer.count_tokens(
+                            ct.get("text", "")
+                        )
 
         if prompt:
             assert isinstance(prompt, str)
@@ -567,7 +573,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         return "{}{}{}".format(
             get_config().BASE_URL,
-            Consts.ModelAPIPrefix,
+            get_config().MODEL_API_PREFIX,
             endpoint,
         )
 
@@ -699,7 +705,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         req = QfRequest(
             method="POST",
             url="{}{}".format(
-                Consts.ModelAPIPrefix,
+                get_config().MODEL_API_PREFIX,
                 endpoint,
             ),
         )

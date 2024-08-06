@@ -218,10 +218,8 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
         try:
             kwargs["retry_count"] = 0
-            GlobalData.data["total_requests"].value += 1
             responses = self.chat_comp.do(messages=messages, **kwargs)
         except Exception as e:
-            GlobalData.data["failure_requests"].value += 1
             self.exc = e
             resp = QfResponse(-1)
             last_resp = resp
@@ -288,7 +286,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report succeed to locust's statistics
-            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -384,7 +381,6 @@ class CompletionClient(QianfanCustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
-        GlobalData.data["total_requests"].value += 1
         for resp in responses:
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)
@@ -442,7 +438,6 @@ class CompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report to locust's statistics
-            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model

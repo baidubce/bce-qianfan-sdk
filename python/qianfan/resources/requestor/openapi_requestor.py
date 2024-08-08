@@ -18,6 +18,7 @@ Qianfan API Requestor
 
 import copy
 import json
+import os
 from typing import (
     Any,
     AsyncIterator,
@@ -25,6 +26,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    List,
     Optional,
     TypeVar,
     Union,
@@ -100,6 +102,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.request_stream(request)
 
         _, resp = next(responses)
+        if "X-Ratelimit-Limit-Requests" in resp.headers:
+            self._rate_limiter.reset_once(
+                float(resp.headers["X-Ratelimit-Limit-Requests"])
+            )
+
         if "json" in resp.headers.get("content-type", ""):
             body, resp = next(responses)
             self._check_error(json.loads(body))
@@ -193,6 +200,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.arequest_stream(request)
 
         _, resp = await responses.__anext__()
+        if "X-Ratelimit-Limit-Requests" in resp.headers:
+            await self._rate_limiter.async_reset_once(
+                float(resp.headers["X-Ratelimit-Limit-Requests"])
+            )
+
         if "json" in resp.headers.get("content-type", ""):
             body, _ = await responses.__anext__()
             self._check_error(json.loads(body))
@@ -303,8 +315,13 @@ class QfAPIRequestor(BaseAPIRequestor):
                 content = message.get("content", None)
                 if not content:
                     continue
-
-                token_count += self._token_limiter.tokenizer.count_tokens(content)
+                if isinstance(content, str):
+                    token_count += self._token_limiter.tokenizer.count_tokens(content)
+                elif isinstance(content, List):
+                    for ct in content:
+                        token_count += self._token_limiter.tokenizer.count_tokens(
+                            ct.get("text", "")
+                        )
 
         if prompt:
             assert isinstance(prompt, str)
@@ -494,7 +511,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         url = request.url
         parsed_uri = urlparse(request.url)
-        host = parsed_uri.netloc
+        if os.environ.get("QIANFAN_IAM_HOST"):
+            host = str(os.environ.get("QIANFAN_IAM_HOST"))
+            parsed_uri = parsed_uri._replace(scheme="https", netloc=host)
+        else:
+            host = parsed_uri.netloc
         request.url = parsed_uri.path
         request.headers = {
             "Content-Type": "application/json",
@@ -552,7 +573,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         return "{}{}{}".format(
             get_config().BASE_URL,
-            Consts.ModelAPIPrefix,
+            get_config().MODEL_API_PREFIX,
             endpoint,
         )
 
@@ -563,7 +584,6 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._retry_if_token_expired
         def _helper() -> QfResponse:
-            self._add_access_token(req, auth)
             return self._request(req)
 
         return self._with_retry(req.retry_config, _helper)
@@ -577,7 +597,6 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         @self._async_retry_if_token_expired
         async def _helper() -> QfResponse:
-            await self._async_add_access_token(req, auth)
             return await self._async_request(req)
 
         return self._async_with_retry(req.retry_config, _helper)
@@ -686,7 +705,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         req = QfRequest(
             method="POST",
             url="{}{}".format(
-                Consts.ModelAPIPrefix,
+                get_config().MODEL_API_PREFIX,
                 endpoint,
             ),
         )

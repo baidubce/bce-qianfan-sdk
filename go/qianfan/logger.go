@@ -26,3 +26,7 @@ var logger = &logrus.Logger{
 	Hooks:     make(logrus.LevelHooks),
 	Level:     logrus.InfoLevel,
 }
+
+func SetLogLevel(level logrus.Level) {
+	logger.Level = level
+}

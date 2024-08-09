@@ -358,7 +358,6 @@ export async function consoleAction({
     const fetchInstance = new Fetch();
     try {
         const {url, ...rest} = fetchOptions;
-        console.log(fetchOptions);
         const resp = await fetchInstance.makeRequest(baseActionUrl(url, action), rest);
         return resp;
     }

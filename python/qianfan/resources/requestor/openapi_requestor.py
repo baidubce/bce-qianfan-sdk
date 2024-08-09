@@ -408,6 +408,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         llm related api request
@@ -427,11 +428,32 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             self._token_limiter.decline(token_count)
 
+            def _generator_wrapper(generator: Iterator[QfResponse]) -> Iterator[QfResponse]:
+                for res in generator:
+                    if not show_total_latency:
+                        res.statistic["total_latency"] = 0
+                        res.statistic["request_latency"] = 0
+
+                    yield res
+
+            def _list_generator(data: List) -> Any:
+                for res in data:
+                    yield res
+
             if stream:
-                return self._compensate_token_usage_stream(
+                generator = self._compensate_token_usage_stream(
                     self._request_stream(req, data_postprocess=data_postprocess),
                     token_count,
                 )
+
+                if not show_total_latency:
+                    return _generator_wrapper(generator)
+                else:
+                    result_list: List[QfResponse] = []
+                    for res in generator:
+                        result_list.append(res)
+
+                    return _list_generator(result_list)
             else:
                 return self._compensate_token_usage_non_stream(
                     self._request(
@@ -452,11 +474,28 @@ class QfAPIRequestor(BaseAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
         llm related api request
         """
         log_debug(f"async requesting llm api endpoint: {endpoint}")
+
+        class AsyncListIterator:
+            def __init__(self, data: List[QfResponse]):
+                self.data = data
+                self.index = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.index < len(self.data):
+                    value = self.data[self.index]
+                    self.index += 1
+                    return value
+                else:
+                    raise StopAsyncIteration
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -471,13 +510,30 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             await self._async_token_limiter.decline(token_count)
 
+            async def _async_generator_wrapper(generator: AsyncIterator[QfResponse]) -> AsyncIterator[QfResponse]:
+                async for res in generator:
+                    if not show_total_latency:
+                        res.statistic["total_latency"] = 0
+                        res.statistic["request_latency"] = 0
+
+                    yield res
+
             if stream:
-                return self._async_compensate_token_usage_stream(
+                generator = self._async_compensate_token_usage_stream(
                     await self._async_request_stream(
                         req, data_postprocess=data_postprocess
                     ),
                     token_count,
                 )
+
+                if not show_total_latency:
+                    return _async_generator_wrapper(generator)
+                else:
+                    result_list: List[QfResponse] = []
+                    async for res in generator:
+                        result_list.append(res)
+
+                    return AsyncListIterator(result_list)
             else:
                 return await self._async_compensate_token_usage_non_stream(
                     await self._async_request(req, data_postprocess=data_postprocess),

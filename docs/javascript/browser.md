@@ -41,7 +41,7 @@ yarn add @baiducloud/qianfan
 2. pip install qianfan
 3. qianfan proxy
 
-![proxy](../docs/imgs/proxy.png)
+![proxy](../imgs/proxy.png)
 
 注意：浏览器环境，必须传入QIANFAN_BASE_URL，（proxy启动后地址）， QIANFAN_CONSOLE_API_BASE_URL不传时，只能使用预置模型，传入后可以使用动态模型
 

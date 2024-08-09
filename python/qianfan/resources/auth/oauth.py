@@ -302,7 +302,7 @@ class Auth(object):
         )
         self._access_key = kwargs.get("access_key", None) or get_config().ACCESS_KEY
         self._secret_key = kwargs.get("secret_key", None) or get_config().SECRET_KEY
-        if not self._credential_available():
+        if not self._credential_available() and not get_config().NO_AUTH:
             raise InvalidArgumentError(
                 "no enough credential found, any one of (access_key, secret_key),"
                 " (ak, sk), access_token must be provided"

@@ -82,11 +82,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         ```
     """
 
-    datasets: List[DataSource] = []
+    datasets: List[Union[DataSource, Dict]] = []
     sampling_rates: List[float] = []
     result: Optional[Dict[str, Any]] = None
     eval_split_ratio: Optional[float] = None
     corpus_config: Optional[CorpusConfig] = None
+    source_type: Optional[console_consts.TrainDatasetSourceType] = None
 
     def __init__(
         self,
@@ -111,6 +112,8 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 self.datasets = [ds.inner_data_source_cache for ds in dataset.datasets]
             elif isinstance(dataset.datasets[0], DataSource):
                 self.datasets = dataset.datasets
+            elif isinstance(dataset.datasets[0], dict):
+                self.datasets = dataset.datasets
             if dataset.sampling_rates:
                 self.sampling_rates = dataset.sampling_rates
             if self.corpus_config is None:
@@ -132,6 +135,10 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 ]
             if self.sampling_rates and len(self.datasets) != len(self.sampling_rates):
                 raise ValueError("sampling_rates not with the same counts to datasets")
+            if dataset.source_type:
+                self.source_type = console_consts.TrainDatasetSourceType(
+                    dataset.source_type
+                )
         elif isinstance(dataset, list):
             if len(dataset) > 0:
                 if isinstance(dataset[0], str):
@@ -200,30 +207,40 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         return result
 
     def get_action_result(self, **kwargs: Any) -> Dict[str, Any]:
-        result: Dict[str, Any] = {"sourceType": None}
+        result: Dict[str, Any] = {}
         versions: List[Dict[str, Any]] = []
         for i, dataset in enumerate(self.datasets):
-            sub_res = self.get_dataset_result(dataset, **kwargs)
-            if sub_res is None:
-                log_warn(f"invalid dataset {dataset}")
-                continue
-            if result.get("sourceType") and sub_res.get("sourceType") != result.get(
-                "sourceType"
-            ):
-                log_warn(
-                    "[load_dataset_action] dataset sourceType conflict, should all be"
-                    " with one source type"
-                    f"{sub_res}"
-                )
-            else:
-                result["sourceType"] = sub_res.get("sourceType")
-            version = sub_res.get("version", {})
+            if isinstance(dataset, Dict):
+                version = dataset
+            elif isinstance(dataset, DataSource):
+                sub_res = self.get_dataset_result(dataset, **kwargs)
+                if sub_res is None:
+                    log_warn(f"invalid dataset {dataset}")
+                    continue
+                if result.get("sourceType") and sub_res.get("sourceType") != result.get(
+                    "sourceType"
+                ):
+                    log_warn(
+                        "[load_dataset_action] dataset sourceType conflict, should all"
+                        f" be with one source type{sub_res}"
+                    )
+                else:
+                    self.source_type = sub_res.get("sourceType")
+                version = sub_res.get("version", {})
             if self.sampling_rates:
                 version["samplingRate"] = self.sampling_rates[i]
             if isinstance(version, dict):
                 versions.append(version)
 
         result["versions"] = versions
+        if self.source_type:
+            result["sourceType"] = self.source_type.value 
+        else:
+            log_error(
+                "[load_dataset_action] dataset dict must be set with"
+                " DatasetConfig.source_type"
+            )
+            raise InvalidArgumentError("dataset dict must be set with source_type")
         return {"datasets": result}
 
     def get_dataset_result(
@@ -242,7 +259,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 raise InvalidArgumentError("dataset must be released")
             log_debug("[load_dataset_action] dataset loaded successfully")
             return {
-                "sourceType": console_consts.TrainDatasetSourceType.Platform.value,
+                "sourceType": console_consts.TrainDatasetSourceType.Platform,
                 "version": {
                     "versionId": qf_data_src.id,
                 },
@@ -251,7 +268,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             log_debug("[load_dataset_action] prepare train-set in BOS")
             bos_data_src = cast(BosDataSource, data_src)
             return {
-                "sourceType": console_consts.TrainDatasetSourceType.PrivateBos.value,
+                "sourceType": console_consts.TrainDatasetSourceType.PrivateBos,
                 "version": {
                     "versionBosUri": bos_uploader.generate_bos_file_path(
                         bos_data_src.bucket, bos_data_src.bos_file_path
@@ -291,6 +308,11 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     ds_dict.get("versionBosUri")
                 )
                 res.append(bos_ds_src)
+            elif (
+                dataset_src_type
+                == console_consts.TrainDatasetSourceType.PrivateAfs.value
+            ):
+                continue
             else:
                 log_warn("[load_dataset_action] invalid dataset source: {ds_dict}")
         return res

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {BASE_PATH, DEFAULT_CONFIG} from './constant';
+import HttpClient from './HttpClient';
+import Fetch from './Fetch';
+import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
 
@@ -301,4 +303,63 @@ export function setBrowserVariable(variables: Variables): void {
     Object.entries(variables).forEach(([key, value]) => {
         DEFAULT_CONFIG[key] = value;
     });
+}
+
+function baseActionUrl(route: string, action: string): string {
+    if (action === '') {
+        return route;
+    }
+    return `${route}?Action=${action}`;
+}
+
+
+interface ConsoleActionParams {
+    base_api_route: string;
+    data?: Record<string, any>,
+    action?: string;
+}
+
+/**
+ * consoleApi 开放入口
+ *
+ * @param base_api_route 基础API路由，类型为字符串
+ * @param body 查询参数，类型为任意类型
+ * @param action 可选参数，方法名称，类型为字符串
+ * @returns 返回任意类型
+ */
+export async function consoleAction({
+    base_api_route,
+    data,
+    action,
+}: ConsoleActionParams): Promise<any> {
+    const config = getDefaultConfig();
+    // IAM鉴权，先判断是否有IAM的key
+    if (!(config.QIANFAN_ACCESS_KEY && config.QIANFAN_SECRET_KEY)) {
+        throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+    }
+    // 鉴权
+    const httpClientConfig = getIAMConfig(
+        config.QIANFAN_ACCESS_KEY,
+        config.QIANFAN_SECRET_KEY,
+        config.QIANFAN_CONSOLE_API_BASE_URL
+    );
+    const client = new HttpClient(httpClientConfig);
+    const fetchOptions = await client.getSignature({
+        httpMethod: 'POST',
+        path: `${config.QIANFAN_CONSOLE_API_BASE_URL}/${base_api_route}`,
+        body: data && JSON.stringify(data),
+        headers: {
+            ...DEFAULT_HEADERS,
+        },
+        params: {'Action': action},
+    });
+    const fetchInstance = new Fetch();
+    try {
+        const {url, ...rest} = fetchOptions;
+        const resp = await fetchInstance.makeRequest(baseActionUrl(url, action), rest);
+        return resp;
+    }
+    catch (error) {
+        throw error;
+    }
 }

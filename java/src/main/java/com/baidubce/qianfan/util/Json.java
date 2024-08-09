@@ -40,6 +40,14 @@ public class Json {
         return GSON.toJson(object);
     }
 
+    public static <T> T deserialize(String json, TypeRef<T> typeRef) {
+        return GSON.fromJson(json, typeRef.getType());
+    }
+
+    public static <T> T deserialize(String json, Class<T> clazz) {
+        return GSON.fromJson(json, clazz);
+    }
+
     public static <T> T deserialize(String json, Type type) {
         return GSON.fromJson(json, type);
     }

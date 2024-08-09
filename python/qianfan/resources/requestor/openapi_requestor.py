@@ -531,6 +531,9 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         add access token to QfRequest
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
         access_token = auth.access_token()
@@ -552,6 +555,9 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async add access token to QfRequest
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
         access_token = await auth.a_access_token()

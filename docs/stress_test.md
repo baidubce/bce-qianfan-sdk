@@ -177,9 +177,10 @@ txt格式示例
         OutputTokens Avg: 43.67
         TotalInputTokens Avg: 2088.0
         TotalOutputTokens Avg: 1266.33
-        TotalQuery: 30
+        SendQuery: 30
         SuccessQuery: 29
         FailureQuery: 1
+        TotalQuery: 30
         TotalTime: 28.63
         SuccessRate: 96.67%
 

@@ -51,6 +51,7 @@ type Config struct {
 	LLMRetryTimeout               float32 `mapstructure:"QIANFAN_LLM_API_RETRY_TIMEOUT"`
 	LLMRetryBackoffFactor         float32 `mapstructure:"QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR"`
 	InferResourceRefreshInterval  int     `mapstructure:"QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"`
+	RetryErrCodes                 []int
 }
 
 func setConfigDefaultValue(vConfig *viper.Viper) {
@@ -89,6 +90,14 @@ var _configInitOnce sync.Once
 func GetConfig() *Config {
 	_configInitOnce.Do(func() {
 		_config = loadConfigFromEnv()
+		_config.RetryErrCodes = []int{
+			ServiceUnavailableErrCode,
+			ServerHighLoadErrCode,
+			QPSLimitReachedErrCode,
+			RPMLimitReachedErrCode,
+			TPMLimitReachedErrCode,
+			AppNotExistErrCode,
+		}
 	})
 	return _config
 }

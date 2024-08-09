@@ -764,6 +764,9 @@ class TrainAction(
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             elif task_status == "":
                 time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
+            elif task_status == console_consts.TrainStatus.Waiting:
+                log_info(f"[train_action] {self.job_id}/{self.task_id} queueing...")
+                time.sleep(get_config().TRAIN_STATUS_POLLING_INTERVAL)
             else:
                 raise InternalError(
                     f"[train_action] job: {self.job_name} task:"

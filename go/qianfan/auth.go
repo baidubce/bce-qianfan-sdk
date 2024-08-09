@@ -146,5 +146,6 @@ func (m *AuthManager) GetAccessTokenWithRefresh(ctx context.Context, ak, sk stri
 		token:         resp.AccessToken,
 		lastUpateTime: time.Now(),
 	}
+	GetConfig().AccessToken = resp.AccessToken
 	return resp.AccessToken, nil
 }

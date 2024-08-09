@@ -189,9 +189,11 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         )
         self.model = model
         if is_endpoint:
-            self.chat_comp = qianfan.ChatCompletion(endpoint=model)
+            self.chat_comp = qianfan.ChatCompletion(
+                endpoint=model, forcing_disable=True
+            )
         else:
-            self.chat_comp = qianfan.ChatCompletion(model=model)
+            self.chat_comp = qianfan.ChatCompletion(model=model, forcing_disable=True)
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -284,7 +286,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report succeed to locust's statistics
-            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model
@@ -437,7 +438,6 @@ class CompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report to locust's statistics
-            GlobalData.data["success_requests"].value += 1
             request_meta["request_type"] = "POST"
             request_meta["response_time"] = response_time
             request_meta["name"] = self.model

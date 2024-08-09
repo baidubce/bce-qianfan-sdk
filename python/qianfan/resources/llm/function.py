@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import re
-from typing import Any, AsyncIterator, Dict, Iterator, List, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
 from qianfan.resources.llm.base import (
@@ -46,6 +46,10 @@ _DEFAULT_FUNCTION_CALL_PROMPT = r"Action: {name}\nAction Input: {input}"
 _SPLIT_FUNCTIONS_SCHEMAS = """\n-"""
 
 _PROMPT_IDENTIFIER = "{}"
+
+_RESPONSE_ACTION_PREFIX = "Action: "
+
+_RESPONSE_ACTION_INPUT_PREFIX = "Action Input: "
 
 
 class Function(BaseResourceV1):
@@ -114,7 +118,7 @@ class Function(BaseResourceV1):
     def do(
         self,
         messages: Union[List[Dict], QfMessages],
-        functions: List[Dict],
+        functions: List[Dict] = [],
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -152,18 +156,26 @@ class Function(BaseResourceV1):
         ```
 
         """
-        if len(functions) <= 0:
-            raise errors.InvalidArgumentError(
-                "functions should be a list of functions, "
-                "each function is a dictionary with name and description."
-            )
-        if kwargs.get("stream") is True:
-            raise errors.InvalidArgumentError("Function does not support stream mode.")
-
         if isinstance(messages, QfMessages):
             temp_messages = messages._to_list()
         else:
             temp_messages = messages
+        for k in [
+            "auto_concat_truncate",
+            "truncated_continue_prompt",
+            "truncate_overlong_msgs",
+        ]:
+            if k in kwargs:
+                del kwargs[k]
+
+        for k in ["request_id"]:
+            if k in kwargs and kwargs.get(k) is None:
+                del kwargs[k]
+
+        if not functions:
+            # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式
+            kwargs["messages"] = temp_messages
+            return super()._do(**kwargs)
 
         functions_schemas = self._render_functions_prompt(functions)
         temp_messages[0] = self._render_user_query_msg(
@@ -183,14 +195,93 @@ class Function(BaseResourceV1):
             kwargs.pop("functions")
 
         resp = super()._do(**kwargs)
-        assert isinstance(resp, QfResponse)
-        return self._convert_function_call_response(resp)
+        if isinstance(resp, QfResponse):
+            return self._convert_function_call_response(resp)
+        elif isinstance(resp, Iterator):
+            return self._convert_function_call_stream_response(resp)
+        else:
+            raise ValueError(f"Invalid type of response. {type(resp)}")
+
+    def _convert_function_call_stream_response(
+        self, iter: Iterator[QfResponse]
+    ) -> Iterator[QfResponse]:
+        not_match: Optional[bool] = None
+        current_resp_result = ""
+        last_message: Optional[QfResponse] = None
+        for r in iter:
+            # not match the function call return
+            # return stream iterator
+            last_message = r
+            if not_match:
+                yield r
+                continue
+
+            current_resp_result += r.get("result", "")
+            # not match, read utils the whole result for parsing
+            if not_match is False:
+                continue
+            action = re.search(f"{_RESPONSE_ACTION_PREFIX}(\w+)", current_resp_result)
+            if action:
+                not_match = False
+            elif len(current_resp_result) > len(_RESPONSE_ACTION_PREFIX):
+                r.body["result"] = current_resp_result
+                not_match = True
+                yield r
+
+        action_input = re.search(
+            f"{_RESPONSE_ACTION_INPUT_PREFIX}(.+)", current_resp_result
+        )
+        # match the function call
+        if action and action_input:
+            assert last_message is not None
+            last_message.body["function_call"] = {
+                "name": action.group(1),
+                "arguments": action_input.group(1),
+            }
+            last_message.body["result"] = ""
+            yield last_message
+
+    async def _convert_function_call_stream_response_async(
+        self, async_iter: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[QfResponse]:
+        not_match: Optional[bool] = None
+        current_resp_result = ""
+        last_message: Optional[QfResponse] = None
+        async for r in async_iter:
+            last_message = r
+            if not_match:
+                yield r
+                continue
+
+            current_resp_result += r.get("result", "")
+            if not_match is False:
+                continue
+
+            action = re.search(f"{_RESPONSE_ACTION_PREFIX}(\w+)", current_resp_result)
+            if action:
+                not_match = False
+            elif len(current_resp_result) > len(_RESPONSE_ACTION_PREFIX):
+                r.body["result"] = current_resp_result
+                not_match = True
+                yield r
+
+        action_input = re.search(
+            f"{_RESPONSE_ACTION_INPUT_PREFIX}(.+)", current_resp_result
+        )
+        if action and action_input:
+            assert last_message is not None
+            last_message.body["function_call"] = {
+                "name": action.group(1),
+                "arguments": action_input.group(1),
+            }
+            last_message.body["result"] = ""
+            yield last_message
 
     def _convert_function_call_response(self, resp: QfResponse) -> QfResponse:
         # parse response content
         action_content = resp.body.get("result", "")
-        action = re.search(r"Action: (\w+)", action_content)
-        action_input = re.search(r"Action Input: (.+)", action_content)
+        action = re.search(f"{_RESPONSE_ACTION_PREFIX}(\w+)", action_content)
+        action_input = re.search(f"{_RESPONSE_ACTION_INPUT_PREFIX}(.+)", action_content)
 
         # update QfResponse
         if action and action_input:
@@ -260,7 +351,7 @@ class Function(BaseResourceV1):
     async def ado(
         self,
         messages: Union[List[Dict], QfMessages],
-        functions: List[Dict],
+        functions: List[Dict] = [],
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
@@ -298,18 +389,26 @@ class Function(BaseResourceV1):
         ```
 
         """
-        if len(functions) <= 0:
-            raise errors.InvalidArgumentError(
-                "functions should be a list of functions, "
-                "each function is a dictionary with name and description."
-            )
-        if kwargs.get("stream") is True:
-            raise errors.InvalidArgumentError("Function does not support stream mode.")
-
         if isinstance(messages, QfMessages):
             temp_messages = messages._to_list()
         else:
             temp_messages = messages
+        for k in [
+            "auto_concat_truncate",
+            "truncated_continue_prompt",
+            "truncate_overlong_msgs",
+        ]:
+            if k in kwargs:
+                del kwargs[k]
+
+        for k in ["request_id"]:
+            if k in kwargs and kwargs.get(k) is None:
+                del kwargs[k]
+
+        if not functions:
+            # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式
+            kwargs["messages"] = temp_messages
+            return await super()._ado(**kwargs)
 
         functions_schemas = self._render_functions_prompt(functions)
         temp_messages[0] = self._render_user_query_msg(
@@ -328,5 +427,9 @@ class Function(BaseResourceV1):
             kwargs.pop("functions")
 
         resp = await super()._ado(**kwargs)
-        assert isinstance(resp, QfResponse)
-        return self._convert_function_call_response(resp)
+        if isinstance(resp, QfResponse):
+            return self._convert_function_call_response(resp)
+        elif isinstance(resp, AsyncIterator):
+            return self._convert_function_call_stream_response_async(resp)
+        else:
+            raise ValueError(f"Invalid type of response. {type(resp)}")

@@ -44,3 +44,12 @@ func runWithContext(ctx context.Context, fn func()) error {
 		return nil
 	}
 }
+
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}

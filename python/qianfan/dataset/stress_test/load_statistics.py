@@ -34,11 +34,11 @@ def get_statistics(path: str) -> List[float]:
             if line.startswith("Type"):
                 continue
             line_splits = line.split(",")
-            lat_avg = float(line_splits[5])
-            lat_min = float(line_splits[6])
-            lat_max = float(line_splits[7])
-            lat_50p = float(line_splits[4])
-            lat_80p = float(line_splits[-8])
+            lat_avg = -1.0 if line_splits[-4] == "N/A" else float(line_splits[-4])
+            lat_min = -1.0 if line_splits[-5] == "N/A" else float(line_splits[-5])
+            lat_max = -1.0 if line_splits[-6] == "N/A" else float(line_splits[-6])
+            lat_50p = -1.0 if line_splits[-7] == "N/A" else float(line_splits[-7])
+            lat_80p = -1.0 if line_splits[-8] == "N/A" else float(line_splits[-8])
             total_count = int(line_splits[2])
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])
@@ -64,7 +64,6 @@ def gen_brief(
     spawn_rate: int,
     model_type: str,
     hyperparameters: Any,
-    total_requests: int,
 ) -> Dict[str, Any]:
     """
     gen_brief
@@ -79,6 +78,9 @@ def gen_brief(
     total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
     failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
     success_count = total_count - failure_count
+    success_rate = (
+        0 if total_count == 0 else round(success_count / total_count * 100, 2)
+    )
     text = (
         "Load Test Statistics\n"
         + "user_num: %s\n" % user_num
@@ -101,11 +103,12 @@ def gen_brief(
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
         + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
         + "TotalOutputTokens Avg: %s\n" % round(output_tk_tuple[0] * success_count, 2)
-        + "TotalQuery: %s\n" % round(total_requests, 2)
+        + "SendQuery: %s\n" % round(total_count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
-        + "FailureQuery: %s\n" % round(total_requests - success_count, 2)
+        + "FailureQuery: %s\n" % round(failure_count, 2)
+        + "TotalQuery: %s\n" % round(count, 2)
         + "TotalTime: %s\n" % round(time, 2)
-        + "SuccessRate: %s%%" % round(success_count / total_requests * 100, 2)
+        + "SuccessRate: %s%%" % success_rate
     )
     statistics = {
         "QPS": round(qps, 2),
@@ -122,7 +125,7 @@ def gen_brief(
         "Input_tokens_avg": round(input_tk_tuple[0], 2),
         "Output_tokens_avg": round(output_tk_tuple[0], 2),
         "TotalTime": round(time, 2),
-        "SuccessRate": round(success_count / total_requests * 100, 2),
+        "SuccessRate": success_rate,
         "concurrency": user_num,
     }
 
@@ -196,7 +199,7 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
         
         <div class="info-section">
             <h2>Model Information</h2>
-            <p><strong>Model name:</strong> {model_info['modelname']}</p>
+            <p><strong>Service name:</strong> {model_info['modelname']}</p>
             <p><strong>Model Version:</strong> {model_info['modelVersionId']}</p>
             <p><strong>serviceId:</strong> {model_info['serviceId']}</p>
             <p><strong>serviceUrl:</strong> {model_info['serviceUrl']}</p>

@@ -15,7 +15,7 @@
 import HttpClient from '../HttpClient';
 import Fetch, {FetchConfig} from '../Fetch/index';
 import {DEFAULT_HEADERS} from '../constant';
-import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath} from '../utils';
+import {getAccessTokenUrl, getIAMConfig, getDefaultConfig, getPath, getCurrentEnvironment} from '../utils';
 import {Resp, AsyncIterableType, AccessTokenResp} from '../interface';
 import DynamicModelEndpoint from '../DynamicModelEndpoint';
 
@@ -145,7 +145,8 @@ export class BaseClient {
     ): Promise<Resp | AsyncIterableType> {
         let fetchOptions;
         // 如果enableOauth开启， 则放开鉴权
-        if (this.enableOauth) {
+        if (getCurrentEnvironment() === 'node' || this.enableOauth) {
+
             // 检查鉴权信息
             if (!(this.qianfanAccessKey && this.qianfanSecretKey) && !(this.qianfanAk && this.qianfanSk)) {
                 throw new Error('请设置AK/SK或QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');

@@ -21,11 +21,13 @@ import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.auth.Auth;
+import com.baidubce.qianfan.core.auth.IAMAuth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.*;
 import com.baidubce.qianfan.model.console.ConsoleRequest;
 import com.baidubce.qianfan.model.console.ConsoleResponse;
 import com.baidubce.qianfan.model.exception.ApiException;
+import com.baidubce.qianfan.model.exception.AuthException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
@@ -129,17 +131,18 @@ class QianfanClient {
 
     public <T> ConsoleResponse<T> consoleRequest(ConsoleRequest request, Type type) {
         try {
+            if (!(auth instanceof IAMAuth)) {
+                throw new AuthException("Console request requires IAM authentication");
+            }
             String url = StringUtils.isNotEmpty(request.getAction())
-                    ? String.format(CONSOLE_URL_ACTION_TEMPLATE, QianfanConfig.getBaseUrl(), request.getRoute(), request.getAction())
-                    : String.format(CONSOLE_URL_NO_ACTION_TEMPLATE, QianfanConfig.getBaseUrl(), request.getRoute());
-
+                    ? String.format(CONSOLE_URL_ACTION_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl(), request.getRoute(), request.getAction())
+                    : String.format(CONSOLE_URL_NO_ACTION_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl(), request.getRoute());
             HttpRequest httpRequest = HttpClient.request()
                     .post(url)
-                    .body(request.getBody());
-            httpRequest = auth.signRequest(httpRequest);
+                    .body(request.getBody() == null ? new Object() : request.getBody());
 
             Type respType = new ParameterizedTypeImpl(ConsoleResponse.class, new Type[]{type});
-            HttpResponse<ConsoleResponse<T>> resp = httpRequest.executeJson(respType);
+            HttpResponse<ConsoleResponse<T>> resp = auth.signRequest(httpRequest).executeJson(respType);
 
             if (resp.getCode() != HttpStatus.SUCCESS) {
                 throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));

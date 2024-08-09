@@ -679,7 +679,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
-                    show_total_latency=show_total_latency
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -720,7 +720,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
-                    show_total_latency=show_total_latency
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -953,7 +953,7 @@ class BaseResourceV2(BaseResource):
             body=self._generate_body(model, stream, **kwargs),
             stream=stream,
             retry_config=retry_config,
-            show_total_latency=show_total_latency
+            show_total_latency=show_total_latency,
         )
 
         return resp

@@ -428,7 +428,9 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             self._token_limiter.decline(token_count)
 
-            def _generator_wrapper(generator: Iterator[QfResponse]) -> Iterator[QfResponse]:
+            def _generator_wrapper(
+                generator: Iterator[QfResponse],
+            ) -> Iterator[QfResponse]:
                 for res in generator:
                     if not show_total_latency:
                         res.statistic["total_latency"] = 0
@@ -486,10 +488,10 @@ class QfAPIRequestor(BaseAPIRequestor):
                 self.data = data
                 self.index = 0
 
-            def __aiter__(self):
+            def __aiter__(self) -> "AsyncListIterator":
                 return self
 
-            async def __anext__(self):
+            async def __anext__(self) -> Any:
                 if self.index < len(self.data):
                     value = self.data[self.index]
                     self.index += 1
@@ -510,7 +512,9 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             await self._async_token_limiter.decline(token_count)
 
-            async def _async_generator_wrapper(generator: AsyncIterator[QfResponse]) -> AsyncIterator[QfResponse]:
+            async def _async_generator_wrapper(
+                generator: AsyncIterator[QfResponse],
+            ) -> AsyncIterator[QfResponse]:
                 async for res in generator:
                     if not show_total_latency:
                         res.statistic["total_latency"] = 0
@@ -780,6 +784,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         llm related api request

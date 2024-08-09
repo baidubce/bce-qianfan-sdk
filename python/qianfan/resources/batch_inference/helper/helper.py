@@ -12,9 +12,10 @@ from qianfan.utils.logging import log_debug, log_error, log_info
 from qianfan.utils.utils import generate_letter_num_random_id, uuid
 
 # 最大支持300mb
-MAX_SUPPORTED_FILE_SIZE = 300 * 1024 * 1024
+MAX_SUPPORTED_FILE_SIZE = 100 * 1024 * 1024
 MAX_SUPPORTED_FILE_COUNT = 100
 SLEEP_INTERVAL = 15
+RETRY_COUNT = 3
 
 
 class AFSClient(object):
@@ -73,6 +74,8 @@ class AFSClient(object):
 
 
 def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
+    if not kwargs.get("retry_count"):
+        kwargs["retry_count"] = RETRY_COUNT
     create_bf_resp = resources.Data.create_offline_batch_inference_task(
         name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(8)}",
         afs_config=afs_config,
@@ -81,9 +84,18 @@ def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
     return create_bf_resp
 
 
-def wait_bf_task(task_id: str, wait_finished: bool = True) -> Any:
+def wait_bf_task(
+    task_id: str,
+    wait_finished: bool = True,
+    polling_interval: float = SLEEP_INTERVAL,
+    **kwargs: Any,
+) -> Any:
     while True:
-        resp = resources.Data.get_offline_batch_inference_task(task_id=task_id)
+        if not kwargs.get("retry_count"):
+            kwargs["retry_count"] = RETRY_COUNT
+        resp = resources.Data.get_offline_batch_inference_task(
+            task_id=task_id, **kwargs
+        )
         result = resp.get("result", {})
         if not wait_finished:
             break
@@ -99,7 +111,7 @@ def wait_bf_task(task_id: str, wait_finished: bool = True) -> Any:
         else:
             log_error(f"task status is {run_status}, exiting")
             break
-        time.sleep(SLEEP_INTERVAL)
+        time.sleep(polling_interval)
     return result
 
 
@@ -110,6 +122,10 @@ class BatchInferenceHelper:
     def __init__(self, host: str, ugi: str, **kwargs: Any) -> None:
         # TODO 抽象一个统一的client or DataSource，实现put，get, du, mkdir等操作
         self.afs_client = AFSClient(host=host, ugi=ugi, **kwargs)
+        self.max_single_file_size = kwargs.get(
+            "max_single_file_size", MAX_SUPPORTED_FILE_SIZE
+        )
+        self.polling_interval = kwargs.get("polling_interval", SLEEP_INTERVAL)
 
     def filter_jsonl_files(self, output: str) -> List:
         # 找到所有匹配项
@@ -135,7 +151,7 @@ class BatchInferenceHelper:
 
             for line in infile:
                 current_size += len(line.encode("utf-8"))
-                if current_size >= MAX_SUPPORTED_FILE_SIZE:
+                if current_size > self.max_single_file_size:
                     outfile.close()
                     part_num += 1
                     output_file = (
@@ -223,7 +239,7 @@ class BatchInferenceHelper:
                 # 检查是否可以将文件放入当前group
                 if (
                     sum([item["size"] for item in group]) + file["size"]
-                    <= MAX_SUPPORTED_FILE_SIZE
+                    <= self.max_single_file_size
                     and len(group) < MAX_SUPPORTED_FILE_COUNT
                 ):
                     group.append(file)
@@ -263,7 +279,7 @@ class BatchInferenceHelper:
         small_files = []
         exceed_files = []
         for f in jsonl_files:
-            if int(f["size"]) > MAX_SUPPORTED_FILE_SIZE:
+            if int(f["size"]) > self.max_single_file_size:
                 exceed_files.append(f)
             else:
                 small_files.append(f)
@@ -290,10 +306,18 @@ class BatchInferenceHelper:
 
         return res_ds_input_dirs
 
-    def wait_for_tasks(self, tasks: List[str], wait_finished: bool = True) -> List:
+    def wait_for_tasks(
+        self, tasks: List[str], wait_finished: bool = True, **kwargs: Any
+    ) -> List:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(wait_bf_task, task_id, wait_finished)
+                executor.submit(
+                    wait_bf_task,
+                    task_id,
+                    wait_finished,
+                    polling_interval=self.polling_interval,
+                    **kwargs,
+                )
                 for i, task_id in enumerate(tasks)
             ]
             res = []

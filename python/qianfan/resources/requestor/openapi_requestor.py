@@ -416,7 +416,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         for m in body.get("messages", []):
             if m["role"] == "function":
                 if "name" not in m:
-                    m["name"] = m["tool_call_id"]
+                    m["name"] = m["tool_call_id"] if "tool_call_id" in m else None
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
             req = self._base_llm_request(
@@ -463,7 +463,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         for m in body.get("messages", []):
             if m["role"] == "function":
                 if "name" not in m:
-                    m["name"] = m["tool_call_id"]
+                    m["name"] = m["tool_call_id"] if "tool_call_id" in m else None
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
             req = self._base_llm_request(

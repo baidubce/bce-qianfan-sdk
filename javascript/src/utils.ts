@@ -337,8 +337,6 @@ export async function consoleAction({
     if (!(config.QIANFAN_ACCESS_KEY && config.QIANFAN_SECRET_KEY)) {
         throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
-    // setEnvVariable('QIANFAN_ACCESS_KEY','***');
-    // setEnvVariable('QIANFAN_SECRET_KEY','***');
     // 鉴权
     const httpClientConfig = getIAMConfig(
         config.QIANFAN_ACCESS_KEY,

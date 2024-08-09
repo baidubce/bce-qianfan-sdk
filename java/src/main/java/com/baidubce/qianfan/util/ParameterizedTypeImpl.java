@@ -14,37 +14,32 @@
  * limitations under the License.
  */
 
-package com.baidubce.qianfan.model.console;
+package com.baidubce.qianfan.util;
 
-import com.baidubce.qianfan.util.JsonProp;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-public class ConsoleResponse<T> {
-    /**
-     * 请求ID
-     */
-    @JsonProp("requestId")
-    private String requestId;
+public class ParameterizedTypeImpl implements ParameterizedType {
+    private final Class<?> raw;
+    private final Type[] args;
 
-    /**
-     * 请求结果
-     */
-    private T result;
-
-    public String getRequestId() {
-        return requestId;
+    public ParameterizedTypeImpl(Class<?> raw, Type[] args) {
+        this.raw = raw;
+        this.args = args;
     }
 
-    public ConsoleResponse<T> setRequestId(String requestId) {
-        this.requestId = requestId;
-        return this;
+    @Override
+    public Type[] getActualTypeArguments() {
+        return args;
     }
 
-    public T getResult() {
-        return result;
+    @Override
+    public Type getRawType() {
+        return raw;
     }
 
-    public ConsoleResponse<T> setResult(T result) {
-        this.result = result;
-        return this;
+    @Override
+    public Type getOwnerType() {
+        return null;
     }
 }

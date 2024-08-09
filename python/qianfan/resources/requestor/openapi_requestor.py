@@ -413,6 +413,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         llm related api request
         """
         log_debug(f"requesting llm api endpoint: {endpoint}")
+        for m in body.get("messages", []):
+            if m.get("role", "") == "function":
+                if not m.get("name", None):
+                    m["name"] = m.get("tool_call_id", "")
+                    m.pop("tool_call_id", None)
 
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
@@ -457,6 +462,11 @@ class QfAPIRequestor(BaseAPIRequestor):
         llm related api request
         """
         log_debug(f"async requesting llm api endpoint: {endpoint}")
+        for m in body.get("messages", []):
+            if m.get("role", "") == "function":
+                if not m.get("name", None):
+                    m["name"] = m.get("tool_call_id", "")
+                    m.pop("tool_call_id", None)
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:

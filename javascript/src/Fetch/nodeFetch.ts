@@ -209,7 +209,7 @@ export class Fetch {
                 if (response.name === 'AbortError') {
                     throw new Error('Request timed out.');
                 }
-                throw new Error('Request timed out.' + response.message);
+                throw new Error('Request timed out.' + (response?.message || response));
             }
 
             if (!response.ok) {

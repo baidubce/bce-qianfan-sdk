@@ -27,7 +27,10 @@ class HttpClient {
         [H.X_BCE_DATE]: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     };
 
-    constructor(private config: any, fetchConfig?: FetchConfig) {
+    constructor(
+        private config: any,
+        fetchConfig?: FetchConfig
+    ) {
         this.fetchInstance = new Fetch(fetchConfig);
     }
 
@@ -40,7 +43,7 @@ class HttpClient {
     async getSignature(config): Promise<any> {
         const {httpMethod, path, body, headers, params, signFunction} = config;
         const method = httpMethod.toUpperCase();
-        const requestUrl = this._getRequestUrl(path, params);
+        const requestUrl = this._getRequestUrl(path);
         const _headers = Object.assign({}, this.defaultHeaders, headers);
         if (!_headers.hasOwnProperty(H.CONTENT_LENGTH)) {
             let contentLength = this._guessContentLength(body);
@@ -51,7 +54,7 @@ class HttpClient {
         const url = new URLClass(requestUrl) as any;
         _headers[H.HOST] = url.host;
         const options = urlObjectToPlainObject(url, method, _headers);
-        const reqHeaders = await this.setAuthorizationHeader(signFunction, _headers, options);
+        const reqHeaders = await this.setAuthorizationHeader(signFunction, _headers, options, params);
         const fetchOptions = {
             url: options.href,
             method: options.method,
@@ -66,7 +69,8 @@ class HttpClient {
             | ((credentials: any, method: any, path: any, headers: any) => [string, string] | string)
             | undefined,
         headers: Record<string, any>,
-        options: any
+        options: any,
+        params: Record<string, any>
     ): Promise<Record<string, any>> {
         if (typeof signFunction === 'function') {
             const result = signFunction(this.config.credentials, options.method!, options.path!, headers);
@@ -89,13 +93,14 @@ class HttpClient {
                 this.config.credentials,
                 options.method!,
                 options.path!,
-                headers
+                headers,
+                params
             );
         }
         return headers;
     }
 
-    private _getRequestUrl(path: string, params: Record<string, any>): string {
+    private _getRequestUrl(path: string, params?: Record<string, any>): string {
         let uri = path;
         const qs = this.buildQueryString(params);
         if (qs) {
@@ -147,9 +152,15 @@ class HttpClient {
         throw new Error('No Content-Length is specified.');
     }
 
-    private createSignature(credentials: any, httpMethod: string, path: string, headers: Record<string, any>): string {
+    private createSignature(
+        credentials: any,
+        httpMethod: string,
+        path: string,
+        headers?: Record<string, any>,
+        params?: Record<string, any>
+    ): string {
         const auth = new Auth(credentials.ak, credentials.sk);
-        return auth.generateAuthorization(httpMethod, path, {}, headers);
+        return auth.generateAuthorization(httpMethod, path, params, headers);
     }
 }
 

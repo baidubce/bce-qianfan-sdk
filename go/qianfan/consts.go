@@ -59,6 +59,8 @@ const (
 	InvalidHTTPMethodErrCode          = 336101
 	InvalidArgumentSystemErrCode      = 336104
 	InvalidArgumentUserSettingErrCode = 336105
+	RPMLimitReachedErrCode            = 336501
+	TPMLimitReachedErrCode            = 336502
 
 	ConsoleInternalErrorErrCode = 500000
 )

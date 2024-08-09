@@ -493,7 +493,6 @@ class QfAPIRequestor(BaseAPIRequestor):
                     m["name"] = m.get("tool_call_id", "")
                     m.pop("tool_call_id", None)
 
-
         class AsyncListIterator:
             def __init__(self, data: List[QfResponse]):
                 self.data = data

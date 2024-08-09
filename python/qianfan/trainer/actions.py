@@ -234,7 +234,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         result["versions"] = versions
         if self.source_type:
-            result["sourceType"] = self.source_type.value 
+            result["sourceType"] = self.source_type.value
         else:
             log_error(
                 "[load_dataset_action] dataset dict must be set with"

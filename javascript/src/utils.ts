@@ -315,7 +315,7 @@ function baseActionUrl(route: string, action: string): string {
 
 interface ConsoleActionParams {
     base_api_route: string;
-    data?: Record<;
+    data?: Record<string, any>,
     action?: string;
 }
 

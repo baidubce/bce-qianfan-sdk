@@ -21,18 +21,27 @@ import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.core.RateLimiter;
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.auth.Auth;
+import com.baidubce.qianfan.core.auth.IAMAuth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.*;
+import com.baidubce.qianfan.model.console.ConsoleRequest;
+import com.baidubce.qianfan.model.console.ConsoleResponse;
 import com.baidubce.qianfan.model.exception.ApiException;
+import com.baidubce.qianfan.model.exception.AuthException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
+import com.baidubce.qianfan.util.ParameterizedTypeImpl;
 import com.baidubce.qianfan.util.StringUtils;
 import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
 
+import java.lang.reflect.Type;
+
 class QianfanClient {
-    private static final String SDK_VERSION = "0.0.9";
+    private static final String SDK_VERSION = "0.1.0";
+    private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
+    private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
@@ -118,6 +127,36 @@ class QianfanClient {
             }
         }
         throw new IllegalStateException("Request failed with unknown error");
+    }
+
+    public <T> ConsoleResponse<T> consoleRequest(ConsoleRequest request, Type type) {
+        try {
+            if (!(auth instanceof IAMAuth)) {
+                throw new AuthException("Console request requires IAM authentication");
+            }
+            String url = StringUtils.isNotEmpty(request.getAction())
+                    ? String.format(CONSOLE_URL_ACTION_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl(), request.getRoute(), request.getAction())
+                    : String.format(CONSOLE_URL_NO_ACTION_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl(), request.getRoute());
+            HttpRequest httpRequest = HttpClient.request()
+                    .post(url)
+                    .body(request.getBody() == null ? new Object() : request.getBody());
+
+            Type respType = new ParameterizedTypeImpl(ConsoleResponse.class, new Type[]{type});
+            HttpResponse<ConsoleResponse<T>> resp = auth.signRequest(httpRequest).executeJson(respType);
+
+            if (resp.getCode() != HttpStatus.SUCCESS) {
+                throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
+            }
+            ApiErrorResponse errorResp = Json.deserialize(resp.getStringBody(), ApiErrorResponse.class);
+            if (StringUtils.isNotEmpty(errorResp.getErrorMsg())) {
+                throw new ApiException("Request failed with api error", errorResp);
+            }
+            return resp.getBody();
+        } catch (QianfanException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RequestException(String.format("Request failed: %s", e.getMessage()), e);
+        }
     }
 
     private <T extends BaseRequest<T>, U, V, E extends Exception> V innerRequest(

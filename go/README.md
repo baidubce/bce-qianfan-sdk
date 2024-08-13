@@ -263,3 +263,21 @@ chat := qianfan.NewChatCompletion(  // Completion 与 Embedding 可以用同样�
     WithLLMRetryBackoffFactor(1),   // 指数回避因子
 )
 ```
+
+同时，由于只有部分错误可以通过重试解决，SDK 只会对部分错误码进行重试，可以通过如下方式自定义修改
+
+```go
+qianfan.GetConfig().RetryErrCodes = []int{
+    // 以下是 SDK 默认重试的错误码
+    qianfan.ServiceUnavailableErrCode,  // 2
+    qianfan.ServerHighLoadErrCode,      // 336100
+    qianfan.QPSLimitReachedErrCode,     // 18
+    qianfan.RPMLimitReachedErrCode,     // 336501
+    qianfan.TPMLimitReachedErrCode,     // 336502
+    qianfan.AppNotExistErrCode,         // 15
+    // 以下为非内置错误码，仅为示例如何增加自定义错误码
+    qianfan.UnknownErrorErrCode,
+    // 也可以直接提供 int 类型的错误码
+    336000,
+}
+```

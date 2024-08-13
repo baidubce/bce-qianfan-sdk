@@ -44,6 +44,15 @@ QianfanDatasetBosDownloadingCacheDir = QianfanDatasetBosCacheDir / "downloading"
 # 用于保存文生图数据集的压缩包的缓存的目录
 QianfanDatasetText2ImageUnzipCacheDir = QianfanDatasetLocalCacheDir / ".unzip_text2img"
 
+# AFS 数据源使用的缓存目录
+QianfanDatasetAFSCacheDir = QianfanDatasetLocalCacheDir / ".afs_cache"
+
+# AFS 数据源使用的上传目录
+QianfanDatasetAFSUploadingCacheDir = QianfanDatasetAFSCacheDir / "uploading"
+
+# AFS 数据源使用的下载目录
+QianfanDatasetAFSDownloadingCacheDir = QianfanDatasetAFSCacheDir / "downloading"
+
 # 本地缓存中，元数据的后缀名
 QianfanDatasetMetaInfoExtensionName = ".meta"
 

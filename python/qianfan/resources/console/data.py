@@ -867,12 +867,13 @@ class Data:
     def create_offline_batch_inference_task(
         cls,
         name: str,
-        input_bos_uri: str,
-        output_bos_uri: str,
+        input_bos_uri: Optional[str] = None,
+        output_bos_uri: Optional[str] = None,
         model_id: Optional[str] = None,
         endpoint: Optional[str] = None,
         inference_params: Dict[str, Any] = {},
         description: Optional[str] = None,
+        afs_config: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -909,10 +910,19 @@ class Data:
         request_json: Dict[str, Any] = {
             "name": name,
             "inferenceParams": inference_params,
-            "inputBosUri": input_bos_uri,
-            "outputBosUri": output_bos_uri,
             **kwargs,
         }
+        if afs_config:
+            request_json["afsConfig"] = afs_config
+        elif input_bos_uri and output_bos_uri:
+            request_json["inputBosUri"] = input_bos_uri
+            request_json["outputBosUri"] = output_bos_uri
+        else:
+            raise ValueError(
+                "Either afs_config or input_bos_uri and output_bos_uri must be"
+                " provided."
+            )
+
         if model_id:
             request_json["modelId"] = model_id
         elif endpoint:

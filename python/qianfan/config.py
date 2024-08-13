@@ -36,6 +36,7 @@ class GlobalConfig(BaseSettings):
     SECRET_KEY: Optional[str] = Field(default=None)
     ACCESS_TOKEN: Optional[str] = Field(default=None)
     BASE_URL: str = Field(default=DefaultValue.BaseURL)
+    NO_AUTH: bool = Field(default=False)
     MODEL_API_PREFIX: str = Field(default=DefaultValue.ModelAPIPrefix)
     AUTH_TIMEOUT: float = Field(default=DefaultValue.AuthTimeout)
     DISABLE_EB_SDK: bool = Field(default=DefaultValue.DisableErnieBotSDK)

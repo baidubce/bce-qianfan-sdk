@@ -1698,7 +1698,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -1715,7 +1715,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1741,15 +1741,7 @@ class ChatCompletion(VersionBase):
         def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return inner_func(**kwargs, show_total_latency=show_total_latency)
 
         task_list: List[Callable]
 
@@ -1778,7 +1770,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1795,7 +1787,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1818,15 +1810,7 @@ class ChatCompletion(VersionBase):
         async def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = await inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            async for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return await inner_func(**kwargs, show_total_latency=show_total_latency)
 
         if messages_list:
             task_list = [

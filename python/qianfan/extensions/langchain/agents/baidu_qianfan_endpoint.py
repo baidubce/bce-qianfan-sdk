@@ -71,7 +71,7 @@ def _convert_action_into_message(
                 additional_kwargs={
                     "function_call": {
                         "name": step.tool,
-                        "arguments": json.dumps(step.tool_input),
+                        "arguments": json.dumps(step.tool_input, ensure_ascii=False),
                     }
                 },
             )
@@ -83,7 +83,11 @@ def _convert_action_into_message(
         if not isinstance(tool_result, dict):
             dicts = {"result": tool_result}
 
-        messages.append(FunctionMessage(name=step.tool, content=json.dumps(dicts)))
+        messages.append(
+            FunctionMessage(
+                name=step.tool, content=json.dumps(dicts, ensure_ascii=False)
+            )
+        )
     return messages
 
 

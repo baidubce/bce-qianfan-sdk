@@ -152,6 +152,32 @@ class _ChatCompletionV1(BaseResourceV1):
                 input_price_per_1k_tokens=0.004,
                 output_price_per_1k_tokens=0.008,
             ),
+            "ERNIE-3.5-8K-0701": QfLLMInfo(
+                endpoint="/chat/ernie-3.5-8k-0701",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                    "stop",
+                    "enable_system_memory",
+                    "system_memory_id",
+                    "disable_search",
+                    "enable_citation",
+                    "enable_trace",
+                    "max_output_tokens",
+                    "response_format",
+                    "functions",
+                    "tool_choice",
+                },
+                max_input_chars=20000,
+                max_input_tokens=5120,
+                input_price_per_1k_tokens=0.12,
+                output_price_per_1k_tokens=0.12,
+            ),
             "ERNIE-3.5-8K-0613": QfLLMInfo(
                 endpoint="/chat/ernie-3.5-8k-0613",
                 required_keys={"messages"},
@@ -199,6 +225,27 @@ class _ChatCompletionV1(BaseResourceV1):
             ),
             "ERNIE-Lite-8K-0308": QfLLMInfo(
                 endpoint="/chat/ernie-lite-8k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "system",
+                    "stop",
+                    "max_output_tokens",
+                    "min_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
+                },
+                max_input_chars=11200,
+                max_input_tokens=7168,
+                input_price_per_1k_tokens=0.003,
+                output_price_per_1k_tokens=0.006,
+            ),
+            "ERNIE-Lite-V": QfLLMInfo(
+                endpoint="/chat/ernie-lite-v",
                 required_keys={"messages"},
                 optional_keys={
                     "stream",
@@ -554,6 +601,31 @@ class _ChatCompletionV1(BaseResourceV1):
                     "tool_choice",
                     "system",
                     "stop",
+                    "max_output_tokens",
+                    "min_output_tokens",
+                    "frequency_penalty",
+                    "presence_penalty",
+                },
+                max_input_chars=24000,
+                max_input_tokens=6144,
+                input_price_per_1k_tokens=0.001,
+                output_price_per_1k_tokens=0.001,
+            ),
+            "ERNIE-Novel-8K": QfLLMInfo(
+                endpoint="/chat/ernie-novel-8k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "user_id",
+                    "tools",
+                    "tool_choice",
+                    "system",
+                    "stop",
+                    "enable_system_memory",
+                    "system_memory_id",
                     "max_output_tokens",
                     "min_output_tokens",
                     "frequency_penalty",
@@ -1626,7 +1698,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -1643,7 +1715,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1669,15 +1741,7 @@ class ChatCompletion(VersionBase):
         def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return inner_func(**kwargs, show_total_latency=show_total_latency)
 
         task_list: List[Callable]
 
@@ -1706,7 +1770,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1723,7 +1787,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1746,15 +1810,7 @@ class ChatCompletion(VersionBase):
         async def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = await inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            async for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return await inner_func(**kwargs, show_total_latency=show_total_latency)
 
         if messages_list:
             task_list = [

@@ -105,82 +105,6 @@ class Env:
     FileEncoding: str = "QIANFAN_FILE_ENCODING"
 
 
-class DefaultValue:
-    """
-    Default value used by qianfan sdk
-    """
-
-    AK: str = ""
-    SK: str = ""
-    ConsoleAK: str = ""
-    ConsoleSK: str = ""
-    AccessToken: str = ""
-    BaseURL: str = "https://aip.baidubce.com"
-    AuthTimeout: float = 5
-    DisableErnieBotSDK: bool = True
-    IAMSignExpirationSeconds: int = 300
-    ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
-    AccessTokenRefreshMinInterval: float = 3600
-    InferResourceRefreshMinInterval: float = 600
-    RetryCount: int = 3
-    RetryTimeout: float = 300
-    RetryBackoffFactor: float = 1
-    RetryJitter: float = 1
-    RetryMaxWaitInterval: float = 120
-    ConsoleRetryCount: int = 1
-    ConsoleRetryTimeout: float = 60
-    ConsoleRetryBackoffFactor: float = 0
-    ConsoleRetryJitter: int = 1
-    ConsoleRetryMaxWaitInterval: float = 120
-    ConsoleRetryErrCodes: Set = {
-        APIErrorCode.ServerHighLoad.value,
-        APIErrorCode.QPSLimitReached.value,
-        APIErrorCode.ConsoleInternalError.value,
-    }
-    QpsLimit: float = 0
-    RpmLimit: float = 0
-    TpmLimit: int = 0
-    DotEnvConfigFile: str = ".env"
-
-    EnablePrivate: bool = False
-    AccessCode: str = ""
-    TruncatedContinuePrompt = "继续"
-    ImportStatusPollingInterval: float = 2
-    ExportStatusPollingInterval: float = 2
-    ReleaseStatusPollingInterval: float = 2
-    ETLStatusPollingInterval: float = 2
-    TrainStatusPollingInterval: float = 30
-    TrainerStatusPollingBackoffFactor: float = 3
-    TrainerStatusPollingRetryTimes: float = 3
-    ModelPublishStatusPollingInterval: float = 30
-    BatchRunStatusPollingInterval: float = 30
-    DeployStatusPollingInterval: float = 30
-    DefaultFinetuneTrainType: str = "ERNIE-Speed"
-    V2InferApiDowngrade: bool = False
-
-    # 目前可直接下载到本地的千帆数据集解压后的大小上限
-    # 后期研究更换为用户机内存大小的上限
-    # 目前限制 2GB，防止用户内存爆炸
-    ExportFileSizeLimit: int = 1024 * 1024 * 1024 * 2
-    GetEntityContentFailedRetryTimes: int = 3
-
-    EvaluationOnlinePollingInterval: float = 30
-    BosHostRegion: str = "bj"
-    RetryErrCodes: Set = {
-        APIErrorCode.ServiceUnavailable.value,
-        APIErrorCode.ServerHighLoad.value,
-        APIErrorCode.QPSLimitReached.value,
-        APIErrorCode.RPMLimitReached.value,
-        APIErrorCode.TPMLimitReached.value,
-        APIErrorCode.AppNotExist.value,
-    }
-    SSLVerificationEnabled: bool = True
-    Proxy: str = ""
-    FileEncoding: str = "utf-8"
-    CacheDir: str = str(Path.home() / ".qianfan_cache")
-    DisableCache: bool = False
-
-
 class Consts:
     """
     Constant used by qianfan sdk
@@ -328,6 +252,83 @@ class Consts:
     QianfanLLMModelsListCacheKey = "qianfan_llm_models"
 
     DateTimeFormat = "%Y-%m-%dT%H:%M:%SZ"
+
+
+class DefaultValue:
+    """
+    Default value used by qianfan sdk
+    """
+
+    AK: str = ""
+    SK: str = ""
+    ConsoleAK: str = ""
+    ConsoleSK: str = ""
+    AccessToken: str = ""
+    BaseURL: str = "https://aip.baidubce.com"
+    ModelAPIPrefix: str = Consts.ModelAPIPrefix
+    AuthTimeout: float = 5
+    DisableErnieBotSDK: bool = True
+    IAMSignExpirationSeconds: int = 300
+    ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
+    AccessTokenRefreshMinInterval: float = 3600
+    InferResourceRefreshMinInterval: float = 600
+    RetryCount: int = 3
+    RetryTimeout: float = 300
+    RetryBackoffFactor: float = 1
+    RetryJitter: float = 1
+    RetryMaxWaitInterval: float = 120
+    ConsoleRetryCount: int = 1
+    ConsoleRetryTimeout: float = 60
+    ConsoleRetryBackoffFactor: float = 0
+    ConsoleRetryJitter: int = 1
+    ConsoleRetryMaxWaitInterval: float = 120
+    ConsoleRetryErrCodes: Set = {
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.ConsoleInternalError.value,
+    }
+    QpsLimit: float = 0
+    RpmLimit: float = 0
+    TpmLimit: int = 0
+    DotEnvConfigFile: str = ".env"
+
+    EnablePrivate: bool = False
+    AccessCode: str = ""
+    TruncatedContinuePrompt = "继续"
+    ImportStatusPollingInterval: float = 2
+    ExportStatusPollingInterval: float = 2
+    ReleaseStatusPollingInterval: float = 2
+    ETLStatusPollingInterval: float = 2
+    TrainStatusPollingInterval: float = 30
+    TrainerStatusPollingBackoffFactor: float = 3
+    TrainerStatusPollingRetryTimes: float = 3
+    ModelPublishStatusPollingInterval: float = 30
+    BatchRunStatusPollingInterval: float = 30
+    DeployStatusPollingInterval: float = 30
+    DefaultFinetuneTrainType: str = "ERNIE-Speed"
+    V2InferApiDowngrade: bool = False
+
+    # 目前可直接下载到本地的千帆数据集解压后的大小上限
+    # 后期研究更换为用户机内存大小的上限
+    # 目前限制 2GB，防止用户内存爆炸
+    ExportFileSizeLimit: int = 1024 * 1024 * 1024 * 2
+    GetEntityContentFailedRetryTimes: int = 3
+
+    EvaluationOnlinePollingInterval: float = 30
+    BosHostRegion: str = "bj"
+    RetryErrCodes: Set = {
+        APIErrorCode.ServiceUnavailable.value,
+        APIErrorCode.ServerHighLoad.value,
+        APIErrorCode.QPSLimitReached.value,
+        APIErrorCode.RPMLimitReached.value,
+        APIErrorCode.TPMLimitReached.value,
+        APIErrorCode.AppNotExist.value,
+    }
+    SSLVerificationEnabled: bool = True
+    Proxy: str = ""
+    FileEncoding: str = "utf-8"
+    CacheDir: str = str(Path.home() / ".qianfan_cache")
+    DisableCache: bool = False
 
 
 class DefaultLLMModel:

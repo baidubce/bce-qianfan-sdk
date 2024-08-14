@@ -652,6 +652,7 @@ class BaseResourceV1(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -678,6 +679,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -699,6 +701,7 @@ class BaseResourceV1(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         endpoint = self._extract_endpoint(**kwargs)
@@ -717,6 +720,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -911,6 +915,7 @@ class BaseResourceV2(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -928,6 +933,7 @@ class BaseResourceV2(BaseResource):
             body=self._generate_body(model, stream, **kwargs),
             stream=stream,
             retry_config=retry_config,
+            show_total_latency=show_total_latency,
         )
 
         return resp
@@ -937,6 +943,7 @@ class BaseResourceV2(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         resp = await self._client.async_llm(
@@ -946,6 +953,7 @@ class BaseResourceV2(BaseResource):
             body=self._generate_body(model, stream, **kwargs),
             stream=stream,
             retry_config=retry_config,
+            show_total_latency=show_total_latency,
         )
 
         return resp
@@ -1022,22 +1030,25 @@ def get_latest_supported_models(
 
         # get preset services:
         for s in svc_list:
-            [api_type, model_endpoint] = trim_prefix(
-                s["url"],
-                "{}{}/".format(
-                    DefaultValue.BaseURL,
-                    Consts.ModelAPIPrefix,
-                ),
-            ).split("/")
-            model_info = _runtime_models_info.get(api_type)
-            if model_info is None:
-                model_info = {}
-            model_info[s["name"]] = QfLLMInfo(
-                endpoint="/{}/{}".format(api_type, model_endpoint),
-                api_type=api_type,
-            )
-            _runtime_models_info[api_type] = model_info
-            _last_update_time = datetime.now(timezone.utc)
+            try:
+                [api_type, model_endpoint] = trim_prefix(
+                    s["url"],
+                    "{}{}/".format(
+                        DefaultValue.BaseURL,
+                        get_config().MODEL_API_PREFIX,
+                    ),
+                ).split("/")
+                model_info = _runtime_models_info.get(api_type)
+                if model_info is None:
+                    model_info = {}
+                model_info[s["name"]] = QfLLMInfo(
+                    endpoint="/{}/{}".format(api_type, model_endpoint),
+                    api_type=api_type,
+                )
+                _runtime_models_info[api_type] = model_info
+                _last_update_time = datetime.now(timezone.utc)
+            except Exception:
+                continue
         cache = KvCache()
         cache.set(
             key=Consts.QianfanLLMModelsListCacheKey,

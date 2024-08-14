@@ -140,7 +140,7 @@ func (s *ModelResponseStream) checkResponseError(ctx context.Context) error {
 					return err
 				}
 				retryCount--
-			} else if resp.ErrorCode != QPSLimitReachedErrCode && resp.ErrorCode != ServerHighLoadErrCode {
+			} else if !contains(GetConfig().RetryErrCodes, resp.ErrorCode) {
 				return apiError
 			}
 			err = s.reset()
@@ -202,7 +202,7 @@ func (m *BaseModel) withRetry(fn func() error) error {
 		var apiErr *APIError
 		ok := errors.As(err, &apiErr)
 		if ok {
-			if apiErr.Code != QPSLimitReachedErrCode && apiErr.Code != ServerHighLoadErrCode {
+			if !contains(GetConfig().RetryErrCodes, apiErr.Code) {
 				return err
 			}
 		}

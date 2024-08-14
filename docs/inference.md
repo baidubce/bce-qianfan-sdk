@@ -243,7 +243,7 @@ import qianfan
 # 模型名称可以通过 qianfan.Embedding.models() 获取
 # 也可以在命令行运行 qianfan embedding --list-model 查看
 # 如果不设置 model，则使用默认模型 Embedding-V1
-emb = qianfan.Embedding(model="ERNIE-Speed-8K")
+emb = qianfan.Embedding(model="embedding-v1")
 
 # 对于自行发布的模型，或者是不在预置模型列表中的模型，用户可以通过指定 endpoint 调用
 # endpoint 指模型 API 地址的最后一个 / 后的部分，例如 embedding-v1

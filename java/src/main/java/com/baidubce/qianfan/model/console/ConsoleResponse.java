@@ -22,20 +22,20 @@ public class ConsoleResponse<T> {
     /**
      * 请求ID
      */
-    @JsonProp("logId")
-    private String logId;
+    @JsonProp("requestId")
+    private String requestId;
 
     /**
      * 请求结果
      */
     private T result;
 
-    public String getLogId() {
-        return logId;
+    public String getRequestId() {
+        return requestId;
     }
 
-    public ConsoleResponse<T> setLogId(String logId) {
-        this.logId = logId;
+    public ConsoleResponse<T> setRequestId(String requestId) {
+        this.requestId = requestId;
         return this;
     }
 

@@ -167,6 +167,7 @@ class TrainDatasetType(int, Enum):
 class TrainDatasetSourceType(str, Enum):
     Platform = "Platform"
     PrivateBos = "Bos"
+    PrivateAfs = "Afs"
 
 
 class TrainMode(str, Enum):

@@ -26,5 +26,5 @@
 package qianfan
 
 // SDK 版本
-const Version = "v0.0.9"
+const Version = "v0.0.11"
 const versionIndicator = "qianfan_go_sdk_" + Version

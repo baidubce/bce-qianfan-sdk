@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from typing import Any, Optional
@@ -6,18 +7,19 @@ import dateutil
 import pyarrow
 
 from qianfan.config import encoding
-from qianfan.dataset import DataSource, FormatType, Table
 from qianfan.dataset.consts import (
     QianfanDatasetAFSDownloadingCacheDir,
     QianfanDatasetAFSUploadingCacheDir,
     _merge_custom_path,
 )
+from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
     _get_a_pyarrow_table,
     _pack_a_table_into_file_for_uploading,
     _read_all_file_from_zip,
     _read_all_image_from_zip,
 )
+from qianfan.dataset.table import Table
 from qianfan.resources.batch_inference.helper.helper import AFSClient
 from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field
@@ -75,7 +77,7 @@ class AFSDataSource(DataSource, BaseModel):
         if not should_overwrite_existed_file:
             file_existed = afs_client.test(self.afs_file_path, "-e")
 
-            if file_existed:
+            if file_existed == 0:
                 err_msg = (
                     f"{final_afs_file_path} existed and argument"
                     " 'should_overwrite_existed_file' is False"
@@ -86,7 +88,7 @@ class AFSDataSource(DataSource, BaseModel):
         # 如果设置了 should_overwrite_existed_file 则防御性删除文件
         if should_overwrite_existed_file:
             log_info(
-                f"try to delete original bos file {final_afs_file_path} for overwrite"
+                f"try to delete original afs file {final_afs_file_path} for overwrite"
             )
             try:
                 afs_client.rm(self.afs_file_path)
@@ -186,9 +188,9 @@ class AFSDataSource(DataSource, BaseModel):
     def _get_specific_downloading_cache_path(self) -> str:
         cache_path = os.path.join(
             _merge_custom_path(QianfanDatasetAFSDownloadingCacheDir),
-            self.host,
-            self.ugi,
-            self.afs_file_path,
+            hashlib.md5(
+                bytes(self.host + self.afs_file_path, encoding="utf8")
+            ).hexdigest(),
         )
         os.makedirs(cache_path, exist_ok=True)
 
@@ -197,9 +199,9 @@ class AFSDataSource(DataSource, BaseModel):
     def _get_specific_uploading_cache_path(self) -> str:
         cache_path = os.path.join(
             _merge_custom_path(QianfanDatasetAFSUploadingCacheDir),
-            self.host,
-            self.ugi,
-            self.afs_file_path,
+            hashlib.md5(
+                bytes(self.host + self.afs_file_path, encoding="utf8")
+            ).hexdigest(),
         )
         os.makedirs(cache_path, exist_ok=True)
 
@@ -245,7 +247,12 @@ class AFSDataSource(DataSource, BaseModel):
         with open(cache_meta_info_path, mode="w", encoding=encoding()) as f:
             f.write(
                 json.dumps(
-                    {"last_modified": new_last_modified_time}, ensure_ascii=False
+                    {
+                        "last_modified": new_last_modified_time.strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        )
+                    },
+                    ensure_ascii=False,
                 )
             )
 

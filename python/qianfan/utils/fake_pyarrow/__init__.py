@@ -17,8 +17,14 @@ fake pyarrow package
 
 from qianfan.utils.fake_pyarrow.functions import concat_tables
 from qianfan.utils.fake_pyarrow.table import ChunkedArray, Table
+from qianfan.utils.logging import log_warn
 
 is_fake = True
+
+log_warn(
+    "no pyarrow has been installed. Dataset will run in restrict mode in which some"
+    " functions may not be available"
+)
 
 __all__ = [
     "Table",

@@ -52,6 +52,7 @@ from qianfan.dataset.data_source import (
     FileDataSource,
     QianfanDataSource,
 )
+from qianfan.dataset.data_source.afs import AFSDataSource
 from qianfan.dataset.data_source.utils import upload_data_from_bos_to_qianfan
 from qianfan.dataset.dataset_utils import (
     _async_batch_do_on_service,
@@ -269,6 +270,7 @@ class Dataset(Table):
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
+        afs_source_args: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Optional[DataSource]:
         """从参数来构建数据源"""
@@ -278,6 +280,7 @@ class Dataset(Table):
                 f" {kwargs}"
             )
             return FileDataSource(path=data_file, **kwargs)
+
         if qianfan_dataset_id:
             log_info(
                 "construct a qianfan data source from existed id:"
@@ -286,6 +289,7 @@ class Dataset(Table):
             return QianfanDataSource.get_existed_dataset(
                 dataset_id=qianfan_dataset_id, **kwargs
             )
+
         if qianfan_dataset_create_args:
             log_info(
                 "construct a new qianfan data source from args:"
@@ -310,6 +314,19 @@ class Dataset(Table):
                 )
                 log_error(err_msg)
                 raise ValueError(err_msg)
+
+            return bos_ds
+
+        if afs_source_args:
+            afs_ds = AFSDataSource(**afs_source_args)
+            if afs_ds.file_format is None:
+                err_msg = (
+                    f"failed to create afs dataset file path {afs_ds.afs_file_path}"
+                )
+                log_error(err_msg)
+                raise ValueError(err_msg)
+
+            return afs_ds
 
         log_info("no datasource was constructed")
         return None
@@ -341,6 +358,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
+        afs_source_args: Optional[Dict[str, Any]] = None,
         huggingface_dataset: Optional[Any] = None,
         dataframe: Optional[Any] = None,
         schema: Optional[Schema] = None,
@@ -366,6 +384,9 @@ class Dataset(Table):
                 from args
             bos_source_args: (Optional[Dict[str, Any]]):
                 create arguments for creating a file on specific bos
+                default to None
+            afs_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific afs
                 default to None
             huggingface_dataset (Optional[Any]):
                 Huggingface dataset object, only support
@@ -433,6 +454,7 @@ class Dataset(Table):
                 qianfan_dataset_id=qianfan_dataset_id,
                 bos_load_args=bos_load_args,
                 bos_source_args=bos_source_args,
+                afs_source_args=afs_source_args,
                 **kwargs,
             )
 
@@ -465,6 +487,7 @@ class Dataset(Table):
         qianfan_dataset_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
+        afs_source_args: Optional[Dict[str, Any]] = None,
         schema: Optional[Schema] = None,
         replace_source: Optional[bool] = None,
         **kwargs: Any,
@@ -489,6 +512,9 @@ class Dataset(Table):
             bos_source_args: (Optional[Dict[str, Any]]):
                 create arguments for creating a file on specific bos
                 default to None
+            afs_source_args: (Optional[Dict[str, Any]]):
+                create arguments for creating a file on specific afs
+                default to None
             schema: (Optional[Schema]):
                 schema used to validate before exporting data, default to None
             replace_source: (Optional[bool]):
@@ -506,6 +532,7 @@ class Dataset(Table):
                 qianfan_dataset_id=qianfan_dataset_id,
                 qianfan_dataset_create_args=qianfan_dataset_create_args,
                 bos_source_args=bos_source_args,
+                afs_source_args=afs_source_args,
                 **kwargs,
             )
 

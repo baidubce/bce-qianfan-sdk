@@ -50,6 +50,9 @@ class AFSClient(object):
     def rmr(self, *params: Any) -> str:
         return self._exec("rmr", *params)
 
+    def rm(self, path: str) -> str:
+        return self._exec("rm", path)
+
     def _get_exec_cmd(self, cmd: str, *params: Any) -> str:
         log_debug(f"run cmd {cmd} {params}")
         exec_cmd = (
@@ -84,6 +87,16 @@ class AFSClient(object):
 
     def cp(self, *params: Any) -> str:
         return self._exec("cp", *params)
+
+    def get_modify_time(self, path: str, *args: Any, **kwargs: Any) -> str:
+        return self._exec("stat", "%y", path)
+
+    def test(self, path: str, *args: Any, **kwargs: Any) -> int:
+        try:
+            self._exec("test", *[*args, path])
+            return 0
+        except ValueError:
+            return 1
 
 
 def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:

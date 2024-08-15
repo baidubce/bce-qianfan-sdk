@@ -17,7 +17,6 @@ bos data source implementation including uploading / downloading
 
 import json
 import os
-import shutil
 from typing import Any, Dict, Optional
 
 import pyarrow
@@ -30,13 +29,11 @@ from qianfan.dataset.consts import (
     _merge_custom_path,
 )
 from qianfan.dataset.data_source.base import DataSource, FormatType
-from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
-    _collect_all_images_and_annotations_in_one_folder,
     _get_a_pyarrow_table,
+    _pack_a_table_into_file_for_uploading,
     _read_all_file_from_zip,
     _read_all_image_from_zip,
-    zip_file_or_folder,
 )
 from qianfan.dataset.table import Table
 from qianfan.utils import log_error, log_info, log_warn
@@ -151,41 +148,13 @@ class BosDataSource(DataSource, BaseModel):
             os.path.split(final_bos_file_path)[1],
         )
 
-        from qianfan.dataset.dataset import Dataset
-
-        if not (
-            isinstance(table, Dataset)
-            and table.inner_table is None
-            and isinstance(table.inner_data_source_cache, FileDataSource)
-        ):
-            # 在特定情况下修改格式
-            if table.is_dataset_grouped() and should_use_qianfan_special_jsonl_format:
-                table.pack()
-
-            if self.format_type() != FormatType.Text2Image:
-                FileDataSource(
-                    path=local_file_path,
-                    file_format=self.format_type(),
-                    save_as_folder=should_save_as_zip_file,
-                ).save(
-                    table,
-                    use_qianfan_special_jsonl_format=should_use_qianfan_special_jsonl_format,
-                    **kwargs,
-                )
-            else:
-                # 不同于千帆数据源会随机生成一个 UUID 拼接在文件名中
-                # 这里需要手动删除上一次的中转文件夹
-                # 避免重名带来的影响
-                shutil.rmtree(local_file_path, ignore_errors=True)
-                _collect_all_images_and_annotations_in_one_folder(
-                    table.inner_table, local_file_path
-                )
-        else:
-            local_file_path = table.inner_data_source_cache.path
-
-        # 打压缩包
-        if should_save_as_zip_file:
-            local_file_path = zip_file_or_folder(local_file_path)
+        local_file_path = _pack_a_table_into_file_for_uploading(
+            table,
+            local_file_path,
+            self.file_format,
+            should_save_as_zip_file,
+            should_use_qianfan_special_jsonl_format,
+        )
 
         try:
             log_info(

@@ -21,6 +21,9 @@ from typing import Any, Callable, Dict, List, Optional
 from qianfan.consts import Consts
 from qianfan.errors import QianfanError
 from qianfan.resources.console.consts import (
+    V2 as V2Consts,
+)
+from qianfan.resources.console.consts import (
     DataExportDestinationType,
     DataProjectType,
     DataSetType,
@@ -1012,3 +1015,306 @@ class Data:
             if v is not None
         }
         return req
+
+    class V2:
+        @classmethod
+        def base_api_route(cls) -> str:
+            """
+            base api url route for service V2.
+
+            Returns:
+                str: base api url route
+            """
+            return Consts.DatasetV2BaseRouteAPI
+
+        @classmethod
+        @console_api_request
+        def create_dataset(
+            cls,
+            dataset_name: str,
+            dataset_format: V2Consts.DatasetFormat,
+            storage_type: V2Consts.StorageType,
+            storage_path: Optional[str] = None,
+            **kwargs: Any,
+        ) -> QfRequest:
+            post_body_dict = {
+                "datasetName": dataset_name,
+                "dataFormat": dataset_format.value,
+                "storageType": storage_type.value,
+            }
+
+            if storage_path:
+                if storage_path[-1] != "/":
+                    storage_path += "/"
+
+                post_body_dict["storagePath"] = storage_path
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.DatasetV2CreateDatasetQueryParam),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def get_dataset_list(
+            cls,
+            marker: Optional[str] = None,
+            max_keys: int = 10,
+            page_reverse: bool = False,
+            filter: Optional[Dict[str, Any]] = None,
+        ) -> QfRequest:
+            post_json_body: Dict[str, Any] = {
+                "maxKeys": max_keys,
+                "pageReverse": page_reverse,
+            }
+
+            if marker:
+                post_json_body["marker"] = marker
+
+            if filter:
+                post_json_body["filter"] = filter
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.DatasetV2GetDatasetList),
+            )
+            req.json_body = post_json_body
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def delete_dataset(
+            cls,
+            dataset_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "datasetId": dataset_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.DatasetV2DeleteDatasetQueryParam),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def create_dataset_version(
+            cls,
+            dataset_id: str,
+            description: Optional[str] = None,
+        ) -> QfRequest:
+            post_body_dict = {
+                "datasetId": dataset_id,
+            }
+
+            if description:
+                post_body_dict["description"] = description
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2CreateDatasetVersionQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def get_dataset_version_info(
+            cls,
+            version_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "versionId": version_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2GetDatasetVersionInfoQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def delete_dataset_version(
+            cls,
+            version_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "versionId": version_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2DeleteDatasetVersionQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def publish_dataset_version(
+            cls,
+            version_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "versionId": version_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2PublishDatasetVersionQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def get_dataset_version_list(
+            cls,
+            dataset_id: str,
+            marker: Optional[str] = None,
+            max_keys: int = 10,
+            page_reverse: bool = False,
+            filter: Optional[Dict[str, Any]] = None,
+        ) -> QfRequest:
+            post_body_dict = {
+                "datasetId": dataset_id,
+                "maxKeys": max_keys,
+                "pageReverse": page_reverse,
+            }
+
+            if marker:
+                post_body_dict["marker"] = marker
+
+            if filter:
+                post_body_dict["filter"] = filter
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2GetDatasetVersionListQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def create_dataset_version_import_task(
+            cls,
+            version_id: str,
+            files: List[str],
+        ) -> QfRequest:
+            post_body_dict = {
+                "versionId": version_id,
+                "files": files,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2CreateDatasetVersionImportTaskQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def get_dataset_version_import_task_info(
+            cls,
+            task_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "taskId": task_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2GetDatasetVersionImportTaskInfoQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def create_dataset_version_export_task(
+            cls,
+            version_id: str,
+            storage_type: V2Consts.StorageType,
+            storage_path: Optional[str] = None,
+        ) -> QfRequest:
+            post_body_dict = {
+                "versionId": version_id,
+                "storageType": storage_type.value,
+            }
+
+            if storage_path:
+                post_body_dict["storagePath"] = storage_path
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2CreateDatasetVersionExportTaskQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req
+
+        @classmethod
+        @console_api_request
+        def get_dataset_version_export_task_info(
+            cls,
+            task_id: str,
+        ) -> QfRequest:
+            post_body_dict = {
+                "taskId": task_id,
+            }
+
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(
+                    Consts.DatasetV2GetDatasetVersionExportTaskInfoQueryParam
+                ),
+            )
+            req.json_body = post_body_dict
+
+            return req

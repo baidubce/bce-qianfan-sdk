@@ -1020,7 +1020,7 @@ class Data:
         @classmethod
         def base_api_route(cls) -> str:
             """
-            base api url route for service V2.
+            base api url route for dataset V2.
 
             Returns:
                 str: base api url route
@@ -1037,6 +1037,24 @@ class Data:
             storage_path: Optional[str] = None,
             **kwargs: Any,
         ) -> QfRequest:
+            """
+            create dataset.
+
+            Parameters:
+                dataset_name (str):
+                    dataset name.
+                dataset_format (V2Consts.DatasetFormat):
+                    dataset format.
+                storage_type (V2Consts.StorageType):
+                    storage type.
+                storage_path (Optional[str], optional):
+                    storage path. Defaults to None.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
             post_body_dict = {
                 "datasetName": dataset_name,
                 "dataFormat": dataset_format.value,
@@ -1052,7 +1070,7 @@ class Data:
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
-                query=_get_console_v2_query(Consts.DatasetV2CreateDatasetQueryParam),
+                query=_get_console_v2_query(Consts.DatasetV2CreateDatasetAction),
             )
             req.json_body = post_body_dict
 
@@ -1066,7 +1084,26 @@ class Data:
             max_keys: int = 10,
             page_reverse: bool = False,
             filter: Optional[Dict[str, Any]] = None,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            get dataset list.
+
+            Parameters:
+                marker (Optional[str], optional):
+                    marker of the first page. Defaults to None.
+                max_keys (int, optional):
+                    max keys of the page. Defaults to 10.
+                page_reverse (bool, optional):
+                    page reverse or not. Defaults to False.
+                filter (Optional[Dict[str, Any]], optional):
+                    filter conditions. Defaults to None.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
             post_json_body: Dict[str, Any] = {
                 "maxKeys": max_keys,
                 "pageReverse": page_reverse,
@@ -1081,7 +1118,7 @@ class Data:
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
-                query=_get_console_v2_query(Consts.DatasetV2GetDatasetList),
+                query=_get_console_v2_query(Consts.DatasetV2GetDatasetListAction),
             )
             req.json_body = post_json_body
 
@@ -1092,7 +1129,21 @@ class Data:
         def delete_dataset(
             cls,
             dataset_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            delete dataset.
+
+            Parameters:
+                dataset_id (str):
+                    dataset id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "datasetId": dataset_id,
             }
@@ -1100,7 +1151,7 @@ class Data:
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
-                query=_get_console_v2_query(Consts.DatasetV2DeleteDatasetQueryParam),
+                query=_get_console_v2_query(Consts.DatasetV2DeleteDatasetAction),
             )
             req.json_body = post_body_dict
 
@@ -1112,7 +1163,22 @@ class Data:
             cls,
             dataset_id: str,
             description: Optional[str] = None,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            create dataset version.
+
+            Parameters:
+                dataset_id (str):
+                    dataset id.
+                description (Optional[str], optional):
+                    dataset version description. Defaults to None.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
             post_body_dict = {
                 "datasetId": dataset_id,
             }
@@ -1123,9 +1189,7 @@ class Data:
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
-                query=_get_console_v2_query(
-                    Consts.DatasetV2CreateDatasetVersionQueryParam
-                ),
+                query=_get_console_v2_query(Consts.DatasetV2CreateDatasetVersionAction),
             )
             req.json_body = post_body_dict
 
@@ -1136,7 +1200,21 @@ class Data:
         def get_dataset_version_info(
             cls,
             version_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            get dataset version info.
+
+            Parameters:
+                version_id (str):
+                    dataset version id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "versionId": version_id,
             }
@@ -1145,7 +1223,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2GetDatasetVersionInfoQueryParam
+                    Consts.DatasetV2GetDatasetVersionInfoAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1157,7 +1235,21 @@ class Data:
         def delete_dataset_version(
             cls,
             version_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            delete dataset version.
+
+            Parameters:
+                version_id (str):
+                    dataset version id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "versionId": version_id,
             }
@@ -1165,9 +1257,7 @@ class Data:
             req = QfRequest(
                 method="POST",
                 url=cls.base_api_route(),
-                query=_get_console_v2_query(
-                    Consts.DatasetV2DeleteDatasetVersionQueryParam
-                ),
+                query=_get_console_v2_query(Consts.DatasetV2DeleteDatasetVersionAction),
             )
             req.json_body = post_body_dict
 
@@ -1178,7 +1268,21 @@ class Data:
         def publish_dataset_version(
             cls,
             version_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            publish dataset version.
+
+            Parameters:
+                version_id (str):
+                    dataset version id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "versionId": version_id,
             }
@@ -1187,7 +1291,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2PublishDatasetVersionQueryParam
+                    Consts.DatasetV2PublishDatasetVersionAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1203,7 +1307,29 @@ class Data:
             max_keys: int = 10,
             page_reverse: bool = False,
             filter: Optional[Dict[str, Any]] = None,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            get dataset version list.
+
+            Parameters:
+                dataset_id (str):
+                    dataset id.
+                marker (Optional[str], optional):
+                    marker. Defaults to None.
+                max_keys (int, optional):
+                    max keys. Defaults to 10.
+                page_reverse (bool, optional):
+                    page reverse. Defaults to False.
+                filter (Optional[Dict[str, Any]], optional):
+                    filter. Defaults to None.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "datasetId": dataset_id,
                 "maxKeys": max_keys,
@@ -1220,7 +1346,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2GetDatasetVersionListQueryParam
+                    Consts.DatasetV2GetDatasetVersionListAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1233,7 +1359,23 @@ class Data:
             cls,
             version_id: str,
             files: List[str],
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            create dataset version import task.
+
+            Parameters:
+                version_id (str):
+                    dataset version id.
+                files (List[str]):
+                    file paths.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "versionId": version_id,
                 "files": files,
@@ -1243,7 +1385,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2CreateDatasetVersionImportTaskQueryParam
+                    Consts.DatasetV2CreateDatasetVersionImportTaskAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1255,7 +1397,21 @@ class Data:
         def get_dataset_version_import_task_info(
             cls,
             task_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            get dataset version import task info.
+
+            Parameters:
+                task_id (str):
+                    task id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "taskId": task_id,
             }
@@ -1264,7 +1420,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2GetDatasetVersionImportTaskInfoQueryParam
+                    Consts.DatasetV2GetDatasetVersionImportTaskInfoAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1278,7 +1434,25 @@ class Data:
             version_id: str,
             storage_type: V2Consts.StorageType,
             storage_path: Optional[str] = None,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            create dataset version export task.
+
+            Parameters:
+                version_id (str):
+                    dataset version id.
+                storage_type (V2Consts.StorageType):
+                    storage type.
+                storage_path (Optional[str], optional):
+                    storage path. Defaults to None.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "versionId": version_id,
                 "storageType": storage_type.value,
@@ -1291,7 +1465,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2CreateDatasetVersionExportTaskQueryParam
+                    Consts.DatasetV2CreateDatasetVersionExportTaskAction
                 ),
             )
             req.json_body = post_body_dict
@@ -1303,7 +1477,21 @@ class Data:
         def get_dataset_version_export_task_info(
             cls,
             task_id: str,
+            **kwargs: Any,
         ) -> QfRequest:
+            """
+            get dataset version export task info.
+
+            Parameters:
+                task_id (str):
+                    task id.
+
+            Note:
+                The `@console_api_request` decorator is applied to this method,
+                enabling it to send the generated QfRequest
+                and return a QfResponse to the user.
+            """
+
             post_body_dict = {
                 "taskId": task_id,
             }
@@ -1312,7 +1500,7 @@ class Data:
                 method="POST",
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(
-                    Consts.DatasetV2GetDatasetVersionExportTaskInfoQueryParam
+                    Consts.DatasetV2GetDatasetVersionExportTaskInfoAction
                 ),
             )
             req.json_body = post_body_dict

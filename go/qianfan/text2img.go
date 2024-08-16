@@ -155,7 +155,7 @@ func (c *Text2Image) ModelList() []string {
 	models := getModelEndpointRetriever().GetModelList(context.TODO(), "text2image")
 	list := make([]string, len(models))
 	i := 0
-	for k := range Text2ImageEndpoint {
+	for k := range models {
 		list[i] = k
 		i++
 	}

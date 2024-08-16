@@ -45,7 +45,7 @@ func getModelEndpointRetriever() *modelEndpointRetriever {
 			"chat":        ChatModelEndpoint,
 			"completions": CompletionModelEndpoint,
 			"embeddings":  EmbeddingEndpoint,
-			"text2image":  make(map[string]string),
+			"text2image":  Text2ImageEndpoint,
 			"image2text":  make(map[string]string),
 		}
 		for modelType, endpointMap := range initMap {

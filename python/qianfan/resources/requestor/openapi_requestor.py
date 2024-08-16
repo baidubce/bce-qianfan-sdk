@@ -211,7 +211,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 self._check_error(json.loads(body))
             except Exception as e:
                 await responses.aclose()
-                raise e     
+                raise e
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses

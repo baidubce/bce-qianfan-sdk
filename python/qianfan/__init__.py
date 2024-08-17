@@ -29,7 +29,7 @@ from qianfan.fake_pyarrow_replacer import _ModuleFinder
 
 sys.meta_path.insert(0, _ModuleFinder())
 
-from qianfan.config import AK, SK, AccessKey, Token, SecretKey, get_config
+from qianfan.config import AK, SK, AccessKey, AccessToken, SecretKey, get_config
 from qianfan.resources import (
     ChatCompletion,
     Completion,

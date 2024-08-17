@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from qianfan.config import get_config
 from qianfan.consts import Consts
@@ -42,26 +42,44 @@ class AuthManager(metaclass=Singleton):
     AuthManager is singleton to manage all access token in SDK
     """
 
-    class AccessToken:
+    class Token:
         """
-        Access Token object
+        Token object
         """
 
         token: Optional[str]
         lock: threading.Lock
         alock: AsyncLock
         refresh_at: float
+        expire_at: float
+        refresh_func: Optional[Callable[..., Dict]]
+        """
+        custom refresh function
+        return {
+            "token": "",
+            "expire_at": 0, # optional
+            "refresh_at": 0, # optional
+        }
+        """
 
-        def __init__(self, access_token: Optional[str] = None):
+        def __init__(
+            self,
+            access_token: Optional[str] = None,
+            refresh_at: float = 0,
+            expire_at: float = 0,
+            refresh_func: Optional[Callable[..., Dict]] = None,
+        ):
             """
             Init access token object
             """
             self.token = access_token
             self.lock = threading.Lock()
             self.alock = AsyncLock()
-            self.refresh_at = 0
+            self.refresh_at = refresh_at
+            self.expire_at = expire_at
+            self.refresh_func = refresh_func
 
-    _token_map: Dict[Tuple[str, str], AccessToken]
+    _token_map: Dict[Tuple[str, str], Token]
 
     def __init__(self) -> None:
         """
@@ -72,7 +90,13 @@ class AuthManager(metaclass=Singleton):
         self._lock = threading.Lock()
         self._alock = AsyncLock()
 
-    def _register(self, ak: str, sk: str, access_token: Optional[str] = None) -> bool:
+    def _register(
+        self,
+        ak: str,
+        sk: str,
+        access_token: Optional[str] = None,
+        refresh_func: Optional[Callable[..., Dict]] = None,
+    ) -> bool:
         """
         add `(ak, sk)` to manager and return whether provided `(ak, sk)` is existed
         this function is not thread safe !!!
@@ -80,7 +104,9 @@ class AuthManager(metaclass=Singleton):
         existed = True
 
         if (ak, sk) not in self._token_map:
-            self._token_map[(ak, sk)] = AuthManager.AccessToken(access_token)
+            self._token_map[(ak, sk)] = AuthManager.Token(
+                access_token, refresh_func=refresh_func
+            )
             existed = False
         else:
             # if user provide new access token for existed (ak, sk), update it
@@ -89,33 +115,43 @@ class AuthManager(metaclass=Singleton):
                 self._token_map[(ak, sk)].refresh_at = 0
         return existed
 
-    def register(self, ak: str, sk: str, access_token: Optional[str] = None) -> None:
+    def register(
+        self,
+        ak: str,
+        sk: str,
+        access_token: Optional[str] = None,
+        refresh_func: Optional[Callable[..., Dict]] = None,
+    ) -> None:
         """
         add `(ak, sk)` to manager and update access token
         """
         with self._lock:
-            existed = self._register(ak, sk, access_token)
+            existed = self._register(ak, sk, access_token, refresh_func)
 
         if not existed and access_token is None:
-            self.refresh_access_token(ak, sk)
+            self.refresh_token(ak, sk)
 
     async def aregister(
-        self, ak: str, sk: str, access_token: Optional[str] = None
+        self,
+        ak: str,
+        sk: str,
+        access_token: Optional[str] = None,
+        refresh_func: Optional[Callable[..., Dict]] = None,
     ) -> None:
         """
         async add `(ak, sk)` to manager and update access token
         """
         async with self._alock:
-            existed = self._register(ak, sk, access_token)
+            existed = self._register(ak, sk, access_token, refresh_func)
 
         if not existed and access_token is None:
             await self.arefresh_access_token(ak, sk)
 
-    def _get_access_token_object(
+    def _get_token_object(
         self, ak: str, sk: str
-    ) -> AccessToken:  # pylint:disable=undefined-variable
+    ) -> Token:  # pylint:disable=undefined-variable
         """
-        get access token object by `(ak, sk)`
+        get token object by `(ak, sk)`
         this function is not thread safe !!!
         """
         obj = self._token_map.get((ak, sk), None)
@@ -123,11 +159,11 @@ class AuthManager(metaclass=Singleton):
             raise InternalError("provided ak and sk are not registered")
         return obj
 
-    def _get_token_from_access_token_object(
-        self, obj: AccessToken, ak: str = "", sk: str = ""
+    def _get_token_from_token_object(
+        self, obj: Token, ak: str = "", sk: str = ""
     ) -> str:
         """
-        get access token from access token object
+        get token from token object
         this function is not thread safe and should be protected by lock from obj !!!
         """
         if obj.token is None:
@@ -135,23 +171,26 @@ class AuthManager(metaclass=Singleton):
             return ""
         return obj.token
 
-    def get_access_token(self, ak: str, sk: str) -> str:
+    def get_token(self, ak: str, sk: str) -> str:
         """
-        get access token by `(ak, sk)`
+        get token by `(ak, sk)`
         """
         with self._lock:
-            obj = self._get_access_token_object(ak, sk)
+            obj = self._get_token_object(ak, sk)
+        # 提前刷新
+        if obj.expire_at != 0 and obj.expire_at - 10 < time.time():
+            self.refresh_token(ak, sk)
         with obj.lock:
-            return self._get_token_from_access_token_object(obj, ak, sk)
+            return self._get_token_from_token_object(obj, ak, sk)
 
-    async def aget_access_token(self, ak: str, sk: str) -> str:
+    async def aget_token(self, ak: str, sk: str) -> str:
         """
-        async get access token by `(ak, sk)`
+        async get token by `(ak, sk)`
         """
         async with self._alock:
-            obj = self._get_access_token_object(ak, sk)
+            obj = self._get_token_object(ak, sk)
         async with obj.alock:
-            return self._get_token_from_access_token_object(obj, ak, sk)
+            return self._get_token_from_token_object(obj, ak, sk)
 
     def _auth_request(self, ak: str, sk: str) -> QfRequest:
         """
@@ -169,7 +208,7 @@ class AuthManager(metaclass=Singleton):
         )
 
     def _update_access_token(
-        self, obj: AccessToken, response: Dict[str, Any], ak: str = "", sk: str = ""
+        self, obj: Token, response: Dict[str, Any], ak: str = "", sk: str = ""
     ) -> None:
         """
         update access token from response of auth request
@@ -184,15 +223,15 @@ class AuthManager(metaclass=Singleton):
                     " https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
                 )
                 err_msg = response.get("error_description", "AK/SK is not correct")
-                chineses_err_msg = response.get("error_description", "AK/SK 错误")
+                chinese_err_msg = response.get("error_description", "AK/SK 错误")
                 if err_msg == "unknown client id":
                     err_msg = f"AK({_masked_ak(ak)}) is not correct"
-                    chineses_err_msg = f"AK(`{_masked_ak(ak)}`) 错误"
+                    chinese_err_msg = f"AK(`{_masked_ak(ak)}`) 错误"
                 if err_msg == "Client authentication failed":
                     err_msg = f"SK({_masked_ak(sk)}) is not correct"
-                    chineses_err_msg = f"SK(`{_masked_ak(sk)}`) 错误"
+                    chinese_err_msg = f"SK(`{_masked_ak(sk)}`) 错误"
                 err_msg = exception_msg_tmpl.format(
-                    err_msg=err_msg, chinese_err_msg=chineses_err_msg
+                    err_msg=err_msg, chinese_err_msg=chinese_err_msg
                 )
                 log_error(err_msg)
                 raise AuthError(err_msg)
@@ -203,62 +242,96 @@ class AuthManager(metaclass=Singleton):
                 )
             )
             return
-        obj.token = response["access_token"]
-        obj.refresh_at = time.time()
+        self._update_token(obj, response["access_token"])
 
-    def _refresh_access_token_too_often(self, obj: AccessToken) -> bool:
+    def _update_token(
+        self,
+        obj: Token,
+        token: str,
+        refresh_at: float = 0,
+        expire_at: float = 0,
+    ) -> None:
+        obj.token = token
+        obj.refresh_at = refresh_at or time.time()
+        if expire_at != 0:
+            obj.expire_at = expire_at
+
+    def _refresh_token_too_often(self, obj: Token) -> bool:
         """
-        check if access token is refreshed too often
+        check if token is refreshed too often
         """
         if (
             time.time() - obj.refresh_at
             < get_config().ACCESS_TOKEN_REFRESH_MIN_INTERVAL
         ):
-            log_info("access_token is already refreshed, skip refresh.")
+            log_info("token is already refreshed, skip refresh.")
             return True
         return False
 
-    def refresh_access_token(self, ak: str, sk: str) -> None:
-        """
-        refresh access token of `(ak, sk)`
-        """
+    def refresh_token(self, ak: str, sk: str) -> None:
         with self._lock:
-            obj = self._get_access_token_object(ak, sk)
+            obj = self._get_token_object(ak, sk)
         with obj.lock:
-            log_info(f"trying to refresh access_token for ak `{_masked_ak(ak)}`")
+            log_info(f"trying to refresh token for ak `{_masked_ak(ak)}`")
             # in case multiple threads try to refresh access token at the same time
             # the token should not be refreshed multiple times
-            if self._refresh_access_token_too_often(obj):
+            if self._refresh_token_too_often(obj):
                 return
             try:
-                resp = self._client.request(self._auth_request(ak, sk))
-                json_body = resp.json()
-                self._update_access_token(obj, json_body, ak, sk)
+                if obj.refresh_func:
+                    # bearer token
+                    token_resp = obj.refresh_func(ak, sk)
+                    token = token_resp.get("token", "")
+                    self._update_token(
+                        obj,
+                        token=token,
+                        refresh_at=token_resp.get("refresh_at", 0),
+                        expire_at=token_resp.get("expire_at", 0),
+                    )
+                else:
+                    # access token
+                    resp = self._client.request(self._auth_request(ak, sk))
+                    json_body = resp.json()
+                    self._update_access_token(obj, json_body, ak, sk)
             except AuthError:
                 raise
             except Exception as e:
-                log_error(f"refresh access token failed with exception {str(e)}")
-                return
+                log_error(f"refresh token failed with exception {str(e)}")
+                raise e
 
-        log_info("sucessfully refresh access_token")
+        log_info("successfully refresh token")
 
     async def arefresh_access_token(self, ak: str, sk: str) -> None:
         """
         async refresh access token of `(ak, sk)`
         """
         async with self._alock:
-            obj = self._get_access_token_object(ak, sk)
+            obj = self._get_token_object(ak, sk)
         async with obj.alock:
             log_info(f"trying to refresh access_token for ak `{_masked_ak(ak)}`")
             # in case multiple threads try to refresh access token at the same time
             # the token should not be refreshed multiple times
-            if self._refresh_access_token_too_often(obj):
+            if self._refresh_token_too_often(obj):
                 return
             try:
-                resp, session = await self._client.arequest(self._auth_request(ak, sk))
-                async with session:
-                    json_body = await resp.json()
-                self._update_access_token(obj, json_body, ak, sk)
+                if obj.refresh_func:
+                    # bearer token
+                    # TODO: implement bearer token refresh async
+                    token_resp = obj.refresh_func(ak, sk)
+                    token = token_resp.get("token", "")
+                    self._update_token(
+                        obj,
+                        token=token,
+                        refresh_at=token_resp.get("refresh_at", 0),
+                        expire_at=token_resp.get("expire_at", 0),
+                    )
+                else:
+                    resp, session = await self._client.arequest(
+                        self._auth_request(ak, sk)
+                    )
+                    async with session:
+                        json_body = await resp.json()
+                    self._update_access_token(obj, json_body, ak, sk)
             except AuthError:
                 raise
             except Exception as e:
@@ -270,23 +343,22 @@ class AuthManager(metaclass=Singleton):
 
 class Auth(object):
     """
-    object to maintain acccess token for open api call
+    object to maintain authorization info for open api call
+    including access_token, ak/sk and access_key/secret_key
     """
 
     _ak: Optional[str] = None
     _sk: Optional[str] = None
     _access_token: Optional[str] = None
+    _bearer_token: Optional[str] = None
     _access_key: Optional[str] = None
     _secret_key: Optional[str] = None
     _registered: bool = False
-    _console_ak_to_app_ak: Dict[Tuple[str, str], Tuple[str, str]] = {}
-    """
-    (access_key, secret_key) -> (ak, sk)
-    map which convert console ak/sk to qianfan ak/sk
-    use as cache to avoid querying console ak/sk multple times
-    """
+    _refresh_func: Optional[Callable[..., Dict]] = None
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, refresh_func: Optional[Callable[..., Dict]] = None, **kwargs: Any
+    ) -> None:
         """
         recv `ak`, `sk` and `access_token` from kwargs
         if the args does not contain the arguments, env variable will be used
@@ -300,17 +372,26 @@ class Auth(object):
         self._access_token = (
             kwargs.get("access_token", None) or get_config().ACCESS_TOKEN
         )
+        self._bearer_token = (
+            kwargs.get("bearer_token", None) or get_config().BEARER_TOKEN
+        )
         self._access_key = kwargs.get("access_key", None) or get_config().ACCESS_KEY
         self._secret_key = kwargs.get("secret_key", None) or get_config().SECRET_KEY
+        self._refresh_func = refresh_func
         if not self._credential_available() and not get_config().NO_AUTH:
             raise InvalidArgumentError(
-                "no enough credential found, any one of (access_key, secret_key),"
-                " (ak, sk), access_token must be provided"
+                "no enough credential found, use any one of (access_key, secret_key),"
+                " (ak, sk), (access_token) in api v1 or"
+                " any of (ak, sk), (bearer token) in api v2"
             )
         if (
             self._access_token is None
             and (self._ak is None or self._sk is None)
-            and (self._access_key is not None and self._secret_key is not None)
+            and (
+                self._access_key is not None
+                and self._secret_key is not None
+                and refresh_func is None
+            )
         ):
             self._registered = True
 
@@ -319,7 +400,16 @@ class Auth(object):
         register the access token to manager, so that it can be refreshed automatically
         """
         if not self._registered:
-            if self._access_token is None:
+            if self._access_key and self._secret_key and self._refresh_func:
+                AuthManager().register(
+                    self._access_key,
+                    self._secret_key,
+                    self._bearer_token,
+                    self._refresh_func,
+                )
+            elif self._bearer_token is not None and self._refresh_func:
+                self._registered = True
+            elif self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided
                 if self._ak is None or self._sk is None:
                     raise InvalidArgumentError(
@@ -339,6 +429,15 @@ class Auth(object):
         register the access token to manager, so that it can be refreshed automatically
         """
         if not self._registered:
+            if self._access_key and self._secret_key and self._refresh_func:
+                await AuthManager().aregister(
+                    self._access_key,
+                    self._secret_key,
+                    self._bearer_token,
+                    self._refresh_func,
+                )
+            elif self._bearer_token is not None and self._refresh_func:
+                self._registered = True
             if self._access_token is None:
                 # if access_token is not provided, both ak and sk should be provided
                 if self._ak is None or self._sk is None:
@@ -356,6 +455,20 @@ class Auth(object):
                     )
             self._registered = True
 
+    def refresh_bearer_token(self) -> None:
+        """
+        refresh `bearer_token` using `access_key` and `secret_key`
+        """
+        if self._access_key is None or self._secret_key is None:
+            log_warn(
+                "access_key or secret_key is not set, refresh bearer_token will not"
+                " work."
+            )
+            return
+        self._register()
+        AuthManager().refresh_token(self._access_key, self._secret_key)
+        self._bearer_token = None
+
     def refresh_access_token(self) -> None:
         """
         refresh `access_token` using `ak` and `sk`
@@ -364,7 +477,7 @@ class Auth(object):
             log_warn("AK or SK is not set, refresh access_token will not work.")
             return
         self._register()
-        AuthManager().refresh_access_token(self._ak, self._sk)
+        AuthManager().refresh_token(self._ak, self._sk)
         self._access_token = None
 
     async def arefresh_access_token(self) -> None:
@@ -379,12 +492,27 @@ class Auth(object):
         self._access_token = None
 
     def _credential_available(self) -> bool:
+        if self._refresh_func:
+            if self._bearer_token is not None:
+                return True
+            elif self._access_key is not None and self._secret_key is not None:
+                return True
+            else:
+                log_warn(
+                    "no enough credential found, any one of (access_key, secret_key),"
+                    " (bearer_token) must be provided"
+                )
+                return False
         if self._access_token is not None:
             return True
         if self._ak is not None and self._sk is not None:
             return True
         if self._access_key is not None and self._secret_key is not None:
             return True
+        log_warn(
+            "no enough credential found, any one of (access_key, secret_key),"
+            " (ak, sk), (access_token) must be provided"
+        )
         return False
 
     def access_token(self) -> str:
@@ -398,7 +526,7 @@ class Auth(object):
             # use access_key and secret_key to auth
             # so no access_token here
             return ""
-        return AuthManager().get_access_token(self._ak, self._sk)
+        return AuthManager().get_token(self._ak, self._sk)
 
     async def a_access_token(self) -> str:
         """
@@ -411,4 +539,30 @@ class Auth(object):
             # use access_key and secret_key to auth
             # so no access_token here
             return ""
-        return await AuthManager().aget_access_token(self._ak, self._sk)
+        return await AuthManager().aget_token(self._ak, self._sk)
+
+    def bearer_token(self) -> str:
+        """
+        get current `bearer_token`
+        """
+        if self._bearer_token is not None and (
+            self._access_key is None or self._secret_key is None
+        ):
+            return self._bearer_token
+        self._register()
+        if self._access_key is not None and self._secret_key is not None:
+            return AuthManager().get_token(self._access_key, self._secret_key)
+        return ""
+
+    async def a_bearer_token(self) -> str:
+        """
+        async get current `bearer_token`
+        """
+        if self._bearer_token is not None and (
+            self._access_key is None or self._secret_key is None
+        ):
+            return self._bearer_token
+        await self._aregister()
+        if self._access_key is not None and self._secret_key is not None:
+            return await AuthManager().aget_token(self._access_key, self._secret_key)
+        return ""

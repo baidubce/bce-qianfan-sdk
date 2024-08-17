@@ -17,6 +17,7 @@
 """
 
 import threading
+import time
 
 import pytest
 
@@ -24,6 +25,9 @@ import qianfan
 import qianfan.tests.utils
 from qianfan.consts import Consts
 
+TEST_BEARER_TOKEN = (
+    "bce-v3/ALTAK-JZasis7GfnokSLLXykKHj/054c2e64c06db4d6019f0dbfc964e90aa3fc3ddd"
+)
 TEST_MODEL = "ernie-unit-test"
 
 TEST_MESSAGE = [
@@ -268,3 +272,47 @@ def test_in_other_thread():
     t = threading.Thread(target=test_generate)
     t.start()
     t.join()
+
+
+def test_auth_using_bearer_token():
+    ak, sk, access_key, secret_key = (
+        qianfan.get_config().AK,
+        qianfan.get_config().SK,
+        qianfan.get_config().ACCESS_KEY,
+        qianfan.get_config().SECRET_KEY,
+    )
+    qianfan.get_config().AK = None
+    qianfan.get_config().SK = None
+    qianfan.get_config().ACCESS_KEY = None
+    qianfan.get_config().SECRET_KEY = None
+    qianfan.get_config().BEARER_TOKEN = TEST_BEARER_TOKEN
+    resp = qianfan.ChatCompletion(version="2").do(messages=TEST_MESSAGE[:1])
+    assert resp.body.get("choices") is not None
+    qianfan.get_config().AK = ak
+    qianfan.get_config().SK = sk
+    qianfan.get_config().ACCESS_KEY = access_key
+    qianfan.get_config().SECRET_KEY = secret_key
+    qianfan.get_config().BEARER_TOKEN = None
+
+
+def test_refresh_token():
+    preset_interval = qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL
+    qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL = 5
+    chat = qianfan.ChatCompletion(version=2, app_id="app-xxx")
+
+    def call() -> qianfan.QfResponse:
+        resp = chat.do(
+            messages=[{"role": "user", "content": "你好"}],
+            model="xxxx",
+            preemptable=True,
+            top_p=0.5,
+        )
+        return resp
+
+    resp1 = call()
+    resp2 = call()
+    time.sleep(6)
+    assert (
+        resp1.request.headers["Authorization"] == resp2.request.headers["Authorization"]
+    )
+    qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL = preset_interval

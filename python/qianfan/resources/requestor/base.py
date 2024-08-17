@@ -82,7 +82,7 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
     check whether the status code of response is ok(200)
     if the status code is not 200, raise a `RequestError`
     """
-    if response.status_code != 200:
+    if response.status_code >= 300 or response.status_code < 200:
         failed_msg = (
             f"http request url {response.url} failed with http status code"
             f" {response.status_code}\n"
@@ -298,6 +298,7 @@ class BaseAPIRequestor(object):
         """
         self._client = HTTPClient(**kwargs)
         self._rate_limiter = VersatileRateLimiter(**kwargs)
+        self._host = kwargs.get("host")
 
     def _preprocess_request(self, request: QfRequest) -> QfRequest:
         return request

@@ -18,6 +18,7 @@ from qianfan.resources.console.memory import Memory
 from qianfan.resources.console.model import Model
 from qianfan.resources.console.prompt import Prompt
 from qianfan.resources.console.service import Service
+from qianfan.resources.console.iam import IAM
 from qianfan.resources.images.image2text import Image2Text
 from qianfan.resources.images.text2image import Text2Image
 from qianfan.resources.llm.chat_completion import ChatCompletion
@@ -49,4 +50,5 @@ __all__ = [
     "QfMessages",
     "QfResponse",
     "Memory",
+    "IAM",
 ]

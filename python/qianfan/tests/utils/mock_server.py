@@ -24,6 +24,7 @@ import random
 import threading
 import time
 import zipfile
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
 
@@ -263,6 +264,31 @@ def access_token_checker(func):
             time.sleep(delay)
         except Exception:
             pass
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def iam_v3_auth_checker(func):
+    """
+    decorator for checking bearer token
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """
+        wrapper for function
+        """
+        authorization = request.headers.get("authorization")
+        if not authorization.startswith("Bearer"):
+            return flask.Response(
+                status=403,
+                headers={
+                    "X-Bce-Error-Message": (
+                        "mock server error, authorization or bce_date not found"
+                    )
+                },
+            )
         return func(*args, **kwargs)
 
     return wrapper
@@ -622,8 +648,36 @@ def chat(model_name):
     )
 
 
+history_tokens = {}
+
+
+@app.route(Consts.IAMBearerTokenAPI, methods=["GET"])
+def iam_get_bearer_token():
+    expire_seconds = request.args.get("expireInSeconds")
+    current_time = datetime.now(timezone.utc)
+    # 加上 100 秒
+    expire_time = current_time + timedelta(seconds=int(expire_seconds))
+
+    # 格式化为指定格式
+    current_time_str = current_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    expire_time_str = expire_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    token = f"bce-v3/ALTAK-XNYpvSpWTC0Qr0cB6LoZR/{generate_letter_num_random_id(16)}"
+    global history_tokens
+    history_tokens[token] = expire_time
+
+    return json_response(
+        {
+            "userId": "6c6093c96f0241c087af184cc5729de8",
+            "token": token,
+            "status": "enable",
+            "createTime": current_time_str,
+            "expireTime": expire_time_str,
+        },
+    )
+
+
 @app.route(Consts.ChatV2API, methods=["POST"])
-@iam_auth_checker
+@iam_v3_auth_checker
 def chat_v2():
     """
     mock chat completion v2 api
@@ -634,7 +688,6 @@ def chat_v2():
     model_name = r["model"]
     if model_name.startswith("test_retry"):
         global retry_cnt
-        print("mock retry cnt", retry_cnt)
         if model_name not in retry_cnt:
             retry_cnt[model_name] = 1
         if retry_cnt[model_name] % 3 != 0:

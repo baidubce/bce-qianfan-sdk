@@ -207,7 +207,11 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         if "json" in resp.headers.get("content-type", ""):
             body, _ = await responses.__anext__()
-            self._check_error(json.loads(body))
+            try:
+                self._check_error(json.loads(body))
+            except Exception as e:
+                await responses.aclose()
+                raise e
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses

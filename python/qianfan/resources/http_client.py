@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, AsyncGenerator, Dict, Iterator, Optional, Tuple
+from typing import Any, AsyncIterator, Dict, Iterator, Optional, Tuple
 
 import aiohttp
 import requests
@@ -111,7 +111,7 @@ class HTTPClient(object):
 
     async def arequest_stream(
         self, req: QfRequest
-    ) -> AsyncGenerator[Tuple[bytes, aiohttp.ClientResponse], None]:
+    ) -> AsyncIterator[Tuple[bytes, aiohttp.ClientResponse]]:
         """
         async stream request
         """

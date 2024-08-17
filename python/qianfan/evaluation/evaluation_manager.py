@@ -335,6 +335,7 @@ class EvaluationManager(BaseModel):
                 )
                 input_argument_dict["appId"] = evaluator.app_id
                 input_argument_dict["prompt"] = {
+                    "templateName": "裁判员模型打分模板 (含参考答案)",
                     "templateContent": QianfanRefereeEvaluatorPromptTemplate,
                     "metric": evaluator.prompt_metrics,
                     "steps": evaluator.prompt_steps,

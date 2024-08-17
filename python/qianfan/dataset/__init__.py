@@ -17,6 +17,7 @@ Library aimed to helping developer to interactive with Dataset
 """
 
 from qianfan.dataset.data_source import (
+    AFSDataSource,
     BosDataSource,
     DataSource,
     FileDataSource,
@@ -48,4 +49,5 @@ __all__ = [
     "QianfanDataSource",
     "BosDataSource",
     "FileDataSource",
+    "AFSDataSource",
 ]

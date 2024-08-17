@@ -74,6 +74,7 @@ class Env:
     AuthTimeout: str = "QIANFAN_AUTH_TIMEOUT"
     IAMSignExpirationSeconds: str = "QIANFAN_IAM_SIGN_EXPIRATION_SEC"
     ConsoleAPIBaseURL: str = "QIANFAN_CONSOLE_API_BASE_URL"
+    IAMBaseURL: str = "QIANFAN_IAM_BASE_URL"
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     InferResourceRefreshMinInterval: str = "QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
@@ -252,7 +253,8 @@ class Consts:
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
     PrivateResourceReleaseServiceResourceParam: str = "ReleaseServiceResource"
 
-    ChatV2API: str = "/v2/chat"
+    ChatV2API: str = "/v2/chat/completions"
+    IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
 
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
@@ -283,7 +285,9 @@ class DefaultValue:
     DisableErnieBotSDK: bool = True
     IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
+    IAMBaseURL: str = "https://iam.bj.baidubce.com"
     AccessTokenRefreshMinInterval: float = 3600
+    BearerTokenExpiredInterval: int = 43200
     InferResourceRefreshMinInterval: float = 600
     RetryCount: int = 3
     RetryTimeout: float = 300

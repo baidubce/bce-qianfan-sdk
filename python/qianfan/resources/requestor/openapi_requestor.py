@@ -15,10 +15,10 @@
 """
 Qianfan API Requestor
 """
-
 import copy
 import json
 import os
+from datetime import datetime
 from typing import (
     Any,
     AsyncIterator,
@@ -418,6 +418,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         llm related api request
         """
         log_debug(f"requesting llm api endpoint: {endpoint}")
+        # TODO 应该放在Adapter中做处理。
         for m in body.get("messages", []):
             if m.get("role", "") == "function":
                 if not m.get("name", None):
@@ -594,7 +595,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         request.headers = {
             "Content-Type": "application/json",
             "Host": host,
-            **request.headers,
+            **(request.headers if request.headers else {}),
         }
         iam_sign(ak, sk, request)
         request.url = url
@@ -683,6 +684,30 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 
 class QfAPIV2Requestor(QfAPIRequestor):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(refresh_func=QfAPIV2Requestor._refresh_bearer_token, **kwargs)
+
+    @staticmethod
+    def _refresh_bearer_token(*args: Any, **kwargs: Any) -> Dict:
+        """
+        refresh bearer token
+        """
+        from qianfan.resources.console.iam import IAM
+
+        resp = IAM.create_bearer_token(
+            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL
+        )
+
+        def _convert_time_str_to_sec(time_str: str) -> float:
+            time_obj = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+            return time_obj.replace().timestamp()
+
+        return {
+            "token": resp.body["token"],
+            "refresh_at": _convert_time_str_to_sec(resp.body["createTime"]),
+            "expire_at": _convert_time_str_to_sec(resp.body["expireTime"]),
+        }
+
     def _llm_api_url(self, endpoint: str) -> str:
         """
         convert endpoint to llm api url
@@ -696,29 +721,41 @@ class QfAPIV2Requestor(QfAPIRequestor):
         self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        add access token to QfRequest
+        add bearer token to QfRequest V2
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
-
-        # use IAM auth
-        access_key = auth._access_key
-        secret_key = auth._secret_key
-        if access_key is None or secret_key is None:
-            extra_msg = ""
-            if get_config().AK is not None or get_config().SK is not None:
-                extra_msg = (
-                    " AK and SK cannot be used in V2 API. V2 推理 API 不支持通过 AK 和"
-                    " SK 进行鉴权，请换用 access_key 和 secret_key。"
-                )
-            raise errors.InvalidArgumentError(
-                "access_key and secret_key must be provided! 未提供 access_key 或"
-                " secret_key！"
-                + extra_msg
-            )
-        self._sign(req, access_key, secret_key)
-
+        bearer_token = auth.bearer_token()
+        if bearer_token == "":
+            raise errors.BearerTokenExpiredError
+        else:
+            # use openapi auth
+            req.headers["Authorization"] = f"Bearer {bearer_token}"
         return req
+
+    def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
+        """
+        this is a wrapper to deal with token expired error
+        """
+        token_refreshed = False
+
+        def retry_wrapper(*args: Any, **kwargs: Any) -> _T:
+            nonlocal token_refreshed
+            # if token is refreshed, token expired exception will not be dealt with
+            if not token_refreshed:
+                try:
+                    return func(*args)
+                except errors.BearerTokenExpiredError:
+                    # refresh token and set token_refreshed flag
+                    self._auth.refresh_bearer_token()
+                    token_refreshed = True
+                    # then fallthrough and try again
+            return func(*args, **kwargs)
+
+        return retry_wrapper
 
     async def _async_add_access_token(
         self, req: QfRequest, auth: Optional[Auth] = None
@@ -748,6 +785,9 @@ class QfAPIV2Requestor(QfAPIRequestor):
             )
 
             raise errors.APIError(error_code, err_msg, req_id)
+
+        # TODO 加上过期的raise BearerTokenExpiredError
+        # 当前无法区分
 
 
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:

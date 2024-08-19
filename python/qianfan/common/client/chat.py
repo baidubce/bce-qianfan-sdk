@@ -72,6 +72,7 @@ class ChatClient(object):
         multi_line: bool,
         debug: bool,
         version: Literal["1", "2"],
+        raw_output: bool,
         **kwargs: Any,
     ) -> None:
         """
@@ -92,6 +93,7 @@ class ChatClient(object):
         self.thread_pool = ThreadPoolExecutor(max_workers=len(self.clients))
         self.inference_args = kwargs
         self.debug = debug
+        self.raw_output = raw_output
         self.version = version
 
     def single_model_response(
@@ -105,7 +107,9 @@ class ChatClient(object):
         if m == "" and not done:
             return Spinner("dots", text="Thinking...", style="status.spinner")
         # render the recieved message
-        render_list: List[RenderableType] = [Markdown(m)]
+        render_list: List[RenderableType] = (
+            [Markdown(m)] if not self.raw_output else [Text(m)]
+        )
         # if not finished, append a spinner
         if not done:
             render_list.append(
@@ -359,6 +363,15 @@ def chat_entry(
         "--multi-line",
         help="Multi-line mode which needs to press Esc before enter to submit message.",
     ),
+    raw_output: bool = typer.Option(
+        False,
+        "--raw-output",
+        help=(
+            "By default, the command line renders the output in Markdown format. If you"
+            " want to view the raw text output, you can achieve this by using this"
+            " parameter."
+        ),
+    ),
     debug: bool = typer.Option(
         False,
         "--debug",
@@ -491,7 +504,13 @@ def chat_entry(
     else:
         raise InternalError("Invalid API version")
     client = ChatClient(
-        model, endpoint, multi_line, debug=debug, version=_version, **extra_args
+        model,
+        endpoint,
+        multi_line,
+        debug=debug,
+        version=_version,
+        raw_output=raw_output,
+        **extra_args,
     )
     client.chat_in_terminal()
 

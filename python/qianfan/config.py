@@ -35,16 +35,22 @@ class GlobalConfig(BaseSettings):
     ACCESS_KEY: Optional[str] = Field(default=None)
     SECRET_KEY: Optional[str] = Field(default=None)
     ACCESS_TOKEN: Optional[str] = Field(default=None)
+    BEARER_TOKEN: Optional[str] = Field(default=None)
     BASE_URL: str = Field(default=DefaultValue.BaseURL)
     NO_AUTH: bool = Field(default=False)
+    USE_CUSTOM_ENDPOINT: bool = Field(default=False)
     MODEL_API_PREFIX: str = Field(default=DefaultValue.ModelAPIPrefix)
     AUTH_TIMEOUT: float = Field(default=DefaultValue.AuthTimeout)
     DISABLE_EB_SDK: bool = Field(default=DefaultValue.DisableErnieBotSDK)
     EB_SDK_INSTALLED: bool = Field(default=False)
     IAM_SIGN_EXPIRATION_SEC: int = Field(default=DefaultValue.IAMSignExpirationSeconds)
     CONSOLE_API_BASE_URL: str = Field(default=DefaultValue.ConsoleAPIBaseURL)
+    IAM_BASE_URL: str = Field(default=DefaultValue.IAMBaseURL)
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float = Field(
         default=DefaultValue.AccessTokenRefreshMinInterval
+    )
+    BEARER_TOKEN_EXPIRED_INTERVAL: int = Field(
+        default=DefaultValue.BearerTokenExpiredInterval
     )
     INFER_RESOURCE_REFRESH_INTERVAL: float = Field(
         default=DefaultValue.InferResourceRefreshMinInterval

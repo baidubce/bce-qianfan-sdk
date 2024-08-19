@@ -37,7 +37,7 @@ from qianfan.resources.llm.base import (
 from qianfan.resources.llm.function import Function
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
-from qianfan.utils.logging import log_error, log_info
+from qianfan.utils.logging import log_error, log_info, log_warn
 
 
 class _ChatCompletionV1(BaseResourceV1):
@@ -1738,6 +1738,17 @@ class ChatCompletion(VersionBase):
 
         """
 
+        if "enable_reading_buffer" in kwargs:
+            log_warn(
+                "enable_reading_buffer has been deprecated, please use"
+                " show_total_latency instead"
+            )
+            if (
+                isinstance(kwargs["enable_reading_buffer"], bool)
+                and kwargs["enable_reading_buffer"]
+            ):
+                show_total_latency = True
+
         def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
@@ -1805,6 +1816,18 @@ class ChatCompletion(VersionBase):
         ```
 
         """
+
+        if "enable_reading_buffer" in kwargs:
+            log_warn(
+                "enable_reading_buffer has been deprecated, please use"
+                " show_total_latency instead"
+            )
+            if (
+                isinstance(kwargs["enable_reading_buffer"], bool)
+                and kwargs["enable_reading_buffer"]
+            ):
+                show_total_latency = True
+
         task_list: List[Callable]
 
         async def worker(

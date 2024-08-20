@@ -2195,6 +2195,7 @@ class Dataset(Table):
         runtime: str = "0s",
         model_type: str = "ChatCompletion",
         hyperparameters: Optional[Dict[str, Any]] = None,
+        is_body: Optional[bool] = False,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2224,6 +2225,8 @@ class Dataset(Table):
                 Default value is 'ChatCompletion'.
             hyperparameters (Optional[Dict[str, Any]]):
                 Specify the hyperparameters in your request.
+            is_body (Optional[bool]):
+                Whether the input data is in body format.
         """
         if users is None:
             raise Exception("users must be specified.")
@@ -2231,6 +2234,8 @@ class Dataset(Table):
             workers = users
         if spawn_rate is None:
             spawn_rate = users
+        if is_body:
+            is_body = True
         import os
 
         if os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true":
@@ -2264,6 +2269,7 @@ class Dataset(Table):
                 first_latency_threshold=100,
                 round_latency_threshold=100,
                 success_rate_threshold=0,
+                is_body=is_body,
             )
             runner.run()
             if isinstance(urllib_env, str):

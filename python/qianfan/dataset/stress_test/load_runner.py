@@ -20,6 +20,7 @@ logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
 GlobalData.data["first_latency_threshold"] = 0
+GlobalData.data["is_body"] = Value("i", 0)
 
 
 def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
@@ -92,6 +93,7 @@ class QianfanLocustRunner(LocustRunner):
         round_latency_threshold: Optional[float] = 1000,
         success_rate_threshold: Optional[float] = 0,
         model_info: Optional[Dict[str, Any]] = None,
+        is_body: Optional[bool] = False,
     ):
         if model is not None:
             host = model
@@ -99,6 +101,8 @@ class QianfanLocustRunner(LocustRunner):
         elif endpoint is not None:
             host = endpoint
             is_endpoint = True
+        if is_body:
+            GlobalData.data["is_body"].value = 1
         super(QianfanLocustRunner, self).__init__(
             locustfile=self.locust_file,
             user_num=user_num,

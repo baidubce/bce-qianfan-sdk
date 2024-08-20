@@ -540,7 +540,20 @@ class QianfanLLMLoadUser(CustomUser):
         assert distributor is not None
         data = next(distributor)
         self.query_idx += 1
-        body = self.client.transfer_data(data, self.input_column, self.output_column)
+        if GlobalData.data["is_body"].value == 1:
+            body = data
+            if "stream" in body:
+                del body["stream"]
+            if "safety_level" in body:
+                del body["safety_level"]
+            content = body["messages"][0]["content"]
+            role = body["messages"][0]["role"]
+            body["messages"][0] = {"role": role, "content": content}
+        else:
+            body = self.client.transfer_data(
+                data, self.input_column, self.output_column
+            )
         if hyperparameters is None:
             hyperparameters = {}
+
         self.client.qianfan_request(stream=True, **body, **hyperparameters)

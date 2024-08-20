@@ -2194,6 +2194,7 @@ class Dataset(Table):
         endpoint: Optional[str] = None,
         runtime: str = "0s",
         model_type: str = "ChatCompletion",
+        is_v2: bool = False,
         hyperparameters: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -2222,6 +2223,8 @@ class Dataset(Table):
                 Type of model service you want to test.
                 Must be one of following values: ChatCompletion / Completions.
                 Default value is 'ChatCompletion'.
+            is_v2 (bool):
+                whether the api being tested is v2 api, default is False.
             hyperparameters (Optional[Dict[str, Any]]):
                 Specify the hyperparameters in your request.
         """
@@ -2264,6 +2267,7 @@ class Dataset(Table):
                 first_latency_threshold=100,
                 round_latency_threshold=100,
                 success_rate_threshold=0,
+                is_v2=is_v2,
             )
             runner.run()
             if isinstance(urllib_env, str):

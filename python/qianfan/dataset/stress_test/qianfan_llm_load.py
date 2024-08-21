@@ -138,7 +138,9 @@ class QianfanCustomHttpSession(CustomHttpSession):
             pass
 
     def transfer_data(self, data: Any, input_column: str, output_column: str) -> Any:
-        if isinstance(data, list):
+        if input_column not in data and output_column not in data:
+            ret = self._transfer_body(data)
+        elif isinstance(data, list):
             ret = self._transfer_jsonl(
                 data, input_column=input_column, output_column=output_column
             )
@@ -167,6 +169,9 @@ class QianfanCustomHttpSession(CustomHttpSession):
     def _transfer_txt(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
     ) -> Any:
+        ...
+
+    def _transfer_body(self, data: Any) -> Any:
         ...
 
 
@@ -336,6 +341,14 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         ret["messages"].append(msg)
         return ret
 
+    def _transfer_body(self, data: Any) -> Any:
+        ret = data
+        if "stream" in ret:
+            del ret["stream"]
+        if "safety_level" in ret and ret["safety_level"] == "none":
+            del ret["safety_level"]
+        return ret
+
 
 class CompletionClient(QianfanCustomHttpSession):
     def __init__(
@@ -476,6 +489,10 @@ class CompletionClient(QianfanCustomHttpSession):
     ) -> Any:
         return dict(prompt=data)
 
+    def _transfer_body(self, data: Any) -> Any:
+        p = data["messages"][0]["content"]
+        return dict(prompt=p)
+
 
 @events.test_start.add_listener
 def test_start(environment: Environment, **kwargs: Any) -> None:
@@ -540,17 +557,7 @@ class QianfanLLMLoadUser(CustomUser):
         assert distributor is not None
         data = next(distributor)
         self.query_idx += 1
-        if GlobalData.data["is_body"].value == 1:
-            body = data
-            if "stream" in body:
-                del body["stream"]
-            if "safety_level" in body and body["safety_level"] == 'none':
-                del body["safety_level"]
-        else:
-            body = self.client.transfer_data(
-                data, self.input_column, self.output_column
-            )
+        body = self.client.transfer_data(data, self.input_column, self.output_column)
         if hyperparameters is None:
             hyperparameters = {}
-
         self.client.qianfan_request(stream=True, **body, **hyperparameters)

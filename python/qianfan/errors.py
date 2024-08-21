@@ -72,6 +72,12 @@ class AccessTokenExpiredError(QianfanError):
     pass
 
 
+class BearerTokenExpiredError(QianfanError):
+    """Exception when bearer token is expired"""
+
+    pass
+
+
 class InternalError(QianfanError):
     """Exception when internal error occurs"""
 

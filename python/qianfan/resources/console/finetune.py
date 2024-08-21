@@ -230,8 +230,8 @@ class FineTune(object):
             cls,
             job_id: str,
             params_scale: Union[str, console_consts.TrainParameterScale],
-            hyper_params: Dict[str, Any],
-            dataset_config: Dict[str, Any],
+            hyper_params: Dict[str, Any] = {},
+            dataset_config: Optional[Dict[str, Any]] = None,
             increment_task_id: Optional[str] = None,
             increment_checkpoint_step: Optional[int] = None,
             model_config: Optional[Dict[str, Any]] = None,
@@ -278,6 +278,8 @@ class FineTune(object):
                 url=cls.base_api_route(),
                 query=_get_console_v2_query(Consts.FineTuneCreateTaskAction),
             )
+            if dataset_config is None:
+                raise ValueError("dataset_config cannot be empty")
             req.json_body = {
                 **kwargs,
                 "jobId": job_id,

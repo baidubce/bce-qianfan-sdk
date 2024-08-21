@@ -220,7 +220,7 @@ def _batch_do_on_service(
     request_latency_list: List[float] = [-1 for _ in range(len(input_list))]
     first_token_latency_list: List[float] = [-1 for _ in range(len(input_list))]
     results = service.batch_do(  # type: ignore
-        input_list, enable_reading_buffer=with_accurate_statistics, *args, **kwargs  # type: ignore
+        input_list, show_total_latency=with_accurate_statistics, *args, **kwargs  # type: ignore
     ).results()  # type: ignore
     for idx in range(len(results)):
         result = results[idx]
@@ -265,7 +265,7 @@ async def _async_batch_do_on_service(
     request_latency_list: List[float] = []
     first_token_latency_list: List[float] = []
     results = await service.abatch_do(  # type: ignore
-        input_list, enable_reading_buffer=with_accurate_statistics, *args, **kwargs  # type: ignore
+        input_list, show_total_latency=with_accurate_statistics, *args, **kwargs  # type: ignore
     )  # type: ignore
     for idx in range(len(results)):
         result = results[idx]

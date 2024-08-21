@@ -37,7 +37,7 @@ from qianfan.resources.llm.base import (
 from qianfan.resources.llm.function import Function
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
-from qianfan.utils.logging import log_error, log_info
+from qianfan.utils.logging import log_error, log_info, log_warn
 
 
 class _ChatCompletionV1(BaseResourceV1):
@@ -1698,7 +1698,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
@@ -1715,7 +1715,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1738,18 +1738,21 @@ class ChatCompletion(VersionBase):
 
         """
 
+        if "enable_reading_buffer" in kwargs:
+            log_warn(
+                "enable_reading_buffer has been deprecated, please use"
+                " show_total_latency instead"
+            )
+            if (
+                isinstance(kwargs["enable_reading_buffer"], bool)
+                and kwargs["enable_reading_buffer"]
+            ):
+                show_total_latency = True
+
         def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return inner_func(**kwargs, show_total_latency=show_total_latency)
 
         task_list: List[Callable]
 
@@ -1778,7 +1781,7 @@ class ChatCompletion(VersionBase):
         self,
         messages_list: Optional[Union[List[List[Dict]], List[QfMessages]]] = None,
         body_list: Optional[List[Dict]] = None,
-        enable_reading_buffer: bool = False,
+        show_total_latency: bool = False,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
@@ -1795,7 +1798,7 @@ class ChatCompletion(VersionBase):
             List of body for `ChatCompletion.do`.
             Make sure you only take either `messages_list` or `body_list` as
             your argument. Default to None.
-          enable_reading_buffer: (bool):
+          show_total_latency: (bool):
             Whether auto reading all results in worker function, without any waiting
             in streaming request situation. Default to False.
           worker_num (Optional[int]):
@@ -1813,20 +1816,24 @@ class ChatCompletion(VersionBase):
         ```
 
         """
+
+        if "enable_reading_buffer" in kwargs:
+            log_warn(
+                "enable_reading_buffer has been deprecated, please use"
+                " show_total_latency instead"
+            )
+            if (
+                isinstance(kwargs["enable_reading_buffer"], bool)
+                and kwargs["enable_reading_buffer"]
+            ):
+                show_total_latency = True
+
         task_list: List[Callable]
 
         async def worker(
             inner_func: Callable, **kwargs: Any
         ) -> Union[List[QfResponse], Iterator[QfResponse], QfResponse, Exception]:
-            r = await inner_func(**kwargs)
-            if isinstance(r, (QfResponse, Exception)) or not enable_reading_buffer:
-                return r
-
-            result_list: List[QfResponse] = []
-            async for resp in r:
-                result_list.append(resp)
-
-            return result_list
+            return await inner_func(**kwargs, show_total_latency=show_total_latency)
 
         if messages_list:
             task_list = [

@@ -70,7 +70,7 @@ __all__ = [
     "QfRole",
     "QfMessages",
     "QfResponse",
-    "AccessToken",
+    "Token",
     "AccessKey",
     "SecretKey",
     "get_config",

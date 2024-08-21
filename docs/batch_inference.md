@@ -78,7 +78,7 @@ ChatCompletion().batch_do(body_list=task_list)
 ChatCompletion().abatch_do(body_list=task_list)
 ```
 
-2. 支持用户设置 `enable_reading_buffer=True` 以获取更为准确的延迟统计信息。此时，流式请求下单条请求返回的对象会由 `Iterator` / `AsyncIterator` 变为 `List`。如果用户需要批量统计不同请求的延迟，请设置该参数
+2. 支持用户设置 `show_total_latency=True` 以获取 `total_latency`
 
 ## 数据集评估
 

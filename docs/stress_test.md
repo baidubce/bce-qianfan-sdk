@@ -13,7 +13,7 @@
 ```bash
 pip install 'qianfan[dataset_base]'
 ```
-
+注意，由于locust的框架限制。建议您在Python3.9-3.12版本中运行压测代码。
 
 
 ## 目录

@@ -139,14 +139,42 @@ async for r in resp:
   - `json_body`：请求体
   - `retry_config`：请求使用的重试信息
 
-##### V2 版本
+#### V2 版本
 
-千帆平台推出了 V2 版本的推理 API，SDK 也支持对 V2 版本的 API 进行调用，只需要创建对象时传入 `version="2"` 即可，其余使用方法与上述一致，差异点主要在于字段名称，具体字段名请参考 API 文档
+千帆平台推出了 V2 版本的推理 API，SDK 也支持对 V2 版本的 API 进行调用：
+
+##### V2 鉴权
+
+API v2 采用Bearer Token的鉴权方式：可以通过access_key 和 secret_key 获取。因此可以选择以下两种方式设置鉴权信息：
+```python
+import os
+# 安全认证
+os.environ['QIANFAN_ACCESS_KEY'] = 'your_access_key'
+os.environ['QIANFAN_SECRET_KEY'] = 'your_secret_key'
+# 或 bearer token
+os.environ['QIANFAN_BEARER_TOKEN'] = 'your_bearer_token'
+```
+
+我们可以运行以下接口获取BEARER_TOKEN（可用于需要临时鉴权，或进行应用分发的场景）：
+
+```python
+import os
+os.environ['QIANFAN_ACCESS_KEY'] = 'your_access_key'
+os.environ['QIANFAN_SECRET_KEY'] = 'your_secret_key'
+
+resp = IAM.create_bearer_token(100)
+print(resp.body)
+token = resp.body["token"]
+```
+
+##### V2 示例:
+
+只需要创建对象时传入 `version="2"` 即可，其余使用方法与上述一致，差异点主要在于字段名称，具体字段名请参考 API 文档
 
 ```python
 # 在创建时传入 version 以使用 V2 版本
 # model 字段为可选，默认为 ernie-speed-8k，也可以指定其他模型，后续调用均会使用该模型
-chat = qianfan.ChatCompletion(version="2", model="ernie-speed-8k")
+chat = qianfan.ChatCompletion(version="2", app_id='app-xxx', model="ernie-speed-8k")
 
 # 调用方式与 V1 版本一致，具体字段名参考 API 文档
 resp = chat.do(

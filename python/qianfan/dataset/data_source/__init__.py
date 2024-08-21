@@ -15,6 +15,7 @@
 data source including file
 """
 
+from qianfan.dataset.data_source.afs import AFSDataSource
 from qianfan.dataset.data_source.baidu_qianfan import QianfanDataSource
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.bos import BosDataSource
@@ -26,4 +27,5 @@ __all__ = [
     "QianfanDataSource",
     "BosDataSource",
     "FormatType",
+    "AFSDataSource",
 ]

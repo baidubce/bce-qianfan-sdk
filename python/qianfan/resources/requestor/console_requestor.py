@@ -17,7 +17,7 @@ Console API Requestor
 """
 from copy import deepcopy
 from typing import Any, Dict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import qianfan.errors as errors
 from qianfan import get_config
@@ -57,7 +57,7 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
 
         def _helper() -> QfResponse:
             req_copy = deepcopy(req)
-            ConsoleAPIRequestor._sign(req_copy, ak, sk)
+            self._sign(req_copy, ak, sk)
             return self._request(req_copy)
 
         return self._with_retry(retry_config, _helper)
@@ -72,22 +72,29 @@ class ConsoleAPIRequestor(BaseAPIRequestor):
         req.retry_config = retry_config
 
         async def _helper() -> QfResponse:
-            ConsoleAPIRequestor._sign(req, ak, sk)
+            self._sign(req, ak, sk)
             return await self._async_request(req)
 
         return await self._async_with_retry(retry_config, _helper)
 
-    @staticmethod
-    def _sign(request: QfRequest, ak: str, sk: str) -> None:
+    def _sign(self, request: QfRequest, ak: str, sk: str) -> None:
         """
         sign the request
         """
         parsed_uri = urlparse(get_config().CONSOLE_API_BASE_URL)
-        host = parsed_uri.netloc
+        if self._host:
+            parsed_new = urlparse(self._host)
+            scheme = parsed_new.scheme if parsed_new.scheme else parsed_uri.scheme
+            netloc = parsed_new.netloc if parsed_new.netloc else parsed_uri.netloc
+            parsed_uri = parsed_uri._replace(scheme=scheme, netloc=netloc)
+            final_base_url = urlunparse(parsed_uri)
+        else:
+            final_base_url = get_config().CONSOLE_API_BASE_URL
+
         request.headers = {
             "Content-Type": "application/json",
-            "Host": host,
+            "Host": parsed_uri.netloc,
             **request.headers,
         }
         iam_sign(ak, sk, request)
-        request.url = get_config().CONSOLE_API_BASE_URL + request.url
+        request.url = final_base_url + request.url

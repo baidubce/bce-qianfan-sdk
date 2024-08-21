@@ -15,10 +15,10 @@
 """
 Qianfan API Requestor
 """
-
 import copy
 import json
 import os
+from datetime import datetime
 from typing import (
     Any,
     AsyncIterator,
@@ -207,7 +207,11 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         if "json" in resp.headers.get("content-type", ""):
             body, _ = await responses.__anext__()
-            self._check_error(json.loads(body))
+            try:
+                self._check_error(json.loads(body))
+            except Exception as e:
+                await responses.aclose()
+                raise e
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses
@@ -408,11 +412,18 @@ class QfAPIRequestor(BaseAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         llm related api request
         """
         log_debug(f"requesting llm api endpoint: {endpoint}")
+        # TODO 应该放在Adapter中做处理。
+        for m in body.get("messages", []):
+            if m.get("role", "") == "function":
+                if not m.get("name", None):
+                    m["name"] = m.get("tool_call_id", "")
+                    m.pop("tool_call_id", None)
 
         @self._retry_if_token_expired
         def _helper() -> Union[QfResponse, Iterator[QfResponse]]:
@@ -427,11 +438,34 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             self._token_limiter.decline(token_count)
 
+            def _generator_wrapper(
+                generator: Iterator[QfResponse],
+            ) -> Iterator[QfResponse]:
+                for res in generator:
+                    if not show_total_latency:
+                        res.statistic["total_latency"] = 0
+                        res.statistic["request_latency"] = 0
+
+                    yield res
+
+            def _list_generator(data: List) -> Any:
+                for res in data:
+                    yield res
+
             if stream:
-                return self._compensate_token_usage_stream(
+                generator = self._compensate_token_usage_stream(
                     self._request_stream(req, data_postprocess=data_postprocess),
                     token_count,
                 )
+
+                if not show_total_latency:
+                    return _generator_wrapper(generator)
+                else:
+                    result_list: List[QfResponse] = []
+                    for res in generator:
+                        result_list.append(res)
+
+                    return _list_generator(result_list)
             else:
                 return self._compensate_token_usage_non_stream(
                     self._request(
@@ -452,11 +486,33 @@ class QfAPIRequestor(BaseAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         """
         llm related api request
         """
         log_debug(f"async requesting llm api endpoint: {endpoint}")
+        for m in body.get("messages", []):
+            if m.get("role", "") == "function":
+                if not m.get("name", None):
+                    m["name"] = m.get("tool_call_id", "")
+                    m.pop("tool_call_id", None)
+
+        class AsyncListIterator:
+            def __init__(self, data: List[QfResponse]):
+                self.data = data
+                self.index = 0
+
+            def __aiter__(self) -> "AsyncListIterator":
+                return self
+
+            async def __anext__(self) -> Any:
+                if self.index < len(self.data):
+                    value = self.data[self.index]
+                    self.index += 1
+                    return value
+                else:
+                    raise StopAsyncIteration
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -471,13 +527,32 @@ class QfAPIRequestor(BaseAPIRequestor):
             token_count = self._get_token_count_from_body(body)
             await self._async_token_limiter.decline(token_count)
 
+            async def _async_generator_wrapper(
+                generator: AsyncIterator[QfResponse],
+            ) -> AsyncIterator[QfResponse]:
+                async for res in generator:
+                    if not show_total_latency:
+                        res.statistic["total_latency"] = 0
+                        res.statistic["request_latency"] = 0
+
+                    yield res
+
             if stream:
-                return self._async_compensate_token_usage_stream(
+                generator = self._async_compensate_token_usage_stream(
                     await self._async_request_stream(
                         req, data_postprocess=data_postprocess
                     ),
                     token_count,
                 )
+
+                if not show_total_latency:
+                    return _async_generator_wrapper(generator)
+                else:
+                    result_list: List[QfResponse] = []
+                    async for res in generator:
+                        result_list.append(res)
+
+                    return AsyncListIterator(result_list)
             else:
                 return await self._async_compensate_token_usage_non_stream(
                     await self._async_request(req, data_postprocess=data_postprocess),
@@ -520,7 +595,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         request.headers = {
             "Content-Type": "application/json",
             "Host": host,
-            **request.headers,
+            **(request.headers if request.headers else {}),
         }
         iam_sign(ak, sk, request)
         request.url = url
@@ -531,6 +606,9 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         add access token to QfRequest
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
         access_token = auth.access_token()
@@ -552,6 +630,9 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async add access token to QfRequest
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
         access_token = await auth.a_access_token()
@@ -603,6 +684,30 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 
 class QfAPIV2Requestor(QfAPIRequestor):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(refresh_func=QfAPIV2Requestor._refresh_bearer_token, **kwargs)
+
+    @staticmethod
+    def _refresh_bearer_token(*args: Any, **kwargs: Any) -> Dict:
+        """
+        refresh bearer token
+        """
+        from qianfan.resources.console.iam import IAM
+
+        resp = IAM.create_bearer_token(
+            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL
+        )
+
+        def _convert_time_str_to_sec(time_str: str) -> float:
+            time_obj = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+            return time_obj.replace().timestamp()
+
+        return {
+            "token": resp.body["token"],
+            "refresh_at": _convert_time_str_to_sec(resp.body["createTime"]),
+            "expire_at": _convert_time_str_to_sec(resp.body["expireTime"]),
+        }
+
     def _llm_api_url(self, endpoint: str) -> str:
         """
         convert endpoint to llm api url
@@ -616,29 +721,41 @@ class QfAPIV2Requestor(QfAPIRequestor):
         self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:
         """
-        add access token to QfRequest
+        add bearer token to QfRequest V2
         """
+        if get_config().NO_AUTH:
+            # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
+            return req
         if auth is None:
             auth = self._auth
-
-        # use IAM auth
-        access_key = auth._access_key
-        secret_key = auth._secret_key
-        if access_key is None or secret_key is None:
-            extra_msg = ""
-            if get_config().AK is not None or get_config().SK is not None:
-                extra_msg = (
-                    " AK and SK cannot be used in V2 API. V2 推理 API 不支持通过 AK 和"
-                    " SK 进行鉴权，请换用 access_key 和 secret_key。"
-                )
-            raise errors.InvalidArgumentError(
-                "access_key and secret_key must be provided! 未提供 access_key 或"
-                " secret_key！"
-                + extra_msg
-            )
-        self._sign(req, access_key, secret_key)
-
+        bearer_token = auth.bearer_token()
+        if bearer_token == "":
+            raise errors.BearerTokenExpiredError
+        else:
+            # use openapi auth
+            req.headers["Authorization"] = f"Bearer {bearer_token}"
         return req
+
+    def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
+        """
+        this is a wrapper to deal with token expired error
+        """
+        token_refreshed = False
+
+        def retry_wrapper(*args: Any, **kwargs: Any) -> _T:
+            nonlocal token_refreshed
+            # if token is refreshed, token expired exception will not be dealt with
+            if not token_refreshed:
+                try:
+                    return func(*args)
+                except errors.BearerTokenExpiredError:
+                    # refresh token and set token_refreshed flag
+                    self._auth.refresh_bearer_token()
+                    token_refreshed = True
+                    # then fallthrough and try again
+            return func(*args, **kwargs)
+
+        return retry_wrapper
 
     async def _async_add_access_token(
         self, req: QfRequest, auth: Optional[Auth] = None
@@ -668,6 +785,9 @@ class QfAPIV2Requestor(QfAPIRequestor):
             )
 
             raise errors.APIError(error_code, err_msg, req_id)
+
+        # TODO 加上过期的raise BearerTokenExpiredError
+        # 当前无法区分
 
 
 def create_api_requestor(*args: Any, **kwargs: Any) -> QfAPIRequestor:
@@ -724,6 +844,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         stream: bool = False,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         llm related api request

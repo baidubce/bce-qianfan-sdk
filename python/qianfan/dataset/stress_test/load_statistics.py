@@ -34,11 +34,11 @@ def get_statistics(path: str) -> List[float]:
             if line.startswith("Type"):
                 continue
             line_splits = line.split(",")
-            lat_avg = -1.0 if line_splits[-4] == "N/A" else float(line_splits[-4])
-            lat_min = -1.0 if line_splits[-5] == "N/A" else float(line_splits[-5])
-            lat_max = -1.0 if line_splits[-6] == "N/A" else float(line_splits[-6])
-            lat_50p = -1.0 if line_splits[-7] == "N/A" else float(line_splits[-7])
-            lat_80p = -1.0 if line_splits[-8] == "N/A" else float(line_splits[-8])
+            lat_avg = -1.0 if line_splits[5] == "N/A" else float(line_splits[5])
+            lat_min = -1.0 if line_splits[6] == "N/A" else float(line_splits[6])
+            lat_max = -1.0 if line_splits[7] == "N/A" else float(line_splits[7])
+            lat_50p = -1.0 if line_splits[11] == "N/A" else float(line_splits[11])
+            lat_80p = -1.0 if line_splits[14] == "N/A" else float(line_splits[14])
             total_count = int(line_splits[2])
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])

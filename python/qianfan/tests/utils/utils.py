@@ -30,6 +30,7 @@ def init_test_env():
     os.environ[Env.BaseURL] = "http://127.0.0.1:8866"
     os.environ[Env.ConsoleAPIBaseURL] = "http://127.0.0.1:8866"
     os.environ[Env.DisableErnieBotSDK] = "True"
+    os.environ[Env.IAMBaseURL] = "http://127.0.0.1:8866"
     qianfan.enable_log(logging.INFO)
     if "QIANFAN_AK" in os.environ:
         os.environ.pop("QIANFAN_AK")

@@ -63,6 +63,10 @@ class DatasetConfig(BaseModel):
     """
     sampling rate in global
     """
+    source_type: Optional[Union[str, console_consts.TrainDatasetSourceType]] = None
+    """
+    source type, must be specified when dataset is dict type
+    """
 
 
 class BaseJsonModel(BaseModel):

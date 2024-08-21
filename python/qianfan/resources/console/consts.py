@@ -167,6 +167,7 @@ class TrainDatasetType(int, Enum):
 class TrainDatasetSourceType(str, Enum):
     Platform = "Platform"
     PrivateBos = "Bos"
+    PrivateAfs = "Afs"
 
 
 class TrainMode(str, Enum):
@@ -391,3 +392,18 @@ class ModelCompTaskStatus(str, Enum):
     """终止中"""
     Stopped: str = "stopped"
     """已终止"""
+
+
+class V2:
+    class DatasetFormat(str, Enum):
+        PromptResponse: str = "PromptResponse"
+        Text: str = "Text"
+        DPOPromptChosenRejected: str = "DPO_PromptChosenRejected"
+        KTOPromptChosenRejected: str = "KTO_PromptChosenRejected"
+        PromptSortedResponses: str = "PromptSortedresponses"
+        Prompt: str = "Prompt"
+        PromptImage: str = "PromptImage"
+
+    class StorageType(str, Enum):
+        Bos: str = "BOS"
+        SysStorage: str = "sysStorage"

@@ -51,7 +51,7 @@ from qianfan.resources.typing import (
     QfResponse,
     RetryConfig,
 )
-from qianfan.utils import log_info, log_warn, utils
+from qianfan.utils import log_debug, log_info, log_warn, utils
 from qianfan.utils.cache.base import KvCache
 from qianfan.version import VERSION
 
@@ -164,7 +164,14 @@ class VersionBase(object):
     ) -> None:
         self._version = str(version) if version else "1"
         self._real = self._real_base(self._version, **kwargs)(**kwargs)
-        self._backup = self._real_base("1", **kwargs)(**kwargs)
+        if self._version != "1":
+            try:
+                self._backup = self._real_base("1", **kwargs)(**kwargs)
+            except Exception as e:
+                log_debug(
+                    f"Failed to create V1 backup instance, error: {e}, "
+                    "will use the latest version instead."
+                )
 
     @classmethod
     def _real_base(cls, version: str, **kwargs: Any) -> Type[BaseResource]:
@@ -214,7 +221,7 @@ class VersionBase(object):
         return get_config().V2_INFER_API_DOWNGRADE and self._version != "1"
 
     def _do(self, **kwargs: Any) -> Union[QfResponse, Iterator[QfResponse]]:
-        if self._need_downgrade():
+        if self._need_downgrade() and self._backup:
             return self._do_downgrade(**kwargs)
         # assert self._real has function `do`
         return self._real.do(**kwargs)  # type: ignore
@@ -612,6 +619,7 @@ class BaseResourceV1(BaseResource):
         self,
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
+        use_custom_endpoint: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -620,6 +628,7 @@ class BaseResourceV1(BaseResource):
         self._model = model
         self._endpoint = endpoint
         self._client = create_api_requestor(**kwargs)
+        self.use_custom_endpoint = use_custom_endpoint
 
     def _update_model_and_endpoint(
         self, model: Optional[str], endpoint: Optional[str]
@@ -644,6 +653,9 @@ class BaseResourceV1(BaseResource):
                 )
             endpoint = model_info.endpoint
         else:
+            # 适配非公有云等需要增加chat/等前缀的endpoint
+            if self.use_custom_endpoint or get_config().USE_CUSTOM_ENDPOINT:
+                return model, endpoint
             endpoint = self._convert_endpoint(model, endpoint)
         return model, endpoint
 
@@ -652,6 +664,7 @@ class BaseResourceV1(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -678,6 +691,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -699,6 +713,7 @@ class BaseResourceV1(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         endpoint = self._extract_endpoint(**kwargs)
@@ -717,6 +732,7 @@ class BaseResourceV1(BaseResource):
                     stream=stream,
                     data_postprocess=self._data_postprocess,
                     retry_config=retry_config,
+                    show_total_latency=show_total_latency,
                 )
             except errors.APIError as e:
                 if (
@@ -901,9 +917,17 @@ class BaseResourceV1(BaseResource):
 
 
 class BaseResourceV2(BaseResource):
-    def __init__(self, model: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        model: Optional[str] = None,
+        app_id: Optional[str] = None,
+        bearer_token: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self._model = model
+        self._app_id = app_id
+        self._bearer_token = bearer_token
         self._client = QfAPIV2Requestor(**kwargs)
 
     def _request(
@@ -911,6 +935,7 @@ class BaseResourceV2(BaseResource):
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
@@ -928,15 +953,29 @@ class BaseResourceV2(BaseResource):
             body=self._generate_body(model, stream, **kwargs),
             stream=stream,
             retry_config=retry_config,
+            show_total_latency=show_total_latency,
         )
 
         return resp
+
+    def _generate_header(
+        self, model: Optional[str], stream: bool, **kwargs: Any
+    ) -> JsonBody:
+        """
+        generate header
+        """
+
+        base_headers = super()._generate_header(model, stream, **kwargs)
+        if self._app_id and "app_id" not in base_headers:
+            base_headers["appid"] = self._app_id
+        return base_headers
 
     async def _arequest(
         self,
         model: Optional[str],
         stream: bool,
         retry_config: RetryConfig,
+        show_total_latency: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         resp = await self._client.async_llm(
@@ -946,6 +985,7 @@ class BaseResourceV2(BaseResource):
             body=self._generate_body(model, stream, **kwargs),
             stream=stream,
             retry_config=retry_config,
+            show_total_latency=show_total_latency,
         )
 
         return resp
@@ -1023,13 +1063,8 @@ def get_latest_supported_models(
         # get preset services:
         for s in svc_list:
             try:
-                [api_type, model_endpoint] = trim_prefix(
-                    s["url"],
-                    "{}{}/".format(
-                        DefaultValue.BaseURL,
-                        get_config().MODEL_API_PREFIX,
-                    ),
-                ).split("/")
+                splits = s["url"].split("/")
+                api_type, model_endpoint = splits[-2], splits[-1]
                 model_info = _runtime_models_info.get(api_type)
                 if model_info is None:
                     model_info = {}

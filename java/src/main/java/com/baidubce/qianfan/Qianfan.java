@@ -26,6 +26,8 @@ import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
+import com.baidubce.qianfan.model.console.ConsoleRequest;
+import com.baidubce.qianfan.model.console.ConsoleResponse;
 import com.baidubce.qianfan.model.embedding.EmbeddingRequest;
 import com.baidubce.qianfan.model.embedding.EmbeddingResponse;
 import com.baidubce.qianfan.model.image.Image2TextRequest;
@@ -36,6 +38,9 @@ import com.baidubce.qianfan.model.plugin.PluginRequest;
 import com.baidubce.qianfan.model.plugin.PluginResponse;
 import com.baidubce.qianfan.model.rerank.RerankRequest;
 import com.baidubce.qianfan.model.rerank.RerankResponse;
+
+import java.lang.reflect.Type;
+
 
 public class Qianfan {
     private final QianfanClient client;
@@ -138,11 +143,23 @@ public class Qianfan {
         return requestStream(request, PluginResponse.class);
     }
 
+    public ConsoleBuilder console() {
+        return new ConsoleBuilder(this);
+    }
+
+    public <T> ConsoleResponse<T> console(ConsoleRequest request, Type type) {
+        return consoleRequest(request, type);
+    }
+
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return client.request(request, responseClass);
     }
 
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
         return client.requestStream(request, responseClass);
+    }
+
+    public <T> ConsoleResponse<T> consoleRequest(ConsoleRequest request, Type type) {
+        return client.consoleRequest(request, type);
     }
 }

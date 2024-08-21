@@ -244,8 +244,11 @@ class QfAPIRequestor(BaseAPIRequestor):
                     raise errors.RequestError(
                         f"got unexpected stream response from server: {body_str}"
                     )
-                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-                json_body = json.loads(body_str)
+                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX):]
+                if body_str != Consts.V2_STREAM_RESPONSE_END_NOTE:
+                    json_body = json.loads(body_str)
+                else:
+                    return
                 parsed = await self._parse_async_response(json_body, resp)
                 parsed.request = QfRequest.from_aiohttp(resp.request_info)
                 parsed.request.json_body = copy.deepcopy(request.json_body)

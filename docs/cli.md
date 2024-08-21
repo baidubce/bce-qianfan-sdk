@@ -53,6 +53,7 @@ $ qianfan chat [OPTIONS]
 * `--endpoint TEXT`：模型的 endpoint
 * `--multi-line / --no-multi-line`：多行模式，提交时需要先按下 Esc 再回车，以避免与文本换行冲突  [default：no-multi-line]
 * `--list-model -l`：打印支持的模型名称列表
+* `--raw-output`：默认命令行会将输出以 Markdown 格式进行渲染，如果希望查看原始输出，可以开启该选项。
 * `--debug`：调试模式，会打印请求相关的原始信息。
 * `--help`：展示帮助文档
 

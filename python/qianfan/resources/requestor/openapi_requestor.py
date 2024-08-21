@@ -152,7 +152,10 @@ class QfAPIRequestor(BaseAPIRequestor):
                         f"got unexpected stream response from server: {body_str}"
                     )
                 body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-                json_body = json.loads(body_str)
+                if body_str != "[DONE]":
+                    json_body = json.loads(body_str)
+                else:
+                    return
                 if event != "":
                     json_body["_event"] = event
                     event = ""

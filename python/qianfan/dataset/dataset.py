@@ -2196,6 +2196,7 @@ class Dataset(Table):
         model_type: str = "ChatCompletion",
         is_v2: bool = False,
         hyperparameters: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2268,6 +2269,7 @@ class Dataset(Table):
                 round_latency_threshold=100,
                 success_rate_threshold=0,
                 is_v2=is_v2,
+                **kwargs,
             )
             runner.run()
             if isinstance(urllib_env, str):

@@ -180,6 +180,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
         is_v2: bool = False,
+        app_id: Optional[str] = None,
         **kwargs: Any
     ):
         """
@@ -196,12 +197,18 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 raise ValueError("v2 api doesn't support endpoint")
 
             self.chat_comp = qianfan.ChatCompletion(
-                endpoint=model, forcing_disable=True
+                endpoint=model,
+                forcing_disable=True,
+                **kwargs,
             )
         else:
             if is_v2:
                 self.chat_comp = qianfan.ChatCompletion(
-                    version="2", model=model, forcing_disable=True, **kwargs
+                    version="2",
+                    model=model,
+                    forcing_disable=True,
+                    app_id=app_id,
+                    **kwargs,
                 )
             else:
                 self.chat_comp = qianfan.ChatCompletion(
@@ -306,9 +313,11 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 self.exc = Exception("Response is empty")
             elif last_resp is None and self.exc is None:
                 self.exc = Exception("Response is null")
-            elif "is_end" not in last_resp["body"]:
+            elif not self.is_v2 and "is_end" not in last_resp["body"]:
                 self.exc = Exception("Response not finished")
-            elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
+            elif last_resp["code"] != 200 or (
+                not self.is_v2 and not last_resp["body"]["is_end"]
+            ):
                 self.exc = Exception("NOT 200 OR is_end is False")
 
         response_time = (time.perf_counter() - start_perf_counter) * 1000
@@ -377,6 +386,7 @@ class CompletionClient(QianfanCustomHttpSession):
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
         is_v2: bool = False,
+        app_id: Optional[str] = None,
         **kwargs: Any
     ):
         """
@@ -392,11 +402,15 @@ class CompletionClient(QianfanCustomHttpSession):
             if is_v2:
                 raise ValueError("v2 api doesn't support endpoint")
             else:
-                self.comp = qianfan.Completion(endpoint=model)
+                self.comp = qianfan.Completion(endpoint=model, **kwargs)
         else:
             if is_v2:
                 self.comp = qianfan.Completion(
-                    version="2", model=model, forcing_disable=True, **kwargs
+                    version="2",
+                    model=model,
+                    app_id=app_id,
+                    forcing_disable=True,
+                    **kwargs,
                 )
             else:
                 self.comp = qianfan.Completion(
@@ -551,6 +565,12 @@ class QianfanLLMLoadUser(CustomUser):
         model_type = GlobalData.data["model_type"]
         is_endpoint = GlobalData.data["is_endpoint"]
         is_v2 = GlobalData.data["is_v2"]
+
+        if "app_id" in GlobalData.data:
+            app_id = GlobalData.data["app_id"]
+        else:
+            app_id = None
+
         self.client: QianfanCustomHttpSession
         if model_type == "ChatCompletion":
             self.client = ChatCompletionClient(
@@ -560,6 +580,7 @@ class QianfanLLMLoadUser(CustomUser):
                 user=self,
                 pool_manager=self.pool_manager,
                 is_v2=is_v2,
+                app_id=app_id,
                 **kwargs,
             )
         elif model_type == "Completion":
@@ -570,6 +591,7 @@ class QianfanLLMLoadUser(CustomUser):
                 user=self,
                 pool_manager=self.pool_manager,
                 is_v2=False,
+                app_id=app_id,
                 **kwargs,
             )
         else:

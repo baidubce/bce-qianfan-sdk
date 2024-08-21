@@ -93,6 +93,7 @@ class QianfanLocustRunner(LocustRunner):
         success_rate_threshold: Optional[float] = 0,
         model_info: Optional[Dict[str, Any]] = None,
         is_v2: bool = False,
+        **kwargs: Any,
     ):
         if model is not None:
             host = model
@@ -119,6 +120,7 @@ class QianfanLocustRunner(LocustRunner):
             round_latency_threshold=round_latency_threshold,
             success_rate_threshold=success_rate_threshold,
             model_info=model_info,
+            **kwargs,
         )
 
         self.first_latency_threshold = first_latency_threshold or 100

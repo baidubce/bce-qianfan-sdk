@@ -544,11 +544,8 @@ class QianfanLLMLoadUser(CustomUser):
             body = data
             if "stream" in body:
                 del body["stream"]
-            if "safety_level" in body:
+            if "safety_level" in body and body["safety_level"] == 'none':
                 del body["safety_level"]
-            content = body["messages"][0]["content"]
-            role = body["messages"][0]["role"]
-            body["messages"][0] = {"role": role, "content": content}
         else:
             body = self.client.transfer_data(
                 data, self.input_column, self.output_column

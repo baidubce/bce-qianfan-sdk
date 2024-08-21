@@ -3,7 +3,7 @@
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from locust import constant, events, task
 from locust.clients import ResponseContextManager
@@ -179,7 +179,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         user: Any,
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
-        is_v2: bool = False,
+        version: Literal["1", "2", 1, 2] = "1",
         app_id: Optional[str] = None,
         **kwargs: Any
     ):
@@ -190,10 +190,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
-        self.is_v2 = is_v2
+        self.is_v2 = str(version) == "2"
 
         if is_endpoint:
-            if is_v2:
+            if self.is_v2:
                 raise ValueError("v2 api doesn't support endpoint")
 
             self.chat_comp = qianfan.ChatCompletion(
@@ -202,7 +202,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 **kwargs,
             )
         else:
-            if is_v2:
+            if self.is_v2:
                 self.chat_comp = qianfan.ChatCompletion(
                     version="2",
                     model=model,
@@ -385,7 +385,7 @@ class CompletionClient(QianfanCustomHttpSession):
         user: Any,
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
-        is_v2: bool = False,
+        version: Literal["1", "2", 1, 2] = "1",
         app_id: Optional[str] = None,
         **kwargs: Any
     ):
@@ -396,15 +396,15 @@ class CompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
-        self.is_v2 = is_v2
+        self.is_v2 = str(version) == "2"
 
         if is_endpoint:
-            if is_v2:
+            if self.is_v2:
                 raise ValueError("v2 api doesn't support endpoint")
             else:
                 self.comp = qianfan.Completion(endpoint=model, **kwargs)
         else:
-            if is_v2:
+            if self.is_v2:
                 self.comp = qianfan.Completion(
                     version="2",
                     model=model,
@@ -564,12 +564,9 @@ class QianfanLLMLoadUser(CustomUser):
 
         model_type = GlobalData.data["model_type"]
         is_endpoint = GlobalData.data["is_endpoint"]
-        is_v2 = GlobalData.data["is_v2"]
 
-        if "app_id" in GlobalData.data:
-            app_id = GlobalData.data["app_id"]
-        else:
-            app_id = None
+        app_id = GlobalData.data.get("app_id", None)
+        version = GlobalData.data.get("version", "1")
 
         self.client: QianfanCustomHttpSession
         if model_type == "ChatCompletion":
@@ -579,7 +576,7 @@ class QianfanLLMLoadUser(CustomUser):
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,
-                is_v2=is_v2,
+                version=version,
                 app_id=app_id,
                 **kwargs,
             )
@@ -590,7 +587,7 @@ class QianfanLLMLoadUser(CustomUser):
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,
-                is_v2=False,
+                version=version,
                 app_id=app_id,
                 **kwargs,
             )

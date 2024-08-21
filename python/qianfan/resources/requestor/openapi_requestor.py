@@ -244,7 +244,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                     raise errors.RequestError(
                         f"got unexpected stream response from server: {body_str}"
                     )
-                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX):]
+                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
                 if body_str != Consts.V2_STREAM_RESPONSE_END_NOTE:
                     json_body = json.loads(body_str)
                 else:

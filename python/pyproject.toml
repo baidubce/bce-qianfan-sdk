@@ -81,6 +81,7 @@ myst-parser = ">=0.19.2"
 pytest-mock = "3.11.1"
 types-protobuf = "4.24.0.4"
 setuptools = "*"
+redis = "*"
 
 [tool.poetry.group.cookbook.dependencies]
 nbformat = {version = "^5.10.3", python = ">=3.8 <4"}

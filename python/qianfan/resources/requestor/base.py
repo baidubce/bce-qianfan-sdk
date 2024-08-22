@@ -46,7 +46,8 @@ import qianfan.errors as errors
 from qianfan.config import get_config
 from qianfan.resources.auth.oauth import _masked_ak
 from qianfan.resources.http_client import HTTPClient
-from qianfan.resources.rate_limiter import VersatileRateLimiter
+from qianfan.resources.rate_limiter.rate_limiter import VersatileRateLimiter
+from qianfan.resources.rate_limiter.redis_rate_limiter import RedisRateLimiter
 from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_error, log_trace, log_warn
 
@@ -297,7 +298,11 @@ class BaseAPIRequestor(object):
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
         self._client = HTTPClient(**kwargs)
-        self._rate_limiter = VersatileRateLimiter(**kwargs)
+        self._rate_limiter = (
+            VersatileRateLimiter(**kwargs)
+            if kwargs.get("redis_rate_limiter", False)
+            else RedisRateLimiter(**kwargs)
+        )
         self._host = kwargs.get("host")
 
     def _preprocess_request(self, request: QfRequest) -> QfRequest:

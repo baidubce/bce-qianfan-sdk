@@ -25,10 +25,11 @@ from typing import Any, Optional, Type
 from aiolimiter import AsyncLimiter
 
 from qianfan.config import get_config
+from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 from qianfan.utils import log_error
 
 
-class VersatileRateLimiter:
+class VersatileRateLimiter(BaseRateLimiter):
     """
     Implementation of Versatile Rate Limiter.
     There are different rules between synchronous and asynchronous method using,

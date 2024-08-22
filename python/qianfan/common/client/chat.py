@@ -287,6 +287,7 @@ class ChatClient(object):
                         response = client.do(
                             messages=messages,
                             stream=True,
+                            show_total_latency=True,
                             **self.inference_args,
                         )
                         for resp in response:

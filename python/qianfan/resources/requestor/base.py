@@ -300,7 +300,7 @@ class BaseAPIRequestor(object):
         self._client = HTTPClient(**kwargs)
         self._rate_limiter = (
             VersatileRateLimiter(**kwargs)
-            if kwargs.get("redis_rate_limiter", False)
+            if not kwargs.get("redis_rate_limiter", False)
             else RedisRateLimiter(**kwargs)
         )
         self._host = kwargs.get("host")

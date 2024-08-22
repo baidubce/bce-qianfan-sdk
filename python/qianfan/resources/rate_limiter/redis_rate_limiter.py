@@ -26,7 +26,7 @@ class RedisRateLimiter(BaseRateLimiter):
         request_per_minute: float = 0,
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
-        redis_key: str = "default_key",
+        keys: str = "default_key",
         redis_connection_info: RedisConnectionInfo = RedisConnectionInfo(),
         **kwargs: Any
     ) -> None:
@@ -47,7 +47,7 @@ class RedisRateLimiter(BaseRateLimiter):
             forcing_disable (bool):
                 Force to disable all functionality of rate limiter.
                 Default to False
-            redis_key: (str),
+            keys: (str),
                 redis key used to identify redis rate limiter info
         """
 
@@ -91,9 +91,9 @@ class RedisRateLimiter(BaseRateLimiter):
         self._request_per_minute = request_per_minute
         self._query_per_second = query_per_second
 
-        self._rpm_key = redis_key + "_rpm"
-        self._rpm_10s_key = redis_key + "_rpm_10s"
-        self._qps_key = redis_key + "_qps"
+        self._rpm_key = keys + "_rpm"
+        self._rpm_10s_key = keys + "_rpm_10s"
+        self._qps_key = keys + "_qps"
 
         if request_per_minute:
             self._set_limit_info(self._rpm_key, request_per_minute, 60)

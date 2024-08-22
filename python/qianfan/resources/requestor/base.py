@@ -328,6 +328,7 @@ class BaseAPIRequestor(object):
         resp.statistic["request_latency"] = response.elapsed.total_seconds()
         resp.request = QfRequest.from_requests(response.request)
         resp.request.json_body = copy.deepcopy(request.json_body)
+        resp.request.retry_config = request.retry_config
 
         if "X-Ratelimit-Limit-Requests" in resp.headers:
             self._rate_limiter.reset_once(
@@ -363,6 +364,7 @@ class BaseAPIRequestor(object):
                 resp.statistic["request_latency"] = request_latency
                 resp.request = QfRequest.from_aiohttp(response.request_info)
                 resp.request.json_body = copy.deepcopy(request.json_body)
+                resp.request.retry_config = request.retry_config
                 if "X-Ratelimit-Limit-Requests" in resp.headers:
                     await self._rate_limiter.async_reset_once(
                         float(resp.headers["X-Ratelimit-Limit-Requests"])

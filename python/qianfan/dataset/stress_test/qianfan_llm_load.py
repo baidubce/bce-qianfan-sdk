@@ -138,16 +138,17 @@ class QianfanCustomHttpSession(CustomHttpSession):
             pass
 
     def transfer_data(self, data: Any, input_column: str, output_column: str) -> Any:
-        if input_column not in data and output_column not in data:
-            ret = self._transfer_body(data)
-        elif isinstance(data, list):
+        if isinstance(data, list):
             ret = self._transfer_jsonl(
                 data, input_column=input_column, output_column=output_column
             )
         elif isinstance(data, dict):
-            ret = self._transfer_json(
-                data, input_column=input_column, output_column=output_column
-            )
+            if input_column not in data and output_column not in data:
+                ret = self._transfer_body(data)
+            else:
+                ret = self._transfer_json(
+                    data, input_column=input_column, output_column=output_column
+                )
         elif isinstance(data, str):
             ret = self._transfer_txt(
                 data, input_column=input_column, output_column=output_column

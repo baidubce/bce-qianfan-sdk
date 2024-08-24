@@ -143,9 +143,12 @@ class QianfanCustomHttpSession(CustomHttpSession):
                 data, input_column=input_column, output_column=output_column
             )
         elif isinstance(data, dict):
-            ret = self._transfer_json(
-                data, input_column=input_column, output_column=output_column
-            )
+            if input_column not in data and output_column not in data:
+                ret = self._transfer_body(data)
+            else:
+                ret = self._transfer_json(
+                    data, input_column=input_column, output_column=output_column
+                )
         elif isinstance(data, str):
             ret = self._transfer_txt(
                 data, input_column=input_column, output_column=output_column
@@ -167,6 +170,9 @@ class QianfanCustomHttpSession(CustomHttpSession):
     def _transfer_txt(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
     ) -> Any:
+        ...
+
+    def _transfer_body(self, data: Any) -> Any:
         ...
 
 
@@ -336,6 +342,14 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         ret["messages"].append(msg)
         return ret
 
+    def _transfer_body(self, data: Any) -> Any:
+        ret = data
+        if "stream" in ret:
+            del ret["stream"]
+        if "safety_level" in ret and ret["safety_level"] == "none":
+            del ret["safety_level"]
+        return ret
+
 
 class CompletionClient(QianfanCustomHttpSession):
     def __init__(
@@ -475,6 +489,10 @@ class CompletionClient(QianfanCustomHttpSession):
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
     ) -> Any:
         return dict(prompt=data)
+
+    def _transfer_body(self, data: Any) -> Any:
+        p = data["messages"][0]["content"]
+        return dict(prompt=p)
 
 
 @events.test_start.add_listener

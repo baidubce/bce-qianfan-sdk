@@ -19,6 +19,7 @@ import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
 import {isOpenTpm, parseHeaders} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
+import {extractHeaders, getStreamData} from './helper';
 
 export type Headers = Record<string, string | null | undefined>;
 export interface RequestOptions extends RequestInit {
@@ -54,7 +55,7 @@ export async function handleResponse<T>(props: APIResponseProps): Promise<T | St
         const json = await response.json();
         return {
             headers,
-            ...(json as T),
+            ...(json as T)
         };
     }
     if (options.stream) {
@@ -67,7 +68,7 @@ export async function handleResponse<T>(props: APIResponseProps): Promise<T | St
     const text = await response?.text();
     return {
         headers,
-        ...(text as unknown as T),
+        ...(text as unknown as T)
     };
 }
 
@@ -93,8 +94,7 @@ export const castToError = (err: any): Error => {
 export const safeJSON = (text: string) => {
     try {
         return JSON.parse(text);
-    }
-    catch (err) {
+    } catch (err) {
         return undefined;
     }
 };
@@ -116,7 +116,7 @@ export class Fetch {
         maxRetries = 3,
         timeout = 600000,
         backoffFactor = 0,
-        retryMaxWaitInterval = 120000,
+        retryMaxWaitInterval = 120000
     }: {
         maxRetries?: number | undefined;
         timeout?: number | undefined;
@@ -144,10 +144,18 @@ export class Fetch {
         const timeout = setTimeout(() => controller.abort(), ms);
 
         return this.rateLimiter.schedule(() =>
-            fetch(url, {signal: controller.signal as any, ...(options as any)})
-                .then(response => {
+            fetch(url, {signal: controller.signal, ...options})
+                .then(async response => {
+                    const responseHeaders = extractHeaders(response.headers);
+                    const responseBody = await getStreamData(response.body as Readable);
                     if (!response.ok) {
-                        throw new Error(`HTTP error, status = ${response.status}`);
+                        throw new Error(
+                            [
+                                `HTTP error, status = ${response.status}`,
+                                `Response Header ${responseHeaders}`,
+                                `Response Body ${responseBody}`
+                            ].join('\n')
+                        );
                     }
                     return response;
                 })
@@ -197,15 +205,14 @@ export class Fetch {
         const controller = new AbortController();
 
         // 计算请求token
-        const tokens = this.tokenLimiter.calculateTokens(options.body as string ?? '');
+        const tokens = this.tokenLimiter.calculateTokens((options.body as string) ?? '');
         const hasToken = await this.tokenLimiter.acquireTokens(tokens);
         if (hasToken) {
             const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);
             let usedTokens = 0;
+
+            // 这个地方的逻辑需要修改
             if (response instanceof Error) {
-                if (options.signal?.aborted) {
-                    throw new Error('Request was aborted.');
-                }
                 if (response.name === 'AbortError') {
                     throw new Error('Request timed out.');
                 }
@@ -247,7 +254,7 @@ export class Fetch {
                 const [stream1, stream2] = (res as any).tee();
                 if (isOpenTpm(val)) {
                     const updateTokensAsync = async () => {
-                        for await (const data of (stream1 as unknown as AsyncIterableType)) {
+                        for await (const data of stream1 as unknown as AsyncIterableType) {
                             const typedData = data as RespBase;
                             if (typedData.is_end) {
                                 usedTokens = typedData?.usage?.total_tokens;
@@ -332,8 +339,7 @@ export class Fetch {
             const timeoutSeconds = parseFloat(retryAfterHeader);
             if (!Number.isNaN(timeoutSeconds)) {
                 timeoutMillis = timeoutSeconds * 1000;
-            }
-            else {
+            } else {
                 timeoutMillis = Date.parse(retryAfterHeader) - Date.now();
             }
         }

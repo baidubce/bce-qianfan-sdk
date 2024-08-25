@@ -3,7 +3,7 @@
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from locust import constant, events, task
 from locust.clients import ResponseContextManager
@@ -185,6 +185,8 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         user: Any,
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
+        version: Literal["1", "2", 1, 2] = "1",
+        app_id: Optional[str] = None,
         **kwargs: Any
     ):
         """
@@ -194,12 +196,30 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
+        self.is_v2 = str(version) == "2"
+
         if is_endpoint:
+            if self.is_v2:
+                raise ValueError("v2 api doesn't support endpoint")
+
             self.chat_comp = qianfan.ChatCompletion(
-                endpoint=model, forcing_disable=True
+                endpoint=model,
+                forcing_disable=True,
+                **kwargs,
             )
         else:
-            self.chat_comp = qianfan.ChatCompletion(model=model, forcing_disable=True)
+            if self.is_v2:
+                self.chat_comp = qianfan.ChatCompletion(
+                    version="2",
+                    model=model,
+                    forcing_disable=True,
+                    app_id=app_id,
+                    **kwargs,
+                )
+            else:
+                self.chat_comp = qianfan.ChatCompletion(
+                    model=model, forcing_disable=True, **kwargs
+                )
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -239,12 +259,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 setattr(resp, "reason", None)
                 setattr(resp, "status_code", resp["code"])
 
-                stream_json = resp["body"]
-                clear_history = stream_json.get("need_clear_history", False)
                 if first_flag:
-                    request_meta["first_token_latency"] = (
-                        time.perf_counter() - start_perf_counter
-                    ) * 1000  # 首Token延迟
+                    request_meta["first_token_latency"] = resp.statistic[
+                        "first_token_latency"
+                    ]
                     if "first_latency_threshold" in GlobalData.data:
                         if (
                             request_meta["first_token_latency"]
@@ -252,26 +270,44 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         ):
                             GlobalData.data["threshold_first"].value = 1
                     first_flag = False
-                content = ""
-                if "result" in stream_json:
-                    content = stream_json["result"]
+
+                if not self.is_v2:
+                    stream_json = resp["body"]
+                    clear_history = stream_json.get("need_clear_history", False)
+                    if "result" in stream_json:
+                        content = stream_json["result"]
+                    elif "error_code" in stream_json and stream_json["error_code"] > 0:
+                        self.exc = Exception(
+                            "ERROR CODE {}".format(str(stream_json["error_code"]))
+                        )
+                        break
+                    else:
+                        self.exc = Exception("ERROR CODE 结果无法解析")
+                        break
                 else:
-                    self.exc = Exception("ERROR CODE 结果无法解析")
-                    break
-                if "error_code" in stream_json and stream_json["error_code"] > 0:
-                    self.exc = Exception(
-                        "ERROR CODE {}".format(str(stream_json["error_code"]))
-                    )
-                    break
+                    if "error_code" in resp.body and resp.body["error_code"] > 0:
+                        self.exc = Exception(
+                            "ERROR CODE {}".format(str(resp.body["error_code"]))
+                        )
+                        break
+
+                    stream_json = resp.body["choices"][0]
+                    clear_history = stream_json.get("need_clear_history", False)
+                    if "delta" in stream_json:
+                        content = stream_json["delta"]["content"]
+                    else:
+                        self.exc = Exception("ERROR CODE 结果无法解析")
+                        break
+
                 if len(content) != 0:
                     all_empty = False
                 # 计算token数, 有usage的累加，没有的直接计算content
-                if "usage" in stream_json:
+                if "usage" in resp.body:
                     request_meta["input_tokens"] = int(
-                        stream_json["usage"]["prompt_tokens"]
+                        resp.body["usage"]["prompt_tokens"]
                     )
                     request_meta["output_tokens"] = int(
-                        stream_json["usage"]["completion_tokens"]
+                        resp.body["usage"]["completion_tokens"]
                     )
                 else:
                     request_meta["input_tokens"] = request_meta["request_length"]
@@ -283,10 +319,13 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 self.exc = Exception("Response is empty")
             elif last_resp is None and self.exc is None:
                 self.exc = Exception("Response is null")
-            elif "is_end" not in last_resp["body"]:
+            elif not self.is_v2 and "is_end" not in last_resp["body"]:
                 self.exc = Exception("Response not finished")
-            elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
+            elif last_resp["code"] != 200 or (
+                not self.is_v2 and not last_resp["body"]["is_end"]
+            ):
                 self.exc = Exception("NOT 200 OR is_end is False")
+
         response_time = (time.perf_counter() - start_perf_counter) * 1000
         if self.user:
             context = {**self.user.context(), **context}
@@ -360,6 +399,8 @@ class CompletionClient(QianfanCustomHttpSession):
         user: Any,
         *args: Any,
         pool_manager: Optional[PoolManager] = None,
+        version: Literal["1", "2", 1, 2] = "1",
+        app_id: Optional[str] = None,
         **kwargs: Any
     ):
         """
@@ -369,10 +410,26 @@ class CompletionClient(QianfanCustomHttpSession):
             model, request_event, user, *args, pool_manager=pool_manager, **kwargs
         )
         self.model = model
+        self.is_v2 = str(version) == "2"
+
         if is_endpoint:
-            self.comp = qianfan.Completion(endpoint=model)
+            if self.is_v2:
+                raise ValueError("v2 api doesn't support endpoint")
+            else:
+                self.comp = qianfan.Completion(endpoint=model, **kwargs)
         else:
-            self.comp = qianfan.Completion(model=model)
+            if self.is_v2:
+                self.comp = qianfan.Completion(
+                    version="2",
+                    model=model,
+                    app_id=app_id,
+                    forcing_disable=True,
+                    **kwargs,
+                )
+            else:
+                self.comp = qianfan.Completion(
+                    model=model, forcing_disable=True, **kwargs
+                )
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -402,9 +459,9 @@ class CompletionClient(QianfanCustomHttpSession):
 
             stream_json = resp["body"]
             if first_flag:
-                request_meta["first_token_latency"] = (
-                    time.perf_counter() - start_perf_counter
-                ) * 1000  # 首Token延迟
+                request_meta["first_token_latency"] = resp.statistic[
+                    "first_token_latency"
+                ]
                 if (
                     request_meta["first_token_latency"]
                     > GlobalData.data["first_latency_threshold"]
@@ -525,6 +582,10 @@ class QianfanLLMLoadUser(CustomUser):
 
         model_type = GlobalData.data["model_type"]
         is_endpoint = GlobalData.data["is_endpoint"]
+
+        app_id = GlobalData.data.get("app_id", None)
+        version = GlobalData.data.get("version", "1")
+
         self.client: QianfanCustomHttpSession
         if model_type == "ChatCompletion":
             self.client = ChatCompletionClient(
@@ -533,6 +594,9 @@ class QianfanLLMLoadUser(CustomUser):
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,
+                version=version,
+                app_id=app_id,
+                **kwargs,
             )
         elif model_type == "Completion":
             self.client = CompletionClient(  # noqa
@@ -541,6 +605,9 @@ class QianfanLLMLoadUser(CustomUser):
                 request_event=self.environment.events.request,
                 user=self,
                 pool_manager=self.pool_manager,
+                version=version,
+                app_id=app_id,
+                **kwargs,
             )
         else:
             raise Exception("Unsupported model type: %s." % model_type)
@@ -561,4 +628,6 @@ class QianfanLLMLoadUser(CustomUser):
         body = self.client.transfer_data(data, self.input_column, self.output_column)
         if hyperparameters is None:
             hyperparameters = {}
-        self.client.qianfan_request(stream=True, **body, **hyperparameters)
+        self.client.qianfan_request(
+            show_total_latency=True, stream=True, **body, **hyperparameters
+        )

@@ -120,7 +120,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                     body, resp = next(responses)
                 except StopIteration:
                     break
-                _check_if_status_code_is_200(resp)
+                _check_if_status_code_is_200(resp, self.config)
                 body_str = body.decode("utf-8")
                 if body_str == "":
                     continue

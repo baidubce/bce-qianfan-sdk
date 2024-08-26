@@ -19,15 +19,15 @@ import typer
 from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
-from qianfan.common.client.chat import chat_entry
-from qianfan.common.client.completion import completion_entry
-from qianfan.common.client.dataset import dataset_app
-from qianfan.common.client.embedding import embedding_entry
-from qianfan.common.client.evaluation import evaluation_app
-from qianfan.common.client.plugin import plugin_entry
-from qianfan.common.client.trainer import trainer_app
-from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import (
+from qianfan.common.cli.chat import chat_entry
+from qianfan.common.cli.completion import completion_entry
+from qianfan.common.cli.dataset import dataset_app
+from qianfan.common.cli.embedding import embedding_entry
+from qianfan.common.cli.evaluation import evaluation_app
+from qianfan.common.cli.plugin import plugin_entry
+from qianfan.common.cli.trainer import trainer_app
+from qianfan.common.cli.txt2img import txt2img_entry
+from qianfan.common.cli.utils import (
     credential_required,
     print_error_msg,
     print_info_msg,

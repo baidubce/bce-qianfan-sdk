@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     list_model_option,
 )
 

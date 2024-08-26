@@ -1857,6 +1857,36 @@ class ChatCompletion(VersionBase):
         tasks = [task() for task in task_list]
         return await self._real._abatch_request(tasks, worker_num)
 
+    def create(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        return self._do(
+            messages=messages,
+            endpoint=endpoint,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
+            **kwargs,
+        )
+
     def _convert_v2_request_to_v1(self, request: Any) -> Any:
         # TODO: V2 model to V1 model
         return request

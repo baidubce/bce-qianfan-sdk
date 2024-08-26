@@ -20,7 +20,7 @@ from qianfan.consts import DefaultValue, Env
 from qianfan.utils.pydantic import BaseSettings, Field
 
 
-class GlobalConfig(BaseSettings):
+class Config(BaseSettings):
     """
     The global config of whole qianfan sdk
     """
@@ -36,6 +36,7 @@ class GlobalConfig(BaseSettings):
     SECRET_KEY: Optional[str] = Field(default=None)
     ACCESS_TOKEN: Optional[str] = Field(default=None)
     BEARER_TOKEN: Optional[str] = Field(default=None)
+    APP_ID: Optional[str] = Field(default=None)
     BASE_URL: str = Field(default=DefaultValue.BaseURL)
     NO_AUTH: bool = Field(default=False)
     USE_CUSTOM_ENDPOINT: bool = Field(default=False)
@@ -137,14 +138,14 @@ class GlobalConfig(BaseSettings):
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
 
 
-_GLOBAL_CONFIG: Optional[GlobalConfig] = None
+_GLOBAL_CONFIG: Optional[Config] = None
 
 
-def get_config() -> GlobalConfig:
+def get_config() -> Config:
     global _GLOBAL_CONFIG
     if not _GLOBAL_CONFIG:
         try:
-            _GLOBAL_CONFIG = GlobalConfig(  # type: ignore
+            _GLOBAL_CONFIG = Config(  # type: ignore
                 _env_file=os.getenv(Env.DotEnvConfigFile, DefaultValue.DotEnvConfigFile)
             )
         except Exception as e:
@@ -152,6 +153,10 @@ def get_config() -> GlobalConfig:
             # logger.error(f"unexpected error: {e}")
             raise e
     return _GLOBAL_CONFIG
+
+
+# 兼容之前版本
+GlobalConfig = Config
 
 
 @deprecated(

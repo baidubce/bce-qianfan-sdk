@@ -19,7 +19,7 @@ import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
 import {isOpenTpm, parseHeaders} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
-import {buildErrorMessage, extractHeaders, getStreamData} from './helper';
+import {buildErrorMessage, extractHeaders} from './helper';
 
 export type Headers = Record<string, string | null | undefined>;
 export interface RequestOptions extends RequestInit {

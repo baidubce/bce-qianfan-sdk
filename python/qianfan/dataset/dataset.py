@@ -2195,6 +2195,7 @@ class Dataset(Table):
         runtime: str = "0s",
         model_type: str = "ChatCompletion",
         hyperparameters: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2264,6 +2265,7 @@ class Dataset(Table):
                 first_latency_threshold=100,
                 round_latency_threshold=100,
                 success_rate_threshold=0,
+                **kwargs,
             )
             runner.run()
             if isinstance(urllib_env, str):
@@ -2291,6 +2293,7 @@ class Dataset(Table):
         first_latency_threshold: Optional[float] = 100,
         round_latency_threshold: Optional[float] = 1000,
         success_rate_threshold: Optional[float] = 0,
+        **kwargs: Any,
     ) -> None:
         """
         Start a load test task with current dataset.
@@ -2367,6 +2370,7 @@ class Dataset(Table):
                 first_latency_threshold=first_latency_threshold,
                 round_latency_threshold=round_latency_threshold,
                 success_rate_threshold=success_rate_threshold,
+                **kwargs,
             )
             runner.run()
             if isinstance(urllib_env, str):

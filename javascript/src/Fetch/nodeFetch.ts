@@ -19,7 +19,7 @@ import {RETRY_CODE} from '../constant';
 import {Stream} from '../streaming';
 import {isOpenTpm, parseHeaders} from '../utils';
 import {Resp, RespBase, AsyncIterableType} from '../interface';
-import {extractHeaders, getStreamData} from './helper';
+import {buildErrorMessage, extractHeaders, getStreamData} from './helper';
 
 export type Headers = Record<string, string | null | undefined>;
 export interface RequestOptions extends RequestInit {
@@ -143,30 +143,24 @@ export class Fetch {
 
         const timeout = setTimeout(() => controller.abort(), ms);
 
-        return this.rateLimiter.schedule(() =>
-            fetch(url, {signal: controller.signal, ...options})
-                .then(async response => {
-                    const responseHeaders = extractHeaders(response.headers);
-                    const responseBody = await getStreamData(response.body as Readable);
-                    if (!response.ok) {
-                        throw new Error(
-                            [
-                                `HTTP error, status = ${response.status}`,
-                                `Response Header ${responseHeaders}`,
-                                `Response Body ${responseBody}`
-                            ].join('\n')
-                        );
-                    }
-                    return response;
-                })
-                .catch(error => {
-                    // console.error('Fetch request failed:', error.message);
-                    throw error;
-                })
-                .finally(() => {
-                    clearTimeout(timeout);
-                })
-        );
+        return this.rateLimiter.schedule(async () => {
+            try {
+                const response = await fetch(url, {signal: controller.signal, ...options});
+                const contentType = response.headers.get('content-type');
+                const responseHeaders = extractHeaders(response.headers);
+
+                if (!response.ok) {
+                    const errorMessage = await buildErrorMessage(response, contentType, responseHeaders);
+                    throw new Error(errorMessage);
+                }
+
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                clearTimeout(timeout);
+            }
+        });
     }
 
     /**
@@ -208,6 +202,7 @@ export class Fetch {
         const tokens = this.tokenLimiter.calculateTokens((options.body as string) ?? '');
         const hasToken = await this.tokenLimiter.acquireTokens(tokens);
         if (hasToken) {
+            // 错误处理不正确，导致错误被node认为是流式的
             const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);
             let usedTokens = 0;
 

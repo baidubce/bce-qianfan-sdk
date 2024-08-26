@@ -57,8 +57,10 @@ class _ModuleFinder(MetaPathFinder):
             # 使用自定义的 Loader 来加载
             module_spec.loader = _SelfDefinedLoader(og_name, module_origin)
 
-        module_spec.name = og_name
-        return module_spec
+            module_spec.name = og_name
+            return module_spec
+
+        return None
 
 
 class _SelfDefinedLoader(SourceFileLoader):

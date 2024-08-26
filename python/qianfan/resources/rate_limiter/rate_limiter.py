@@ -20,7 +20,7 @@ import threading
 import time
 from queue import Queue
 from types import TracebackType
-from typing import Any, Optional, Type, Dict
+from typing import Any, Dict, Optional, Type
 
 from aiolimiter import AsyncLimiter
 
@@ -28,9 +28,7 @@ from qianfan.config import get_config
 from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 from qianfan.utils import log_error
 
-
 _MAP_LOCK = threading.Lock()
-_RATE_LIMITER_MAP: Dict[str, BaseRateLimiter] = {}
 
 
 class VersatileRateLimiter(BaseRateLimiter):
@@ -385,6 +383,10 @@ class _LimiterWrapper(BaseRateLimiter):
         exc_tb: Optional[TracebackType],
     ) -> None:
         return
+
+
+_RATE_LIMITER_MAP: Dict[str, _LimiterWrapper] = {}
+
 
 class _RateLimiter:
     """

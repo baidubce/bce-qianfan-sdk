@@ -228,7 +228,9 @@ def test_reset_once():
     rpm_rl = VersatileRateLimiter(query_per_second=5)
 
     assert not rpm_rl._impl._is_rpm
-    assert rpm_rl._impl._internal_qps_rate_limiter._sync_limiter._query_per_period == 4.5
+    assert (
+        rpm_rl._impl._internal_qps_rate_limiter._sync_limiter._query_per_period == 4.5
+    )
 
     def _reset_once():
         rpm_rl.reset_once(200)
@@ -287,7 +289,9 @@ def test_reset_once_from_closed():
     assert rpm_rl._impl._has_been_reset
     assert rpm_rl._impl._is_rpm
     assert rpm_rl._impl._new_request_per_minute == 200
-    assert rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    assert (
+        rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    )
 
 
 @pytest.mark.asyncio
@@ -305,4 +309,6 @@ async def test_reset_once_async_from_closed():
     assert rpm_rl._impl._has_been_reset
     assert rpm_rl._impl._is_rpm
     assert rpm_rl._impl._new_request_per_minute == 200
-    assert rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    assert (
+        rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    )

@@ -2,7 +2,7 @@ import asyncio
 import importlib.resources as pkg_resources
 import time
 from hashlib import sha1
-from typing import Any, Dict
+from typing import Any, Dict, Awaitable
 
 from redis import ConnectionPool, Redis
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
@@ -110,23 +110,33 @@ class RedisRateLimiter(BaseRateLimiter):
         return self._forcing_disable
 
     def _set_limit_info(self, key: str, quantity: float, period: float) -> None:
+        str_quantity = str(quantity)
+        str_period = str(period)
+
         try:
             self._connection.evalsha(
-                self._reset_limit_script_hash, 1, key, quantity, period
+                self._reset_limit_script_hash, 1, key, str_quantity, str_period
             )
         except NoScriptError:
-            self._connection.eval(self._reset_limit_script, 1, key, quantity, period)
+            self._connection.eval(self._reset_limit_script, 1, key, str_quantity, str_period)
 
     async def _async_set_limit_info(
         self, key: str, quantity: float, period: float
     ) -> None:
+        str_quantity = str(quantity)
+        str_period = str(period)
+
         try:
-            await self._async_connection.evalsha(
-                self._reset_limit_script_hash, 1, key, quantity, period
+            await assert_awaitable(
+                self._async_connection.evalsha(
+                    self._reset_limit_script_hash, 1, key, str_quantity, str_period
+                )
             )
         except NoScriptError:
-            await self._async_connection.eval(
-                self._reset_limit_script, 1, key, quantity, period
+            await assert_awaitable(
+                self._async_connection.eval(
+                    self._reset_limit_script, 1, key, str_quantity, str_period
+                )
             )
 
     def reset_once(self, rpm: float) -> None:
@@ -252,3 +262,8 @@ class RedisRateLimiter(BaseRateLimiter):
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         pass
+
+
+async def assert_awaitable(handler: Any) -> Awaitable:
+    assert isinstance(handler, Awaitable)
+    return handler

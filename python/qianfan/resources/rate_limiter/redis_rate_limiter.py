@@ -199,8 +199,10 @@ class RedisRateLimiter(BaseRateLimiter):
                     self._check_limit_script, 1, self._rpm_key
                 )
 
-            if wait_time_10s != 0 or wait_time != 0:
-                time.sleep(max(wait_time_10s, wait_time))
+            float_wait_time = float(wait_time)
+            float_wait_time_10s = float(wait_time_10s)
+            if float_wait_time_10s != 0 or float_wait_time != 0:
+                time.sleep(max(float_wait_time_10s, float_wait_time))
 
             return
         elif self._query_per_second:
@@ -213,8 +215,9 @@ class RedisRateLimiter(BaseRateLimiter):
                     self._check_limit_script, 1, self._qps_key
                 )
 
-            if wait_time:
-                time.sleep(wait_time)
+            float_wait_time = float(wait_time)
+            if float_wait_time:
+                time.sleep(float_wait_time)
 
             return
 
@@ -229,36 +232,51 @@ class RedisRateLimiter(BaseRateLimiter):
 
         if self._request_per_minute:
             try:
-                wait_time_10s = await self._async_connection.evalsha(
-                    self._check_limit_script_hash, 1, self._rpm_10s_key
+                wait_time_10s = await assert_awaitable(
+                    self._async_connection.evalsha(
+                        self._check_limit_script_hash, 1, self._rpm_10s_key
+                    )
                 )
-                wait_time = await self._async_connection.evalsha(
-                    self._check_limit_script_hash, 1, self._rpm_key
+                wait_time = await assert_awaitable(
+                    self._async_connection.evalsha(
+                        self._check_limit_script_hash, 1, self._rpm_key
+                    )
                 )
             except NoScriptError:
-                wait_time_10s = await self._async_connection.eval(
-                    self._check_limit_script, 1, self._rpm_10s_key
+                wait_time_10s = await assert_awaitable(
+                    self._async_connection.eval(
+                        self._check_limit_script, 1, self._rpm_10s_key
+                    )
                 )
-                wait_time = await self._async_connection.eval(
-                    self._check_limit_script, 1, self._rpm_key
+                wait_time = await assert_awaitable(
+                    self._async_connection.eval(
+                        self._check_limit_script, 1, self._rpm_key
+                    )
                 )
 
-            if wait_time_10s != 0 or wait_time != 0:
-                await asyncio.sleep(max(wait_time_10s, wait_time))
+            float_wait_time = float(wait_time)
+            float_wait_time_10s = float(wait_time_10s)
+            if float_wait_time_10s != 0 or float_wait_time != 0:
+                await asyncio.sleep(max(float_wait_time_10s, float_wait_time))
 
             return
         elif self._query_per_second:
             try:
-                wait_time = await self._async_connection.evalsha(
-                    self._check_limit_script_hash, 1, self._qps_key
+                wait_time = await assert_awaitable(
+                    self._async_connection.evalsha(
+                        self._check_limit_script_hash, 1, self._qps_key
+                    )
                 )
             except NoScriptError:
-                wait_time = await self._async_connection.eval(
-                    self._check_limit_script, 1, self._qps_key
+                wait_time = await assert_awaitable(
+                    self._async_connection.eval(
+                        self._check_limit_script, 1, self._qps_key
+                    )
                 )
 
-            if wait_time:
-                await asyncio.sleep(wait_time)
+            float_wait_time = float(wait_time)
+            if float_wait_time:
+                await asyncio.sleep(float_wait_time)
 
             return
 
@@ -266,6 +284,6 @@ class RedisRateLimiter(BaseRateLimiter):
         pass
 
 
-async def assert_awaitable(handler: Any) -> Awaitable:
+def assert_awaitable(handler: Any) -> Awaitable:
     assert isinstance(handler, Awaitable)
     return handler

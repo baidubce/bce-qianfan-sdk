@@ -34,7 +34,7 @@ from qianfan.resources.llm.base import (
     BatchRequestFuture,
     VersionBase,
 )
-from qianfan.resources.llm.function import Function
+from qianfan.resources.llm.function import Function, FunctionV2
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
 from qianfan.utils.logging import log_error, log_info, log_warn
@@ -1611,26 +1611,27 @@ class ChatCompletion(VersionBase):
 
     @classmethod
     def _real_base(cls, version: str, **kwargs: Any) -> Type:
-        # convert to qianfan.Function
-        if kwargs.get("use_function"):
-            return Function
-        else:
-            model = kwargs.get("model") or ""
-            func_model_info_list = {
-                k.lower(): v for k, v in Function._supported_models().items()
-            }
-            func_model_info = func_model_info_list.get(model.lower())
-            if model and func_model_info:
-                if func_model_info and func_model_info.endpoint:
-                    return Function
-            endpoint = kwargs.get("endpoint", "")
-            for m in func_model_info_list.values():
-                if endpoint and m.endpoint == endpoint:
-                    return Function
-
         if version == "1":
+            # convert to qianfan.Function, only for api v1
+            if kwargs.get("use_function"):
+                return Function
+            else:
+                model = kwargs.get("model") or ""
+                func_model_info_list = {
+                    k.lower(): v for k, v in Function._supported_models().items()
+                }
+                func_model_info = func_model_info_list.get(model.lower())
+                if model and func_model_info:
+                    if func_model_info and func_model_info.endpoint:
+                        return Function
+                endpoint = kwargs.get("endpoint", "")
+                for m in func_model_info_list.values():
+                    if endpoint and m.endpoint == endpoint:
+                        return Function
             return _ChatCompletionV1
         elif version == "2":
+            if kwargs.get("use_function") or kwargs.get("model") == "ernie-func-8k":
+                return FunctionV2
             return _ChatCompletionV2
         raise errors.InvalidArgumentError("Invalid version")
 
@@ -1649,6 +1650,28 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if model is not None or endpoint is not None:
+            # TODO兼容 v2调用ernie-func-8k
+            real_base_type = self._real_base(
+                self._version, model=model, endpoint=endpoint, **kwargs
+            )
+            if real_base_type is Function:
+                # 不影响ChatCompletion流程，兼容Function调用
+                tmpImpl = real_base_type(**kwargs)
+                return tmpImpl.do(
+                    messages=messages,
+                    endpoint=endpoint,
+                    model=model,
+                    stream=stream,
+                    retry_count=retry_count,
+                    request_timeout=request_timeout,
+                    request_id=request_id,
+                    backoff_factor=backoff_factor,
+                    auto_concat_truncate=auto_concat_truncate,
+                    truncated_continue_prompt=truncated_continue_prompt,
+                    truncate_overlong_msgs=truncate_overlong_msgs,
+                    **kwargs,
+                )
         return self._do(
             messages=messages,
             endpoint=endpoint,
@@ -1679,6 +1702,28 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if model is not None or endpoint is not None:
+            # TODO兼容 v2调用ernie-func-8k
+            real_base_type = self._real_base(
+                self._version, model=model, endpoint=endpoint, **kwargs
+            )
+            if real_base_type is Function:
+                # 不影响ChatCompletion流程，兼容Function调用
+                tmpImpl = real_base_type(**kwargs)
+                return tmpImpl.ado(
+                    messages=messages,
+                    endpoint=endpoint,
+                    model=model,
+                    stream=stream,
+                    retry_count=retry_count,
+                    request_timeout=request_timeout,
+                    request_id=request_id,
+                    backoff_factor=backoff_factor,
+                    auto_concat_truncate=auto_concat_truncate,
+                    truncated_continue_prompt=truncated_continue_prompt,
+                    truncate_overlong_msgs=truncate_overlong_msgs,
+                    **kwargs,
+                )
         return await self._ado(
             messages=messages,
             model=model,

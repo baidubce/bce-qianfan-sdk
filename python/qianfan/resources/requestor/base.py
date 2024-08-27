@@ -163,6 +163,9 @@ def _with_latency(func: Callable) -> Callable:
     raise errors.InternalError()
 
 
+_COMPLETION_TOKENS_FIELD = "completion_tokens"
+
+
 def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
     """
     a decorator to add latency info into response
@@ -179,6 +182,8 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
             resp = func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
             resp.statistic["start_timestamp"] = start_timestamp
+            usage_tokens = resp.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+            resp.statistic["avg_output_tokens_per_second"] = usage_tokens / resp.statistic["total_latency"]
             return resp
 
     return wrapper
@@ -202,6 +207,8 @@ def _async_latency(
             resp = await func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
             resp.statistic["start_timestamp"] = start_timestamp
+            usage_tokens = resp.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+            resp.statistic["avg_output_tokens_per_second"] = usage_tokens / resp.statistic["total_latency"]
             return resp
 
     return wrapper
@@ -238,6 +245,8 @@ def _stream_latency(
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
+                usage_tokens = r.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+                r.statistic["avg_output_tokens_per_second"] = usage_tokens / r.statistic["total_latency"]
                 yield r
 
         return iter()
@@ -280,6 +289,8 @@ def _async_stream_latency(
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
+                usage_tokens = r.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+                r.statistic["avg_output_tokens_per_second"] = usage_tokens / r.statistic["total_latency"]
                 yield r
 
         return iter()

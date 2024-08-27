@@ -2,7 +2,7 @@ import asyncio
 import importlib.resources as pkg_resources
 import time
 from hashlib import sha1
-from typing import Any, Dict, Awaitable
+from typing import Any, Awaitable, Dict
 
 from redis import ConnectionPool, Redis
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
@@ -118,7 +118,9 @@ class RedisRateLimiter(BaseRateLimiter):
                 self._reset_limit_script_hash, 1, key, str_quantity, str_period
             )
         except NoScriptError:
-            self._connection.eval(self._reset_limit_script, 1, key, str_quantity, str_period)
+            self._connection.eval(
+                self._reset_limit_script, 1, key, str_quantity, str_period
+            )
 
     async def _async_set_limit_info(
         self, key: str, quantity: float, period: float

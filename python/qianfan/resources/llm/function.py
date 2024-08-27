@@ -16,9 +16,11 @@ import re
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 import qianfan.errors as errors
+from qianfan.consts import Consts, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResourceV1,
+    BaseResourceV2,
 )
 from qianfan.resources.typing import QfLLMInfo, QfMessages, QfResponse
 
@@ -52,7 +54,155 @@ _RESPONSE_ACTION_PREFIX = "Action: "
 _RESPONSE_ACTION_INPUT_PREFIX = "Action Input: "
 
 
-class Function(BaseResourceV1):
+class FunctionV2(BaseResourceV2):
+    """
+    QianFan Function is an agent for calling QianFan
+    ChatCompletion with function call API.
+    """
+
+    def _api_path(self) -> str:
+        return Consts.ChatV2API
+
+    def do(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
+        return self._do(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
+        return await self._ado(
+            messages=messages,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            **kwargs,
+        )
+
+    @classmethod
+    def _default_model(cls) -> str:
+        return "ernie-func-8k"
+
+
+class BaseFunction:
+    def _render_query(
+        self, query: Dict[str, Any], messages: List[Dict], functions: List[Dict]
+    ) -> None:
+        functions_schemas = self._render_functions_prompt(functions)
+        messages[0] = self._render_user_query_msg(
+            messages[0], functions=functions_schemas
+        )
+
+        # render function message:
+        for i, msg in enumerate(messages):
+            if msg["role"] == "function":
+                msg["role"] = "user"
+                msg.pop("name")
+            elif msg["role"] == "assistant" and msg.get("function_call"):
+                messages[i] = self._render_assistant_msg(msg)
+
+        query["messages"] = messages
+        if "functions" in query:
+            query.pop("functions")
+
+    def _render_assistant_msg(self, msg: Dict) -> Dict:
+        function_call = msg.get("function_call", {})
+        msg["content"] = self._render_prompt(
+            _DEFAULT_FUNCTION_CALL_PROMPT,
+            _PROMPT_IDENTIFIER,
+            name=function_call.get("name"),
+            input=function_call.get("arguments"),
+        )
+        msg.pop("function_call")
+        return msg
+
+    def _render_functions_prompt(self, functions: List[Dict]) -> str:
+        functions_prompt = []
+        for f in functions:
+            functions_prompt.append(
+                self._render_prompt(
+                    _DEFAULT_FUNCTIONS_SCHEMA_PROMPT,
+                    _PROMPT_IDENTIFIER,
+                    name=f.get("name"),
+                    description=f.get("description"),
+                    parameters=json.dumps(f.get("parameters", {}), ensure_ascii=False),
+                )
+            )
+
+        return _SPLIT_FUNCTIONS_SCHEMAS.join(functions_prompt)
+
+    def _render_user_query_msg(self, msg: Dict, **kwargs: Any) -> Dict:
+        return {
+            "role": "user",
+            "content": self._render_prompt(
+                _DEFAULT_FUNCTIONS_ENHANCE_PROMPT,
+                _PROMPT_IDENTIFIER,
+                functions=kwargs.get("functions"),
+                query=msg["content"],
+            ),
+        }
+
+    def _render_prompt(
+        self, prompt_template: str, identifier: str, **kwargs: Any
+    ) -> str:
+        from qianfan.resources.console.prompt import Prompt as PromptResource
+
+        variables = PromptResource._extract_variables(prompt_template, identifier)
+
+        def _render(_prompt: str, _vars: List[str], **kwargs: Any) -> str:
+            left_id, right_id = PromptResource._split_identifier(identifier)
+            for v in _vars:
+                if v not in kwargs:
+                    raise errors.InvalidArgumentError(
+                        f"functions prompt variable `{v}` is not provided"
+                    )
+                _prompt = _prompt.replace(f"{left_id}{v}{right_id}", str(kwargs[v]))
+            return _prompt
+
+        return _render(prompt_template, variables, **kwargs)
+
+
+class Function(BaseResourceV1, BaseFunction):
     """
     QianFan Function is an agent for calling QianFan
     ChatCompletion with function call API.
@@ -176,23 +326,7 @@ class Function(BaseResourceV1):
             # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式
             kwargs["messages"] = temp_messages
             return super()._do(**kwargs)
-
-        functions_schemas = self._render_functions_prompt(functions)
-        temp_messages[0] = self._render_user_query_msg(
-            temp_messages[0], functions=functions_schemas
-        )
-
-        # render function message:
-        for i, msg in enumerate(temp_messages):
-            if msg["role"] == "function":
-                msg["role"] = "user"
-                msg.pop("name")
-            elif msg["role"] == "assistant" and msg.get("function_call"):
-                temp_messages[i] = self._render_assistant_msg(msg)
-
-        kwargs["messages"] = temp_messages
-        if "functions" in kwargs:
-            kwargs.pop("functions")
+        self._render_query(query=kwargs, messages=temp_messages, functions=functions)
 
         resp = super()._do(**kwargs)
         if isinstance(resp, QfResponse):
@@ -292,62 +426,6 @@ class Function(BaseResourceV1):
             resp.body["result"] = ""
         return resp
 
-    def _render_assistant_msg(self, msg: Dict) -> Dict:
-        function_call = msg.get("function_call", {})
-        msg["content"] = self._render_prompt(
-            _DEFAULT_FUNCTION_CALL_PROMPT,
-            _PROMPT_IDENTIFIER,
-            name=function_call.get("name"),
-            input=function_call.get("arguments"),
-        )
-        msg.pop("function_call")
-        return msg
-
-    def _render_functions_prompt(self, functions: List[Dict]) -> str:
-        functions_prompt = []
-        for f in functions:
-            functions_prompt.append(
-                self._render_prompt(
-                    _DEFAULT_FUNCTIONS_SCHEMA_PROMPT,
-                    _PROMPT_IDENTIFIER,
-                    name=f.get("name"),
-                    description=f.get("description"),
-                    parameters=json.dumps(f.get("parameters", {}), ensure_ascii=False),
-                )
-            )
-
-        return _SPLIT_FUNCTIONS_SCHEMAS.join(functions_prompt)
-
-    def _render_user_query_msg(self, msg: Dict, **kwargs: Any) -> Dict:
-        return {
-            "role": "user",
-            "content": self._render_prompt(
-                _DEFAULT_FUNCTIONS_ENHANCE_PROMPT,
-                _PROMPT_IDENTIFIER,
-                functions=kwargs.get("functions"),
-                query=msg["content"],
-            ),
-        }
-
-    def _render_prompt(
-        self, prompt_template: str, identifier: str, **kwargs: Any
-    ) -> str:
-        from qianfan.resources.console.prompt import Prompt as PromptResource
-
-        variables = PromptResource._extract_variables(prompt_template, identifier)
-
-        def _render(_prompt: str, _vars: List[str], **kwargs: Any) -> str:
-            left_id, right_id = PromptResource._split_identifier(identifier)
-            for v in _vars:
-                if v not in kwargs:
-                    raise errors.InvalidArgumentError(
-                        f"functions prompt variable `{v}` is not provided"
-                    )
-                _prompt = _prompt.replace(f"{left_id}{v}{right_id}", str(kwargs[v]))
-            return _prompt
-
-        return _render(prompt_template, variables, **kwargs)
-
     async def ado(
         self,
         messages: Union[List[Dict], QfMessages],
@@ -409,22 +487,7 @@ class Function(BaseResourceV1):
             # 没有传入functions，不特殊处理，直接走普通的base_resource请求模式
             kwargs["messages"] = temp_messages
             return await super()._ado(**kwargs)
-
-        functions_schemas = self._render_functions_prompt(functions)
-        temp_messages[0] = self._render_user_query_msg(
-            temp_messages[0], functions=functions_schemas
-        )
-        # render function message:
-        for i, msg in enumerate(temp_messages):
-            if msg["role"] == "function":
-                msg["role"] = "user"
-                msg.pop("name")
-            elif msg["role"] == "assistant" and msg.get("function_call"):
-                temp_messages[i] = self._render_assistant_msg(msg)
-
-        kwargs["messages"] = temp_messages
-        if "functions" in kwargs:
-            kwargs.pop("functions")
+        self._render_query(query=kwargs, messages=temp_messages, functions=functions)
 
         resp = await super()._ado(**kwargs)
         if isinstance(resp, QfResponse):

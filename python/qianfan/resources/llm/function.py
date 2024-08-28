@@ -137,7 +137,8 @@ class BaseFunction:
         for i, msg in enumerate(messages):
             if msg["role"] == "function":
                 msg["role"] = "user"
-                msg.pop("name")
+                if "name" in msg:
+                    msg.pop("name")
             elif msg["role"] == "assistant" and msg.get("function_call"):
                 messages[i] = self._render_assistant_msg(msg)
 

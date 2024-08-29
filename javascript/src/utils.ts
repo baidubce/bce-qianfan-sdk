@@ -306,10 +306,7 @@ export function setBrowserVariable(variables: Variables): void {
 }
 
 function baseActionUrl(route: string, action: string): string {
-    if (action === '') {
-        return route;
-    }
-    return `${route}?Action=${action}`;
+    return !action ? route : `${route}?Action=${action}`;
 }
 
 
@@ -344,15 +341,17 @@ export async function consoleAction({
         config.QIANFAN_CONSOLE_API_BASE_URL
     );
     const client = new HttpClient(httpClientConfig);
-    const fetchOptions = await client.getSignature({
+    const baseParams = {
         httpMethod: 'POST',
         path: `${config.QIANFAN_CONSOLE_API_BASE_URL}/${base_api_route}`,
         body: data && JSON.stringify(data),
         headers: {
             ...DEFAULT_HEADERS,
         },
-        params: {'Action': action},
-    });
+    };
+    const fetchOptions = await client.getSignature(
+        action ? Object.assign({}, baseParams, {params: {Action: action}}) : baseParams
+    );
     const fetchInstance = new Fetch();
     try {
         const {url, ...rest} = fetchOptions;

@@ -3,11 +3,12 @@ QianfanLocustRunner
 """
 
 
+import json
 import logging
 import os
 import time
 import traceback
-from multiprocessing import Value
+from multiprocessing import Queue, Value
 from typing import Any, Dict, List, Optional, Union
 
 from qianfan import resources
@@ -20,6 +21,8 @@ logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
 GlobalData.data["first_latency_threshold"] = 0
+dataqueue = "asid"
+GlobalData.data[dataqueue] = Queue()
 
 
 def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
@@ -175,6 +178,7 @@ class QianfanLocustRunner(LocustRunner):
         current_user_num = self.user_num
         html = []
         for round in range(self.rounds):
+            GlobalData.data[dataqueue] = Queue()
             start_time = time.time()
             round_result = super(QianfanLocustRunner, self).run(
                 user_num=current_user_num
@@ -198,7 +202,7 @@ class QianfanLocustRunner(LocustRunner):
                 html.append(round_html)
             except Exception:
                 traceback.print_exc()
-                logger.error("Error happens when generating brief.")
+                logger.error("在生成统计报告时发生错误.")
             if GlobalData.data["threshold_first"].value == 1:
                 dataset = self.dataset.list()
                 prompt = ""
@@ -212,24 +216,103 @@ class QianfanLocustRunner(LocustRunner):
                 log_info = f"首token超时, 超时token: {prompt}"
                 self.model_info["log_info"] = log_info
                 logger.info(f"首token超时, 超时token: {prompt}")
+                try:
+                    dataqueue_path = (
+                        self.record_dir
+                        if self.record_dir is not None
+                        else "./"
+                        + "/round-user_num_"
+                        + str(current_user_num)
+                        + "/dataqueue.log"
+                    )
+                    with open(dataqueue_path, "w", encoding="utf-8") as f:
+                        while not GlobalData.data[dataqueue].empty():
+                            item = GlobalData.data[dataqueue].get()
+                            if isinstance(item, dict):
+                                item_str = json.dumps(item)
+                            else:
+                                item_str = str(item)
+                            f.write(item_str + "\n")
+                except Exception:
+                    traceback.print_exc()
+                    logger.error("在生成压测对话记录时发生错误.")
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 return ret
             if t > self.round_latency_threshold:
+                try:
+                    dataqueue_path = (
+                        self.record_dir
+                        if self.record_dir is not None
+                        else "./"
+                        + "/round-user_num_"
+                        + str(current_user_num)
+                        + "/dataqueue.log"
+                    )
+                    with open(dataqueue_path, "w", encoding="utf-8") as f:
+                        while not GlobalData.data[dataqueue].empty():
+                            item = GlobalData.data[dataqueue].get()
+                            if isinstance(item, dict):
+                                item_str = json.dumps(item)
+                            else:
+                                item_str = str(item)
+                            f.write(item_str + "\n")
+                except Exception:
+                    traceback.print_exc()
+                    logger.error("在生成压测对话记录时发生错误.")
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 logger.info("整句时延超时")
                 return ret
             if round_html["SuccessRate"] < self.success_rate_threshold:
+                try:
+                    dataqueue_path = (
+                        self.record_dir
+                        if self.record_dir is not None
+                        else "./"
+                        + "/round-user_num_"
+                        + str(current_user_num)
+                        + "/dataqueue.log"
+                    )
+                    with open(dataqueue_path, "w", encoding="utf-8") as f:
+                        while not GlobalData.data[dataqueue].empty():
+                            item = GlobalData.data[dataqueue].get()
+                            if isinstance(item, dict):
+                                item_str = json.dumps(item)
+                            else:
+                                item_str = str(item)
+                            f.write(item_str + "\n")
+                except Exception:
+                    traceback.print_exc()
+                    logger.error("在生成压测对话记录时发生错误.")
                 html_table = generate_html_table(html, self.model_info)
                 with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html_table)
                 logger.info("成功率低于阈值")
                 return ret
+            try:
+                dataqueue_path = (
+                    self.record_dir
+                    if self.record_dir is not None
+                    else "./"
+                    + "/round-user_num_"
+                    + str(current_user_num)
+                    + "/dataqueue.log"
+                )
+                with open(dataqueue_path, "w", encoding="utf-8") as f:
+                    while not GlobalData.data[dataqueue].empty():
+                        item = GlobalData.data[dataqueue].get()
+                        if isinstance(item, dict):
+                            item_str = json.dumps(item)
+                        else:
+                            item_str = str(item)
+                        f.write(item_str + "\n")
+            except Exception:
+                traceback.print_exc()
+                logger.error("在生成压测对话记录时发生错误.")
             current_user_num += self.interval if self.interval is not None else 0
-
         html_table = generate_html_table(html, self.model_info)
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_table)

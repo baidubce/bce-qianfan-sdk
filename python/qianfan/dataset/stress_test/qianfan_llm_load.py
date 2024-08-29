@@ -2,6 +2,7 @@
 """
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
+import json
 import time
 from typing import Any, Dict, Literal, Optional
 
@@ -14,6 +15,7 @@ from urllib3 import PoolManager
 
 import qianfan
 from qianfan import QfResponse
+from qianfan.dataset.stress_test.load_runner import dataqueue
 from qianfan.dataset.stress_test.yame import GlobalData
 from qianfan.dataset.stress_test.yame.distributor import Distributor
 from qianfan.dataset.stress_test.yame.listeners import CustomHandler
@@ -225,6 +227,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
         context = context or {}
+        res: Dict[str, Any] = {"key": "value"}
         if "messages" in kwargs:
             messages = kwargs.pop("messages")
         else:
@@ -252,7 +255,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             setattr(resp, "url", self.model)
             setattr(resp, "reason", str(e))
             setattr(resp, "status_code", 500)
-
+        merged_query = ""
         if self.exc is None:
             for resp in responses:
                 setattr(resp, "url", self.model)
@@ -273,6 +276,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
                 if not self.is_v2:
                     stream_json = resp["body"]
+                    stat = resp["statistic"]
+                    header = resp["headers"]
+                    body = resp["body"]
                     clear_history = stream_json.get("need_clear_history", False)
                     if "result" in stream_json:
                         content = stream_json["result"]
@@ -325,8 +331,15 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 not self.is_v2 and not last_resp["body"]["is_end"]
             ):
                 self.exc = Exception("NOT 200 OR is_end is False")
-
         response_time = (time.perf_counter() - start_perf_counter) * 1000
+        body["result"] = merged_query
+        res = {
+            "headers": header,
+            "stat": stat,
+            "body": body,
+        }
+        res_json = json.dumps(res, ensure_ascii=False)
+        GlobalData.data[dataqueue].put(res_json, timeout=1)
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
@@ -434,6 +447,7 @@ class CompletionClient(QianfanCustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
+        res: Dict[str, Any] = {"key": "value"}
         context = context or {}
         if "prompt" in kwargs:
             prompt = kwargs.pop("prompt")
@@ -452,12 +466,17 @@ class CompletionClient(QianfanCustomHttpSession):
         start_time = time.time()
         start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
+        merged_query = ""
         for resp in responses:
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)
             setattr(resp, "status_code", resp["code"])
 
             stream_json = resp["body"]
+            stat = resp["statistic"]
+            header = resp["headers"]
+            body = resp["body"]
+            merged_query += stream_json["result"]
             if first_flag:
                 request_meta["first_token_latency"] = resp.statistic[
                     "first_token_latency"
@@ -503,8 +522,15 @@ class CompletionClient(QianfanCustomHttpSession):
             self.exc = Exception("Response not finished")
         elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
             self.exc = Exception("NOT 200 OR is_end is False")
-
         response_time = (time.perf_counter() - start_perf_counter) * 1000
+        body["result"] = merged_query
+        res = {
+            "headers": header,
+            "stat": stat,
+            "body": body,
+        }
+        res_json = json.dumps(res, ensure_ascii=False)
+        GlobalData.data[dataqueue].put(res_json, timeout=1)
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:

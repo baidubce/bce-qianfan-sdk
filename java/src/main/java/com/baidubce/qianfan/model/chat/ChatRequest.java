@@ -60,6 +60,26 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
     private String system;
 
     /**
+     * 是否开启用户记忆，非必填字段，默认false
+     * 开启后user_id字段为必填字段
+     */
+    private Boolean enableUserMemory;
+
+    /**
+     * 用户记忆召回强度，数值越大，记忆召回强度越高
+     * 取值范围[0,4]，默认为1
+     */
+    private Integer userMemoryLevel;
+
+    /**
+     * 用户记忆抽取级别
+     * 0：关闭抽取
+     * 1：实时抽取-普通抽取
+     * 2：实时抽取-高级抽取
+     */
+    private Integer userMemoryExtractLevel;
+
+    /**
      * 生成停止标识，当模型生成结果以stop中某个元素结尾时，停止文本生成
      */
     private List<String> stop;
@@ -82,6 +102,11 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
     private Boolean enableTrace;
 
     /**
+     * 返回搜索溯源信息的数量
+     */
+    private Integer traceNumber;
+
+    /**
      * 指定模型最大输出token数
      */
     private Integer maxOutputTokens;
@@ -92,9 +117,22 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
     private String responseFormat;
 
     /**
+     * 指定响应内容的风格，当前支持
+     * * concise，简洁模式
+     * * detailed，详细模式
+     */
+    private String responseStyle;
+
+    /**
      * 一个可触发函数的描述列表
      */
     private List<Function> functions;
+
+    /**
+     * 调用模式，默认为空，当前支持：
+     * "speed": 使用极速模式，优化链路耗时，模型效果可能会有影响
+     */
+    private String mode;
 
     /**
      * 在函数调用场景下，提示大模型选择指定的函数
@@ -105,6 +143,11 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
      * 是否为流式请求
      */
     private Boolean stream;
+
+    /**
+     * 安全等级
+     */
+    private String safetyLevel;
 
     @Override
     public String getType() {
@@ -174,6 +217,33 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
         return this;
     }
 
+    public Boolean getEnableUserMemory() {
+        return enableUserMemory;
+    }
+
+    public ChatRequest setEnableUserMemory(Boolean enableUserMemory) {
+        this.enableUserMemory = enableUserMemory;
+        return this;
+    }
+
+    public Integer getUserMemoryLevel() {
+        return userMemoryLevel;
+    }
+
+    public ChatRequest setUserMemoryLevel(Integer userMemoryLevel) {
+        this.userMemoryLevel = userMemoryLevel;
+        return this;
+    }
+
+    public Integer getUserMemoryExtractLevel() {
+        return userMemoryExtractLevel;
+    }
+
+    public ChatRequest setUserMemoryExtractLevel(Integer userMemoryExtractLevel) {
+        this.userMemoryExtractLevel = userMemoryExtractLevel;
+        return this;
+    }
+
     public List<String> getStop() {
         return stop;
     }
@@ -210,6 +280,15 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
         return this;
     }
 
+    public Integer getTraceNumber() {
+        return traceNumber;
+    }
+
+    public ChatRequest setTraceNumber(Integer traceNumber) {
+        this.traceNumber = traceNumber;
+        return this;
+    }
+
     public Integer getMaxOutputTokens() {
         return maxOutputTokens;
     }
@@ -225,6 +304,24 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
 
     public ChatRequest setResponseFormat(String responseFormat) {
         this.responseFormat = responseFormat;
+        return this;
+    }
+
+    public String getResponseStyle() {
+        return responseStyle;
+    }
+
+    public ChatRequest setResponseStyle(String responseStyle) {
+        this.responseStyle = responseStyle;
+        return this;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public ChatRequest setMode(String mode) {
+        this.mode = mode;
         return this;
     }
 
@@ -252,6 +349,15 @@ public class ChatRequest extends BaseRequest<ChatRequest> {
 
     public ChatRequest setStream(Boolean stream) {
         this.stream = stream;
+        return this;
+    }
+
+    public String getSafetyLevel() {
+        return safetyLevel;
+    }
+
+    public ChatRequest setSafetyLevel(String safetyLevel) {
+        this.safetyLevel = safetyLevel;
         return this;
     }
 }

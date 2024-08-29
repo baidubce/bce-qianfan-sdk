@@ -163,6 +163,9 @@ def _with_latency(func: Callable) -> Callable:
     raise errors.InternalError()
 
 
+_COMPLETION_TOKENS_FIELD = "completion_tokens"
+
+
 def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
     """
     a decorator to add latency info into response
@@ -179,6 +182,10 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
             resp = func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
             resp.statistic["start_timestamp"] = start_timestamp
+            usage_tokens = resp.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+            resp.statistic["avg_output_tokens_per_second"] = (
+                usage_tokens / resp.statistic["total_latency"]
+            )
             return resp
 
     return wrapper
@@ -202,6 +209,10 @@ def _async_latency(
             resp = await func(requestor, request, *args, **kwargs)
             resp.statistic["total_latency"] = time.perf_counter() - start_time
             resp.statistic["start_timestamp"] = start_timestamp
+            usage_tokens = resp.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+            resp.statistic["avg_output_tokens_per_second"] = (
+                usage_tokens / resp.statistic["total_latency"]
+            )
             return resp
 
     return wrapper
@@ -238,6 +249,10 @@ def _stream_latency(
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
+                usage_tokens = r.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+                r.statistic["avg_output_tokens_per_second"] = (
+                    usage_tokens / r.statistic["total_latency"]
+                )
                 yield r
 
         return iter()
@@ -280,6 +295,10 @@ def _async_stream_latency(
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
+                usage_tokens = r.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+                r.statistic["avg_output_tokens_per_second"] = (
+                    usage_tokens / r.statistic["total_latency"]
+                )
                 yield r
 
         return iter()
@@ -328,6 +347,7 @@ class BaseAPIRequestor(object):
         resp.statistic["request_latency"] = response.elapsed.total_seconds()
         resp.request = QfRequest.from_requests(response.request)
         resp.request.json_body = copy.deepcopy(request.json_body)
+        resp.request.retry_config = request.retry_config
 
         if "X-Ratelimit-Limit-Requests" in resp.headers:
             self._rate_limiter.reset_once(
@@ -363,6 +383,7 @@ class BaseAPIRequestor(object):
                 resp.statistic["request_latency"] = request_latency
                 resp.request = QfRequest.from_aiohttp(response.request_info)
                 resp.request.json_body = copy.deepcopy(request.json_body)
+                resp.request.retry_config = request.retry_config
                 if "X-Ratelimit-Limit-Requests" in resp.headers:
                     await self._rate_limiter.async_reset_once(
                         float(resp.headers["X-Ratelimit-Limit-Requests"])

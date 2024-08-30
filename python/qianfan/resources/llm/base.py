@@ -281,7 +281,6 @@ class BaseResource(object):
         config: Optional[Config] = None,
         **kwargs: Any,
     ) -> None:
-        print("====?", config)
         self._config = config
 
     @property

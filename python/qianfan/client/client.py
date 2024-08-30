@@ -35,6 +35,8 @@ class Qianfan:
         retry_count: int = DefaultValue.RetryCount,
         **kwargs: Any,
     ) -> None:
+        if kwargs.get("api_key"):
+            bearer_token = kwargs.get("api_key")
         self.config = Config(
             ACCESS_KEY=access_key or get_config().ACCESS_KEY,
             SECRET_KEY=secret_key or get_config().SECRET_KEY,
@@ -50,6 +52,9 @@ class Qianfan:
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self, name) or name in ["config", "chat", "completions"]:
             object.__setattr__(self, name, value)
+            return
+        if name == "api_key":
+            self.config.BEARER_TOKEN = value
             return
         self.config.__setattr__(name, value)
 

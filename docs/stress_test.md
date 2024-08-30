@@ -128,6 +128,13 @@ monkey.patch_all()
 - **round_latency_threshold (float)**：指定全长时延的阈值，超过该阈值会停止在本轮压测，单位为秒；
 - **success_rate_threshold (float)**：指定请求成功率的阈值，低于该阈值会停止在本轮压测，单位为百分比；
 
+除了上述参数，`stress_test` 和 `multi_stress_test` 方法还支持传入 kwargs，用于设置底层用于压测的 `ChatCompletion` / `Completion` 对象：
+
+```python
+# 用户可以这样进行 V2 接口的压测
+ds.stress_test(users=1, version="2", app_id='app-xxx', model="ernie-speed-8k")
+```
+
 ## 数据格式
 可用于压测的数据集目前支持以下三种格式：
 

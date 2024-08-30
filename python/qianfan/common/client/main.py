@@ -334,7 +334,7 @@ def entry(
     log_level: str = typer.Option(
         "WARN",
         help="Set log level.",
-        click_type=click.Choice(["DEBUG", "INFO", "WARN", "ERROR"]),
+        click_type=click.Choice(["DEBUG", "INFO", "WARN", "ERROR", "TRACE"]),
     ),
 ) -> None:
     """

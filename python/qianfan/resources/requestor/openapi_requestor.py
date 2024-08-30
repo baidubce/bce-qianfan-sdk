@@ -102,14 +102,22 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.request_stream(request)
 
         _, resp = next(responses)
+        if "json" in resp.headers.get("content-type", "") or resp.status_code != 200:
+            try:
+                status_code = resp.status_code
+                body, resp = next(responses)
+                self._check_error(json.loads(body))
+            except Exception as e:
+                log_error(
+                    f"stream ended with status code: {status_code}, error: {e},"
+                    f" headers: {resp.headers}"
+                )
+                raise e
+
         if "X-Ratelimit-Limit-Requests" in resp.headers:
             self._rate_limiter.reset_once(
                 float(resp.headers["X-Ratelimit-Limit-Requests"])
             )
-
-        if "json" in resp.headers.get("content-type", ""):
-            body, resp = next(responses)
-            self._check_error(json.loads(body))
 
         def iter() -> Iterator[QfResponse]:
             event = ""
@@ -208,18 +216,25 @@ class QfAPIRequestor(BaseAPIRequestor):
                 float(resp.headers["X-Ratelimit-Limit-Requests"])
             )
 
-        if "json" in resp.headers.get("content-type", ""):
-            body, _ = await responses.__anext__()
+        if "json" in resp.headers.get("content-type", "") or resp.status != 200:
             try:
+                status_code = resp.status
+                body, _ = await responses.__anext__()
                 self._check_error(json.loads(body))
             except Exception as e:
+                log_error(
+                    f"stream ended with status code: {status_code}, error: {e},"
+                    f" headers: {resp.headers}"
+                )
                 await responses.aclose()
                 raise e
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses
             token_refreshed = False
+            count = 0
             async for body, resp in responses:
+                count += 1
                 _async_check_if_status_code_is_200(resp)
                 body_str = body.decode("utf-8")
                 if body_str.strip() == "":
@@ -245,7 +260,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                         f"got unexpected stream response from server: {body_str}"
                     )
                 body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-                if body_str != Consts.V2_STREAM_RESPONSE_END_NOTE:
+                if not body_str.startswith(Consts.V2_STREAM_RESPONSE_END_NOTE):
                     json_body = json.loads(body_str)
                 else:
                     return
@@ -691,22 +706,23 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 class QfAPIV2Requestor(QfAPIRequestor):
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(refresh_func=QfAPIV2Requestor._refresh_bearer_token, **kwargs)
+        super().__init__(refresh_func=self._refresh_bearer_token, **kwargs)
 
-    @staticmethod
-    def _refresh_bearer_token(*args: Any, **kwargs: Any) -> Dict:
+    def _refresh_bearer_token(self, *args: Any, **kwargs: Any) -> Dict:
         """
         refresh bearer token
         """
         from qianfan.resources.console.iam import IAM
 
         resp = IAM.create_bearer_token(
-            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL
+            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL,
+            ak=self._auth._access_key,
+            sk=self._auth._secret_key,
         )
 
         def _convert_time_str_to_sec(time_str: str) -> float:
-            time_obj = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-            return time_obj.replace().timestamp()
+            dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+            return dt.timestamp()
 
         return {
             "token": resp.body["token"],

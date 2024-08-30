@@ -152,6 +152,7 @@ def chat_completion_stream_response_v2(model, messages):
                 "id": "as-5j1w2wzna2",
                 "object": "chat.completion",
                 "created": 1717488564,
+                "model": model,
                 "choices": [
                     {
                         "index": 0,
@@ -160,6 +161,7 @@ def chat_completion_stream_response_v2(model, messages):
                         },
                         "is_end": is_end,
                         "need_clear_history": False,
+                        # "finish_reason": "normal",
                     }
                 ],
                 "usage": {
@@ -175,6 +177,7 @@ def chat_completion_stream_response_v2(model, messages):
                 },
             }
         ) + "\n\n"
+    yield "data: [DONE]\n\n"
 
 
 def check_messages(messages):
@@ -388,7 +391,6 @@ def chat(model_name):
     request_id = request_header.get(Consts.XRequestID)
     if model_name.startswith("test_retry"):
         global retry_cnt
-        print("mock retry cnt", retry_cnt)
         if model_name not in retry_cnt:
             retry_cnt[model_name] = 1
         if retry_cnt[model_name] % 3 != 0:
@@ -725,6 +727,7 @@ def chat_v2():
             "id": "as-sq01fe52em",
             "object": "chat.completion",
             "created": 1717487283,
+            "model": model_name,
             "choices": [
                 {
                     "index": 0,

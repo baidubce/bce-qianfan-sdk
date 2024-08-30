@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.client.client import Qianfan
 
-__all__ = ["Qianfan"]
+class Consts:
+    test_access_key = "test_access_key"
+    test_secret_key = "test_secret_key"

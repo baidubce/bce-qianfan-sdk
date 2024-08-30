@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from typing_extensions import deprecated
 
@@ -136,6 +137,17 @@ class Config(BaseSettings):
     # 缓存文件路径配置
     DISABLE_CACHE: bool = Field(default=DefaultValue.DisableCache)
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
+
+    def auth_key(self) -> str:
+        auth_keys = (
+            f"{self.AK}:{self.SK}:{self.ACCESS_KEY}:{self.SECRET_KEY}:"
+            f"{self.ACCESS_TOKEN}:{self.BEARER_TOKEN}:{self.ACCESS_CODE}"
+        )
+        md5_hash = hashlib.md5(auth_keys.encode(encoding=encoding()))
+        return md5_hash.hexdigest()[:24]
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name.upper(), value)
 
 
 _GLOBAL_CONFIG: Optional[Config] = None

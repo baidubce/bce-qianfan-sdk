@@ -187,13 +187,11 @@ class VersionBase(object):
         """
         return self._real.access_token()
 
-    @utils.class_or_instancemethod
+    @utils.class_or_instancemethod  # type: ignore
     def models(
         self_or_cls,
         version: Optional[Literal["1", "2", 1, 2]] = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Set[str]:
+    ) -> Set[str]:  # type ignore
         if version is not None:
             return self_or_cls._real_base(str(version)).models()
         if isinstance(self_or_cls, type):
@@ -272,6 +270,9 @@ class BaseResource(object):
     _config: Optional[Config] = None
 
     _runtime_models_info = {}  # type: ignore
+    """
+    动态模型列表
+    """
     _last_update_time = datetime(1970, 1, 1, tzinfo=timezone.utc)  # type: ignore
     _model_infos_access_lock = threading.Lock()  # type: ignore
 
@@ -280,6 +281,7 @@ class BaseResource(object):
         config: Optional[Config] = None,
         **kwargs: Any,
     ) -> None:
+        print("====?", config)
         self._config = config
 
     @property
@@ -313,20 +315,23 @@ class BaseResource(object):
         """
         raise NotImplementedError
 
-    def _update_with_cache_model_infos(self) -> Dict[str, Dict[str, QfLLMInfo]]:
+    def _init_model_info_with_cache(self) -> Dict[str, Dict[str, QfLLMInfo]]:
         """
-        update the model info with cache and return `_runtime_models_info`
+        update the model info with local cache and return `_runtime_models_info`
+        this function should be called only once for each resource instance
 
         Returns:
             Dict[str, Dict[str, QfLLMInfo]]: model infos list
         """
-        if self._last_update_time.timestamp() == 0:
-            # 首次加载本地缓存
-            cache = KvCache()
-            value = cache.get(key=Consts.QianfanLLMModelsListCacheKey)
-            if value is not None:
-                try:
-                    with self._model_infos_access_lock:
+        with self._model_infos_access_lock:
+            if self._last_update_time.timestamp() == 0:
+                # 首次加载本地缓存
+                cache = KvCache()
+                value = cache.get(
+                    key=f"{Consts.QianfanLLMModelsListCacheKey}_{self.config.auth_key()}"
+                )
+                if value is not None:
+                    try:
                         self._last_update_time = value.get(
                             "update_time",
                             datetime(1970, 1, 1, second=1, tzinfo=timezone.utc),
@@ -335,12 +340,11 @@ class BaseResource(object):
                         self._runtime_models_info = self._merge_models(
                             self._runtime_models_info, value.get("models", {})
                         )
-                except TypeError:
-                    # 防止value格式不对齐可能产生的问题
-                    # global_disk_cache.delete(Consts.QianfanLLMModelsListCacheKey)
-                    ...
-            else:
-                with self._model_infos_access_lock:
+                    except TypeError:
+                        # 防止value格式不对齐可能产生的问题
+                        # global_disk_cache.delete(Consts.QianfanLLMModelsListCacheKey)
+                        ...
+                else:
                     self._last_update_time = datetime(
                         1970, 1, 1, second=1, tzinfo=timezone.utc
                     )
@@ -644,7 +648,8 @@ class BaseResourceV1(BaseResource):
         self, model: Optional[str], endpoint: Optional[str]
     ) -> Tuple[Optional[str], str]:
         """
-        update model and endpoint from constructor
+        update model and endpoint passed in do with
+        params passed in constructor __init__
         """
         # if user do not provide new model and endpoint,
         # use the model and endpoint from constructor
@@ -652,8 +657,8 @@ class BaseResourceV1(BaseResource):
             model = self._model
             endpoint = self._endpoint
         if endpoint is None:
-            model_name = self._default_model() if model is None else model
-            model_info = self.get_model_info(model_name)
+            final_model = self._default_model() if model is None else model
+            model_info = self.get_model_info(final_model)
             if model_info is None:
                 raise errors.InvalidArgumentError(
                     f"The provided model `{model}` is not in the list of supported"
@@ -663,7 +668,7 @@ class BaseResourceV1(BaseResource):
                 )
             endpoint = model_info.endpoint
         else:
-            # 适配非公有云等需要增加chat/等前缀的endpoint
+            # 适配非公有云等不需要添加chat/等前缀的endpoint
             if self.use_custom_endpoint or self.config.USE_CUSTOM_ENDPOINT:
                 return model, endpoint
             endpoint = self._convert_endpoint(model, endpoint)
@@ -686,6 +691,7 @@ class BaseResourceV1(BaseResource):
         """
         endpoint = self._extract_endpoint(**kwargs)
 
+        # 通过model，endpoint以及模型列表获取实际的model和endpoint
         model, endpoint = self._update_model_and_endpoint(model, endpoint)
 
         endpoint = self._get_endpoint_from_dict(model, endpoint, stream)
@@ -708,8 +714,8 @@ class BaseResourceV1(BaseResource):
                     e.error_code == APIErrorCode.UnsupportedMethod
                     and not refreshed_model_list
                 ):
-                    list = self.get_latest_supported_models(True)
-                    endpoint = list.get(self.api_type(), {}).get(model)
+                    list = self.get_latest_api_type_models(True)
+                    endpoint = list.get(model)
                     refreshed_model_list = True
                     continue
                 else:
@@ -749,8 +755,8 @@ class BaseResourceV1(BaseResource):
                     e.error_code == APIErrorCode.UnsupportedMethod
                     and not refreshed_model_list
                 ):
-                    list = self.get_latest_supported_models(True)
-                    endpoint = list.get(self.api_type(), {}).get(model)
+                    list = self.get_latest_api_type_models(True)
+                    endpoint = list.get(model)
                     refreshed_model_list = True
                     continue
                 else:
@@ -761,7 +767,7 @@ class BaseResourceV1(BaseResource):
     @classmethod
     def _supported_models(cls) -> Dict[str, QfLLMInfo]:
         """
-        get preset model list
+        models provide for resources
 
         Args:
             None
@@ -770,7 +776,38 @@ class BaseResourceV1(BaseResource):
             a dict which key is preset model and value is the endpoint
 
         """
-        return cls().get_latest_supported_models().get(cls.api_type(), {})
+        return cls()._self_supported_models()
+
+    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
+        """
+        base implement os _supported_models
+
+        Returns:
+            Dict[str, QfLLMInfo]: _description_
+        """
+        # 获取最新的模型列表
+        return self.get_latest_api_type_models()
+
+    def _merge_local_models_with_latest(
+        self, info_list: Dict[str, QfLLMInfo]
+    ) -> Dict[str, QfLLMInfo]:
+        # 获取最新的模型列表
+        latest_models_list = self.get_latest_api_type_models()
+        for m in latest_models_list:
+            if m not in info_list:
+                info_list[m] = latest_models_list[m]
+            else:
+                # 更新endpoint
+                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        return info_list
+
+    def get_latest_api_type_models(
+        self, refresh_force: bool = False
+    ) -> Dict[str, QfLLMInfo]:
+        return self._get_latest_supported_models(refresh_force=refresh_force).get(
+            self.api_type(), {}
+        )
 
     @classmethod
     def api_type(cls) -> str:
@@ -869,7 +906,7 @@ class BaseResourceV1(BaseResource):
 
         # 非默认模型
         if model_info is None:
-            model_info = self._supported_models()[UNSPECIFIED_MODEL]
+            model_info = self._self_supported_models()[UNSPECIFIED_MODEL]
         for key in model_info.required_keys:
             if key not in kwargs:
                 raise errors.ArgumentNotFoundError(
@@ -884,14 +921,18 @@ class BaseResourceV1(BaseResource):
         """
         return kwargs.get("endpoint", None)
 
-    @classmethod
-    def models(cls) -> Set[str]:
-        """
-        get all supported model names
-        """
-        ...
-        models = set(cls._supported_models().keys())
-        models.remove(UNSPECIFIED_MODEL)
+    @utils.class_or_instancemethod  # type: ignore
+    def models(
+        self_or_cls,
+    ) -> Set[str]:
+        if isinstance(self_or_cls, type):
+            cls = self_or_cls
+            models = set(cls._supported_models().keys())
+        else:
+            self = self_or_cls
+            models = set(self._self_supported_models().keys())
+        if UNSPECIFIED_MODEL in models:
+            models.remove(UNSPECIFIED_MODEL)
         return models
 
     def get_model_info(self, model: str) -> QfLLMInfo:
@@ -904,9 +945,9 @@ class BaseResourceV1(BaseResource):
         Return:
             Information of the model
         """
-        models_infos = self._update_with_cache_model_infos().get(self.api_type(), {})
+        models_info = self._self_supported_models()
         # get the supported_models list
-        model_info_list = {k.lower(): v for k, v in models_infos.items()}
+        model_info_list = {k.lower(): v for k, v in models_info.items()}
         model_info = model_info_list.get(model.lower())
         if model_info is None:
             use_iam_aksk_msg = ""
@@ -919,13 +960,13 @@ class BaseResourceV1(BaseResource):
                 f"The provided model `{model}` is not in the list of supported models."
                 " If this is a recently added model, try using the `endpoint`"
                 " arguments and create an issue to tell us. Supported models:"
-                f" {self.models()} {use_iam_aksk_msg}"
+                f" {models_info.keys()} {use_iam_aksk_msg}"
             )
         return model_info
 
-    def get_latest_supported_models(
+    def _get_latest_supported_models(
         self,
-        refresh_focus: bool = False,
+        refresh_force: bool = False,
         update_interval: Optional[float] = None,
     ) -> Dict[str, Dict[str, QfLLMInfo]]:
         """
@@ -938,51 +979,50 @@ class BaseResourceV1(BaseResource):
         if self.config.ENABLE_PRIVATE:
             # 私有化直接跳过
             return {}
+        # try recover from cache
+        self._init_model_info_with_cache()
+        with self._model_infos_access_lock:
+            if update_interval is None:
+                update_interval = self.config.ACCESS_TOKEN_REFRESH_MIN_INTERVAL
 
-        if update_interval is None:
-            update_interval = self.config.ACCESS_TOKEN_REFRESH_MIN_INTERVAL
-        if (
-            datetime.now(timezone.utc) - self._last_update_time
-        ).total_seconds() >= update_interval or refresh_focus:
-            self._model_infos_access_lock.acquire()
             if (
                 datetime.now(timezone.utc) - self._last_update_time
-            ).total_seconds() < update_interval and not refresh_focus:
-                self._model_infos_access_lock.release()
-                return self._runtime_models_info
-            try:
-                svc_list = Service.list()["result"]["common"]
-            except Exception as e:
-                log_warn(f"fetch_supported_models failed: {e}")
-                self._model_infos_access_lock.release()
-                self._last_update_time = datetime.now(timezone.utc)
-                return self._runtime_models_info
-
-            # get preset services:
-            for s in svc_list:
+            ).total_seconds() >= update_interval or refresh_force:
+                if (
+                    datetime.now(timezone.utc) - self._last_update_time
+                ).total_seconds() < update_interval and not refresh_force:
+                    return self._runtime_models_info
                 try:
-                    splits = s["url"].split("/")
-                    api_type, model_endpoint = splits[-2], splits[-1]
-                    model_info = self._runtime_models_info.get(api_type)
-                    if model_info is None:
-                        model_info = {}
-                    model_info[s["name"]] = QfLLMInfo(
-                        endpoint="/{}/{}".format(api_type, model_endpoint),
-                        api_type=api_type,
-                    )
-                    self._runtime_models_info[api_type] = model_info
+                    svc_list = Service.list()["result"]["common"]
+                except Exception as e:
+                    log_warn(f"fetch_supported_models failed: {e}")
                     self._last_update_time = datetime.now(timezone.utc)
-                except Exception:
-                    continue
-            cache = KvCache()
-            cache.set(
-                key=Consts.QianfanLLMModelsListCacheKey,
-                value=BaseResource.format_model_infos_cache(
-                    self._runtime_models_info, self._last_update_time
-                ),
-            )
-            self._model_infos_access_lock.release()
-        return self._runtime_models_info
+                    return self._runtime_models_info
+
+                # get preset services:
+                for s in svc_list:
+                    try:
+                        splits = s["url"].split("/")
+                        api_type, model_endpoint = splits[-2], splits[-1]
+                        model_info = self._runtime_models_info.get(api_type)
+                        if model_info is None:
+                            model_info = {}
+                        model_info[s["name"]] = QfLLMInfo(
+                            endpoint="/{}/{}".format(api_type, model_endpoint),
+                            api_type=api_type,
+                        )
+                        self._runtime_models_info[api_type] = model_info
+                        self._last_update_time = datetime.now(timezone.utc)
+                    except Exception:
+                        continue
+                cache = KvCache()
+                cache.set(
+                    key=Consts.QianfanLLMModelsListCacheKey,
+                    value=BaseResource.format_model_infos_cache(
+                        self._runtime_models_info, self._last_update_time
+                    ),
+                )
+            return self._runtime_models_info
 
 
 class BaseResourceV2(BaseResource):
@@ -995,7 +1035,7 @@ class BaseResourceV2(BaseResource):
     ) -> None:
         super().__init__(**kwargs)
         self._model = model
-        self._app_id = app_id
+        self._app_id = app_id or self.config.APP_ID
         self._bearer_token = bearer_token
         self._client = QfAPIV2Requestor(**kwargs)
 

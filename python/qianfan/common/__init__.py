@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qianfan.common import cli
 from qianfan.common.prompt.prompt import Prompt, PromptLabel
 
-__all__ = ["Prompt", "PromptLabel"]
+client = cli
+__all__ = ["Prompt", "PromptLabel", "cli"]

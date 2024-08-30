@@ -811,6 +811,25 @@ def test_function_chat():
     resp = f.do(messages=msgs, functions=func_list)
     assert resp["body"].get("result")
 
+    # test input with model
+    f = qianfan.ChatCompletion()
+    query = "请帮我查一下上海的气温"
+    msgs = qianfan.QfMessages()
+    msgs.append(query, role="user")
+
+    resp = f.do(model="ERNIE-Function-8K", messages=msgs, functions=func_list)
+    assert resp["body"].get("function_call")
+
+    func_call_result = resp["function_call"]
+    location = json.loads(func_call_result["arguments"]).get("location")
+    func_resp = get_current_weather(location)
+
+    msgs.append(resp, role="assistant")
+    msgs.append(json.dumps({"return": func_resp}), role="function")
+
+    resp = f.do(model="ERNIE-Function-8K", messages=msgs, functions=func_list)
+    assert resp["body"].get("result")
+
 
 @pytest.mark.asyncio
 async def test_async_function_chat():
@@ -844,3 +863,15 @@ async def test_async_function_chat():
 
     resp = await f.ado(messages=msgs, functions=func_list)
     assert resp["body"].get("result")
+
+
+def test_compat_message_format():
+    resp = qianfan.ChatCompletion().do(
+        messages=[
+            {"role": "system", "content": "你是智能助手BD"},
+            {"role": "user", "content": "你是谁"},
+        ]
+    )
+
+    assert "system" in resp.request.json_body
+    assert resp.request.json_body.get("system") == "你是智能助手BD"

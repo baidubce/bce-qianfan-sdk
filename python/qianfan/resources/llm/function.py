@@ -208,8 +208,7 @@ class Function(BaseResourceV1, BaseFunction):
     ChatCompletion with function call API.
     """
 
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
+    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
         """
         preset model list of Functions
         support model:

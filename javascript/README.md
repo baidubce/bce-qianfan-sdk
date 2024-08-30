@@ -675,3 +675,43 @@ async function main() {
 main();
 
 ```
+
+## 通过其他集成了sdk的库来使用
+
+### langchain
+#### 安装langchain库
+```npm install @langchain/baidu-qianfan```
+
+#### 添加环境变量(或作为函数参数传入)
+
+```bash
+export QIANFAN_AK=""
+export QIANFAN_SK=""
+export QIANFAN_ACCESS_KEY=""
+export QIANFAN_SECRET_KEY=""
+```
+
+#### 示例
+
+```ts
+
+import { ChatBaiduQianfan } from "@langchain/baidu-qianfan";
+import { HumanMessage } from "@langchain/core/messages";
+
+const chat = new ChatBaiduQianfan({
+    model: 'ERNIE-Lite-8K'
+});
+const message = new HumanMessage("北京天气");
+
+const res = await chat.invoke([message]);
+
+```
+
+```ts
+
+import { BaiduQianfanEmbeddings } from "@langchain/baidu-qianfan";
+
+const embeddings = new BaiduQianfanEmbeddings();
+const res = await embeddings.embedQuery("Introduce the city Beijing");
+
+```

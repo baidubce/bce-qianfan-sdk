@@ -27,7 +27,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
-from qianfan.consts import Consts, DefaultLLMModel, DefaultValue
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResourceV1,
@@ -1534,7 +1534,7 @@ class _ChatCompletionV2(BaseResourceV2):
         return "chat"
 
     def _api_path(self) -> str:
-        return Consts.ChatV2API
+        return self.config.CHAT_V2_API_ROUTE
 
     def do(
         self,
@@ -1642,7 +1642,7 @@ class ChatCompletion(VersionBase):
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         system, messages = self._adapt_messages_format(messages)
-        if "system" not in kwargs:
+        if "system" not in kwargs and system:
             kwargs["system"] = system
         if model is not None or endpoint is not None:
             # TODO兼容 v2调用ernie-func-8k
@@ -1697,7 +1697,7 @@ class ChatCompletion(VersionBase):
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         system, messages = self._adapt_messages_format(messages)
-        if "system" not in kwargs:
+        if "system" not in kwargs and system:
             kwargs["system"] = system
         if model is not None or endpoint is not None:
             # TODO兼容 v2调用ernie-func-8k

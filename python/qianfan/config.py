@@ -137,6 +137,7 @@ class Config(BaseSettings):
     # 缓存文件路径配置
     DISABLE_CACHE: bool = Field(default=DefaultValue.DisableCache)
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
+    CHAT_V2_API_ROUTE: str = Field(default=DefaultValue.ChatV2ApiRoute)
 
     def auth_key(self) -> str:
         auth_keys = (

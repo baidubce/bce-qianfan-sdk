@@ -416,10 +416,17 @@ class BaseResource(object):
                 del kwargs[key]
 
         kwargs["stream"] = stream
-        if "extra_parameters" not in kwargs:
-            kwargs["extra_parameters"] = {}
-        if kwargs["extra_parameters"].get("request_source") is None:
-            kwargs["extra_parameters"]["request_source"] = f"qianfan_py_sdk_v{VERSION}"
+        if kwargs.get("_no_extra_parameters", False):
+            if "extra_parameters" in kwargs:
+                del kwargs["extra_parameters"]
+            del kwargs["_no_extra_parameters"]
+        else:
+            if "extra_parameters" not in kwargs:
+                kwargs["extra_parameters"] = {}
+            if kwargs["extra_parameters"].get("request_source") is None:
+                kwargs["extra_parameters"][
+                    "request_source"
+                ] = f"qianfan_py_sdk_v{VERSION}"
         return kwargs
 
     def _data_postprocess(self, data: QfResponse) -> QfResponse:

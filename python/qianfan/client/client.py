@@ -27,23 +27,41 @@ class Qianfan:
         *,
         access_key: Optional[str] = None,
         secret_key: Optional[str] = None,
+        api_key: Optional[str] = None,
         bearer_token: Optional[str] = None,
         app_id: Optional[str] = None,
-        base_url: Optional[str] = None,
-        console_base_url: Optional[str] = None,
+        console_api_base_url: Optional[str] = None,
         request_timeout: Optional[int] = None,
         retry_count: int = DefaultValue.RetryCount,
         **kwargs: Any,
     ) -> None:
-        if kwargs.get("api_key"):
-            bearer_token = kwargs.get("api_key")
+        """
+        Construct a new qianfan client
+
+        This automatically infers the following arguments from their corresponding
+        environment variables if they are not provided:
+        - `api_key` from `QIANFAN_BEARER_TOKEN`
+        - `access_key` from `QIANFAN_ACCESS_KEY`
+        - `secret_key` from `QIANFAN_SECRET_KEY`
+        - `app_id` from `QIANFAN_APP_ID`
+
+        Args:
+            access_key (Optional[str], optional): iam access key.
+            secret_key (Optional[str], optional): iam secret key.
+            api_key (Optional[str], optional): api_key.
+            bearer_token (Optional[str], optional): same with api_key.
+            app_id (Optional[str], optional): qianfan app v2 id.
+            console_api_base_url (Optional[str], optional): api base url.
+        """
+        if api_key:
+            bearer_token = api_key
         self.config = Config(
             ACCESS_KEY=access_key or get_config().ACCESS_KEY,
             SECRET_KEY=secret_key or get_config().SECRET_KEY,
             BEARER_TOKEN=bearer_token or get_config().BEARER_TOKEN,
             APP_ID=app_id or get_config().APP_ID,
-            BASE_URL=base_url or get_config().BASE_URL,
-            CONSOLE_API_BASE_URL=console_base_url or get_config().CONSOLE_API_BASE_URL,
+            CONSOLE_API_BASE_URL=console_api_base_url
+            or get_config().CONSOLE_API_BASE_URL,
             LLM_API_RETRY_COUNT=retry_count or get_config().LLM_API_RETRY_COUNT,
             LLM_API_RETRY_TIMEOUT=request_timeout or get_config().LLM_API_RETRY_TIMEOUT,
             **kwargs,

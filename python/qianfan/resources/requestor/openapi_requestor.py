@@ -288,7 +288,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 possible_reason = (
                     "IAM 鉴权失败，请检查 Access Key 与 Secret Key 是否正确，"
                     "当前使用的 Access Key 为"
-                    f" `{_masked_ak(get_config().ACCESS_KEY or '')}`"
+                    f" `{_masked_ak(self.config.ACCESS_KEY or '')}`"
                 )
             elif error_code == APIErrorCode.DailyLimitReached.value:
                 possible_reason = "未开通所调用服务的付费权限，或者账户已欠费"
@@ -629,7 +629,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         add access token to QfRequest
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:
@@ -653,7 +653,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async add access token to QfRequest
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:
@@ -676,8 +676,8 @@ class QfAPIRequestor(BaseAPIRequestor):
         convert endpoint to llm api url
         """
         return "{}{}{}".format(
-            get_config().BASE_URL,
-            get_config().MODEL_API_PREFIX,
+            self.config.BASE_URL,
+            self.config.MODEL_API_PREFIX,
             endpoint,
         )
 
@@ -717,7 +717,7 @@ class QfAPIV2Requestor(QfAPIRequestor):
         from qianfan.resources.console.iam import IAM
 
         resp = IAM.create_bearer_token(
-            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL,
+            expire_in_seconds=self.config.BEARER_TOKEN_EXPIRED_INTERVAL,
             ak=self._auth._access_key,
             sk=self._auth._secret_key,
         )
@@ -737,7 +737,7 @@ class QfAPIV2Requestor(QfAPIRequestor):
         convert endpoint to llm api url
         """
         return "{}{}".format(
-            get_config().CONSOLE_API_BASE_URL,
+            self.config.CONSOLE_API_BASE_URL,
             endpoint,
         )
 
@@ -747,7 +747,7 @@ class QfAPIV2Requestor(QfAPIRequestor):
         """
         add bearer token to QfRequest V2
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:

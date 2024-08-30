@@ -1707,7 +1707,7 @@ class ChatCompletion(VersionBase):
             if real_base_type is Function:
                 # 不影响ChatCompletion流程，兼容Function调用
                 tmpImpl = real_base_type(**kwargs)
-                return tmpImpl.ado(
+                return await tmpImpl.ado(
                     messages=messages,
                     endpoint=endpoint,
                     model=model,

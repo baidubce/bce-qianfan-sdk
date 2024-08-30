@@ -1,5 +1,5 @@
-import type {Readable} from 'stream';
 import {Headers} from 'node-fetch';
+import {Readable} from 'stream';
 
 /**
  * 处理返回的头部信息
@@ -28,4 +28,17 @@ export const getStreamData = (stream: Readable): Promise<string> => {
         stream.on('end', () => resolve(Buffer.concat(chunks).toString()));
         stream.on('error', reject);
     });
+};
+
+export const buildErrorMessage = async (response, contentType, responseHeaders) => {
+    const baseMessage = `
+        HTTP error, status = ${response.status}\n
+        Response Header ${responseHeaders}
+    `;
+
+    if (response.body instanceof Readable) {
+        const responseBody = await getStreamData(response.body as Readable);
+        return `${baseMessage}\nResponse Body ${responseBody}`; // 返回新的错误消息
+    }
+    return baseMessage; // 返回不可变的错误消息
 };

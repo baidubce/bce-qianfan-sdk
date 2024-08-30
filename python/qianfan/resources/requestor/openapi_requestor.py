@@ -170,6 +170,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 parsed = self._parse_response(json_body, resp)
                 parsed.request = QfRequest.from_requests(resp.request)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.request.retry_config = request.retry_config
                 parsed.statistic["first_token_latency"] = resp.elapsed.total_seconds()
                 yield data_postprocess(parsed)
 
@@ -267,6 +268,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 parsed = await self._parse_async_response(json_body, resp)
                 parsed.request = QfRequest.from_aiohttp(resp.request_info)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.request.retry_config = request.retry_config
                 yield data_postprocess(parsed)
 
         return iter()

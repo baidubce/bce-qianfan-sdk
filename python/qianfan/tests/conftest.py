@@ -45,3 +45,44 @@ def init():
 def reset_config_automatically():
     qianfan.config._GLOBAL_CONFIG = None
     return
+
+import threading
+import subprocess
+
+def print_ulimit():
+    result = subprocess.run("ulimit -s", shell=True, capture_output=True, text=True)
+    print(f"ulimit -s in pytest: {result.stdout.strip()}")
+    global res_ulimit 
+    res_ulimit = result.stdout.strip()
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_setup(item):
+    # 记录测试开始时的活动线程数
+    item._initial_thread_count = threading.active_count()
+    item._initial_threads = {thread.ident: thread.name for thread in threading.enumerate()}
+    yield
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_teardown(item):
+    yield
+    import time
+    time.sleep(3)
+    # 记录测试结束时的活动线程数
+    final_thread_count = threading.active_count()
+    initial_thread_count = getattr(item, '_initial_thread_count', final_thread_count)
+    
+    global res_ulimit
+    # 计算新增的线程数
+    threads_created = final_thread_count - initial_thread_count
+    print(f"max threads{res_ulimit},  '{item.nodeid}' init:{initial_thread_count}, curr:  {final_thread_count} , 新增线程数: {threads_created}")
+    
+    
+    # 列出diff threads
+    final_threads = {thread.ident: thread.name for thread in threading.enumerate()}
+    initial_threads = getattr(item, '_initial_threads', final_threads)
+    # 找出新增的线程
+    new_threads = {ident: name for ident, name in final_threads.items() if ident not in initial_threads}
+    # 打印新增的线程信息
+    print(f"测试 '{item.nodeid}' 结束后，新增的线程数: {len(new_threads)}")
+    for ident, name in new_threads.items():
+        print(f"线程ID: {ident}, 线程名: {name}", )

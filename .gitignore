@@ -25,6 +25,7 @@ __pycache__/
 /.installed.cfg
 /*.egg
 /.eggs
+/javascript/dist
 
 # AUTHORS and ChangeLog will be generated while packaging
 /AUTHORS

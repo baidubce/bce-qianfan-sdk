@@ -26,7 +26,6 @@ export const getStreamData = (stream: Readable): Promise<string> => {
         const chunks: Buffer[] = [];
         stream.on('data', (chunk: Buffer) => chunks.push(chunk));
         stream.on('end', () => resolve(Buffer.concat(chunks).toString()));
-        stream.on('error', reject);
     });
 };
 

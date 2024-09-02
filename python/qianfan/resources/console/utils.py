@@ -60,6 +60,7 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
             max_wait_interval=kwargs.pop(
                 "max_wait_interval", config.CONSOLE_API_RETRY_MAX_WAIT_INTERVAL
             ),
+            retry_err_handler=kwargs.pop("retry_err_handler", None),
         )
         req = func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"

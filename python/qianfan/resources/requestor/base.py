@@ -131,7 +131,12 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
         )
 
         log_error(failed_msg)
-        raise errors.RequestError(failed_msg)
+        raise errors.RequestError(
+            failed_msg,
+            body=request_body,
+            headers=response.headers,
+            status_code=response.status_code,
+        )
 
 
 def _async_check_if_status_code_is_200(response: aiohttp.ClientResponse) -> None:
@@ -330,13 +335,15 @@ class BaseAPIRequestor(object):
         self,
         request: QfRequest,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
+        check_error: Callable[[requests.Response], None] = _check_if_status_code_is_200,
     ) -> QfResponse:
         """
         simple sync request
         """
         request = self._preprocess_request(request)
         response = self._client.request(request)
-        _check_if_status_code_is_200(response)
+        if check_error:
+            check_error(response)
         try:
             body = response.json()
         except requests.JSONDecodeError:
@@ -429,8 +436,12 @@ class BaseAPIRequestor(object):
         retry wrapper
         """
 
-        def predicate_api_err_code(result: Any) -> bool:
+        def predicate_api_err(result: Any) -> bool:
+            if config.retry_err_handler:
+                if config.retry_err_handler(result):
+                    return True
             if isinstance(result, errors.APIError):
+                # llm openapi error
                 if result.error_code in config.retry_err_codes:
                     log_warn(
                         f"got error code {result.error_code} from server, retrying... "
@@ -447,7 +458,7 @@ class BaseAPIRequestor(object):
                 jitter=config.jitter,
                 max=config.max_wait_interval,
             ),
-            retry=retry_if_exception(predicate_api_err_code),
+            retry=retry_if_exception(predicate_api_err),
             stop=stop_after_attempt(config.retry_count),
             reraise=True,
         )

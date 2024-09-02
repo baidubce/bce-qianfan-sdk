@@ -16,7 +16,7 @@
 Data API
 """
 import functools
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from qianfan.consts import Consts
 from qianfan.errors import QianfanError
@@ -978,7 +978,7 @@ class Data:
         marker: Optional[str] = None,
         max_keys: Optional[int] = None,
         page_reverse: Optional[bool] = None,
-        run_status: Optional[str] = None,
+        run_status: Optional[Union[List[str], str]] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -991,6 +991,9 @@ class Data:
             max keys of the page.
         page_reverse: Optional[bool] = None,
             page reverse or not.
+        run_status: Optional[List[str]] = None,
+            run status of the batch inference task.
+            'Running', 'Done', 'Stopped', 'Failed'
         Note:
             The `@console_api_request` decorator is applied to this method,
             enabling it to send the generated QfRequest
@@ -1003,11 +1006,17 @@ class Data:
                 Consts.DatasetDescribeOfflineBatchInferencesAction
             ),
         )
+        if isinstance(run_status, str):
+            run_status = [run_status]
+        elif run_status is None:
+            run_status = []
+        else:
+            run_status = list(run_status)
         req.json_body = {
             k: v
             for k, v in {
                 **kwargs,
-                "maker": marker,
+                "marker": marker,
                 "maxKeys": max_keys,
                 "pageReverse": page_reverse,
                 "runStatus": run_status,

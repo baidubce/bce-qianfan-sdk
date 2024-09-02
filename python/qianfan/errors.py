@@ -15,7 +15,7 @@
 """the collection of errors for this library
 """
 
-from typing import Any
+from typing import Any, Optional
 
 
 class QianfanError(Exception):
@@ -48,6 +48,12 @@ class APIError(QianfanError):
 
 class RequestError(QianfanError):
     """Exception when api request is failed"""
+
+    def __init__(self, failed_msg: Optional[str] = None, **kwargs: Any) -> None:
+        super().__init__(failed_msg)
+        self.body = kwargs.get("body")
+        self.headers = kwargs.get("headers")
+        self.status_code = kwargs.get("status_code")
 
 
 class InvalidArgumentError(QianfanError):

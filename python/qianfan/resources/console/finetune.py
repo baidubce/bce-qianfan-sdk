@@ -347,7 +347,7 @@ class FineTune(object):
                         if isinstance(train_model, console_consts.TrainMode)
                         else train_model
                     ),
-                    "maker": marker,
+                    "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
                 }.items()
@@ -395,7 +395,7 @@ class FineTune(object):
                 for k, v in {
                     **kwargs,
                     "jobId": job_id,
-                    "maker": marker,
+                    "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
                 }.items()

@@ -30,10 +30,8 @@ yarn add @baiducloud/qianfan
 ```ts
 import {consoleAction, setEnvVariable} from "@baiducloud/qianfan";
 
-const client = new ChatCompletion({QIANFAN_BASE_URL: 'http://localhost:3001'});
-
 async function consoleApi() {
-  const res4 = await consoleAction({base_api_route: 'v2/finetuning', action: 'CreateFineTuningJob', body: {"name":"test_name",
+  const res = await consoleAction({base_api_route: 'v2/finetuning', action: 'CreateFineTuningJob', data: {"name":"test_name",
     "description":"test_description",
     "model":"ERNIE-Lite-8K-0922",
     "trainMode":"SFT"}});    

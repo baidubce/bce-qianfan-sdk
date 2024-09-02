@@ -14,7 +14,7 @@
 
 import HttpClient from './HttpClient';
 import Fetch from './Fetch';
-import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS} from './constant';
+import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS, BEAR_TOKEN_URL} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
 
@@ -363,27 +363,29 @@ export async function consoleAction({
     }
 }
 
-async function fetchBearToken(): Promise<any> {
+async function fetchBearToken(props: any): Promise<any> {
+    const {expireInSeconds: expireInSecondsInProps} = props || {};
     const config = getDefaultConfig();
     try {
         // 鉴权
         const httpClientConfig = getIAMConfig(
             config.QIANFAN_ACCESS_KEY,
             config.QIANFAN_SECRET_KEY,
-            'http://iam.bj.baidubce.com/v1/BCE-BEARER/token',
+            BEAR_TOKEN_URL
         );
         const client = new HttpClient(httpClientConfig);
+        const expireInSeconds = typeof expireInSecondsInProps === 'number' ? expireInSecondsInProps : 100000
         const fetchOptions = await client.getSignature({
             httpMethod: 'GET',
-            path: 'http://iam.bj.baidubce.com/v1/BCE-BEARER/token',
-            params: {'expireInSeconds': 100000},
+            path: BEAR_TOKEN_URL,
+            params: {expireInSeconds},
             headers: {
                 ...DEFAULT_HEADERS,
-            },
+            }
         });
         const fetchInstance = new Fetch();
         const {url, ...rest} = fetchOptions;
-        const resp = await fetchInstance.makeRequest('http://iam.bj.baidubce.com/v1/BCE-BEARER/token?expireInSeconds=100000', rest);
+        const resp = await fetchInstance.makeRequest(`${BEAR_TOKEN_URL}?expireInSeconds=${expireInSeconds}`, rest);
         return resp;
     }
     catch (error) {
@@ -393,11 +395,11 @@ async function fetchBearToken(): Promise<any> {
 }
 
 function _getBearToken() {
-    let expire_time = '1970-01-01 08:00:00', data;
-    return async function getToken(): Promise<any> {
+    let expire_time = 0, data;
+    return async function getToken(props: any): Promise<any> {
         try{
             if(!expire_time || new Date(expire_time) <= new Date()){
-                const resp = await fetchBearToken();
+                const resp = await fetchBearToken(props);
                 const {expireTime} = resp || {};
                 expire_time = expireTime;
                 data = resp;
@@ -409,4 +411,4 @@ function _getBearToken() {
     }
 }
 
-export const getBearToken: () => Promise<any> = _getBearToken();
+export const getBearToken: (props: any) => Promise<any> = _getBearToken();

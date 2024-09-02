@@ -47,3 +47,5 @@ export const RETRY_CODE = [
 export const SERVER_LIST_API = '/wenxinworkshop/service/list';
 
 export const DYNAMIC_INVALID = ['reranker'];
+
+export const BEAR_TOKEN_URL = 'http://iam.bj.baidubce.com/v1/BCE-BEARER/token';

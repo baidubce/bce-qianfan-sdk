@@ -362,3 +362,51 @@ export async function consoleAction({
         throw error;
     }
 }
+
+async function fetchBearToken(): Promise<any> {
+    const config = getDefaultConfig();
+    try {
+        // 鉴权
+        const httpClientConfig = getIAMConfig(
+            config.QIANFAN_ACCESS_KEY,
+            config.QIANFAN_SECRET_KEY,
+            'http://iam.bj.baidubce.com/v1/BCE-BEARER/token',
+        );
+        const client = new HttpClient(httpClientConfig);
+        const fetchOptions = await client.getSignature({
+            httpMethod: 'GET',
+            path: 'http://iam.bj.baidubce.com/v1/BCE-BEARER/token',
+            params: {'expireInSeconds': 100000},
+            headers: {
+                ...DEFAULT_HEADERS,
+            },
+        });
+        const fetchInstance = new Fetch();
+        const {url, ...rest} = fetchOptions;
+        const resp = await fetchInstance.makeRequest('http://iam.bj.baidubce.com/v1/BCE-BEARER/token?expireInSeconds=100000', rest);
+        return resp;
+    }
+    catch (error) {
+        const error_msg = `Failed to get access token: ${error && error.message}`;
+        throw new Error(error_msg);
+    }
+}
+
+function _getBearToken() {
+    let expire_time = '1970-01-01 08:00:00', data;
+    return async function getToken(): Promise<any> {
+        try{
+            if(!expire_time || new Date(expire_time) <= new Date()){
+                const resp = await fetchBearToken();
+                const {expireTime} = resp || {};
+                expire_time = expireTime;
+                data = resp;
+            }
+            return data;
+        } catch(error) {
+            throw new Error(error?.message);
+        }
+    }
+}
+
+export const getBearToken: () => Promise<any> = _getBearToken();

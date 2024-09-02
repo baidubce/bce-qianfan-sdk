@@ -663,15 +663,20 @@ class BaseResourceV1(BaseResource):
             model = self._model
             endpoint = self._endpoint
         if endpoint is None:
+            # 获取本地模型列表
             final_model = self._default_model() if model is None else model
-            model_info = self.get_model_info(final_model)
+            model_info_list = {k.lower(): v for k, v in self._local_models().items()}
+            model_info = model_info_list.get(final_model.lower())
             if model_info is None:
-                raise errors.InvalidArgumentError(
-                    f"The provided model `{model}` is not in the list of supported"
-                    " models. If this is a recently added model, try using the"
-                    " `endpoint` arguments and create an issue to tell us. Supported"
-                    f" models: {self.models()}"
-                )
+                # 动态获取
+                model_info = self.get_model_info(final_model)
+                if model_info is None:
+                    raise errors.InvalidArgumentError(
+                        f"The provided model `{model}` is not in the list of supported"
+                        " models. If this is a recently added model, try using the"
+                        " `endpoint` arguments and create an issue to tell us."
+                        f" Supported models: {self.models()}"
+                    )
             endpoint = model_info.endpoint
         else:
             # 适配非公有云等不需要添加chat/等前缀的endpoint
@@ -786,13 +791,18 @@ class BaseResourceV1(BaseResource):
 
     def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
         """
-        base implement os _supported_models
+        preset model services list of current config
+
+        Args:
+            None
 
         Returns:
             Dict[str, QfLLMInfo]: _description_
         """
+        info_list = self._local_models()
         # 获取最新的模型列表
-        return self.get_latest_api_type_models()
+        info_list = self._merge_local_models_with_latest(info_list)
+        return info_list
 
     def _merge_local_models_with_latest(
         self, info_list: Dict[str, QfLLMInfo]
@@ -940,6 +950,9 @@ class BaseResourceV1(BaseResource):
         if UNSPECIFIED_MODEL in models:
             models.remove(UNSPECIFIED_MODEL)
         return models
+
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
+        return {}
 
     def get_model_info(self, model: str) -> QfLLMInfo:
         """

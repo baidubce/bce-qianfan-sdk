@@ -47,17 +47,7 @@ class _ChatCompletionV1(BaseResourceV1):
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
     """
 
-    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
-        """
-        preset model services list of ChatCompletion to current config
-
-        Args:
-            None
-
-        Returns:
-            Dict[str, QfLLMInfo]: _description_
-        """
-
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         info_list = {
             "ERNIE-4.0-8K-Latest": QfLLMInfo(
                 endpoint="/chat/ernie-4.0-8k-latest",
@@ -1018,8 +1008,7 @@ class _ChatCompletionV1(BaseResourceV1):
                 optional_keys=set(),
             ),
         }
-        # 获取最新的模型列表
-        info_list = self._merge_local_models_with_latest(info_list)
+
         # 处理历史模型名称/别名
         alias = {
             "ERNIE-Speed": "ERNIE-Speed-8K",

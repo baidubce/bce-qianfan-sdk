@@ -1,6 +1,6 @@
 {
-    "name": "@baiducloud/qianfan",
-    "version": "0.1.7",
+    "name": "@baiducloud/qianfanzzj",
+    "version": "0.1.8",
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org/"
@@ -15,7 +15,7 @@
     "browser": "dist/bundle.esm.js",
     "type": "module",
     "scripts": {
-        "start": "NODE_ENV=production ts-node src/test/chatCompletion",
+        "start": "NODE_ENV=production ts-node examples/chatCompletion",
         "build": "npx rollup -c rollup.config.mjs",
         "test": "jest --detectOpenHandles",
         "proxy": "node proxyserver",

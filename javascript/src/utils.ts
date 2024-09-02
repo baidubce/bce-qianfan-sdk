@@ -14,6 +14,7 @@
 
 import HttpClient from './HttpClient';
 import Fetch from './Fetch';
+import {Headers} from './Fetch/nodeFetch';
 import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS, BEAR_TOKEN_URL} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
@@ -363,7 +364,20 @@ export async function consoleAction({
     }
 }
 
-async function fetchBearToken(props: any): Promise<any> {
+interface GetTokenProps {
+    expireInSeconds?: number;
+}
+
+interface TokenResp {
+    headers?: Headers,
+    userId?: string,
+    status?: string,
+    createTime?: string,
+    token: string,
+    expireTime: string
+}
+
+async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
     const {expireInSeconds: expireInSecondsInProps} = props || {};
     const config = getDefaultConfig();
     try {
@@ -395,8 +409,8 @@ async function fetchBearToken(props: any): Promise<any> {
 }
 
 function _getBearToken() {
-    let expire_time = 0, data;
-    return async function getToken(props: any): Promise<any> {
+    let expire_time: string | number = 0, data;
+    return async function getToken(props?: GetTokenProps): Promise<TokenResp> {
         try{
             if(!expire_time || new Date(expire_time) <= new Date()){
                 const resp = await fetchBearToken(props);
@@ -411,4 +425,4 @@ function _getBearToken() {
     }
 }
 
-export const getBearToken: (props: any) => Promise<any> = _getBearToken();
+export const getBearToken: (props?: GetTokenProps) => Promise<TokenResp> = _getBearToken();

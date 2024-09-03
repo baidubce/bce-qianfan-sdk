@@ -1386,6 +1386,7 @@ def finetune_v2_supported_models(body):
 @app.route(Consts.DatasetV2OfflineBatchInferenceAPI, methods=["POST"])
 def offline_batch_inference_task_v2():
     action = request.args.get(Consts.ConsoleAPIQueryAction)
+    body = request.json
     action_handler = {
         Consts.DatasetCreateOfflineBatchInferenceAction: (
             create_offline_batch_inference_task_v2
@@ -1397,10 +1398,18 @@ def offline_batch_inference_task_v2():
             describe_offline_batch_inference_tasks_v2
         )
     }
-    return action_handler.get(action)()
+    return action_handler.get(action)(body)
 
 
-def create_offline_batch_inference_task_v2():
+def create_offline_batch_inference_task_v2(body):
+    user_name = body.get("afsConfig").get("userName")
+    if user_name in ["test_bf_invalid_username", ""]:
+        return json_response(data={
+            "requestId":"deb38cd1-d880-4259-a35d-c383f0fcddca",
+            "code":"InappropriateJSON",
+            "message":"The JSON you provided was well-formed and valid, but"
+            "not appropriate for this operation. param[userName] invalid."
+        }, status_code=400)
     return json_response(
         {
             "requestId": "c1111-944f-4a9a-a12b-cc9o99999",
@@ -1409,7 +1418,7 @@ def create_offline_batch_inference_task_v2():
     )
 
 
-def describe_offline_batch_inference_task_v2():
+def describe_offline_batch_inference_task_v2(body):
     return json_response(
         {
             "requestId": "b6999-5fdc-495c-b526-ef68145345354",
@@ -1433,7 +1442,7 @@ def describe_offline_batch_inference_task_v2():
     )
 
 
-def describe_offline_batch_inference_tasks_v2():
+def describe_offline_batch_inference_tasks_v2(body):
     return json_response(
         {
     "requestId":"1bef3f87-c5b2-4419-936b-5xxxxxxxx4",

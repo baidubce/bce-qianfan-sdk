@@ -246,7 +246,7 @@ class BatchInferenceHelper:
             running_tasks = self._get_all_tasks(run_status="Running")
             if self.max_remote_tasks > len(running_tasks):
                 try:
-                    resp = call_bf(task.request_input)
+                    resp = call_bf(**task.request_input)
                 except RequestError as e:
                     err_resp = json.loads(e.body)
                     if (
@@ -254,8 +254,11 @@ class BatchInferenceHelper:
                         and err_resp.get("code") == "TaskRunningNumberExceedLimit"
                     ):
                         continue
+                except Exception as e:
+                    log_error(f"create batch inference task error {e}")
+                    raise e
                 task_id = resp.body.get("result", {}).get("taskId")
-                log_info(f'assiagn inffer _id{ task_id}, {task}')
+                log_info(f'created infer_task:{ task_id}, {task}')
                 with self._monitor_task_pool_lock:
                     self._monitor_task_pool[task.id].infer_id = task_id
                 task = None
@@ -498,6 +501,7 @@ class BatchInferenceHelper:
         ensure_directory_exists(bf_id)
         if kwargs.get("use_raw_input"):
             input_group_uris = [input_uri]
+            kwargs.pop("use_raw_input")
         else:
             input_group_uris = self._prepare_ds(bf_id, input_uri)
         

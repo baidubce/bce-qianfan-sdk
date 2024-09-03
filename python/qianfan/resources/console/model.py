@@ -762,7 +762,7 @@ class Model(object):
                 k: v
                 for k, v in {
                     **kwargs,
-                    "maker": marker,
+                    "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
                 }.items()
@@ -807,7 +807,7 @@ class Model(object):
                 k: v
                 for k, v in {
                     **kwargs,
-                    "maker": marker,
+                    "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
                 }.items()
@@ -1234,7 +1234,7 @@ class Model(object):
                 k: v
                 for k, v in {
                     **kwargs,
-                    "maker": marker,
+                    "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
                 }.items()

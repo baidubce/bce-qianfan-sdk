@@ -3,12 +3,10 @@ on:
     branches: ['main']
     paths:
       - "go/**"
-      - "python/qianfan/tests/utils/mock_server.py"
       - ".github/workflows/go_ci.yml"
   pull_request:
     paths:
       - "go/**"
-      - "python/qianfan/tests/utils/mock_server.py"
       - ".github/workflows/go_ci.yml"
   workflow_dispatch:
 

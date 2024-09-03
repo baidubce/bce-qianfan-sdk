@@ -330,9 +330,13 @@ export async function consoleAction({base_api_route, data, action}: ConsoleActio
         config.QIANFAN_CONSOLE_API_BASE_URL
     );
     const client = new HttpClient(httpClientConfig);
+
+    const normalizedRoute = base_api_route.startsWith('/') ? base_api_route.slice(1) : base_api_route;
+    const apiRoute = `${config.QIANFAN_CONSOLE_API_BASE_URL}/${normalizedRoute}`;
+
     const baseParams = {
         httpMethod: 'POST',
-        path: `${config.QIANFAN_CONSOLE_API_BASE_URL}/${base_api_route}`,
+        path: apiRoute,
         body: data && JSON.stringify(data),
         headers: {
             ...DEFAULT_HEADERS

@@ -237,8 +237,8 @@ class _LimiterWrapper(BaseRateLimiter):
 
         og_rpm = self._get_og_rpm()
 
-        # 如果新旧值一致则不需要操作
-        if og_rpm == rpm:
+        # 如果新值大于旧值则不需要操作
+        if og_rpm <= rpm:
             self._async_reset_once_lock.release()
             return
 
@@ -254,7 +254,6 @@ class _LimiterWrapper(BaseRateLimiter):
 
         # 重置
         await self._async_reset_internal_rate_limiter(rpm)
-
         self._async_reset_once_lock.release()
 
     def reset_once(self, rpm: float) -> None:
@@ -270,12 +269,12 @@ class _LimiterWrapper(BaseRateLimiter):
             return
 
         self._has_been_reset = True
-        self._reset_once_lock.release()
 
         og_rpm = self._get_og_rpm()
 
-        # 如果新旧值一致则不需要操作
-        if og_rpm == rpm:
+        # 如果新值大于旧值则不需要操作
+        if og_rpm <= rpm:
+            self._reset_once_lock.release()
             return
 
         # 取最小的那个，如果是关闭的则直接取重置的
@@ -285,10 +284,12 @@ class _LimiterWrapper(BaseRateLimiter):
         # 如果重置为 0 则直接关闭
         if rpm == 0:
             self.is_closed = True
+            self._reset_once_lock.release()
             return
 
         # 重置
         self._reset_internal_rate_limiter(rpm)
+        self._reset_once_lock.release()
 
     def _reset_internal_rate_limiter(self, rpm: float) -> None:
         # 记录一下新值

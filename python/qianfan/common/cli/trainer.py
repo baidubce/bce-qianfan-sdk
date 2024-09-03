@@ -31,7 +31,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     credential_required,
     enum_typer,
     print_error_msg,

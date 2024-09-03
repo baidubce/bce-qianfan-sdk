@@ -20,7 +20,7 @@ from rich.markdown import Markdown
 
 import qianfan
 from qianfan import Messages, QfResponse, QfRole
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     create_client,
     credential_required,
     list_model_option,

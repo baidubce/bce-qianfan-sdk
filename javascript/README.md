@@ -25,7 +25,7 @@
 [ticket-image]: https://img.shields.io/badge/%E8%81%94%E7%B3%BB%E6%88%91%E4%BB%AC-%E7%99%BE%E5%BA%A6%E6%99%BA%E8%83%BD%E4%BA%91%E5%B7%A5%E5%8D%95-brightgreen
 [ticket-url]: https://console.bce.baidu.com/ticket/#/ticket/create?productId=279
 
-浏览器环境使用请参考 [文档](../docs/javascript/browser.md)
+浏览器环境使用请参考 [文档](https://github.com/baidubce/bce-qianfan-sdk/blob/main/docs/javascript/browser.md)
 
 ## 快速使用
 
@@ -673,5 +673,45 @@ async function main() {
 }
 
 main();
+
+```
+
+## 通过其他集成了sdk的库来使用
+
+### langchain
+#### 安装langchain库
+```npm install @langchain/baidu-qianfan```
+
+#### 添加环境变量(或作为函数参数传入)
+
+```bash
+export QIANFAN_AK=""
+export QIANFAN_SK=""
+export QIANFAN_ACCESS_KEY=""
+export QIANFAN_SECRET_KEY=""
+```
+
+#### 示例
+
+```ts
+
+import { ChatBaiduQianfan } from "@langchain/baidu-qianfan";
+import { HumanMessage } from "@langchain/core/messages";
+
+const chat = new ChatBaiduQianfan({
+    model: 'ERNIE-Lite-8K'
+});
+const message = new HumanMessage("北京天气");
+
+const res = await chat.invoke([message]);
+
+```
+
+```ts
+
+import { BaiduQianfanEmbeddings } from "@langchain/baidu-qianfan";
+
+const embeddings = new BaiduQianfanEmbeddings();
+const res = await embeddings.embedQuery("Introduce the city Beijing");
 
 ```

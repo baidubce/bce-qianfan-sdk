@@ -18,7 +18,7 @@
 import asyncio
 import threading
 import time
-from queue import Queue
+from queue import Empty, Queue
 from types import TracebackType
 from typing import Any, Dict, Optional, Type
 
@@ -385,6 +385,14 @@ class _LimiterWrapper(BaseRateLimiter):
     ) -> None:
         return
 
+    def __del__(self) -> None:
+        if hasattr(self, "_internal_qp10s_rate_limiter"):
+            del self._internal_qp10s_rate_limiter
+        if hasattr(self, "_internal_qps_rate_limiter"):
+            del self._internal_qps_rate_limiter
+        if hasattr(self, "_internal_rpm_rate_limiter"):
+            del self._internal_rpm_rate_limiter
+
 
 _RATE_LIMITER_MAP: Dict[str, _LimiterWrapper] = {}
 
@@ -431,6 +439,7 @@ class _RateLimiter:
             self._last_leak_timestamp = time.time()
             self._sync_lock = threading.Lock()
             self._condition_queue: Queue[_RateLimiter._AcquireTask] = Queue()
+            self._running = True
             self._working_thread = threading.Thread(target=self._worker, daemon=True)
             self._working_thread.start()
 
@@ -444,10 +453,14 @@ class _RateLimiter:
             )
 
         def _worker(self) -> None:
-            while True:
-                task = self._condition_queue.get(True)
+            while self._running:
+                task: Optional[RateLimiter._AcquireTask] = None
+                try:
+                    task = self._condition_queue.get(True, 1)
+                except Empty:
+                    continue
                 amount = task.amount
-                while True:
+                while self._running:
                     with self._sync_lock:
                         self._leak()
                         if self._token_count >= amount:
@@ -457,6 +470,14 @@ class _RateLimiter:
 
                 with task.condition:
                     task.condition.notify()
+
+        def stop(self, block: bool = False) -> None:
+            self._running = False
+            if block:
+                self._working_thread.join()
+
+        def __del__(self) -> None:
+            self.stop()
 
         def acquire(self, amount: float = 1) -> None:
             if amount > self._query_per_period:
@@ -618,3 +639,6 @@ class _RateLimiter:
         exit
         """
         return
+
+    def __del__(self) -> None:
+        self._sync_limiter.stop()

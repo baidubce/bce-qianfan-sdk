@@ -23,8 +23,8 @@ from rich.pretty import Pretty
 from rich.rule import Rule
 from rich.table import Table
 
-import qianfan.common.client.utils as client_utils
-from qianfan.common.client.utils import (
+import qianfan.common.cli.utils as client_utils
+from qianfan.common.cli.utils import (
     check_credential,
     credential_required,
     enum_typer,

@@ -26,8 +26,7 @@ import * as packageJson from '../package.json';
 export function getCurrentEnvironment() {
     if (typeof window !== 'undefined') {
         return 'browser';
-    }
-    else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
+    } else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
         return 'node';
     }
     return 'unknown';
@@ -49,9 +48,9 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
     return {
         credentials: {
             ak,
-            sk,
+            sk
         },
-        endpoint: baseUrl,
+        endpoint: baseUrl
     };
 }
 
@@ -63,20 +62,19 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  * @returns 返回JSON格式的字符串
  */
 export function getRequestBody(body: ReqBody, model, version: string): string {
-    const request_source
-        = (getCurrentEnvironment() === 'browser') ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
+    const request_source =
+        getCurrentEnvironment() === 'browser' ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
 
     const modifiedBody = {
         ...body,
         model,
         extra_parameters: {
             ...body.extra_parameters,
-            request_source,
-        },
+            request_source
+        }
     };
     return JSON.stringify(modifiedBody);
 }
-
 
 /**
  * 获取模型对应的API端点
@@ -104,29 +102,25 @@ export const getPath = ({
     Authentication,
     api_base,
     endpoint = '',
-    type,
+    type
 }: {
-    model?: string,
-    modelInfoMap?: QfLLMInfoMap,
-    Authentication: 'IAM' | 'AK', // 假设 Authentication 只能是 'IAM' 或 'AK'
-    api_base: string,
-    endpoint?: string,
-    type?: string,
+    model?: string;
+    modelInfoMap?: QfLLMInfoMap;
+    Authentication: 'IAM' | 'AK'; // 假设 Authentication 只能是 'IAM' 或 'AK'
+    api_base: string;
+    endpoint?: string;
+    type?: string;
 }): string => {
     if (endpoint && type) {
         const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
         const suffix = type === 'plugin' ? '/' : `/${type}/`;
         return `${basePath}${suffix}${endpoint}`;
-    }
-    else if (model && modelInfoMap && modelInfoMap[model]) {
+    } else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}${modelEndpoint}`
-            : `${api_base}${modelEndpoint}`;
+        return Authentication === 'IAM' ? `${BASE_PATH}${modelEndpoint}` : `${api_base}${modelEndpoint}`;
     }
     throw new Error('Model is not supported');
 };
-
 
 export const castToError = (err: any): Error => {
     if (err instanceof Error) {
@@ -182,14 +176,14 @@ export function getPathAndBody({
     baseUrl,
     body,
     endpoint = '',
-    type,
+    type
 }: {
-    model?: string,
-    modelInfoMap?: QfLLMInfoMap,
-    baseUrl: string,
-    body?: ReqBody,
-    endpoint?: string,
-    type?: string
+    model?: string;
+    modelInfoMap?: QfLLMInfoMap;
+    baseUrl: string;
+    body?: ReqBody;
+    endpoint?: string;
+    type?: string;
 }): {
     AKPath: string;
     requestBody: string;
@@ -201,12 +195,12 @@ export function getPathAndBody({
         Authentication: 'AK',
         api_base,
         endpoint,
-        type,
+        type
     });
     const requestBody = getRequestBody(body, model, packageJson.version);
     return {
         AKPath,
-        requestBody,
+        requestBody
     };
 }
 
@@ -262,7 +256,7 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
     if (typeof model !== 'string' || model.trim() === '') {
         return {
             modelInfoMapUppercase: modelMap,
-            modelUppercase: '',
+            modelUppercase: ''
         };
     }
     const modelInfoMapUppercase = convertKeysToUppercase(modelMap);
@@ -271,7 +265,7 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
     return {
         modelInfoMapUppercase,
         modelUppercase,
-        modelLowercase,
+        modelLowercase
     };
 }
 
@@ -306,16 +300,12 @@ export function setBrowserVariable(variables: Variables): void {
 }
 
 function baseActionUrl(route: string, action: string): string {
-    if (action === '') {
-        return route;
-    }
-    return `${route}?Action=${action}`;
+    return !action ? route : `${route}?Action=${action}`;
 }
-
 
 interface ConsoleActionParams {
     base_api_route: string;
-    data?: Record<string, any>,
+    data?: Record<string, any>;
     action?: string;
 }
 
@@ -327,11 +317,7 @@ interface ConsoleActionParams {
  * @param action 可选参数，方法名称，类型为字符串
  * @returns 返回任意类型
  */
-export async function consoleAction({
-    base_api_route,
-    data,
-    action,
-}: ConsoleActionParams): Promise<any> {
+export async function consoleAction({base_api_route, data, action}: ConsoleActionParams): Promise<any> {
     const config = getDefaultConfig();
     // IAM鉴权，先判断是否有IAM的key
     if (!(config.QIANFAN_ACCESS_KEY && config.QIANFAN_SECRET_KEY)) {
@@ -344,22 +330,27 @@ export async function consoleAction({
         config.QIANFAN_CONSOLE_API_BASE_URL
     );
     const client = new HttpClient(httpClientConfig);
-    const fetchOptions = await client.getSignature({
+
+    const normalizedRoute = base_api_route.startsWith('/') ? base_api_route.slice(1) : base_api_route;
+    const apiRoute = `${config.QIANFAN_CONSOLE_API_BASE_URL}/${normalizedRoute}`;
+
+    const baseParams = {
         httpMethod: 'POST',
-        path: `${config.QIANFAN_CONSOLE_API_BASE_URL}/${base_api_route}`,
+        path: apiRoute,
         body: data && JSON.stringify(data),
         headers: {
-            ...DEFAULT_HEADERS,
-        },
-        params: {'Action': action},
-    });
+            ...DEFAULT_HEADERS
+        }
+    };
+    const fetchOptions = await client.getSignature(
+        action ? Object.assign({}, baseParams, {params: {Action: action}}) : baseParams
+    );
     const fetchInstance = new Fetch();
     try {
         const {url, ...rest} = fetchOptions;
         const resp = await fetchInstance.makeRequest(baseActionUrl(url, action), rest);
         return resp;
-    }
-    catch (error) {
+    } catch (error) {
         throw error;
     }
 }

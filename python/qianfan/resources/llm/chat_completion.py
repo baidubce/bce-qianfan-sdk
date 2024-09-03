@@ -21,12 +21,13 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
     Type,
     Union,
 )
 
 import qianfan.errors as errors
-from qianfan.consts import Consts, DefaultLLMModel, DefaultValue
+from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
     BaseResourceV1,
@@ -34,9 +35,10 @@ from qianfan.resources.llm.base import (
     BatchRequestFuture,
     VersionBase,
 )
-from qianfan.resources.llm.function import Function
+from qianfan.resources.llm.function import Function, FunctionV2
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
+from qianfan.resources.typing_client import Completion, CompletionChunk
 from qianfan.utils.logging import log_error, log_info, log_warn
 
 
@@ -45,18 +47,7 @@ class _ChatCompletionV1(BaseResourceV1):
     QianFan ChatCompletion is an agent for calling QianFan ChatCompletion API.
     """
 
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
-        """
-        preset model services list of ChatCompletion
-
-        Args:
-            None
-
-        Returns:
-            a dict which key is preset model and value is the endpoint
-
-        """
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         info_list = {
             "ERNIE-4.0-8K-Latest": QfLLMInfo(
                 endpoint="/chat/ernie-4.0-8k-latest",
@@ -654,6 +645,30 @@ class _ChatCompletionV1(BaseResourceV1):
                 input_price_per_1k_tokens=0.004,
                 output_price_per_1k_tokens=0.008,
             ),
+            "Qianfan-Dynamic-8K": QfLLMInfo(
+                endpoint="/chat/qianfan-dynamic-8k",
+                required_keys={"messages"},
+                optional_keys={
+                    "stream",
+                    "temperature",
+                    "top_p",
+                    "penalty_score",
+                    "system",
+                    "user_id",
+                    "stop",
+                    "max_output_tokens",
+                    "response_format",
+                    "disable_search",
+                    "enable_citation",
+                    "enable_trace",
+                    "functions",
+                    "tool_choice",
+                },
+                max_input_chars=20000,
+                max_input_tokens=5120,
+                input_price_per_1k_tokens=0.012,
+                output_price_per_1k_tokens=0.012,
+            ),
             "ERNIE-Character-8K": QfLLMInfo(
                 endpoint="/chat/ernie-char-8k",
                 required_keys={"messages"},
@@ -1017,14 +1032,8 @@ class _ChatCompletionV1(BaseResourceV1):
                 optional_keys=set(),
             ),
         }
-        # 获取最新的模型列表
-        latest_models_list = super()._supported_models()
-        for m in latest_models_list:
-            if m not in info_list:
-                info_list[m] = latest_models_list[m]
-            else:
-                # 更新endpoint
-                info_list[m].endpoint = latest_models_list[m].endpoint
+
+        # 处理历史模型名称/别名
         alias = {
             "ERNIE-Speed": "ERNIE-Speed-8K",
             "ERNIE Speed": "ERNIE-Speed-8K",
@@ -1045,15 +1054,10 @@ class _ChatCompletionV1(BaseResourceV1):
             "ERNIE-Bot-turbo-AI": "ERNIE Speed-AppBuilder",
         }
 
-        # for m in info_list:
-        #     if m not in latest_models_list.keys():
-        #         info_list[m].deprecated = True
-
         for src, target in deprecated_alias.items():
             info = copy.deepcopy(info_list[target])
             info.deprecated = True
             info_list[src] = info
-
         return info_list
 
     @classmethod
@@ -1479,7 +1483,7 @@ class _ChatCompletionV1(BaseResourceV1):
 
         # 非默认模型
         if model_info is None:
-            model_info = self._supported_models()[UNSPECIFIED_MODEL]
+            model_info = self._self_supported_models()[UNSPECIFIED_MODEL]
 
         if model_info.max_input_chars is not None:
             chars_limit = model_info.max_input_chars
@@ -1543,7 +1547,7 @@ class _ChatCompletionV2(BaseResourceV2):
         return "chat"
 
     def _api_path(self) -> str:
-        return Consts.ChatV2API
+        return self.config.CHAT_V2_API_ROUTE
 
     def do(
         self,
@@ -1611,26 +1615,28 @@ class ChatCompletion(VersionBase):
 
     @classmethod
     def _real_base(cls, version: str, **kwargs: Any) -> Type:
-        # convert to qianfan.Function
-        if kwargs.get("use_function"):
-            return Function
-        else:
-            model = kwargs.get("model") or ""
-            func_model_info_list = {
-                k.lower(): v for k, v in Function._supported_models().items()
-            }
-            func_model_info = func_model_info_list.get(model.lower())
-            if model and func_model_info:
-                if func_model_info and func_model_info.endpoint:
-                    return Function
-            endpoint = kwargs.get("endpoint", "")
-            for m in func_model_info_list.values():
-                if endpoint and m.endpoint == endpoint:
-                    return Function
-
         if version == "1":
+            # convert to qianfan.Function, only for api v1
+            if kwargs.get("use_function"):
+                return Function
+            else:
+                model = kwargs.get("model") or ""
+                func_model_info_list = {
+                    k.lower(): v for k, v in Function._supported_models().items()
+                }
+                func_model_info = func_model_info_list.get(model.lower())
+                if model and func_model_info:
+                    if func_model_info and func_model_info.endpoint:
+                        return Function
+                endpoint = kwargs.get("endpoint", "")
+                if endpoint:
+                    for m in func_model_info_list.values():
+                        if endpoint and m.endpoint == endpoint:
+                            return Function
             return _ChatCompletionV1
         elif version == "2":
+            if kwargs.get("use_function") or kwargs.get("model") == "ernie-func-8k":
+                return FunctionV2
             return _ChatCompletionV2
         raise errors.InvalidArgumentError("Invalid version")
 
@@ -1649,6 +1655,31 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
+        system, messages = self._adapt_messages_format(messages)
+        if "system" not in kwargs and system:
+            kwargs["system"] = system
+        if model is not None or endpoint is not None:
+            # TODO兼容 v2调用ernie-func-8k
+            real_base_type = self._real_base(
+                self._version, model=model, endpoint=endpoint, **kwargs
+            )
+            if real_base_type is Function:
+                # 不影响ChatCompletion流程，兼容Function调用
+                tmpImpl = real_base_type(**kwargs)
+                return tmpImpl.do(
+                    messages=messages,
+                    endpoint=endpoint,
+                    model=model,
+                    stream=stream,
+                    retry_count=retry_count,
+                    request_timeout=request_timeout,
+                    request_id=request_id,
+                    backoff_factor=backoff_factor,
+                    auto_concat_truncate=auto_concat_truncate,
+                    truncated_continue_prompt=truncated_continue_prompt,
+                    truncate_overlong_msgs=truncate_overlong_msgs,
+                    **kwargs,
+                )
         return self._do(
             messages=messages,
             endpoint=endpoint,
@@ -1679,6 +1710,31 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        system, messages = self._adapt_messages_format(messages)
+        if "system" not in kwargs and system:
+            kwargs["system"] = system
+        if model is not None or endpoint is not None:
+            # TODO兼容 v2调用ernie-func-8k
+            real_base_type = self._real_base(
+                self._version, model=model, endpoint=endpoint, **kwargs
+            )
+            if real_base_type is Function:
+                # 不影响ChatCompletion流程，兼容Function调用
+                tmpImpl = real_base_type(**kwargs)
+                return await tmpImpl.ado(
+                    messages=messages,
+                    endpoint=endpoint,
+                    model=model,
+                    stream=stream,
+                    retry_count=retry_count,
+                    request_timeout=request_timeout,
+                    request_id=request_id,
+                    backoff_factor=backoff_factor,
+                    auto_concat_truncate=auto_concat_truncate,
+                    truncated_continue_prompt=truncated_continue_prompt,
+                    truncate_overlong_msgs=truncate_overlong_msgs,
+                    **kwargs,
+                )
         return await self._ado(
             messages=messages,
             model=model,
@@ -1693,6 +1749,22 @@ class ChatCompletion(VersionBase):
             truncate_overlong_msgs=truncate_overlong_msgs,
             **kwargs,
         )
+
+    def _adapt_messages_format(
+        self, messages: Optional[Union[List[Dict], QfMessages]] = None
+    ) -> Tuple[str, List[Dict]]:
+        if messages is None:
+            return "", []
+        if isinstance(messages, QfMessages):
+            messages = messages._to_list()
+        system = ""
+        filtered_messages = []
+        for message in messages:
+            if message.get("role") == "system":
+                system += message.get("content", "")
+            else:
+                filtered_messages.append(message)  # 保留非 system 的 message
+        return system, filtered_messages
 
     def batch_do(
         self,
@@ -1856,6 +1928,125 @@ class ChatCompletion(VersionBase):
 
         tasks = [task() for task in task_list]
         return await self._real._abatch_request(tasks, worker_num)
+
+    def create(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[Completion, Iterator[CompletionChunk], QfResponse, Iterator[QfResponse]]:
+        if self._version == "1":
+            return self.do(
+                messages=messages,
+                endpoint=endpoint,
+                model=model,
+                stream=stream,
+                retry_count=retry_count,
+                request_timeout=request_timeout,
+                request_id=request_id,
+                backoff_factor=backoff_factor,
+                auto_concat_truncate=auto_concat_truncate,
+                truncated_continue_prompt=truncated_continue_prompt,
+                truncate_overlong_msgs=truncate_overlong_msgs,
+                **kwargs,
+            )
+        resp = self.do(
+            messages=messages,
+            endpoint=endpoint,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
+            **kwargs,
+        )
+        if not stream:
+            assert isinstance(resp, QfResponse)
+            return Completion.parse_obj(resp.body)
+        else:
+            assert isinstance(resp, Iterator)
+            return self._create_completion_stream(resp)
+
+    async def acreate(
+        self,
+        messages: Union[List[Dict], QfMessages],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        stream: bool = False,
+        retry_count: int = DefaultValue.RetryCount,
+        request_timeout: float = DefaultValue.RetryTimeout,
+        request_id: Optional[str] = None,
+        backoff_factor: float = DefaultValue.RetryBackoffFactor,
+        auto_concat_truncate: bool = False,
+        truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
+        truncate_overlong_msgs: bool = False,
+        **kwargs: Any,
+    ) -> Union[
+        Completion,
+        AsyncIterator[CompletionChunk],
+        QfResponse,
+        AsyncIterator[QfResponse],
+    ]:
+        if self._version == "1":
+            return await self.ado(
+                messages=messages,
+                endpoint=endpoint,
+                model=model,
+                stream=stream,
+                retry_count=retry_count,
+                request_timeout=request_timeout,
+                request_id=request_id,
+                backoff_factor=backoff_factor,
+                auto_concat_truncate=auto_concat_truncate,
+                truncated_continue_prompt=truncated_continue_prompt,
+                truncate_overlong_msgs=truncate_overlong_msgs,
+                **kwargs,
+            )
+        resp = await self.ado(
+            messages=messages,
+            endpoint=endpoint,
+            model=model,
+            stream=stream,
+            retry_count=retry_count,
+            request_timeout=request_timeout,
+            request_id=request_id,
+            backoff_factor=backoff_factor,
+            auto_concat_truncate=auto_concat_truncate,
+            truncated_continue_prompt=truncated_continue_prompt,
+            truncate_overlong_msgs=truncate_overlong_msgs,
+            **kwargs,
+        )
+        if not stream:
+            assert isinstance(resp, QfResponse)
+            return Completion.parse_obj(resp.body)
+        else:
+            assert isinstance(resp, AsyncIterator)
+            return self._acreate_completion_stream(resp)
+
+    def _create_completion_stream(
+        self, resp: Iterator[QfResponse]
+    ) -> Iterator[CompletionChunk]:
+        for r in resp:
+            yield CompletionChunk.parse_obj(r.body)
+
+    async def _acreate_completion_stream(
+        self, resp: AsyncIterator[QfResponse]
+    ) -> AsyncIterator[CompletionChunk]:
+        async for r in resp:
+            yield CompletionChunk.parse_obj(r.body)
 
     def _convert_v2_request_to_v1(self, request: Any) -> Any:
         # TODO: V2 model to V1 model

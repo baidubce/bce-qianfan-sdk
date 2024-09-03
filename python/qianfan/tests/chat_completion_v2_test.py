@@ -24,6 +24,7 @@ import pytest
 import qianfan
 import qianfan.tests.utils
 from qianfan.consts import Consts
+from qianfan.tests.utils import EnvHelper
 
 TEST_BEARER_TOKEN = (
     "bce-v3/ALTAK-JZasis7GfnokSLLXykKHj/054c2e64c06db4d6019f0dbfc964e90aa3fc3ddd"
@@ -296,23 +297,30 @@ def test_auth_using_bearer_token():
 
 
 def test_refresh_token():
-    preset_interval = qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL
-    qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL = 5
-    chat = qianfan.ChatCompletion(version=2, app_id="app-xxx")
+    with EnvHelper(
+        QIANFAN_BEARER_TOKEN_EXPIRED_INTERVAL="15",
+        QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL="0",
+    ):
+        chat = qianfan.ChatCompletion(version=2, app_id="app-xxx")
 
-    def call() -> qianfan.QfResponse:
-        resp = chat.do(
-            messages=[{"role": "user", "content": "你好"}],
-            model="xxxx",
-            preemptable=True,
-            top_p=0.5,
+        def call() -> qianfan.QfResponse:
+            resp = chat.do(
+                messages=[{"role": "user", "content": "你好"}],
+                model="xxxx",
+                preemptable=True,
+                top_p=0.5,
+            )
+            return resp
+
+        resp1 = call()
+        resp2 = call()
+        assert (
+            resp1.request.headers["Authorization"]
+            == resp2.request.headers["Authorization"]
         )
-        return resp
-
-    resp1 = call()
-    resp2 = call()
-    time.sleep(6)
-    assert (
-        resp1.request.headers["Authorization"] == resp2.request.headers["Authorization"]
-    )
-    qianfan.get_config().BEARER_TOKEN_EXPIRED_INTERVAL = preset_interval
+        time.sleep(11)
+        resp3 = call()
+        assert (
+            resp1.request.headers["Authorization"]
+            != resp3.request.headers["Authorization"]
+        )

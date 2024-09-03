@@ -102,14 +102,22 @@ class QfAPIRequestor(BaseAPIRequestor):
         responses = self._client.request_stream(request)
 
         _, resp = next(responses)
+        if "json" in resp.headers.get("content-type", "") or resp.status_code != 200:
+            try:
+                status_code = resp.status_code
+                body, resp = next(responses)
+                self._check_error(json.loads(body))
+            except Exception as e:
+                log_error(
+                    f"stream ended with status code: {status_code}, error: {e},"
+                    f" headers: {resp.headers}"
+                )
+                raise e
+
         if "X-Ratelimit-Limit-Requests" in resp.headers:
             self._rate_limiter.reset_once(
                 float(resp.headers["X-Ratelimit-Limit-Requests"])
             )
-
-        if "json" in resp.headers.get("content-type", ""):
-            body, resp = next(responses)
-            self._check_error(json.loads(body))
 
         def iter() -> Iterator[QfResponse]:
             event = ""
@@ -120,7 +128,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                     body, resp = next(responses)
                 except StopIteration:
                     break
-                _check_if_status_code_is_200(resp)
+                _check_if_status_code_is_200(resp, self.config)
                 body_str = body.decode("utf-8")
                 if body_str == "":
                     continue
@@ -152,13 +160,17 @@ class QfAPIRequestor(BaseAPIRequestor):
                         f"got unexpected stream response from server: {body_str}"
                     )
                 body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-                json_body = json.loads(body_str)
+                if body_str != Consts.V2_STREAM_RESPONSE_END_NOTE:
+                    json_body = json.loads(body_str)
+                else:
+                    return
                 if event != "":
                     json_body["_event"] = event
                     event = ""
                 parsed = self._parse_response(json_body, resp)
                 parsed.request = QfRequest.from_requests(resp.request)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.request.retry_config = request.retry_config
                 parsed.statistic["first_token_latency"] = resp.elapsed.total_seconds()
                 yield data_postprocess(parsed)
 
@@ -205,18 +217,25 @@ class QfAPIRequestor(BaseAPIRequestor):
                 float(resp.headers["X-Ratelimit-Limit-Requests"])
             )
 
-        if "json" in resp.headers.get("content-type", ""):
-            body, _ = await responses.__anext__()
+        if "json" in resp.headers.get("content-type", "") or resp.status != 200:
             try:
+                status_code = resp.status
+                body, _ = await responses.__anext__()
                 self._check_error(json.loads(body))
             except Exception as e:
+                log_error(
+                    f"stream ended with status code: {status_code}, error: {e},"
+                    f" headers: {resp.headers}"
+                )
                 await responses.aclose()
                 raise e
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses
             token_refreshed = False
+            count = 0
             async for body, resp in responses:
+                count += 1
                 _async_check_if_status_code_is_200(resp)
                 body_str = body.decode("utf-8")
                 if body_str.strip() == "":
@@ -242,10 +261,14 @@ class QfAPIRequestor(BaseAPIRequestor):
                         f"got unexpected stream response from server: {body_str}"
                     )
                 body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
-                json_body = json.loads(body_str)
+                if not body_str.startswith(Consts.V2_STREAM_RESPONSE_END_NOTE):
+                    json_body = json.loads(body_str)
+                else:
+                    return
                 parsed = await self._parse_async_response(json_body, resp)
                 parsed.request = QfRequest.from_aiohttp(resp.request_info)
                 parsed.request.json_body = copy.deepcopy(request.json_body)
+                parsed.request.retry_config = request.retry_config
                 yield data_postprocess(parsed)
 
         return iter()
@@ -265,7 +288,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 possible_reason = (
                     "IAM 鉴权失败，请检查 Access Key 与 Secret Key 是否正确，"
                     "当前使用的 Access Key 为"
-                    f" `{_masked_ak(get_config().ACCESS_KEY or '')}`"
+                    f" `{_masked_ak(self.config.ACCESS_KEY or '')}`"
                 )
             elif error_code == APIErrorCode.DailyLimitReached.value:
                 possible_reason = "未开通所调用服务的付费权限，或者账户已欠费"
@@ -606,7 +629,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         add access token to QfRequest
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:
@@ -630,7 +653,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         async add access token to QfRequest
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:
@@ -653,8 +676,8 @@ class QfAPIRequestor(BaseAPIRequestor):
         convert endpoint to llm api url
         """
         return "{}{}{}".format(
-            get_config().BASE_URL,
-            get_config().MODEL_API_PREFIX,
+            self.config.BASE_URL,
+            self.config.MODEL_API_PREFIX,
             endpoint,
         )
 
@@ -685,22 +708,23 @@ class QfAPIRequestor(BaseAPIRequestor):
 
 class QfAPIV2Requestor(QfAPIRequestor):
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(refresh_func=QfAPIV2Requestor._refresh_bearer_token, **kwargs)
+        super().__init__(refresh_func=self._refresh_bearer_token, **kwargs)
 
-    @staticmethod
-    def _refresh_bearer_token(*args: Any, **kwargs: Any) -> Dict:
+    def _refresh_bearer_token(self, *args: Any, **kwargs: Any) -> Dict:
         """
         refresh bearer token
         """
         from qianfan.resources.console.iam import IAM
 
         resp = IAM.create_bearer_token(
-            expire_in_seconds=get_config().BEARER_TOKEN_EXPIRED_INTERVAL
+            expire_in_seconds=self.config.BEARER_TOKEN_EXPIRED_INTERVAL,
+            ak=self._auth._access_key,
+            sk=self._auth._secret_key,
         )
 
         def _convert_time_str_to_sec(time_str: str) -> float:
-            time_obj = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-            return time_obj.replace().timestamp()
+            dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+            return dt.timestamp()
 
         return {
             "token": resp.body["token"],
@@ -713,7 +737,7 @@ class QfAPIV2Requestor(QfAPIRequestor):
         convert endpoint to llm api url
         """
         return "{}{}".format(
-            get_config().CONSOLE_API_BASE_URL,
+            self.config.CONSOLE_API_BASE_URL,
             endpoint,
         )
 
@@ -723,7 +747,7 @@ class QfAPIV2Requestor(QfAPIRequestor):
         """
         add bearer token to QfRequest V2
         """
-        if get_config().NO_AUTH:
+        if self.config.NO_AUTH:
             # 配置无鉴权，不签名，不抛出需要刷新token的异常，直接跳出。
             return req
         if auth is None:

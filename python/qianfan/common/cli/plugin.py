@@ -32,7 +32,7 @@ from rich.text import Text
 
 import qianfan
 from qianfan import QfRole
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     BosPathValidator,
     InputEmptyValidator,
     credential_required,

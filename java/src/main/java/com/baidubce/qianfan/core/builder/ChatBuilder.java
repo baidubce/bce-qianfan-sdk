@@ -37,6 +37,12 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
 
     private String system;
 
+    private Boolean enableUserMemory;
+
+    private Integer userMemoryLevel;
+
+    private Integer userMemoryExtractLevel;
+
     private List<String> stop;
 
     private Boolean disableSearch;
@@ -45,13 +51,21 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
 
     private Boolean enableTrace;
 
+    private Integer traceNumber;
+
     private Integer maxOutputTokens;
 
     private String responseFormat;
 
+    private String responseStyle;
+
     private List<Function> functions;
 
+    private String mode;
+
     private ToolChoice toolChoice;
+
+    private String safetyLevel;
 
     public ChatBuilder() {
         super();
@@ -131,6 +145,21 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
         return this;
     }
 
+    public ChatBuilder enableUserMemory(Boolean enableUserMemory) {
+        this.enableUserMemory = enableUserMemory;
+        return this;
+    }
+
+    public ChatBuilder userMemoryLevel(Integer userMemoryLevel) {
+        this.userMemoryLevel = userMemoryLevel;
+        return this;
+    }
+
+    public ChatBuilder userMemoryExtractLevel(Integer userMemoryExtractLevel) {
+        this.userMemoryExtractLevel = userMemoryExtractLevel;
+        return this;
+    }
+
     public ChatBuilder stop(List<String> stop) {
         this.stop = stop;
         return this;
@@ -151,6 +180,11 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
         return this;
     }
 
+    public ChatBuilder traceNumber(Integer traceNumber) {
+        this.traceNumber = traceNumber;
+        return this;
+    }
+
     public ChatBuilder maxOutputTokens(Integer maxOutputTokens) {
         this.maxOutputTokens = maxOutputTokens;
         return this;
@@ -161,13 +195,28 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
         return this;
     }
 
+    public ChatBuilder responseStyle(String responseStyle) {
+        this.responseStyle = responseStyle;
+        return this;
+    }
+
     public ChatBuilder functions(List<Function> functions) {
         this.functions = functions;
         return this;
     }
 
+    public ChatBuilder mode(String mode) {
+        this.mode = mode;
+        return this;
+    }
+
     public ChatBuilder toolChoice(ToolChoice toolChoice) {
         this.toolChoice = toolChoice;
+        return this;
+    }
+
+    public ChatBuilder safetyLevel(String safetyLevel) {
+        this.safetyLevel = safetyLevel;
         return this;
     }
 
@@ -181,14 +230,21 @@ public class ChatBuilder extends BaseBuilder<ChatBuilder> {
                 .setEnableSystemMemory(enableSystemMemory)
                 .setSystemMemoryId(systemMemoryId)
                 .setSystem(system)
+                .setEnableUserMemory(enableUserMemory)
+                .setUserMemoryLevel(userMemoryLevel)
+                .setUserMemoryExtractLevel(userMemoryExtractLevel)
                 .setStop(stop)
                 .setDisableSearch(disableSearch)
                 .setEnableCitation(enableCitation)
                 .setEnableTrace(enableTrace)
+                .setTraceNumber(traceNumber)
                 .setMaxOutputTokens(maxOutputTokens)
                 .setResponseFormat(responseFormat)
+                .setResponseStyle(responseStyle)
                 .setFunctions(functions)
+                .setMode(mode)
                 .setToolChoice(toolChoice)
+                .setSafetyLevel(safetyLevel)
                 .setModel(super.getModel())
                 .setEndpoint(super.getEndpoint())
                 .setUserId(super.getUserId())

@@ -258,6 +258,7 @@ class Consts:
 
     STREAM_RESPONSE_PREFIX: str = "data: "
     STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
+    V2_STREAM_RESPONSE_END_NOTE: str = "[DONE]"
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
     QianfanRequestIdDefaultPrefix: str = f"sdk-py-{VERSION}"
@@ -346,6 +347,7 @@ class DefaultValue:
     FileEncoding: str = "utf-8"
     CacheDir: str = str(Path.home() / ".qianfan_cache")
     DisableCache: bool = False
+    ChatV2ApiRoute: str = Consts.ChatV2API
 
 
 class DefaultLLMModel:

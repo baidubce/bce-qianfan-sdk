@@ -30,7 +30,7 @@ from rich.table import Table
 from rich.text import Text
 
 from qianfan import QfRole
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     InputEmptyValidator,
     credential_required,
     list_model_option,
@@ -287,6 +287,7 @@ class ChatClient(object):
                         response = client.do(
                             messages=messages,
                             stream=True,
+                            show_total_latency=True,
                             **self.inference_args,
                         )
                         for resp in response:

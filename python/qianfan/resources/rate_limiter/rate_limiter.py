@@ -238,7 +238,7 @@ class _LimiterWrapper(BaseRateLimiter):
         og_rpm = self._get_og_rpm()
 
         # 如果新值大于旧值则不需要操作
-        if og_rpm <= rpm:
+        if og_rpm != 0 and og_rpm <= rpm:
             self._async_reset_once_lock.release()
             return
 
@@ -273,7 +273,7 @@ class _LimiterWrapper(BaseRateLimiter):
         og_rpm = self._get_og_rpm()
 
         # 如果新值大于旧值则不需要操作
-        if og_rpm <= rpm:
+        if og_rpm != 0 and og_rpm <= rpm:
             self._reset_once_lock.release()
             return
 
@@ -454,7 +454,7 @@ class _RateLimiter:
 
         def _worker(self) -> None:
             while self._running:
-                task: Optional[RateLimiter._AcquireTask] = None
+                task: Optional[_RateLimiter._AcquireTask] = None
                 try:
                     task = self._condition_queue.get(True, 1)
                 except Empty:

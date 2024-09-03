@@ -6,7 +6,7 @@ from fastapi import Request
 from starlette.requests import ClientDisconnect
 
 from qianfan import get_config
-from qianfan.config import GlobalConfig
+from qianfan.config import Config
 from qianfan.consts import DefaultValue
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.auth.iam import iam_sign
@@ -18,7 +18,7 @@ from qianfan.resources.typing import QfRequest, RetryConfig
 
 class ClientProxy(object):
     _auth: Auth = Auth()
-    _config: GlobalConfig = get_config()
+    _config: Config = get_config()
     _client: HTTPClient = HTTPClient()
     _mock_port: int = -1
     _rate_limiter: VersatileRateLimiter = VersatileRateLimiter()

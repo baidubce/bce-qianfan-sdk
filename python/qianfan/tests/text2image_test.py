@@ -29,7 +29,6 @@ def test_text2image_generate():
     Test basic generate text2image
     """
     qfg = qianfan.Text2Image()
-    print("===>", qfg._supported_models())
     resp = qfg.do(prompt="Rag doll cat")
     assert len(resp["body"]["data"]) == 1
 

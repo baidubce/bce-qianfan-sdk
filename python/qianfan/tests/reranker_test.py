@@ -35,7 +35,6 @@ def test_reranker_do():
 
     r = qianfan.Reranker(model="bce-reranker-base_v1")
     resp = r.do(_QUERY, _DOCUMENTS)
-    print(resp["_request"])
 
     resp = r.do(_QUERY, _DOCUMENTS, top_n=1)
     assert len(resp["body"]["results"]) == 1
@@ -52,7 +51,6 @@ async def test_reranker_ado():
 
     r = qianfan.Reranker(model="bce-reranker-base_v1")
     resp = r.do(_QUERY, _DOCUMENTS)
-    print(resp["_request"])
 
     resp = r.do(_QUERY, _DOCUMENTS, top_n=1)
     assert len(resp["body"]["results"]) == 1

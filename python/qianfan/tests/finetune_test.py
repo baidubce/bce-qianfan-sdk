@@ -96,7 +96,9 @@ def test_stop_finetune_job():
 
 def test_finetune_v2_create_job():
     resp = FineTune.V2.create_job(name="hiii", model="ERNIE-Speed", train_mode="SFT")
-    print("resp", resp)
+    assert resp["_request"]["name"] == "hiii"
+    assert resp["_request"]["model"] == "ERNIE-Speed"
+    assert "result" in resp
 
 
 def test_finetune_v2_create_task():
@@ -148,7 +150,6 @@ def test_finetune_v2_stop_task():
         name="teststop", model="ERNIE-Speed", train_mode="SFT"
     )
     job_id = resp["result"]["jobId"]
-    print("job_id+>>>>>>", job_id)
     resp = FineTune.V2.create_task(
         job_id=job_id,
         params_scale=console_consts.TrainParameterScale.FullFineTuning,
@@ -166,9 +167,7 @@ def test_finetune_v2_stop_task():
     assert resp["result"]["jobId"] == job_id
     assert resp["result"]["taskId"] != ""
     task_id = resp["result"]["taskId"]
-    print("tasl_idddd+>>>>>>", task_id)
     resp = FineTune.V2.stop_task(task_id=task_id)
-    print("res", resp["result"])
     assert resp["result"]
 
 

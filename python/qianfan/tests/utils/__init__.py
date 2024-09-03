@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qianfan.tests.utils.consts import Consts
 from qianfan.tests.utils.mock_server import fake_access_token
 from qianfan.tests.utils.utils import EnvHelper, init_test_env
 
-__all__ = ["EnvHelper", "fake_access_token", "init_test_env"]
+__all__ = ["EnvHelper", "fake_access_token", "init_test_env", "Consts"]

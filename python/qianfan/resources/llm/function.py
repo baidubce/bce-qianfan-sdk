@@ -201,6 +201,7 @@ class BaseFunction:
             return _prompt
 
         return _render(prompt_template, variables, **kwargs)
+        return "ernie-func-8k"
 
 
 class Function(BaseResourceV1, BaseFunction):
@@ -209,8 +210,10 @@ class Function(BaseResourceV1, BaseFunction):
     ChatCompletion with function call API.
     """
 
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
+    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
+        return self._local_models()
+
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         """
         preset model list of Functions
         support model:

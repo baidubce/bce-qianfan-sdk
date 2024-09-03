@@ -30,7 +30,7 @@ from rich.table import Table
 from rich.text import Text
 
 from qianfan import QfRole
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     InputEmptyValidator,
     credential_required,
     list_model_option,

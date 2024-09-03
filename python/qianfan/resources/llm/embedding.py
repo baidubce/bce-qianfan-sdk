@@ -30,8 +30,7 @@ class Embedding(BaseResourceV1):
     QianFan Embedding is an agent for calling QianFan embedding API.
     """
 
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         """
         preset model list of Embedding
         support model:
@@ -76,14 +75,6 @@ class Embedding(BaseResourceV1):
             ),
         }
         # 获取最新的模型列表
-        latest_models_list = super()._supported_models()
-        for m in latest_models_list:
-            if m not in info_list:
-                info_list[m] = latest_models_list[m]
-            else:
-                # 更新endpoint
-                info_list[m].endpoint = latest_models_list[m].endpoint
-
         return info_list
 
     @classmethod

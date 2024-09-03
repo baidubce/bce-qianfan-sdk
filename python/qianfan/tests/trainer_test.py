@@ -50,7 +50,6 @@ class MyEventHandler(EventHandler):
     events: list = []
 
     def dispatch(self, event: Event) -> None:
-        print("receive:<", event)
         self.events.append(event)
 
 

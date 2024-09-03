@@ -26,7 +26,8 @@ import * as packageJson from '../package.json';
 export function getCurrentEnvironment() {
     if (typeof window !== 'undefined') {
         return 'browser';
-    } else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
+    }
+    else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
         return 'node';
     }
     return 'unknown';
@@ -48,9 +49,9 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
     return {
         credentials: {
             ak,
-            sk
+            sk,
         },
-        endpoint: baseUrl
+        endpoint: baseUrl,
     };
 }
 
@@ -62,16 +63,16 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  * @returns 返回JSON格式的字符串
  */
 export function getRequestBody(body: ReqBody, model, version: string): string {
-    const request_source =
-        getCurrentEnvironment() === 'browser' ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
+    const request_source
+        = getCurrentEnvironment() === 'browser' ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
 
     const modifiedBody = {
         ...body,
         model,
         extra_parameters: {
             ...body.extra_parameters,
-            request_source
-        }
+            request_source,
+        },
     };
     return JSON.stringify(modifiedBody);
 }
@@ -102,7 +103,7 @@ export const getPath = ({
     Authentication,
     api_base,
     endpoint = '',
-    type
+    type,
 }: {
     model?: string;
     modelInfoMap?: QfLLMInfoMap;
@@ -115,11 +116,11 @@ export const getPath = ({
         const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
         const suffix = type === 'plugin' ? '/' : `/${type}/`;
         return `${basePath}${suffix}${endpoint}`;
-    } else if (model && modelInfoMap && modelInfoMap[model]) {
+    }
+    else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);
         return Authentication === 'IAM' ? `${BASE_PATH}${modelEndpoint}` : `${api_base}${modelEndpoint}`;
     }
-    throw new Error('Model is not supported');
 };
 
 export const castToError = (err: any): Error => {
@@ -176,7 +177,7 @@ export function getPathAndBody({
     baseUrl,
     body,
     endpoint = '',
-    type
+    type,
 }: {
     model?: string;
     modelInfoMap?: QfLLMInfoMap;
@@ -195,12 +196,12 @@ export function getPathAndBody({
         Authentication: 'AK',
         api_base,
         endpoint,
-        type
+        type,
     });
     const requestBody = getRequestBody(body, model, packageJson.version);
     return {
         AKPath,
-        requestBody
+        requestBody,
     };
 }
 
@@ -256,7 +257,7 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
     if (typeof model !== 'string' || model.trim() === '') {
         return {
             modelInfoMapUppercase: modelMap,
-            modelUppercase: ''
+            modelUppercase: '',
         };
     }
     const modelInfoMapUppercase = convertKeysToUppercase(modelMap);
@@ -265,7 +266,7 @@ export function getUpperCaseModelAndModelMap(model: string, modelMap?: QfLLMInfo
     return {
         modelInfoMapUppercase,
         modelUppercase,
-        modelLowercase
+        modelLowercase,
     };
 }
 
@@ -339,8 +340,8 @@ export async function consoleAction({base_api_route, data, action}: ConsoleActio
         path: apiRoute,
         body: data && JSON.stringify(data),
         headers: {
-            ...DEFAULT_HEADERS
-        }
+            ...DEFAULT_HEADERS,
+        },
     };
     const fetchOptions = await client.getSignature(
         action ? Object.assign({}, baseParams, {params: {Action: action}}) : baseParams
@@ -350,7 +351,8 @@ export async function consoleAction({base_api_route, data, action}: ConsoleActio
         const {url, ...rest} = fetchOptions;
         const resp = await fetchInstance.makeRequest(baseActionUrl(url, action), rest);
         return resp;
-    } catch (error) {
+    }
+    catch (error) {
         throw error;
     }
 }

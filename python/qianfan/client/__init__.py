@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+# Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.common.client.utils import (
-    list_model_option,
-)
+from qianfan.client.client import Qianfan
 
-
-def embedding_entry(
-    list_model: bool = list_model_option,
-) -> None:
-    """
-    Embedding utils.
-    """
-    pass
+__all__ = ["Qianfan"]

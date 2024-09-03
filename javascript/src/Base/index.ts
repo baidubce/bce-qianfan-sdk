@@ -183,6 +183,9 @@ export class BaseClient {
             }
             // AK/SK鉴权
             if (this.qianfanAk && this.qianfanSk) {
+                if (!AKPath) {
+                    throw new Error(`${model} is not supported`);
+                }
                 if (this.expires_in < Date.now() / 1000) {
                     await this.getAccessToken();
                 }

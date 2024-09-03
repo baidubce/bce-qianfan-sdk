@@ -267,7 +267,6 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
 def test_qianfan_data_source_load():
     ds = create_an_empty_qianfan_datasource()
     content = Dataset(inner_table=ds.fetch()).list()
-    print(content)
     assert content[0][0]["response"] == [["no response"]]
 
 

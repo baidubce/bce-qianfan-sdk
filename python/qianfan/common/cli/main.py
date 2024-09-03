@@ -19,15 +19,16 @@ import typer
 from typer.completion import completion_init, install_callback, show_callback
 
 import qianfan
-from qianfan.common.client.chat import chat_entry
-from qianfan.common.client.completion import completion_entry
-from qianfan.common.client.dataset import dataset_app
-from qianfan.common.client.embedding import embedding_entry
-from qianfan.common.client.evaluation import evaluation_app
-from qianfan.common.client.plugin import plugin_entry
-from qianfan.common.client.trainer import trainer_app
-from qianfan.common.client.txt2img import txt2img_entry
-from qianfan.common.client.utils import (
+from qianfan.common.cli.api import api_app
+from qianfan.common.cli.chat import chat_entry
+from qianfan.common.cli.completion import completion_entry
+from qianfan.common.cli.dataset import dataset_app
+from qianfan.common.cli.embedding import embedding_entry
+from qianfan.common.cli.evaluation import evaluation_app
+from qianfan.common.cli.plugin import plugin_entry
+from qianfan.common.cli.trainer import trainer_app
+from qianfan.common.cli.txt2img import txt2img_entry
+from qianfan.common.cli.utils import (
     credential_required,
     print_error_msg,
     print_info_msg,
@@ -49,6 +50,7 @@ app.command(name="plugin")(plugin_entry)
 app.add_typer(dataset_app, name="dataset")
 app.add_typer(trainer_app, name="trainer")
 app.add_typer(evaluation_app, name="evaluation")
+app.add_typer(api_app, name="api")
 
 _enable_traceback = False
 
@@ -93,7 +95,7 @@ def openai(
     Create an openai wrapper server.
     """
     check_dependency("openai", ["fastapi", "uvicorn"])
-    from qianfan.common.client.openai_adapter import entry as openai_entry
+    from qianfan.common.cli.openai_adapter import entry as openai_entry
 
     default_config = {
         "host": "0.0.0.0",
@@ -189,7 +191,7 @@ def proxy(
     Create a proxy server.
     """
     check_dependency("openai", ["fastapi", "uvicorn"])
-    from qianfan.common.client.proxy import entry as proxy_entry
+    from qianfan.common.cli.proxy import entry as proxy_entry
 
     ssl_config: Dict[str, Any] = {}
     if ssl_keyfile:

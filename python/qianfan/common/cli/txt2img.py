@@ -21,7 +21,7 @@ from rich.console import Console
 
 import qianfan
 from qianfan import QfResponse
-from qianfan.common.client.utils import (
+from qianfan.common.cli.utils import (
     create_client,
     credential_required,
     list_model_option,

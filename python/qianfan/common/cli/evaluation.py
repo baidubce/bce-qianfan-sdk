@@ -20,8 +20,8 @@ from rich.console import RenderableType
 from rich.pretty import Pretty
 from rich.table import Table
 
-from qianfan.common.client.dataset import load_dataset
-from qianfan.common.client.utils import (
+from qianfan.common.cli.dataset import load_dataset
+from qianfan.common.cli.utils import (
     credential_required,
     print_error_msg,
     print_info_msg,

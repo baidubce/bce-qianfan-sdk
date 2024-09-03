@@ -347,6 +347,7 @@ class DefaultValue:
     FileEncoding: str = "utf-8"
     CacheDir: str = str(Path.home() / ".qianfan_cache")
     DisableCache: bool = False
+    ChatV2ApiRoute: str = Consts.ChatV2API
 
 
 class DefaultLLMModel:

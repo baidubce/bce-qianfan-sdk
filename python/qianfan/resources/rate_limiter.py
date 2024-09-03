@@ -341,6 +341,7 @@ class RateLimiter:
             self._last_leak_timestamp = time.time()
             self._sync_lock = threading.Lock()
             self._condition_queue: Queue[RateLimiter._AcquireTask] = Queue()
+            self._running = True
             self._working_thread = threading.Thread(target=self._worker, daemon=True)
             self._working_thread.start()
 
@@ -354,14 +355,11 @@ class RateLimiter:
             )
 
         def _worker(self) -> None:
-            self._running = True
             while self._running:
                 task: Optional[RateLimiter._AcquireTask] = None
                 try:
-                    task = self._condition_queue.get(False)
+                    task = self._condition_queue.get(True, 1)
                 except Empty:
-                    # time.sleep(0.5)
-                    task = None
                     continue
                 amount = task.amount
                 while self._running:
@@ -375,7 +373,7 @@ class RateLimiter:
                 with task.condition:
                     task.condition.notify()
 
-        def stop(self, block: bool = True) -> None:
+        def stop(self, block: bool = False) -> None:
             self._running = False
             if block:
                 self._working_thread.join()

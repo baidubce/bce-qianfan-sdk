@@ -1605,9 +1605,10 @@ class ChatCompletion(VersionBase):
                     if func_model_info and func_model_info.endpoint:
                         return Function
                 endpoint = kwargs.get("endpoint", "")
-                for m in func_model_info_list.values():
-                    if endpoint and m.endpoint == endpoint:
-                        return Function
+                if endpoint:
+                    for m in func_model_info_list.values():
+                        if endpoint and m.endpoint == endpoint:
+                            return Function
             return _ChatCompletionV1
         elif version == "2":
             if kwargs.get("use_function") or kwargs.get("model") == "ernie-func-8k":

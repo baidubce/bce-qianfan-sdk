@@ -38,9 +38,9 @@ class Completion(BaseResourceV1):
     QianFan Completion is an agent for calling QianFan completion API.
     """
 
-    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         """
-        preset model list of Completions
+        local preset model list of Completions
 
         Args:
             None
@@ -88,8 +88,6 @@ class Completion(BaseResourceV1):
                 optional_keys=set(),
             ),
         }
-        # 获取最新的模型列表
-        info_list = self._merge_local_models_with_latest(info_list)
         # chat兼容
         chat_model_info = _ChatCompletionV1(config=self.config)._self_supported_models()
         for model, info in chat_model_info.items():

@@ -22,6 +22,7 @@ import pytest
 import qianfan
 from qianfan.tests.utils import EnvHelper, init_test_env
 from qianfan.tests.utils.consts import Consts
+from qianfan.utils.logging import log_debug
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -68,7 +69,7 @@ def pytest_runtest_teardown(item):
 
     # 计算新增的线程数
     threads_created = final_thread_count - initial_thread_count
-    print(
+    log_debug(
         f" '{item.nodeid}' thread stat: init:{initial_thread_count}, curr: "
         f" {final_thread_count} , new threads count: {threads_created}"
     )
@@ -83,8 +84,8 @@ def pytest_runtest_teardown(item):
         if ident not in initial_threads
     }
     # 打印新增的线程信息
-    print(f"ut: '{item.nodeid}' new threads count: {len(new_threads)}")
+    log_debug(f"ut: '{item.nodeid}' new threads count: {len(new_threads)}")
     for ident, name in new_threads.items():
-        print(
+        log_debug(
             f"thread ID: {ident}, thread name: {name}",
         )

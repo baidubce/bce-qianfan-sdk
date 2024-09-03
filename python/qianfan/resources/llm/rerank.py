@@ -27,7 +27,7 @@ class Reranker(BaseResourceV1):
     QianFan Reranker is an agent for calling QianFan reranker API.
     """
 
-    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         info_list = {
             "bce-reranker-base_v1": QfLLMInfo(
                 endpoint="/reranker/bce_reranker_base",

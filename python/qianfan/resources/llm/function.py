@@ -211,6 +211,9 @@ class Function(BaseResourceV1, BaseFunction):
     """
 
     def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
+        return self._local_models()
+
+    def _local_models(self) -> Dict[str, QfLLMInfo]:
         """
         preset model list of Functions
         support model:

@@ -1,5 +1,5 @@
 import abc
-from typing import Any
+from typing import Any, AsyncContextManager, ContextManager, Optional, Union
 
 
 class BaseRateLimiter(abc.ABC):
@@ -25,4 +25,8 @@ class BaseRateLimiter(abc.ABC):
 
     @abc.abstractmethod
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        ...
+
+    @abc.abstractmethod
+    def acquire(self, key: Optional[str]) -> Union[ContextManager, AsyncContextManager]:
         ...

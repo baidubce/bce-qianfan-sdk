@@ -20,7 +20,7 @@ import threading
 import time
 from queue import Empty, Queue
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Any, AsyncContextManager, ContextManager, Dict, Optional, Type, Union
 
 from aiolimiter import AsyncLimiter
 
@@ -44,7 +44,6 @@ class VersatileRateLimiter(BaseRateLimiter):
         request_per_minute: float = 0,
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
-        keys: Optional[str] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -64,40 +63,35 @@ class VersatileRateLimiter(BaseRateLimiter):
             forcing_disable (bool):
                 Force to disable all functionality of rate limiter.
                 Default to False
-            keys: (str),
-                redis key used to identify redis rate limiter info
         """
 
-        if not keys:
-            self._impl = _LimiterWrapper(
-                query_per_second=query_per_second,
-                request_per_minute=request_per_minute,
-                buffer_ratio=buffer_ratio,
-                forcing_disable=forcing_disable,
-                **kwargs
-            )
+        self._arguments = {
+            "query_per_second": query_per_second,
+            "request_per_minute": request_per_minute,
+            "buffer_ratio": buffer_ratio,
+            "forcing_disable": forcing_disable,
+            **kwargs,
+        }
 
-            return
-
-        with _MAP_LOCK:
-            if keys not in _RATE_LIMITER_MAP:
-                _RATE_LIMITER_MAP[keys] = _LimiterWrapper(
-                    query_per_second=query_per_second,
-                    request_per_minute=request_per_minute,
-                    buffer_ratio=buffer_ratio,
-                    forcing_disable=forcing_disable,
-                    **kwargs
-                )
-
-        self._impl = _RATE_LIMITER_MAP[keys]
+        self._impl: Optional[_LimiterWrapper] = None
+        self._init_lock = threading.Lock()
 
     async def async_reset_once(self, rpm: float) -> None:
+        if not self._impl:
+            return
+
         await self._impl.async_reset_once(rpm)
 
     def reset_once(self, rpm: float) -> None:
+        if not self._impl:
+            return
+
         self._impl.reset_once(rpm)
 
     def __enter__(self) -> None:
+        if not self._impl:
+            return
+
         with self._impl:
             ...
 
@@ -110,6 +104,9 @@ class VersatileRateLimiter(BaseRateLimiter):
         return
 
     async def __aenter__(self) -> None:
+        if not self._impl:
+            return
+
         async with self._impl:
             ...
 
@@ -120,6 +117,25 @@ class VersatileRateLimiter(BaseRateLimiter):
         exc_tb: Optional[TracebackType],
     ) -> None:
         return
+
+    def acquire(self, key: Optional[str] = None) -> ContextManager:
+        if self._impl:
+            return self
+
+        with self._init_lock:
+            if self._impl:
+                return self
+
+            if key is None:
+                self._impl = _LimiterWrapper(**self._arguments)
+            else:
+                with _MAP_LOCK:
+                    if key not in _RATE_LIMITER_MAP:
+                        _RATE_LIMITER_MAP[key] = _LimiterWrapper(**self._arguments)
+
+                self._impl = _RATE_LIMITER_MAP[key]
+
+        return self
 
 
 class _LimiterWrapper(BaseRateLimiter):
@@ -392,6 +408,9 @@ class _LimiterWrapper(BaseRateLimiter):
             del self._internal_qps_rate_limiter
         if hasattr(self, "_internal_rpm_rate_limiter"):
             del self._internal_rpm_rate_limiter
+
+    def acquire(self, key: Optional[str]) -> Union[ContextManager, AsyncContextManager]:
+        return self
 
 
 _RATE_LIMITER_MAP: Dict[str, _LimiterWrapper] = {}

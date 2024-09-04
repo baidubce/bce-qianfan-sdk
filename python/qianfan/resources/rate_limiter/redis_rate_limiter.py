@@ -1,8 +1,17 @@
 import asyncio
 import importlib.resources as pkg_resources
+import threading
 import time
 from hashlib import sha1
-from typing import Any, Awaitable, Dict
+from typing import (
+    Any,
+    AsyncContextManager,
+    Awaitable,
+    ContextManager,
+    Dict,
+    Optional,
+    Union,
+)
 
 from redis import ConnectionPool, Redis
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
@@ -26,8 +35,7 @@ class RedisRateLimiter(BaseRateLimiter):
         request_per_minute: float = 0,
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
-        keys: str = "default_key",
-        redis_connection_info: RedisConnectionInfo = RedisConnectionInfo(),
+        redis_connection_info: Optional[RedisConnectionInfo] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -47,9 +55,12 @@ class RedisRateLimiter(BaseRateLimiter):
             forcing_disable (bool):
                 Force to disable all functionality of rate limiter.
                 Default to False
-            keys: (str),
-                redis key used to identify redis rate limiter info
+            redis_connection_info: (Optional[RedisConnectionInfo])：
+                redis connection info
+                Default to None
         """
+        if redis_connection_info is None:
+            redis_connection_info = RedisConnectionInfo()
 
         self._forcing_disable = forcing_disable
         if self.check_forcing_disable():
@@ -91,20 +102,19 @@ class RedisRateLimiter(BaseRateLimiter):
         self._request_per_minute = request_per_minute
         self._query_per_second = query_per_second
 
-        self._rpm_key = keys + "_rpm"
-        self._rpm_10s_key = keys + "_rpm_10s"
-        self._qps_key = keys + "_qps"
+        self._has_been_reset = False
+        self._has_been_init = False
 
-        if request_per_minute:
-            self._set_limit_info(self._rpm_key, request_per_minute, 60)
-            self._set_limit_info(self._rpm_10s_key, request_per_minute / 6, 10)
-        if query_per_second:
-            if 0 < query_per_second < 1:
-                period = 1 / query_per_second
-                query_per_second = 1
-                self._set_limit_info(self._qps_key, query_per_second, period)
-            else:
-                self._set_limit_info(self._qps_key, query_per_second, 1)
+        self._reset_lock = threading.Lock()
+        self._async_reset_lock = asyncio.Lock()
+
+        self._init_lock = threading.Lock()
+
+        replacer = "_default"
+
+        self._rpm_key = replacer + "_rpm"
+        self._rpm_10s_key = replacer + "_rpm_10s"
+        self._qps_key = replacer + "_qps"
 
     def check_forcing_disable(self) -> bool:
         return self._forcing_disable
@@ -129,57 +139,71 @@ class RedisRateLimiter(BaseRateLimiter):
         str_period = str(period)
 
         try:
-            await assert_awaitable(
+            await _assert_awaitable(
                 self._async_connection.evalsha(
                     self._reset_limit_script_hash, 1, key, str_quantity, str_period
                 )
             )
         except NoScriptError:
-            await assert_awaitable(
+            await _assert_awaitable(
                 self._async_connection.eval(
                     self._reset_limit_script, 1, key, str_quantity, str_period
                 )
             )
 
     def reset_once(self, rpm: float) -> None:
-        if self.check_forcing_disable():
+        if self.check_forcing_disable() or not self._has_been_init:
             return
 
-        if self._request_per_minute and (rpm < self._request_per_minute):
-            self._request_per_minute = rpm
-            self._set_limit_info(self._rpm_key, rpm, 60)
-            self._set_limit_info(self._rpm_10s_key, rpm / 6, 10)
-        elif self._query_per_second and (rpm < self._query_per_second * 60):
-            if rpm < 60:
-                period = 60 / rpm
-                rpm = 60
-            else:
-                period = 1
+        with self._reset_lock:
+            if self._has_been_reset:
+                return
 
-            self._query_per_second = rpm / 60
-            self._set_limit_info(self._qps_key, rpm / 60, period)
+            self._has_been_reset = True
+
+            if self._request_per_minute and (rpm < self._request_per_minute):
+                self._request_per_minute = rpm
+                self._set_limit_info(self._rpm_key, rpm, 60)
+                self._set_limit_info(self._rpm_10s_key, rpm / 6, 10)
+            elif self._query_per_second and (rpm < self._query_per_second * 60):
+                if rpm < 60:
+                    period = 60 / rpm
+                    rpm = 60
+                else:
+                    period = 1
+
+                self._query_per_second = rpm / 60
+                self._set_limit_info(self._qps_key, rpm / 60, period)
 
     async def async_reset_once(self, rpm: float) -> None:
-        if self.check_forcing_disable():
+        if self.check_forcing_disable() or not self._has_been_init:
             return
 
-        if self._request_per_minute and (rpm < self._request_per_minute):
-            self._request_per_minute = rpm
-            await self._async_set_limit_info(self._rpm_key, rpm, 60)
-            await self._async_set_limit_info(self._rpm_10s_key, rpm / 6, 10)
-        elif self._query_per_second and (rpm < self._query_per_second * 60):
-            if rpm < 60:
-                period = 60 / rpm
-                rpm = 60
-            else:
-                period = 1
+        async with self._async_reset_lock:
+            if self._has_been_reset:
+                return
 
-            self._query_per_second = rpm / 60
-            await self._async_set_limit_info(self._qps_key, rpm / 60, period)
+            self._has_been_reset = True
+
+            if self._request_per_minute and (rpm < self._request_per_minute):
+                self._request_per_minute = rpm
+                await self._async_set_limit_info(self._rpm_key, rpm, 60)
+                await self._async_set_limit_info(self._rpm_10s_key, rpm / 6, 10)
+            elif self._query_per_second and (rpm < self._query_per_second * 60):
+                if rpm < 60:
+                    period = 60 / rpm
+                    rpm = 60
+                else:
+                    period = 1
+
+                self._query_per_second = rpm / 60
+                await self._async_set_limit_info(self._qps_key, rpm / 60, period)
 
     def __enter__(self) -> None:
-        if self.check_forcing_disable() or (
-            self._request_per_minute == 0 and self._query_per_second == 0
+        if (
+            self.check_forcing_disable()
+            or (self._request_per_minute == 0 and self._query_per_second == 0)
+            or not self._has_been_init
         ):
             return
 
@@ -229,30 +253,32 @@ class RedisRateLimiter(BaseRateLimiter):
         pass
 
     async def __aenter__(self) -> None:
-        if self.check_forcing_disable() or (
-            self._request_per_minute == 0 and self._query_per_second == 0
+        if (
+            self.check_forcing_disable()
+            or (self._request_per_minute == 0 and self._query_per_second == 0)
+            or not self._has_been_init
         ):
             return
 
         if self._request_per_minute:
             try:
-                wait_time_10s = await assert_awaitable(
+                wait_time_10s = await _assert_awaitable(
                     self._async_connection.evalsha(
                         self._check_limit_script_hash, 1, self._rpm_10s_key
                     )
                 )
-                wait_time = await assert_awaitable(
+                wait_time = await _assert_awaitable(
                     self._async_connection.evalsha(
                         self._check_limit_script_hash, 1, self._rpm_key
                     )
                 )
             except NoScriptError:
-                wait_time_10s = await assert_awaitable(
+                wait_time_10s = await _assert_awaitable(
                     self._async_connection.eval(
                         self._check_limit_script, 1, self._rpm_10s_key
                     )
                 )
-                wait_time = await assert_awaitable(
+                wait_time = await _assert_awaitable(
                     self._async_connection.eval(
                         self._check_limit_script, 1, self._rpm_key
                     )
@@ -266,13 +292,13 @@ class RedisRateLimiter(BaseRateLimiter):
             return
         elif self._query_per_second:
             try:
-                wait_time = await assert_awaitable(
+                wait_time = await _assert_awaitable(
                     self._async_connection.evalsha(
                         self._check_limit_script_hash, 1, self._qps_key
                     )
                 )
             except NoScriptError:
-                wait_time = await assert_awaitable(
+                wait_time = await _assert_awaitable(
                     self._async_connection.eval(
                         self._check_limit_script, 1, self._qps_key
                     )
@@ -287,7 +313,43 @@ class RedisRateLimiter(BaseRateLimiter):
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         pass
 
+    def acquire(
+        self, key: Optional[str] = None
+    ) -> Union[ContextManager, AsyncContextManager]:
+        if self._has_been_init:
+            return self
 
-def assert_awaitable(handler: Any) -> Awaitable:
+        with self._init_lock:
+            if self._has_been_init:
+                return self
+
+            self._has_been_init = True
+
+            if key is not None:
+                self._rpm_key = key + "_rpm"
+                self._rpm_10s_key = key + "_rpm_10s"
+                self._qps_key = key + "_qps"
+
+            self._set_in_redis()
+
+        return self
+
+    def _set_in_redis(self) -> None:
+        request_per_minute = self._request_per_minute
+        query_per_second = self._query_per_second
+
+        if request_per_minute:
+            self._set_limit_info(self._rpm_key, request_per_minute, 60)
+            self._set_limit_info(self._rpm_10s_key, request_per_minute / 6, 10)
+        if query_per_second:
+            if 0 < query_per_second < 1:
+                period = 1 / query_per_second
+                query_per_second = 1
+                self._set_limit_info(self._qps_key, query_per_second, period)
+            else:
+                self._set_limit_info(self._qps_key, query_per_second, 1)
+
+
+def _assert_awaitable(handler: Any) -> Awaitable:
     assert isinstance(handler, Awaitable)
     return handler

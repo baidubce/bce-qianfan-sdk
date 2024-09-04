@@ -1,0 +1,2669 @@
+[2024-09-04 14:31:23,416] MacBook-Pro/INFO/root: Waiting for workers to be ready, 0 of 10 connected
+[2024-09-04 14:31:23,935] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_1d36c527a7154d3f926fb1c5d0f14709 (index 0) reported as ready. 1 workers connected.
+[2024-09-04 14:31:23,936] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_4564eab283114cd8996fd8369c8f6e09 (index 1) reported as ready. 2 workers connected.
+[2024-09-04 14:31:23,937] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,939] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_345a34896666458ebcea17ed23643dd5 (index 2) reported as ready. 3 workers connected.
+[2024-09-04 14:31:23,940] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,944] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,949] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_23eeec5f97cc40308b317ec5f1a3b947 (index 3) reported as ready. 4 workers connected.
+[2024-09-04 14:31:23,951] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,953] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_8e2cb8f91541441b898c54e6343d8217 (index 4) reported as ready. 5 workers connected.
+[2024-09-04 14:31:23,954] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_332a6435d5204eacae56b1bb40c5d2fe (index 5) reported as ready. 6 workers connected.
+[2024-09-04 14:31:23,954] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,955] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,957] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_19f42ab8c5284ca9bdbba7b76b916dd9 (index 6) reported as ready. 7 workers connected.
+[2024-09-04 14:31:23,958] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,959] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_6030a166c253468381b190d868601c4a (index 7) reported as ready. 8 workers connected.
+[2024-09-04 14:31:23,960] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_c8e5e56c436d42e6900885dd65dab92e (index 8) reported as ready. 9 workers connected.
+[2024-09-04 14:31:23,959] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,961] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:23,962] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_aebb15d5430b49779a534500abc60cb3 (index 9) reported as ready. 10 workers connected.
+[2024-09-04 14:31:23,963] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:24,418] MacBook-Pro/INFO/locust.main: No run time limit set, use CTRL+C to interrupt
+[2024-09-04 14:31:24,421] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:31:24,422] MacBook-Pro/INFO/locust.runners: Sending spawn jobs of 10 users at 10.00 spawn rate to 10 ready workers
+[2024-09-04 14:31:24,533] MacBook-Pro/INFO/locust.runners: All users spawned: {"QianfanLLMLoadUser": 10} (10 total users)
+[2024-09-04 14:31:25,169] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,198] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,202] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,203] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,224] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,283] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,290] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,293] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,325] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,325] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,350] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,375] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,377] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,411] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,422] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,436] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,452] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,455] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,513] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,531] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,590] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,594] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,628] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,639] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,663] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,678] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,727] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,727] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,755] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,760] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,812] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,815] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,820] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,860] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,910] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,915] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,933] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:25,953] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,003] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,003] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,034] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,071] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,091] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,097] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,097] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,119] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,126] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,138] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,162] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,187] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,198] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,198] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,229] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,246] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,267] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,280] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,283] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,293] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,317] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,322] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,361] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,361] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,363] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,386] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,393] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,433] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,445] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,464] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,464] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,498] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,538] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,539] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,557] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,578] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,592] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,623] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,630] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,642] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,644] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,664] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,668] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,668] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,701] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,710] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,715] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,718] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,748] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,748] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:26,895] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:27,414] MacBook-Pro/ERROR/locust.user.task: Object of type _GenericAlias is not JSON serializable
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 340, in run
+    self.execute_next_task()
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+  File "/opt/anaconda3/envs/xn/lib/python3.11/site-packages/locust/user/task.py", line 490, in execute_task
+    task(self.user)
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 696, in mytask
+    self.client.qianfan_request(
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 134, in qianfan_request
+    request_meta = self._request_internal(context=context, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jianruitian/Documents/GitHub/bce-qianfan-sdk/python/qianfan/dataset/stress_test/qianfan_llm_load.py", line 350, in _request_internal
+    res = json.dumps(res,ensure_ascii=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/xn/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type _GenericAlias is not JSON serializable
+
+[2024-09-04 14:31:27,416] MacBook-Pro.local/WARNING/yame.runner: Distributor[distributor] StopIteration occurs 10 times, and 10 users have been spawned.
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,420] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,422] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,422] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,422] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:31:27,503] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,503] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_345a34896666458ebcea17ed23643dd5' (index 2) quit. 0 workers ready.
+[2024-09-04 14:31:27,507] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,507] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_c8e5e56c436d42e6900885dd65dab92e' (index 8) quit. 0 workers ready.
+[2024-09-04 14:31:27,508] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,509] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_23eeec5f97cc40308b317ec5f1a3b947' (index 3) quit. 0 workers ready.
+[2024-09-04 14:31:27,514] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,514] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_19f42ab8c5284ca9bdbba7b76b916dd9' (index 6) quit. 0 workers ready.
+[2024-09-04 14:31:27,515] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,516] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_4564eab283114cd8996fd8369c8f6e09' (index 1) quit. 0 workers ready.
+[2024-09-04 14:31:27,516] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,517] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,517] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_332a6435d5204eacae56b1bb40c5d2fe' (index 5) quit. 0 workers ready.
+[2024-09-04 14:31:27,519] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_1d36c527a7154d3f926fb1c5d0f14709' (index 0) quit. 0 workers ready.
+[2024-09-04 14:31:27,520] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,520] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_aebb15d5430b49779a534500abc60cb3' (index 9) quit. 0 workers ready.
+[2024-09-04 14:31:27,520] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,520] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_6030a166c253468381b190d868601c4a' (index 7) quit. 0 workers ready.
+[2024-09-04 14:31:27,522] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:31:27,522] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_8e2cb8f91541441b898c54e6343d8217' (index 4) quit. 0 workers ready.
+[2024-09-04 14:31:27,522] MacBook-Pro/INFO/locust.runners: The last worker quit, stopping test.
+[2024-09-04 14:31:28,005] MacBook-Pro/INFO/locust.main: writing html report to file: record/20240904T143123Z/round-user_num_10/report_user_num_10.html
+[2024-09-04 14:31:28,508] MacBook-Pro/INFO/locust.main: Shutting down (exit code 1)

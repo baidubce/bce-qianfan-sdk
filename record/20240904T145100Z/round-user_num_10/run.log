@@ -1,0 +1,59 @@
+[2024-09-04 14:51:00,095] MacBook-Pro/INFO/root: Waiting for workers to be ready, 0 of 10 connected
+[2024-09-04 14:51:00,610] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_e720802287b54e1bbdc15f9e316ca57c (index 0) reported as ready. 1 workers connected.
+[2024-09-04 14:51:00,613] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,620] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_5ea00a8877444b46820c4d8519e2136f (index 1) reported as ready. 2 workers connected.
+[2024-09-04 14:51:00,623] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,627] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_07b78c94113a4b648a7352302034ee42 (index 2) reported as ready. 3 workers connected.
+[2024-09-04 14:51:00,630] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,636] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_fe9c8a7089244f4b9de69d9cb43ba7f7 (index 3) reported as ready. 4 workers connected.
+[2024-09-04 14:51:00,639] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_0387cc9e4b774fbf8057578c32ee6189 (index 4) reported as ready. 5 workers connected.
+[2024-09-04 14:51:00,638] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,641] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,642] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_c270dfee217d4c58815f5e9bccedeb51 (index 5) reported as ready. 6 workers connected.
+[2024-09-04 14:51:00,642] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_3457dabdb5144066807ba0dade6e0712 (index 6) reported as ready. 7 workers connected.
+[2024-09-04 14:51:00,642] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,643] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,644] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_557f3a29521d49f1a4e015bcceb72e93 (index 7) reported as ready. 8 workers connected.
+[2024-09-04 14:51:00,645] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_ed3ccee70bb747f8b1fd877076cce0c5 (index 8) reported as ready. 9 workers connected.
+[2024-09-04 14:51:00,645] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,645] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:00,646] MacBook-Pro/INFO/locust.runners: Worker MacBook-Pro.local_505a299904cb4b3b9b6d6089ecf6540a (index 9) reported as ready. 10 workers connected.
+[2024-09-04 14:51:00,647] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:01,098] MacBook-Pro/INFO/locust.main: No run time limit set, use CTRL+C to interrupt
+[2024-09-04 14:51:01,100] MacBook-Pro/INFO/locust.main: Starting Locust 2.31.4
+[2024-09-04 14:51:01,102] MacBook-Pro/INFO/locust.runners: Sending spawn jobs of 10 users at 10.00 spawn rate to 10 ready workers
+[2024-09-04 14:51:01,206] MacBook-Pro/INFO/locust.runners: All users spawned: {"QianfanLLMLoadUser": 10} (10 total users)
+[2024-09-04 14:51:03,264] MacBook-Pro.local/WARNING/yame.runner: Distributor[distributor] StopIteration occurs 10 times, and 10 users have been spawned.
+[2024-09-04 14:51:03,269] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,269] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,269] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,269] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,269] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,270] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,270] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,274] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,274] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,277] MacBook-Pro/INFO/locust.runners: Got quit message from master, shutting down...
+[2024-09-04 14:51:03,351] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,352] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,354] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,353] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_0387cc9e4b774fbf8057578c32ee6189' (index 4) quit. 0 workers ready.
+[2024-09-04 14:51:03,355] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,355] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,356] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_e720802287b54e1bbdc15f9e316ca57c' (index 0) quit. 0 workers ready.
+[2024-09-04 14:51:03,357] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_5ea00a8877444b46820c4d8519e2136f' (index 1) quit. 0 workers ready.
+[2024-09-04 14:51:03,358] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_c270dfee217d4c58815f5e9bccedeb51' (index 5) quit. 0 workers ready.
+[2024-09-04 14:51:03,359] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_3457dabdb5144066807ba0dade6e0712' (index 6) quit. 0 workers ready.
+[2024-09-04 14:51:03,360] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,360] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_ed3ccee70bb747f8b1fd877076cce0c5' (index 8) quit. 0 workers ready.
+[2024-09-04 14:51:03,362] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,362] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_557f3a29521d49f1a4e015bcceb72e93' (index 7) quit. 0 workers ready.
+[2024-09-04 14:51:03,365] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,365] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_505a299904cb4b3b9b6d6089ecf6540a' (index 9) quit. 0 workers ready.
+[2024-09-04 14:51:03,366] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,366] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)
+[2024-09-04 14:51:03,366] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_07b78c94113a4b648a7352302034ee42' (index 2) quit. 0 workers ready.
+[2024-09-04 14:51:03,366] MacBook-Pro/INFO/locust.runners: Worker 'MacBook-Pro.local_fe9c8a7089244f4b9de69d9cb43ba7f7' (index 3) quit. 0 workers ready.
+[2024-09-04 14:51:03,367] MacBook-Pro/INFO/locust.runners: The last worker quit, stopping test.
+[2024-09-04 14:51:03,821] MacBook-Pro/INFO/locust.main: writing html report to file: record/20240904T145100Z/round-user_num_10/report_user_num_10.html
+[2024-09-04 14:51:04,324] MacBook-Pro/INFO/locust.main: Shutting down (exit code 0)

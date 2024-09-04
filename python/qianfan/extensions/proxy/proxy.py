@@ -157,7 +157,7 @@ class ClientProxy(object):
 
         """
         try:
-            async with self._rate_limiter:
+            async with self._rate_limiter.acquire():
                 qf_req = await self.get_request(request, url_route)
                 if self._direct:
                     pass

@@ -5,12 +5,9 @@ import time
 from hashlib import sha1
 from typing import (
     Any,
-    AsyncContextManager,
     Awaitable,
-    ContextManager,
     Dict,
     Optional,
-    Union,
 )
 
 from redis import ConnectionPool, Redis
@@ -313,9 +310,7 @@ class RedisRateLimiter(BaseRateLimiter):
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         pass
 
-    def acquire(
-        self, key: Optional[str] = None
-    ) -> Union[ContextManager, AsyncContextManager]:
+    def acquire(self, key: Optional[str] = None) -> "RedisRateLimiter":
         if self._has_been_init:
             return self
 

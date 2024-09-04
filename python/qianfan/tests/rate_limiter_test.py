@@ -31,7 +31,7 @@ def test_not_sync_rate_limiter():
     start_timestamp = time.time()
     rl = VersatileRateLimiter()
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp < 1
@@ -40,7 +40,7 @@ def test_not_sync_rate_limiter():
 @pytest.mark.asyncio
 async def test_not_async_rate_limiter():
     async def async_sleep(rl):
-        async with rl:
+        async with rl.acquire():
             pass
 
     start_timestamp = time.time()
@@ -58,7 +58,7 @@ def test_sync_rate_limiter():
     start_timestamp = time.time()
     rl = VersatileRateLimiter(query_per_second=1)
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 4
@@ -67,7 +67,7 @@ def test_sync_rate_limiter():
 @pytest.mark.asyncio
 async def test_async_rate_limiter():
     async def async_sleep(rl):
-        async with rl:
+        async with rl.acquire():
             pass
 
     start_timestamp = time.time()
@@ -141,7 +141,7 @@ def test_set_rate_limiter_through_environment_variable():
     start_timestamp = time.time()
     rl = VersatileRateLimiter()
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
@@ -152,7 +152,7 @@ def test_set_rpm_limiter_function():
     start_timestamp = time.time()
     rpm_rl = VersatileRateLimiter(request_per_minute=10)
     for i in range(0, 2):
-        with rpm_rl:
+        with rpm_rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 2
@@ -164,7 +164,7 @@ def test_multi_thread_case_limiter():
     t_list = []
 
     def _inner_thread_working_function():
-        with rpm_rl:
+        with rpm_rl.acquire():
             ...
 
     for i in range(5):
@@ -186,7 +186,7 @@ async def test_async_case_limiter():
     awaitable_list = []
 
     async def _inner_coroutine_working_function():
-        async with rpm_rl:
+        async with rpm_rl.acquire():
             ...
 
     for i in range(5):
@@ -226,6 +226,7 @@ def test_limit_in_thread_async():
 
 def test_reset_once():
     rpm_rl = VersatileRateLimiter(query_per_second=5)
+    rpm_rl.acquire()
 
     assert not rpm_rl._impl._is_rpm
     assert (
@@ -253,6 +254,7 @@ def test_reset_once():
 @pytest.mark.asyncio
 async def test_reset_once_async():
     rpm_rl = VersatileRateLimiter(request_per_minute=300)
+    rpm_rl.acquire()
 
     assert rpm_rl._impl._is_rpm
     assert rpm_rl._impl._internal_rpm_rate_limiter._async_limiter.max_rate == 270
@@ -271,6 +273,7 @@ async def test_reset_once_async():
 
 def test_reset_once_from_closed():
     rpm_rl = VersatileRateLimiter()
+    rpm_rl.acquire()
 
     assert rpm_rl._impl.is_closed
 
@@ -297,6 +300,7 @@ def test_reset_once_from_closed():
 @pytest.mark.asyncio
 async def test_reset_once_async_from_closed():
     rpm_rl = VersatileRateLimiter()
+    rpm_rl.acquire()
 
     assert rpm_rl._impl.is_closed
 

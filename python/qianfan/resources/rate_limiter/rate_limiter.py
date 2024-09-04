@@ -20,7 +20,7 @@ import threading
 import time
 from queue import Empty, Queue
 from types import TracebackType
-from typing import Any, AsyncContextManager, ContextManager, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type
 
 from aiolimiter import AsyncLimiter
 
@@ -118,7 +118,7 @@ class VersatileRateLimiter(BaseRateLimiter):
     ) -> None:
         return
 
-    def acquire(self, key: Optional[str] = None) -> ContextManager:
+    def acquire(self, key: Optional[str] = None) -> "VersatileRateLimiter":
         if self._impl:
             return self
 
@@ -409,7 +409,7 @@ class _LimiterWrapper(BaseRateLimiter):
         if hasattr(self, "_internal_rpm_rate_limiter"):
             del self._internal_rpm_rate_limiter
 
-    def acquire(self, key: Optional[str]) -> Union[ContextManager, AsyncContextManager]:
+    def acquire(self, key: Optional[str] = None) -> "_LimiterWrapper":
         return self
 
 

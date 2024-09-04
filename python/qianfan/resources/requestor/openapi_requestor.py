@@ -146,7 +146,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                             token_refreshed = True
                             self._auth.refresh_access_token()
                             self._add_access_token(request)
-                            with self._rate_limiter:
+                            with self._rate_limiter.acquire():
                                 responses = self._client.request_stream(request)
                             continue
                         raise
@@ -253,7 +253,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                             token_refreshed = True
                             await self._auth.arefresh_access_token()
                             await self._async_add_access_token(request)
-                            async with self._rate_limiter:
+                            async with self._rate_limiter.acquire():
                                 responses = self._client.arequest_stream(request)
                             continue
                         raise

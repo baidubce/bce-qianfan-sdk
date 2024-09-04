@@ -177,7 +177,7 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> QfResponse:
         log_trace(f"raw request: {request}")
-        with requestor._rate_limiter:
+        with requestor._rate_limiter.acquire():
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
@@ -204,7 +204,7 @@ def _async_latency(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> QfResponse:
         log_trace(f"raw request: {request}")
-        async with requestor._rate_limiter:
+        async with requestor._rate_limiter.acquire():
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)
@@ -230,7 +230,7 @@ def _stream_latency(
     def wrapper(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> Iterator[QfResponse]:
-        with requestor._rate_limiter:
+        with requestor._rate_limiter.acquire():
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
@@ -272,7 +272,7 @@ def _async_stream_latency(
     async def wrapper(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> AsyncIterator[QfResponse]:
-        async with requestor._rate_limiter:
+        async with requestor._rate_limiter.acquire():
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)

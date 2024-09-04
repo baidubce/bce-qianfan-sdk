@@ -1,8 +1,8 @@
 import abc
-from typing import Any, AsyncContextManager, ContextManager, Optional, Union
+from typing import Any, AsyncContextManager, ContextManager, Optional
 
 
-class BaseRateLimiter(abc.ABC):
+class BaseRateLimiter(abc.ABC, ContextManager, AsyncContextManager):
     @abc.abstractmethod
     def reset_once(self, rpm: float) -> None:
         ...
@@ -28,5 +28,5 @@ class BaseRateLimiter(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def acquire(self, key: Optional[str]) -> Union[ContextManager, AsyncContextManager]:
+    def acquire(self, key: Optional[str] = None) -> "BaseRateLimiter":
         ...

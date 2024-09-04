@@ -65,7 +65,7 @@ export function getIAMConfig(ak: string, sk: string, baseUrl: string): IAMConfig
  */
 export function getRequestBody(body: ReqBody, model, version: string): string {
     const request_source
-        = (getCurrentEnvironment() === 'browser') ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
+        = getCurrentEnvironment() === 'browser' ? `qianfan_fe_sdk_v${version}` : `qianfan_js_sdk_v${version}`;
 
     const modifiedBody = {
         ...body,
@@ -77,7 +77,6 @@ export function getRequestBody(body: ReqBody, model, version: string): string {
     };
     return JSON.stringify(modifiedBody);
 }
-
 
 /**
  * 获取模型对应的API端点
@@ -107,12 +106,12 @@ export const getPath = ({
     endpoint = '',
     type,
 }: {
-    model?: string,
-    modelInfoMap?: QfLLMInfoMap,
-    Authentication: 'IAM' | 'AK', // 假设 Authentication 只能是 'IAM' 或 'AK'
-    api_base: string,
-    endpoint?: string,
-    type?: string,
+    model?: string;
+    modelInfoMap?: QfLLMInfoMap;
+    Authentication: 'IAM' | 'AK'; // 假设 Authentication 只能是 'IAM' 或 'AK'
+    api_base: string;
+    endpoint?: string;
+    type?: string;
 }): string => {
     if (endpoint && type) {
         const basePath = Authentication === 'IAM' ? BASE_PATH : api_base;
@@ -121,13 +120,9 @@ export const getPath = ({
     }
     else if (model && modelInfoMap && modelInfoMap[model]) {
         const modelEndpoint = getModelEndpoint(model, modelInfoMap);
-        return Authentication === 'IAM'
-            ? `${BASE_PATH}${modelEndpoint}`
-            : `${api_base}${modelEndpoint}`;
+        return Authentication === 'IAM' ? `${BASE_PATH}${modelEndpoint}` : `${api_base}${modelEndpoint}`;
     }
-    throw new Error('Model is not supported');
 };
-
 
 export const castToError = (err: any): Error => {
     if (err instanceof Error) {
@@ -185,12 +180,12 @@ export function getPathAndBody({
     endpoint = '',
     type,
 }: {
-    model?: string,
-    modelInfoMap?: QfLLMInfoMap,
-    baseUrl: string,
-    body?: ReqBody,
-    endpoint?: string,
-    type?: string
+    model?: string;
+    modelInfoMap?: QfLLMInfoMap;
+    baseUrl: string;
+    body?: ReqBody;
+    endpoint?: string;
+    type?: string;
 }): {
     AKPath: string;
     requestBody: string;
@@ -310,10 +305,9 @@ function baseActionUrl(route: string, action: string): string {
     return !action ? route : `${route}?Action=${action}`;
 }
 
-
 interface ConsoleActionParams {
     base_api_route: string;
-    data?: Record<string, any>,
+    data?: Record<string, any>;
     action?: string;
 }
 
@@ -325,11 +319,7 @@ interface ConsoleActionParams {
  * @param action 可选参数，方法名称，类型为字符串
  * @returns 返回任意类型
  */
-export async function consoleAction({
-    base_api_route,
-    data,
-    action,
-}: ConsoleActionParams): Promise<any> {
+export async function consoleAction({base_api_route, data, action}: ConsoleActionParams): Promise<any> {
     const config = getDefaultConfig();
     // IAM鉴权，先判断是否有IAM的key
     if (!(config.QIANFAN_ACCESS_KEY && config.QIANFAN_SECRET_KEY)) {
@@ -342,9 +332,13 @@ export async function consoleAction({
         config.QIANFAN_CONSOLE_API_BASE_URL
     );
     const client = new HttpClient(httpClientConfig);
+
+    const normalizedRoute = base_api_route.startsWith('/') ? base_api_route.slice(1) : base_api_route;
+    const apiRoute = `${config.QIANFAN_CONSOLE_API_BASE_URL}/${normalizedRoute}`;
+
     const baseParams = {
         httpMethod: 'POST',
-        path: `${config.QIANFAN_CONSOLE_API_BASE_URL}/${base_api_route}`,
+        path: apiRoute,
         body: data && JSON.stringify(data),
         headers: {
             ...DEFAULT_HEADERS,

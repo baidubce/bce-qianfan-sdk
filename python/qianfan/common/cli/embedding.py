@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.common import cli
-from qianfan.common.prompt.prompt import Prompt, PromptLabel
+from qianfan.common.cli.utils import (
+    list_model_option,
+)
 
-client = cli
-__all__ = ["Prompt", "PromptLabel", "cli"]
+
+def embedding_entry(
+    list_model: bool = list_model_option,
+) -> None:
+    """
+    Embedding utils.
+    """
+    pass

@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from typing_extensions import deprecated
 
@@ -20,7 +21,7 @@ from qianfan.consts import DefaultValue, Env
 from qianfan.utils.pydantic import BaseSettings, Field
 
 
-class GlobalConfig(BaseSettings):
+class Config(BaseSettings):
     """
     The global config of whole qianfan sdk
     """
@@ -36,6 +37,7 @@ class GlobalConfig(BaseSettings):
     SECRET_KEY: Optional[str] = Field(default=None)
     ACCESS_TOKEN: Optional[str] = Field(default=None)
     BEARER_TOKEN: Optional[str] = Field(default=None)
+    APP_ID: Optional[str] = Field(default=None)
     BASE_URL: str = Field(default=DefaultValue.BaseURL)
     NO_AUTH: bool = Field(default=False)
     USE_CUSTOM_ENDPOINT: bool = Field(default=False)
@@ -135,16 +137,28 @@ class GlobalConfig(BaseSettings):
     # 缓存文件路径配置
     DISABLE_CACHE: bool = Field(default=DefaultValue.DisableCache)
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
+    CHAT_V2_API_ROUTE: str = Field(default=DefaultValue.ChatV2ApiRoute)
+
+    def auth_key(self) -> str:
+        auth_keys = (
+            f"{self.AK}:{self.SK}:{self.ACCESS_KEY}:{self.SECRET_KEY}:"
+            f"{self.ACCESS_TOKEN}:{self.BEARER_TOKEN}:{self.ACCESS_CODE}"
+        )
+        md5_hash = hashlib.md5(auth_keys.encode(encoding=encoding()))
+        return md5_hash.hexdigest()[:24]
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name.upper(), value)
 
 
-_GLOBAL_CONFIG: Optional[GlobalConfig] = None
+_GLOBAL_CONFIG: Optional[Config] = None
 
 
-def get_config() -> GlobalConfig:
+def get_config() -> Config:
     global _GLOBAL_CONFIG
     if not _GLOBAL_CONFIG:
         try:
-            _GLOBAL_CONFIG = GlobalConfig(  # type: ignore
+            _GLOBAL_CONFIG = Config(  # type: ignore
                 _env_file=os.getenv(Env.DotEnvConfigFile, DefaultValue.DotEnvConfigFile)
             )
         except Exception as e:
@@ -152,6 +166,10 @@ def get_config() -> GlobalConfig:
             # logger.error(f"unexpected error: {e}")
             raise e
     return _GLOBAL_CONFIG
+
+
+# 兼容之前版本
+GlobalConfig = Config
 
 
 @deprecated(

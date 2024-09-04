@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Baidu, Inc. All Rights Reserved.
+# Copyright (c) 2024 Baidu, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qianfan.common import cli
-from qianfan.common.prompt.prompt import Prompt, PromptLabel
 
-client = cli
-__all__ = ["Prompt", "PromptLabel", "cli"]
+class Consts:
+    test_access_key = "test_access_key"
+    test_secret_key = "test_secret_key"

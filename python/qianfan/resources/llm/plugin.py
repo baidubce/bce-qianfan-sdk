@@ -49,8 +49,7 @@ class Plugin(BaseResourceV1):
             )
             super().__init__(endpoint=endpoint, **kwargs)
 
-    @classmethod
-    def _supported_models(cls) -> Dict[str, QfLLMInfo]:
+    def _self_supported_models(self) -> Dict[str, QfLLMInfo]:
         """
         Only one endpoint provide for plugins
 
@@ -108,9 +107,9 @@ class Plugin(BaseResourceV1):
             return f"/plugin/{endpoint}/"
         else:
             # 一言插件
-            if model not in self._supported_models():
+            if model not in self._self_supported_models():
                 model = self._default_model()
-            model_info = self._supported_models().get(model)
+            model_info = self._self_supported_models().get(model)
             assert model_info is not None
             return model_info.endpoint
 

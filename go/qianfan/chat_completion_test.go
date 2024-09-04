@@ -39,6 +39,8 @@ var testEndpointList = []string{
 	"fjid_432",
 }
 
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func TestChatCompletion(t *testing.T) {
 	for model, endpoint := range ChatModelEndpoint {
 		if model == "ERNIE-Function-8K" {
@@ -194,7 +196,7 @@ func TestChatCompletionModelList(t *testing.T) {
 func TestChatCompletionRetry(t *testing.T) {
 	defer resetTestEnv()
 	chat := NewChatCompletion(
-		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithEndpoint(fmt.Sprintf("test_retry_%d", r.Intn(100000))),
 		WithLLMRetryCount(5),
 	)
 	resp, err := chat.Do(
@@ -218,7 +220,7 @@ func TestChatCompletionRetry(t *testing.T) {
 	assert.Equal(t, target.Code, InvalidParamErrCode)
 
 	chat = NewChatCompletion(
-		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithEndpoint(fmt.Sprintf("test_retry_%d", r.Intn(100000))),
 	)
 	_, err = chat.Do(
 		context.Background(),
@@ -237,7 +239,7 @@ func TestChatCompletionStreamRetry(t *testing.T) {
 	GetConfig().LLMRetryCount = 5
 	defer resetTestEnv()
 	chat := NewChatCompletion(
-		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithEndpoint(fmt.Sprintf("test_retry_%d", r.Intn(100000))),
 	)
 	resp, err := chat.Stream(
 		context.Background(),
@@ -268,7 +270,7 @@ func TestChatCompletionStreamRetry(t *testing.T) {
 	assert.True(t, turn_count > 1)
 
 	chat = NewChatCompletion(
-		WithEndpoint(fmt.Sprintf("test_retry_%d", rand.Intn(100000))),
+		WithEndpoint(fmt.Sprintf("test_retry_%d", r.Intn(100000))),
 		WithLLMRetryCount(1),
 	)
 	_, err = chat.Stream(
@@ -636,7 +638,7 @@ func resetModelEndpointRetriever() {
 }
 
 func resetTestEnv() {
-	rand.Seed(time.Now().UnixNano())
+	r.Seed(time.Now().UnixNano())
 	logger.SetLevel(logrus.DebugLevel)
 	os.Setenv("QIANFAN_BASE_URL", "http://127.0.0.1:8866")
 	os.Setenv("QIANFAN_CONSOLE_BASE_URL", "http://127.0.0.1:8866")

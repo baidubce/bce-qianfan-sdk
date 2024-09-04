@@ -15,7 +15,7 @@
 import HttpClient from './HttpClient';
 import Fetch from './Fetch';
 import {Headers} from './Fetch/nodeFetch';
-import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS, BEAR_TOKEN_URL} from './constant';
+import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
 
@@ -374,18 +374,19 @@ interface TokenResp {
 async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
     const {expireInSeconds: expireInSecondsInProps} = props || {};
     const config = getDefaultConfig();
+    const {QIANFAN_BEAR_TOKEN_URL} = config;
     try {
         // 鉴权
         const httpClientConfig = getIAMConfig(
             config.QIANFAN_ACCESS_KEY,
             config.QIANFAN_SECRET_KEY,
-            BEAR_TOKEN_URL
+            QIANFAN_BEAR_TOKEN_URL
         );
         const client = new HttpClient(httpClientConfig);
         const expireInSeconds = typeof expireInSecondsInProps === 'number' ? expireInSecondsInProps : 100000
         const fetchOptions = await client.getSignature({
             httpMethod: 'GET',
-            path: BEAR_TOKEN_URL,
+            path: QIANFAN_BEAR_TOKEN_URL,
             params: {expireInSeconds},
             headers: {
                 ...DEFAULT_HEADERS,
@@ -393,7 +394,7 @@ async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
         });
         const fetchInstance = new Fetch();
         const {url, ...rest} = fetchOptions;
-        const resp = await fetchInstance.makeRequest(`${BEAR_TOKEN_URL}?expireInSeconds=${expireInSeconds}`, rest);
+        const resp = await fetchInstance.makeRequest(`${QIANFAN_BEAR_TOKEN_URL}?expireInSeconds=${expireInSeconds}`, rest);
         return resp;
     }
     catch (error) {

@@ -18,9 +18,9 @@ import re
 import subprocess
 import threading
 import time
+from dataclasses import dataclass, field
 from queue import Empty, Queue
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field
 
 from qianfan import QfResponse, resources
 from qianfan.config import encoding
@@ -207,7 +207,9 @@ class BatchInferenceHelper:
         self.max_remote_tasks = kwargs.get("max_remote_tasks", MAX_REMOTE_TASKS)
         self._monitor_task_pool: Dict[str, InferTask] = {}
         self._running = False
-        self._queue_process_thread = threading.Thread(target=self._start_process_queue, daemon=True)
+        self._queue_process_thread = threading.Thread(
+            target=self._start_process_queue, daemon=True
+        )
         self._queue_process_thread.start()
         self._monitor_task_pool_lock = threading.Lock()
 
@@ -243,22 +245,21 @@ class BatchInferenceHelper:
                 except Empty:
                     time.sleep(1)
                     continue
-            running_tasks = self._get_all_tasks(run_status="Running")
+            try:
+                running_tasks = self._get_all_tasks(run_status="Running")
+            except Exception as e:
+                log_error(f"get running tasks error {e}")
+                time.sleep(15)
+                continue
             if self.max_remote_tasks > len(running_tasks):
                 try:
                     resp = call_bf(**task.request_input)
-                except RequestError as e:
-                    err_resp = json.loads(e.body)
-                    if (
-                        e.status_code == 400
-                        and err_resp.get("code") == "TaskRunningNumberExceedLimit"
-                    ):
-                        continue
                 except Exception as e:
+                    #  无限重试。
                     log_error(f"create batch inference task error {e}")
-                    raise e
+                    continue
                 task_id = resp.body.get("result", {}).get("taskId")
-                log_info(f'created infer_task:{ task_id}, {task}')
+                log_info(f"created infer_task:{ task_id}, {task}")
                 with self._monitor_task_pool_lock:
                     self._monitor_task_pool[task.id].infer_id = task_id
                 task = None
@@ -455,9 +456,14 @@ class BatchInferenceHelper:
             done_list = []
             for k, task in tasks.items():
                 if task.infer_id and task.status in ["Running", "", None]:
-                    task.update_status()
-                    time.sleep(1)
-                elif task.infer_id :
+                    try:
+                        task.update_status()
+                    except Exception as e:
+                        log_error(f"failed to get task status:{e}")
+                        time.sleep(5)
+                        continue
+                    time.sleep(5)
+                elif task.infer_id:
                     if k in self._monitor_task_pool:
                         done_list.append(k)
                     final_tasks.append(task)
@@ -483,7 +489,12 @@ class BatchInferenceHelper:
             json.dump([r.id for r in self._monitor_task_pool.values()], f)
 
     def batch_inference(
-        self, input_uri: str, output_uri: str, wait_finished: bool = True, **kwargs: Any
+        self,
+        input_uri: str,
+        output_uri: str,
+        wait_finished: bool = True,
+        done_file_uri: Optional[str] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         batch inference
@@ -504,7 +515,7 @@ class BatchInferenceHelper:
             kwargs.pop("use_raw_input")
         else:
             input_group_uris = self._prepare_ds(bf_id, input_uri)
-        
+
         log_info(f"input uris:{input_group_uris}")
         user_name, password = self.afs_client.ugi.split(",")
         bf_tasks = [
@@ -536,6 +547,10 @@ class BatchInferenceHelper:
             )
         if del_after_finished:
             self.afs_client.rmr(*input_group_uris)
+        if done_file_uri:
+            with open(f"{bf_id}/DONE", "w") as f:
+                pass
+            self.afs_client.put(f"{bf_id}/DONE", done_file_uri)
 
         return {"bf_id": bf_id, "results": res}
 
@@ -567,6 +582,7 @@ class BatchInferenceHelper:
                 )
         return res
 
+
 @dataclass
 class InferTask:
     bf_id: str = field(default="")
@@ -575,8 +591,7 @@ class InferTask:
     request_input: Dict = field(default=None)
     status: str = field(default="")
     output: Optional[Dict] = field(default=None)
-    
-    
+
     def __init__(self, bf_id: str, id: Any, request_input: Dict, **kwargs: Any) -> None:
         self.bf_id = bf_id
         self.id = id
@@ -611,7 +626,7 @@ class InferTask:
         resp_body = infer_task_status(self.infer_id).body
         self.status = resp_body.get("result", {}).get("runStatus")
         self.output = resp_body.get("result")
-        log_info(f'updating task status{self}')
+        log_info(f"updating task status{self}")
         if with_persist:
             self.persist()
 

@@ -1396,7 +1396,7 @@ def offline_batch_inference_task_v2():
         ),
         Consts.DatasetDescribeOfflineBatchInferencesAction: (
             describe_offline_batch_inference_tasks_v2
-        )
+        ),
     }
     return action_handler.get(action)(body)
 
@@ -1404,12 +1404,17 @@ def offline_batch_inference_task_v2():
 def create_offline_batch_inference_task_v2(body):
     user_name = body.get("afsConfig").get("userName")
     if user_name in ["test_bf_invalid_username", ""]:
-        return json_response(data={
-            "requestId":"deb38cd1-d880-4259-a35d-c383f0fcddca",
-            "code":"InappropriateJSON",
-            "message":"The JSON you provided was well-formed and valid, but"
-            "not appropriate for this operation. param[userName] invalid."
-        }, status_code=400)
+        return json_response(
+            data={
+                "requestId": "deb38cd1-d880-4259-a35d-c383f0fcddca",
+                "code": "InappropriateJSON",
+                "message": (
+                    "The JSON you provided was well-formed and valid, but"
+                    "not appropriate for this operation. param[userName] invalid."
+                ),
+            },
+            status_code=400,
+        )
     return json_response(
         {
             "requestId": "c1111-944f-4a9a-a12b-cc9o99999",
@@ -1433,7 +1438,7 @@ def describe_offline_batch_inference_task_v2(body):
                 "outputBosUri": "bos:/sdk-test/inference-output/",
                 "inputAfsUri": "afs:/sdk_test/inference-afs-input/",
                 "outputAfsUri": "afs:/sdk-test/inference-afs-output/",
-                "outputDir":"662f7bfb805xxx16942",
+                "outputDir": "662f7bfb805xxx16942",
                 "progress": 300,
                 "createTime": "2024-03-05T07:43:48Z",
                 "finishTime": "2024-03-05T15:44:56Z",
@@ -1445,57 +1450,53 @@ def describe_offline_batch_inference_task_v2(body):
 def describe_offline_batch_inference_tasks_v2(body):
     return json_response(
         {
-    "requestId":"1bef3f87-c5b2-4419-936b-5xxxxxxxx4",
-    "result":{
-        "taskList":[
+            "requestId": "1bef3f87-c5b2-4419-936b-5xxxxxxxx4",
+            "result": {
+                "taskList": [
                     {
-                        "taskId":"infer-9ixxxxxxmp",
-                        "name":"name",
-                        "description":"description",
-                        "endpoint":"http://xxx",
-                        "inferenceParams":{
-                            "temperature":0.9,
-                            "top_p":0.3
-                        },
-                        "runStatus":"Running",
-                        "inputBosUri":"bos:/user_a/bucket",
-                        "outputBosUri":"bos:/user_b/output",
-                        "outputDir":"662f7bfb80xxxd516942",
-                        "inputTokenUsage":10000,
-                        "outputTokenUsage":10000,
-                        "progress":2000,
-                        "creator":"accountName",
-                        "createTime":"2024-01-16T09:48:35Z",
-                        "finishTime":"2024-01-16T10:48:35Z"
-                    },{
-                        "taskId":"infer-9ixxxxxxm1",
-                        "name":"name",
-                        "description":"description",
-                        "endpoint":"http://xxx",
-                        "inferenceParams":{
-                            "temperature":0.9,
-                            "top_p":0.3
-                        },
-                        "runStatus":"Done",
-                        "inputBosUri":"bos:/user_a/bucket",
-                        "outputBosUri":"bos:/user_b/output",
-                        "outputDir":"662f7bfb80xxxd516942",
-                        "inputTokenUsage":10000,
-                        "outputTokenUsage":10000,
-                        "progress":300,
-                        "creator":"accountName",
-                        "createTime":"2024-01-16T09:48:35Z",
-                        "finishTime":"2024-01-16T10:48:35Z"
-                    }
+                        "taskId": "infer-9ixxxxxxmp",
+                        "name": "name",
+                        "description": "description",
+                        "endpoint": "http://xxx",
+                        "inferenceParams": {"temperature": 0.9, "top_p": 0.3},
+                        "runStatus": "Running",
+                        "inputBosUri": "bos:/user_a/bucket",
+                        "outputBosUri": "bos:/user_b/output",
+                        "outputDir": "662f7bfb80xxxd516942",
+                        "inputTokenUsage": 10000,
+                        "outputTokenUsage": 10000,
+                        "progress": 2000,
+                        "creator": "accountName",
+                        "createTime": "2024-01-16T09:48:35Z",
+                        "finishTime": "2024-01-16T10:48:35Z",
+                    },
+                    {
+                        "taskId": "infer-9ixxxxxxm1",
+                        "name": "name",
+                        "description": "description",
+                        "endpoint": "http://xxx",
+                        "inferenceParams": {"temperature": 0.9, "top_p": 0.3},
+                        "runStatus": "Done",
+                        "inputBosUri": "bos:/user_a/bucket",
+                        "outputBosUri": "bos:/user_b/output",
+                        "outputDir": "662f7bfb80xxxd516942",
+                        "inputTokenUsage": 10000,
+                        "outputTokenUsage": 10000,
+                        "progress": 300,
+                        "creator": "accountName",
+                        "createTime": "2024-01-16T09:48:35Z",
+                        "finishTime": "2024-01-16T10:48:35Z",
+                    },
                 ],
-                "pageInfo":{
-                    "marker":"infer-n50985crhqq3",
+                "pageInfo": {
+                    "marker": "infer-n50985crhqq3",
                     "maxKeys": 100,
-                    "isTruncated": False
-                }
-            }
+                    "isTruncated": False,
+                },
+            },
         }
     )
+
 
 @app.route(Consts.FineTuneCreateJobAPI, methods=["POST"])
 @iam_auth_checker

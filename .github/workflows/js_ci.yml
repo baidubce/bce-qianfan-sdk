@@ -27,7 +27,7 @@ jobs:
         run: |
           pip install poetry
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          cd python && poetry lock
+          cd python && poetry lock --no-update
       - name: Setup Python Cache
         uses: actions/setup-python@v5
         with:

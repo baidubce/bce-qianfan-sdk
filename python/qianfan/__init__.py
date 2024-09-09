@@ -46,13 +46,14 @@ from qianfan.resources import (
 )
 from qianfan.utils import disable_log, enable_log
 from qianfan.version import VERSION
-
+from qianfan.client import Qianfan
 
 Role = QfRole
 Messages = QfMessages
 Response = QfResponse
 
 __all__ = [
+    "Qianfan",
     "ChatCompletion",
     "Embedding",
     "Completion",

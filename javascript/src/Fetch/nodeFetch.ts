@@ -202,11 +202,9 @@ export class Fetch {
         const tokens = this.tokenLimiter.calculateTokens((options.body as string) ?? '');
         const hasToken = await this.tokenLimiter.acquireTokens(tokens);
         if (hasToken) {
-            // 错误处理不正确，导致错误被node认为是流式的
             const response = await this.fetchWithTimeout(url, options, timeout, controller).catch(castToError);
             let usedTokens = 0;
 
-            // 这个地方的逻辑需要修改
             if (response instanceof Error) {
                 if (response.name === 'AbortError') {
                     throw new Error('Request timed out.');

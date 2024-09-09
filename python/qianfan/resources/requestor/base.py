@@ -43,7 +43,7 @@ from tenacity import (
 )
 
 import qianfan.errors as errors
-from qianfan.config import get_config
+from qianfan.config import Config, get_config
 from qianfan.resources.auth.oauth import _masked_ak
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter import VersatileRateLimiter
@@ -77,7 +77,7 @@ def _get_body_str(byte_str: Optional[Union[bytes, str]]) -> Optional[Union[bytes
     return str(byte_str, encoding="utf8")
 
 
-def _check_if_status_code_is_200(response: requests.Response) -> None:
+def _check_if_status_code_is_200(response: requests.Response, config: Config) -> None:
     """
     check whether the status code of response is ok(200)
     if the status code is not 200, raise a `RequestError`
@@ -103,7 +103,7 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
         possible_reason = ""
         x_err_msg = response.headers.get("X-Bce-Error-Message", "")
         if x_err_msg == "NotFound, cause: Could not find credential.":
-            access_key = get_config().ACCESS_KEY
+            access_key = config.ACCESS_KEY
             if access_key:
                 possible_reason = f"Access Key(`{_masked_ak(access_key)}`) 错误"
             else:
@@ -113,7 +113,7 @@ def _check_if_status_code_is_200(response: requests.Response) -> None:
             == "SignatureDoesNotMatch, cause: Fail to authn user: Signature does not"
             " match"
         ):
-            secret_key = get_config().SECRET_KEY
+            secret_key = config.SECRET_KEY
             if secret_key:
                 possible_reason = f"Secret Key(`{_masked_ak(secret_key)}`) 错误"
             else:
@@ -323,6 +323,7 @@ class BaseAPIRequestor(object):
         self._client = HTTPClient(**kwargs)
         self._rate_limiter = VersatileRateLimiter(**kwargs)
         self._host = kwargs.get("host")
+        self.config = kwargs.get("config", get_config())
 
     def _preprocess_request(self, request: QfRequest) -> QfRequest:
         return request
@@ -344,6 +345,7 @@ class BaseAPIRequestor(object):
         response = self._client.request(request)
         if check_error:
             check_error(response)
+        _check_if_status_code_is_200(response, self.config)
         try:
             body = response.json()
         except requests.JSONDecodeError:

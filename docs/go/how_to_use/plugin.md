@@ -57,16 +57,28 @@ request, _ := qianfan.NewModelRequest(
 
 # 3. 发送请求并获取结果
 
-在使用 `BaseModel` 调用 `Do` 进行请求时，返回值是一个代表了响应结果的 `RawResponse` 对象。用户可以使用 `json.Unmarshal` 方法将响应结果反序列化为一个 `map[string]any` 对象，方便后续处理
+在使用 `BaseModel` 调用 `Stream` 进行请求时，返回值是一个代表了流式响应迭代器的 `RawModelResponseStream` 对象。用户可以使用 `Recv` 方法来获取每次流式返回的 `RawResponse` 对象
 
 ```
-resp, err := qianfanClient.Do(context.Background(), request)
+stream, err := qianfanClient.Stream(context.Background(), request)
 if err != nil {
     fmt.Println(err)
 } else {
-    result := make(map[string]any)
-    json.Unmarshal(resp.Body, &result)
-    fmt.Println(result)
+    for {
+        resp, err := stream.Recv()
+        if err != nil {
+            fmt.Println(err)
+            break
+        } else {
+            result := make(map[string]any)
+            json.Unmarshal(resp.Body, &result)
+            str, _ := json.Marshal(result)
+            fmt.Println(string(str))
+            if end, ok := result["is_end"].(bool); ok && end {
+                break
+            }
+        }
+    }
 }
 ```
 

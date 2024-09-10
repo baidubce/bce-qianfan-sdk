@@ -118,7 +118,7 @@ func (c *Embedding) do(ctx context.Context, request *EmbeddingRequest) (*Embeddi
 		if err != nil {
 			return nil, err
 		}
-		req, err := newModelRequest("POST", url, request)
+		req, err := NewModelRequest("POST", url, request)
 		if err != nil {
 			return nil, err
 		}

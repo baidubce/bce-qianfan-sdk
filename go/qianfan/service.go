@@ -42,7 +42,7 @@ type ServiceListItemVersion struct {
 
 func (service *Service) List(ctx context.Context, request *ServiceListRequest) (*ServiceListResponse, error) {
 	var s ServiceListResponse
-	req, err := newConsoleRequest("POST", serviceListURL, request)
+	req, err := NewConsoleRequest("POST", serviceListURL, request)
 	if err != nil {
 		return nil, err
 	}

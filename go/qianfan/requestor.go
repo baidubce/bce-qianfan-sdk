@@ -430,6 +430,9 @@ func (si *streamInternal) recv(resp QfResponse) error {
 				// field []byte = line
 				value []byte
 			)
+			if i := bytes.Index(line, []byte("event")); i != -1 {
+				continue
+			}
 			if i := bytes.IndexRune(line, ':'); i != -1 {
 				// field = line[:i]
 				value = line[i+1:]

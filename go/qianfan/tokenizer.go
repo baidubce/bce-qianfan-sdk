@@ -87,7 +87,7 @@ func (t *Tokenizer) remoteCountTokensEB(text string, model string) (int, error) 
 		Model:  model,
 	}
 
-	req, err := newModelRequest("POST", modelAPIPrefix+"/tokenizer/erniebot", request)
+	req, err := NewModelRequest("POST", modelAPIPrefix+"/tokenizer/erniebot", request)
 	if err != nil {
 		return -1, err
 	}

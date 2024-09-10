@@ -121,7 +121,7 @@ func (c *Text2Image) do(ctx context.Context, request *Text2ImageRequest) (*Text2
 		if err != nil {
 			return nil, err
 		}
-		req, err := newModelRequest("POST", url, request)
+		req, err := NewModelRequest("POST", url, request)
 		if err != nil {
 			return nil, err
 		}

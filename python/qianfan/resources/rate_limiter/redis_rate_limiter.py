@@ -279,6 +279,7 @@ class RedisRateLimiter(BaseRateLimiter):
                     self._check_limit_script, 1, self._qps_key
                 )
 
+            assert not isinstance(wait_time, Awaitable)
             float_wait_time = float(wait_time)
             if float_wait_time:
                 time.sleep(float_wait_time)

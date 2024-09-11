@@ -1,6 +1,7 @@
 # 大模型推理
 
 + [Chat 对话](#chat-对话)
+  + [统计信息](#统计信息)
 + [Completion 续写](#completion-续写)
 + [Embedding 向量化](#embedding-向量化)
 + [Plugin 插件调用](#plugin-插件)
@@ -143,8 +144,10 @@ async for r in resp:
   - `retry_config`：请求使用的重试信息
 
 
-##### 延迟统计
-> [!IMPORTANT] 为了不影响请求的性能并获取准确的延迟信息，我们默认会关闭statistic统计功能，如果需要开启统计功能，请在创建对象时设置`show_total_latency`：
+##### 统计信息
+> [!IMPORTANT] 
+>
+> 为了不影响请求的性能并获取准确的延迟信息，我们默认会关闭statistic统计功能，如果需要开启统计功能，请在创建对象时设置`show_total_latency`：
 > ```python
 > qianfan.ChatCompletion().do(messages=[{"role":"user", "content":"hi"}], show_total_latency=True)
 > ```
@@ -569,11 +572,20 @@ import os
 # os.environ["QIANFAN_CHAT_V2_API_ROUTE"] = '/v2/chat/completions'
 
 client = Qianfan(
-    access_key='',
-    secret_key=''
+    access_key='your_access_key',
+    secret_key='your_secret_key'
     # api_key='', # 如果传入了access_key和secret_key，则不需要传入api_key
-    app_id='app-8lhFr5xxx'
+    app_id='your_app_id'
 )
-comp = client.chat.completions.create(model='naz06y6b_xxx', messages=[{'role': 'user', 'content': '你好'}])
+
+
+comp = client.chat.completions.create(model='your_v2_api_name', messages=[{'role': 'user', 'content': '你好'}])
 print("comp", comp)
 ```
+
+`app_id`可以通过以下[链接](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)获取(注意需要成新版获取v2 app_id)
+
+`model`可以通过以下方式获取:
+访问以下[链接](https://console.bce.baidu.com/qianfan/ais/console/onlineService?tab=service)切换成v2服务，点击详后获取:
+![pic](./imgs/v2_api_name.jpg)
+

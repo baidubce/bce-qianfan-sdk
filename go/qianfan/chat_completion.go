@@ -316,7 +316,7 @@ func (c *ChatCompletion) do(ctx context.Context, request *ChatCompletionRequest)
 
 		c.processWithInputLimit(ctx, request, url)
 
-		req, err := newModelRequest("POST", url, request)
+		req, err := NewModelRequest("POST", url, request)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func (c *ChatCompletion) stream(ctx context.Context, request *ChatCompletionRequ
 		c.processWithInputLimit(ctx, request, url)
 
 		request.SetStream()
-		req, err := newModelRequest("POST", url, request)
+		req, err := NewModelRequest("POST", url, request)
 		if err != nil {
 			return nil, err
 		}

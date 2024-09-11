@@ -30,7 +30,7 @@ func (ca *ConsoleAction) Call(ctx context.Context, route string, action string, 
 	reqBody := BaseRequestBody{
 		Extra: params,
 	}
-	req, err := newConsoleRequest("POST", ca.baseActionUrl(route, action), &reqBody)
+	req, err := NewConsoleRequest("POST", ca.baseActionUrl(route, action), &reqBody)
 	if err != nil {
 		logger.Error("new console req error", err)
 		return nil, err

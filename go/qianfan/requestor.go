@@ -97,7 +97,7 @@ type QfRequest struct {
 }
 
 // 创建一个用于模型类请求的 Request
-func newModelRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+func NewModelRequest(method string, url string, body RequestBody) (*QfRequest, error) {
 	return newRequest(modelRequest, method, url, body)
 }
 
@@ -107,7 +107,7 @@ func newAuthRequest(method string, url string, body RequestBody) (*QfRequest, er
 }
 
 // 创建一个用于管控类请求的 Request
-func newConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+func NewConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
 	return newRequest(consoleRequest, method, url, body)
 }
 
@@ -430,6 +430,9 @@ func (si *streamInternal) recv(resp QfResponse) error {
 				// field []byte = line
 				value []byte
 			)
+			if i := bytes.Index(line, []byte("event")); i != -1 {
+				continue
+			}
 			if i := bytes.IndexRune(line, ':'); i != -1 {
 				// field = line[:i]
 				value = line[i+1:]

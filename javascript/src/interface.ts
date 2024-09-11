@@ -19,6 +19,7 @@ export interface DefaultConfig {
     QIANFAN_SECRET_KEY: string;
     QIANFAN_BASE_URL: string;
     QIANFAN_CONSOLE_API_BASE_URL: string;
+    QIANFAN_BEAR_TOKEN_URL: string;
     QIANFAN_LLM_API_RETRY_TIMEOUT: string;
     QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: string;
     QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: string;

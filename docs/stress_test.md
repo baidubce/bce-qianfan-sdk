@@ -210,6 +210,38 @@ txt格式示例
 - **TotalTime**：总运行时间；
 - **SuccessRate**：请求成功率；
 
+## V2 压测
+
+对于新推出的 V2 接口，我们也同步适配了压测功能。
+
+对于使用 `stress_test` 与 `multi_stress_test` 方法进行压测的用户，只需要在调用时如[推理文档](inference.md)所述，传入 version 与 app_id 参数即可。
+
+```python
+import os
+
+os.environ['QIANFAN_ENABLE_STRESS_TEST'] = "true"
+
+from qianfan.dataset import Dataset
+
+os.environ["QIANFAN_ACCESS_KEY"] = "..."
+os.environ["QIANFAN_SECRET_KEY"] = "..."
+
+# 需要初始化一个数据集对象
+
+ds = Dataset.load(data_file="...")
+
+ds.stress_test(
+    users=1,
+    model="ERNIE-Speed-8K",
+    version="2",
+    app_id='app-xxx',
+)
+```
+
+> [!IMPORTANT]
+> 
+> V2 接口不支持使用 Endpoint 作为入参。如果需要使用 Endpoint 作为入参，请使用 V1 接口。
+
 ## Q&A
 
 - Q: notebook环境中为什么要先执行`monkey.patch_all()`？

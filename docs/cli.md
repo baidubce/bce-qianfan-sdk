@@ -476,3 +476,24 @@ openai_adapter:
     # 支持正则替换，如下仅作示意
     # gpt-3.5(.*): ERNIE-3.5\1
 ```
+
+### 原生管控API调用
+
+**用法**:
+
+```console
+$ qianfan api raw.console [OPTIONS]
+```
+
+**Options 选项**:
+
+* `--route`: api 路由, 例如 `/v2/finetuning`
+* `--action`: 管控api action ，例如 `DescribeFineTuningTask`
+* `--data`: 请求的json body
+* `--help`: 展示帮助信息
+
+**示例**:
+
+```shell
+qianfan api raw.console --route /v2/model --action DescribeSystemModelSets --data {}
+```

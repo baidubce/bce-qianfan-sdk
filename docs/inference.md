@@ -6,6 +6,7 @@
 + [Plugin 插件调用](#plugin-插件)
 + [文生图](#文生图)
 + [批量推理](#批量推理)
++ [类OpenAI入口](#类OpenAI入口)
 
 ### OpenAI迁移
 如果您已经使用了OpenAI SDK 或集成了 OpenAI API，那么您可以直接使用千帆Python SDK提供的OpenAI适配器，以快速接入千帆大模型平台：
@@ -127,10 +128,12 @@ async for r in resp:
 - `body`：API 返回的结果。可以通过 `[]` 简化调用直接获取 body 字段，例如 `resp.body['result']` 与 `resp['result']` 等价。
 - `code`：返回的 HTTP 状态码。
 - `headers`：返回的 HTTP 头。
-- `statistic`：请求相关的统计信息，包含如下字段
+- `statistic`：请求相关的统计信息，包含如下字段, 仅 `show_total_latency=True` 时有效
   - `request_latency`：请求延迟，单位为秒
   - `first_token_latency`：第一个 token 的延迟，单位为秒
   - `total_latency`：总调用延迟，包含了请求、序列化、限流等耗时，单位为秒
+  - `start_timestamp`： 请求开始时间戳，单位为毫秒
+  - `avg_output_tokens_per_second`： 平均每秒输出 token 数
 - `request`：请求的原始信息，包含如下字段
   - `method`：请求方法
   - `url`：请求的 URL
@@ -138,6 +141,25 @@ async for r in resp:
   - `headers`：请求的 header 字典
   - `json_body`：请求体
   - `retry_config`：请求使用的重试信息
+
+
+##### 延迟统计
+> [!IMPORTANT] 为了不影响请求的性能并获取准确的延迟信息，我们默认会关闭statistic统计功能，如果需要开启统计功能，请在创建对象时设置`show_total_latency`：
+> ```python
+> qianfan.ChatCompletion().do(messages=[{"role":"user", "content":"hi"}], show_total_latency=True)
+> ```
+
+以下是一个获取流式请求包间延迟的例子：
+```python
+from qianfan import ChatCompletion
+
+chat = ChatCompletion()
+
+resp = chat.do(messages=[{"role": "user", "content": "你好"}], stream=True, show_total_latency=True)
+for r in resp:
+    print(r['statistic']['request_latency'])
+```
+
 
 #### V2 版本
 
@@ -528,4 +550,30 @@ results = await Completion().abatch_do(prompt_list, worker_num=10)
 for prompt, result in zip(prompt_list, results):
     if not isinstance(result, Exception):
         print(prompt, result)
+```
+
+#### **类OpenAI入口**
+
+为了方便曾经使用过OpenAI SDK的用户快速接入，千帆SDK提供类OpenAI的入口，用户可以通过以下方式快速接入：
+
+> 当前仅支持Chat V2 SFT服务调用
+
+##### Chat 对话
+
+```python
+from qianfan import Qianfan
+import os
+
+# 为了适应不同环境下的API调用，可以自定义BASE_URL以及API_ROUTE：
+# os.environ["QIANFAN_CONSOLE_BASE_URL"] = 'https://qianfan.baidubce.com'
+# os.environ["QIANFAN_CHAT_V2_API_ROUTE"] = '/v2/chat/completions'
+
+client = Qianfan(
+    access_key='',
+    secret_key=''
+    # api_key='', # 如果传入了access_key和secret_key，则不需要传入api_key
+    app_id='app-8lhFr5xxx'
+)
+comp = client.chat.completions.create(model='naz06y6b_xxx', messages=[{'role': 'user', 'content': '你好'}])
+print("comp", comp)
 ```

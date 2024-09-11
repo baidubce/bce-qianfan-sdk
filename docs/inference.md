@@ -569,11 +569,20 @@ import os
 # os.environ["QIANFAN_CHAT_V2_API_ROUTE"] = '/v2/chat/completions'
 
 client = Qianfan(
-    access_key='',
-    secret_key=''
+    access_key='your_access_key',
+    secret_key='your_secret_key'
     # api_key='', # 如果传入了access_key和secret_key，则不需要传入api_key
-    app_id='app-8lhFr5xxx'
+    app_id='your_app_id'
 )
-comp = client.chat.completions.create(model='naz06y6b_xxx', messages=[{'role': 'user', 'content': '你好'}])
+
+
+comp = client.chat.completions.create(model='your_v2_api_name', messages=[{'role': 'user', 'content': '你好'}])
 print("comp", comp)
 ```
+
+`app_id`可以通过以下[链接](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)获取(注意需要成新版获取v2 app_id)
+
+`model`可以通过以下方式获取:
+访问以下[链接](https://console.bce.baidu.com/qianfan/ais/console/onlineService?tab=service)切换成v2服务，点击详后获取:
+![pic](./imgs/v2_api_name.jpg)
+

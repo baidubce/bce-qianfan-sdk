@@ -909,7 +909,7 @@ class Data:
             query=_get_console_v2_query(
                 Consts.DatasetCreateOfflineBatchInferenceAction
             ),
-            headers={"Referer": "infer"}
+            headers={"Referer": "infer"},
         )
         request_json: Dict[str, Any] = {
             "name": name,

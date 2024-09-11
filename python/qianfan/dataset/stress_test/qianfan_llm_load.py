@@ -294,7 +294,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     stream_json = resp.body["choices"][0]
                     clear_history = stream_json.get("need_clear_history", False)
                     if "delta" in stream_json:
-                        content = stream_json["delta"]["content"]
+                        content = stream_json["delta"].get("content", "")
                     else:
                         self.exc = Exception("ERROR CODE 结果无法解析")
                         break

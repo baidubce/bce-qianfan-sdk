@@ -214,7 +214,7 @@ txt格式示例
 
 对于新推出的 V2 接口，我们也同步适配了压测功能。
 
-对于使用 `stress_test` 与 `multi_stress_test` 方法进行压测的用户，只需要在调用时如[推理文档](inference.md)所述，传入 version 与 app_id 参数即可。
+对于使用 `stress_test` 与 `multi_stress_test` 方法进行压测的用户，只需要在调用时如[推理文档](inference.md#v2-版本)所述，传入 version 与 app_id 参数即可。
 
 ```python
 import os

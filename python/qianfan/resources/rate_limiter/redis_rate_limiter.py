@@ -79,6 +79,14 @@ class RedisRateLimiter(BaseRateLimiter):
                 bytes(self._reset_limit_script, encoding="utf8")
             ).hexdigest()
 
+        with pkg_resources.open_text(
+            "qianfan.resources.rate_limiter", "pulse.lua", "utf8"
+        ) as script:
+            self._pulse_script = script.read()
+            self._pulse_script_hash = sha1(
+                bytes(self._pulse_script, encoding="utf8")
+            ).hexdigest()
+
         self._connection = Redis(
             connection_pool=ConnectionPool(
                 host=redis_connection_info.host,
@@ -107,14 +115,46 @@ class RedisRateLimiter(BaseRateLimiter):
 
         self._init_lock = threading.Lock()
 
-        replacer = "_default"
+        self.key_prefix = "_default"
 
-        self._rpm_key = replacer + "_rpm"
-        self._rpm_10s_key = replacer + "_rpm_10s"
-        self._qps_key = replacer + "_qps"
+        self._rpm_key = self.key_prefix + "_rpm"
+        self._rpm_10s_key = self.key_prefix + "_rpm_10s"
+        self._qps_key = self.key_prefix + "_qps"
+
+        self._exit = False
+        self._pulse_thread = threading.Thread(target=self._pulse, daemon=True)
+
+        super().__init__(**kwargs)
 
     def check_forcing_disable(self) -> bool:
         return self._forcing_disable
+
+    def _reset_expire_key_time(self, key: str) -> None:
+        try:
+            self._connection.evalsha(
+                self._pulse_script_hash,
+                1,
+                key,
+            )
+        except NoScriptError:
+            self._connection.eval(
+                self._pulse_script,
+                1,
+                key,
+            )
+
+    def _pulse(self) -> None:
+        while not self._exit:
+            request_per_minute = self._request_per_minute
+            query_per_second = self._query_per_second
+
+            if request_per_minute:
+                self._reset_expire_key_time(self._rpm_key)
+                self._reset_expire_key_time(self._rpm_10s_key)
+            elif query_per_second:
+                self._reset_expire_key_time(self._qps_key)
+
+            time.sleep(60)
 
     def _set_limit_info(self, key: str, quantity: float, period: float) -> None:
         str_quantity = str(quantity)
@@ -239,7 +279,6 @@ class RedisRateLimiter(BaseRateLimiter):
                     self._check_limit_script, 1, self._qps_key
                 )
 
-            assert isinstance(wait_time, str)
             float_wait_time = float(wait_time)
             if float_wait_time:
                 time.sleep(float_wait_time)
@@ -321,11 +360,13 @@ class RedisRateLimiter(BaseRateLimiter):
             self._has_been_init = True
 
             if key is not None:
+                self.key_prefix = key
                 self._rpm_key = key + "_rpm"
                 self._rpm_10s_key = key + "_rpm_10s"
                 self._qps_key = key + "_qps"
 
             self._set_in_redis()
+            self._pulse_thread.start()
 
         return self
 
@@ -336,13 +377,17 @@ class RedisRateLimiter(BaseRateLimiter):
         if request_per_minute:
             self._set_limit_info(self._rpm_key, request_per_minute, 60)
             self._set_limit_info(self._rpm_10s_key, request_per_minute / 6, 10)
-        if query_per_second:
+        elif query_per_second:
             if 0 < query_per_second < 1:
                 period = 1 / query_per_second
                 query_per_second = 1
                 self._set_limit_info(self._qps_key, query_per_second, period)
             else:
                 self._set_limit_info(self._qps_key, query_per_second, 1)
+
+    def __del__(self) -> None:
+        self._exit = True
+        self._pulse_thread.join(1)
 
 
 def _assert_awaitable(handler: Any) -> Awaitable:

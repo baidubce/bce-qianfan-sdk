@@ -76,6 +76,8 @@ class VersatileRateLimiter(BaseRateLimiter):
         self._impl: Optional[_LimiterWrapper] = None
         self._init_lock = threading.Lock()
 
+        super().__init__(**kwargs)
+
     async def async_reset_once(self, rpm: float) -> None:
         if not self._impl:
             return

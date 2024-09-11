@@ -16,6 +16,7 @@ keywords = ["baidu", "qianfan"]
 include = [
     "qianfan/resources/rate_limiter/check_rate_limiter.lua",
     "qianfan/resources/rate_limiter/reset_rate_limiter.lua",
+    "qianfan/resources/rate_limiter/pulse.lua",
 ]
 
 [tool.poetry.dependencies]

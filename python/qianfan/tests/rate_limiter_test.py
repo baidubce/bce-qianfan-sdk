@@ -82,7 +82,7 @@ async def test_async_rate_limiter():
 
 
 def test_sync_rate_limiter_in_call():
-    chat = qianfan.ChatCompletion(query_per_second=2)
+    chat = qianfan.ChatCompletion(query_per_second=2, key="1")
     start_timestamp = time.time()
     for i in range(2):
         chat.do(messages=TEST_MESSAGE)
@@ -98,7 +98,7 @@ def test_sync_rate_limiter_in_call():
 
 @pytest.mark.asyncio
 async def test_async_rate_limiter_in_call():
-    chat = qianfan.ChatCompletion(query_per_second=2)
+    chat = qianfan.ChatCompletion(query_per_second=2, key="2")
     start_timestamp = time.time()
     task = []
     for i in range(2):
@@ -118,7 +118,7 @@ async def test_async_rate_limiter_in_call():
 
 @pytest.mark.asyncio
 async def test_async_rate_limiter_in_call_with_qps_sub1():
-    chat = qianfan.ChatCompletion(query_per_second=0.5)
+    chat = qianfan.ChatCompletion(query_per_second=0.5, key="3")
     start_timestamp = time.time()
     task = []
     for i in range(2):

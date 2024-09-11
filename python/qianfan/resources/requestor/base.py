@@ -44,7 +44,7 @@ from tenacity import (
 
 import qianfan.errors as errors
 from qianfan.config import Config, get_config
-from qianfan.resources.auth.oauth import _masked_ak
+from qianfan.resources.auth.oauth import Auth, _masked_ak
 from qianfan.resources.http_client import HTTPClient
 from qianfan.resources.rate_limiter.rate_limiter import VersatileRateLimiter
 from qianfan.resources.rate_limiter.redis_rate_limiter import RedisRateLimiter
@@ -167,6 +167,13 @@ def _with_latency(func: Callable) -> Callable:
 _COMPLETION_TOKENS_FIELD = "completion_tokens"
 
 
+def _get_rate_limit_key(requestor: Any, request: QfRequest) -> str:
+    assert isinstance(requestor, BaseAPIRequestor)
+    ch = requestor._auth.credential_hash()
+    url = request.url
+    return f"{ch}_{url}"
+
+
 def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
     """
     a decorator to add latency info into response
@@ -177,7 +184,11 @@ def _latency(func: Callable[..., QfResponse]) -> Callable[..., QfResponse]:
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> QfResponse:
         log_trace(f"raw request: {request}")
-        with requestor._rate_limiter.acquire():
+        key = _get_rate_limit_key(requestor, request)
+        if "key" in kwargs:
+            key = kwargs["key"]
+
+        with requestor._rate_limiter.acquire(key):
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
@@ -204,7 +215,11 @@ def _async_latency(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> QfResponse:
         log_trace(f"raw request: {request}")
-        async with requestor._rate_limiter.acquire():
+        key = _get_rate_limit_key(requestor, request)
+        if "key" in kwargs:
+            key = kwargs["key"]
+
+        async with requestor._rate_limiter.acquire(key):
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)
@@ -230,7 +245,11 @@ def _stream_latency(
     def wrapper(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> Iterator[QfResponse]:
-        with requestor._rate_limiter.acquire():
+        key = _get_rate_limit_key(requestor, request)
+        if "key" in kwargs:
+            key = kwargs["key"]
+
+        with requestor._rate_limiter.acquire(key):
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = func(requestor, request, *args, **kwargs)
@@ -272,7 +291,11 @@ def _async_stream_latency(
     async def wrapper(
         requestor: Any, request: QfRequest, *args: Any, **kwargs: Any
     ) -> AsyncIterator[QfResponse]:
-        async with requestor._rate_limiter.acquire():
+        key = _get_rate_limit_key(requestor, request)
+        if "key" in kwargs:
+            key = kwargs["key"]
+
+        async with requestor._rate_limiter.acquire(key):
             start_time = time.perf_counter()
             start_timestamp = int(time.time() * 1000)
             resp = await func(requestor, request, *args, **kwargs)
@@ -317,6 +340,7 @@ class BaseAPIRequestor(object):
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
         self._client = HTTPClient(**kwargs)
+        self._auth = Auth(**kwargs)
         self._rate_limiter = (
             VersatileRateLimiter(**kwargs)
             if not kwargs.get("redis_rate_limiter", False)

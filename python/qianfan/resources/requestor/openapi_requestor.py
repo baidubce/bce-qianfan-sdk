@@ -64,7 +64,6 @@ class QfAPIRequestor(BaseAPIRequestor):
         `ak`, `sk` and `access_token` can be provided in kwargs.
         """
         super().__init__(**kwargs)
-        self._auth = Auth(**kwargs)
         self._token_limiter = TokenLimiter(**kwargs)
         self._async_token_limiter = AsyncTokenLimiter(**kwargs)
 

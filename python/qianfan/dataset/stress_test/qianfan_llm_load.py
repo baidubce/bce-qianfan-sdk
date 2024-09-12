@@ -303,7 +303,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     header = resp.headers
                     clear_history = stream_json.get("need_clear_history", False)
                     if "delta" in stream_json:
-                        content = stream_json["delta"]["content"]
+                        content = stream_json["delta"].get("content", "")
                         merged_query += content
                     else:
                         self.exc = Exception("ERROR CODE 结果无法解析")

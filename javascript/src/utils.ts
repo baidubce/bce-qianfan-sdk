@@ -14,6 +14,7 @@
 
 import HttpClient from './HttpClient';
 import Fetch from './Fetch';
+import {Headers} from './Fetch/nodeFetch';
 import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
@@ -356,3 +357,67 @@ export async function consoleAction({base_api_route, data, action}: ConsoleActio
         throw error;
     }
 }
+
+interface GetTokenProps {
+    expireInSeconds?: number;
+}
+
+interface TokenResp {
+    headers?: Headers,
+    userId?: string,
+    status?: string,
+    createTime?: string,
+    token: string,
+    expireTime: string
+}
+
+async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
+    const {expireInSeconds: expireInSecondsInProps} = props || {};
+    const config = getDefaultConfig();
+    const {QIANFAN_BEAR_TOKEN_URL} = config;
+    try {
+        // 鉴权
+        const httpClientConfig = getIAMConfig(
+            config.QIANFAN_ACCESS_KEY,
+            config.QIANFAN_SECRET_KEY,
+            QIANFAN_BEAR_TOKEN_URL
+        );
+        const client = new HttpClient(httpClientConfig);
+        const expireInSeconds = typeof expireInSecondsInProps === 'number' ? expireInSecondsInProps : 100000
+        const fetchOptions = await client.getSignature({
+            httpMethod: 'GET',
+            path: QIANFAN_BEAR_TOKEN_URL,
+            params: {expireInSeconds},
+            headers: {
+                ...DEFAULT_HEADERS,
+            }
+        });
+        const fetchInstance = new Fetch();
+        const {url, ...rest} = fetchOptions;
+        const resp = await fetchInstance.makeRequest(`${QIANFAN_BEAR_TOKEN_URL}?expireInSeconds=${expireInSeconds}`, rest);
+        return resp;
+    }
+    catch (error) {
+        const error_msg = `Failed to get access token: ${error && error.message}`;
+        throw new Error(error_msg);
+    }
+}
+
+function _getBearToken() {
+    let expire_time: string | number = 0, data;
+    return async function getToken(props?: GetTokenProps): Promise<TokenResp> {
+        try{
+            if(!expire_time || new Date(expire_time) <= new Date()){
+                const resp = await fetchBearToken(props);
+                const {expireTime} = resp || {};
+                expire_time = expireTime;
+                data = resp;
+            }
+            return data;
+        } catch(error) {
+            throw new Error(error?.message);
+        }
+    }
+}
+
+export const getBearToken: (props?: GetTokenProps) => Promise<TokenResp> = _getBearToken();

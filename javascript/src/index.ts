@@ -18,7 +18,7 @@ import Embedding from './Embedding';
 import Plugin from './Plugin';
 import {Text2Image, Image2Text} from './Images';
 import Reranker from './Reranker';
-import {setEnvVariable, setBrowserVariable, consoleAction} from './utils';
+import {setEnvVariable, setBrowserVariable, consoleAction, getBearToken} from './utils';
 
 export {
     ChatCompletion,
@@ -31,4 +31,5 @@ export {
     setEnvVariable,
     setBrowserVariable,
     consoleAction,
+    getBearToken
 };

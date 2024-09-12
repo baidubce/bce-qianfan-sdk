@@ -37,7 +37,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
-from qianfan import get_config
+from qianfan import get_config, get_config_with_kwargs
 from qianfan.config import Config
 from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
@@ -282,11 +282,16 @@ class BaseResource(object):
         **kwargs: Any,
     ) -> None:
         self._config = config
+        if self._config is not None:
+            return
+
+        if len(kwargs) != 0:
+            self._config = get_config_with_kwargs(**kwargs)
+        else:
+            self._config = get_config()
 
     @property
     def config(self) -> Config:
-        if self._config is None:
-            return get_config()
         return self._config
 
     @classmethod

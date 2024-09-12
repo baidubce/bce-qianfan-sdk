@@ -1686,7 +1686,8 @@ class ChatCompletion(VersionBase):
             else:
                 model = kwargs.get("model") or ""
                 func_model_info_list = {
-                    k.lower(): v for k, v in Function._supported_models().items()
+                    k.lower(): v
+                    for k, v in Function(**kwargs)._self_supported_models().items()
                 }
                 func_model_info = func_model_info_list.get(model.lower())
                 if model and func_model_info:

@@ -871,7 +871,8 @@ def test_compat_message_format():
         messages=[
             {"role": "system", "content": "你是智能助手BD"},
             {"role": "user", "content": "你是谁"},
-        ]
+        ],
+        adapt_openai_message_format=True,
     )
 
     assert "system" in resp.request.json_body

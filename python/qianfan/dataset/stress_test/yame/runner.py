@@ -230,7 +230,7 @@ class LocustRunner(object):
             self.spawn_rate = max(1, math.ceil(self.user_num / self.worker_num))
 
         record_dir = self.generate_record_path()
-
+        GlobalData.data["record_dir"] = record_dir
         start_time = time.time()
         if self.worker_num == 1:
             process = multiprocessing.Process(target=self.local)

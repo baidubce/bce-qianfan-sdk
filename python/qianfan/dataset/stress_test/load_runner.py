@@ -20,6 +20,7 @@ logger = logging.getLogger("yame.stats")
 logger.setLevel(logging.INFO)
 GlobalData.data["threshold_first"] = Value("i", 0)
 GlobalData.data["first_latency_threshold"] = 0
+GlobalData.data["log"] = 0
 
 
 def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
@@ -122,6 +123,9 @@ class QianfanLocustRunner(LocustRunner):
             **kwargs,
         )
 
+        log = kwargs.get("log", False)
+        if log:
+            GlobalData.data["log"] = 1
         self.first_latency_threshold = first_latency_threshold or 100
         GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
         self.round_latency_threshold = round_latency_threshold or 1000
@@ -198,7 +202,7 @@ class QianfanLocustRunner(LocustRunner):
                 html.append(round_html)
             except Exception:
                 traceback.print_exc()
-                logger.error("Error happens when generating brief.")
+                logger.error("在生成统计报告时发生错误.")
             if GlobalData.data["threshold_first"].value == 1:
                 dataset = self.dataset.list()
                 prompt = ""
@@ -229,7 +233,6 @@ class QianfanLocustRunner(LocustRunner):
                 logger.info("成功率低于阈值")
                 return ret
             current_user_num += self.interval if self.interval is not None else 0
-
         html_table = generate_html_table(html, self.model_info)
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_table)

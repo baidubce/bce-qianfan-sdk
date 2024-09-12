@@ -2,7 +2,9 @@
 """
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
+import json
 import time
+from multiprocessing import Lock
 from typing import Any, Dict, Literal, Optional
 
 from locust import constant, events, task
@@ -237,6 +239,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             "response_length": 0,
             "request_length": sum([len(msg) for msg in messages]),
         }
+        header: dict = {}
+        stat: dict = {}
+        merged_query: str = ""
+        body: Dict[str, Any] = {"headers": {}, "stat": {}, "body": ""}
         last_resp = None
         all_empty = True
         start_time = time.time()
@@ -252,13 +258,11 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             setattr(resp, "url", self.model)
             setattr(resp, "reason", str(e))
             setattr(resp, "status_code", 500)
-
         if self.exc is None:
             for resp in responses:
                 setattr(resp, "url", self.model)
                 setattr(resp, "reason", None)
                 setattr(resp, "status_code", resp["code"])
-
                 if first_flag:
                     request_meta["first_token_latency"] = resp.statistic[
                         "first_token_latency"
@@ -270,9 +274,12 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         ):
                             GlobalData.data["threshold_first"].value = 1
                     first_flag = False
-
                 if not self.is_v2:
                     stream_json = resp["body"]
+                    stat = resp.get("statistic", "")
+                    header = resp.get("headers", "")
+                    body = stream_json
+                    merged_query += stream_json.get("result", "")
                     clear_history = stream_json.get("need_clear_history", False)
                     if "result" in stream_json:
                         content = stream_json["result"]
@@ -292,9 +299,12 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         break
 
                     stream_json = resp.body["choices"][0]
+                    stat = resp.statistic
+                    header = resp.headers
                     clear_history = stream_json.get("need_clear_history", False)
                     if "delta" in stream_json:
                         content = stream_json["delta"].get("content", "")
+                        merged_query += content
                     else:
                         self.exc = Exception("ERROR CODE 结果无法解析")
                         break
@@ -325,8 +335,22 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 not self.is_v2 and not last_resp["body"]["is_end"]
             ):
                 self.exc = Exception("NOT 200 OR is_end is False")
-
         response_time = (time.perf_counter() - start_perf_counter) * 1000
+        body["result"] = merged_query
+        res = {
+            "headers": header,
+            "stat": stat,
+            "body": body,
+        }
+        res_json = json.dumps(res, ensure_ascii=False)
+        if GlobalData.data["log"] == 1:
+            lock = Lock()
+            dir = GlobalData.data["record_dir"]
+            dir = dir + "/" + "query_result.json"
+            with lock:
+                with open(dir, "a") as f:
+                    f.write(res_json + "\n")
+
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
@@ -446,6 +470,14 @@ class CompletionClient(QianfanCustomHttpSession):
             "response_length": 0,
             "request_length": len(prompt),
         }
+        header: str
+        stat: str
+        merged_query: str = ""
+        body: Dict[str, Any] = {
+            "headers": {},
+            "stat": {},
+            "body": "",
+        }
         last_resp = None
         all_empty = True
 
@@ -458,6 +490,10 @@ class CompletionClient(QianfanCustomHttpSession):
             setattr(resp, "status_code", resp["code"])
 
             stream_json = resp["body"]
+            stat = resp["statistic"]
+            header = resp["headers"]
+            body = resp["body"]
+            merged_query += stream_json["result"]
             if first_flag:
                 request_meta["first_token_latency"] = resp.statistic[
                     "first_token_latency"
@@ -505,6 +541,21 @@ class CompletionClient(QianfanCustomHttpSession):
             self.exc = Exception("NOT 200 OR is_end is False")
 
         response_time = (time.perf_counter() - start_perf_counter) * 1000
+        body["result"] = merged_query
+        res = {
+            "headers": header,
+            "stat": stat,
+            "body": body,
+        }
+        res_json = json.dumps(res, ensure_ascii=False)
+
+        if GlobalData.data["log"] == 1:
+            lock = Lock()
+            dir = GlobalData.data["record_dir"]
+            dir = dir + "/" + "query_result.json"
+            with lock:
+                with open(dir, "a") as f:
+                    f.write(res_json + "\n")
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:

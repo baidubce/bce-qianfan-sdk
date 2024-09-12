@@ -173,7 +173,7 @@ def get_config_with_kwargs(**kwargs: Any) -> Config:
 
     assert isinstance(kwargs, dict)
 
-    upper_kwargs: Dict[str, any] = {}
+    upper_kwargs: Dict[str, Any] = {}
     cfg_key = cfg.dict().keys()
 
     for k, v in kwargs.items():

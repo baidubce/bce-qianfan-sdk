@@ -267,8 +267,6 @@ class VersionBase(object):
 
 
 class BaseResource(object):
-    _config: Optional[Config] = None
-
     _runtime_models_info = {}  # type: ignore
     """
     动态模型列表
@@ -281,8 +279,8 @@ class BaseResource(object):
         config: Optional[Config] = None,
         **kwargs: Any,
     ) -> None:
-        self._config = config
-        if self._config is not None:
+        if config is not None:
+            self._config = config
             return
 
         if len(kwargs) != 0:
@@ -292,6 +290,7 @@ class BaseResource(object):
 
     @property
     def config(self) -> Config:
+        assert self._config is not None
         return self._config
 
     @classmethod

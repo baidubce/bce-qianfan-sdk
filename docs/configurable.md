@@ -73,6 +73,37 @@ os.environ["QIANFAN_QPS_LIMIT"] = "1"
 os.environ["QIANFAN_TPM_LIMIT"] = "30000"
 ```
 
+#### 限流分组
+
+在千帆 SDK 中，所有限流器都是按照特定的 Key 进行分组的。所有具有相同 Key 的限流器会被归为一组，同一组的限流器会共享一个令牌桶。 默认情况下，所有请求对象在初始化时会根据鉴权信息和请求 URL 来自动确认使用的 Key 并按照该 Key 进行限流。
+
+用户也可以在初始化时选择手动传入一个 Key，以实现自定义的限流分组：
+
+```python
+from qianfan import ChatCompletion
+
+chat_comp = ChatCompletion(key="your_key")
+```
+
+#### 多机流控
+
+在千帆 SDK 中，我们还实现了多机流控的功能，以防止不同机器上的请求因超限而失败。
+
+为了使用该功能，用户需要手动配置一台 Redis 服务器，并且在创建请求对象时将链接信息传入其中：
+
+```python
+import qianfan
+from qianfan.resources.rate_limiter import RedisConnectionInfo
+
+chat_comp = qianfan.ChatCompletion(
+    request_per_minute=300,
+    token_per_minute=300000,
+    redis_rate_limiter=True,
+    # 链接参数不传时默认链接到 127.0.0.1:6379?db=0
+    redis_connection_info=RedisConnectionInfo(host="", port=6379, password="", db=0)
+)
+```
+
 ### request_id
 
 千帆SDK支持对用户对接口请求进行track，可以传入`request_id`作为参数以标记一次resources api 调用， 并在返回值中的header `X-Baidu-Request-id` 得到相对应的`request_id`

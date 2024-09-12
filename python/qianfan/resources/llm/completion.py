@@ -136,7 +136,7 @@ class Completion(BaseResourceV1):
         """
         convert endpoint to Completion API endpoint
         """
-        if model is not None and model in self._self_supported_models():
+        if model is not None and model in _ChatCompletionV1(config=self.config)._self_supported_models():
             return _ChatCompletionV1()._convert_endpoint(model, endpoint)
         return f"/completions/{endpoint}"
 

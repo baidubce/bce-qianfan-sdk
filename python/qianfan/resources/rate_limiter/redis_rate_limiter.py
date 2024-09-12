@@ -1,12 +1,12 @@
 import asyncio
 import importlib.resources as pkg_resources
+import random
 import threading
 import time
 from hashlib import sha1
 from typing import (
     Any,
     Awaitable,
-    Dict,
     Optional,
 )
 
@@ -17,12 +17,21 @@ from redis.exceptions import NoScriptError
 
 from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 
+rand = random.Random()
+
 
 class RedisConnectionInfo:
-    host: str = "127.0.0.1"
-    port: int = 6379
-    db: int = 0
-    other: Dict[str, Any] = {}
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 6379,
+        db: int = 0,
+        **other: Any,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.db = db
+        self.other = other
 
 
 class RedisRateLimiter(BaseRateLimiter):
@@ -33,7 +42,7 @@ class RedisRateLimiter(BaseRateLimiter):
         buffer_ratio: float = 0.1,
         forcing_disable: bool = False,
         redis_connection_info: Optional[RedisConnectionInfo] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         initialize a RedisRateLimiter instance
@@ -92,7 +101,7 @@ class RedisRateLimiter(BaseRateLimiter):
                 host=redis_connection_info.host,
                 port=redis_connection_info.port,
                 db=redis_connection_info.db,
-                **redis_connection_info.other
+                **redis_connection_info.other,
             )
         )
         self._async_connection = AsyncRedis(
@@ -100,7 +109,7 @@ class RedisRateLimiter(BaseRateLimiter):
                 host=redis_connection_info.host,
                 port=redis_connection_info.port,
                 db=redis_connection_info.db,
-                **redis_connection_info.other
+                **redis_connection_info.other,
             )
         )
 
@@ -154,7 +163,8 @@ class RedisRateLimiter(BaseRateLimiter):
             elif query_per_second:
                 self._reset_expire_key_time(self._qps_key)
 
-            time.sleep(60)
+            sleep_time = rand.randint(60, 600)
+            time.sleep(sleep_time)
 
     def _set_limit_info(self, key: str, quantity: float, period: float) -> None:
         str_quantity = str(quantity)

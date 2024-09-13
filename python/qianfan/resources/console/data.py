@@ -877,6 +877,7 @@ class Data:
         inference_params: Dict[str, Any] = {},
         description: Optional[str] = None,
         afs_config: Optional[Dict[str, Any]] = None,
+        completion_window: Optional[str] = None,
         **kwargs: Any,
     ) -> QfRequest:
         """
@@ -897,6 +898,9 @@ class Data:
                 The inference parameters used in the model
             description (Optional[str]):
                 Description of the batch inference task
+            completion_window (Optional[str]):
+                The Running Time Limitation. Currently it can only
+                be "24h" or None. Default to None
 
         Note:
             The `@console_api_request` decorator is applied to this method,
@@ -935,6 +939,9 @@ class Data:
         if description is not None:
             request_json["description"] = description
 
+        if completion_window is not None:
+            request_json["completion_window"] = completion_window
+
         req.json_body = request_json
         return req
 
@@ -962,6 +969,40 @@ class Data:
             url=Consts.DatasetV2OfflineBatchInferenceAPI,
             query=_get_console_v2_query(
                 Consts.DatasetDescribeOfflineBatchInferenceAction
+            ),
+        )
+        request_json: Dict[str, Any] = {
+            "taskId": task_id,
+            **kwargs,
+        }
+
+        req.json_body = request_json
+        return req
+
+    @classmethod
+    @console_api_request
+    def delete_offline_batch_inference_task(
+        cls,
+        task_id: str,
+        **kwargs: Any,
+    ) -> QfRequest:
+        """
+        Delete an offline batch inference task
+
+        Parameters:
+            task_id (str):
+                Id of the batch inference task
+
+        Note:
+            The `@console_api_request` decorator is applied to this method,
+            enabling it to send the generated QfRequest
+            and return a QfResponse to the user.
+        """
+        req = QfRequest(
+            method="POST",
+            url=Consts.DatasetV2OfflineBatchInferenceAPI,
+            query=_get_console_v2_query(
+                Consts.DatasetDeleteOfflineBatchInferenceAction
             ),
         )
         request_json: Dict[str, Any] = {

@@ -1001,9 +1001,7 @@ class Data:
         req = QfRequest(
             method="POST",
             url=Consts.DatasetV2OfflineBatchInferenceAPI,
-            query=_get_console_v2_query(
-                Consts.DatasetStopOfflineBatchInferenceAction
-            ),
+            query=_get_console_v2_query(Consts.DatasetStopOfflineBatchInferenceAction),
         )
         request_json: Dict[str, Any] = {
             "taskId": task_id,

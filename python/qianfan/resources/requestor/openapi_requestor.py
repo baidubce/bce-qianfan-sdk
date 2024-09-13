@@ -381,7 +381,8 @@ class QfAPIRequestor(BaseAPIRequestor):
                         int(res.headers["X-Ratelimit-Limit-Tokens"])
                     )
 
-                token_usage = res.body.get("usage", {}).get("total_tokens", 0)
+                chunk_usage = res.body.get("usage", {}) or {}
+                chunk_usage.get("total_tokens", 0)
                 yield res
 
             if token_usage:

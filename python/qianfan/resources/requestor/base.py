@@ -269,7 +269,8 @@ def _stream_latency(
                 r.statistic["total_latency"] = time.perf_counter() - start_time
                 r.statistic["start_timestamp"] = start_timestamp
                 sse_block_receive_time = time.perf_counter()
-                usage_tokens = r.body.get("usage", {}).get(_COMPLETION_TOKENS_FIELD, 0)
+                chunk_usage = r.body.get("usage", {}) or {}
+                usage_tokens = chunk_usage.get(_COMPLETION_TOKENS_FIELD, 0)
                 r.statistic["avg_output_tokens_per_second"] = (
                     usage_tokens / r.statistic["total_latency"]
                 )

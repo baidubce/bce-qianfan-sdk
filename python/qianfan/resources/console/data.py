@@ -981,7 +981,7 @@ class Data:
 
     @classmethod
     @console_api_request
-    def delete_offline_batch_inference_task(
+    def stop_offline_batch_inference_task(
         cls,
         task_id: str,
         **kwargs: Any,
@@ -1002,7 +1002,7 @@ class Data:
             method="POST",
             url=Consts.DatasetV2OfflineBatchInferenceAPI,
             query=_get_console_v2_query(
-                Consts.DatasetDeleteOfflineBatchInferenceAction
+                Consts.DatasetStopOfflineBatchInferenceAction
             ),
         )
         request_json: Dict[str, Any] = {

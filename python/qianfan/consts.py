@@ -204,7 +204,7 @@ class Consts:
     DatasetV2OfflineBatchInferenceAPI: str = "/v2/batchinference"
     DatasetCreateOfflineBatchInferenceAction: str = "CreateBatchInferenceTask"
     DatasetDescribeOfflineBatchInferenceAction: str = "DescribeBatchInferenceTask"
-    DatasetDeleteOfflineBatchInferenceAction: str = "StopBatchInferenceTask"
+    DatasetStopOfflineBatchInferenceAction: str = "StopBatchInferenceTask"
     DatasetDescribeOfflineBatchInferencesAction: str = "DescribeBatchInferenceTasks"
     DatasetV2BaseRouteAPI: str = "/v2/dataset"
     DatasetV2CreateDatasetAction: str = "CreateDataset"

@@ -16,11 +16,15 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
-from typing import Any, Dict, List
+from dataclasses import dataclass, field
+from queue import Empty, Queue
+from typing import Any, Dict, List, Optional, cast
 
 from qianfan import QfResponse, resources
 from qianfan.config import encoding
+from qianfan.errors import RequestError
 from qianfan.utils.logging import log_debug, log_error, log_info
 from qianfan.utils.utils import generate_letter_num_random_id, uuid
 
@@ -28,10 +32,42 @@ from qianfan.utils.utils import generate_letter_num_random_id, uuid
 MAX_SUPPORTED_FILE_SIZE = 100 * 1024 * 1024
 MAX_SUPPORTED_FILE_COUNT = 100
 SLEEP_INTERVAL = 15
-RETRY_COUNT = 3
+RETRY_COUNT = 5
+LOCAL_QUEUE_SIZE = 128
+MAX_REMOTE_TASKS = 40
+MIN_BF_LIST_POLLING_INTERVAL = 1
 
 
-class AFSClient(object):
+class BaseClient(object):
+    def put(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def du(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def get(self, remote_path: str, local_path: str) -> str:
+        raise NotImplementedError
+
+    def rmr(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def rm(self, path: str) -> str:
+        raise NotImplementedError
+
+    def mv(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def mkdir(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def cp(self, *params: Any) -> str:
+        raise NotImplementedError
+
+    def get_modify_time(self, path: str, *args: Any, **kwargs: Any) -> str:
+        raise NotImplementedError
+
+
+class AFSClient(BaseClient):
     def __init__(self, **kwargs: Any):
         self.host = kwargs.get("host", None)
         self.ugi = kwargs.get("ugi", None)
@@ -102,12 +138,33 @@ class AFSClient(object):
 def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
     if not kwargs.get("retry_count"):
         kwargs["retry_count"] = RETRY_COUNT
+
+    def retry_if_error(error: Exception) -> bool:
+        if isinstance(error, RequestError):
+            if error.status_code == 403:
+                try:
+                    assert isinstance(error.body, (str, bytes))
+                    err_resp = json.loads(error.body)
+                    if err_resp.get("code") == "AccessDenied":
+                        # try cover 403 AccessDenied
+                        return True
+                except Exception as e:
+                    log_error(f"failed to parse error response: {error.body} {e}")
+        return False
+
     create_bf_resp = resources.Data.create_offline_batch_inference_task(
-        name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(8)}",
+        name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(10)}",
         afs_config=afs_config,
+        retry_err_handler=retry_if_error,
         **kwargs,
     )
     return create_bf_resp
+
+
+def infer_task_status(task_id: str, **kwargs: Any) -> QfResponse:
+    if not kwargs.get("retry_count"):
+        kwargs["retry_count"] = RETRY_COUNT
+    return resources.Data.get_offline_batch_inference_task(task_id=task_id, **kwargs)
 
 
 def wait_bf_task(
@@ -117,14 +174,9 @@ def wait_bf_task(
     **kwargs: Any,
 ) -> Any:
     while True:
-        if not kwargs.get("retry_count"):
-            kwargs["retry_count"] = RETRY_COUNT
-        resp = resources.Data.get_offline_batch_inference_task(
-            task_id=task_id, **kwargs
-        )
-        result = resp.get("result", {})
         if not wait_finished:
             break
+        result = infer_task_status(task_id=task_id, **kwargs).body
         run_status = result.get("runStatus")
         if run_status == "Running":
             log_info(
@@ -152,6 +204,69 @@ class BatchInferenceHelper:
             "max_single_file_size", MAX_SUPPORTED_FILE_SIZE
         )
         self.polling_interval = kwargs.get("polling_interval", SLEEP_INTERVAL)
+        self.queue: Queue = Queue(self.max_single_file_size or LOCAL_QUEUE_SIZE)
+        self.max_remote_tasks = kwargs.get("max_remote_tasks", MAX_REMOTE_TASKS)
+        self._monitor_task_pool: Dict[str, InferTask] = {}
+        self._running = False
+        self._queue_process_thread = threading.Thread(
+            target=self._start_process_queue, daemon=True
+        )
+        self._queue_process_thread.start()
+        self._monitor_task_pool_lock = threading.Lock()
+
+    def __del__(self) -> None:
+        self._running = False
+        if self._queue_process_thread:
+            self._queue_process_thread.join()
+
+    def _get_all_tasks(self, run_status: str) -> List[Dict]:
+        result: List[Dict] = []
+        while True:
+            cur_resp = resources.Data.list_offline_batch_inference_task(
+                max_keys=100,
+                run_status=run_status,
+                page_reverse=True,
+                retry_count=RETRY_COUNT,
+            )
+            page_info = cur_resp.body.get("result", {}).get("pageInfo", {})
+            task_list = cur_resp.body.get("result", {}).get("taskList", [])
+            result.append(task_list)
+            if len(task_list) == 0 or not page_info.get("isTruncated"):
+                break
+            time.sleep(0.5)
+        return result
+
+    def _start_process_queue(self) -> None:
+        task: Optional[InferTask] = None
+        self._running = True
+        while self._running:
+            if not task:
+                try:
+                    task = self.queue.get(False)
+                except Empty:
+                    time.sleep(1)
+                    continue
+            try:
+                running_tasks = self._get_all_tasks(run_status="Running")
+            except Exception as e:
+                log_error(f"get running tasks error {e}")
+                time.sleep(15)
+                continue
+            if self.max_remote_tasks > len(running_tasks):
+                try:
+                    assert task is not None
+                    resp = call_bf(**task.request_input)
+                except Exception as e:
+                    #  无限重试。
+                    log_error(f"create batch inference task error {e}")
+                    continue
+                task_id = resp.body.get("result", {}).get("taskId")
+                log_info(f"created infer_task:{ task_id}, {task}")
+                with self._monitor_task_pool_lock:
+                    self._monitor_task_pool[task.id].infer_id = task_id
+                task = None
+            else:
+                time.sleep(MIN_BF_LIST_POLLING_INTERVAL)
 
     def filter_jsonl_files(self, output: str) -> List:
         # 找到所有匹配项
@@ -228,7 +343,7 @@ class BatchInferenceHelper:
 
     def _batch_upload_local_file(
         self, data_path: str, split_local_files: List[str]
-    ) -> List:
+    ) -> List[str]:
         grouped_files = [
             split_local_files[i : i + 1] for i in range(0, len(split_local_files), 1)
         ]
@@ -293,7 +408,7 @@ class BatchInferenceHelper:
                 future.result()
         return split_files_dirs
 
-    def _prepare_ds(self, bf_id: str, input_uri: str) -> List:
+    def _prepare_ds(self, bf_id: str, input_uri: str) -> List[str]:
         ds_id = bf_id
         data_path = "/".join([input_uri, ds_id])
         res = self.afs_client.du(input_uri)
@@ -310,7 +425,7 @@ class BatchInferenceHelper:
             else:
                 small_files.append(f)
 
-        res_ds_input_dirs = []
+        res_ds_input_dirs: List[str] = []
         if exceed_files:
             # 拆分成小文件
             split_local_files = self.download_and_split_files(
@@ -333,26 +448,55 @@ class BatchInferenceHelper:
         return res_ds_input_dirs
 
     def wait_for_tasks(
-        self, tasks: List[str], wait_finished: bool = True, **kwargs: Any
-    ) -> List:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(
-                    wait_bf_task,
-                    task_id,
-                    wait_finished,
-                    polling_interval=self.polling_interval,
-                    **kwargs,
-                )
-                for i, task_id in enumerate(tasks)
-            ]
-            res = []
-            for future in concurrent.futures.as_completed(futures):
-                res.append(future.result())
-            return res
+        self, wait_finished: bool = True, **kwargs: Any
+    ) -> List["InferTask"]:
+        final_tasks: List[InferTask] = []
+        while True:
+            tasks = self._monitor_task_pool
+            if len(tasks) == 0:
+                break
+            done_list = []
+            for k, task in tasks.items():
+                if task.infer_id and task.status in ["Running", "", None]:
+                    try:
+                        task.update_status()
+                    except Exception as e:
+                        log_error(f"failed to get task status:{e}")
+                        time.sleep(5)
+                        continue
+                    time.sleep(5)
+                elif task.infer_id:
+                    if k in self._monitor_task_pool:
+                        done_list.append(k)
+                    final_tasks.append(task)
+            with self._monitor_task_pool_lock:
+                for k in done_list:
+                    if k in self._monitor_task_pool:
+                        del self._monitor_task_pool[k]
+            if not wait_finished:
+                break
+            time.sleep(10)
+        return final_tasks
+
+    def _submit_tasks(self, tasks: List["InferTask"]) -> None:
+        if len(tasks) == 0:
+            return
+        with self._monitor_task_pool_lock:
+            for task in tasks:
+                self.queue.put(task)
+                self._monitor_task_pool[task.id] = task
+        with open(
+            f"{tasks[0].bf_id}/bf_task_infos.json", "w", encoding=encoding()
+        ) as f:
+            json.dump([r.id for r in self._monitor_task_pool.values()], f)
 
     def batch_inference(
-        self, input_uri: str, output_uri: str, wait_finished: bool = True, **kwargs: Any
+        self,
+        input_uri: str,
+        output_uri: str,
+        wait_finished: bool = True,
+        done_file_uri: Optional[str] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         batch inference
@@ -368,33 +512,49 @@ class BatchInferenceHelper:
         bf_id = uuid()
         log_info(f"bf_id: {bf_id} batch inference inst created")
         ensure_directory_exists(bf_id)
-        input_group_uris = self._prepare_ds(bf_id, input_uri)
-        log_info(f"input uris:{input_group_uris}")
-        task_list = []
-        user_name, password = self.afs_client.ugi.split(",")
-        for input_group_uri in input_group_uris:
-            resp = call_bf(
-                afs_config={
-                    "userName": user_name,
-                    "password": password,
-                    "inputAfsUri": input_group_uri,
-                    "outputAfsUri": output_uri,
-                },
-                **kwargs,
-            )
-            task_list.append(resp["result"]["taskId"])
+        if kwargs.get("use_raw_input"):
+            input_group_uris = [input_uri]
+            kwargs.pop("use_raw_input")
+        else:
+            input_group_uris = self._prepare_ds(bf_id, input_uri)
 
-        log_info(f"batch inference id [{bf_id}] with api tasks: {task_list}")
-        with open(f"{bf_id}/bf_task_ids.json", "w+", encoding=encoding()) as f:
-            json.dump(task_list, f, ensure_ascii=False)
-        res = self.wait_for_tasks(task_list, wait_finished)
+        log_info(f"input uris:{input_group_uris}")
+        user_name, password = self.afs_client.ugi.split(",")
+        bf_tasks = [
+            InferTask(
+                bf_id=bf_id,
+                id=i,
+                request_input={
+                    "afs_config": {
+                        "userName": user_name,
+                        "password": password,
+                        "inputAfsUri": input_group_uri,
+                        "outputAfsUri": output_uri,
+                    },
+                    **kwargs,
+                },
+            )
+            for i, input_group_uri in enumerate(input_group_uris)
+        ]
+        self._submit_tasks(bf_tasks)
+        log_info(f"bf_id: {bf_id} with local queueing tasks num: {self.queue.qsize()}")
+        res = self.wait_for_tasks(wait_finished=wait_finished)
         for r in res:
+            if r.output is None:
+                log_error(f"failed to get result from server, task res: {r}")
+                continue
+            output_sub_uri: str = cast(str, r.output.get("outputAfsUri", ""))
+            output_sub_dir: str = cast(str, r.output.get("outputDir", ""))
             log_info(
-                f'task_id: {r["taskId"]} status: {r["runStatus"]}, output_dir:'
-                f' {"/".join([r["outputAfsUri"], r["outputDir"]])}'
+                f"bf: {bf_id}, task_id: {r.id}, infer_id: {r.infer_id} status:"
+                f" {r.status}, output_dir:"
+                f" { str(os.path.join(output_sub_uri, output_sub_dir))}"
             )
         if del_after_finished:
             self.afs_client.rmr(*input_group_uris)
+        if done_file_uri:
+            open(f"{bf_id}/DONE", "w", encoding=encoding())
+            self.afs_client.put(f"{bf_id}/DONE", done_file_uri)
 
         return {"bf_id": bf_id, "results": res}
 
@@ -406,16 +566,77 @@ class BatchInferenceHelper:
             pooling: whether to poll the status of tasks until they are
                 all finished
         """
-        with open(f"{bf_id}/bf_task_ids.json", "r", encoding=encoding()) as f:
-            task_list = json.load(f)
-            res = self.wait_for_tasks(task_list, pooling)
+        with self._monitor_task_pool_lock:
+            if not self._monitor_task_pool:
+                with open(f"{bf_id}/bf_task_infos.json", "r", encoding=encoding()) as f:
+                    task_id_list = json.load(f)
+                    for id in task_id_list:
+                        task = InferTask.load(bf_id, id)
+                        self._monitor_task_pool[id] = task
+                        if task.status in ["", None]:
+                            self._submit_tasks([task])
+            res = self.wait_for_tasks(wait_finished=pooling)
             for r in res:
+                if r.output is None:
+                    log_error(f"failed to get result from server, task res: {r}")
+                    continue
+                # TODO 需要抽象出通用的接口以适配bos等
+                output_sub_uri: str = cast(str, r.output.get("outputAfsUri", ""))
+                output_sub_dir: str = cast(str, r.output.get("outputDir", ""))
                 log_info(
-                    f'task_id: {r["taskId"]} status: {r["runStatus"]},'
-                    f' done_query_count: {r["progress"]}, output_dir:'
-                    f' {"/".join([r["outputAfsUri"], r["outputDir"]])}'
+                    f"bf: {bf_id}, task_id: {r.id}, infer_id: {r.infer_id} status:"
+                    f" {r.status}, output_dir:"
+                    f" { str(os.path.join(output_sub_uri, output_sub_dir))}"
                 )
         return res
+
+
+@dataclass
+class InferTask:
+    bf_id: str = field(default="")
+    id: Any = field(default=None)
+    infer_id: Any = field(default=None)
+    request_input: Dict = field(default_factory=dict)
+    status: str = field(default="")
+    output: Optional[Dict] = field(default=None)
+
+    def __init__(self, bf_id: str, id: Any, request_input: Dict, **kwargs: Any) -> None:
+        self.bf_id = bf_id
+        self.id = id
+        self.infer_id = kwargs.get("infer_id")
+        self.request_input = request_input
+        self.status = kwargs.get("status") or ""
+        self.output: Optional[Dict] = None
+        self.persist()
+
+    def persist(self) -> None:
+        with open(f"{self.bf_id}/{self.id}.json", "w", encoding=encoding()) as f:
+            data = self.__dict__
+            json.dump(
+                data,
+                f,
+            )
+
+    @classmethod
+    def load(cls, bf_id: str, id: Any) -> "InferTask":
+        with open(f"{bf_id}/{id}.json", "r", encoding=encoding()) as f:
+            data = json.load(f)
+            return cls(
+                bf_id=bf_id,
+                id=id,
+                request_input=data.get("request_input"),
+                status=data.get("status"),
+                infer_id=data.get("infer_id"),
+                output=data.get("output"),
+            )
+
+    def update_status(self, with_persist: bool = True) -> None:
+        resp_body = infer_task_status(self.infer_id).body
+        self.status = resp_body.get("result", {}).get("runStatus")
+        self.output = resp_body.get("result")
+        log_info(f"updating task status{self}")
+        if with_persist:
+            self.persist()
 
 
 def ensure_directory_exists(directory: str) -> None:

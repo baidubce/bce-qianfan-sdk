@@ -17,7 +17,7 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Iterator, List, Optional, Set, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Union
 
 import aiohttp
 import requests
@@ -77,6 +77,10 @@ class RetryConfig:
     retry_err_codes: Set[int] = default_field({})
     """
     API error codes used to catch for retrying
+    """
+    retry_err_handler: Optional[Callable[[Exception], bool]] = None
+    """
+    custom error handler for retrying, return True to retry, False not.
     """
 
 

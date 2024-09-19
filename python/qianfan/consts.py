@@ -204,6 +204,7 @@ class Consts:
     DatasetV2OfflineBatchInferenceAPI: str = "/v2/batchinference"
     DatasetCreateOfflineBatchInferenceAction: str = "CreateBatchInferenceTask"
     DatasetDescribeOfflineBatchInferenceAction: str = "DescribeBatchInferenceTask"
+    DatasetStopOfflineBatchInferenceAction: str = "StopBatchInferenceTask"
     DatasetDescribeOfflineBatchInferencesAction: str = "DescribeBatchInferenceTasks"
     DatasetV2BaseRouteAPI: str = "/v2/dataset"
     DatasetV2CreateDatasetAction: str = "CreateDataset"
@@ -252,6 +253,7 @@ class Consts:
     PrivateResourceGetResourceListParam: str = "DescribeServiceResources"
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
     PrivateResourceReleaseServiceResourceParam: str = "ReleaseServiceResource"
+    PrivateResourceCreateAutoRenewRulesParam: str = "CreateAutoRenewRules"
 
     ChatV2API: str = "/v2/chat/completions"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"

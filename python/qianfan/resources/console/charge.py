@@ -266,3 +266,50 @@ class Charge(object):
         }
 
         return req
+
+    @classmethod
+    @console_api_request
+    def create_auto_renew_rules(
+        cls,
+        instance_id: str,
+        instance_type: str,
+        auto_renew_time_unit: Optional[str] = None,
+        auto_renew_time: Optional[int] = None,
+        **kwargs: Any
+    ) -> QfRequest:
+        """
+        create a new automatically renew rules for resource
+
+        Parameters:
+            instance_id (str):
+                The resource instance id.
+            instance_type (str):
+                Type of instance, can be "ComputingUnit" or "TPM".
+            auto_renew_time_unit (Optional[str]):
+                Time unit for automatically renew cycle. Default to None.
+            auto_renew_time (Optional[int]):
+                Time to renew. Default to None.
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourceCreateAutoRenewRulesParam}
+        req.json_body = {
+            "instanceId": instance_id,
+            "instanceType": instance_type,
+        }
+
+        if auto_renew_time_unit is not None and auto_renew_time is not None:
+            req.json_body.update(
+                {
+                    "autoRenewTimeUnit": auto_renew_time_unit,
+                    "autoRenewTime": auto_renew_time,
+                }
+            )
+
+        return req

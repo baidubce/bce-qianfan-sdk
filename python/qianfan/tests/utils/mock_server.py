@@ -1405,19 +1405,20 @@ def offline_batch_inference_task_v2():
 
 
 def create_offline_batch_inference_task_v2(body):
-    user_name = body.get("afsConfig").get("userName")
-    if user_name in ["test_bf_invalid_username", ""]:
-        return json_response(
-            data={
-                "requestId": "deb38cd1-d880-4259-a35d-c383f0fcddca",
-                "code": "InappropriateJSON",
-                "message": (
-                    "The JSON you provided was well-formed and valid, but"
-                    "not appropriate for this operation. param[userName] invalid."
-                ),
-            },
-            status_code=400,
-        )
+    if "afsConfig" in body:
+        user_name = body.get("afsConfig").get("userName")
+        if user_name in ["test_bf_invalid_username", ""]:
+            return json_response(
+                data={
+                    "requestId": "deb38cd1-d880-4259-a35d-c383f0fcddca",
+                    "code": "InappropriateJSON",
+                    "message": (
+                        "The JSON you provided was well-formed and valid, but"
+                        "not appropriate for this operation. param[userName] invalid."
+                    ),
+                },
+                status_code=400,
+            )
     return json_response(
         {
             "requestId": "c1111-944f-4a9a-a12b-cc9o99999",

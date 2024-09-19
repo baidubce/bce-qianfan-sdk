@@ -679,6 +679,10 @@ class QianfanLLMLoadUser(CustomUser):
         body = self.client.transfer_data(data, self.input_column, self.output_column)
         if hyperparameters is None:
             hyperparameters = {}
+        # 参数去重
+        keys_to_delete = [key for key in hyperparameters.keys() if key in body]
+        for key in keys_to_delete:
+            del hyperparameters[key]
         self.client.qianfan_request(
             show_total_latency=True, stream=True, **body, **hyperparameters
         )

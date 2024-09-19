@@ -20,7 +20,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from queue import Empty, Queue
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from qianfan import QfResponse, resources
 from qianfan.config import encoding
@@ -143,6 +143,7 @@ def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
         if isinstance(error, RequestError):
             if error.status_code == 403:
                 try:
+                    assert isinstance(error.body, (str, bytes))
                     err_resp = json.loads(error.body)
                     if err_resp.get("code") == "AccessDenied":
                         # try cover 403 AccessDenied
@@ -160,7 +161,7 @@ def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
     return create_bf_resp
 
 
-def infer_task_status(task_id, **kwargs):
+def infer_task_status(task_id: str, **kwargs: Any) -> QfResponse:
     if not kwargs.get("retry_count"):
         kwargs["retry_count"] = RETRY_COUNT
     return resources.Data.get_offline_batch_inference_task(task_id=task_id, **kwargs)
@@ -203,7 +204,7 @@ class BatchInferenceHelper:
             "max_single_file_size", MAX_SUPPORTED_FILE_SIZE
         )
         self.polling_interval = kwargs.get("polling_interval", SLEEP_INTERVAL)
-        self.queue = Queue(self.max_single_file_size or LOCAL_QUEUE_SIZE)
+        self.queue: Queue = Queue(self.max_single_file_size or LOCAL_QUEUE_SIZE)
         self.max_remote_tasks = kwargs.get("max_remote_tasks", MAX_REMOTE_TASKS)
         self._monitor_task_pool: Dict[str, InferTask] = {}
         self._running = False
@@ -213,12 +214,12 @@ class BatchInferenceHelper:
         self._queue_process_thread.start()
         self._monitor_task_pool_lock = threading.Lock()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self._running = False
         if self._queue_process_thread:
             self._queue_process_thread.join()
 
-    def _get_all_tasks(self, run_status: str) -> int:
+    def _get_all_tasks(self, run_status: str) -> List[Dict]:
         result: List[Dict] = []
         while True:
             cur_resp = resources.Data.list_offline_batch_inference_task(
@@ -253,6 +254,7 @@ class BatchInferenceHelper:
                 continue
             if self.max_remote_tasks > len(running_tasks):
                 try:
+                    assert task is not None
                     resp = call_bf(**task.request_input)
                 except Exception as e:
                     #  无限重试。
@@ -538,8 +540,11 @@ class BatchInferenceHelper:
         log_info(f"bf_id: {bf_id} with local queueing tasks num: {self.queue.qsize()}")
         res = self.wait_for_tasks(wait_finished=wait_finished)
         for r in res:
-            output_sub_uri = r.output.get("outputAfsUri")
-            output_sub_dir = r.output.get("outputDir")
+            if r.output is None:
+                log_error(f"failed to get result from server, task res: {r}")
+                continue
+            output_sub_uri: str = cast(str, r.output.get("outputAfsUri", ""))
+            output_sub_dir: str = cast(str, r.output.get("outputDir", ""))
             log_info(
                 f"bf: {bf_id}, task_id: {r.id}, infer_id: {r.infer_id} status:"
                 f" {r.status}, output_dir:"
@@ -548,8 +553,7 @@ class BatchInferenceHelper:
         if del_after_finished:
             self.afs_client.rmr(*input_group_uris)
         if done_file_uri:
-            with open(f"{bf_id}/DONE", "w") as f:
-                pass
+            open(f"{bf_id}/DONE", "w", encoding=encoding())
             self.afs_client.put(f"{bf_id}/DONE", done_file_uri)
 
         return {"bf_id": bf_id, "results": res}
@@ -573,12 +577,16 @@ class BatchInferenceHelper:
                             self._submit_tasks([task])
             res = self.wait_for_tasks(wait_finished=pooling)
             for r in res:
-                output_uri = r.output.get("outputAfsUri")
-                output_sub_dir = r.output.get("outputDir")
+                if r.output is None:
+                    log_error(f"failed to get result from server, task res: {r}")
+                    continue
+                # TODO 需要抽象出通用的接口以适配bos等
+                output_sub_uri: str = cast(str, r.output.get("outputAfsUri", ""))
+                output_sub_dir: str = cast(str, r.output.get("outputDir", ""))
                 log_info(
                     f"bf: {bf_id}, task_id: {r.id}, infer_id: {r.infer_id} status:"
                     f" {r.status}, output_dir:"
-                    f" { str(os.path.join(output_uri, output_sub_dir))}"
+                    f" { str(os.path.join(output_sub_uri, output_sub_dir))}"
                 )
         return res
 
@@ -588,7 +596,7 @@ class InferTask:
     bf_id: str = field(default="")
     id: Any = field(default=None)
     infer_id: Any = field(default=None)
-    request_input: Dict = field(default=None)
+    request_input: Dict = field(default={})
     status: str = field(default="")
     output: Optional[Dict] = field(default=None)
 
@@ -597,11 +605,11 @@ class InferTask:
         self.id = id
         self.infer_id = kwargs.get("infer_id")
         self.request_input = request_input
-        self.status = kwargs.get("status")
+        self.status = kwargs.get("status") or ""
         self.output: Optional[Dict] = None
         self.persist()
 
-    def persist(self):
+    def persist(self) -> None:
         with open(f"{self.bf_id}/{self.id}.json", "w", encoding=encoding()) as f:
             data = self.__dict__
             json.dump(

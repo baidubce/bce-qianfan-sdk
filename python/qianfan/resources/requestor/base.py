@@ -366,15 +366,16 @@ class BaseAPIRequestor(object):
         self,
         request: QfRequest,
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
-        check_error: Callable[[requests.Response], None] = _check_if_status_code_is_200,
+        check_error: Callable[
+            [requests.Response, Config], None
+        ] = _check_if_status_code_is_200,
     ) -> QfResponse:
         """
         simple sync request
         """
         request = self._preprocess_request(request)
         response = self._client.request(request)
-        if check_error:
-            check_error(response)
+        check_error(response, self.config)
         _check_if_status_code_is_200(response, self.config)
         try:
             body = response.json()

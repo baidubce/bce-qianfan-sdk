@@ -596,7 +596,7 @@ class InferTask:
     bf_id: str = field(default="")
     id: Any = field(default=None)
     infer_id: Any = field(default=None)
-    request_input: Dict = field(default={})
+    request_input: Dict = field(default_factory=dict)
     status: str = field(default="")
     output: Optional[Dict] = field(default=None)
 

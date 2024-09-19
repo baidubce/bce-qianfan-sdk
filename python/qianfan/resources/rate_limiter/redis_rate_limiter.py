@@ -10,10 +10,15 @@ from typing import (
     Optional,
 )
 
-from redis import ConnectionPool, Redis
-from redis.asyncio import ConnectionPool as AsyncConnectionPool
-from redis.asyncio import Redis as AsyncRedis
-from redis.exceptions import NoScriptError
+from qianfan.utils import log_warn
+
+try:
+    from redis import ConnectionPool, Redis
+    from redis.asyncio import ConnectionPool as AsyncConnectionPool
+    from redis.asyncio import Redis as AsyncRedis
+    from redis.exceptions import NoScriptError
+except ImportError:
+    log_warn("no redis installed, RedisRateLimiter unavailable")
 
 from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 

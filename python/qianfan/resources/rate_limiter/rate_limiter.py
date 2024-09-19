@@ -20,15 +20,127 @@ import threading
 import time
 from queue import Empty, Queue
 from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from aiolimiter import AsyncLimiter
 
 from qianfan.config import get_config
+from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 from qianfan.utils import log_error
 
+_MAP_LOCK = threading.Lock()
 
-class VersatileRateLimiter:
+
+class VersatileRateLimiter(BaseRateLimiter):
+    """
+    Implementation of Versatile Rate Limiter.
+    There are different rules between synchronous and asynchronous method using,
+    we recommend only use one of two method within single rate limiter at same time
+    """
+
+    def __init__(
+        self,
+        query_per_second: float = 0,
+        request_per_minute: float = 0,
+        buffer_ratio: float = 0.1,
+        forcing_disable: bool = False,
+        **kwargs: Any
+    ) -> None:
+        """
+        initialize a VersatileRateLimiter instance
+
+        Args:
+            query_per_second (float):
+                the query-per-second limitation, default to 0,
+                means to not limit
+            request_per_minute (float):
+                the request-per-minute limitation, default to 0,
+                means to not limit
+            buffer_ratio (float):
+                remaining rate ratio for better practice in
+                production environment, default to 0.1,
+                means only apply 90% rate limitation
+            forcing_disable (bool):
+                Force to disable all functionality of rate limiter.
+                Default to False
+        """
+
+        self._arguments = {
+            "query_per_second": query_per_second,
+            "request_per_minute": request_per_minute,
+            "buffer_ratio": buffer_ratio,
+            "forcing_disable": forcing_disable,
+            **kwargs,
+        }
+
+        self._impl: Optional[_LimiterWrapper] = None
+        self._init_lock = threading.Lock()
+
+        super().__init__(**kwargs)
+
+    async def async_reset_once(self, rpm: float) -> None:
+        if not self._impl:
+            return
+
+        await self._impl.async_reset_once(rpm)
+
+    def reset_once(self, rpm: float) -> None:
+        if not self._impl:
+            return
+
+        self._impl.reset_once(rpm)
+
+    def __enter__(self) -> None:
+        if not self._impl:
+            return
+
+        with self._impl:
+            ...
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        return
+
+    async def __aenter__(self) -> None:
+        if not self._impl:
+            return
+
+        async with self._impl:
+            ...
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        return
+
+    def acquire(self, key: Optional[str] = None) -> "VersatileRateLimiter":
+        if self._impl:
+            return self
+
+        with self._init_lock:
+            if self._impl:
+                return self
+
+            if key is None:
+                self._impl = _LimiterWrapper(**self._arguments)
+            else:
+                with _MAP_LOCK:
+                    if key not in _RATE_LIMITER_MAP:
+                        _RATE_LIMITER_MAP[key] = _LimiterWrapper(**self._arguments)
+
+                self._impl = _RATE_LIMITER_MAP[key]
+
+        return self
+
+
+class _LimiterWrapper(BaseRateLimiter):
     """
     Implementation of Versatile Rate Limiter.
     There are different rules between synchronous and asynchronous method using,
@@ -96,12 +208,12 @@ class VersatileRateLimiter:
 
         if request_per_minute > 0:
             self._is_rpm = True
-            self._internal_qp10s_rate_limiter = RateLimiter(request_per_minute / 6, 10)
-            self._internal_rpm_rate_limiter = RateLimiter(request_per_minute, 60)
+            self._internal_qp10s_rate_limiter = _RateLimiter(request_per_minute / 6, 10)
+            self._internal_rpm_rate_limiter = _RateLimiter(request_per_minute, 60)
 
         if query_per_second > 0:
             self._is_rpm = False
-            self._internal_qps_rate_limiter = RateLimiter(query_per_second)
+            self._internal_qps_rate_limiter = _RateLimiter(query_per_second)
 
     @property
     def _reset_once_lock(self) -> threading.Lock:
@@ -143,8 +255,8 @@ class VersatileRateLimiter:
 
         og_rpm = self._get_og_rpm()
 
-        # 如果新旧值一致则不需要操作
-        if og_rpm == rpm:
+        # 如果新值大于旧值则不需要操作
+        if og_rpm != 0 and og_rpm <= rpm:
             self._async_reset_once_lock.release()
             return
 
@@ -160,7 +272,6 @@ class VersatileRateLimiter:
 
         # 重置
         await self._async_reset_internal_rate_limiter(rpm)
-
         self._async_reset_once_lock.release()
 
     def reset_once(self, rpm: float) -> None:
@@ -176,12 +287,12 @@ class VersatileRateLimiter:
             return
 
         self._has_been_reset = True
-        self._reset_once_lock.release()
 
         og_rpm = self._get_og_rpm()
 
-        # 如果新旧值一致则不需要操作
-        if og_rpm == rpm:
+        # 如果新值大于旧值则不需要操作
+        if og_rpm != 0 and og_rpm <= rpm:
+            self._reset_once_lock.release()
             return
 
         # 取最小的那个，如果是关闭的则直接取重置的
@@ -191,10 +302,12 @@ class VersatileRateLimiter:
         # 如果重置为 0 则直接关闭
         if rpm == 0:
             self.is_closed = True
+            self._reset_once_lock.release()
             return
 
         # 重置
         self._reset_internal_rate_limiter(rpm)
+        self._reset_once_lock.release()
 
     def _reset_internal_rate_limiter(self, rpm: float) -> None:
         # 记录一下新值
@@ -228,13 +341,13 @@ class VersatileRateLimiter:
                 self._internal_qp10s_rate_limiter.reset(rpm / 6, 10)
                 self._internal_rpm_rate_limiter.reset(rpm, 60)
             else:
-                self._internal_qp10s_rate_limiter = RateLimiter(rpm / 6, 10)
-                self._internal_rpm_rate_limiter = RateLimiter(rpm, 60)
+                self._internal_qp10s_rate_limiter = _RateLimiter(rpm / 6, 10)
+                self._internal_rpm_rate_limiter = _RateLimiter(rpm, 60)
         else:
             if hasattr(self, "_internal_qps_rate_limiter"):
                 self._internal_qps_rate_limiter.reset(rpm / 60)
             else:
-                self._internal_qps_rate_limiter = RateLimiter(rpm / 60)
+                self._internal_qps_rate_limiter = _RateLimiter(rpm / 60)
 
     async def _async_reset(self, rpm: float) -> None:
         if self._is_rpm:
@@ -242,13 +355,13 @@ class VersatileRateLimiter:
                 await self._internal_qp10s_rate_limiter.async_reset(rpm / 6, 10)
                 await self._internal_rpm_rate_limiter.async_reset(rpm, 60)
             else:
-                self._internal_qp10s_rate_limiter = RateLimiter(rpm / 6, 10)
-                self._internal_rpm_rate_limiter = RateLimiter(rpm, 60)
+                self._internal_qp10s_rate_limiter = _RateLimiter(rpm / 6, 10)
+                self._internal_rpm_rate_limiter = _RateLimiter(rpm, 60)
         else:
             if hasattr(self, "_internal_qps_rate_limiter"):
                 await self._internal_qps_rate_limiter.async_reset(rpm / 60)
             else:
-                self._internal_qps_rate_limiter = RateLimiter(rpm / 60)
+                self._internal_qps_rate_limiter = _RateLimiter(rpm / 60)
 
     def __enter__(self) -> None:
         if self.is_closed:
@@ -298,8 +411,14 @@ class VersatileRateLimiter:
         if hasattr(self, "_internal_rpm_rate_limiter"):
             del self._internal_rpm_rate_limiter
 
+    def acquire(self, key: Optional[str] = None) -> "_LimiterWrapper":
+        return self
 
-class RateLimiter:
+
+_RATE_LIMITER_MAP: Dict[str, _LimiterWrapper] = {}
+
+
+class _RateLimiter:
     """
     Implementation of Rate Limiter.
     They're different rules between synchronous and asynchronous method using,
@@ -340,7 +459,7 @@ class RateLimiter:
             self._token_count = 0.0
             self._last_leak_timestamp = time.time()
             self._sync_lock = threading.Lock()
-            self._condition_queue: Queue[RateLimiter._AcquireTask] = Queue()
+            self._condition_queue: Queue[_RateLimiter._AcquireTask] = Queue()
             self._running = True
             self._working_thread = threading.Thread(target=self._worker, daemon=True)
             self._working_thread.start()
@@ -356,7 +475,7 @@ class RateLimiter:
 
         def _worker(self) -> None:
             while self._running:
-                task: Optional[RateLimiter._AcquireTask] = None
+                task: Optional[_RateLimiter._AcquireTask] = None
                 try:
                     task = self._condition_queue.get(True, 1)
                 except Empty:
@@ -387,7 +506,7 @@ class RateLimiter:
 
             request_condition = threading.Condition()
             self._condition_queue.put(
-                RateLimiter._AcquireTask(request_condition, amount)
+                _RateLimiter._AcquireTask(request_condition, amount)
             )
             with request_condition:
                 request_condition.wait()

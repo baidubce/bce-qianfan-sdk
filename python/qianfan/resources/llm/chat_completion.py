@@ -1686,7 +1686,8 @@ class ChatCompletion(VersionBase):
             else:
                 model = kwargs.get("model") or ""
                 func_model_info_list = {
-                    k.lower(): v for k, v in Function._supported_models().items()
+                    k.lower(): v
+                    for k, v in Function(**kwargs)._self_supported_models().items()
                 }
                 func_model_info = func_model_info_list.get(model.lower())
                 if model and func_model_info:
@@ -1717,11 +1718,63 @@ class ChatCompletion(VersionBase):
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         truncate_overlong_msgs: bool = False,
+        adapt_openai_message_format: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
-        system, messages = self._adapt_messages_format(messages)
-        if "system" not in kwargs and system:
-            kwargs["system"] = system
+        """
+        Perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages (Union[List[Dict], QfMessages]):
+            A list of messages in the conversation including the one from system. Each
+            message should be a dictionary containing 'role' and 'content' keys,
+            representing the role (either 'user', or 'assistant') and content of the
+            message, respectively. Alternatively, you can provide a QfMessages object
+            for convenience.
+          model (Optional[str]):
+            The name or identifier of the language model to use. If not specified, the
+            default model is used(ERNIE-Lite-8K).
+          endpoint (Optional[str]):
+            The endpoint for making API requests. If not provided, the default endpoint
+            is used.
+          stream (bool):
+            If set to True, the responses are streamed back as an iterator. If False, a
+            single response is returned.
+          retry_count (int):
+            The number of times to retry the request in case of failure.
+          request_timeout (float):
+            The maximum time (in seconds) to wait for a response from the model.
+          backoff_factor (float):
+            A factor to increase the waiting time between retry attempts.
+          auto_concat_truncate (bool):
+            [Experimental] If set to True, continuously requesting will be run
+            until `is_truncated` is `False`. As a result, the entire reply will
+            be returned.
+            Cause this feature highly relies on the understanding ability of LLM,
+            Use it carefully.
+          truncated_continue_prompt (str):
+            [Experimental] The prompt to use when requesting more content for auto
+            truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
+          adapt_openai_message_format (bool):
+            whether to adapt openai message format, such as `system` default is False.
+          kwargs (Any):
+            Additional keyword arguments that can be passed to customize the request.
+
+        Additional parameters like `temperature` will vary depending on the model,
+        please refer to the API documentation. The additional parameters can be passed
+        as follows:
+
+        ```
+        ChatCompletion(version=2).do(messages = ..., temperature = 0.2, top_p = 0.5)
+        ```
+        """
+        if adapt_openai_message_format:
+            # todo more message format
+            system, messages = self._adapt_messages_format(messages)
+            if "system" not in kwargs and system:
+                kwargs["system"] = system
         if model is not None or endpoint is not None:
             # TODO兼容 v2调用ernie-func-8k
             real_base_type = self._real_base(
@@ -1772,11 +1825,63 @@ class ChatCompletion(VersionBase):
         auto_concat_truncate: bool = False,
         truncated_continue_prompt: str = DefaultValue.TruncatedContinuePrompt,
         truncate_overlong_msgs: bool = False,
+        adapt_openai_message_format: bool = False,
         **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
-        system, messages = self._adapt_messages_format(messages)
-        if "system" not in kwargs and system:
-            kwargs["system"] = system
+        """
+        Async perform chat-based language generation using user-supplied messages.
+
+        Parameters:
+          messages (Union[List[Dict], QfMessages]):
+            A list of messages in the conversation including the one from system. Each
+            message should be a dictionary containing 'role' and 'content' keys,
+            representing the role (either 'user', or 'assistant') and content of the
+            message, respectively. Alternatively, you can provide a QfMessages object
+            for convenience.
+          model (Optional[str]):
+            The name or identifier of the language model to use. If not specified, the
+            default model is used(ERNIE-Lite-8K).
+          endpoint (Optional[str]):
+            The endpoint for making API requests. If not provided, the default endpoint
+            is used.
+          stream (bool):
+            If set to True, the responses are streamed back as an iterator. If False,
+            a single response is returned.
+          retry_count (int):
+            The number of times to retry the request in case of failure.
+          request_timeout (float):
+            The maximum time (in seconds) to wait for a response from the model.
+          backoff_factor (float):
+            A factor to increase the waiting time between retry attempts.
+          auto_concat_truncate (bool):
+            [Experimental] If set to True, continuously requesting will be run
+            until `is_truncated` is `False`. As a result, the entire reply will
+            be returned.
+            Cause this feature highly relies on the understanding ability of LLM,
+            Use it carefully.
+          truncated_continue_prompt (str):
+            [Experimental] The prompt to use when requesting more content for auto
+            truncated reply.
+          truncate_overlong_msgs (bool):
+            Whether to truncate overlong messages.
+          adapt_openai_message_format (bool):
+            whether to adapt openai message format, such as `system` default is False.
+          kwargs (Any):
+            Additional keyword arguments that can be passed to customize the request.
+
+        Additional parameters like `temperature` will vary depending on the model,
+        please refer to the API documentation. The additional parameters can be passed
+        as follows:
+
+        ```
+        ChatCompletion().ado(messages = ..., temperature = 0.2, top_p = 0.5)
+        ```
+
+        """
+        if adapt_openai_message_format:
+            system, messages = self._adapt_messages_format(messages)
+            if "system" not in kwargs and system:
+                kwargs["system"] = system
         if model is not None or endpoint is not None:
             # TODO兼容 v2调用ernie-func-8k
             real_base_type = self._real_base(

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
+import json
 import threading
 import time
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -526,6 +528,23 @@ class Auth(object):
             " (ak, sk), (access_token) must be provided"
         )
         return False
+
+    def credential_hash(self) -> str:
+        sha256 = hashlib.sha256()
+
+        sha256.update(
+            json.dumps(
+                [
+                    self._access_token,
+                    self._ak,
+                    self._sk,
+                    self._access_key,
+                    self._secret_key,
+                    self._bearer_token,
+                ]
+            ).encode("utf-8")
+        )
+        return sha256.hexdigest()
 
     def access_token(self) -> str:
         """

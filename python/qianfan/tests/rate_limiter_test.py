@@ -31,7 +31,7 @@ def test_not_sync_rate_limiter():
     start_timestamp = time.time()
     rl = VersatileRateLimiter()
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp < 1
@@ -40,7 +40,7 @@ def test_not_sync_rate_limiter():
 @pytest.mark.asyncio
 async def test_not_async_rate_limiter():
     async def async_sleep(rl):
-        async with rl:
+        async with rl.acquire():
             pass
 
     start_timestamp = time.time()
@@ -58,7 +58,7 @@ def test_sync_rate_limiter():
     start_timestamp = time.time()
     rl = VersatileRateLimiter(query_per_second=1)
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 4
@@ -67,7 +67,7 @@ def test_sync_rate_limiter():
 @pytest.mark.asyncio
 async def test_async_rate_limiter():
     async def async_sleep(rl):
-        async with rl:
+        async with rl.acquire():
             pass
 
     start_timestamp = time.time()
@@ -82,7 +82,7 @@ async def test_async_rate_limiter():
 
 
 def test_sync_rate_limiter_in_call():
-    chat = qianfan.ChatCompletion(query_per_second=2)
+    chat = qianfan.ChatCompletion(query_per_second=2, key="1")
     start_timestamp = time.time()
     for i in range(2):
         chat.do(messages=TEST_MESSAGE)
@@ -98,7 +98,7 @@ def test_sync_rate_limiter_in_call():
 
 @pytest.mark.asyncio
 async def test_async_rate_limiter_in_call():
-    chat = qianfan.ChatCompletion(query_per_second=2)
+    chat = qianfan.ChatCompletion(query_per_second=2, key="2")
     start_timestamp = time.time()
     task = []
     for i in range(2):
@@ -118,7 +118,7 @@ async def test_async_rate_limiter_in_call():
 
 @pytest.mark.asyncio
 async def test_async_rate_limiter_in_call_with_qps_sub1():
-    chat = qianfan.ChatCompletion(query_per_second=0.5)
+    chat = qianfan.ChatCompletion(query_per_second=0.5, key="3")
     start_timestamp = time.time()
     task = []
     for i in range(2):
@@ -141,7 +141,7 @@ def test_set_rate_limiter_through_environment_variable():
     start_timestamp = time.time()
     rl = VersatileRateLimiter()
     for i in range(0, 5):
-        with rl:
+        with rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 6
@@ -152,7 +152,7 @@ def test_set_rpm_limiter_function():
     start_timestamp = time.time()
     rpm_rl = VersatileRateLimiter(request_per_minute=10)
     for i in range(0, 2):
-        with rpm_rl:
+        with rpm_rl.acquire():
             pass
     end_timestamp = time.time()
     assert end_timestamp - start_timestamp >= 2
@@ -164,7 +164,7 @@ def test_multi_thread_case_limiter():
     t_list = []
 
     def _inner_thread_working_function():
-        with rpm_rl:
+        with rpm_rl.acquire():
             ...
 
     for i in range(5):
@@ -186,7 +186,7 @@ async def test_async_case_limiter():
     awaitable_list = []
 
     async def _inner_coroutine_working_function():
-        async with rpm_rl:
+        async with rpm_rl.acquire():
             ...
 
     for i in range(5):
@@ -226,9 +226,12 @@ def test_limit_in_thread_async():
 
 def test_reset_once():
     rpm_rl = VersatileRateLimiter(query_per_second=5)
+    rpm_rl.acquire()
 
-    assert not rpm_rl._is_rpm
-    assert rpm_rl._internal_qps_rate_limiter._sync_limiter._query_per_period == 4.5
+    assert not rpm_rl._impl._is_rpm
+    assert (
+        rpm_rl._impl._internal_qps_rate_limiter._sync_limiter._query_per_period == 4.5
+    )
 
     def _reset_once():
         rpm_rl.reset_once(200)
@@ -242,18 +245,19 @@ def test_reset_once():
     for t in t_list:
         t.join()
 
-    assert rpm_rl._has_been_reset
-    assert not rpm_rl._is_rpm
-    assert rpm_rl._new_query_per_second == 200 / 60
-    assert rpm_rl._internal_qps_rate_limiter._sync_limiter._query_per_period == 3
+    assert rpm_rl._impl._has_been_reset
+    assert not rpm_rl._impl._is_rpm
+    assert rpm_rl._impl._new_query_per_second == 200 / 60
+    assert rpm_rl._impl._internal_qps_rate_limiter._sync_limiter._query_per_period == 3
 
 
 @pytest.mark.asyncio
 async def test_reset_once_async():
     rpm_rl = VersatileRateLimiter(request_per_minute=300)
+    rpm_rl.acquire()
 
-    assert rpm_rl._is_rpm
-    assert rpm_rl._internal_rpm_rate_limiter._async_limiter.max_rate == 270
+    assert rpm_rl._impl._is_rpm
+    assert rpm_rl._impl._internal_rpm_rate_limiter._async_limiter.max_rate == 270
 
     awaitable_list = []
     for i in range(5):
@@ -261,16 +265,17 @@ async def test_reset_once_async():
 
     await asyncio.wait(awaitable_list)
 
-    assert rpm_rl._has_been_reset
-    assert rpm_rl._is_rpm
-    assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._async_limiter.max_rate == 180
+    assert rpm_rl._impl._has_been_reset
+    assert rpm_rl._impl._is_rpm
+    assert rpm_rl._impl._new_request_per_minute == 200
+    assert rpm_rl._impl._internal_rpm_rate_limiter._async_limiter.max_rate == 180
 
 
 def test_reset_once_from_closed():
     rpm_rl = VersatileRateLimiter()
+    rpm_rl.acquire()
 
-    assert rpm_rl.is_closed
+    assert rpm_rl._impl.is_closed
 
     def _reset_once():
         rpm_rl.reset_once(200)
@@ -284,17 +289,20 @@ def test_reset_once_from_closed():
     for t in t_list:
         t.join()
 
-    assert rpm_rl._has_been_reset
-    assert rpm_rl._is_rpm
-    assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    assert rpm_rl._impl._has_been_reset
+    assert rpm_rl._impl._is_rpm
+    assert rpm_rl._impl._new_request_per_minute == 200
+    assert (
+        rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    )
 
 
 @pytest.mark.asyncio
 async def test_reset_once_async_from_closed():
     rpm_rl = VersatileRateLimiter()
+    rpm_rl.acquire()
 
-    assert rpm_rl.is_closed
+    assert rpm_rl._impl.is_closed
 
     awaitable_list = []
     for i in range(5):
@@ -302,7 +310,9 @@ async def test_reset_once_async_from_closed():
 
     await asyncio.wait(awaitable_list)
 
-    assert rpm_rl._has_been_reset
-    assert rpm_rl._is_rpm
-    assert rpm_rl._new_request_per_minute == 200
-    assert rpm_rl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    assert rpm_rl._impl._has_been_reset
+    assert rpm_rl._impl._is_rpm
+    assert rpm_rl._impl._new_request_per_minute == 200
+    assert (
+        rpm_rl._impl._internal_rpm_rate_limiter._sync_limiter._query_per_period == 180
+    )

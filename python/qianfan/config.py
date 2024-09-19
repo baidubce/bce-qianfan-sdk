@@ -13,7 +13,7 @@
 # limitations under the License.
 import hashlib
 import os
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from typing_extensions import deprecated
 
@@ -166,6 +166,22 @@ def get_config() -> Config:
             # logger.error(f"unexpected error: {e}")
             raise e
     return _GLOBAL_CONFIG
+
+
+def get_config_with_kwargs(**kwargs: Any) -> Config:
+    cfg = get_config()
+
+    assert isinstance(kwargs, dict)
+
+    upper_kwargs: Dict[str, Any] = {}
+    cfg_key = cfg.dict().keys()
+
+    for k, v in kwargs.items():
+        upper_key = k.upper()
+        if upper_key in cfg_key:
+            upper_kwargs[upper_key] = v
+
+    return Config.parse_obj({**cfg.dict(), **upper_kwargs})
 
 
 # 兼容之前版本

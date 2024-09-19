@@ -37,7 +37,7 @@ from typing import (
 )
 
 import qianfan.errors as errors
-from qianfan import get_config
+from qianfan import get_config, get_config_with_kwargs
 from qianfan.config import Config
 from qianfan.consts import APIErrorCode, Consts, DefaultValue
 from qianfan.resources.console.service import Service
@@ -267,8 +267,6 @@ class VersionBase(object):
 
 
 class BaseResource(object):
-    _config: Optional[Config] = None
-
     _runtime_models_info = {}  # type: ignore
     """
     动态模型列表
@@ -281,12 +279,18 @@ class BaseResource(object):
         config: Optional[Config] = None,
         **kwargs: Any,
     ) -> None:
-        self._config = config
+        if config is not None:
+            self._config = config
+            return
+
+        if len(kwargs) != 0:
+            self._config = get_config_with_kwargs(**kwargs)
+        else:
+            self._config = get_config()
 
     @property
     def config(self) -> Config:
-        if self._config is None:
-            return get_config()
+        assert self._config is not None
         return self._config
 
     @classmethod

@@ -224,7 +224,7 @@ ds: Dataset = Dataset.load(qianfan_dataset_id="ds-xxx")
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
 trainer = Finetune(
-    train_type="ERNIE-Speed-8K
+    train_type="ERNIE-Speed-8K",
     dataset=ds, 
 )
 

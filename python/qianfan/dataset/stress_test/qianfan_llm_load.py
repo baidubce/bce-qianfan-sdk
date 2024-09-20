@@ -298,6 +298,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         )
                         break
 
+                    if len(resp.body["choices"]) == 0:
+                        break
+
                     stream_json = resp.body["choices"][0]
                     stat = resp.statistic
                     header = resp.headers
@@ -312,7 +315,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 if len(content) != 0:
                     all_empty = False
                 # 计算token数, 有usage的累加，没有的直接计算content
-                if "usage" in resp.body:
+                if "usage" in resp.body and resp.body["usage"] is not None:
                     request_meta["input_tokens"] = int(
                         resp.body["usage"]["prompt_tokens"]
                     )

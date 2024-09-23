@@ -498,9 +498,7 @@ class CompletionClient(QianfanCustomHttpSession):
 
             # 计算token数, 有usage的累加，没有的直接计算content
             if "usage" in resp.body and resp.body["usage"] is not None:
-                request_meta["input_tokens"] = int(
-                    resp.body["usage"]["prompt_tokens"]
-                )
+                request_meta["input_tokens"] = int(resp.body["usage"]["prompt_tokens"])
                 request_meta["output_tokens"] = int(
                     resp.body["usage"]["completion_tokens"]
                 )

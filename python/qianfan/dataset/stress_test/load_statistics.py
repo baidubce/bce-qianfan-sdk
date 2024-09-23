@@ -94,11 +94,11 @@ def gen_brief(
         + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 2)
         + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 2)
         + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 2)
-        + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0] / 1000, 2)
-        + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1] / 1000, 2)
-        + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2] / 1000, 2)
-        + "FirstTokenLatency 50%%: %s\n" % round(first_lat_tuple[3] / 1000, 2)
-        + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4] / 1000, 2)
+        + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0], 2)
+        + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1], 2)
+        + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2], 2)
+        + "FirstTokenLatency 50%%: %s\n" % round(first_lat_tuple[3], 2)
+        + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4], 2)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
         + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
@@ -117,11 +117,11 @@ def gen_brief(
         "latency_max": round(lat_tuple[2] / 1000, 2),
         "latency_50%": round(lat_tuple[3] / 1000, 2),
         "latency_80%": round(lat_tuple[4] / 1000, 2),
-        "FirstTokenLatency_avg": round(first_lat_tuple[0] / 1000, 2),
-        "FirstTokenLatency_min": round(first_lat_tuple[1] / 1000, 2),
-        "FirstTokenLatency_max": round(first_lat_tuple[2] / 1000, 2),
-        "FirstTokenLatency_50%": round(first_lat_tuple[3] / 1000, 2),
-        "FirstTokenLatency_80%": round(first_lat_tuple[4] / 1000, 2),
+        "FirstTokenLatency_avg": round(first_lat_tuple[0], 2),
+        "FirstTokenLatency_min": round(first_lat_tuple[1], 2),
+        "FirstTokenLatency_max": round(first_lat_tuple[2], 2),
+        "FirstTokenLatency_50%": round(first_lat_tuple[3], 2),
+        "FirstTokenLatency_80%": round(first_lat_tuple[4], 2),
         "Input_tokens_avg": round(input_tk_tuple[0], 2),
         "Output_tokens_avg": round(output_tk_tuple[0], 2),
         "TotalTime": round(time, 2),

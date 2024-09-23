@@ -260,9 +260,23 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             setattr(resp, "status_code", 500)
         if self.exc is None:
             for resp in responses:
+                last_resp = resp
                 setattr(resp, "url", self.model)
                 setattr(resp, "reason", None)
                 setattr(resp, "status_code", resp["code"])
+
+                # 计算token数, 有usage的累加，没有的直接计算content
+                if "usage" in resp.body and resp.body["usage"] is not None:
+                    request_meta["input_tokens"] = int(
+                        resp.body["usage"]["prompt_tokens"]
+                    )
+                    request_meta["output_tokens"] = int(
+                        resp.body["usage"]["completion_tokens"]
+                    )
+                else:
+                    request_meta["input_tokens"] = request_meta["request_length"]
+                    request_meta["output_tokens"] = request_meta["response_length"]
+
                 if first_flag:
                     request_meta["first_token_latency"] = resp.statistic[
                         "first_token_latency"
@@ -274,6 +288,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         ):
                             GlobalData.data["threshold_first"].value = 1
                     first_flag = False
+
                 if not self.is_v2:
                     stream_json = resp["body"]
                     stat = resp.get("statistic", "")
@@ -314,18 +329,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
                 if len(content) != 0:
                     all_empty = False
-                # 计算token数, 有usage的累加，没有的直接计算content
-                if "usage" in resp.body and resp.body["usage"] is not None:
-                    request_meta["input_tokens"] = int(
-                        resp.body["usage"]["prompt_tokens"]
-                    )
-                    request_meta["output_tokens"] = int(
-                        resp.body["usage"]["completion_tokens"]
-                    )
-                else:
-                    request_meta["input_tokens"] = request_meta["request_length"]
-                    request_meta["output_tokens"] = request_meta["response_length"]
-                last_resp = resp
 
             assert last_resp is not None
             if all_empty and not clear_history:
@@ -488,9 +491,22 @@ class CompletionClient(QianfanCustomHttpSession):
         start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
         for resp in responses:
+            last_resp = resp
             setattr(resp, "url", self.model)
             setattr(resp, "reason", None)
             setattr(resp, "status_code", resp["code"])
+
+            # 计算token数, 有usage的累加，没有的直接计算content
+            if "usage" in resp.body and resp.body["usage"] is not None:
+                request_meta["input_tokens"] = int(
+                    resp.body["usage"]["prompt_tokens"]
+                )
+                request_meta["output_tokens"] = int(
+                    resp.body["usage"]["completion_tokens"]
+                )
+            else:
+                request_meta["input_tokens"] = request_meta["request_length"]
+                request_meta["output_tokens"] = request_meta["response_length"]
 
             stream_json = resp["body"]
             stat = resp["statistic"]
@@ -507,6 +523,7 @@ class CompletionClient(QianfanCustomHttpSession):
                 ):
                     GlobalData.data["threshold_first"].value = 1
                 first_flag = False
+
             content = ""
             if "result" in stream_json:
                 content = stream_json["result"]
@@ -520,18 +537,6 @@ class CompletionClient(QianfanCustomHttpSession):
                 break
             if len(content) != 0:
                 all_empty = False
-            # 计算token数, 有usage的累加，没有的直接计算content
-            if "usage" in stream_json:
-                request_meta["input_tokens"] = int(
-                    stream_json["usage"]["prompt_tokens"]
-                )
-                request_meta["output_tokens"] = int(
-                    stream_json["usage"]["total_tokens"]
-                ) - int(stream_json["usage"]["prompt_tokens"])
-            else:
-                request_meta["input_tokens"] = request_meta["request_length"]
-                request_meta["output_tokens"] = request_meta["response_length"]
-            last_resp = resp
 
         assert last_resp is not None
         if all_empty:

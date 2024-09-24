@@ -57,8 +57,6 @@ from qianfan.utils.logging import log_debug, log_error, log_info
 
 _T = TypeVar("_T")
 
-_sync_stream_thread_pool = ThreadPoolExecutor(20)
-
 
 class QfAPIRequestor(BaseAPIRequestor):
     """
@@ -72,6 +70,7 @@ class QfAPIRequestor(BaseAPIRequestor):
         super().__init__(**kwargs)
         self._token_limiter = TokenLimiter(**kwargs)
         self._async_token_limiter = AsyncTokenLimiter(**kwargs)
+        self._sync_stream_thread_pool = ThreadPoolExecutor(20)
 
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
@@ -488,7 +487,7 @@ class QfAPIRequestor(BaseAPIRequestor):
 
                     is_closed = True
 
-                _sync_stream_thread_pool.submit(_inner_worker)
+                self._sync_stream_thread_pool.submit(_inner_worker)
                 while not is_closed or not data.empty():
                     try:
                         yield data.get(timeout=0.5)

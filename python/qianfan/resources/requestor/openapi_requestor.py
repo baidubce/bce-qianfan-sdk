@@ -15,10 +15,14 @@
 """
 Qianfan API Requestor
 """
+import asyncio
 import copy
 import json
 import os
+import queue
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from queue import Queue
 from typing import (
     Any,
     AsyncIterator,
@@ -52,6 +56,8 @@ from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_debug, log_error, log_info
 
 _T = TypeVar("_T")
+
+_sync_stream_thread_pool = ThreadPoolExecutor(20)
 
 
 class QfAPIRequestor(BaseAPIRequestor):
@@ -471,9 +477,23 @@ class QfAPIRequestor(BaseAPIRequestor):
 
                     yield res
 
-            def _list_generator(data: List) -> Any:
-                for res in data:
-                    yield res
+            def _list_generator(generator: Iterator) -> Any:
+                data: Queue[QfResponse] = Queue()
+                is_closed = False
+
+                def _inner_worker() -> None:
+                    nonlocal is_closed
+                    for res in generator:
+                        data.put(res)
+
+                    is_closed = True
+
+                _sync_stream_thread_pool.submit(_inner_worker)
+                while not is_closed or not data.empty():
+                    try:
+                        yield data.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
 
             if stream:
                 generator = self._compensate_token_usage_stream(
@@ -484,11 +504,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 if not show_total_latency:
                     return _generator_wrapper(generator)
                 else:
-                    result_list: List[QfResponse] = []
-                    for res in generator:
-                        result_list.append(res)
-
-                    return _list_generator(result_list)
+                    return _list_generator(generator)
             else:
                 return self._compensate_token_usage_non_stream(
                     self._request(
@@ -522,20 +538,29 @@ class QfAPIRequestor(BaseAPIRequestor):
                     m.pop("tool_call_id", None)
 
         class AsyncListIterator:
-            def __init__(self, data: List[QfResponse]):
-                self.data = data
-                self.index = 0
+            def __init__(self, data: AsyncIterator[QfResponse]):
+                self.queue = asyncio.Queue()
+                self.is_closed = False
+
+                async def _inner_worker() -> None:
+                    async for res in data:
+                        await self.queue.put(res)
+
+                    self.is_closed = True
+
+                self.task = asyncio.create_task(_inner_worker())
 
             def __aiter__(self) -> "AsyncListIterator":
                 return self
 
             async def __anext__(self) -> Any:
-                if self.index < len(self.data):
-                    value = self.data[self.index]
-                    self.index += 1
-                    return value
-                else:
-                    raise StopAsyncIteration
+                while not self.is_closed or self.queue.empty():
+                    try:
+                        return self.queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        await asyncio.sleep(0.5)
+                        continue
+                raise StopAsyncIteration
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -571,11 +596,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 if not show_total_latency:
                     return _async_generator_wrapper(generator)
                 else:
-                    result_list: List[QfResponse] = []
-                    async for res in generator:
-                        result_list.append(res)
-
-                    return AsyncListIterator(result_list)
+                    return AsyncListIterator(generator)
             else:
                 return await self._async_compensate_token_usage_non_stream(
                     await self._async_request(req, data_postprocess=data_postprocess),

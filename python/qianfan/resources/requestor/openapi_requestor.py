@@ -20,7 +20,7 @@ import copy
 import json
 import os
 import queue
-from concurrent.futures import ThreadPoolExecutor
+import threading
 from datetime import datetime
 from queue import Queue
 from typing import (
@@ -70,7 +70,6 @@ class QfAPIRequestor(BaseAPIRequestor):
         super().__init__(**kwargs)
         self._token_limiter = TokenLimiter(**kwargs)
         self._async_token_limiter = AsyncTokenLimiter(**kwargs)
-        self._sync_stream_thread_pool = ThreadPoolExecutor(20)
 
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
@@ -478,21 +477,21 @@ class QfAPIRequestor(BaseAPIRequestor):
 
             def _list_generator(generator: Iterator) -> Any:
                 data: Queue[QfResponse] = Queue()
-                is_closed = False
 
                 def _inner_worker() -> None:
-                    nonlocal is_closed
                     for res in generator:
                         data.put(res)
 
-                    is_closed = True
+                t = threading.Thread(target=_inner_worker, daemon=True)
+                t.start()
 
-                self._sync_stream_thread_pool.submit(_inner_worker)
-                while not is_closed or not data.empty():
+                while t.is_alive() or not data.empty():
                     try:
                         yield data.get(timeout=0.5)
                     except queue.Empty:
                         continue
+
+                t.join()
 
             if stream:
                 generator = self._compensate_token_usage_stream(

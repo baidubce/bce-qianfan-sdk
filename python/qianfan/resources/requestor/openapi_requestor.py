@@ -539,7 +539,7 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         class AsyncListIterator:
             def __init__(self, data: AsyncIterator[QfResponse]):
-                self.queue = asyncio.Queue()
+                self.queue: asyncio.Queue = asyncio.Queue()
                 self.is_closed = False
 
                 async def _inner_worker() -> None:

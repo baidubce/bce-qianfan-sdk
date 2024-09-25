@@ -81,8 +81,8 @@ def gen_brief(
     )
     input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
     output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
-    total_count = get_statistics(report_dir + "/statistics_stats.csv")[5]
-    failure_count = get_statistics(report_dir + "/statistics_stats.csv")[6]
+    total_count = get_statistics(report_dir + "/statistics_stats.csv")[8]
+    failure_count = get_statistics(report_dir + "/statistics_stats.csv")[9]
     success_count = total_count - failure_count
     success_rate = (
         0 if total_count == 0 else round(success_count / total_count * 100, 2)
@@ -100,9 +100,9 @@ def gen_brief(
         + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 6)
         + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 6)
         + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 6)
-        + "Latency 90%%: %s\n" % round(lat_tuple[5], 6)
-        + "Latency 95%%: %s\n" % round(lat_tuple[6], 6)
-        + "Latency 99%%: %s\n" % round(lat_tuple[7], 6)
+        + "Latency 90%%: %s\n" % round(lat_tuple[5] / 1000, 6)
+        + "Latency 95%%: %s\n" % round(lat_tuple[6] / 1000, 6)
+        + "Latency 99%%: %s\n" % round(lat_tuple[7] / 1000, 6)
         + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0], 6)
         + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1], 6)
         + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2], 6)
@@ -126,9 +126,9 @@ def gen_brief(
         "latency_max": round(lat_tuple[2] / 1000, 6),
         "latency_50%": round(lat_tuple[3] / 1000, 6),
         "latency_80%": round(lat_tuple[4] / 1000, 6),
-        "latency_90%": round(lat_tuple[5], 6),
-        "latency_95%": round(lat_tuple[6], 6),
-        "latency_99%": round(lat_tuple[7], 6),
+        "latency_90%": round(lat_tuple[5] / 1000, 6),
+        "latency_95%": round(lat_tuple[6] / 1000, 6),
+        "latency_99%": round(lat_tuple[7] / 1000, 6),
         "FirstTokenLatency_avg": round(first_lat_tuple[0], 6),
         "FirstTokenLatency_min": round(first_lat_tuple[1], 6),
         "FirstTokenLatency_max": round(first_lat_tuple[2], 6),

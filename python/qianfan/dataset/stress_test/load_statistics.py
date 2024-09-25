@@ -89,16 +89,16 @@ def gen_brief(
         + "model_type: %s\n" % model_type
         + "hyperparameters: %s\n" % hyperparameters
         + "QPS: %s\n" % round(qps, 2)
-        + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 2)
-        + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 2)
-        + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 2)
-        + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 2)
-        + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 2)
-        + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0], 2)
-        + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1], 2)
-        + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2], 2)
-        + "FirstTokenLatency 50%%: %s\n" % round(first_lat_tuple[3], 2)
-        + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4], 2)
+        + "Latency Avg: %s\n" % round(lat_tuple[0] / 1000, 6)
+        + "Latency Min: %s\n" % round(lat_tuple[1] / 1000, 6)
+        + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 6)
+        + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 6)
+        + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 6)
+        + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0], 6)
+        + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1], 6)
+        + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2], 6)
+        + "FirstTokenLatency 50%%: %s\n" % round(first_lat_tuple[3], 6)
+        + "FirstTokenLatency 80%%: %s\n" % round(first_lat_tuple[4], 6)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
         + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
@@ -112,16 +112,16 @@ def gen_brief(
     )
     statistics = {
         "QPS": round(qps, 2),
-        "latency_avg": round(lat_tuple[0] / 1000, 2),
-        "latency_min": round(lat_tuple[1] / 1000, 2),
-        "latency_max": round(lat_tuple[2] / 1000, 2),
-        "latency_50%": round(lat_tuple[3] / 1000, 2),
-        "latency_80%": round(lat_tuple[4] / 1000, 2),
-        "FirstTokenLatency_avg": round(first_lat_tuple[0], 2),
-        "FirstTokenLatency_min": round(first_lat_tuple[1], 2),
-        "FirstTokenLatency_max": round(first_lat_tuple[2], 2),
-        "FirstTokenLatency_50%": round(first_lat_tuple[3], 2),
-        "FirstTokenLatency_80%": round(first_lat_tuple[4], 2),
+        "latency_avg": round(lat_tuple[0] / 1000, 6),
+        "latency_min": round(lat_tuple[1] / 1000, 6),
+        "latency_max": round(lat_tuple[2] / 1000, 6),
+        "latency_50%": round(lat_tuple[3] / 1000, 6),
+        "latency_80%": round(lat_tuple[4] / 1000, 6),
+        "FirstTokenLatency_avg": round(first_lat_tuple[0], 6),
+        "FirstTokenLatency_min": round(first_lat_tuple[1], 6),
+        "FirstTokenLatency_max": round(first_lat_tuple[2], 6),
+        "FirstTokenLatency_50%": round(first_lat_tuple[3], 6),
+        "FirstTokenLatency_80%": round(first_lat_tuple[4], 6),
         "Input_tokens_avg": round(input_tk_tuple[0], 2),
         "Output_tokens_avg": round(output_tk_tuple[0], 2),
         "TotalTime": round(time, 2),

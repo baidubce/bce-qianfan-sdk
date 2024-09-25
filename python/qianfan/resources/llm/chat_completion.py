@@ -38,7 +38,11 @@ from qianfan.resources.llm.base import (
 from qianfan.resources.llm.function import Function, FunctionV2
 from qianfan.resources.tools.tokenizer import Tokenizer
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfMessages, QfResponse, QfRole
-from qianfan.resources.typing_client import Completion, CompletionChunk
+from qianfan.resources.typing_client import (
+    Completion,
+    CompletionChunk,
+    CompletionStatistic,
+)
 from qianfan.utils.logging import log_error, log_info, log_warn
 
 
@@ -2113,7 +2117,11 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[Completion, Iterator[CompletionChunk], QfResponse, Iterator[QfResponse]]:
-        if self._version == "1":
+        if hasattr(self, "_with_raw_response") and self._with_raw_response:
+            raw = True
+        else:
+            raw = False
+        if self._version == "1" or raw:
             return self.do(
                 messages=messages,
                 endpoint=endpoint,
@@ -2144,7 +2152,9 @@ class ChatCompletion(VersionBase):
         )
         if not stream:
             assert isinstance(resp, QfResponse)
-            return Completion.parse_obj(resp.body)
+            result = Completion.parse_obj(resp.body)
+            result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            return result
         else:
             assert isinstance(resp, Iterator)
             return self._create_completion_stream(resp)
@@ -2169,7 +2179,11 @@ class ChatCompletion(VersionBase):
         QfResponse,
         AsyncIterator[QfResponse],
     ]:
-        if self._version == "1":
+        if hasattr(self, "_with_raw_response") and self._with_raw_response:
+            raw = True
+        else:
+            raw = False
+        if self._version == "1" or raw:
             return await self.ado(
                 messages=messages,
                 endpoint=endpoint,
@@ -2200,7 +2214,9 @@ class ChatCompletion(VersionBase):
         )
         if not stream:
             assert isinstance(resp, QfResponse)
-            return Completion.parse_obj(resp.body)
+            result = Completion.parse_obj(resp.body)
+            result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            return result
         else:
             assert isinstance(resp, AsyncIterator)
             return self._acreate_completion_stream(resp)
@@ -2209,13 +2225,17 @@ class ChatCompletion(VersionBase):
         self, resp: Iterator[QfResponse]
     ) -> Iterator[CompletionChunk]:
         for r in resp:
-            yield CompletionChunk.parse_obj(r.body)
+            result = CompletionChunk.parse_obj(r.body)
+            result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            yield result
 
     async def _acreate_completion_stream(
         self, resp: AsyncIterator[QfResponse]
     ) -> AsyncIterator[CompletionChunk]:
         async for r in resp:
-            yield CompletionChunk.parse_obj(r.body)
+            result = CompletionChunk.parse_obj(r.body)
+            result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            yield result
 
     def _convert_v2_request_to_v1(self, request: Any) -> Any:
         # TODO: V2 model to V1 model

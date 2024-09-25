@@ -39,6 +39,9 @@ def get_statistics(path: str) -> List[float]:
             lat_max = -1.0 if line_splits[7] == "N/A" else float(line_splits[7])
             lat_50p = -1.0 if line_splits[11] == "N/A" else float(line_splits[11])
             lat_80p = -1.0 if line_splits[14] == "N/A" else float(line_splits[14])
+            lat_90p = -1.0 if line_splits[14] == "N/A" else float(line_splits[15])
+            lat_95p = -1.0 if line_splits[14] == "N/A" else float(line_splits[16])
+            lat_99p = -1.0 if line_splits[14] == "N/A" else float(line_splits[17])
             total_count = int(line_splits[2])
             failure_count = int(line_splits[3])
             total_time = float(line_splits[2]) * float(line_splits[5])
@@ -49,6 +52,9 @@ def get_statistics(path: str) -> List[float]:
         lat_max,
         lat_50p,
         lat_80p,
+        lat_90p,
+        lat_95p,
+        lat_99p,
         total_count,
         failure_count,
         total_time,
@@ -94,6 +100,9 @@ def gen_brief(
         + "Latency Max: %s\n" % round(lat_tuple[2] / 1000, 6)
         + "Latency 50%%: %s\n" % round(lat_tuple[3] / 1000, 6)
         + "Latency 80%%: %s\n" % round(lat_tuple[4] / 1000, 6)
+        + "Latency 90%%: %s\n" % round(lat_tuple[5], 6)
+        + "Latency 95%%: %s\n" % round(lat_tuple[6], 6)
+        + "Latency 99%%: %s\n" % round(lat_tuple[7], 6)
         + "FirstTokenLatency Avg: %s\n" % round(first_lat_tuple[0], 6)
         + "FirstTokenLatency Min: %s\n" % round(first_lat_tuple[1], 6)
         + "FirstTokenLatency Max: %s\n" % round(first_lat_tuple[2], 6)
@@ -117,6 +126,9 @@ def gen_brief(
         "latency_max": round(lat_tuple[2] / 1000, 6),
         "latency_50%": round(lat_tuple[3] / 1000, 6),
         "latency_80%": round(lat_tuple[4] / 1000, 6),
+        "latency_90%": round(lat_tuple[5], 6),
+        "latency_95%": round(lat_tuple[6], 6),
+        "latency_99%": round(lat_tuple[7], 6),
         "FirstTokenLatency_avg": round(first_lat_tuple[0], 6),
         "FirstTokenLatency_min": round(first_lat_tuple[1], 6),
         "FirstTokenLatency_max": round(first_lat_tuple[2], 6),
@@ -233,6 +245,9 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
         "Latency Max",
         "Latency 50",
         "Latency 80",
+        "Latency 90",
+        "Latency 95",
+        "Latency 99",
         "FirstTokenLatency Avg",
         "FirstTokenLatency Min",
         "FirstTokenLatency Max",
@@ -269,6 +284,12 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
                 value = row.get("latency_50%", "")
             elif column == "Latency 80":
                 value = row.get("latency_80%", "")
+            elif column == "Latency 90":
+                value = row.get("latency_90%", "")
+            elif column == "Latency 95":
+                value = row.get("latency_95%", "")
+            elif column == "Latency 99":
+                value = row.get("latency_99%", "")
             elif column == "FirstTokenLatency Avg":
                 value = row.get("FirstTokenLatency_avg", "")
             elif column == "FirstTokenLatency Min":

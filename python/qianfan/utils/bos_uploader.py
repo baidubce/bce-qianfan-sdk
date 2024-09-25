@@ -17,7 +17,7 @@ uploading content to bos
 """
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from baidubce.auth.bce_credentials import BceCredentials
 from baidubce.bce_client_configuration import BceClientConfiguration
@@ -96,6 +96,37 @@ class BosHelper:
             file_existed = False
 
         return file_existed
+
+    def get_file_size(self, bucket: str, bos_file_path: str) -> float:
+        try:
+            metadata = self.get_metadata(bucket, bos_file_path)
+        except Exception:
+            return 0
+
+        return metadata["content_length"]
+
+    def list_dir(
+        self, bucket: str, bos_file_path: str, only_deep1: bool = True
+    ) -> List[Any]:
+        input_kwargs = {
+            "bucket_name": bucket,
+            "prefix": bos_file_path.lstrip("/"),
+        }
+
+        if only_deep1:
+            input_kwargs["delimiter"] = "/"
+
+        return self.bos_client.list_objects(**input_kwargs).contents
+
+    def is_dir(self, bucket: str, bos_path: str) -> bool:
+        try:
+            self.get_metadata(bucket, bos_path)
+            return False
+        except Exception:
+            return True
+
+    def copy_object(self, bucket: str, source_path: str, destination_path: str) -> None:
+        self.bos_client.copy_object(bucket, source_path, bucket, destination_path)
 
     def delete_bos_file_anyway(self, bucket: str, bos_file_path: str) -> None:
         try:

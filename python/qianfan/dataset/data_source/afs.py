@@ -91,7 +91,7 @@ class AFSDataSource(DataSource, BaseModel):
                 f"try to delete original afs file {final_afs_file_path} for overwrite"
             )
             try:
-                afs_client.rm(self.afs_file_path)
+                afs_client.rm([self.afs_file_path])
             except ValueError:
                 # do nothing
                 ...
@@ -114,7 +114,7 @@ class AFSDataSource(DataSource, BaseModel):
             log_info(
                 f"start to upload file {local_file_path} to afs {final_afs_file_path}"
             )
-            afs_client.put(local_file_path, final_afs_file_path)
+            afs_client.put([local_file_path], final_afs_file_path)
         except Exception as e:
             err_msg = (
                 "an error occurred during upload data to afs with path"

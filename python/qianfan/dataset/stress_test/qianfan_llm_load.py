@@ -4,7 +4,6 @@
 """
 import json
 import time
-from multiprocessing import Lock
 from typing import Any, Dict, Literal, Optional
 
 from locust import constant, events, task
@@ -139,6 +138,10 @@ class QianfanCustomHttpSession(CustomHttpSession):
     """
 
     exc: Optional[Exception] = None
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._file_lock: Any = GlobalData.data["file_lock"]
+        super().__init__(*args, **kwargs)
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -373,12 +376,15 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             "stat": stat,
             "body": body,
         }
+
+        if self.exc is None and last_resp is not None and last_resp.request is not None:
+            res["request"] = last_resp.request.requests_args()
+
         res_json = json.dumps(res, ensure_ascii=False)
         if GlobalData.data["log"] == 1:
-            lock = Lock()
             dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.json"
-            with lock:
+            dir = dir + "/" + "query_result.jsonl"
+            with self._file_lock:
                 with open(dir, "a") as f:
                     f.write(res_json + "\n")
 
@@ -583,15 +589,19 @@ class CompletionClient(QianfanCustomHttpSession):
             "stat": stat,
             "body": body,
         }
+
+        if self.exc is None and last_resp is not None and last_resp.request is not None:
+            res["request"] = last_resp.request.requests_args()
+
         res_json = json.dumps(res, ensure_ascii=False)
 
         if GlobalData.data["log"] == 1:
-            lock = Lock()
             dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.json"
-            with lock:
+            dir = dir + "/" + "query_result.jsonl"
+            with self._file_lock:
                 with open(dir, "a") as f:
                     f.write(res_json + "\n")
+
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:

@@ -442,6 +442,8 @@ def _update_train_config(model_info_list: List[Dict]) -> Type:
                             "limit_type": LimitType(params["checkType"]),
                             "default": None,
                             "origin_key": params["key"],
+                            "name": params["name"],
+                            "description": params["description"],
                         }
                         if params["checkType"] == "mult_choice":
                             train_config_fields[field_name]["type"] = list

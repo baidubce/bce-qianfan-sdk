@@ -311,6 +311,7 @@ class FineTune(object):
             marker: Optional[str] = None,
             max_keys: Optional[int] = None,
             page_reverse: Optional[bool] = None,
+            model: Optional[str] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -325,6 +326,8 @@ class FineTune(object):
                 max keys of the page.
             page_reverse: Optional[bool] = None,
                 page reverse or not.
+            model: Optional[str] = None
+                base model name, default to None
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -350,6 +353,7 @@ class FineTune(object):
                     "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
+                    "model": model,
                 }.items()
                 if v is not None
             }

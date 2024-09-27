@@ -7,7 +7,7 @@ import logging
 import os
 import time
 import traceback
-from multiprocessing import Value
+from multiprocessing import Lock, Value
 from typing import Any, Dict, List, Optional, Union
 
 from qianfan import resources
@@ -128,6 +128,7 @@ class QianfanLocustRunner(LocustRunner):
             GlobalData.data["log"] = 1
         self.first_latency_threshold = first_latency_threshold or 100
         GlobalData.data["first_latency_threshold"] = self.first_latency_threshold * 1000
+        GlobalData.data["file_lock"] = Lock()
         self.round_latency_threshold = round_latency_threshold or 1000
         self.success_rate_threshold = success_rate_threshold or 0
 

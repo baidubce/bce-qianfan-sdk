@@ -19,12 +19,14 @@ import subprocess
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from queue import Empty, Queue
 from typing import Any, Dict, List, Optional, cast
 
 from qianfan import QfResponse, resources
-from qianfan.config import encoding
+from qianfan.config import encoding, get_config
 from qianfan.errors import RequestError
+from qianfan.utils.bos_uploader import BosHelper
 from qianfan.utils.logging import log_debug, log_error, log_info
 from qianfan.utils.utils import generate_letter_num_random_id, uuid
 
@@ -39,28 +41,34 @@ MIN_BF_LIST_POLLING_INTERVAL = 1
 
 
 class BaseClient(object):
-    def put(self, *params: Any) -> str:
+    def put(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
         raise NotImplementedError
 
-    def du(self, *params: Any) -> str:
+    def du(self, file_path: List[str], *args: Any, **kwargs: Any) -> str:
         raise NotImplementedError
 
     def get(self, remote_path: str, local_path: str) -> str:
         raise NotImplementedError
 
-    def rmr(self, *params: Any) -> str:
+    def rmr(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
         raise NotImplementedError
 
-    def rm(self, path: str) -> str:
+    def rm(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
         raise NotImplementedError
 
-    def mv(self, *params: Any) -> str:
+    def mv(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
         raise NotImplementedError
 
-    def mkdir(self, *params: Any) -> str:
+    def mkdir(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
         raise NotImplementedError
 
-    def cp(self, *params: Any) -> str:
+    def cp(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
         raise NotImplementedError
 
     def get_modify_time(self, path: str, *args: Any, **kwargs: Any) -> str:
@@ -72,22 +80,22 @@ class AFSClient(BaseClient):
         self.host = kwargs.get("host", None)
         self.ugi = kwargs.get("ugi", None)
 
-    def put(self, *params: Any) -> str:
-        return self._exec("put", *params)
+    def put(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
+        return self._exec("put", *local_paths, remote_path, *args)
 
-    def du(self, *params: Any) -> str:
-        res = self._exec("du", *params)
-        return res
+    def du(self, file_path: List[str], *args: Any, **kwargs: Any) -> str:
+        return self._exec("du", *file_path, *args)
 
     def get(self, remote_path: str, local_path: str) -> str:
-        res = self._exec("get", remote_path, local_path)
-        return res
+        return self._exec("get", remote_path, local_path)
 
-    def rmr(self, *params: Any) -> str:
-        return self._exec("rmr", *params)
+    def rmr(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
+        return self._exec("rmr", *remote_paths, *args)
 
-    def rm(self, path: str) -> str:
-        return self._exec("rm", path)
+    def rm(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
+        return self._exec("rm", *remote_paths, *args)
 
     def _get_exec_cmd(self, cmd: str, *params: Any) -> str:
         log_debug(f"run cmd {cmd} {params}")
@@ -108,12 +116,14 @@ class AFSClient(BaseClient):
             raise ValueError(f"failed to execute command {exec_cmd}: {result.stderr}")
         return result.stdout
 
-    def mv(self, *params: Any) -> str:
-        return self._exec("mv", *params)
+    def mv(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
+        return self._exec("mv", *local_paths, remote_path, *args)
 
-    def mkdir(self, *params: Any) -> str:
+    def mkdir(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
         try:
-            return self._exec("mkdir", *params)
+            return self._exec("mkdir", *remote_paths, *args)
         except ValueError as e:
             if "File exists" in str(e):
                 pass
@@ -121,8 +131,10 @@ class AFSClient(BaseClient):
                 raise e
         return ""
 
-    def cp(self, *params: Any) -> str:
-        return self._exec("cp", *params)
+    def cp(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
+        return self._exec("cp", *local_paths, remote_path, *args)
 
     def get_modify_time(self, path: str, *args: Any, **kwargs: Any) -> str:
         return self._exec("stat", "%y", path)
@@ -135,7 +147,138 @@ class AFSClient(BaseClient):
             return 1
 
 
-def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
+class BosClient(BaseClient):
+    def __init__(
+        self,
+        region: str,
+        bucket: str,
+        ak: Optional[str] = None,
+        sk: Optional[str] = None,
+        **kwargs: Any,
+    ):
+        self.region = region
+        self.bucket = bucket
+        self.ak = ak if ak is not None else get_config().ACCESS_KEY
+        self.sk = sk if sk is not None else get_config().SECRET_KEY
+        self.bos_helper = BosHelper(self.region, self.ak, self.sk)
+
+    def put(
+        self,
+        local_paths: List[str],
+        remote_path: str,
+        is_remote_dir: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
+        if remote_path.endswith("/"):
+            is_remote_dir = True
+
+        if len(local_paths) == 1:
+            ext = Path(remote_path).suffix
+            if not ext and is_remote_dir:
+                remote_path = str(Path(remote_path).joinpath(Path(local_paths[0]).name))
+
+            self.bos_helper.upload_file_to_bos(local_paths[0], remote_path, self.bucket)
+
+        else:
+            base_remote_path = remote_path
+            for local_path in local_paths:
+                remote_path = str(
+                    Path(base_remote_path).joinpath(Path(local_path).name)
+                )
+                self.bos_helper.upload_file_to_bos(local_path, remote_path, self.bucket)
+
+        return ""
+
+    def du(self, file_path: List[str], *args: Any, **kwargs: Any) -> str:
+        ret_str = ""
+        for path in file_path:
+            files = self.bos_helper.list_dir(self.bucket, path)
+
+            for file in files:
+                ret_str += f"{file.size} /{file.key}\n"
+        return ret_str
+
+    def get(self, remote_path: str, local_path: str) -> str:
+        self.bos_helper.get_object_as_file(self.bucket, remote_path, local_path)
+        return ""
+
+    def rmr(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
+        for path in remote_paths:
+            files = self.bos_helper.list_dir(self.bucket, path, False)
+
+            for file in files:
+                self.bos_helper.delete_bos_file_anyway(self.bucket, str(file.key))
+
+        return ""
+
+    def rm(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
+        for path in remote_paths:
+            files = self.bos_helper.list_dir(self.bucket, path)
+
+            for file in files:
+                if not str(file.key).endswith("/"):
+                    self.bos_helper.delete_bos_file_anyway(self.bucket, str(file.key))
+
+        return ""
+
+    def mv(
+        self, local_paths: List[str], remote_path: str, *args: Any, **kwargs: Any
+    ) -> str:
+        self.cp(local_paths, remote_path)
+        self.rmr(local_paths, remote_path)
+
+        return ""
+
+    def mkdir(self, remote_paths: List[str], *args: Any, **kwargs: Any) -> str:
+        # 不实现
+        return ""
+
+    def cp(
+        self,
+        local_paths: List[str],
+        remote_path: str,
+        is_remote_dir: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
+        if remote_path.endswith("/"):
+            is_remote_dir = True
+
+        def _copy_one(local_path: str, remote_path: str) -> None:
+            ext = Path(remote_path).suffix
+            if not ext and is_remote_dir:
+                remote_path = str(Path(remote_path).joinpath(Path(local_path).name))
+
+            self.bos_helper.copy_object(self.bucket, local_path, remote_path)
+
+        for local_path in local_paths:
+            if self.bos_helper.is_dir(self.bucket, local_path):
+                files = self.bos_helper.list_dir(self.bucket, local_path, False)
+
+                for file in files:
+                    sub_file_path = f"/{str(file.key)}"
+                    if sub_file_path == local_path:
+                        pass
+
+                    t_remote_path = str(
+                        Path(remote_path).joinpath(sub_file_path.lstrip(local_path))
+                    )
+                    self.bos_helper.copy_object(
+                        self.bucket, sub_file_path, t_remote_path
+                    )
+            else:
+                _copy_one(local_path, remote_path)
+
+        return ""
+
+    def get_modify_time(self, path: str, *args: Any, **kwargs: Any) -> str:
+        return self.bos_helper.get_metadata(self.bucket, path)["last_modified"]
+
+
+def call_bf(
+    afs_config: Optional[dict] = None, bos_config: Optional[dict] = None, **kwargs: Any
+) -> QfResponse:
     if not kwargs.get("retry_count"):
         kwargs["retry_count"] = RETRY_COUNT
 
@@ -152,12 +295,22 @@ def call_bf(afs_config: dict, **kwargs: Any) -> QfResponse:
                     log_error(f"failed to parse error response: {error.body} {e}")
         return False
 
-    create_bf_resp = resources.Data.create_offline_batch_inference_task(
-        name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(10)}",
-        afs_config=afs_config,
-        retry_err_handler=retry_if_error,
-        **kwargs,
-    )
+    if afs_config is not None:
+        create_bf_resp = resources.Data.create_offline_batch_inference_task(
+            name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(10)}",
+            afs_config=afs_config,
+            retry_err_handler=retry_if_error,
+            **kwargs,
+        )
+    elif bos_config is not None:
+        create_bf_resp = resources.Data.create_offline_batch_inference_task(
+            name=kwargs.get("name") or f"bf_{generate_letter_num_random_id(10)}",
+            retry_err_handler=retry_if_error,
+            **bos_config,
+            **kwargs,
+        )
+    else:
+        raise Exception("no param has been provided")
     return create_bf_resp
 
 
@@ -197,9 +350,22 @@ class BatchInferenceHelper:
     # 使用正则表达式来匹配文件名和大小
     jsonl_files_pattern = re.compile(r"(\d+)\s+(\S+jsonl)")
 
-    def __init__(self, host: str, ugi: str, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        ugi: Optional[str] = None,
+        bos_region: Optional[str] = None,
+        bos_bucket: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         # TODO 抽象一个统一的client or DataSource，实现put，get, du, mkdir等操作
-        self.afs_client = AFSClient(host=host, ugi=ugi, **kwargs)
+        if host is not None and ugi is not None:
+            self.client: BaseClient = AFSClient(host=host, ugi=ugi, **kwargs)
+        elif bos_region is not None and bos_bucket is not None:
+            self.client = BosClient(bos_region, bos_bucket, **kwargs)
+        else:
+            raise Exception("no sufficient argument has been provided")
+
         self.max_single_file_size = kwargs.get(
             "max_single_file_size", MAX_SUPPORTED_FILE_SIZE
         )
@@ -315,7 +481,7 @@ class BatchInferenceHelper:
         def download_to_local(remote_path: str) -> str:
             ensure_directory_exists(local_dir)
             local_path = "/".join([local_dir, remote_path.split("/")[-1]])
-            self.afs_client.get(remote_path, local_path)
+            self.client.get(remote_path, local_path)
             return local_path
 
         all_output_files = []
@@ -338,8 +504,8 @@ class BatchInferenceHelper:
     def _process_local_batch(
         self, local_file_batch: List[str], target_dir: str
     ) -> None:
-        self.afs_client.mkdir(target_dir)
-        self.afs_client.put(*[*local_file_batch, target_dir])
+        self.client.mkdir([target_dir])
+        self.client.put(local_file_batch, target_dir, is_remote_dir=True)
 
     def _batch_upload_local_file(
         self, data_path: str, split_local_files: List[str]
@@ -364,8 +530,8 @@ class BatchInferenceHelper:
     def _process_remote_batch(
         self, remote_file_batch: List[str], target_dir: str
     ) -> None:
-        self.afs_client.mkdir(target_dir)
-        self.afs_client.cp(*[*remote_file_batch, target_dir])
+        self.client.mkdir([target_dir])
+        self.client.cp(remote_file_batch, target_dir, is_remote_dir=True)
 
     def _batch_group_remote_files(
         self, data_path: str, remote_files: List[Dict]
@@ -409,9 +575,14 @@ class BatchInferenceHelper:
         return split_files_dirs
 
     def _prepare_ds(self, bf_id: str, input_uri: str) -> List[str]:
+        if isinstance(self.client, BosClient):
+            prefix = f"bos:/{self.client.bucket}"
+            if input_uri.startswith(prefix):
+                input_uri = input_uri[len(prefix) :]
+
         ds_id = bf_id
-        data_path = "/".join([input_uri, ds_id])
-        res = self.afs_client.du(input_uri)
+        data_path = "/".join([input_uri.rstrip("/"), ds_id])
+        res = self.client.du([input_uri])
         jsonl_files = self.filter_jsonl_files(res)
         if not jsonl_files:
             raise ValueError("no jsonl files found in the {input_uri}")
@@ -444,6 +615,12 @@ class BatchInferenceHelper:
                     data_path, [f_meta for f_meta in small_files]
                 )
             )
+
+        if isinstance(self.client, BosClient):
+            prefix = f"bos:/{self.client.bucket}"
+            for i in range(len(res_ds_input_dirs)):
+                res_ds_input_dirs[i] = res_ds_input_dirs[i].lstrip("/")
+                res_ds_input_dirs[i] = f"{prefix}/{res_ds_input_dirs[i]}"
 
         return res_ds_input_dirs
 
@@ -519,31 +696,59 @@ class BatchInferenceHelper:
             input_group_uris = self._prepare_ds(bf_id, input_uri)
 
         log_info(f"input uris:{input_group_uris}")
-        user_name, password = self.afs_client.ugi.split(",")
-        bf_tasks = [
-            InferTask(
-                bf_id=bf_id,
-                id=i,
-                request_input={
-                    "afs_config": {
-                        "userName": user_name,
-                        "password": password,
-                        "inputAfsUri": input_group_uri,
-                        "outputAfsUri": output_uri,
+
+        if isinstance(self.client, AFSClient):
+            user_name, password = self.client.ugi.split(",")
+            bf_tasks = [
+                InferTask(
+                    bf_id=bf_id,
+                    id=i,
+                    request_input={
+                        "afs_config": {
+                            "userName": user_name,
+                            "password": password,
+                            "inputAfsUri": input_group_uri,
+                            "outputAfsUri": output_uri,
+                        },
+                        **kwargs,
                     },
-                    **kwargs,
-                },
-            )
-            for i, input_group_uri in enumerate(input_group_uris)
-        ]
+                )
+                for i, input_group_uri in enumerate(input_group_uris)
+            ]
+        else:
+            bf_tasks = [
+                InferTask(
+                    bf_id=bf_id,
+                    id=i,
+                    request_input={
+                        "bos_config": {
+                            "input_bos_uri": input_group_uri,
+                            "output_bos_uri": output_uri,
+                        },
+                        **kwargs,
+                    },
+                )
+                for i, input_group_uri in enumerate(input_group_uris)
+            ]
+
         self._submit_tasks(bf_tasks)
         log_info(f"bf_id: {bf_id} with local queueing tasks num: {self.queue.qsize()}")
         res = self.wait_for_tasks(wait_finished=wait_finished)
+
+        is_bos = isinstance(self.client, BosClient)
+
         for r in res:
             if r.output is None:
                 log_error(f"failed to get result from server, task res: {r}")
                 continue
-            output_sub_uri: str = cast(str, r.output.get("outputAfsUri", ""))
+            output_sub_uri: str = cast(
+                str,
+                (
+                    r.output.get("outputAfsUri", "")
+                    if not is_bos
+                    else r.output.get("outputBosUri", "")
+                ),
+            )
             output_sub_dir: str = cast(str, r.output.get("outputDir", ""))
             log_info(
                 f"bf: {bf_id}, task_id: {r.id}, infer_id: {r.infer_id} status:"
@@ -551,10 +756,18 @@ class BatchInferenceHelper:
                 f" { str(os.path.join(output_sub_uri, output_sub_dir))}"
             )
         if del_after_finished:
-            self.afs_client.rmr(*input_group_uris)
+            if is_bos:
+                assert isinstance(self.client, BosClient)
+                prefix = f"bos:/{self.client.bucket}"
+                input_group_uris = [
+                    uri[len(prefix) :] if uri.startswith(prefix) else uri
+                    for uri in input_group_uris
+                ]
+
+            self.client.rmr(input_group_uris)
         if done_file_uri:
             open(f"{bf_id}/DONE", "w", encoding=encoding())
-            self.afs_client.put(f"{bf_id}/DONE", done_file_uri)
+            self.client.put([f"{bf_id}/DONE"], done_file_uri)
 
         return {"bf_id": bf_id, "results": res}
 

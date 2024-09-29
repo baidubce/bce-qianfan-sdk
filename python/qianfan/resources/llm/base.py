@@ -265,6 +265,11 @@ class VersionBase(object):
         async for i in iterator:
             yield i
 
+    @property
+    def with_raw_response(self) -> VersionBase:
+        setattr(self, "_with_raw_response", True)
+        return self
+
 
 class BaseResource(object):
     _runtime_models_info = {}  # type: ignore

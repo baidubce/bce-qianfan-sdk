@@ -19,7 +19,7 @@ from typing import Any, List, Optional
 
 from typing_extensions import Literal
 
-from qianfan.utils.pydantic import BaseModel
+from qianfan.utils.pydantic import BaseModel, Field
 
 __all__ = ["Completion"]
 
@@ -102,6 +102,26 @@ class CompletionUsage(BaseModel):
     """Total number of tokens used in the request (prompt + completion)."""
 
 
+class CompletionStatistic(BaseModel):
+    first_token_latency: float = Field(default=0)
+    """first token latency when using stream"""
+
+    request_latency: float = Field(default=0)
+    """
+    it's response interval between current chunk and last chunk when streaming.
+    Else it's api response elapsed time read from api
+    """
+
+    total_latency: float
+    """total latency of request complete, it's based on clock on your system"""
+
+    start_timestamp: float
+    """the timestamp of request start"""
+
+    avg_output_tokens_per_second: float
+    """average output tokens per second"""
+
+
 class Completion(BaseModel):
     id: str
     """A unique identifier for the chat completion."""
@@ -123,6 +143,8 @@ class Completion(BaseModel):
 
     usage: Optional[CompletionUsage] = None
     """Usage statistics for the completion request."""
+
+    statistic: Optional[CompletionStatistic] = None
 
 
 class ChoiceDelta(BaseModel):
@@ -171,3 +193,5 @@ class CompletionChunk(BaseModel):
     contains a null value except for the last chunk which contains the token usage
     statistics for the entire request.
     """
+
+    statistic: Optional[CompletionStatistic] = None

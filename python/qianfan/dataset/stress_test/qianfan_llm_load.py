@@ -4,7 +4,6 @@
 """
 import json
 import time
-from multiprocessing import Lock
 from typing import Any, Dict, Literal, Optional
 
 from locust import constant, events, task
@@ -48,7 +47,7 @@ def first_token_latency_request_handler(
     """
     if "first_token_latency" in kwargs:
         stats.log_request(
-            request_type, name, kwargs["first_token_latency"], response_length
+            request_type, name, kwargs["first_token_latency"] * 1000, response_length
         )
     else:
         stats.log_request(request_type, name, 0, response_length)
@@ -87,6 +86,23 @@ def output_tokens_request_handler(
         stats.log_error(request_type, name, "未找到输出token数")
 
 
+def interval_latency_handler(
+    stats: RequestStats,
+    request_type: str,
+    name: str,
+    response_time: int,
+    response_length: int,
+    exception: Optional[Exception] = None,
+    **kwargs: Any
+) -> None:
+    if "request_latency" in kwargs:
+        for latency in kwargs["request_latency"]:
+            stats.log_request(request_type, name, latency * 1000, response_length)
+    else:
+        stats.log_request(request_type, name, 0, response_length)
+        stats.log_error(request_type, name, "未找到包间延迟")
+
+
 # (1) 上文统计ttft的方法request_handler 是CustomHandler的默认行为；
 #     如需此场景 可无需传入request_handler参数，即：CustomHandler()
 # (2) 上文平均时间的阈值判断方法condition_handler
@@ -109,6 +125,12 @@ CustomHandler(
     csv_suffix="output_tokens",
 )
 
+CustomHandler(
+    name="包间延迟统计",
+    request_handler=interval_latency_handler,
+    csv_suffix="interval_latency",
+)
+
 
 class QianfanCustomHttpSession(CustomHttpSession):
     """
@@ -116,6 +138,10 @@ class QianfanCustomHttpSession(CustomHttpSession):
     """
 
     exc: Optional[Exception] = None
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._file_lock: Any = GlobalData.data["file_lock"]
+        super().__init__(*args, **kwargs)
 
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -246,7 +272,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         last_resp = None
         all_empty = True
         start_time = time.time()
-        start_perf_counter = time.perf_counter()
 
         try:
             kwargs["retry_count"] = 0
@@ -288,6 +313,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         ):
                             GlobalData.data["threshold_first"].value = 1
                     first_flag = False
+
+                interval_latencies = request_meta.get("request_latency", [])
+                interval_latencies.append(resp.statistic["request_latency"])
+                request_meta["request_latency"] = interval_latencies
 
                 if not self.is_v2:
                     stream_json = resp["body"]
@@ -341,19 +370,21 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 not self.is_v2 and not last_resp["body"]["is_end"]
             ):
                 self.exc = Exception("NOT 200 OR is_end is False")
-        response_time = (time.perf_counter() - start_perf_counter) * 1000
         body["result"] = merged_query
         res = {
             "headers": header,
             "stat": stat,
             "body": body,
         }
+
+        if self.exc is None and last_resp is not None and last_resp.request is not None:
+            res["request"] = last_resp.request.requests_args()
+
         res_json = json.dumps(res, ensure_ascii=False)
         if GlobalData.data["log"] == 1:
-            lock = Lock()
             dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.json"
-            with lock:
+            dir = dir + "/" + "query_result.jsonl"
+            with self._file_lock:
                 with open(dir, "a") as f:
                     f.write(res_json + "\n")
 
@@ -361,8 +392,11 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report succeed to locust's statistics
+            assert last_resp is not None
             request_meta["request_type"] = "POST"
-            request_meta["response_time"] = response_time
+            request_meta["response_time"] = (
+                last_resp.statistic.get("total_latency", 0) * 1000
+            )
             request_meta["name"] = self.model
             request_meta["context"] = context
             request_meta["exception"] = self.exc
@@ -488,7 +522,6 @@ class CompletionClient(QianfanCustomHttpSession):
         all_empty = True
 
         start_time = time.time()
-        start_perf_counter = time.perf_counter()
         responses = self.comp.do(prompt=prompt, **kwargs)
         for resp in responses:
             last_resp = resp
@@ -522,6 +555,10 @@ class CompletionClient(QianfanCustomHttpSession):
                     GlobalData.data["threshold_first"].value = 1
                 first_flag = False
 
+            interval_latencies = request_meta.get("request_latency", [])
+            interval_latencies.append(resp.statistic["request_latency"])
+            request_meta["request_latency"] = interval_latencies
+
             content = ""
             if "result" in stream_json:
                 content = stream_json["result"]
@@ -546,28 +583,34 @@ class CompletionClient(QianfanCustomHttpSession):
         elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
             self.exc = Exception("NOT 200 OR is_end is False")
 
-        response_time = (time.perf_counter() - start_perf_counter) * 1000
         body["result"] = merged_query
         res = {
             "headers": header,
             "stat": stat,
             "body": body,
         }
+
+        if self.exc is None and last_resp is not None and last_resp.request is not None:
+            res["request"] = last_resp.request.requests_args()
+
         res_json = json.dumps(res, ensure_ascii=False)
 
         if GlobalData.data["log"] == 1:
-            lock = Lock()
             dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.json"
-            with lock:
+            dir = dir + "/" + "query_result.jsonl"
+            with self._file_lock:
                 with open(dir, "a") as f:
                     f.write(res_json + "\n")
+
         if self.user:
             context = {**self.user.context(), **context}
         if self.exc is None:
             # report to locust's statistics
+            assert last_resp is not None
             request_meta["request_type"] = "POST"
-            request_meta["response_time"] = response_time
+            request_meta["response_time"] = (
+                last_resp.statistic.get("total_latency", 0) * 1000
+            )
             request_meta["name"] = self.model
             request_meta["context"] = context
             request_meta["exception"] = self.exc

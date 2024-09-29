@@ -21,6 +21,7 @@ import json
 import os
 import queue
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from queue import Queue
 from typing import (
@@ -70,6 +71,14 @@ class QfAPIRequestor(BaseAPIRequestor):
         super().__init__(**kwargs)
         self._token_limiter = TokenLimiter(**kwargs)
         self._async_token_limiter = AsyncTokenLimiter(**kwargs)
+        self._sync_reading_thread_count: Optional[int] = kwargs.get(
+            "sync_reading_thread_count", None
+        )
+
+        if self._sync_reading_thread_count is not None:
+            self._sync_reading_thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(
+                max_workers=self._sync_reading_thread_count
+            )
 
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
@@ -482,16 +491,27 @@ class QfAPIRequestor(BaseAPIRequestor):
                     for res in generator:
                         data.put(res)
 
-                t = threading.Thread(target=_inner_worker, daemon=True)
-                t.start()
+                if self._sync_reading_thread_count is not None:
+                    task = self._sync_reading_thread_pool.submit(_inner_worker)
 
-                while t.is_alive() or not data.empty():
+                    def is_alive() -> bool:
+                        return not task.done()
+
+                else:
+                    t = threading.Thread(target=_inner_worker, daemon=True)
+                    t.start()
+
+                    def is_alive() -> bool:
+                        return t.is_alive()
+
+                while is_alive() or not data.empty():
                     try:
                         yield data.get(timeout=0.5)
                     except queue.Empty:
                         continue
 
-                t.join()
+                if self._sync_reading_thread_count is None:
+                    t.join()
 
             if stream:
                 generator = self._compensate_token_usage_stream(

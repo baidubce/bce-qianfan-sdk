@@ -15,10 +15,15 @@
 """
 Qianfan API Requestor
 """
+import asyncio
 import copy
 import json
 import os
+import queue
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from queue import Queue
 from typing import (
     Any,
     AsyncIterator,
@@ -66,6 +71,14 @@ class QfAPIRequestor(BaseAPIRequestor):
         super().__init__(**kwargs)
         self._token_limiter = TokenLimiter(**kwargs)
         self._async_token_limiter = AsyncTokenLimiter(**kwargs)
+        self._sync_reading_thread_count: Optional[int] = kwargs.get(
+            "sync_reading_thread_count", None
+        )
+
+        if self._sync_reading_thread_count is not None:
+            self._sync_reading_thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(
+                max_workers=self._sync_reading_thread_count
+            )
 
     def _retry_if_token_expired(self, func: Callable[..., _T]) -> Callable[..., _T]:
         """
@@ -471,9 +484,34 @@ class QfAPIRequestor(BaseAPIRequestor):
 
                     yield res
 
-            def _list_generator(data: List) -> Any:
-                for res in data:
-                    yield res
+            def _list_generator(generator: Iterator) -> Any:
+                data: Queue[QfResponse] = Queue()
+
+                def _inner_worker() -> None:
+                    for res in generator:
+                        data.put(res)
+
+                if self._sync_reading_thread_count is not None:
+                    task = self._sync_reading_thread_pool.submit(_inner_worker)
+
+                    def is_alive() -> bool:
+                        return not task.done()
+
+                else:
+                    t = threading.Thread(target=_inner_worker, daemon=True)
+                    t.start()
+
+                    def is_alive() -> bool:
+                        return t.is_alive()
+
+                while is_alive() or not data.empty():
+                    try:
+                        yield data.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
+
+                if self._sync_reading_thread_count is None:
+                    t.join()
 
             if stream:
                 generator = self._compensate_token_usage_stream(
@@ -484,11 +522,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 if not show_total_latency:
                     return _generator_wrapper(generator)
                 else:
-                    result_list: List[QfResponse] = []
-                    for res in generator:
-                        result_list.append(res)
-
-                    return _list_generator(result_list)
+                    return _list_generator(generator)
             else:
                 return self._compensate_token_usage_non_stream(
                     self._request(
@@ -522,20 +556,29 @@ class QfAPIRequestor(BaseAPIRequestor):
                     m.pop("tool_call_id", None)
 
         class AsyncListIterator:
-            def __init__(self, data: List[QfResponse]):
-                self.data = data
-                self.index = 0
+            def __init__(self, data: AsyncIterator[QfResponse]):
+                self.queue: asyncio.Queue = asyncio.Queue()
+                self.is_closed = False
+
+                async def _inner_worker() -> None:
+                    async for res in data:
+                        await self.queue.put(res)
+
+                    self.is_closed = True
+
+                self.task = asyncio.create_task(_inner_worker())
 
             def __aiter__(self) -> "AsyncListIterator":
                 return self
 
             async def __anext__(self) -> Any:
-                if self.index < len(self.data):
-                    value = self.data[self.index]
-                    self.index += 1
-                    return value
-                else:
-                    raise StopAsyncIteration
+                while not self.is_closed or self.queue.empty():
+                    try:
+                        return self.queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        await asyncio.sleep(0.5)
+                        continue
+                raise StopAsyncIteration
 
         @self._async_retry_if_token_expired
         async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -571,11 +614,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 if not show_total_latency:
                     return _async_generator_wrapper(generator)
                 else:
-                    result_list: List[QfResponse] = []
-                    async for res in generator:
-                        result_list.append(res)
-
-                    return AsyncListIterator(result_list)
+                    return AsyncListIterator(generator)
             else:
                 return await self._async_compensate_token_usage_non_stream(
                     await self._async_request(req, data_postprocess=data_postprocess),

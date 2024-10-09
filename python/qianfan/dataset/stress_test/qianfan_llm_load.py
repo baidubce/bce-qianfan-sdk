@@ -2,9 +2,10 @@
 """
 流式请求 统计首token延迟时间（TTFT: time to first token）
 """
+import abc
 import json
 import time
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Iterator, Literal, Optional
 
 from locust import constant, events, task
 from locust.clients import ResponseContextManager
@@ -132,12 +133,22 @@ CustomHandler(
 )
 
 
+class _InnerResponseProcessRet:
+    def __init__(
+        self, request_meta: Dict, last_resp: Optional[QfResponse], merged_result: str
+    ):
+        self.request_meta = request_meta
+        self.last_resp = last_resp
+        self.merged_result = merged_result
+
+
 class QianfanCustomHttpSession(CustomHttpSession):
     """
     custom http session class
     """
 
     exc: Optional[Exception] = None
+    model: str = ""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._file_lock: Any = GlobalData.data["file_lock"]
@@ -146,7 +157,83 @@ class QianfanCustomHttpSession(CustomHttpSession):
     def _request_internal(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
-        return {}
+        context = context or {}
+        start_time = time.time()
+        res: Dict = {}
+        request_meta = self._prepare_request_meta(context, **kwargs)
+
+        try:
+            kwargs["retry_count"] = 0
+            responses = self._get_request(context, **kwargs)
+            processed_resp = self._process_responses(responses, request_meta)
+
+            last_resp = processed_resp.last_resp
+            request_meta = processed_resp.request_meta
+
+            assert last_resp is not None
+            res = {
+                "headers": last_resp.headers,
+                "stat": last_resp.statistic,
+                "body": last_resp.body,
+            }
+            res["body"]["result"] = processed_resp.merged_result
+        except Exception as e:
+            self.exc = e
+            resp = QfResponse(-1)
+            last_resp = resp
+            setattr(resp, "url", self.model)
+            setattr(resp, "reason", str(e))
+            setattr(resp, "status_code", 500)
+
+        if self.exc is None and last_resp is not None and last_resp.request is not None:
+            res["request"] = last_resp.request.requests_args()
+
+        if GlobalData.data["log"] == 1:
+            if self.exc:
+                self._write_result({"error": str(self.exc)})
+            else:
+                self._write_result(res)
+
+        if self.user:
+            context = {**self.user.context(), **context}
+        if self.exc is None:
+            # report succeed to locust's statistics
+            assert last_resp is not None
+            request_meta["request_type"] = "POST"
+            request_meta["response_time"] = (
+                last_resp.statistic.get("total_latency", 0) * 1000
+            )
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        else:
+            # setting response_time to None when the request is failed
+            request_meta["response_time"] = None
+            request_meta["request_type"] = "POST"
+            request_meta["name"] = self.model
+            request_meta["context"] = context
+            request_meta["exception"] = self.exc
+            request_meta["start_time"] = start_time
+            request_meta["url"] = self.model
+            request_meta["response"] = last_resp
+        return request_meta
+
+    @abc.abstractmethod
+    def _process_responses(
+        self, responses: Iterator[QfResponse], request_meta: Dict
+    ) -> _InnerResponseProcessRet:
+        ...
+
+    @abc.abstractmethod
+    def _prepare_request_meta(self, context: Dict, **kwargs: Any) -> Dict:
+        ...
+
+    @abc.abstractmethod
+    def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
+        ...
 
     def qianfan_request(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -203,6 +290,14 @@ class QianfanCustomHttpSession(CustomHttpSession):
     def _transfer_body(self, data: Any) -> Any:
         ...
 
+    def _write_result(self, res: Dict) -> None:
+        res_json = json.dumps(res, ensure_ascii=False)
+        folder = GlobalData.data["record_dir"]
+        file_path = folder + "/" + "query_result.jsonl"
+        with self._file_lock:
+            with open(file_path, "a") as f:
+                f.write(res_json + "\n")
+
 
 class ChatCompletionClient(QianfanCustomHttpSession):
     def __init__(
@@ -249,15 +344,111 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     model=model, forcing_disable=True, **kwargs
                 )
 
-    def _request_internal(
-        self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
-    ) -> Dict[str, Any]:
-        context = context or {}
+    def _process_responses(
+        self, responses: Iterator[QfResponse], request_meta: Dict
+    ) -> _InnerResponseProcessRet:
+        last_resp: Optional[QfResponse] = None
+        merged_query = ""
+        first_flag, all_empty = True, True
+        clear_history = False
+
+        for resp in responses:
+            last_resp = resp
+            setattr(resp, "url", self.model)
+            setattr(resp, "reason", None)
+            setattr(resp, "status_code", resp["code"])
+
+            # 计算token数, 有usage的累加，没有的直接计算content
+            if "usage" in resp.body and resp.body["usage"] is not None:
+                request_meta["input_tokens"] = int(resp.body["usage"]["prompt_tokens"])
+                request_meta["output_tokens"] = int(
+                    resp.body["usage"]["completion_tokens"]
+                )
+            else:
+                request_meta["input_tokens"] = request_meta["request_length"]
+                request_meta["output_tokens"] = request_meta["response_length"]
+
+            if first_flag:
+                request_meta["first_token_latency"] = resp.statistic[
+                    "first_token_latency"
+                ]
+                if "first_latency_threshold" in GlobalData.data:
+                    if (
+                        request_meta["first_token_latency"]
+                        > GlobalData.data["first_latency_threshold"]
+                    ):
+                        GlobalData.data["threshold_first"].value = 1
+                first_flag = False
+
+            interval_latencies = request_meta.get("request_latency", [])
+            interval_latencies.append(resp.statistic["request_latency"])
+            request_meta["request_latency"] = interval_latencies
+
+            if not self.is_v2:
+                stream_json = resp["body"]
+                merged_query += stream_json.get("result", "")
+                clear_history = stream_json.get("need_clear_history", False)
+                if "result" in stream_json:
+                    content = stream_json["result"]
+                elif "error_code" in stream_json and stream_json["error_code"] > 0:
+                    self.exc = Exception(
+                        "ERROR CODE {}".format(str(stream_json["error_code"]))
+                    )
+                    break
+                else:
+                    self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+            else:
+                if "error_code" in resp.body and resp.body["error_code"] > 0:
+                    self.exc = Exception(
+                        "ERROR CODE {}".format(str(resp.body["error_code"]))
+                    )
+                    break
+
+                if len(resp.body["choices"]) == 0:
+                    break
+
+                stream_json = resp.body["choices"][0]
+                clear_history = stream_json.get("need_clear_history", False)
+                if "delta" in stream_json:
+                    content = stream_json["delta"].get("content", "")
+                    merged_query += content
+                else:
+                    self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+
+            if len(content) != 0:
+                all_empty = False
+
+        assert last_resp is not None
+        if all_empty and not clear_history:
+            self.exc = Exception("Response is empty")
+        elif last_resp is None and self.exc is None:
+            self.exc = Exception("Response is null")
+        elif not self.is_v2 and "is_end" not in last_resp["body"]:
+            self.exc = Exception("Response not finished")
+        elif last_resp["code"] != 200 or (
+            not self.is_v2 and not last_resp["body"]["is_end"]
+        ):
+            self.exc = Exception("NOT 200 OR is_end is False")
+
+        return _InnerResponseProcessRet(request_meta, last_resp, merged_query)
+
+    def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
         if "messages" in kwargs:
             messages = kwargs.pop("messages")
         else:
             messages = []
-        first_flag = True
+
+        responses = self.chat_comp.do(messages=messages, **kwargs)
+        assert isinstance(responses, Iterator)
+        return responses
+
+    def _prepare_request_meta(self, context: Dict, **kwargs: Any) -> Dict:
+        if "messages" in kwargs:
+            messages = kwargs.pop("messages")
+        else:
+            messages = []
 
         request_meta: Dict[str, Any] = {
             "input_tokens": 0,
@@ -265,154 +456,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             "response_length": 0,
             "request_length": sum([len(msg) for msg in messages]),
         }
-        header: dict = {}
-        stat: dict = {}
-        merged_query: str = ""
-        body: Dict[str, Any] = {"headers": {}, "stat": {}, "body": ""}
-        last_resp = None
-        all_empty = True
-        start_time = time.time()
 
-        try:
-            kwargs["retry_count"] = 0
-            responses = self.chat_comp.do(messages=messages, **kwargs)
-        except Exception as e:
-            self.exc = e
-            resp = QfResponse(-1)
-            last_resp = resp
-            setattr(resp, "url", self.model)
-            setattr(resp, "reason", str(e))
-            setattr(resp, "status_code", 500)
-        if self.exc is None:
-            for resp in responses:
-                last_resp = resp
-                setattr(resp, "url", self.model)
-                setattr(resp, "reason", None)
-                setattr(resp, "status_code", resp["code"])
-
-                # 计算token数, 有usage的累加，没有的直接计算content
-                if "usage" in resp.body and resp.body["usage"] is not None:
-                    request_meta["input_tokens"] = int(
-                        resp.body["usage"]["prompt_tokens"]
-                    )
-                    request_meta["output_tokens"] = int(
-                        resp.body["usage"]["completion_tokens"]
-                    )
-                else:
-                    request_meta["input_tokens"] = request_meta["request_length"]
-                    request_meta["output_tokens"] = request_meta["response_length"]
-
-                if first_flag:
-                    request_meta["first_token_latency"] = resp.statistic[
-                        "first_token_latency"
-                    ]
-                    if "first_latency_threshold" in GlobalData.data:
-                        if (
-                            request_meta["first_token_latency"]
-                            > GlobalData.data["first_latency_threshold"]
-                        ):
-                            GlobalData.data["threshold_first"].value = 1
-                    first_flag = False
-
-                interval_latencies = request_meta.get("request_latency", [])
-                interval_latencies.append(resp.statistic["request_latency"])
-                request_meta["request_latency"] = interval_latencies
-
-                if not self.is_v2:
-                    stream_json = resp["body"]
-                    stat = resp.get("statistic", "")
-                    header = resp.get("headers", "")
-                    body = stream_json
-                    merged_query += stream_json.get("result", "")
-                    clear_history = stream_json.get("need_clear_history", False)
-                    if "result" in stream_json:
-                        content = stream_json["result"]
-                    elif "error_code" in stream_json and stream_json["error_code"] > 0:
-                        self.exc = Exception(
-                            "ERROR CODE {}".format(str(stream_json["error_code"]))
-                        )
-                        break
-                    else:
-                        self.exc = Exception("ERROR CODE 结果无法解析")
-                        break
-                else:
-                    if "error_code" in resp.body and resp.body["error_code"] > 0:
-                        self.exc = Exception(
-                            "ERROR CODE {}".format(str(resp.body["error_code"]))
-                        )
-                        break
-
-                    if len(resp.body["choices"]) == 0:
-                        break
-
-                    stream_json = resp.body["choices"][0]
-                    stat = resp.statistic
-                    header = resp.headers
-                    clear_history = stream_json.get("need_clear_history", False)
-                    if "delta" in stream_json:
-                        content = stream_json["delta"].get("content", "")
-                        merged_query += content
-                    else:
-                        self.exc = Exception("ERROR CODE 结果无法解析")
-                        break
-
-                if len(content) != 0:
-                    all_empty = False
-
-            assert last_resp is not None
-            if all_empty and not clear_history:
-                self.exc = Exception("Response is empty")
-            elif last_resp is None and self.exc is None:
-                self.exc = Exception("Response is null")
-            elif not self.is_v2 and "is_end" not in last_resp["body"]:
-                self.exc = Exception("Response not finished")
-            elif last_resp["code"] != 200 or (
-                not self.is_v2 and not last_resp["body"]["is_end"]
-            ):
-                self.exc = Exception("NOT 200 OR is_end is False")
-        body["result"] = merged_query
-        res = {
-            "headers": header,
-            "stat": stat,
-            "body": body,
-        }
-
-        if self.exc is None and last_resp is not None and last_resp.request is not None:
-            res["request"] = last_resp.request.requests_args()
-
-        res_json = json.dumps(res, ensure_ascii=False)
-        if GlobalData.data["log"] == 1:
-            dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.jsonl"
-            with self._file_lock:
-                with open(dir, "a") as f:
-                    f.write(res_json + "\n")
-
-        if self.user:
-            context = {**self.user.context(), **context}
-        if self.exc is None:
-            # report succeed to locust's statistics
-            assert last_resp is not None
-            request_meta["request_type"] = "POST"
-            request_meta["response_time"] = (
-                last_resp.statistic.get("total_latency", 0) * 1000
-            )
-            request_meta["name"] = self.model
-            request_meta["context"] = context
-            request_meta["exception"] = self.exc
-            request_meta["start_time"] = start_time
-            request_meta["url"] = self.model
-            request_meta["response"] = last_resp
-        else:
-            # setting response_time to None when the request is failed
-            request_meta["response_time"] = None
-            request_meta["request_type"] = "POST"
-            request_meta["name"] = self.model
-            request_meta["context"] = context
-            request_meta["exception"] = self.exc
-            request_meta["start_time"] = start_time
-            request_meta["url"] = self.model
-            request_meta["response"] = last_resp
         return request_meta
 
     def _transfer_jsonl(
@@ -495,34 +539,13 @@ class CompletionClient(QianfanCustomHttpSession):
                     model=model, forcing_disable=True, **kwargs
                 )
 
-    def _request_internal(
-        self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
-    ) -> Dict[str, Any]:
-        context = context or {}
-        if "prompt" in kwargs:
-            prompt = kwargs.pop("prompt")
-        else:
-            prompt = ""
+    def _process_responses(
+        self, responses: Iterator[QfResponse], request_meta: Dict
+    ) -> _InnerResponseProcessRet:
+        last_resp: Optional[QfResponse] = None
+        merged_query = ""
         first_flag = True
-        request_meta: Dict[str, Any] = {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "response_length": 0,
-            "request_length": len(prompt),
-        }
-        header: str
-        stat: str
-        merged_query: str = ""
-        body: Dict[str, Any] = {
-            "headers": {},
-            "stat": {},
-            "body": "",
-        }
-        last_resp = None
-        all_empty = True
 
-        start_time = time.time()
-        responses = self.comp.do(prompt=prompt, **kwargs)
         for resp in responses:
             last_resp = resp
             setattr(resp, "url", self.model)
@@ -540,9 +563,6 @@ class CompletionClient(QianfanCustomHttpSession):
                 request_meta["output_tokens"] = request_meta["response_length"]
 
             stream_json = resp["body"]
-            stat = resp["statistic"]
-            header = resp["headers"]
-            body = resp["body"]
             merged_query += stream_json["result"]
             if first_flag:
                 request_meta["first_token_latency"] = resp.statistic[
@@ -559,10 +579,7 @@ class CompletionClient(QianfanCustomHttpSession):
             interval_latencies.append(resp.statistic["request_latency"])
             request_meta["request_latency"] = interval_latencies
 
-            content = ""
-            if "result" in stream_json:
-                content = stream_json["result"]
-            else:
+            if "result" not in stream_json:
                 self.exc = Exception("ERROR CODE 结果无法解析")
                 break
             if "error_code" in stream_json and stream_json["error_code"] > 0:
@@ -570,63 +587,32 @@ class CompletionClient(QianfanCustomHttpSession):
                     "ERROR CODE {}".format(str(stream_json["error_code"]))
                 )
                 break
-            if len(content) != 0:
-                all_empty = False
 
-        assert last_resp is not None
-        if all_empty:
-            self.exc = Exception("Response is empty")
-        elif last_resp is None and self.exc is None:
-            self.exc = Exception("Response is null")
-        elif "is_end" not in last_resp["body"]:
-            self.exc = Exception("Response not finished")
-        elif last_resp["code"] != 200 or not last_resp["body"]["is_end"]:
-            self.exc = Exception("NOT 200 OR is_end is False")
+        return _InnerResponseProcessRet(request_meta, last_resp, merged_query)
 
-        body["result"] = merged_query
-        res = {
-            "headers": header,
-            "stat": stat,
-            "body": body,
+    def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
+        if "prompt" in kwargs:
+            prompt = kwargs.pop("prompt")
+        else:
+            prompt = ""
+
+        responses = self.comp.do(prompt=prompt, **kwargs)
+        assert isinstance(responses, Iterator)
+        return responses
+
+    def _prepare_request_meta(self, context: Dict, **kwargs: Any) -> Dict:
+        if "prompt" in kwargs:
+            prompt = kwargs.pop("prompt")
+        else:
+            prompt = ""
+
+        request_meta: Dict[str, Any] = {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "response_length": 0,
+            "request_length": len(prompt),
         }
 
-        if self.exc is None and last_resp is not None and last_resp.request is not None:
-            res["request"] = last_resp.request.requests_args()
-
-        res_json = json.dumps(res, ensure_ascii=False)
-
-        if GlobalData.data["log"] == 1:
-            dir = GlobalData.data["record_dir"]
-            dir = dir + "/" + "query_result.jsonl"
-            with self._file_lock:
-                with open(dir, "a") as f:
-                    f.write(res_json + "\n")
-
-        if self.user:
-            context = {**self.user.context(), **context}
-        if self.exc is None:
-            # report to locust's statistics
-            assert last_resp is not None
-            request_meta["request_type"] = "POST"
-            request_meta["response_time"] = (
-                last_resp.statistic.get("total_latency", 0) * 1000
-            )
-            request_meta["name"] = self.model
-            request_meta["context"] = context
-            request_meta["exception"] = self.exc
-            request_meta["start_time"] = start_time
-            request_meta["url"] = self.model
-            request_meta["response"] = last_resp
-        else:
-            # setting response_time to None when the request is failed
-            request_meta["response_time"] = None
-            request_meta["request_type"] = "POST"
-            request_meta["name"] = self.model
-            request_meta["context"] = context
-            request_meta["exception"] = self.exc
-            request_meta["start_time"] = start_time
-            request_meta["url"] = self.model
-            request_meta["response"] = last_resp
         return request_meta
 
     def _transfer_jsonl(

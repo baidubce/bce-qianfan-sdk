@@ -287,6 +287,8 @@ class FinetuneSupportModelType(str, Enum):
     """Text2Text Model"""
     Text2Image: str = "text2image"
     """Text2Image Model"""
+    ImageUnderstanding: str = "imageUnderstanding"
+    """Image Understanding Model"""
 
 
 class FinetuneSupportHyperParameterType(str, Enum):

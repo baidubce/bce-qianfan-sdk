@@ -15,6 +15,7 @@ import concurrent.futures
 import json
 import os
 import re
+import shlex
 import subprocess
 import threading
 import time
@@ -99,10 +100,13 @@ class AFSClient(BaseClient):
 
     def _get_exec_cmd(self, cmd: str, *params: Any) -> str:
         log_debug(f"run cmd {cmd} {params}")
+
+        host = str(self.host).replace("'", r"\'")
+        ugi = str(self.ugi).replace("'", r"\'")
+
         exec_cmd = (
-            "hadoop fs"
-            f" -Dfs.default.name={self.host} "
-            f"-Dhadoop.job.ugi={self.ugi} -{cmd} {' '.join(params)} "
+            f"hadoop fs '-Dfs.default.name={host}' '-Dhadoop.job.ugi={ugi}'"
+            f" {shlex.quote('-{}'.format(cmd))} {' '.join(shlex.quote(str(params)))} "
         )
         return exec_cmd
 

@@ -151,6 +151,12 @@ async for r in resp:
 > ```python
 > qianfan.ChatCompletion().do(messages=[{"role":"user", "content":"hi"}], show_total_latency=True)
 > ```
+> 在开启 show_total_latency 时，SDK 会在每次请求时启动一个单独的后台线程进行输出的预读取。在极端场景下可能会因无法创建线程而异常抛出。
+>
+> 对于这种情况，用户在使用时，可以在创建请求对象时设置 `sync_reading_thread_count=最大线程数` 来避免此问题：
+> ```python
+> qianfan.ChatCompletion(sync_reading_thread_count=500).do(messages=[{"role":"user", "content":"hi"}], show_total_latency=True)
+> ```
 
 以下是一个获取流式请求包间延迟的例子：
 ```python

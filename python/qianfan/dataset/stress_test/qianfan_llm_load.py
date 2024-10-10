@@ -192,6 +192,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
             if self.exc:
                 self._write_result({"error": str(self.exc)})
             else:
+                del res["request"]["headers"]["Authorization"]
                 self._write_result(res)
 
         if self.user:

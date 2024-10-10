@@ -37,6 +37,7 @@ from qianfan.trainer.configs import (
     CorpusConfig,
     CorpusConfigItem,
     DatasetConfig,
+    ResourceConfig,
     TrainConfig,
     TrainLimit,
 )
@@ -520,6 +521,9 @@ def test_persist():
         max_seq_len=4096,
         trainset_rate=20,
         peft_type=PeftType.ALL,
+        resource_config=ResourceConfig(
+            node_num=4,
+        ),
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
         "test", console_consts.DataTemplateType.NonSortedConversation
@@ -530,6 +534,7 @@ def test_persist():
         train_type="ERNIE-Speed",
         dataset=ds,
         train_config=train_config,
+        train_extras={"newField": {"name": "111"}},
     )
     trainer.run()
 

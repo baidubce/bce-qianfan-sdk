@@ -51,7 +51,6 @@ def first_token_latency_request_handler(
             request_type, name, kwargs["first_token_latency"] * 1000, response_length
         )
     else:
-        stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到首token延迟指标")
 
 
@@ -67,7 +66,6 @@ def input_tokens_request_handler(
     if "input_tokens" in kwargs:
         stats.log_request(request_type, name, kwargs["input_tokens"], response_length)
     else:
-        stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到输入token数")
 
 
@@ -83,7 +81,6 @@ def output_tokens_request_handler(
     if "output_tokens" in kwargs:
         stats.log_request(request_type, name, kwargs["output_tokens"], response_length)
     else:
-        stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到输出token数")
 
 
@@ -100,8 +97,54 @@ def interval_latency_handler(
         for latency in kwargs["request_latency"]:
             stats.log_request(request_type, name, latency * 1000, response_length)
     else:
-        stats.log_request(request_type, name, 0, response_length)
         stats.log_error(request_type, name, "未找到包间延迟")
+
+
+def input_str_length_handler(
+    stats: RequestStats,
+    request_type: str,
+    name: str,
+    response_time: int,
+    response_length: int,
+    exception: Optional[Exception] = None,
+    **kwargs: Any
+) -> None:
+    if "request_length" in kwargs:
+        stats.log_request(request_type, name, kwargs["request_length"], response_length)
+    else:
+        stats.log_error(request_type, name, "未找到请求长度")
+
+
+def output_str_length_handler(
+    stats: RequestStats,
+    request_type: str,
+    name: str,
+    response_time: int,
+    response_length: int,
+    exception: Optional[Exception] = None,
+    **kwargs: Any
+) -> None:
+    if "output_response_length" in kwargs:
+        stats.log_request(
+            request_type, name, kwargs["output_response_length"], response_length
+        )
+    else:
+        stats.log_error(request_type, name, "未找到输出长度")
+
+
+def total_latency_handler(
+    stats: RequestStats,
+    request_type: str,
+    name: str,
+    response_time: int,
+    response_length: int,
+    exception: Optional[Exception] = None,
+    **kwargs: Any
+) -> None:
+    if "total_latency" in kwargs:
+        stats.log_request(request_type, name, kwargs["total_latency"], response_length)
+    else:
+        stats.log_error(request_type, name, "未找到请求耗时")
 
 
 # (1) 上文统计ttft的方法request_handler 是CustomHandler的默认行为；
@@ -130,6 +173,24 @@ CustomHandler(
     name="包间延迟统计",
     request_handler=interval_latency_handler,
     csv_suffix="interval_latency",
+)
+
+CustomHandler(
+    name="输入长度延迟统计",
+    request_handler=input_str_length_handler,
+    csv_suffix="input_str_length",
+)
+
+CustomHandler(
+    name="输出长度延迟统计",
+    request_handler=output_str_length_handler,
+    csv_suffix="output_str_length",
+)
+
+CustomHandler(
+    name="请求耗时统计",
+    request_handler=total_latency_handler,
+    csv_suffix="total_latency",
 )
 
 
@@ -177,6 +238,8 @@ class QianfanCustomHttpSession(CustomHttpSession):
                 "body": last_resp.body,
             }
             res["body"]["result"] = processed_resp.merged_result
+            request_meta["output_response_length"] = len(processed_resp.merged_result)
+            request_meta["total_latency"] = last_resp.statistic["total_latency"] * 1000
         except Exception as e:
             self.exc = e
             resp = QfResponse(-1)
@@ -366,7 +429,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 )
             else:
                 request_meta["input_tokens"] = request_meta["request_length"]
-                request_meta["output_tokens"] = request_meta["response_length"]
+                request_meta["output_tokens"] = 0
 
             if first_flag:
                 request_meta["first_token_latency"] = resp.statistic[
@@ -451,8 +514,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             messages = []
 
         request_meta: Dict[str, Any] = {
-            "input_tokens": 0,
-            "output_tokens": 0,
             "response_length": 0,
             "request_length": sum([len(msg) for msg in messages]),
         }
@@ -560,7 +621,7 @@ class CompletionClient(QianfanCustomHttpSession):
                 )
             else:
                 request_meta["input_tokens"] = request_meta["request_length"]
-                request_meta["output_tokens"] = request_meta["response_length"]
+                request_meta["output_tokens"] = 0
 
             stream_json = resp["body"]
             merged_query += stream_json["result"]
@@ -607,8 +668,6 @@ class CompletionClient(QianfanCustomHttpSession):
             prompt = ""
 
         request_meta: Dict[str, Any] = {
-            "input_tokens": 0,
-            "output_tokens": 0,
             "response_length": 0,
             "request_length": len(prompt),
         }

@@ -75,7 +75,7 @@ def gen_brief(
     gen_brief
     """
     qps = get_qps(report_dir + "/statistics_stats.csv")
-    lat_tuple = get_statistics(report_dir + "/statistics_stats.csv")
+    lat_tuple = get_statistics(report_dir + "/statistics_total_latency_stats.csv")
     first_lat_tuple = get_statistics(
         report_dir + "/statistics_first_token_latency_stats.csv"
     )
@@ -84,6 +84,12 @@ def gen_brief(
     )
     input_tk_tuple = get_statistics(report_dir + "/statistics_input_tokens_stats.csv")
     output_tk_tuple = get_statistics(report_dir + "/statistics_output_tokens_stats.csv")
+    input_str_length_tuple = get_statistics(
+        report_dir + "/statistics_input_str_length_stats.csv"
+    )
+    output_str_length_tuple = get_statistics(
+        report_dir + "/statistics_output_str_length_stats.csv"
+    )
     total_count = get_statistics(report_dir + "/statistics_stats.csv")[8]
     failure_count = get_statistics(report_dir + "/statistics_stats.csv")[9]
     success_count = total_count - failure_count
@@ -124,8 +130,18 @@ def gen_brief(
         + "IntervalLatency 99%%: %s\n" % round(interval_lat_tuple[7] / 1000, 6)
         + "InputTokens Avg: %s\n" % round(input_tk_tuple[0], 2)
         + "OutputTokens Avg: %s\n" % round(output_tk_tuple[0], 2)
-        + "TotalInputTokens Avg: %s\n" % round(input_tk_tuple[0] * total_count, 2)
-        + "TotalOutputTokens Avg: %s\n" % round(output_tk_tuple[0] * success_count, 2)
+        + "TotalInputTokens: %s\n" % round(input_tk_tuple[0] * success_count, 2)
+        + "TotalOutputTokens: %s\n" % round(output_tk_tuple[0] * success_count, 2)
+        + "InputStringLength Avg :%s\n" % round(input_str_length_tuple[0], 2)
+        + "OutputStringLength Avg :%s\n" % round(output_str_length_tuple[0], 2)
+        + "TotalInputStringLength: %s\n"
+        % round(input_str_length_tuple[0] * success_count, 2)
+        + "TotalOutputStringLength: %s\n"
+        % round(output_str_length_tuple[0] * success_count, 2)
+        + "OutputTokensPerSecond: %s\n"
+        % round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2)
+        + "OutputStringLengthPerSecond: %s\n"
+        % round(output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2)
         + "SendQuery: %s\n" % round(total_count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
         + "FailureQuery: %s\n" % round(failure_count, 2)
@@ -159,8 +175,14 @@ def gen_brief(
         "IntervalLatency_90%": round(interval_lat_tuple[5] / 1000, 6),
         "IntervalLatency_95%": round(interval_lat_tuple[6] / 1000, 6),
         "IntervalLatency_99%": round(interval_lat_tuple[7] / 1000, 6),
-        "Input_tokens_avg": round(input_tk_tuple[0], 2),
-        "Output_tokens_avg": round(output_tk_tuple[0], 2),
+        "InputTokens_avg": round(input_tk_tuple[0], 2),
+        "OutputTokens_avg": round(output_tk_tuple[0], 2),
+        "InputStringLength_avg": round(input_str_length_tuple[0], 2),
+        "OutputStringLength_avg": round(output_str_length_tuple[0], 2),
+        "OutputTokensPerSecond": round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2),
+        "OutputStringLengthPerSecond": round(
+            output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2
+        ),
         "TotalTime": round(time, 2),
         "SuccessRate": success_rate,
         "concurrency": user_num,
@@ -291,6 +313,10 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
         "IntervalLatency 99",
         "InputTokens avg",
         "OutputTokens avg",
+        "InputStringLength avg",
+        "OutputStringLength avg",
+        "OutputTokensPerSecond",
+        "OutputStringLengthPerSecond",
         "SuccessRate",
     ]
 
@@ -359,9 +385,17 @@ def generate_html_table(data_rows: Any, model_info: Any) -> str:
             elif column == "IntervalLatency 99":
                 value = row.get("IntervalLatency_99%", "")
             elif column == "InputTokens avg":
-                value = row.get("Input_tokens_avg", "")
+                value = row.get("InputTokens_avg", "")
             elif column == "OutputTokens avg":
-                value = row.get("Output_tokens_avg", "")
+                value = row.get("OutputTokens_avg", "")
+            elif column == "InputStringLength avg":
+                value = row.get("InputStringLength_avg", "")
+            elif column == "OutputStringLength avg":
+                value = row.get("OutputStringLength_avg", "")
+            elif column == "OutputTokensPerSecond":
+                value = row.get("OutputTokensPerSecond", "")
+            elif column == "OutputStringLengthPerSecond":
+                value = row.get("OutputStringLengthPerSecond", "")
             elif column == "SuccessRate":
                 value = row.get("SuccessRate", "")
             else:

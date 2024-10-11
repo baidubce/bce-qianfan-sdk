@@ -139,9 +139,17 @@ def gen_brief(
         + "TotalOutputStringLength: %s\n"
         % round(output_str_length_tuple[0] * success_count, 2)
         + "OutputTokensPerSecond: %s\n"
-        % (round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2) if lat_tuple[0] != 0 else 0)
+        % (
+            round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2)
+            if lat_tuple[0] != 0
+            else 0
+        )
         + "OutputStringLengthPerSecond: %s\n"
-        % (round(output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2) if lat_tuple[0] != 0 else 0)
+        % (
+            round(output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2)
+            if lat_tuple[0] != 0
+            else 0
+        )
         + "SendQuery: %s\n" % round(total_count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
         + "FailureQuery: %s\n" % round(failure_count, 2)
@@ -179,10 +187,16 @@ def gen_brief(
         "OutputTokens_avg": round(output_tk_tuple[0], 2),
         "InputStringLength_avg": round(input_str_length_tuple[0], 2),
         "OutputStringLength_avg": round(output_str_length_tuple[0], 2),
-        "OutputTokensPerSecond": round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2) if lat_tuple[0] != 0 else 0,
-        "OutputStringLengthPerSecond": round(
-            output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2
-        ) if lat_tuple[0] != 0 else 0,
+        "OutputTokensPerSecond": (
+            round(output_tk_tuple[0] / (lat_tuple[0] / 1000), 2)
+            if lat_tuple[0] != 0
+            else 0
+        ),
+        "OutputStringLengthPerSecond": (
+            round(output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2)
+            if lat_tuple[0] != 0
+            else 0
+        ),
         "TotalTime": round(time, 2),
         "SuccessRate": success_rate,
         "concurrency": user_num,

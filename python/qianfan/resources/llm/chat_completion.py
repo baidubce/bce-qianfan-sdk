@@ -1896,7 +1896,7 @@ class ChatCompletion(VersionBase):
                     impl = real_base_type(**kwargs)
         except Exception:
             impl = self._real
-        return await impl._ado(
+        return await impl.ado(
             messages=messages,
             model=model,
             endpoint=endpoint,

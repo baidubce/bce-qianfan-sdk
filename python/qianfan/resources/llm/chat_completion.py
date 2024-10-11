@@ -30,6 +30,7 @@ import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
+    BaseResource,
     BaseResourceV1,
     BaseResourceV2,
     BatchRequestFuture,
@@ -1779,7 +1780,7 @@ class ChatCompletion(VersionBase):
             system, messages = self._adapt_messages_format(messages)
             if "system" not in kwargs and system:
                 kwargs["system"] = system
-        impl: VersionBase = self
+        impl: Union[VersionBase, BaseResource] = self
         try:
             if model is not None or endpoint is not None:
                 # TODO兼容 v2调用ernie-func-8k

@@ -4,6 +4,7 @@
 """
 import abc
 import json
+import re
 import time
 from typing import Any, Dict, Iterator, Literal, Optional
 
@@ -38,7 +39,7 @@ def first_token_latency_request_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     """
     每个请求均会调用，用于向统计表注册数据
@@ -61,7 +62,7 @@ def input_tokens_request_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "input_tokens" in kwargs:
         stats.log_request(request_type, name, kwargs["input_tokens"], response_length)
@@ -76,7 +77,7 @@ def output_tokens_request_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "output_tokens" in kwargs:
         stats.log_request(request_type, name, kwargs["output_tokens"], response_length)
@@ -91,7 +92,7 @@ def interval_latency_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "request_latency" in kwargs:
         for latency in kwargs["request_latency"]:
@@ -107,7 +108,7 @@ def input_str_length_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "request_length" in kwargs:
         stats.log_request(request_type, name, kwargs["request_length"], response_length)
@@ -122,7 +123,7 @@ def output_str_length_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "output_response_length" in kwargs:
         stats.log_request(
@@ -139,7 +140,7 @@ def total_latency_handler(
     response_time: int,
     response_length: int,
     exception: Optional[Exception] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
     if "total_latency" in kwargs:
         stats.log_request(request_type, name, kwargs["total_latency"], response_length)
@@ -192,6 +193,21 @@ CustomHandler(
     request_handler=total_latency_handler,
     csv_suffix="total_latency",
 )
+
+_remove_access_token_pattern = re.compile(r"([&?])access_token=[^&]*(&)?")
+
+
+def _remove_access_token_url_parameter(url: str) -> str:
+    # 使用正则表达式替换参数，注意分组用于保留正确连接符号
+    new_url = _remove_access_token_pattern.sub(
+        lambda m: m.group(1) if m.group(2) else "", url
+    )
+
+    # 移除可能遗留在结尾的 '&' 或 '?'
+    if new_url.endswith("?") or new_url.endswith("&"):
+        new_url = new_url[:-1]
+
+    return new_url
 
 
 class _InnerResponseProcessRet:
@@ -255,6 +271,17 @@ class QianfanCustomHttpSession(CustomHttpSession):
             if self.exc:
                 self._write_result({"error": str(self.exc)})
             else:
+                if (
+                    res.get("request", {}).get("headers", {}).get("Authorization", None)
+                    is not None
+                ):
+                    del res["request"]["headers"]["Authorization"]
+
+                if len(res.get("request", {}).get("url", "")) != 0:
+                    res["request"]["url"] = _remove_access_token_url_parameter(
+                        res["request"]["url"]
+                    )
+
                 self._write_result(res)
 
         if self.user:
@@ -373,7 +400,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         pool_manager: Optional[PoolManager] = None,
         version: Literal["1", "2", 1, 2] = "1",
         app_id: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """
         init
@@ -570,7 +597,7 @@ class CompletionClient(QianfanCustomHttpSession):
         pool_manager: Optional[PoolManager] = None,
         version: Literal["1", "2", 1, 2] = "1",
         app_id: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """
         init

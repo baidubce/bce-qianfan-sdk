@@ -4,6 +4,7 @@
 """
 import abc
 import json
+import re
 import time
 from typing import Any, Dict, Iterator, Literal, Optional
 
@@ -133,6 +134,20 @@ CustomHandler(
 )
 
 
+def _remove_access_token_url_parameter(url: str):
+    # 构建正则表达式模式以匹配参数
+    pattern = rf'([&?])access_token=[^&]*(&)?'
+
+    # 使用正则表达式替换参数，注意分组用于保留正确连接符号
+    new_url = re.sub(pattern, lambda m: m.group(1) if m.group(2) else '', url)
+
+    # 移除可能遗留在结尾的 '&' 或 '?'
+    if new_url.endswith('?') or new_url.endswith('&'):
+        new_url = new_url[:-1]
+
+    return new_url
+
+
 class _InnerResponseProcessRet:
     def __init__(
         self, request_meta: Dict, last_resp: Optional[QfResponse], merged_result: str
@@ -192,7 +207,12 @@ class QianfanCustomHttpSession(CustomHttpSession):
             if self.exc:
                 self._write_result({"error": str(self.exc)})
             else:
-                del res["request"]["headers"]["Authorization"]
+                if res.get("request", {}).get("headers", {}).get("Authorization", None) is not None:
+                    del res["request"]["headers"]["Authorization"]
+
+                if len(res.get("request", {}).get("url", "")) != 0:
+                    res["request"]["url"] = _remove_access_token_url_parameter(res["request"]["url"])
+
                 self._write_result(res)
 
         if self.user:

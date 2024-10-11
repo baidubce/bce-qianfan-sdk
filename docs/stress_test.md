@@ -205,8 +205,13 @@ ds.stress_test(users=1, version="2", app_id='app-xxx', model="ernie-speed-8k")
 - **QPS**：服务每秒实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
 - **FirstTokenLatency Avg/Min/Max/50%/80%**：首Token时延的平均值/最小值/最大值/50分位值/80分位值；
+- **IntervalLatency Avg/Min/Max/50%/80%**：包间时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
+- **InputStringLength Avg**：单次请求输入的字符串长度平均值；
+- **OutputStringLength Avg**：单次请求输出的字符串长度平均值；
+- **OutputTokensPerSecond**：每秒输出的 token 量平均值；
+- **OutputStringLengthPerSecond**：每秒输出的字符串长度平均值；
 - **TotalQuery/SuccessQuery/FailureQuery**：总请求数/成功请求数/失败请求数；
 - **TotalTime**：总运行时间；
 - **SuccessRate**：请求成功率；

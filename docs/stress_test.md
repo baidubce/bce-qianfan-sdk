@@ -170,31 +170,52 @@ ds.stress_test(users=1, version="2", app_id='app-xxx', model="ernie-speed-8k")
 运行结束后会输出整体的聚合数据，以及任务的日志路径。日志路径中的performance_table.html为压测结果的可视化表格。
 整体聚合数据内容示例：
 
-        user_num: 4
-        worker_num: 2
-        spawn_rate: 2
-        model_type: ChatCompletion
-        hyperparameters: None
-        QPS: 1.16
-        Latency Avg: 3.08
-        Latency Min: 1.95
-        Latency Max: 4.56
-        Latency 50%: 3.0
-        Latency 80%: 3.6
-        FirstTokenLatency Avg: 0.74
-        FirstTokenLatency Min: 0.0
-        FirstTokenLatency Max: 2.15
-        FirstTokenLatency 50%: 0.64
-        FirstTokenLatency 80%: 0.8
-        InputTokens Avg: 69.6
-        OutputTokens Avg: 43.67
-        TotalInputTokens Avg: 2088.0
-        TotalOutputTokens Avg: 1266.33
-        TotalQuery: 30
-        SuccessQuery: 29
-        FailureQuery: 1
-        TotalTime: 28.63
-        SuccessRate: 96.67%
+    user_num: 50
+    worker_num: 50
+    spawn_rate: 50
+    model_type: Completion
+    hyperparameters: None
+    QPS: 3.63
+    Latency Avg: 3.121617
+    Latency Min: 0.742033
+    Latency Max: 11.915927
+    Latency 50%: 2.9
+    Latency 80%: 4.0
+    Latency 90%: 6.4
+    Latency 95%: 6.7
+    Latency 99%: 12.0
+    FirstTokenLatency Avg: 0.457397
+    FirstTokenLatency Min: 0.366038
+    FirstTokenLatency Max: 0.757577
+    FirstTokenLatency 50%: 0.44
+    FirstTokenLatency 80%: 0.49
+    FirstTokenLatency 90%: 0.54
+    FirstTokenLatency 95%: 0.58
+    FirstTokenLatency 99%: 0.76
+    IntervalLatency Avg: 0.490564
+    IntervalLatency Min: 0.000174
+    IntervalLatency Max: 1.708265
+    IntervalLatency 50%: 0.44
+    IntervalLatency 80%: 0.76
+    IntervalLatency 90%: 0.99
+    IntervalLatency 95%: 1.1
+    IntervalLatency 99%: 1.2
+    InputTokens Avg: 6.38
+    OutputTokens Avg: 72.22
+    TotalInputTokens: 319.0
+    TotalOutputTokens: 3611.0
+    InputStringLength Avg :13.1
+    OutputStringLength Avg :136.44
+    TotalInputStringLength: 655.0
+    TotalOutputStringLength: 6822.0
+    OutputTokensPerSecond: 23.14
+    OutputStringLengthPerSecond: 43.71
+    SendQuery: 50
+    SuccessQuery: 50
+    FailureQuery: 0
+    TotalQuery: 50
+    TotalTime: 16.77
+    SuccessRate: 100.0%
 
 各项指标含义如下：
 - **user_num**: 压测使用的本轮user数，即本轮发压的并发数；
@@ -205,8 +226,13 @@ ds.stress_test(users=1, version="2", app_id='app-xxx', model="ernie-speed-8k")
 - **QPS**：服务每秒实际处理的请求数；
 - **Latency Avg/Min/Max/50%/80%**：全长时延的平均值/最小值/最大值/50分位值/80分位值；
 - **FirstTokenLatency Avg/Min/Max/50%/80%**：首Token时延的平均值/最小值/最大值/50分位值/80分位值；
+- **IntervalLatency Avg/Min/Max/50%/80%**：包间时延的平均值/最小值/最大值/50分位值/80分位值；
 - **InputTokens Avg**：单次请求输入的token长度平均值；
 - **OutputTokens Avg**：单次请求输出的token长度平均值；
+- **InputStringLength Avg**：单次请求输入的字符串长度平均值；
+- **OutputStringLength Avg**：单次请求输出的字符串长度平均值；
+- **OutputTokensPerSecond**：每秒输出的 token 量平均值；
+- **OutputStringLengthPerSecond**：每秒输出的字符串长度平均值；
 - **TotalQuery/SuccessQuery/FailureQuery**：总请求数/成功请求数/失败请求数；
 - **TotalTime**：总运行时间；
 - **SuccessRate**：请求成功率；

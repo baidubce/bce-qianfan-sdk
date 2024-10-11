@@ -454,6 +454,8 @@ class TrainAction(
     """visualdl link"""
     log_link: Optional[str] = None
     """log link"""
+    extras: Dict[str, Any] = {}
+    """extra params which are not supported in the previous version"""
 
     def __init__(
         self,
@@ -531,6 +533,7 @@ class TrainAction(
         self.job_name = self._generate_job_name(job_name, self.train_type)
         self.task_description = task_description
         self.job_description = job_description
+        self.extras = kwargs.get("train_extras", {})
 
     def _generate_job_name(
         self, job_name: Optional[str], train_type: Optional[str]
@@ -673,7 +676,8 @@ class TrainAction(
         assert self.train_config is not None
         hyper_params_dict = {
             **self.train_config.dict(
-                exclude={"peft_type", "trainset_rate", "extras", "resource_config"}
+                exclude={"peft_type", "trainset_rate", "extras", "resource_config"},
+                exclude_none=True,
             ),
             **self.train_config.extras,
         }
@@ -703,14 +707,20 @@ class TrainAction(
             kwargs["corpus_config"] = input.get("corpus_config")
         # 训练资源配置
         if self.train_config.resource_config:
-            kwargs["resource_config"] = self.train_config.resource_config.dict(
-                by_alias=True, exclude_none=True
-            )
+            kwargs["resource_config"] = {
+                **self.train_config.resource_config.dict(
+                    by_alias=True,
+                    exclude={"extras"},
+                    exclude_none=True,
+                ),
+                **self.train_config.resource_config.extras,
+            }
         create_task_resp = api.FineTune.V2.create_task(
             job_id=self.job_id,
             params_scale=self.train_config.peft_type,
             hyper_params=hyper_params_dict,
             dataset_config=ds_config,
+            **self.extras,
             **kwargs,
         )
         self.task_id = str(create_task_resp["result"]["taskId"])

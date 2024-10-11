@@ -83,7 +83,7 @@ os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
 
 from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
-from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem, PeftType
+from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem, PeftType, ResourceConfig
 from qianfan.resources.console import consts as console_consts
 
 
@@ -105,6 +105,9 @@ trainer = LLMFinetune(
         weight_decay=0.0100,
         lora_rank=8,
         lora_all_linear="True",
+    ),
+    resource_config=ResourceConfig(
+        node_num=4,
     ),
     corpus_config=CorpusConfig(
         data_copy=False, # 仅一言语料使用，如果为True，则当语料库不足以混入时，则拷贝重复数据混入
@@ -139,7 +142,10 @@ trainer.run()
     - `corpus_type` 用于指定模型混合的类型
     - `corpus_labels` 每一个`CorpusConfigItem` 最多指定5个Labels。
     - `corpus_proportion` 语料库的混入比例， 千帆使用"x%"，一言使用"1:n"
-
+- `resource_config`: 训练资源配置，包括使用的节点数，是否使用潮汐资源训练
+    - `node_num`: 训练节点数
+    - `idle_resource`: 是否使用潮汐资源
+- `train_extras`: 训练api的额外参数，当api新参数trainer sdk未支持时，可以通过此参数传入
 
 ### 事件回调
 

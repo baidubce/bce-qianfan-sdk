@@ -53,7 +53,7 @@ from qianfan.resources.requestor.base import (
     _with_latency,
 )
 from qianfan.resources.token_limiter import AsyncTokenLimiter, TokenLimiter
-from qianfan.resources.typing import QfMessages, QfRequest, QfResponse, RetryConfig
+from qianfan.resources.typing import QfRequest, QfResponse, RetryConfig
 from qianfan.utils.logging import log_debug, log_error, log_info
 
 _T = TypeVar("_T")
@@ -453,9 +453,6 @@ class QfAPIRequestor(BaseAPIRequestor):
         """
         llm related api request
         """
-        if isinstance(body.get("messages", []), QfMessages):
-            body["messages"] = body["messages"]._to_list()
-
         log_debug(f"requesting llm api endpoint: {endpoint}")
         # TODO 应该放在Adapter中做处理。
         for m in body.get("messages", []):

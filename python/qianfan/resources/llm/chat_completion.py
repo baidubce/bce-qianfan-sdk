@@ -30,7 +30,6 @@ import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    BaseResource,
     BaseResourceV1,
     BaseResourceV2,
     BatchRequestFuture,
@@ -1780,7 +1779,9 @@ class ChatCompletion(VersionBase):
             system, messages = self._adapt_messages_format(messages)
             if "system" not in kwargs and system:
                 kwargs["system"] = system
-        impl: Union[VersionBase, BaseResource] = self
+        impl: Union[_ChatCompletionV1, _ChatCompletionV2, Function, FunctionV2] = (
+            self._real
+        )
         try:
             if model is not None or endpoint is not None:
                 # TODO兼容 v2调用ernie-func-8k
@@ -1793,8 +1794,8 @@ class ChatCompletion(VersionBase):
                     # 不影响ChatCompletion流程，兼容Function调用
                     impl = real_base_type(**new_kwargs)
         except Exception:
-            impl = self
-        return impl._do(
+            impl = self._real
+        return impl.do(
             messages=messages,
             endpoint=endpoint,
             model=model,
@@ -1879,7 +1880,9 @@ class ChatCompletion(VersionBase):
             system, messages = self._adapt_messages_format(messages)
             if "system" not in kwargs and system:
                 kwargs["system"] = system
-        impl: VersionBase = self
+        impl: Union[_ChatCompletionV1, _ChatCompletionV2, Function, FunctionV2] = (
+            self._real
+        )
         try:
             if model is not None or endpoint is not None:
                 # TODO兼容 v2调用ernie-func-8k
@@ -1892,7 +1895,7 @@ class ChatCompletion(VersionBase):
                     # 不影响ChatCompletion流程，兼容Function调用
                     impl = real_base_type(**kwargs)
         except Exception:
-            impl = self
+            impl = self._real
         return await impl._ado(
             messages=messages,
             model=model,

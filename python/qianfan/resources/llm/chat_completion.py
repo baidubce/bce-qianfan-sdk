@@ -1779,29 +1779,21 @@ class ChatCompletion(VersionBase):
             system, messages = self._adapt_messages_format(messages)
             if "system" not in kwargs and system:
                 kwargs["system"] = system
-        if model is not None or endpoint is not None:
-            # TODO兼容 v2调用ernie-func-8k
-            real_base_type = self._real_base(
-                self._version, model=model, endpoint=endpoint, **kwargs
-            )
-            if real_base_type is Function:
-                # 不影响ChatCompletion流程，兼容Function调用
-                tmpImpl = real_base_type(**kwargs)
-                return tmpImpl.do(
-                    messages=messages,
-                    endpoint=endpoint,
-                    model=model,
-                    stream=stream,
-                    retry_count=retry_count,
-                    request_timeout=request_timeout,
-                    request_id=request_id,
-                    backoff_factor=backoff_factor,
-                    auto_concat_truncate=auto_concat_truncate,
-                    truncated_continue_prompt=truncated_continue_prompt,
-                    truncate_overlong_msgs=truncate_overlong_msgs,
-                    **kwargs,
+        impl: VersionBase = self
+        try:
+            if model is not None or endpoint is not None:
+                # TODO兼容 v2调用ernie-func-8k
+                new_kwargs = self._real.config.dict()
+                new_kwargs.update(kwargs)
+                real_base_type = self._real_base(
+                    self._version, model=model, endpoint=endpoint, **new_kwargs
                 )
-        return self._do(
+                if real_base_type is Function:
+                    # 不影响ChatCompletion流程，兼容Function调用
+                    impl = real_base_type(**new_kwargs)
+        except Exception:
+            impl = self
+        return impl._do(
             messages=messages,
             endpoint=endpoint,
             model=model,
@@ -1886,29 +1878,21 @@ class ChatCompletion(VersionBase):
             system, messages = self._adapt_messages_format(messages)
             if "system" not in kwargs and system:
                 kwargs["system"] = system
-        if model is not None or endpoint is not None:
-            # TODO兼容 v2调用ernie-func-8k
-            real_base_type = self._real_base(
-                self._version, model=model, endpoint=endpoint, **kwargs
-            )
-            if real_base_type is Function:
-                # 不影响ChatCompletion流程，兼容Function调用
-                tmpImpl = real_base_type(**kwargs)
-                return await tmpImpl.ado(
-                    messages=messages,
-                    endpoint=endpoint,
-                    model=model,
-                    stream=stream,
-                    retry_count=retry_count,
-                    request_timeout=request_timeout,
-                    request_id=request_id,
-                    backoff_factor=backoff_factor,
-                    auto_concat_truncate=auto_concat_truncate,
-                    truncated_continue_prompt=truncated_continue_prompt,
-                    truncate_overlong_msgs=truncate_overlong_msgs,
-                    **kwargs,
+        impl: VersionBase = self
+        try:
+            if model is not None or endpoint is not None:
+                # TODO兼容 v2调用ernie-func-8k
+                new_kwargs = self._real.config.dict()
+                new_kwargs.update(kwargs)
+                real_base_type = self._real_base(
+                    self._version, model=model, endpoint=endpoint, **new_kwargs
                 )
-        return await self._ado(
+                if real_base_type is Function:
+                    # 不影响ChatCompletion流程，兼容Function调用
+                    impl = real_base_type(**kwargs)
+        except Exception:
+            impl = self
+        return await impl._ado(
             messages=messages,
             model=model,
             endpoint=endpoint,

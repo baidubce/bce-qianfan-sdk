@@ -106,7 +106,8 @@ class AFSClient(BaseClient):
 
         exec_cmd = (
             f"hadoop fs '-Dfs.default.name={host}' '-Dhadoop.job.ugi={ugi}'"
-            f" {shlex.quote('-{}'.format(cmd))} {' '.join(shlex.quote(str(params)))} "
+            f" {shlex.quote('-{}'.format(cmd))} "
+            f"{' '.join([shlex.quote(str(p)) for p in params])} "
         )
         return exec_cmd
 

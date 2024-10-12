@@ -113,7 +113,6 @@ class AFSClient(BaseClient):
 
     def _exec(self, cmd: str, *params: Any) -> str:
         exec_cmd = self._get_exec_cmd(cmd, *params)
-        print(exec_cmd)
         result = subprocess.run(exec_cmd, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
             log_error(

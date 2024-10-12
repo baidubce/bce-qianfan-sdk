@@ -106,12 +106,14 @@ class AFSClient(BaseClient):
 
         exec_cmd = (
             f"hadoop fs '-Dfs.default.name={host}' '-Dhadoop.job.ugi={ugi}'"
-            f" {shlex.quote('-{}'.format(cmd))} {' '.join(shlex.quote(str(params)))} "
+            f" {shlex.quote('-{}'.format(cmd))} "
+            f"{' '.join([shlex.quote(str(p)) for p in params])} "
         )
         return exec_cmd
 
     def _exec(self, cmd: str, *params: Any) -> str:
         exec_cmd = self._get_exec_cmd(cmd, *params)
+        print(exec_cmd)
         result = subprocess.run(exec_cmd, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
             log_error(

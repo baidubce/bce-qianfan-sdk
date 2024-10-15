@@ -560,9 +560,7 @@ class OpenAIApdater(object):
                         "created": res["created"],
                         "model": openai_request["model"],
                         "system_fingerprint": "fp_?",
-                        "object": (
-                            "text_completion"
-                        ), 
+                        "object": "text_completion",
                     }
                     if base is None
                     else base

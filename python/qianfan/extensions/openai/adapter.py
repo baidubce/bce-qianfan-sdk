@@ -562,7 +562,7 @@ class OpenAIApdater(object):
                         "system_fingerprint": "fp_?",
                         "object": (
                             "text_completion"
-                        ),  # 或者 "chat.completion.chunk"，视情况而定
+                        ), 
                     }
                     if base is None
                     else base

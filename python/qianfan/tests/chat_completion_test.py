@@ -220,9 +220,9 @@ def test_generate_multiturn_stream():
                 assert ut_res["stream"] is True
             turn += 1
             messages.append({"role": "assistant", "content": next_msg})
-            messages.append(
-                {"role": "user", "content": TEST_MULTITURN_MESSAGES[turn + 1]}
-            )
+            messages.append({
+                "role": "user", "content": TEST_MULTITURN_MESSAGES[turn + 1]
+            })
 
 
 def test_request_id():
@@ -309,9 +309,9 @@ async def test_generate_multiturn_stream_async():
                 assert "/chat/" + ut_res["model"] == sqfg.get_model_info(model).endpoint
                 assert ut_res["type"] == "chat"
                 assert ut_res["stream"] is True
-            messages.append(
-                {"role": "user", "content": TEST_MULTITURN_MESSAGES[turn + 1]}
-            )
+            messages.append({
+                "role": "user", "content": TEST_MULTITURN_MESSAGES[turn + 1]
+            })
 
 
 def test_qfmessage():
@@ -647,9 +647,9 @@ def test_truncated_message():
     req_messages = req["messages"]
     assert len(req_messages) == 1
 
-    messages.extend(
-        [{"role": "assistant", "content": "hi1"}, {"role": "user", "content": "hi2"}]
-    )
+    messages.extend([
+        {"role": "assistant", "content": "hi1"}, {"role": "user", "content": "hi2"}
+    ])
     resp = qianfan.ChatCompletion().do(messages=messages, truncate_overlong_msgs=True)
     req_messages = resp["_request"]["messages"]
     assert len(req_messages) == 1

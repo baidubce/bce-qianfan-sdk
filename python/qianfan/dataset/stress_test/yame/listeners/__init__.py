@@ -1,6 +1,7 @@
 """
 yame plugins
 """
+
 from typing import Any
 
 from locust import events

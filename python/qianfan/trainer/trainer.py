@@ -135,22 +135,18 @@ class Trainer(ABC):
 
     @property
     @abstractmethod
-    def output(self) -> Any:
-        ...
+    def output(self) -> Any: ...
 
     @staticmethod
     @abstractmethod
-    def list() -> List["Trainer"]:
-        ...
+    def list() -> List["Trainer"]: ...
 
     @staticmethod
     @abstractmethod
-    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer":
-        ...
+    def load(id: Optional[str] = None, file: Optional[str] = None) -> "Trainer": ...
 
     @abstractmethod
-    def save(self, file: Optional[str] = None) -> None:
-        ...
+    def save(self, file: Optional[str] = None) -> None: ...
 
     def info(self) -> Dict:
         """
@@ -162,5 +158,4 @@ class Trainer(ABC):
 
     @property
     @abstractmethod
-    def id(self) -> str:
-        ...
+    def id(self) -> str: ...

@@ -1537,8 +1537,7 @@ class _ChatCompletionV1(BaseResourceV1):
         if model is not None:
             try:
                 model_info = self.get_model_info(model)
-            except errors.InvalidArgumentError:
-                ...
+            except errors.InvalidArgumentError: ...
         endpoint = self._extract_endpoint(**kwargs)
         if model_info is None:
             # 使用默认模型
@@ -1546,8 +1545,7 @@ class _ChatCompletionV1(BaseResourceV1):
                 default_model_info = self.get_model_info(self._default_model())
                 if default_model_info.endpoint == endpoint:
                     model_info = default_model_info
-            except errors.InvalidArgumentError:
-                ...
+            except errors.InvalidArgumentError: ...
 
         # 非默认模型
         if model_info is None:

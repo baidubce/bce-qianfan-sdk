@@ -164,8 +164,7 @@ def test_multi_thread_case_limiter():
     t_list = []
 
     def _inner_thread_working_function():
-        with rpm_rl.acquire():
-            ...
+        with rpm_rl.acquire(): ...
 
     for i in range(5):
         t = threading.Thread(target=_inner_thread_working_function)
@@ -186,8 +185,7 @@ async def test_async_case_limiter():
     awaitable_list = []
 
     async def _inner_coroutine_working_function():
-        async with rpm_rl.acquire():
-            ...
+        async with rpm_rl.acquire(): ...
 
     for i in range(5):
         t = _inner_coroutine_working_function()

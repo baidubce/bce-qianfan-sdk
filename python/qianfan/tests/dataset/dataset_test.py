@@ -131,15 +131,15 @@ def test_dataset_online_process():
         "test", DataTemplateType.GenericText
     )
     dataset = Dataset.load(source=qianfan_data_source)
-    assert dataset.online_data_process(
-        [FilterCheckNumberWords(number_words_min_cutoff=10)]
-    )["is_succeeded"]
+    assert dataset.online_data_process([
+        FilterCheckNumberWords(number_words_min_cutoff=10)
+    ])["is_succeeded"]
 
 
 def test_manipulator_group_add_and_delete():
-    dataset = Dataset.create_from_pyobj(
-        [{"test_column": "456"}, {"test_column": "123"}]
-    )
+    dataset = Dataset.create_from_pyobj([
+        {"test_column": "456"}, {"test_column": "123"}
+    ])
     dataset.add_default_group_column()
 
     assert QianfanDataGroupColumnName in dataset.col_names()

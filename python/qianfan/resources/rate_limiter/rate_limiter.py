@@ -94,8 +94,7 @@ class VersatileRateLimiter(BaseRateLimiter):
         if not self._impl:
             return
 
-        with self._impl:
-            ...
+        with self._impl: ...
 
     def __exit__(
         self,
@@ -109,8 +108,7 @@ class VersatileRateLimiter(BaseRateLimiter):
         if not self._impl:
             return
 
-        async with self._impl:
-            ...
+        async with self._impl: ...
 
     async def __aexit__(
         self,
@@ -369,11 +367,9 @@ class _LimiterWrapper(BaseRateLimiter):
 
         if self._is_rpm:
             with self._internal_rpm_rate_limiter:
-                with self._internal_qp10s_rate_limiter:
-                    ...
+                with self._internal_qp10s_rate_limiter: ...
         else:
-            with self._internal_qps_rate_limiter:
-                ...
+            with self._internal_qps_rate_limiter: ...
 
     def __exit__(
         self,
@@ -389,11 +385,9 @@ class _LimiterWrapper(BaseRateLimiter):
 
         if self._is_rpm:
             async with self._internal_rpm_rate_limiter:
-                async with self._internal_qp10s_rate_limiter:
-                    ...
+                async with self._internal_qp10s_rate_limiter: ...
         else:
-            async with self._internal_qps_rate_limiter:
-                ...
+            async with self._internal_qps_rate_limiter: ...
 
     async def __aexit__(
         self,

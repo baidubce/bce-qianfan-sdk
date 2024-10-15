@@ -2,7 +2,6 @@
 QianfanLocustRunner
 """
 
-
 import logging
 import os
 import time
@@ -161,16 +160,14 @@ class QianfanLocustRunner(LocustRunner):
             model_info = model_details(endpoint)
             if model_info:
                 # 更新 model_info 字典
-                self.model_info.update(
-                    {
-                        "modelname": model_info["name"],
-                        "modelVersionId": model_info["modelId"],
-                        "serviceId": model_info["serviceId"],
-                        "serviceUrl": model_info["url"],
-                        "computer": model_info["resourceConfig"]["type"],
-                        "replicasCount": model_info["resourceConfig"]["replicasCount"],
-                    }
-                )
+                self.model_info.update({
+                    "modelname": model_info["name"],
+                    "modelVersionId": model_info["modelId"],
+                    "serviceId": model_info["serviceId"],
+                    "serviceUrl": model_info["url"],
+                    "computer": model_info["resourceConfig"]["type"],
+                    "replicasCount": model_info["resourceConfig"]["replicasCount"],
+                })
 
     def run(self, user_num: Optional[int] = None) -> Dict[str, Any]:
         """

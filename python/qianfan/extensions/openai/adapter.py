@@ -124,6 +124,7 @@ class OpenAIApdater(object):
         Convert general arguments in OpenAI request to Qianfan request.
         """
         qianfan_request = copy.deepcopy(openai_request)
+
         def add_if_exist(openai_key: str, qianfan_key: Optional[str] = None) -> None:
             qianfan_key = openai_key if qianfan_key is None else qianfan_key
             if openai_key in openai_request:
@@ -249,14 +250,10 @@ class OpenAIApdater(object):
         while i < len(input):
             self.qianfan_req_post_process(qianfan_request)
             request_list.append(
-                self.qianfan_req_post_process(
-                    {
-                        "texts": input[
-                            i : min(i + self.EmbeddingBatchSize, len(input))
-                        ],
-                        **qianfan_request,
-                    }
-                )
+                self.qianfan_req_post_process({
+                    "texts": input[i : min(i + self.EmbeddingBatchSize, len(input))],
+                    **qianfan_request,
+                })
             )
             i += self.EmbeddingBatchSize
 
@@ -412,9 +409,9 @@ class OpenAIApdater(object):
         if stream:
             return self._chat_stream(n, request, qianfan_request)
 
-        res = await asyncio.gather(
-            *[self._chat_client.ado(**qianfan_request) for _ in range(n)]
-        )
+        res = await asyncio.gather(*[
+            self._chat_client.ado(**qianfan_request) for _ in range(n)
+        ])
         result = self.qianfan_chat_response_to_openai(request, res)
         return result
 
@@ -430,9 +427,9 @@ class OpenAIApdater(object):
         if stream:
             return self._completion_stream(n, request, qianfan_request)
 
-        res = await asyncio.gather(
-            *[self._comp_client.ado(**qianfan_request) for _ in range(n)]
-        )
+        res = await asyncio.gather(*[
+            self._comp_client.ado(**qianfan_request) for _ in range(n)
+        ])
         result = self.qianfan_completion_response_to_openai(request, res)
         return result
 
@@ -443,12 +440,10 @@ class OpenAIApdater(object):
         Embedding Wrapper API
         """
         qianfan_request_list = self.convert_openai_embedding_request(request)
-        res = await asyncio.gather(
-            *[
-                self._embed_client.ado(**qianfan_request)
-                for qianfan_request in (qianfan_request_list)
-            ]
-        )
+        res = await asyncio.gather(*[
+            self._embed_client.ado(**qianfan_request)
+            for qianfan_request in (qianfan_request_list)
+        ])
 
         result = self.qianfan_embedding_response_to_openai(request, res)
         return result
@@ -559,19 +554,27 @@ class OpenAIApdater(object):
         base = None
         async for i, res in results:
             if base is None:
-                base = {
-                    "id": res["id"],
-                    "created": res["created"],
-                    "model": openai_request["model"],
-                    "system_fingerprint": "fp_?",
-                    "object": "text_completion",  # 或者 "chat.completion.chunk"，视情况而定
-                } if base is None else base
+                base = (
+                    {
+                        "id": res["id"],
+                        "created": res["created"],
+                        "model": openai_request["model"],
+                        "system_fingerprint": "fp_?",
+                        "object": (
+                            "text_completion"
+                        ),  # 或者 "chat.completion.chunk"，视情况而定
+                    }
+                    if base is None
+                    else base
+                )
                 for j in range(n):
                     yield {
                         "choices": [
                             {
                                 "index": j,
-                                "delta": {"text": ""},  # 如果是消息流，则为 {"role": "assistant", "content": ""}
+                                "delta": {
+                                    "text": ""
+                                },  # 如果是消息流，则为 {"role": "assistant", "content": ""}
                                 "logprobs": None,
                                 "finish_reason": None,
                             }

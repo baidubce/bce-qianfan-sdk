@@ -29,9 +29,9 @@ from qianfan.dataset.table import Table
 
 def test_append_row():
     table = Table(
-        inner_table=pyarrow.Table.from_pylist(
-            [{"name": "duck", "age": 3}, {"name": "monkey", "age": 24}]
-        )
+        inner_table=pyarrow.Table.from_pylist([
+            {"name": "duck", "age": 3}, {"name": "monkey", "age": 24}
+        ])
     )
 
     with pytest.raises(ValueError):
@@ -49,9 +49,9 @@ def test_append_row():
 
 def test_insert_row():
     table = Table(
-        inner_table=pyarrow.Table.from_pylist(
-            [{"name": "duck", "age": 3}, {"name": "monkey", "age": 24}]
-        )
+        inner_table=pyarrow.Table.from_pylist([
+            {"name": "duck", "age": 3}, {"name": "monkey", "age": 24}
+        ])
     )
 
     with pytest.raises(ValueError):
@@ -199,9 +199,9 @@ def test_insert_column():
 
 def test_list_column():
     table = Table(
-        inner_table=pyarrow.Table.from_pydict(
-            {"x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"]}
-        )
+        inner_table=pyarrow.Table.from_pydict({
+            "x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"]
+        })
     )
 
     assert table.col_list() == {"x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"]}
@@ -221,9 +221,9 @@ def test_list_column():
 
 def test_map_column():
     table = Table(
-        inner_table=pyarrow.Table.from_pydict(
-            {"x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]}
-        )
+        inner_table=pyarrow.Table.from_pydict({
+            "x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]
+        })
     )
 
     def op(column: Any) -> Any:
@@ -243,9 +243,9 @@ def test_map_column():
 
 def test_filter_column():
     table = Table(
-        inner_table=pyarrow.Table.from_pydict(
-            {"x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]}
-        )
+        inner_table=pyarrow.Table.from_pydict({
+            "x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]
+        })
     )
 
     def op(column: Any) -> bool:
@@ -257,9 +257,9 @@ def test_filter_column():
 
 def test_delete_column():
     table = Table(
-        inner_table=pyarrow.Table.from_pydict(
-            {"x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]}
-        )
+        inner_table=pyarrow.Table.from_pydict({
+            "x": [1, 2, 3, 4], "y": ["a", "b", "c", "c"], "z": ["1", "2", "3", "4"]
+        })
     )
 
     assert table.col_delete("y").to_pydict() == {

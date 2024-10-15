@@ -79,13 +79,11 @@ def _convert_the_value_in_evaluation_into_str(json_line_path: str) -> str:
                     # 判断是否包含 judge_reason，如果包含则退出
                     if "evaluation" not in single_entry or (
                         not is_judge_reason_existed_checked
-                        and not any(
-                            [
-                                v == "judge_reason"
-                                for item in single_entry["evaluation"]
-                                for _, v in item.items()
-                            ]
-                        )
+                        and not any([
+                            v == "judge_reason"
+                            for item in single_entry["evaluation"]
+                            for _, v in item.items()
+                        ])
                     ):
                         return json_line_path
 
@@ -189,9 +187,9 @@ class EvaluationManager(BaseModel):
         reference_column_name = dataset.reference_column
         output_column_name = dataset.eval_llm_output_column
 
-        ds_dict = dataset.col_list(
-            [input_column_name, reference_column_name, output_column_name]
-        )
+        ds_dict = dataset.col_list([
+            input_column_name, reference_column_name, output_column_name
+        ])
 
         sector_length = math.ceil(len(dataset) / multiprocessing.cpu_count())
         pool = ThreadPoolExecutor()
@@ -428,9 +426,9 @@ class EvaluationManager(BaseModel):
         dataset = copy(dataset)
         if not dataset.reference_column:
             dataset.reference_column = OldReferenceColumnName
-            dataset.col_append(
-                {OldReferenceColumnName: [None for _ in range(len(dataset))]}
-            )
+            dataset.col_append({
+                OldReferenceColumnName: [None for _ in range(len(dataset))]
+            })
 
         tmp_ds = Dataset.create_from_pyobj(
             self._run_evaluator_locally(dataset, **kwargs)
@@ -490,9 +488,9 @@ class EvaluationManager(BaseModel):
             if not dataset.reference_column:
                 dataset = copy(dataset)
                 dataset.reference_column = OldReferenceColumnName
-                dataset.col_append(
-                    {OldReferenceColumnName: [None for _ in range(len(dataset))]}
-                )
+                dataset.col_append({
+                    OldReferenceColumnName: [None for _ in range(len(dataset))]
+                })
 
             # 首先获取批量评估的结果
             log_info("start to inference in batch during evaluation")
@@ -553,14 +551,12 @@ class EvaluationManager(BaseModel):
 
             for index, response_list in llm_response_list.items():
                 index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
-                ds = dataset.create_from_pyobj(
-                    {
-                        LLMTagColumnName: index_tag_column,
-                        input_column_name: llm_input_list,
-                        OldReferenceColumnName: expected_output_list,
-                        LLMOutputColumnName: response_list,
-                    }
-                )
+                ds = dataset.create_from_pyobj({
+                    LLMTagColumnName: index_tag_column,
+                    input_column_name: llm_input_list,
+                    OldReferenceColumnName: expected_output_list,
+                    LLMOutputColumnName: response_list,
+                })
 
                 metrics_ds = dataset.create_from_pyobj(
                     llm_evaluation_result_dict[index]
@@ -691,12 +687,10 @@ class EvaluationManager(BaseModel):
                 if os.path.exists(local_cache_file_path):
                     try:
                         os.remove(local_cache_file_path)
-                    except Exception:
-                        ...
+                    except Exception: ...
                 if os.path.exists(unfold_zip_file_path):
                     try:
                         shutil.rmtree(unfold_zip_file_path)
-                    except Exception:
-                        ...
+                    except Exception: ...
 
         return None

@@ -421,9 +421,9 @@ class Dataset(Table):
                 data = huggingface_dataset.data
                 if isinstance(data, dict):
                     log_info("construct from huggingface DatasetDict")
-                    pyarrow_table = pyarrow.concat_tables(
-                        [ds.table for ds in data.values()]
-                    )
+                    pyarrow_table = pyarrow.concat_tables([
+                        ds.table for ds in data.values()
+                    ])
                     return cls.create_from_pyarrow_table(pyarrow_table.combine_chunks())
                 elif hasattr(data, "table"):
                     log_info("construct from huggingface Dataset")
@@ -630,9 +630,9 @@ class Dataset(Table):
                 )
             elif isinstance(data[0], str):
                 return cls(
-                    inner_table=pyarrow.Table.from_pydict(
-                        {QianfanDatasetPackColumnName: data}
-                    ),
+                    inner_table=pyarrow.Table.from_pydict({
+                        QianfanDatasetPackColumnName: data
+                    }),
                     inner_schema_cache=schema,
                     **kwargs,
                 )
@@ -829,9 +829,9 @@ class Dataset(Table):
             # 如果已经存在，则不做任何处理
             return self
 
-        return self.col_append(
-            {QianfanDataGroupColumnName: list(range(self.row_number()))}
-        )
+        return self.col_append({
+            QianfanDataGroupColumnName: list(range(self.row_number()))
+        })
 
     @_online_except_decorator
     def delete_group_column(self) -> Self:
@@ -1712,9 +1712,9 @@ class Dataset(Table):
             reference_column = OldReferenceColumnName
 
         if does_show_latency:
-            if any(
-                [value != -1 and value != -1.0 for value in first_token_latency_list]
-            ):
+            if any([
+                value != -1 and value != -1.0 for value in first_token_latency_list
+            ]):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 
@@ -1752,9 +1752,9 @@ class Dataset(Table):
         }
 
         if does_show_latency:
-            if any(
-                [value != -1 and value != -1.0 for value in first_token_latency_list]
-            ):
+            if any([
+                value != -1 and value != -1.0 for value in first_token_latency_list
+            ]):
                 table_dict[FirstTokenLatencyColumnName] = first_token_latency_list
             table_dict[RequestLatencyColumnName] = request_latency_list
 
@@ -1980,12 +1980,9 @@ class Dataset(Table):
                 )
             else:
                 input_str_list.append(
-                    "\n".join(
-                        [
-                            input_dict[column_name][i]
-                            for column_name in self.input_columns
-                        ]
-                    )
+                    "\n".join([
+                        input_dict[column_name][i] for column_name in self.input_columns
+                    ])
                 )
 
         return input_str_list
@@ -2027,18 +2024,16 @@ class Dataset(Table):
         for chat in dataset.list():
             input_messages: List[Dict[str, Any]] = []
             for i in range(len(chat)):
-                input_messages.append(
-                    {"role": QfRole.User.value, "content": chat[i][input_column]}
-                )
+                input_messages.append({
+                    "role": QfRole.User.value, "content": chat[i][input_column]
+                })
                 reference = _extract_string(chat[i][reference_column])
 
                 if i != len(chat) - 1:
-                    input_messages.append(
-                        {
-                            "role": QfRole.Assistant.value,
-                            "content": reference,
-                        }
-                    )
+                    input_messages.append({
+                        "role": QfRole.Assistant.value,
+                        "content": reference,
+                    })
                 else:
                     reference_list.append(reference)
 

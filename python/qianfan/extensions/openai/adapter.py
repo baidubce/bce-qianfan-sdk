@@ -124,8 +124,6 @@ class OpenAIApdater(object):
         Convert general arguments in OpenAI request to Qianfan request.
         """
         qianfan_request = copy.deepcopy(openai_request)
-        print("\n\nrequest:", qianfan_request, "\n\n")
-
         def add_if_exist(openai_key: str, qianfan_key: Optional[str] = None) -> None:
             qianfan_key = openai_key if qianfan_key is None else qianfan_key
             if openai_key in openai_request:
@@ -197,7 +195,6 @@ class OpenAIApdater(object):
         Convert chat request in OpenAI to Qianfan request.
         """
         qianfan_request = self.openai_base_request_to_qianfan(openai_request)
-        print("\n\nchat:", qianfan_request, "\n\n")
         messages = openai_request["messages"]
         if messages[0]["role"] == "system":
             if not self._ignore_system:
@@ -227,7 +224,6 @@ class OpenAIApdater(object):
         Convert completion request in OpenAI to Qianfan request.
         """
         qianfan_request = self.openai_base_request_to_qianfan(openai_request)
-        print("\n\ncompletion:", qianfan_request, "\n\n")
         prompt = openai_request["prompt"]
         if isinstance(prompt, list):
             prompt = "".join(prompt)
@@ -568,14 +564,14 @@ class OpenAIApdater(object):
                     "created": res["created"],
                     "model": openai_request["model"],
                     "system_fingerprint": "fp_?",
-                    "object": "text_completion",
-                }
+                    "object": "text_completion",  # 或者 "chat.completion.chunk"，视情况而定
+                } if base is None else base
                 for j in range(n):
                     yield {
                         "choices": [
                             {
                                 "index": j,
-                                "delta": {"text": ""},
+                                "delta": {"text": ""},  # 如果是消息流，则为 {"role": "assistant", "content": ""}
                                 "logprobs": None,
                                 "finish_reason": None,
                             }

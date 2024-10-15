@@ -250,10 +250,14 @@ class OpenAIApdater(object):
         while i < len(input):
             self.qianfan_req_post_process(qianfan_request)
             request_list.append(
-                self.qianfan_req_post_process({
-                    "texts": input[i : min(i + self.EmbeddingBatchSize, len(input))],
-                    **qianfan_request,
-                })
+                self.qianfan_req_post_process(
+                    {
+                        "texts": input[
+                            i : min(i + self.EmbeddingBatchSize, len(input))
+                        ],
+                        **qianfan_request,
+                    }
+                )
             )
             i += self.EmbeddingBatchSize
 
@@ -409,9 +413,9 @@ class OpenAIApdater(object):
         if stream:
             return self._chat_stream(n, request, qianfan_request)
 
-        res = await asyncio.gather(*[
-            self._chat_client.ado(**qianfan_request) for _ in range(n)
-        ])
+        res = await asyncio.gather(
+            *[self._chat_client.ado(**qianfan_request) for _ in range(n)]
+        )
         result = self.qianfan_chat_response_to_openai(request, res)
         return result
 
@@ -427,9 +431,9 @@ class OpenAIApdater(object):
         if stream:
             return self._completion_stream(n, request, qianfan_request)
 
-        res = await asyncio.gather(*[
-            self._comp_client.ado(**qianfan_request) for _ in range(n)
-        ])
+        res = await asyncio.gather(
+            *[self._comp_client.ado(**qianfan_request) for _ in range(n)]
+        )
         result = self.qianfan_completion_response_to_openai(request, res)
         return result
 
@@ -440,10 +444,12 @@ class OpenAIApdater(object):
         Embedding Wrapper API
         """
         qianfan_request_list = self.convert_openai_embedding_request(request)
-        res = await asyncio.gather(*[
-            self._embed_client.ado(**qianfan_request)
-            for qianfan_request in (qianfan_request_list)
-        ])
+        res = await asyncio.gather(
+            *[
+                self._embed_client.ado(**qianfan_request)
+                for qianfan_request in (qianfan_request_list)
+            ]
+        )
 
         result = self.qianfan_embedding_response_to_openai(request, res)
         return result
@@ -525,6 +531,7 @@ class OpenAIApdater(object):
             }
 
         # 在流式响应结束后，添加usage信息
+        base = base or {}
         if total_prompt_tokens > 0 or total_completion_tokens > 0:
             yield {
                 "choices": [],
@@ -570,9 +577,7 @@ class OpenAIApdater(object):
                         "choices": [
                             {
                                 "index": j,
-                                "delta": {
-                                    "text": ""
-                                },  # 如果是消息流，则为 {"role": "assistant", "content": ""}
+                                "delta": {"text": ""},
                                 "logprobs": None,
                                 "finish_reason": None,
                             }

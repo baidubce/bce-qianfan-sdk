@@ -27,15 +27,18 @@ _T = TypeVar("_T", bound=Type["Persistent"])
 class Persister(ABC):
     @classmethod
     @abstractmethod
-    def save(cls, p: Persistent) -> None: ...
+    def save(cls, p: Persistent) -> None:
+        ...
 
     @classmethod
     @abstractmethod
-    def list(self, t: _T) -> List[Persistent]: ...
+    def list(self, t: _T) -> List[Persistent]:
+        ...
 
     @classmethod
     @abstractmethod
-    def load(self, id: str, t: _T) -> Persistent: ...
+    def load(self, id: str, t: _T) -> Persistent:
+        ...
 
 
 class FilePersister(Persister):

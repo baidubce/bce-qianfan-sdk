@@ -125,9 +125,9 @@ def get_special_characters_ratio(
         if len(document) == 0:
             special_characters_ratio = 0.0
         else:
-            special_characters_ratio = len([
-                char for char in document if char in special_character_set
-            ]) / len(document)
+            special_characters_ratio = len(
+                [char for char in document if char in special_character_set]
+            ) / len(document)
 
         return {"special_characters_ratio": special_characters_ratio}
 
@@ -174,9 +174,9 @@ def get_flagged_word_ratio(
                     "",
                 )
 
-            flagged_words_ratio = len([
-                word for word in words + augmentation if word in flagged_set
-            ]) / len(words)
+            flagged_words_ratio = len(
+                [word for word in words + augmentation if word in flagged_set]
+            ) / len(words)
 
         if flagged_words_ratio > 1.0:
             flagged_words_ratio = 1.0

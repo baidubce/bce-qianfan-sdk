@@ -917,7 +917,8 @@ class BaseResourceV1(BaseResource):
                             f"This key `{key}` does not seem to be a parameter that the"
                             f" model `{model}` will accept"
                         )
-            except errors.InvalidArgumentError: ...
+            except errors.InvalidArgumentError:
+                ...
 
         if model_info is None:
             # 使用默认模型
@@ -925,7 +926,8 @@ class BaseResourceV1(BaseResource):
                 default_model_info = self.get_model_info(self._default_model())
                 if default_model_info.endpoint == endpoint:
                     model_info = default_model_info
-            except errors.InvalidArgumentError: ...
+            except errors.InvalidArgumentError:
+                ...
 
         # 非默认模型
         if model_info is None:

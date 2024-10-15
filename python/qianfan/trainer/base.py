@@ -113,8 +113,10 @@ class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
                 self.__class__,
                 self.id,
                 ActionState.Error,
-                f"action_error: action_type[{self.__class__.__name__}]"
-                f" action_id[{self.id}], msg:{str(e)}",
+                (
+                    f"action_error: action_type[{self.__class__.__name__}]"
+                    f" action_id[{self.id}], msg:{str(e)}"
+                ),
                 {"error": str(e)},
             ),
         )
@@ -134,8 +136,10 @@ class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
                 self.__class__,
                 self.id,
                 state,
-                f"action_event: action_type[{self.__class__.__name__}]"
-                f" action_id[{self.id}], msg:{msg}",
+                (
+                    f"action_event: action_type[{self.__class__.__name__}]"
+                    f" action_id[{self.id}], msg:{msg}"
+                ),
                 data,
             ),
         )
@@ -161,11 +165,13 @@ class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
         return {}
 
     @abstractmethod
-    def _action_dict(self) -> Dict: ...
+    def _action_dict(self) -> Dict:
+        ...
 
     @classmethod
     @abstractmethod
-    def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction": ...
+    def _load_from_dict(cls, meta: Dict[str, Any]) -> "BaseAction":
+        ...
 
 
 def with_event(func: Callable[..., Any]) -> Callable[..., Any]:

@@ -114,9 +114,9 @@ class LocalCheckStopwordsFilter(BaseLocalFilterOperator):
                     self.words_augmentation_join_char,
                 )
 
-            stopwords_ratio = len([
-                word for word in words + augmentation if word in self.stopwords_set
-            ]) / len(words)
+            stopwords_ratio = len(
+                [word for word in words + augmentation if word in self.stopwords_set]
+            ) / len(words)
 
         if stopwords_ratio > 1.0:
             stopwords_ratio = 1.0

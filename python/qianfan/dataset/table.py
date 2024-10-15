@@ -501,9 +501,9 @@ class _PyarrowRowManipulator(BaseModel, Addable, Listable, Processable):
             return self.table.slice(1)
         elif index == table_length - 1:
             return self.table.slice(0, table_length - 1)
-        return pyarrow.concat_tables([
-            self.table.slice(0, index), self.table.slice(index + 1)
-        ])
+        return pyarrow.concat_tables(
+            [self.table.slice(0, index), self.table.slice(index + 1)]
+        )
 
     def take_slice(self, start: int = 0, end: int = -1) -> PyarrowTable:
         if start < 0:

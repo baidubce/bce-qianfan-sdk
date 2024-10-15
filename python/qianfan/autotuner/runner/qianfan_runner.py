@@ -117,19 +117,23 @@ class QianfanRunner(InferRunner):
                 r = results_list[j][i]
 
                 if isinstance(r, Exception):
-                    results.append({
-                        "output": None,
-                        "stat": {"exception": repr(r)},
-                    })
+                    results.append(
+                        {
+                            "output": None,
+                            "stat": {"exception": repr(r)},
+                        }
+                    )
                     continue
                 assert isinstance(r, QfResponse)
-                results.append({
-                    "output": r["result"],
-                    "stat": {
-                        **r["usage"],
-                        **r.statistic,
-                    },
-                })
+                results.append(
+                    {
+                        "output": r["result"],
+                        "stat": {
+                            **r["usage"],
+                            **r.statistic,
+                        },
+                    }
+                )
             ret.append({"input": input, "expect": reference, "results": results})
         return ret
 
@@ -173,9 +177,9 @@ class QianfanRunner(InferRunner):
 
         await asyncio.gather(*[_eval(res) for res in result_list])
 
-        metrics_ds = Dataset.create_from_pyobj([
-            res["metrics"] for result in result_list for res in result["results"]
-        ])
+        metrics_ds = Dataset.create_from_pyobj(
+            [res["metrics"] for result in result_list for res in result["results"]]
+        )
         total_metrics = self.evaluator.summarize(metrics_ds)
         if total_metrics is None:
             return {}

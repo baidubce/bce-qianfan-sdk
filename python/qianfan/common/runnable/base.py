@@ -39,7 +39,8 @@ class Executable(Generic[Input, Output], ABC):
     """
 
     @abstractmethod
-    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output: ...
+    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
+        ...
 
 
 class Serializable(ABC):
@@ -78,10 +79,12 @@ class SerializeHelper(ABC):
     """
 
     @abstractmethod
-    def serialize(self, obj: Any) -> bytes: ...
+    def serialize(self, obj: Any) -> bytes:
+        ...
 
     @abstractmethod
-    def deserialize(self, data: bytes) -> Any: ...
+    def deserialize(self, data: bytes) -> Any:
+        ...
 
 
 class PickleSerializeHelper(SerializeHelper):

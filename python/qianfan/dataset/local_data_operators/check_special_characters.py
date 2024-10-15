@@ -67,7 +67,7 @@ class LocalCheckSpecialCharactersFilter(BaseLocalFilterOperator):
         if len(document) == 0:
             special_characters_ratio = 0.0
         else:
-            special_characters_ratio = len([
-                char for char in document if char in self.special_characters
-            ]) / len(document)
+            special_characters_ratio = len(
+                [char for char in document if char in self.special_characters]
+            ) / len(document)
         return special_characters_ratio <= self.special_characters_max_cutoff

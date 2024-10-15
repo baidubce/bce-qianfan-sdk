@@ -78,7 +78,8 @@ def _convert_action_into_message(
         )
         try:
             dicts = json.loads(tool_result)
-        except Exception: ...
+        except Exception:
+            ...
         if not isinstance(tool_result, dict):
             dicts = {"result": tool_result}
 

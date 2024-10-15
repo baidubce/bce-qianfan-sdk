@@ -54,12 +54,18 @@ def clean_cache():
 
 def test_automatic_detect_file_format():
     try:
-        with open("1.json", "w"): ...
-        with open("1.2.jsonl", "w"): ...
-        with open("1.csv", "w"): ...
-        with open("1.txt", "w"): ...
-        with open(".1.json", "w"): ...
-        with open("123", "w"): ...
+        with open("1.json", "w"):
+            ...
+        with open("1.2.jsonl", "w"):
+            ...
+        with open("1.csv", "w"):
+            ...
+        with open("1.txt", "w"):
+            ...
+        with open(".1.json", "w"):
+            ...
+        with open("123", "w"):
+            ...
         with pytest.raises(FileNotFoundError):
             FileDataSource(path="unexised_file").fetch()
         with pytest.raises(ValueError, match="cannot match proper format type for ddl"):
@@ -112,9 +118,9 @@ def test_save_to_folder():
 
     try:
         os.makedirs(folder_path)
-        table = Dataset.create_from_pyobj({
-            QianfanDatasetPackColumnName: ["this is a data"]
-        })
+        table = Dataset.create_from_pyobj(
+            {QianfanDatasetPackColumnName: ["this is a data"]}
+        )
 
         f = FileDataSource(
             path=folder_path, file_format=FormatType.Text, save_as_folder=True
@@ -139,9 +145,9 @@ def test_save_as_folder():
     folder_path = "test_folder"
 
     try:
-        table = Dataset.create_from_pyobj({
-            QianfanDatasetPackColumnName: ["file1", "file2"]
-        })
+        table = Dataset.create_from_pyobj(
+            {QianfanDatasetPackColumnName: ["file1", "file2"]}
+        )
         f = FileDataSource(path=folder_path, save_as_folder=True)
         f.save(table)
         for root, dirs, files in os.walk(folder_path):
@@ -280,7 +286,8 @@ def test_save_to_file_data_source_json():
 
     try:
         os.remove(test_json_file)
-    except Exception: ...
+    except Exception:
+        ...
 
 
 def test_save_to_file_data_source_jsonl():
@@ -340,7 +347,8 @@ def test_save_to_file_data_source_jsonl():
 
     try:
         os.remove(test_jsonl_file)
-    except Exception: ...
+    except Exception:
+        ...
 
 
 def test_save_to_file_data_source_csv():
@@ -356,4 +364,5 @@ def test_save_to_file_data_source_csv():
 
     try:
         os.remove(test_csv_file)
-    except Exception: ...
+    except Exception:
+        ...

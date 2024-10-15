@@ -533,14 +533,16 @@ class Auth(object):
         sha256 = hashlib.sha256()
 
         sha256.update(
-            json.dumps([
-                self._access_token,
-                self._ak,
-                self._sk,
-                self._access_key,
-                self._secret_key,
-                self._bearer_token,
-            ]).encode("utf-8")
+            json.dumps(
+                [
+                    self._access_token,
+                    self._ak,
+                    self._sk,
+                    self._access_key,
+                    self._secret_key,
+                    self._bearer_token,
+                ]
+            ).encode("utf-8")
         )
         return sha256.hexdigest()
 

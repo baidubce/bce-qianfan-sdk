@@ -124,6 +124,7 @@ class OpenAIApdater(object):
         Convert general arguments in OpenAI request to Qianfan request.
         """
         qianfan_request = copy.deepcopy(openai_request)
+        print("\n\nrequest:", qianfan_request, "\n\n")
 
         def add_if_exist(openai_key: str, qianfan_key: Optional[str] = None) -> None:
             qianfan_key = openai_key if qianfan_key is None else qianfan_key
@@ -181,6 +182,12 @@ class OpenAIApdater(object):
             if not isinstance(response_format, str):
                 response_format = response_format["type"]
             qianfan_request["response_format"] = response_format
+        if "stream_options" in openai_request:
+            stream_options = openai_request["stream_options"]
+            qianfan_request["stream"] = True
+            if not isinstance(stream_options, str):
+                stream_options = stream_options["include_usage"]
+            qianfan_request["stream_options"] = stream_options
         return qianfan_request
 
     def openai_chat_request_to_qianfan(
@@ -190,6 +197,7 @@ class OpenAIApdater(object):
         Convert chat request in OpenAI to Qianfan request.
         """
         qianfan_request = self.openai_base_request_to_qianfan(openai_request)
+        print("\n\nchat:", qianfan_request, "\n\n")
         messages = openai_request["messages"]
         if messages[0]["role"] == "system":
             if not self._ignore_system:
@@ -219,6 +227,7 @@ class OpenAIApdater(object):
         Convert completion request in OpenAI to Qianfan request.
         """
         qianfan_request = self.openai_base_request_to_qianfan(openai_request)
+        print("\n\ncompletion:", qianfan_request, "\n\n")
         prompt = openai_request["prompt"]
         if isinstance(prompt, list):
             prompt = "".join(prompt)
@@ -464,6 +473,8 @@ class OpenAIApdater(object):
         tasks = [task(i) for i in range(n)]
         results = merge_async_iters(*tasks)
         base = None
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
         async for i, res in results:
             if base is None:
                 base = {
@@ -513,8 +524,24 @@ class OpenAIApdater(object):
                 choices[0]["delta"]["finish_reason"] = "tool_calls"
                 choices[0]["delta"]["function_call"] = res["function_call"]
 
+            if res["is_end"] and "usage" in res:
+                total_prompt_tokens += res["usage"]["prompt_tokens"]
+                total_completion_tokens += res["usage"]["completion_tokens"]
+
             yield {
                 "choices": choices,
+                **base,
+            }
+
+        # 在流式响应结束后，添加usage信息
+        if total_prompt_tokens > 0 or total_completion_tokens > 0:
+            yield {
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
+                    "total_tokens": total_prompt_tokens + total_completion_tokens,
+                },
                 **base,
             }
 

@@ -542,7 +542,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
         request_meta: Dict[str, Any] = {
             "response_length": 0,
-            "request_length": sum([len(msg) for msg in messages]),
+            "request_length": sum([len(msg["content"]) for msg in messages]),
         }
 
         return request_meta

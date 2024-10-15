@@ -153,7 +153,7 @@ def gen_brief(
         + "SendQuery: %s\n" % round(total_count, 2)
         + "SuccessQuery: %s\n" % round(success_count, 2)
         + "FailureQuery: %s\n" % round(failure_count, 2)
-        + "TotalQuery: %s\n" % round(count, 2)
+        + "DataEntryCount: %s\n" % round(count, 2)
         + "TotalTime: %s\n" % round(time, 2)
         + "SuccessRate: %s%%" % success_rate
     )

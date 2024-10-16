@@ -1,6 +1,7 @@
 """
 locust runner lib
 """
+
 from typing import Any, Dict
 
 

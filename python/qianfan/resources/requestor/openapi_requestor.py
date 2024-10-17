@@ -938,6 +938,45 @@ class PrivateAPIRequestor(QfAPIRequestor):
 
         return self._with_retry(retry_config, _helper)
 
+    async def async_llm(
+        self,
+        endpoint: str,
+        header: Dict[str, Any] = {},
+        query: Dict[str, Any] = {},
+        body: Dict[str, Any] = {},
+        stream: bool = False,
+        data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
+        retry_config: RetryConfig = RetryConfig(),
+        show_total_latency: bool = False,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        log_info(f"requesting llm api endpoint: {endpoint}")
+
+        async def _helper() -> Union[QfResponse, AsyncIterator[QfResponse]]:
+            req = self._base_llm_request(
+                endpoint,
+                header=header,
+                query=query,
+                body=body,
+                retry_config=retry_config,
+            )
+            parsed_uri = urlparse(get_config().BASE_URL)
+            host = parsed_uri.netloc
+            req.headers["content-type"] = "application/json;"
+            req.headers["Host"] = host
+            if self._access_code != "" and self._access_code is not None:
+                req.headers["Authorization"] = "ACCESSCODE {}".format(self._access_code)
+            elif self._ak != "" and self._sk != "":
+                iam_sign(str(self._ak), str(self._sk), req)
+            req.url = get_config().BASE_URL + req.url
+
+            if stream:
+                return await self._async_request_stream(
+                    req, data_postprocess=data_postprocess
+                )
+            return await self._async_request(req, data_postprocess=data_postprocess)
+
+        return await self._async_with_retry(retry_config, _helper)
+
     def _add_access_token(
         self, req: QfRequest, auth: Optional[Auth] = None
     ) -> QfRequest:

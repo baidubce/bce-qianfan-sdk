@@ -581,8 +581,6 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         ret = data
         if "stream" in ret:
             del ret["stream"]
-        if "safety_level" in ret and ret["safety_level"] == "none":
-            del ret["safety_level"]
         return ret
 
 

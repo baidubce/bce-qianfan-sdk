@@ -181,6 +181,12 @@ class OpenAIApdater(object):
             if not isinstance(response_format, str):
                 response_format = response_format["type"]
             qianfan_request["response_format"] = response_format
+        if "stream_options" in openai_request:
+            stream_options = openai_request["stream_options"]
+            qianfan_request["stream"] = True
+            if not isinstance(stream_options, str):
+                stream_options = stream_options["include_usage"]
+            qianfan_request["stream_options"] = stream_options
         return qianfan_request
 
     def openai_chat_request_to_qianfan(
@@ -464,6 +470,8 @@ class OpenAIApdater(object):
         tasks = [task(i) for i in range(n)]
         results = merge_async_iters(*tasks)
         base = None
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
         async for i, res in results:
             if base is None:
                 base = {
@@ -513,8 +521,25 @@ class OpenAIApdater(object):
                 choices[0]["delta"]["finish_reason"] = "tool_calls"
                 choices[0]["delta"]["function_call"] = res["function_call"]
 
+            if res["is_end"] and "usage" in res:
+                total_prompt_tokens += res["usage"]["prompt_tokens"]
+                total_completion_tokens += res["usage"]["completion_tokens"]
+
             yield {
                 "choices": choices,
+                **base,
+            }
+
+        # 在流式响应结束后，添加usage信息
+        base = base or {}
+        if total_prompt_tokens > 0 or total_completion_tokens > 0:
+            yield {
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
+                    "total_tokens": total_prompt_tokens + total_completion_tokens,
+                },
                 **base,
             }
 
@@ -536,13 +561,17 @@ class OpenAIApdater(object):
         base = None
         async for i, res in results:
             if base is None:
-                base = {
-                    "id": res["id"],
-                    "created": res["created"],
-                    "model": openai_request["model"],
-                    "system_fingerprint": "fp_?",
-                    "object": "text_completion",
-                }
+                base = (
+                    {
+                        "id": res["id"],
+                        "created": res["created"],
+                        "model": openai_request["model"],
+                        "system_fingerprint": "fp_?",
+                        "object": "text_completion",
+                    }
+                    if base is None
+                    else base
+                )
                 for j in range(n):
                     yield {
                         "choices": [

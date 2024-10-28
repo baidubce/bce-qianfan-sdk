@@ -177,6 +177,8 @@ class TrainMode(str, Enum):
     """PostPretrain """
     DPO = "DPO"
     """DPO"""
+    KTO = "KTO"
+    """KTO"""
 
 
 class TrainParameterScale(str, Enum):

@@ -176,6 +176,8 @@ class FineTune(object):
             model: str,
             train_mode: Union[str, console_consts.TrainMode],
             description: Optional[str] = None,
+            parameter_scale: Optional[str] = None,
+            hyper_parameter_config: Optional[Dict] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -195,6 +197,10 @@ class FineTune(object):
                 "PostPreTrain" and so on.
             description (Optional[str]):
                 The description of the fine-tuning job.
+            parameter_scale (Optional[str]):
+                the parameter scale for your fintune model
+             hyper_parameter_config (Optional[Dict]):
+                hyper parameter config
             kwargs:
                 Additional keyword arguments that can be passed to customize the
                 request.
@@ -222,6 +228,12 @@ class FineTune(object):
                 )
             if description is not None:
                 req.json_body["description"] = description
+
+            if parameter_scale is not None:
+                req.json_body["parameterScale"] = parameter_scale
+
+            if hyper_parameter_config is not None:
+                req.json_body["hyperParameterConfig"] = hyper_parameter_config
             return req
 
         @classmethod

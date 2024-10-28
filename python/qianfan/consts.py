@@ -247,6 +247,8 @@ class Consts:
     TpmCreditPurchaseQueryParam: str = "PurchaseTPMResource"
     TpmCreditInfoQueryParam: str = "DescribeTPMResource"
     TpmCreditStopQueryParam: str = "ReleaseTPMResource"
+    TpmCreditResizeQueryParam: str = "ResizeTPMResource"
+    TpmCreditAutoStopQueryParam: str = "AutoReleaseTPMResource"
 
     PrivateResourceAPI: str = "/v2/charge"
     PrivateResourcePurchaseParam: str = "PurchaseServiceResource"
@@ -254,7 +256,16 @@ class Consts:
     PrivateResourceGetResourceParam: str = "DescribeServiceResource"
     PrivateResourceReleaseServiceResourceParam: str = "ReleaseServiceResource"
     PrivateResourceCreateAutoRenewRulesParam: str = "CreateAutoRenewRules"
+    PrivateResourceResizeComputeUnitParam: str = "ResizeComputeUnit"
+    PrivateResourceAutoReleaseComputeUnitParam: str = "AutoReleaseComputeUnit"
 
+    EvalV2API: str = "/v2/eval"
+    CreateEvalTaskAPI: str = "CreateEvalTask"
+    DescribeEvalTasksAPI: str = "DescribeEvalTasks"
+    DescribeEvalTaskAPI: str = "DescribeEvalTask"
+    DescribeEvalTaskReportAPI: str = "DescribeEvalTaskReport"
+    DeleteEvalTaskAPI: str = "DeleteEvalTask"
+    
     ChatV2API: str = "/v2/chat/completions"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
 

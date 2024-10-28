@@ -265,7 +265,7 @@ class Consts:
     DescribeEvalTaskAPI: str = "DescribeEvalTask"
     DescribeEvalTaskReportAPI: str = "DescribeEvalTaskReport"
     DeleteEvalTaskAPI: str = "DeleteEvalTask"
-    
+
     ChatV2API: str = "/v2/chat/completions"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
 

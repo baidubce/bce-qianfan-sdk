@@ -407,6 +407,7 @@ class V2:
         PromptSortedResponses: str = "PromptSortedresponses"
         Prompt: str = "Prompt"
         PromptImage: str = "PromptImage"
+        PromptImageResponse: str = "PromptImageResponse"
 
     class StorageType(str, Enum):
         Bos: str = "BOS"

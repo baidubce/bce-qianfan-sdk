@@ -178,6 +178,12 @@ class Service(object):
             marker: Optional[str] = None,
             max_keys: Optional[int] = None,
             page_reverse: Optional[bool] = None,
+            name: Optional[str] = None,
+            service_type: Optional[List[str]] = None,
+            run_status: Optional[List[str]] = None,
+            creator: Optional[List[str]] = None,
+            charge_type: Optional[str] = None,
+            pay_type: Optional[str] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -190,6 +196,18 @@ class Service(object):
                 max keys of the page.
             page_reverse: Optional[bool] = None,
                 page reverse or not.
+            name: Optional[str] = None,
+                service name for search
+            service_type: Optional[List[str]] = None,
+                service type list for search
+            run_status: Optional[List[str]] = None,
+                service status list for search
+            creator: Optional[str] = None,
+                service creator name for search
+            charge_type: Optional[str] = None,
+                service charge type for search
+            pay_type: Optional[str] = None,
+                service pay type for search
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -210,6 +228,12 @@ class Service(object):
                     "marker": marker,
                     "maxKeys": max_keys,
                     "pageReverse": page_reverse,
+                    "name": name,
+                    "serviceType": service_type,
+                    "runStatus": run_status,
+                    "creator": creator,
+                    "chargeType": charge_type,
+                    "payType": pay_type,
                 }.items()
                 if v is not None
             }
@@ -411,6 +435,9 @@ class Service(object):
         def describe_preset_services(
             cls,
             service_ids: Optional[List[str]] = None,
+            service_type: Optional[List[str]] = None,
+            charge_type: Optional[List[str]] = None,
+            charge_status: Optional[List[str]] = None,
             **kwargs: Any,
         ) -> QfRequest:
             """
@@ -419,7 +446,12 @@ class Service(object):
             Parameters:
             service_ids: Optional[List[str]] = None,
                 service ids.
-
+            service_type: Optional[List[str]] = None,
+                service type
+            charge_type: Optional[List[str]] = None,
+                charge type
+            charge_status: Optional[List[str]] = None,
+                charge status
             kwargs:
                 Additional keyword arguments that can be passed to customize
                 the request.
@@ -438,6 +470,9 @@ class Service(object):
                 for k, v in {
                     **kwargs,
                     "serviceIds": service_ids,
+                    "serviceType": service_type,
+                    "chargeType": charge_type,
+                    "chargeStatus": charge_status,
                 }.items()
                 if v is not None
             }

@@ -178,6 +178,14 @@ class Consts:
         "/wenxinworkshop/modelrepo/eval/result/export/info"
     )
     ModelEvaluableModelListAPI: str = "/wenxinworkshop/modelrepo/eval/model/list"
+
+    ModelEvalV2API: str = "/v2/eval"
+    ModelEvalV2Create: str = "CreateEvalTask"
+    ModelEvalV2DescribeTasks: str = "DescribeEvalTasks"
+    ModelEvalV2DescribeTask: str = "DescribeEvalTask"
+    ModelEvalV2DescribeTaskReport: str = "DescribeEvalTaskReport"
+    ModelEvalV2DeleteTask: str = "DeleteEvalTask"
+
     ServiceCreateAPI: str = "/wenxinworkshop/service/apply"
     ServiceDetailAPI: str = "/wenxinworkshop/service/detail"
     ServiceListAPI: str = "/wenxinworkshop/service/list"
@@ -247,13 +255,16 @@ class Consts:
     TpmCreditPurchaseQueryParam: str = "PurchaseTPMResource"
     TpmCreditInfoQueryParam: str = "DescribeTPMResource"
     TpmCreditStopQueryParam: str = "ReleaseTPMResource"
+    TpmCreditResizeTPMResourceParam: str = "ResizeTPMResource"
+    TpmCreditAutoReleaseTPMResourceParam: str = "AutoReleaseTPMResource"
 
     PrivateResourceAPI: str = "/v2/charge"
     PrivateResourcePurchaseParam: str = "PurchaseServiceResource"
-    PrivateResourceGetResourceListParam: str = "DescribeServiceResources"
-    PrivateResourceGetResourceParam: str = "DescribeServiceResource"
-    PrivateResourceReleaseServiceResourceParam: str = "ReleaseServiceResource"
-    PrivateResourceCreateAutoRenewRulesParam: str = "CreateAutoRenewRules"
+    PrivateResourceGetResourceListParam: str = "DescribeComputeUnits"
+    PrivateResourceGetResourceParam: str = "DescribeComputeUnit"
+    PrivateResourceReleaseServiceResourceParam: str = "ReleaseComputeUnit"
+    PrivateResourceCreateAutoRenewRulesParam: str = "AutoReleaseComputeUnit"
+    PrivateResourceResizeComputeUnitParam: str = "ResizeComputeUnit"
 
     ChatV2API: str = "/v2/chat/completions"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"

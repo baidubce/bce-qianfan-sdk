@@ -30,7 +30,7 @@ class Charge(object):
     @classmethod
     @console_api_request
     def charge_tpm_credit(
-        cls, model: str, purchase_count: int, **kwargs: Any
+        cls, model: str, purchase_count: int, billing: Dict[str, Any], **kwargs: Any
     ) -> QfRequest:
         """
         charge the rpm / tpm credit.
@@ -40,6 +40,8 @@ class Charge(object):
             The model you want to charge to.
           purchase_count (int):
             how many credit you want to charge.
+          billing (Dict[str, Any]):
+            billing info
           kwargs (Any):
             Additional keyword arguments.
 
@@ -54,7 +56,7 @@ class Charge(object):
         req.json_body = {
             "model": model,
             "purchaseCount": purchase_count,
-            "billing": {"paymentTiming": "Postpaid"},
+            "billing": billing,
             **kwargs,
         }
         return req
@@ -66,6 +68,7 @@ class Charge(object):
         model: str,
         payment_type: Optional[str] = None,
         instance_id: Optional[str] = None,
+        status: Optional[str] = None,
         **kwargs: Any
     ) -> QfRequest:
         """
@@ -79,6 +82,8 @@ class Charge(object):
                 Only available type is "Postpaid" currently.
             instance_id (Optional[str]):
                 which specific instance you want to get.
+            status (str):
+                which status of instance you want to get.
             **kwargs (Any):
                 Additional keyword arguments.
 
@@ -100,6 +105,9 @@ class Charge(object):
 
         if instance_id:
             req.json_body["instanceId"] = instance_id
+
+        if status:
+            req.json_body["status"] = status
 
         return req
 
@@ -132,6 +140,74 @@ class Charge(object):
             "model": model,
             "instanceId": instance_id,
         }
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def resize_tpm_resource(
+        cls, instance_id: str, count: Optional[int], **kwargs: Any
+    ) -> QfRequest:
+        """
+        resize the rpm / tpm charging
+
+        Parameters:
+            instance_id (str):
+                which specific instance you want to get.
+            count: (Optional[int])
+                how many tpm resources should be after resize.
+            **kwargs (Any):
+                Additional keyword arguments.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/cm2cy5ion
+        """
+
+        req = QfRequest(method="POST", url=Consts.TpmCreditAPI)
+        req.query = {"Action": Consts.TpmCreditResizeTPMResourceParam}
+        req.json_body = {
+            "instanceId": instance_id,
+        }
+
+        if count:
+            req.json_body["count"] = count
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def auto_release_tpm_resource(
+        cls, instance_id: str, release_time: Optional[str], **kwargs: Any
+    ) -> QfRequest:
+        """
+        resize the rpm / tpm charging
+
+        Parameters:
+            instance_id (str):
+                which specific instance you want to get.
+            release_time: (Optional[str])
+                when resources are released automatically. None for cancel
+            **kwargs (Any):
+                Additional keyword arguments.
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/cm2cy5ion
+        """
+
+        req = QfRequest(method="POST", url=Consts.TpmCreditAPI)
+        req.query = {"Action": Consts.TpmCreditAutoReleaseTPMResourceParam}
+        req.json_body = {
+            "instanceId": instance_id,
+        }
+
+        if release_time:
+            req.json_body["releaseTime"] = release_time
 
         return req
 
@@ -172,7 +248,7 @@ class Charge(object):
 
     @classmethod
     @console_api_request
-    def ger_service_resource_list(
+    def get_service_resource_list(
         cls, service_id: str, payment_timing: Optional[str] = None, **kwargs: Any
     ) -> QfRequest:
         """
@@ -311,5 +387,37 @@ class Charge(object):
                     "autoRenewTime": auto_renew_time,
                 }
             )
+
+        return req
+
+    @classmethod
+    @console_api_request
+    def resize_service_resource_count(
+        cls, instance_id: str, count: int, **kwargs: Any
+    ) -> QfRequest:
+        """
+        release purchase private service resource from qianfan
+
+        Parameters:
+            instance_id (str):
+                The resource instance id.
+            count (int):
+                how many instance count you want to set
+            **kwargs (Any):
+                other arguments
+
+        Note:
+        The `@console_api_request` decorator is applied to this method, enabling it to
+        send the generated QfRequest and return a QfResponse to the user.
+
+        API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Tm2cxzmhi
+        """
+
+        req = QfRequest(method="POST", url=Consts.PrivateResourceAPI)
+        req.query = {"Action": Consts.PrivateResourceResizeComputeUnitParam}
+        req.json_body = {
+            "count": count,
+            "instanceId": instance_id,
+        }
 
         return req

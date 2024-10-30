@@ -6,6 +6,7 @@ import abc
 import json
 import re
 import time
+import traceback
 from typing import Any, Dict, Iterator, Literal, Optional
 
 from locust import constant, events, task
@@ -269,7 +270,13 @@ class QianfanCustomHttpSession(CustomHttpSession):
 
         if GlobalData.data["log"] == 1:
             if self.exc:
-                self._write_result({"error": str(self.exc)})
+                self._write_result(
+                    {
+                        "exception_type": type(self.exc),
+                        "error": str(self.exc),
+                        "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
+                    }
+                )
             else:
                 if (
                     res.get("request", {}).get("headers", {}).get("Authorization", None)

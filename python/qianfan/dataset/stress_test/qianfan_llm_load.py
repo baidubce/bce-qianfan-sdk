@@ -446,7 +446,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     ) -> _InnerResponseProcessRet:
         last_resp: Optional[QfResponse] = None
         merged_query = ""
-        res_choices = {}
+        res_choices: Dict[str, Dict[str, Any]] = {}
         first_flag, all_empty = True, True
         clear_history = False
 
@@ -511,15 +511,21 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     content = stream_json["delta"].get("content", "")
                     merged_query += content
                     if index not in res_choices:
-                        if "delta" in stream_json:
-                            res_choices[index] = {
-                                "index": index,
-                                "is_truncated": stream_json["is_truncated"],
-                                "content": stream_json["delta"]["content"],
-                                "need_clear_history": stream_json["need_clear_history"],
-                            }
+                        if "delta" in stream_json and "content" in stream_json["delta"]:
+                            res_choices[index]["content"] = stream_json["delta"][
+                                "content"
+                            ]
+                        else:
+                            res_choices[index]["content"] = ""
                     else:
-                        res_choices[index]["content"] += stream_json["delta"]["content"]
+                        for k, v in stream_json.items():
+                            if k != "delta":
+                                res_choices[index][k] = v
+                        # 追加 'delta' 中的 'content'
+                        if "delta" in stream_json and "content" in stream_json["delta"]:
+                            res_choices[index]["content"] += stream_json["delta"][
+                                "content"
+                            ]
                 else:
                     self.exc = Exception("ERROR CODE 结果无法解析")
                     break

@@ -272,7 +272,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
             if self.exc:
                 self._write_result(
                     {
-                        "exception_type": type(self.exc),
+                        "exception_type": str(type(self.exc)),
                         "error": str(self.exc),
                         "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
                     }
@@ -388,6 +388,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
         ...
 
     def _write_result(self, res: Dict) -> None:
+        print(res)
         res_json = json.dumps(res, ensure_ascii=False)
         folder = GlobalData.data["record_dir"]
         file_path = folder + "/" + "query_result.jsonl"
@@ -485,7 +486,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 stream_json = resp["body"]
                 merged_query += stream_json.get("result", "")
                 clear_history = stream_json.get("need_clear_history", False)
-                if "result" in stream_json:
+                if "result" in stream_json and len(stream_json["result"]) != 0:
                     content = stream_json["result"]
                 elif "function_call" in stream_json:
                     content = json.dumps(

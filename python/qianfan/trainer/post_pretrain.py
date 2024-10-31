@@ -80,7 +80,7 @@ class PostPreTrain(Trainer):
 
         for calling example:
         ```
-        ds = Dataset.load(qianfan_dataset_id="", ...)
+        ds = Dataset.load(qianfan_dataset_version_id="", ...)
         sft_task = PostPreTrain(
             train_type="ERNIE-Speed-8K",
             dataset=ds,
@@ -104,7 +104,7 @@ class PostPreTrain(Trainer):
         assert dataset is not None
         self.load_data_action = LoadDataSetAction(
             dataset,
-            console_consts.DataTemplateType.GenericText,
+            console_consts.V2.DatasetFormat.Text,
             event_handler=event_handler,
             **kwargs,
         )

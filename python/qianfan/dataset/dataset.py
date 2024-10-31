@@ -61,7 +61,6 @@ from qianfan.dataset.dataset_utils import (
     _check_online_data_process_result,
     _create_a_dataset_etl_task,
     _extract_string,
-    _get_qianfan_schema,
     _list_cloud_data,
     _start_an_evaluation_task_for_model_batch_inference,
     open_in_streamlit,
@@ -82,9 +81,7 @@ from qianfan.dataset.table import Table
 from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
 from qianfan.errors import ValidationError
 from qianfan.resources import Data, Model
-from qianfan.resources.console.consts import (
-    DataTemplateType,
-)
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.bos_uploader import BosHelper
 
@@ -266,7 +263,7 @@ class Dataset(Table):
     def _from_args_to_source(
         cls,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[str] = None,
+        qianfan_dataset_version_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
@@ -281,13 +278,13 @@ class Dataset(Table):
             )
             return FileDataSource(path=data_file, **kwargs)
 
-        if qianfan_dataset_id:
+        if qianfan_dataset_version_id:
             log_info(
                 "construct a qianfan data source from existed id:"
-                f" {qianfan_dataset_id}, with args: {kwargs}"
+                f" {qianfan_dataset_version_id}, with args: {kwargs}"
             )
             return QianfanDataSource.get_existed_dataset(
-                dataset_id=qianfan_dataset_id, **kwargs
+                version_id=qianfan_dataset_version_id, **kwargs
             )
 
         if qianfan_dataset_create_args:
@@ -335,18 +332,20 @@ class Dataset(Table):
         if not isinstance(source, QianfanDataSource):
             return
 
-        template_type = source.template_type
+        template_type = source.data_format_type
 
         if template_type in [
-            DataTemplateType.NonSortedConversation,
-            DataTemplateType.SortedConversation,
-            DataTemplateType.QuerySet,
+            V2Consts.DatasetFormat.Prompt,
+            V2Consts.DatasetFormat.PromptResponse,
+            V2Consts.DatasetFormat.PromptSortedResponses,
+            V2Consts.DatasetFormat.DPOPromptChosenRejected,
+            V2Consts.DatasetFormat.KTOPromptChosenRejected,
         ]:
             self.input_columns = ["prompt"]
 
         if template_type in [
-            DataTemplateType.NonSortedConversation,
-            DataTemplateType.SortedConversation,
+            V2Consts.DatasetFormat.PromptResponse,
+            V2Consts.DatasetFormat.PromptSortedResponses,
         ]:
             self.reference_column = "response"
 
@@ -355,7 +354,7 @@ class Dataset(Table):
         cls,
         source: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[str] = None,
+        qianfan_dataset_version_id: Optional[str] = None,
         bos_load_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
         afs_source_args: Optional[Dict[str, Any]] = None,
@@ -377,7 +376,7 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[str]):
+            qianfan_dataset_version_id (Optional[str]):
                 qianfan dataset ID, default to None
             bos_load_args: (Optional[Dict[str, Any]]):
                 create a dataset and import initial dataset content
@@ -451,7 +450,7 @@ class Dataset(Table):
             log_info("no data source was provided, construct")
             source = cls._from_args_to_source(
                 data_file=data_file,
-                qianfan_dataset_id=qianfan_dataset_id,
+                qianfan_dataset_version_id=qianfan_dataset_version_id,
                 bos_load_args=bos_load_args,
                 bos_source_args=bos_source_args,
                 afs_source_args=afs_source_args,
@@ -484,7 +483,7 @@ class Dataset(Table):
         self,
         destination: Optional[DataSource] = None,
         data_file: Optional[str] = None,
-        qianfan_dataset_id: Optional[str] = None,
+        qianfan_dataset_version_id: Optional[str] = None,
         qianfan_dataset_create_args: Optional[Dict[str, Any]] = None,
         bos_source_args: Optional[Dict[str, Any]] = None,
         afs_source_args: Optional[Dict[str, Any]] = None,
@@ -504,7 +503,7 @@ class Dataset(Table):
                 using parameters below
             data_file (Optional[str]):
                 dataset local file path, default to None
-            qianfan_dataset_id (Optional[str]):
+            qianfan_dataset_version_id (Optional[str]):
                 qianfan dataset ID, default to None
             qianfan_dataset_create_args: (Optional[Dict[str: Any]]):
                 create arguments for creating a bare dataset on qianfan,
@@ -529,7 +528,7 @@ class Dataset(Table):
             log_info("no destination data source was provided, construct")
             destination = self._from_args_to_source(
                 data_file=data_file,
-                qianfan_dataset_id=qianfan_dataset_id,
+                qianfan_dataset_version_id=qianfan_dataset_version_id,
                 qianfan_dataset_create_args=qianfan_dataset_create_args,
                 bos_source_args=bos_source_args,
                 afs_source_args=afs_source_args,
@@ -545,11 +544,6 @@ class Dataset(Table):
 
         # 首先检查是否有传入 schema 或者已经默认有了 schema
         schema = schema if schema else self.inner_schema_cache
-        # 如果导出的数据源是千帆，则强制构造 schema 进行检查，优先级最高
-        # 如果是只上传，则不校验
-        if isinstance(source, QianfanDataSource) and self.inner_table:
-            # 一个方法从 source 中抽取 schema 信息
-            schema = _get_qianfan_schema(source)
 
         # 校验
         if schema and not schema.validate(self):
@@ -708,7 +702,7 @@ class Dataset(Table):
         if not isinstance(self.inner_data_source_cache, QianfanDataSource):
             return False
         return (
-            self.inner_data_source_cache.template_type == DataTemplateType.GenericText
+            self.inner_data_source_cache.data_format_type == V2Consts.DatasetFormat.Text
         )
 
     def is_dataset_located_in_qianfan(self) -> bool:
@@ -1062,9 +1056,9 @@ class Dataset(Table):
     def row_number(self) -> int:
         if self.is_dataset_located_in_qianfan():
             assert isinstance(self.inner_data_source_cache, QianfanDataSource)
-            return Data.get_dataset_info(self.inner_data_source_cache.id)["result"][
-                "versionInfo"
-            ]["entityCount"]
+            return Data.V2.get_dataset_version_info(self.inner_data_source_cache.id)[
+                "result"
+            ]["sampleCount"]
         elif self._is_dataset_local():
             return super().row_number()
         else:
@@ -1668,7 +1662,7 @@ class Dataset(Table):
         )
 
         result_dataset = Dataset.load(
-            qianfan_dataset_id=result_dataset_id,
+            qianfan_dataset_version_id=result_dataset_id,
             is_download_to_local=output_prettified,
             **kwargs,
         )

@@ -21,6 +21,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
+import deprecated
 import requests
 
 from qianfan import ChatCompletion, Completion, QfResponse, get_config
@@ -36,8 +37,8 @@ from qianfan.dataset.schema import (
 )
 from qianfan.errors import QianfanError, RequestError
 from qianfan.resources import Data, Model
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.resources.console.consts import (
-    DataTemplateType,
     ETLTaskStatus,
     EvaluationTaskStatus,
 )
@@ -133,15 +134,7 @@ def _create_a_dataset_etl_task(
     assert isinstance(origin_data_source, QianfanDataSource)
 
     log_info("create a new dataset group and dataset")
-    new_data_source = QianfanDataSource.create_bare_dataset(
-        name=f"etl_result_set_{generate_letter_num_random_id()}",
-        template_type=origin_data_source.template_type,
-        storage_type=origin_data_source.storage_type,
-        storage_id=origin_data_source.storage_id,
-        storage_path=origin_data_source.storage_raw_path,
-        ak=origin_data_source.ak,
-        sk=origin_data_source.sk,
-    )
+    new_data_source = origin_data_source.create_new_version()
 
     log_debug(
         f"new dataset id: {new_data_source.id} , and name: {new_data_source.name}"
@@ -159,23 +152,24 @@ def _create_a_dataset_etl_task(
     return etl_id, new_data_source.id
 
 
+@deprecated.deprecated
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
     """推断获取 Schema"""
-    template_type = source.template_type
-    if template_type == DataTemplateType.SortedConversation:
+    data_format_type = source.data_format_type
+    if data_format_type == V2Consts.DatasetFormat.PromptResponse:
         return QianfanSortedConversation()
-    if template_type == DataTemplateType.NonSortedConversation:
+    if data_format_type == V2Consts.DatasetFormat.PromptSortedResponses:
         return QianfanSortedConversation()
-    if template_type == DataTemplateType.GenericText:
+    if data_format_type == V2Consts.DatasetFormat.Text:
         return QianfanGenericText()
-    if template_type == DataTemplateType.QuerySet:
+    if data_format_type == V2Consts.DatasetFormat.Prompt:
         return QianfanQuerySet()
-    if template_type == DataTemplateType.Text2Image:
+    if data_format_type == V2Consts.DatasetFormat.PromptImage:
         return QianfanText2Image()
-    if template_type == DataTemplateType.PromptChosenRejected:
+    if data_format_type == V2Consts.DatasetFormat.DPOPromptChosenRejected:
         return QianfanPromptChosenRejected()
 
-    error = ValueError(f"schema didn't find for template type {template_type}")
+    error = ValueError(f"schema didn't find for template type {data_format_type}")
     log_error(str(error))
     raise error
 

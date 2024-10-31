@@ -412,3 +412,19 @@ class V2:
     class StorageType(str, Enum):
         Bos: str = "BOS"
         SysStorage: str = "sysStorage"
+
+    class DatasetPublishStatus(str, Enum):
+        Unpublished: str = "Unpublished"
+        Publishing: str = "Publishing"
+        Published: str = "Published"
+        PublishFailed: str = "PublishFailed"
+
+    class DatasetImportTaskStatus(str, Enum):
+        Importing: str = "Importing"
+        ImportFinished: str = "ImportFinished"
+        ImportFailed: str = "ImportFailed"
+
+    class DatasetExportTaskStatus(str, Enum):
+        Exporting: str = "Exporting"
+        ExportFinished: str = "ExportFinished"
+        ExportFailed: str = "ExportFailed"

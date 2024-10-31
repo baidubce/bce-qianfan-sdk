@@ -31,7 +31,7 @@ m = trainer.output["model"]
 from qianfan.model import Model
 from qianfan.dataset import Dataset
 
-ds = Dataset.load(qianfan_dataset_id="ds-xx")
+ds = Dataset.load(qianfan_dataset_version_id="ds-xx")
 m = Model(version_id="amv-xx")
 
 m.batch_inference(dataset=ds)
@@ -47,7 +47,7 @@ from qianfan.model import Model
 from qianfan.evaluation.evaluator import QianfanRuleEvaluator
 from qianfan.evaluation import EvaluationManager
 
-ds = Dataset.load(qianfan_dataset_id="ds-xxx")
+ds = Dataset.load(qianfan_dataset_version_id="ds-xxx")
 m = Model(version_id="amv-xx")
 
 # 千帆平台规则评估器:

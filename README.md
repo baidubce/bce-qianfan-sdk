@@ -167,7 +167,7 @@ print(resp["result"])
 ```python
 from qianfan.dataset import Dataset
 
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 ```
 
 且千帆 Python SDK 集成了一系列本地的数据处理功能，允许用户在本地对来自多个数据源的数据进行增删改查等操作，详见[Dataset 框架](./docs/dataset.md)。
@@ -192,14 +192,17 @@ from qianfan.dataset import Dataset
 # 从本地文件导入
 ds = Dataset.load(data_file="path/to/dataset_file.json")
 
+
 def filter_func(row: Dict[str, Any]) -> bool:
-  return "answer" in row.keys()
+    return "answer" in row.keys()
+
 
 def map_func(row: Dict[str, Any]) -> Dict[str, Any]:
-  return {
-      "prompt": row["question"],
-      "response": row["answer"],
-  }
+    return {
+        "prompt": row["question"],
+        "response": row["answer"],
+    }
+
 
 # 链式调用处理数据
 ds.filter(filter_func).map(map_func).pack()
@@ -207,19 +210,20 @@ ds.filter(filter_func).map(map_func).pack()
 # 上传到千帆
 # 数据集只有上传到千帆后才可以用于训练
 # 请确保你的数据集格式符合要求
-ds.save(qianfan_dataset_id="your_dataset_id")
+ds.save(qianfan_dataset_version_id="your_dataset_id")
 ```
 
 #### Trainer
 
 千帆 Python SDK 以Pipeline为基础串联整个模型训练的流程，同时允许用户更好的把控训练流程状态 [Trainer 框架](./docs/trainer.md)。
 以下是一个快速实现ERNIE-Speed-8K fine-tuning的例子：
+
 ```python
 from qianfan.dataset import Dataset
 from qianfan.trainer import Finetune
 
 # 加载千帆平台上的数据集
-ds: Dataset = Dataset.load(qianfan_dataset_id="ds-xxx")
+ds: Dataset = Dataset.load(qianfan_dataset_version_id="ds-xxx")
 
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
@@ -242,7 +246,7 @@ trainer.run()
 from qianfan.model import Model
 from qianfan.dataset import Dataset
 
-ds = Dataset.load(qianfan_dataset_id="ds-xx")
+ds = Dataset.load(qianfan_dataset_version_id="ds-xx")
 m = Model(version_id="amv-xx")
 
 m.batch_inference(dataset=ds)

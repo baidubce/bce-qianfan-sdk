@@ -74,7 +74,7 @@ from qianfan.dataset import Dataset
 ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
 
 # 从千帆导入
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 ```
 
 ### 处理数据集
@@ -107,7 +107,7 @@ print(ds.filter(filter_func).map(map_func).list())
 new_ds = ds.save(data_file="path/to/local_file.csv")
 
 # 导出到千帆平台
-new_ds = ds.save(qianfan_dataset_id="your_dataset_id")
+new_ds = ds.save(qianfan_dataset_version_id="your_dataset_id")
 
 # 或者导出到它导入的地方
 new_ds = ds.save()
@@ -269,7 +269,7 @@ new_ds = ds.save(data_file="file.json", batch_size=100)
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 print(ds_qianfan.list())
 ```
 
@@ -280,7 +280,7 @@ print(ds_qianfan.list())
 ```python
 from qianfan.dataset import Dataset
 
-ds_local = Dataset.load(qianfan_dataset_id="your_dataset_id").save(data_file="your_file_path")
+ds_local = Dataset.load(qianfan_dataset_version_id="your_dataset_id").save(data_file="your_file_path")
 print(ds_local.list())
 ```
 
@@ -312,7 +312,7 @@ ds_qianfan.save(
 + 另一种导出方式是增量导出到已经存在的数据集当中：填写 `save` 函数的 `qianfan_dataset_id` 参数（和 `load` 方法一致）。如果是导出到原本导入的数据集，则可以忽略 `qianfan_dataset_id` 参数。
 
 ```python
-ds_qianfan.save(qianfan_dataset_id="your_dataset_id")
+ds_qianfan.save(qianfan_dataset_version_id="your_dataset_id")
 # 如果是导出到原本导入的数据集，可以忽略该参数
 ds_qianfan.save()
 ```
@@ -412,7 +412,7 @@ ds_pyarrow_table = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
 除此之外，当用户以 jsonl \ txt 格式导入类数组形式文件，或者导入的是千帆平台的数据集时，SDK 支持传入 `organize_data_as_group` 参数，来指定将数据集组织成 SDK 内部的二维表格形式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
 
 ```python
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id", organize_data_as_group=True)
+ds = Dataset.load(qianfan_dataset_version_id="your_dataset_id", organize_data_as_group=True)
 ```
 
 设置 `organize_data_as_group=True` 或使用 `unpack()` 函数得到的千帆平台的数据集格式如下所示
@@ -548,7 +548,7 @@ print(ds[["column_name1", "column_name3"]])
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 
 # 单独检视某一实体
 print(ds_qianfan[0])
@@ -605,19 +605,19 @@ ds = ds \
 ```python
 from qianfan.dataset import Dataset
 from qianfan.dataset.qianfan_data_operators import (
-  RemoveInvisibleCharacter,
-  FilterCheckNumberWords,
-  DeduplicationSimhash,
-  ReplaceEmails,
+    RemoveInvisibleCharacter,
+    FilterCheckNumberWords,
+    DeduplicationSimhash,
+    ReplaceEmails,
 )
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 
 ds_qianfan.online_data_process([
-  RemoveInvisibleCharacter(),
-  FilterCheckNumberWords(number_words_max_cutoff=1024),
-  DeduplicationSimhash(distance=5),
-  ReplaceEmails()
+    RemoveInvisibleCharacter(),
+    FilterCheckNumberWords(number_words_max_cutoff=1024),
+    DeduplicationSimhash(distance=5),
+    ReplaceEmails()
 ])
 ```
 
@@ -632,7 +632,7 @@ from qianfan.dataset.schema import QianfanNonSortedConversation
 schema = QianfanNonSortedConversation()
 
 # 在 load 时使用
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", schema=schema)
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id", schema=schema)
 
 # 在 save 时使用
 # 如果在 load 时就已经传入了 schema ，

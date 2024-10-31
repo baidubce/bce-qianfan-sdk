@@ -27,6 +27,7 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
+from typing import Dict
 
 import flask
 import requests
@@ -4477,6 +4478,42 @@ def reranker(model_name):
             "usage": {"prompt_tokens": 22, "total_tokens": 22},
         }
     )
+
+
+@app.route(Consts.DatasetV2BaseRouteAPI, methods=["POST"])
+def dataset_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.FineTuneCreateJobAction: finetune_v2_create_job,
+        Consts.FineTuneCreateTaskAction: finetune_v2_create_task,
+        Consts.FineTuneJobListAction: finetune_v2_job_list,
+        Consts.FineTuneTaskListAction: finetune_v2_task_list,
+        Consts.FineTuneTaskDetailAction: finetune_v2_task_detail,
+        Consts.FineTuneStopTaskAction: finetune_v2_stop_task,
+        Consts.FineTuneSupportedModelsAction: finetune_v2_supported_models,
+    }
+    return action_handler.get(action)(body=json_body)
+
+def dataset_v2_create_dataset(body: Dict):
+    result_dict = {
+        "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+        "result": {
+            "datasetversionId": "ds-123",
+            "datasetId": "dg-123",
+            "datasetName": body.get("datasetName", ""),
+            "versionNumber": 1,
+            "dataFormat": body.get("dataFormat", ""),
+            "storageType": body.get("storageType", ""),
+            "storagePath": "bos:/yourBucket/yourDir/_system_/dataset/ds-xxx/images",
+            "createTime": "2023-11-02T14:50:30.6533454+08:00"
+        }
+    }
+
+    if body.get("storageType", "") == "sysStorage":
+        del result_dict["result"]["storagePath"]
+
+    return json_response(result_dict)
 
 
 def _start_mock_server():

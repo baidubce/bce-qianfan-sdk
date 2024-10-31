@@ -23,11 +23,12 @@
 from qianfan.dataset import Dataset
 from qianfan.evaluation import EvaluationManager
 from qianfan.evaluation.evaluator import QianfanRuleEvaluator, QianfanRefereeEvaluator
-from qianfan.evaluation.consts import QianfanRefereeEvaluatorDefaultMetrics, QianfanRefereeEvaluatorDefaultSteps, QianfanRefereeEvaluatorDefaultMaxScore
+from qianfan.evaluation.consts import QianfanRefereeEvaluatorDefaultMetrics, QianfanRefereeEvaluatorDefaultSteps,
+    QianfanRefereeEvaluatorDefaultMaxScore
 from qianfan.model import Model
 
 your_qianfan_dataset_id = "your_dataset_id"
-ds = Dataset.load(qianfan_dataset_id=your_qianfan_dataset_id)
+ds = Dataset.load(qianfan_dataset_version_id=your_qianfan_dataset_id)
 
 user_app_id = 123
 
@@ -117,7 +118,7 @@ result = em.eval([your_service], ds)
 
 ```python
 your_qianfan_dataset_id = "your_dataset_id"
-ds = Dataset.load(qianfan_dataset_id=your_qianfan_dataset_id)
+ds = Dataset.load(qianfan_dataset_version_id=your_qianfan_dataset_id)
 
 em = EvaluationManager(local_evaluators=local_evaluators)
 result = em.eval([Model(version_id="amv-qb8ijukaish3")], ds)

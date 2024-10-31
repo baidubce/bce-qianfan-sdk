@@ -10,7 +10,7 @@
 以下以LLMFinetune（对应千帆平台 SFT语言大模型）为例，介绍如何使用`Trainer`进行训练。
 
 ```python
-import os 
+import os
 
 os.environ["QIANFAN_ACCESS_KEY"] = "your_ak"
 os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
@@ -19,13 +19,13 @@ from qianfan.dataset import Dataset
 from qianfan.trainer import LLMFinetune
 
 # 加载千帆平台上的数据集
-ds: Dataset = Dataset.load(qianfan_dataset_id="111")
+ds: Dataset = Dataset.load(qianfan_dataset_version_id="111")
 
 # 新建trainer LLMFinetune，最少传入train_type和dataset
 # 注意fine-tune任务需要指定的数据集类型要求为有标注的非排序对话数据集。
 trainer = LLMFinetune(
     train_type="ERNIE-Speed",
-    dataset=ds, 
+    dataset=ds,
 )
 
 trainer.run()
@@ -41,7 +41,7 @@ from qianfan.trainer.consts import PeftType
 from qianfan.dataset import Dataset
 
 # 泛文本 数据集
-ds = Dataset.load(qianfan_dataset_id="ds-ag138")
+ds = Dataset.load(qianfan_dataset_version_id="ds-ag138")
 
 # postpretrain
 trainer = PostPreTrain(
@@ -52,9 +52,8 @@ trainer.run()
 # 这一步可以拿到训练完成的PostPretrain任务信息:
 print(trainer.output)
 
-
 # sft数据集
-sft_ds = Dataset.load(qianfan_dataset_id="ds-47j7ztjxfz60wb8x")
+sft_ds = Dataset.load(qianfan_dataset_version_id="ds-47j7ztjxfz60wb8x")
 ppt_sft_trainer = LLMFinetune(
     train_type="ERNIE-Speed",
     dataset=sft_ds,
@@ -65,7 +64,7 @@ ppt_sft_trainer = LLMFinetune(
         peft_type=PeftType.ALL,
     ),
     name="qianfantrainer01"
-    previous_trainer=trainer,
+previous_trainer = trainer,
 )
 
 ppt_sft_trainer.run()
@@ -75,8 +74,9 @@ print(ppt_sft_trainer.output)
 
 ### 自定义训练参数
 如果需要自定义训练参数，可以根据不同的模型传入不同的TrainConfig 以指定训练过程中的参数，需要注意的是不同模型支持的参数不同，具体以API文档为准。
+
 ```python
-import os 
+import os
 
 os.environ["QIANFAN_ACCESS_KEY"] = "your_ak"
 os.environ["QIANFAN_SECRET_KEY"] = "your_sk"
@@ -86,17 +86,16 @@ from qianfan.trainer import LLMFinetune
 from qianfan.trainer.configs import TrainConfig, DatasetConfig, CorpusConfig, CorpusConfigItem, PeftType, ResourceConfig
 from qianfan.resources.console import consts as console_consts
 
-
-ds = Dataset.load(qianfan_dataset_id="ds-pt19ixpeqrhtgc92")
+ds = Dataset.load(qianfan_dataset_version_id="ds-pt19ixpeqrhtgc92")
 trainer = LLMFinetune(
     train_type="ERNIE-Speed-8K",
     dataset=DatasetConfig(
         datasets=[ds],
-        eval_split_ratio=10, 
+        eval_split_ratio=10,
         sampling_rate=1,
     ),
     train_config=TrainConfig(
-        peft_type=PeftType.LoRA, # 必传，指定SFT or LoRA
+        peft_type=PeftType.LoRA,  # 必传，指定SFT or LoRA
         epoch=1,
         learning_rate=0.0003,
         max_seq_len=4096,
@@ -110,22 +109,22 @@ trainer = LLMFinetune(
         node_num=4,
     ),
     corpus_config=CorpusConfig(
-        data_copy=False, # 仅一言语料使用，如果为True，则当语料库不足以混入时，则拷贝重复数据混入
+        data_copy=False,  # 仅一言语料使用，如果为True，则当语料库不足以混入时，则拷贝重复数据混入
         corpus_configs=[
             # CorpusConfigItem( # 千帆通用语料
             #     corpus_type=console_consts.FinetuneCorpusType.QianfanCommon,
             #     corpus_proportion="1%", # 总通用语料共n条，混入比例的取值范围x%为[0-100]%， 则混入n * x%
             # ),
-            CorpusConfigItem( # 一言垂类
+            CorpusConfigItem(  # 一言垂类
                 corpus_labels=["文本创作"],
                 corpus_type=console_consts.FinetuneCorpusType.YiyanVertical,
-                corpus_proportion="1:2", # 1:x 表示一条用户数据对应x条一言语料数据
+                corpus_proportion="1:2",  # 1:x 表示一条用户数据对应x条一言语料数据
             ),
-            CorpusConfigItem( # 一言通用
+            CorpusConfigItem(  # 一言通用
                 corpus_type=console_consts.FinetuneCorpusType.YiyanCommon,
-                corpus_proportion="1:1", # 1:x 表示一条用户数据对应x条一言语料数据
+                corpus_proportion="1:1",  # 1:x 表示一条用户数据对应x条一言语料数据
             ),
-            
+
         ],
     )
 )

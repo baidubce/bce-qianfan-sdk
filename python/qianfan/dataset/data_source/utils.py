@@ -54,12 +54,9 @@ from qianfan.dataset.data_source.chunk_reader import (
 from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.resources.console.consts import (
-    DataExportDestinationType,
-    DataExportStatus,
-    DataImportStatus,
     DataProjectType,
-    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataTemplateType,
@@ -584,33 +581,30 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
 
 
 def _create_import_data_task_and_wait_for_success(
-    dataset_id: str,
+    version_id: str,
     is_annotated: bool,
     file_path: str,
     source_type: DataSourceType = DataSourceType.PrivateBos,
 ) -> bool:
     """创建并且监听导出任务直到完成"""
 
-    Data.create_data_import_task(
-        dataset_id,
-        is_annotated,
-        source_type,
-        file_path,
+    create_resp = Data.V2.create_dataset_version_import_task(
+        version_id,
+        [file_path],
     )
+
+    task_id = create_resp["result"]
 
     log_info("successfully create importing task")
     while True:
         sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
         log_info("polling import task status")
-        qianfan_resp = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
+        qianfan_resp = Data.V2.get_dataset_version_import_task_info(task_id)["result"]
         status = qianfan_resp["importStatus"]
-        if status in [
-            DataImportStatus.NotStarted.value,
-            DataImportStatus.Running.value,
-        ]:
+        if status == V2Consts.DatasetImportTaskStatus.Importing.value:
             log_info(f"import status: {status}, keep polling")
             continue
-        elif status == DataImportStatus.Finished.value:
+        elif status == V2Consts.DatasetImportTaskStatus.ImportFinished.value:
             log_info("import succeed")
             return True
         else:
@@ -708,11 +702,15 @@ def _datetime_parse_hook(obj: Any) -> Union[datetime.datetime, str]:
     return obj
 
 
-def _check_is_any_data_existed_in_dataset(dataset_id: str, **kwargs: Any) -> bool:
+def _check_is_any_data_existed_in_dataset(
+    dataset_version_id: str, **kwargs: Any
+) -> bool:
     """检查远端数据集是否为空"""
 
-    qianfan_resp = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
-    return qianfan_resp["entityCount"] != 0
+    qianfan_resp = Data.V2.get_dataset_version_info(dataset_version_id, **kwargs)[
+        "result"
+    ]
+    return qianfan_resp["sampleCount"] != 0
 
 
 def _check_data_and_zip_file_valid(
@@ -730,31 +728,38 @@ def _check_data_and_zip_file_valid(
 
 
 def _create_export_data_task_and_wait_for_success(
-    dataset_id: str, **kwargs: Any
-) -> None:
+    dataset_id: str,
+    storage_type: V2Consts.StorageType = V2Consts.StorageType.SysStorage,
+    path: str = "",
+    **kwargs: Any,
+) -> str:
     log_info("start to export dataset")
-    Data.create_dataset_export_task(
-        dataset_id, DataExportDestinationType.PlatformBos, **kwargs
+    create_resp = Data.V2.create_dataset_version_export_task(
+        dataset_id, storage_type, path, **kwargs
     )
     log_info("create dataset export task successfully")
+
+    task_id = create_resp["result"]
 
     # 轮巡导出状态
     while True:
         sleep(get_config().EXPORT_STATUS_POLLING_INTERVAL)
         log_info("polling export task status")
-        info = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
+        info = Data.V2.get_dataset_version_export_task_info(task_id, **kwargs)["result"]
         status = info["exportStatus"]
 
-        if status == DataExportStatus.Finished.value:
+        if status == V2Consts.DatasetExportTaskStatus.ExportFinished.value:
             log_info("export succeed")
             break
-        elif status == DataExportStatus.Running.value:
+        elif status == V2Consts.DatasetExportTaskStatus.Exporting.value:
             log_info(f"export status: {status}, keep polling")
             continue
-        elif status == DataExportStatus.Failed.value:
+        elif status == V2Consts.DatasetExportTaskStatus.ExportFailed.value:
             error = QianfanRequestError(f"export dataset failed with status {status}")
             log_error(str(error))
             raise error
+
+    return task_id
 
 
 def _download_file_from_url_streamly(
@@ -781,25 +786,25 @@ def _download_file_from_url_streamly(
 
 
 def _create_release_data_task_and_wait_for_success(
-    dataset_id: str, **kwargs: Any
+    version_id: str, **kwargs: Any
 ) -> bool:
-    info = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
+    info = Data.V2.get_dataset_version_info(version_id, **kwargs)["result"]
 
-    status = info["releaseStatus"]
-    if status == DataReleaseStatus.Finished:
+    status = info["publishStatus"]
+    if status == V2Consts.DatasetPublishStatus.Published.value:
         return True
 
-    Data.release_dataset(dataset_id, **kwargs)
+    Data.V2.publish_dataset_version(version_id, **kwargs)
     while True:
         sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
 
-        info = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
-        status = info["releaseStatus"]
+        info = Data.V2.get_dataset_version_info(version_id, **kwargs)["result"]
+        status = info["publishStatus"]
 
-        if status == DataReleaseStatus.Running:
+        if status == V2Consts.DatasetPublishStatus.Publishing.value:
             log_info("data releasing, keep polling")
             continue
-        elif status == DataReleaseStatus.Failed:
+        elif status == V2Consts.DatasetPublishStatus.PublishFailed.value:
             message = f"data releasing failed with error code {info['releaseErrCode']}"
             log_error(message)
             return False

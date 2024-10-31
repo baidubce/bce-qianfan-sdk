@@ -92,7 +92,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def __init__(
         self,
         dataset: Union[DatasetConfig, Dataset, str, List[str]],
-        dataset_template: Optional[console_consts.DataTemplateType] = None,
+        dataset_format_type: Optional[console_consts.V2.DatasetFormat] = None,
         corpus_config: Optional[CorpusConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -157,11 +157,11 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
             qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
             if (
-                dataset_template is not None
-                and qf_data_src.template_type != dataset_template
+                dataset_format_type is not None
+                and qf_data_src.data_format_type != dataset_format_type
             ):
                 raise InvalidArgumentError(
-                    f"dataset must be `{dataset_template}` template."
+                    f"dataset must be `{dataset_format_type}` template."
                 )
             self.datasets = [dataset.inner_data_source_cache]
         elif isinstance(dataset.inner_data_source_cache, BosDataSource):
@@ -295,7 +295,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         dataset_src_type = dataset_result.get("sourceType")
         for ds_dict in dataset_result.get("versions", []):
             if dataset_src_type == console_consts.TrainDatasetSourceType.Platform.value:
-                ds = Dataset.load(qianfan_dataset_id=ds_dict.get("versionId"))
+                ds = Dataset.load(qianfan_dataset_version_id=ds_dict.get("versionId"))
                 if ds.inner_data_source_cache:
                     res.append(
                         ds.inner_data_source_cache,
@@ -324,7 +324,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         Returns:
             Dict[str, Any]: datasets meta_info including
-            dataset_id and dataset_type.
+            version_id and dataset_type.
         """
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)

@@ -64,10 +64,11 @@ def test_load_data_action():
     assert isinstance(res, dict)
     assert "datasets" in res
 
-    preset = Dataset.load(qianfan_dataset_id="ds-9cetiuhvnbn4mqs3")
+    preset = Dataset.load(qianfan_dataset_version_id="ds-9cetiuhvnbn4mqs3")
 
     res = LoadDataSetAction(
-        preset, dataset_template=console_consts.DataTemplateType.NonSortedConversation
+        preset,
+        dataset_format_type=console_consts.DataTemplateType.NonSortedConversation,
     ).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
@@ -428,7 +429,7 @@ def test_train_config_validate():
 
 
 def test_ppt():
-    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
+    ppt_ds = Dataset.load(qianfan_dataset_version_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -439,7 +440,7 @@ def test_ppt():
 
 
 def test_ppt_with_sft():
-    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
+    ppt_ds = Dataset.load(qianfan_dataset_version_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
         train_type="ERNIE-Speed",
         dataset=ppt_ds,
@@ -447,7 +448,7 @@ def test_ppt_with_sft():
     ppt_trainer.run()
     assert "task_id" in ppt_trainer.output and "job_id" in ppt_trainer.output
 
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    sft_ds = Dataset.load(qianfan_dataset_version_id="ds-111")
     sft_trainer = LLMFinetune(
         dataset=sft_ds, previous_trainer=ppt_trainer, name="ppt_with_sft"
     )
@@ -461,7 +462,7 @@ def test_all_default_config():
         DefaultTrainConfigMapping,
     )
 
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    sft_ds = Dataset.load(qianfan_dataset_version_id="ds-111")
 
     for k in DefaultTrainConfigMapping.keys():
         LLMFinetune(
@@ -469,7 +470,7 @@ def test_all_default_config():
             dataset=sft_ds,
         )
 
-    ppt_ds = Dataset.load(qianfan_dataset_id="ds-mock-generic")
+    ppt_ds = Dataset.load(qianfan_dataset_version_id="ds-mock-generic")
     for k in DefaultPostPretrainTrainConfigMapping.keys():
         PostPreTrain(
             train_type=k,
@@ -502,7 +503,7 @@ def test_failed_sft_run():
 
 
 def test_increment_sft():
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    sft_ds = Dataset.load(qianfan_dataset_version_id="ds-111")
     trainer = LLMFinetune(
         dataset=sft_ds,
         previous_task_id="task-abc",
@@ -591,9 +592,9 @@ def test_persist():
 
 
 def test_trainer_dataset_config():
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-111")
+    sft_ds = Dataset.load(qianfan_dataset_version_id="ds-111")
     # test multiple dataset
-    sft_ds2 = Dataset.load(qianfan_dataset_id="ds-222")
+    sft_ds2 = Dataset.load(qianfan_dataset_version_id="ds-222")
     qf_ds_conf = DatasetConfig(
         datasets=[sft_ds, sft_ds2],
         eval_split_ratio=0,
@@ -609,8 +610,8 @@ def test_trainer_dataset_config():
 
 
 def test_trainer_corpus_config():
-    sft_ds = Dataset.load(qianfan_dataset_id="ds-144")
-    sft_ds1 = Dataset.load(qianfan_dataset_id="ds-123")
+    sft_ds = Dataset.load(qianfan_dataset_version_id="ds-144")
+    sft_ds1 = Dataset.load(qianfan_dataset_version_id="ds-123")
     qf_ds_conf = DatasetConfig(
         datasets=[sft_ds, sft_ds1],
         eval_split_ratio=0,

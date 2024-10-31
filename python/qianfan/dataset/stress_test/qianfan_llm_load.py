@@ -487,6 +487,11 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 clear_history = stream_json.get("need_clear_history", False)
                 if "result" in stream_json:
                     content = stream_json["result"]
+                elif "function_call" in stream_json:
+                    content = json.dumps(
+                        stream_json["function_call"], ensure_ascii=False
+                    )
+                    merged_query += content
                 elif "error_code" in stream_json and stream_json["error_code"] > 0:
                     self.exc = Exception(
                         "ERROR CODE {}".format(str(stream_json["error_code"]))

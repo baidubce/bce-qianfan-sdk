@@ -388,7 +388,6 @@ class QianfanCustomHttpSession(CustomHttpSession):
         ...
 
     def _write_result(self, res: Dict) -> None:
-        print(res)
         res_json = json.dumps(res, ensure_ascii=False)
         folder = GlobalData.data["record_dir"]
         file_path = folder + "/" + "query_result.jsonl"

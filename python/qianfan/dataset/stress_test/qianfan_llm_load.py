@@ -272,7 +272,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
             if self.exc:
                 self._write_result(
                     {
-                        "exception_type": type(self.exc),
+                        "exception_type": str(type(self.exc)),
                         "error": str(self.exc),
                         "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
                     }
@@ -485,8 +485,13 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 stream_json = resp["body"]
                 merged_query += stream_json.get("result", "")
                 clear_history = stream_json.get("need_clear_history", False)
-                if "result" in stream_json:
+                if "result" in stream_json and len(stream_json["result"]) != 0:
                     content = stream_json["result"]
+                elif "function_call" in stream_json:
+                    content = json.dumps(
+                        stream_json["function_call"], ensure_ascii=False
+                    )
+                    merged_query += content
                 elif "error_code" in stream_json and stream_json["error_code"] > 0:
                     self.exc = Exception(
                         "ERROR CODE {}".format(str(stream_json["error_code"]))

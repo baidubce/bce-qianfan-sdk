@@ -56,7 +56,8 @@ class MyEventHandler(EventHandler):
 
 def test_load_data_action():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "test",
+        console_consts.V2.DatasetFormat.PromptResponse,
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
@@ -68,7 +69,7 @@ def test_load_data_action():
 
     res = LoadDataSetAction(
         preset,
-        dataset_format_type=console_consts.DataTemplateType.NonSortedConversation,
+        dataset_format_type=console_consts.V2.DatasetFormat.PromptResponse,
     ).exec()
     assert isinstance(res, dict)
     assert "datasets" in res
@@ -134,7 +135,8 @@ def test_trainer_sft_run():
         peft_type=PeftType.ALL,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "test",
+        console_consts.V2.DatasetFormat.PromptResponse,
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
@@ -183,7 +185,7 @@ def test_trainer_sft_with_deploy():
     )
     deploy_config = DeployConfig(replicas=1, pool_type=1, service_type=ServiceType.Chat)
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "test", console_consts.V2.DatasetFormat.PromptResponse
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
@@ -231,7 +233,7 @@ def test_service_exec():
 
 def test_trainer_resume():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        name="test", template_type=console_consts.DataTemplateType.NonSortedConversation
+        "test", console_consts.V2.DatasetFormat.PromptResponse
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
@@ -272,7 +274,7 @@ def test_batch_run_on_qianfan():
 # 测试_parse_from_input方法
 def test__parse_from_input():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "eval", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.V2.DatasetFormat.PromptResponse
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_accuracy=True)]  # 创建一些评估器
@@ -300,7 +302,7 @@ def test__parse_from_input():
 # 测试eval action exec方法
 def test_eval_action_exec():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "eval", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.V2.DatasetFormat.PromptResponse
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
@@ -317,7 +319,7 @@ def test_eval_action_exec():
 # 测试eval action resume方法
 def test_eval_action_resume():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "eval", console_consts.DataTemplateType.NonSortedConversation
+        "eval", console_consts.V2.DatasetFormat.PromptResponse
     )
     test_dataset = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     test_evaluators = [QianfanRuleEvaluator(using_similarity=True)]  # 创建一些评估器
@@ -338,11 +340,12 @@ def test_trainer_sft_with_eval():
         peft_type=PeftType.ALL,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "train", console_consts.DataTemplateType.NonSortedConversation
+        "train", console_consts.V2.DatasetFormat.PromptResponse
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
     qianfan_eval_data_source = QianfanDataSource.create_bare_dataset(
-        "eval", console_consts.DataTemplateType.NonSortedConversation
+        "eval",
+        console_consts.V2.DatasetFormat.PromptResponse,
     )
     eval_ds = Dataset.load(source=qianfan_eval_data_source, organize_data_as_group=True)
     eh = MyEventHandler()
@@ -487,7 +490,8 @@ def test_failed_sft_run():
         peft_type=PeftType.ALL,
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "test",
+        console_consts.V2.DatasetFormat.PromptResponse,
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
@@ -527,7 +531,8 @@ def test_persist():
         ),
     )
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", console_consts.DataTemplateType.NonSortedConversation
+        "test",
+        console_consts.V2.DatasetFormat.PromptResponse,
     )
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 

@@ -15,19 +15,21 @@
 """
     Mock server for unit test
 """
+import copy
 import io
 
 # disable line too long lint error in this file
 # ruff: noqa: E501
 import json
 import random
+import string
 import threading
 import time
 import zipfile
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
-from typing import Dict
+from typing import Any, Dict, List
 
 import flask
 import requests
@@ -4485,35 +4487,339 @@ def dataset_v2():
     action = request.args.get(Consts.ConsoleAPIQueryAction)
     json_body = request.json
     action_handler = {
-        Consts.FineTuneCreateJobAction: finetune_v2_create_job,
-        Consts.FineTuneCreateTaskAction: finetune_v2_create_task,
-        Consts.FineTuneJobListAction: finetune_v2_job_list,
-        Consts.FineTuneTaskListAction: finetune_v2_task_list,
-        Consts.FineTuneTaskDetailAction: finetune_v2_task_detail,
-        Consts.FineTuneStopTaskAction: finetune_v2_stop_task,
-        Consts.FineTuneSupportedModelsAction: finetune_v2_supported_models,
+        Consts.DatasetV2CreateDatasetAction: dataset_v2_create_dataset,
+        Consts.DatasetV2GetDatasetListAction: dataset_v2_describe_datasets,
+        Consts.DatasetV2DeleteDatasetAction: dataset_v2_delete_dataset,
+        Consts.DatasetV2CreateDatasetVersionAction: dataset_v2_create_dataset_version,
+        Consts.DatasetV2GetDatasetVersionInfoAction: (
+            dataset_v2_describe_dataset_version
+        ),
+        Consts.DatasetV2DeleteDatasetVersionAction: dataset_v2_delete_dataset_version,
+        Consts.DatasetV2PublishDatasetVersionAction: dataset_v2_publish_dataset_version,
+        Consts.DatasetV2GetDatasetVersionListAction: (
+            dataset_v2_describe_dataset_versions
+        ),
+        Consts.DatasetV2CreateDatasetVersionImportTaskAction: (
+            dataset_v2_create_import_task
+        ),
+        Consts.DatasetV2GetDatasetVersionImportTaskInfoAction: (
+            dataset_v2_describe_import_task
+        ),
+        Consts.DatasetV2CreateDatasetVersionExportTaskAction: (
+            dataset_v2_create_export_task
+        ),
+        Consts.DatasetV2GetDatasetVersionExportTaskInfoAction: (
+            dataset_v2_describe_export_task
+        ),
     }
     return action_handler.get(action)(body=json_body)
 
+
+def _generate_random_string(length):
+    # 定义可以用来生成字符串的字符集，包括字母和数字
+    characters = string.ascii_letters + string.digits
+    # 使用 random.choices 从字符集中随机选择指定数量的字符
+    random_string = "".join(random.choices(characters, k=length))
+    return random_string
+
+
+def _get_current_timestamp():
+    # 创建代表东八区（+08:00）的时区对象
+    tz_offset = timezone(timedelta(hours=8))
+
+    # 获取当前时间，并应用时区偏移
+    now = datetime.now(tz_offset)
+
+    timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    return timestamp_str
+
+
+_v2_dataset_id_version_map: Dict[str, List[str]] = {}
+_v2_dataset_map: Dict[str, Dict[str, Any]] = {}
+
+
 def dataset_v2_create_dataset(body: Dict):
+    dataset_id_suffix = _generate_random_string(10)
+
+    dataset_id = f"dg-{dataset_id_suffix}"
+    dataset_version_id = f"ds-{dataset_id_suffix}"
+
     result_dict = {
         "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
         "result": {
-            "datasetversionId": "ds-123",
-            "datasetId": "dg-123",
+            "versionId": dataset_version_id,
+            "datasetId": dataset_id,
             "datasetName": body.get("datasetName", ""),
             "versionNumber": 1,
             "dataFormat": body.get("dataFormat", ""),
             "storageType": body.get("storageType", ""),
-            "storagePath": "bos:/yourBucket/yourDir/_system_/dataset/ds-xxx/images",
-            "createTime": "2023-11-02T14:50:30.6533454+08:00"
-        }
+            "storagePath": body.get("storagePath", ""),
+            "createTime": _get_current_timestamp(),
+            "sizeMB": 513.42,
+            "description": "中文医疗问答数据集第一版",
+            "characterCount": 111,
+            "sampleCount": 10,
+            "annotationProgress": "1/10",
+            "importStatus": "Created",
+            "publishStatus": "Unpublished",
+            "publishProgress": "0",
+            "creator": "accountName",
+            "modifyTime": _get_current_timestamp(),
+        },
     }
 
     if body.get("storageType", "") == "sysStorage":
         del result_dict["result"]["storagePath"]
 
+    version_list = _v2_dataset_id_version_map.get(dataset_id, [])
+    version_list.append(dataset_version_id)
+    _v2_dataset_id_version_map[dataset_id] = version_list
+    _v2_dataset_map[dataset_version_id] = result_dict
+
     return json_response(result_dict)
+
+
+def dataset_v2_describe_datasets(body: Dict):
+    result_dict = {
+        "requestId": "b4f5f3f2-307e-41d6-5afc-a6708cfa286b",
+        "result": {
+            "pageInfo": {
+                "marker": "",
+                "maxKeys": 2,
+                "isTruncated": False,
+                "nextMarker": "dg-xxx",
+                "pageReverse": False,
+            },
+            "datasets": [
+                {
+                    "datasetId": "dg-xxx",
+                    "datasetName": "helloDatasetList1",
+                    "dataFormat": "PromptResponse",
+                },
+                {
+                    "datasetId": "dg-xxx",
+                    "datasetName": "helloDatasetList2",
+                    "dataFormat": "PromptImage",
+                },
+            ],
+        },
+    }
+
+    return json_response(result_dict)
+
+
+def dataset_v2_delete_dataset(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_create_dataset_version(body: Dict):
+    dataset_id = body["datasetId"]
+    dataset_version_id_suffix = _generate_random_string(10)
+    new_version_id = f"ds-{dataset_version_id_suffix}"
+
+    version_list = _v2_dataset_id_version_map.get(dataset_id, [])
+    if len(version_list) == 0:
+        return json_response(
+            {
+                "requestId": "6ba7b810-xxxc04fd430c8",
+                "code": "AccessDenied",
+                "message": "Access denied.",
+            }
+        )
+
+    old_version_id = version_list[-1]
+    version_list.append(new_version_id)
+    _v2_dataset_id_version_map[dataset_id] = version_list
+
+    new_dataset_dict = copy.deepcopy(_v2_dataset_map[old_version_id])
+    result = new_dataset_dict["result"]
+    result["versionId"] = new_version_id
+    result["versionNumber"] = result["versionNumber"] + 1
+    result["createTime"] = _get_current_timestamp()
+    result["modifyTime"] = _get_current_timestamp()
+    new_dataset_dict["result"] = result
+
+    _v2_dataset_map[new_version_id] = new_dataset_dict
+
+    return json_response(new_dataset_dict)
+
+
+def dataset_v2_describe_dataset_version(body: Dict):
+    version_id = body["versionId"]
+    if version_id in _v2_dataset_map:
+        return json_response(_v2_dataset_map.get(version_id, {}))
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "datasetId": "dg-xxx",
+                "datasetName": "ChineseMedicalDialogueData中文医疗问答数据集",
+                "dataFormat": (
+                    "PromptResponse" if version_id != "ds-mock-generic" else "Text"
+                ),
+                "versionId": version_id,
+                "versionNumber": 1,
+                "createTime": "2023-09-08 17:10:11",
+                "modifyTime": "2023-10-25 20:45:23",
+                "storageType": "sysStorage",
+                "sizeMB": 513.42,
+                "description": "中文医疗问答数据集第一版",
+                "characterCount": 111,
+                "sampleCount": 10,
+                "annotationProgress": "1/10",
+                "importStatus": "Created",
+                "publishStatus": "Unpublished",
+                "publishProgress": "0",
+                "creator": "accountName",
+            },
+        }
+    )
+
+
+def dataset_v2_delete_dataset_version(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_publish_dataset_version(body: Dict):
+    version_id = body["versionId"]
+
+    if version_id in _v2_dataset_map:
+        dataset_dict = _v2_dataset_map[version_id]
+        dataset_dict["result"]["publishStatus"] = "Published"
+        dataset_dict["result"]["publishProgress"] = "100%"
+        _v2_dataset_map[version_id] = dataset_dict
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_describe_dataset_versions(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "pageInfo": {
+                    "marker": "",
+                    "maxKeys": 2,
+                    "isTruncated": True,
+                    "nextMarker": "ds-xxx",
+                    "pageReverse": False,
+                },
+                "datasetId": "dg-xxx",
+                "datasetName": "helloDatasetDetail",
+                "dataFormat": "PromptResponse",
+                "datasetVersions": [
+                    {
+                        "versionId": "ds-ck73i9r6423t1rzm",
+                        "versionNumber": 1,
+                        "description": "",
+                        "storageType": "sysStorage",
+                        "sizeMB": 0.05,
+                        "sampleCount": 35,
+                        "characterCount": 111,
+                        "annotationProgress": "35/35",
+                        "importStatus": "Importing",
+                        "publishStatus": "Unpublished",
+                        "creator": "accountName",
+                        "createTime": "2024-07-24 21:29:44",
+                        "modifyTime": "2024-07-24 21:29:50",
+                    },
+                    {
+                        "versionId": "ds-yx9ajxk2s80m84m4",
+                        "versionNumber": 2,
+                        "description": "",
+                        "storageType": "BOS",
+                        "storagePath": "bos:/{your_bucket}/{you_dir}",
+                        "sizeMB": 0.02,
+                        "sampleCount": 35,
+                        "characterCount": 111,
+                        "annotationProgress": "35/35",
+                        "importStatus": "Importing",
+                        "publishStatus": "Unpublished",
+                        "creator": "accountName",
+                        "createTime": "2024-07-24 23:12:43",
+                        "modifyTime": "2024-07-24 23:13:35",
+                    },
+                ],
+            },
+        }
+    )
+
+
+def dataset_v2_create_import_task(body: Dict):
+    task_id_suffix = _generate_random_string(10)
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": f"task-{task_id_suffix}",
+        }
+    )
+
+
+def dataset_v2_describe_import_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "febaf751-7725-4a8b-5699-a966b82dd676",
+            "result": {
+                "versionId": "ds-sshcwxmh5uk9t17w",
+                "importStatus": "ImportFinished",
+                "progress": "100%",
+                "sizeMB": 0.01,
+                "sampleCount": 10,
+                "creator": "accountName",
+                "startTime": "2024-08-06 11:17:50",
+                "finishTime": "2024-08-06 11:18:01",
+                "errDownloadUrl": "",
+            },
+        }
+    )
+
+
+def dataset_v2_create_export_task(body: Dict):
+    task_id_suffix = _generate_random_string(10)
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": f"task-{task_id_suffix}",
+        }
+    )
+
+
+def dataset_v2_describe_export_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "bdb7afcc-d9a4-4804-7587-8d9afaa53007",
+            "result": {
+                "storageType": "sysStorage",
+                "storagePath": "bos:/bucketName/some/path/exportFileName.zip",
+                "sizeMB": 0.05,
+                "sampleCount": 55,
+                "exportStatus": "ExportFinished",
+                "progress": "100%",
+                "creator": "accountName",
+                "startTime": "2024-08-01 10:31:48",
+                "finishTime": "2024-08-01 10:31:58",
+                "downloadUrl": "http://127.0.0.1:8866/url",
+            },
+        }
+    )
 
 
 def _start_mock_server():

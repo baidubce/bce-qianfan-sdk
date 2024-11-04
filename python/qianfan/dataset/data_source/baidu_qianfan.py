@@ -17,6 +17,7 @@ qianfan data source implementation including uploading / downloading
 
 import json
 import os
+import re
 import uuid
 import zipfile
 from typing import Any, Dict, Optional, Tuple
@@ -91,7 +92,13 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_region = sup_storage_region
         elif self.storage_type == V2Consts.StorageType.Bos:
             assert self.storage_region
+            assert self.storage_path
             storage_region = self.storage_region
+            match_result = re.search(r"^bos://(.*?)/(.*)/$", self.storage_path)
+            if match_result is None:
+                raise ValueError("no bos bucket and path found")
+            groups = match_result.groups()
+            storage_id, storage_path = groups[0], groups[1]
         elif self.storage_type == V2Consts.StorageType.SysStorage:
             err_msg = "don't support upload dataset to dataset which use platform bos"
             log_error(err_msg)
@@ -176,11 +183,12 @@ class QianfanDataSource(DataSource, BaseModel):
             V2Consts.DatasetFormat.PromptImageResponse,
         ]
 
+        ak, sk = self._get_console_ak_and_sk()
+
         # 获取存储信息和鉴权信息
         storage_id, storage_path, storage_region = self._get_transmission_bos_info(
             sup_storage_id, sup_storage_path, sup_storage_region
         )
-        ak, sk = self._get_console_ak_and_sk()
 
         # 构造本地和远端的路径
         if not should_save_as_zip_file:
@@ -471,7 +479,6 @@ class QianfanDataSource(DataSource, BaseModel):
             name=name,
             version=qianfan_resp["versionNumber"],
             storage_type=storage_type,
-            storage_path=qianfan_resp["storagePath"],
             info=(
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
@@ -701,11 +708,12 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def create_new_version(self) -> "QianfanDataSource":
         qianfan_resp = Data.V2.create_dataset_version(self.group_id)
+        result = qianfan_resp["result"]
         dataset = QianfanDataSource(
-            id=qianfan_resp["versionId"],
-            group_id=qianfan_resp["datasetId"],
-            name=qianfan_resp["datasetName"],
-            version=qianfan_resp["versionNumber"],
+            id=result["versionId"],
+            group_id=result["datasetId"],
+            name=result["datasetName"],
+            version=result["versionNumber"],
             data_format_type=self.data_format_type,
             storage_type=self.storage_type,
             storage_path=self.storage_path,

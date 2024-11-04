@@ -30,12 +30,7 @@ from qianfan.dataset.consts import (
     QianfanLocalCacheDir,
 )
 from qianfan.dataset.data_source import FileDataSource, FormatType, QianfanDataSource
-from qianfan.resources.console.consts import (
-    DataProjectType,
-    DataSetType,
-    DataStorageType,
-    DataTemplateType,
-)
+from qianfan.resources.console.consts import V2 as V2Consts
 
 
 def _clean_func():
@@ -159,56 +154,43 @@ def test_save_as_folder():
 def test_create_bare_qianfan_data_source():
     datasource_1 = QianfanDataSource.create_bare_dataset(
         "name",
-        DataTemplateType.NonSortedConversation,
-        DataStorageType.PublicBos,
+        V2Consts.DatasetFormat.PromptResponse,
+        V2Consts.StorageType.SysStorage,
     )
 
-    assert datasource_1.template_type == DataTemplateType.NonSortedConversation
-    assert datasource_1.project_type == DataProjectType.Conversation
-    assert datasource_1.set_type == DataSetType.TextOnly
+    assert datasource_1.data_format_type == V2Consts.DatasetFormat.PromptResponse
 
     datasource_2 = QianfanDataSource.create_bare_dataset(
         "name",
-        DataTemplateType.Text2Image,
-        DataStorageType.PrivateBos,
-        storage_id="a",
-        storage_path="b",
+        V2Consts.DatasetFormat.PromptImage,
+        V2Consts.StorageType.Bos,
+        storage_path="bos://a/b/",
     )
 
-    assert datasource_2.template_type == DataTemplateType.Text2Image
-    assert datasource_2.project_type == DataProjectType.Text2Image
-    assert datasource_2.set_type == DataSetType.MultiModel
-    assert (
-        datasource_2.storage_path
-        == "/easydata/_system_/dataset/ds-z07hkq2kyvsmrmdw/texts"
-    )
-    assert datasource_2.storage_id == "a"
+    assert datasource_2.data_format_type == V2Consts.DatasetFormat.PromptImage
+    assert datasource_2.storage_path == "bos://a/b/"
     assert datasource_2.storage_region == "bj"
     assert datasource_2.format_type() == FormatType.Text2Image
 
 
 def test_create_qianfan_data_source_from_existed():
-    source = QianfanDataSource.get_existed_dataset("12", False)
-    assert source.id == "12"
-    assert source.storage_region == "bj"
+    source = QianfanDataSource.create_bare_dataset(
+        "empty", V2Consts.DatasetFormat.PromptResponse, V2Consts.StorageType.SysStorage
+    )
+    new_source = QianfanDataSource.get_existed_dataset(source.id, False)
+    assert new_source.id == source.id
 
 
 def create_an_empty_qianfan_datasource() -> QianfanDataSource:
     return QianfanDataSource(
-        id=1,
-        group_id=2,
+        id="1",
+        group_id="2",
         name="test",
-        set_type=DataSetType.TextOnly,
-        project_type=DataProjectType.Conversation,
-        template_type=DataTemplateType.NonSortedConversation,
+        data_format_type=V2Consts.DatasetFormat.PromptResponse,
         version=1,
-        storage_type=DataStorageType.PrivateBos,
-        storage_id="123",
-        storage_path="456",
-        storage_name="storage_name",
-        storage_raw_path="/s/",
+        storage_type=V2Consts.StorageType.Bos,
+        storage_path="bos://123/456/",
         storage_region="bj",
-        data_format_type=FormatType.Jsonl,
     )
 
 
@@ -221,11 +203,13 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     empty_table = Dataset.create_from_pyobj({QianfanDatasetPackColumnName: ["1"]})
     ds = create_an_empty_qianfan_datasource()
 
-    ds.storage_type = DataStorageType.PublicBos
+    ds.storage_type = V2Consts.StorageType.SysStorage
     with pytest.raises(NotImplementedError):
         ds.save(empty_table)
 
-    ds = create_an_empty_qianfan_datasource()
+    ds = QianfanDataSource.create_bare_dataset(
+        "test", V2Consts.DatasetFormat.PromptResponse
+    )
     config = get_config()
 
     config.ACCESS_KEY = ""
@@ -240,12 +224,12 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
         )
 
     ds.ak = "1"
-
     with pytest.raises(ValueError):
         ds.save(empty_table)
 
     ds.sk = "2"
-    assert ds.save(empty_table)
+    with pytest.raises(NotImplementedError):
+        ds.save(empty_table)
 
     config.ACCESS_KEY = "1"
     config.SECRET_KEY = "2"
@@ -256,16 +240,12 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
         sup_storage_path="/sdasd/",
         sup_storage_region="bj",
     )
-    assert ds.save(
-        empty_table,
-        sup_storage_id="1",
-        sup_storage_path="/sdasd/",
-        sup_storage_region="bj",
-    )
 
 
 def test_qianfan_data_source_load():
-    ds = create_an_empty_qianfan_datasource()
+    ds = QianfanDataSource.create_bare_dataset(
+        "empty", V2Consts.DatasetFormat.PromptResponse, V2Consts.StorageType.SysStorage
+    )
     content = Dataset(inner_table=ds.fetch()).list()
     assert content[0][0]["response"] == [["no response"]]
 

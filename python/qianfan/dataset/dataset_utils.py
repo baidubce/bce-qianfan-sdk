@@ -21,8 +21,8 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
-import deprecated
 import requests
+from typing_extensions import deprecated
 
 from qianfan import ChatCompletion, Completion, QfResponse, get_config
 from qianfan.common import Prompt
@@ -36,12 +36,12 @@ from qianfan.dataset.schema import (
     Schema,
 )
 from qianfan.errors import QianfanError, RequestError
-from qianfan.resources import Data, Model
+from qianfan.resources import Data
 from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.resources.console.consts import (
     ETLTaskStatus,
-    EvaluationTaskStatus,
 )
+from qianfan.resources.console.eval import Eval
 from qianfan.utils import log_debug, log_error, log_info, log_warn
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -152,7 +152,7 @@ def _create_a_dataset_etl_task(
     return etl_id, new_data_source.id
 
 
-@deprecated.deprecated
+@deprecated("these schemas aren't adapted for dataset V2")
 def _get_qianfan_schema(source: QianfanDataSource) -> Schema:
     """推断获取 Schema"""
     data_format_type = source.data_format_type
@@ -366,28 +366,29 @@ def _wait_evaluation_finished(eval_id: str) -> str:
     log_info(f"start to polling status of evaluation task {eval_id}")
 
     while True:
-        eval_info = Model.get_evaluation_info(eval_id)
+        eval_info = Eval.V2.describe_eval_task(eval_id)
         eval_state = eval_info["result"]["state"]
 
         log_debug(f"current evaluation task info: {eval_info}")
         log_info(f"current eval_state: {eval_state}")
 
         if eval_state not in [
-            EvaluationTaskStatus.Pending.value,
-            EvaluationTaskStatus.Doing.value,
+            V2Consts.EvalTaskStatus.Queued.value,
+            V2Consts.EvalTaskStatus.Running.value,
         ]:
             break
         time.sleep(get_config().BATCH_RUN_STATUS_POLLING_INTERVAL)
 
     if eval_state not in [
-        EvaluationTaskStatus.DoingWithManualBegin,
-        EvaluationTaskStatus.Done,
+        V2Consts.EvalTaskStatus.RunningWithManualBegin.value,
+        V2Consts.EvalTaskStatus.RunningWithMetricsCalculating.value,
+        V2Consts.EvalTaskStatus.Succeeded.value,
     ]:
         err_msg = f"can't finish evaluation task and failed with state {eval_state}"
         log_error(err_msg)
         raise QianfanError(err_msg)
 
-    result_dataset_id = eval_info["result"]["evalStandardConf"]["resultDatasetIdStr"]
+    result_dataset_id = eval_info["result"]["inferDatasetList"][0]["inferDatasetId"]
     log_info(f"get result dataset id {result_dataset_id}")
 
     return result_dataset_id
@@ -403,26 +404,27 @@ def _start_an_evaluation_task_for_model_batch_inference(
 
     log_info("start to create evaluation task in model")
 
-    resp = Model.create_evaluation_task(
-        name=f"model_run_{generate_letter_num_random_id()}",
-        version_info=[
-            {
-                "modelId": model_set_id,
-                "modelVersionId": model_id,
+    resp = Eval.V2.create_eval_task(
+        task_name=f"model_run_{generate_letter_num_random_id()}",
+        eval_object_type="model",
+        eval_object_config={
+            "evalModelConfig": {
+                "versionId": data_source.id,
+                "evalModelConfigList": [
+                    {
+                        "modelId": model_id,
+                    }
+                ],
             }
-        ],
-        dataset_id=data_source.id,
+        },
         eval_config={
             "evalMode": "manual",
-            "evaluationDimension": [
-                {"dimension": "满意度"},
-            ],
+            "manualEvalConfig": {"evalDimension": [{"dimension": "满意度"}]},
         },
-        dataset_name=data_source.name,
         **kwargs,
     ).body
 
-    eval_id = resp["result"]["evalIdStr"]
+    eval_id = resp["result"]
 
     log_debug(f"create evaluation task in model response: {resp}")
     result_dataset_id = _wait_evaluation_finished(eval_id)

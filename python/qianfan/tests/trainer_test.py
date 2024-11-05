@@ -268,7 +268,7 @@ def test_batch_run_on_qianfan():
 
     inner_source = result_dataset.inner_data_source_cache
     assert isinstance(inner_source, QianfanDataSource)
-    assert inner_source.id == "1"
+    assert inner_source.id == "ds-sueg3fqxxxxx"
 
 
 # 测试_parse_from_input方法
@@ -355,7 +355,7 @@ def test_trainer_sft_with_eval():
         train_config=train_config,
         event_handler=eh,
         eval_dataset=eval_ds,
-        evaluators=[QianfanRefereeEvaluator(app_id=18890)],
+        evaluators=[QianfanRefereeEvaluator()],
     )
     sft_task.run()
     res = sft_task.result

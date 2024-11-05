@@ -4822,6 +4822,179 @@ def dataset_v2_describe_export_task(body: Dict):
     )
 
 
+@app.route(Consts.ModelEvalV2API, methods=["POST"])
+def eval_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.ModelEvalV2Create: eval_v2_create_eval_task,
+        Consts.ModelEvalV2DescribeTasks: eval_v2_describe_eval_tasks,
+        Consts.ModelEvalV2DescribeTask: eval_v2_describe_eval_task,
+        Consts.ModelEvalV2DescribeTaskReport: eval_v2_describe_eval_task_report,
+        Consts.ModelEvalV2DeleteTask: eval_v2_delete_eval_task,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+_eval_task_id_map: Dict[str, Any] = {}
+
+
+def eval_v2_create_eval_task(body: Dict):
+    task_id = f"ame-_{_generate_random_string(7)}"
+
+    _eval_task_id_map[task_id] = body
+    return json_response(
+        {
+            "requestId": "df3986c5-70bd-40d9-bedf-6db65ef137d8",
+            "result": task_id,
+        }
+    )
+
+
+def eval_v2_describe_eval_tasks(body: Dict):
+    return json_response(
+        {
+            "requestId": "55244c61-3b25-40be-af34-ee6c4675e965",
+            "result": {
+                "evalTaskList": [
+                    {
+                        "taskId": "ame-nfw1fxxxxx",
+                        "taskName": "sandboxdd",
+                        "evalType": "auto",
+                        "evalMode": "rule",
+                        "description": "sfasf",
+                        "createTime": "2023-05-31 23:34:38",
+                    }
+                ],
+                "pageInfo": {"marker": "", "maxKeys": 100, "isTruncated": False},
+            },
+        }
+    )
+
+
+def eval_v2_describe_eval_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "81252b33-a63e-4231-93cb-8df1f2720a0d",
+            "result": {
+                "taskId": "ame-4kvnxxxxx",
+                "taskName": "自动评估_停止测试0910",
+                "description": "",
+                "state": "Succeeded",
+                "evalObjectConfig": {
+                    "evalModelConfig": {
+                        "versionId": "ds-mwmk3mwkxxxxx",
+                        "storageType": "BOS",
+                        "storagePath": "bos:/aip-static/123",
+                        "evalModelConfigList": [
+                            {
+                                "modelId": "amv-6j6ixxxxx",
+                                "isBaseline": False,
+                                "promptTemplate": "",
+                                "params": {},
+                            },
+                            {
+                                "modelId": "amv-tts8vxxxx",
+                                "isBaseline": False,
+                                "promptTemplate": "",
+                                "params": {},
+                            },
+                        ],
+                    }
+                },
+                "evalConfig": {
+                    "evalMode": "rule",
+                    "autoRuleEvalConfig": {
+                        "scoreModes": ["similarity", "accuracy"],
+                        "stopWordList": None,
+                        "stopWordsPath": "",
+                    },
+                },
+                "inferDatasetList": [
+                    {
+                        "inferDatasetId": "ds-sueg3fqxxxxx",
+                        "modelId": "amv-6j6is3sp166h",
+                    },
+                    {"inferDatasetId": "ds-ecwqqjxxxxx", "modelId": "amv-tts8v6re61hp"},
+                ],
+                "createTime": "2024-09-10 11:52:53",
+                "updateTime": "2024-09-10 16:52:25",
+            },
+        }
+    )
+
+
+def eval_v2_describe_eval_task_report(body: Dict):
+    return json_response(
+        {
+            "requestId": "d60a00c4-a724-4851-96e5-b4dc3b258ca0",
+            "result": [
+                {
+                    "taskId": "ame-4kvnxxxx",
+                    "taskName": "自动评估_停止测试0910",
+                    "modelId": "amv-tts8v6re61hp",
+                    "inferDatasetId": "ds-ecwqqjb787dk1vm6",
+                    "evalObjectType": "service",
+                    "evalMode": "rule",
+                    "effectMetric": {
+                        "accuracy": 0,
+                        "f1Score": 0.34983957,
+                        "rouge_1": 0.33882716,
+                        "rouge_2": 0.15241386,
+                        "rouge_l": 0.26100817,
+                        "bleu4": 0.09671887,
+                        "avgJudgeScore": 0,
+                        "stdJudgeScore": 0,
+                        "medianJudgeScore": 0,
+                        "scoreDistribution": None,
+                        "manualAvgScore": 0,
+                        "goodCaseProportion": 0,
+                        "subjectiveImpression": "",
+                        "manualScoreDistribution": None,
+                        "gsbDistribution": None,
+                    },
+                },
+                {
+                    "taskId": "ame-4kvnxxxx",
+                    "taskName": "自动评估_停止测试0910",
+                    "modelId": "amv-6j6is3sp166h",
+                    "inferDatasetId": "ds-sueg3fqnd14h9kqt",
+                    "evalObjectType": "service",
+                    "evalMode": "rule",
+                    "effectMetric": {
+                        "accuracy": 0,
+                        "f1Score": 0.34691638,
+                        "rouge_1": 0.32689363,
+                        "rouge_2": 0.13487022,
+                        "rouge_l": 0.25140443,
+                        "bleu4": 0.087691635,
+                        "edit_dist": 331.97778,
+                        "embedding_dist": 0.16930991,
+                        "avgJudgeScore": 0,
+                        "stdJudgeScore": 0,
+                        "medianJudgeScore": 0,
+                        "scoreDistribution": None,
+                        "manualAvgScore": 0,
+                        "goodCaseProportion": 0,
+                        "subjectiveImpression": "",
+                        "manualScoreDistribution": None,
+                        "gsbDistribution": None,
+                    },
+                },
+            ],
+        }
+    )
+
+
+def eval_v2_delete_eval_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "c8d2afee-b307-471a-80ab-9b08b36f2272",
+            "result": {},
+        }
+    )
+
+
 def _start_mock_server():
     """
     run mock server

@@ -428,3 +428,13 @@ class V2:
         Exporting: str = "Exporting"
         ExportFinished: str = "ExportFinished"
         ExportFailed: str = "ExportFailed"
+
+    class EvalTaskStatus(str, Enum):
+        Queued: str = "Queued"
+        Running: str = "Running"
+        RunningWithManualBegin: str = "RunningWithManualBegin"
+        RunningWithMetricsCalculating: str = "RunningWithMetricsCalculating"
+        Succeeded: str = "Succeeded"
+        Stopping: str = "Stopping"
+        Failed: str = "Failed"
+        Stopped: str = "Stopped"

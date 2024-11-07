@@ -20,6 +20,7 @@ export interface DefaultConfig {
     QIANFAN_BASE_URL: string;
     QIANFAN_CONSOLE_API_BASE_URL: string;
     QIANFAN_BEAR_TOKEN_URL: string;
+    QIANFAN_V2_BASE_URL: string;
     QIANFAN_LLM_API_RETRY_TIMEOUT: string;
     QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR: string;
     QIANFAN_LLM_RETRY_MAX_WAIT_INTERVAL: string;
@@ -27,6 +28,7 @@ export interface DefaultConfig {
     QIANFAN_QPS_LIMIT: string;
     QIANFAN_RPM_LIMIT: string;
     QIANFAN_TPM_LIMIT: string;
+    APP_ID: string;
     version: string;
     // 浏览器字段是否开启鉴权，是则使用鉴权，否则不使用鉴权
     ENABLE_OAUTH: boolean;
@@ -127,9 +129,37 @@ interface baseReq {
 }
 
 /**
+ * v2版本对话请求
+ */
+export interface ChatBodyV2 {
+    /**
+     * appid 应用ID ，不传使用静默 appid
+     */
+    appid?: string;
+    /**
+     * 是否开启排队抢占，错峰使用，开启后响应时间会有所增加，不保证 SLA
+     * 默认 false
+     * true 开启抢占
+     */
+    preemptible?: boolean;
+    // /**
+    //  * （暂不对外开放）用户画像，仅千亿EB支持，需要开白名单权限
+    //  */
+    // user_setting?: string;
+    /**
+     * 返回搜索溯源信息的数量默认由系统内部指定
+     */
+    trace_number?: number;
+    // /**
+    //  * （暂不对外开放）表示安全等级
+    //  */
+    // safety_level?: string;
+}
+
+/**
  * 对话请求
  */
-export interface ChatBody extends baseReq {
+export interface ChatBody extends baseReq, ChatBodyV2 {
     /**
      * 聊天上下文信息
      * 1. messages 成员不能为空，1 个成员表示单轮对话，多个成员表示多轮对话

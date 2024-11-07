@@ -486,32 +486,39 @@ class QfAPIRequestor(BaseAPIRequestor):
 
             def _list_generator(generator: Iterator) -> Any:
                 data: Queue[QfResponse] = Queue()
+                cond = threading.Condition()
+                is_closed = False
 
                 def _inner_worker() -> None:
-                    for res in generator:
-                        data.put(res)
+                    nonlocal is_closed
+                    with cond:
+                        for res in generator:
+                            data.put(res)
+                            cond.notify()
+                        is_closed = True
+                        cond.notify()
 
                 if self._sync_reading_thread_count is not None:
                     task = self._sync_reading_thread_pool.submit(_inner_worker)
-
-                    def is_alive() -> bool:
-                        return not task.done()
-
                 else:
                     t = threading.Thread(target=_inner_worker, daemon=True)
                     t.start()
 
-                    def is_alive() -> bool:
-                        return t.is_alive()
-
-                while is_alive() or not data.empty():
-                    try:
-                        yield data.get(timeout=0.5)
-                    except queue.Empty:
-                        continue
+                with cond:
+                    while True:
+                        while not data.empty():
+                            try:
+                                yield data.get_nowait()
+                            except queue.Empty:
+                                continue
+                        if is_closed:
+                            break
+                        cond.wait()
 
                 if self._sync_reading_thread_count is None:
                     t.join()
+                else:
+                    task.done()
 
             if stream:
                 generator = self._compensate_token_usage_stream(

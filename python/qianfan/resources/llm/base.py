@@ -26,6 +26,7 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Generator,
     Iterator,
     List,
     Optional,
@@ -465,6 +466,21 @@ class BaseResource(object):
         """
         if worker_num is not None and worker_num <= 0:
             raise errors.InvalidArgumentError("worker_num must be greater than 0")
+
+        # 以下代码块是暖机流程
+        # 用于规避一些并发情况下可能会出现的
+        # 重复网络请求的问题
+        def warmup() -> None:
+            warmup_task = tasks[0]
+            result = warmup_task()
+            if not isinstance(result, Generator):
+                return
+            # 空读取，不建议复用暖机请求时的答案，和后面 results 以及 wait 冲突
+            for _ in result:
+                continue
+
+        warmup()
+
         return BatchRequestFuture(tasks, worker_num)
 
     async def _abatch_request(
@@ -484,6 +500,45 @@ class BaseResource(object):
         else:
             sem = None
 
+        # 异步版本的暖机流程
+        async def async_warmup() -> (
+            Union[Exception, Union[QfResponse, AsyncIterator[QfResponse]]]
+        ):
+            warmup_task = tasks[0]
+            r: Union[Exception, Union[QfResponse, AsyncIterator[QfResponse]]]
+            try:
+                r = await warmup_task
+            except Exception as e:
+                r = e
+            return r
+
+        result_0 = await async_warmup()
+        tasks = tasks[1:]
+
+        if isinstance(result_0, AsyncIterator):
+            # 这里要先读出来，确保一次任务已经被完整执行
+            temp_list = []
+            async for r in result_0:
+                temp_list.append(r)
+
+            # 然后再重新封装成一个异步生成器
+            class _AsyncListIterator:
+                def __init__(self, data: List[QfResponse]):
+                    self._data = data
+                    self._index = 0
+
+                def __aiter__(self) -> "_AsyncListIterator":
+                    return self
+
+                async def __anext__(self) -> QfResponse:
+                    if self._index >= len(self._data):
+                        raise StopAsyncIteration
+                    value = self._data[self._index]
+                    self._index += 1
+                    return value
+
+            result_0 = _AsyncListIterator(temp_list)
+
         async def _with_concurrency_limit(
             task: Coroutine[Any, Any, Union[QfResponse, AsyncIterator[QfResponse]]]
         ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
@@ -493,10 +548,12 @@ class BaseResource(object):
             else:
                 return await task
 
-        return await asyncio.gather(
+        result = await asyncio.gather(
             *[asyncio.ensure_future(_with_concurrency_limit(task)) for task in tasks],
             return_exceptions=True,
         )
+
+        return [result_0] + result
 
     def access_token(self) -> str:
         """

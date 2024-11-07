@@ -497,8 +497,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         "ERROR CODE {}".format(str(stream_json["error_code"]))
                     )
                     break
-                else:
+                elif len(merged_query) == 0:
                     self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+                else:
                     break
             else:
                 if "error_code" in resp.body and resp.body["error_code"] > 0:

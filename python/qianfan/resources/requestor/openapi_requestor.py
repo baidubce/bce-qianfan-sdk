@@ -579,7 +579,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                 return self
 
             async def __anext__(self) -> Any:
-                while not self.is_closed or self.queue.empty():
+                while not self.is_closed or not self.queue.empty():
                     try:
                         return self.queue.get_nowait()
                     except asyncio.QueueEmpty:

@@ -803,6 +803,31 @@ class QianfanLLMLoadUser(CustomUser):
         self.input_column = ds.input_columns[0] if ds.input_columns else "prompt"
         self.output_column = ds.reference_column if ds.reference_column else "response"
 
+        # 暖机流程
+        def warmup() -> None:
+            data = ds.list(0)
+            body = self.client.transfer_data(
+                data, self.input_column, self.output_column
+            )
+            hyperparameters = GlobalData.data["hyperparameters"]
+            if hyperparameters is None:
+                hyperparameters = {}
+            keys_to_delete = [key for key in hyperparameters.keys() if key in body]
+            for key in keys_to_delete:
+                del hyperparameters[key]
+
+            args = {
+                "show_total_latency": True,
+                "stream": True,
+                **body,
+                **hyperparameters,
+            }
+            request_meta = self.client._prepare_request_meta({}, **args)
+            responses = self.client._get_request({}, **args)
+            self.client._process_responses(responses, request_meta)
+
+        warmup()
+
     @task
     def mytask(self) -> None:
         hyperparameters = GlobalData.data["hyperparameters"]

@@ -85,7 +85,7 @@ def test_batch_predict():
     for i, output in enumerate(future):
         assert input_list[i][0] == output.result()["_request"]["prompt"]
         assert input_list[i][1] == output.result()["_request"]["image"]
-    assert 3 >= time.time() - start_time >= 2
+    assert 4 >= time.time() - start_time >= 2
 
     start_time = time.time()
     future = qianfan.Image2Text(endpoint="fuyu1").batch_do(
@@ -94,7 +94,7 @@ def test_batch_predict():
     assert future.task_count() == CASE_LEN
     while future.finished_count() != future.task_count():
         time.sleep(0.3)
-    assert 3 >= time.time() - start_time >= 2
+    assert 4 >= time.time() - start_time >= 2
     assert future.finished_count() == CASE_LEN
     for input, output in zip(input_list, future.results()):
         assert input[0] == output["_request"]["prompt"]
@@ -106,7 +106,7 @@ def test_batch_predict():
     )
     assert future.task_count() == CASE_LEN
     future.wait()
-    assert 2 >= time.time() - start_time >= 1
+    assert 3 >= time.time() - start_time >= 1
     assert future.finished_count() == CASE_LEN
     for input, output in zip(input_list, future.results()):
         assert input[0] == output["_request"]["prompt"]

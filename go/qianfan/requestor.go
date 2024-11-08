@@ -81,11 +81,11 @@ func convertToMap(body RequestBody) (map[string]interface{}, error) {
 // 请求类型，用于区分是模型的请求还是管控类请求
 // 在 QfRequest.Type 处被使用
 const (
-	authRequest        = "auth" // AccessToken 鉴权请求
-	modelRequest       = "model"
-	consoleRequest     = "console"
-	bearerTokenRequest = "bearer"
-	iamRequest         = "iam"
+	authRequest             = "auth" // AccessToken 鉴权请求
+	modelRequest            = "model"
+	consoleRequest          = "console"
+	bearerTokenRequest      = "bearer"
+	fetchBearerTokenRequest = "fetchBearerToken"
 )
 
 // SDK 内部表示请求的类
@@ -120,7 +120,7 @@ func NewBearerTokenRequest(method string, url string, body RequestBody) (*QfRequ
 
 // 创建一个使用Bearer Token鉴权的 Request
 func NewIAMBearerTokenRequest(method string, url string, body RequestBody) (*QfRequest, error) {
-	return newRequest(iamRequest, method, url, body)
+	return newRequest(fetchBearerTokenRequest, method, url, body)
 }
 
 // 创建一个 Request，body 可以是任意实现了 RequestBody 接口的类型
@@ -310,7 +310,7 @@ func (r *Requestor) prepareRequest(ctx context.Context, request QfRequest) (*htt
 	} else if request.Type == bearerTokenRequest {
 		request.URL = GetConfig().ConsoleBaseURL + request.URL
 		request.Headers["request-source"] = versionIndicator
-	} else if request.Type == iamRequest {
+	} else if request.Type == fetchBearerTokenRequest {
 		request.URL = GetConfig().IAMBaseURL + request.URL
 	} else {
 		return nil, &InternalError{"unexpected request type: " + request.Type}
@@ -470,6 +470,12 @@ func (si *streamInternal) recv(resp QfResponse) error {
 	response := baseResponse{
 		Body:        eventData,
 		RawResponse: si.httpResponse,
+	}
+
+	if string(eventData) == "[DONE]" {
+		si.IsEnd = true
+		si.Close()
+		return nil
 	}
 
 	resp.SetResponse(response.Body, response.RawResponse)

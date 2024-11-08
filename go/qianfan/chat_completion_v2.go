@@ -153,7 +153,7 @@ func (c *ChatCompletionV2) stream(ctx context.Context, request *ChatCompletionV2
 		url := "/v2/chat/completions"
 
 		request.SetStream()
-		req, err := NewConsoleRequest("POST", url, request)
+		req, err := NewBearerTokenRequest("POST", url, request)
 		if err != nil {
 			return nil, err
 		}

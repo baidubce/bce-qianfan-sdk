@@ -1102,7 +1102,7 @@ class BaseResourceV1(BaseResource):
                         continue
                 cache = KvCache()
                 cache.set(
-                    key=Consts.QianfanLLMModelsListCacheKey,
+                    key=f"{Consts.QianfanLLMModelsListCacheKey}_{self.config.auth_key()}",
                     value=BaseResource.format_model_infos_cache(
                         self._runtime_models_info, self._last_update_time
                     ),

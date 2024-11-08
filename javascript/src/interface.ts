@@ -128,6 +128,81 @@ interface baseReq {
     user_id?: string;
 }
 
+// v2版本
+export interface Message {
+    /**
+     * 当前支持以下：
+     * user: 表示用户
+     * assistant: 表示对话助手
+     * system：表示人设
+     */
+    role: string;
+    /**
+     * message名
+     */
+    name: string;
+    /**
+     * 对话内容
+     */
+    content: string;
+}
+
+export interface Choices {
+    /**
+     * choice列表中的序号
+     */
+    index: number;
+    /**
+     * 响应信息，当stream=false时返回
+     */
+    message: Message;
+    /**
+     * 输出内容标识
+     */
+    finish_reason: string;
+    /**
+     * 安全细分类型，说明：
+     * 当stream=false，flag值含义如下：
+     * · 0或不返回：安全
+     * · 1：低危不安全场景，可以继续对话
+     * · 2：禁聊：不允许继续对话，但是可以展示内容
+     * · 3：禁止上屏：不允许继续对话且不能上屏展示
+     * · 4：撤屏
+     */
+    flag: string;
+    /**
+     * 当flag 不为 0 时，该字段会告知第几轮对话有敏感信息；如果是当前问题，ban_round = -1
+     */
+    ban_round: number;
+}
+
+export interface SseChoices {
+    /**
+     * choice 列表中的序号
+     */
+    index: number;
+    /**
+     * 响应信息
+     */
+    delta: ChatMessage;
+    /**
+     * 输出内容标识，说明：
+     * normal：输出内容完全由大模型生成，未触发截断、替换
+     * stop：输出结果命中入参stop中指定的字段后被截断· length：达到了最大的token数
+     * content_filter：输出内容被截断、兜底、替换为**等
+     */
+    finish_reason: string;
+
+    /**
+     * 安全细分类型，说明：当stream=true时，返回flag表示触发安全
+     */
+    flag?: number;
+    /**
+     * 当flag 不为 0 时，该字段会告知第几轮对话有敏感信息；如果是当前问题，ban_round = -1
+     */
+    ban_round?: number;
+}
+
 /**
  * v2版本对话请求
  */
@@ -142,18 +217,10 @@ export interface ChatBodyV2 {
      * true 开启抢占
      */
     preemptible?: boolean;
-    // /**
-    //  * （暂不对外开放）用户画像，仅千亿EB支持，需要开白名单权限
-    //  */
-    // user_setting?: string;
     /**
      * 返回搜索溯源信息的数量默认由系统内部指定
      */
     trace_number?: number;
-    // /**
-    //  * （暂不对外开放）表示安全等级
-    //  */
-    // safety_level?: string;
 }
 
 /**
@@ -302,167 +369,11 @@ export interface RespBase {
     usage: TokenUsage;
 }
 
-export interface SearchResult {
-    /**
-     * 序号
-     */
-    index?: number;
-    /**
-     * 搜索结果 URL
-     */
-    url?: string;
-    /**
-     * 搜索结果标题
-     */
-    title?: string;
-    /**
-     * 搜索来源 id 大搜解决死链问题需要透传的字段
-     */
-    datasource_id?: string;
-}
-
-export interface SearchInfo {
-    /**
-     * 是否飞线
-     */
-    is_beset?: number;
-    /**
-     * 改写后的搜索 query
-     */
-    rewrite_query?: string;
-    /**
-     * 改写后的搜索 query
-     */
-    search_results?: SearchResult[];
-}
-
-export interface BaiduSearchResult {
-    /**
-     * 结果序号，从1开始
-     */
-    index?: number;
-    /**
-     * 搜索结果页面 url
-     */
-    url?: string;
-    /**
-     * 搜索结果页面url
-     */
-    title?: string;
-}
-
-export interface ToolsInfo {
-    /**
-     * 工具名，目前支持 baidu_search
-     */
-    name?: string;
-    /**
-     * query 改写结果，表示在使用工具时使用的 query
-     */
-    rewrite_query?: string;
-    /**
-     * 当使用 baidu_search 会返回检索结果
-     */
-    baidu_search?: BaiduSearchResult[];
-    /**
-     * qianfan
-     */
-    usage_agent?: string;
-}
-
-export interface Choices {
-    /**
-     * choice 列表中的序号
-     */
-    index?: number;
-    /**
-     * 响应信息
-     */
-    message?: ChatMessage;
-    /**
-     * 值为 true 表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
-     */
-    need_clear_history?: boolean;
-    /**
-     * 当 need_clear_history 为 true 时，次字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round = -1
-     */
-    ban_round?: number;
-    /**
-     * 由模型生成的函数调用，包含函数名称，和调用参数
-     */
-    function_call?: FunctionCall;
-    /**
-     * 搜索数据，请求参数 enable_citation 置 true 并且触发搜索时，会返回对应内容
-     */
-    search_info?: SearchInfo;
-    /**
-     * 输出内容标识，取值访问及定义如下：
-     * normal：输出内容完全由大模型生成，未触发截断、替换；
-     * stop：输出结果命中入参 stop 中指定的字段后被截断；
-     * length：达到了最大的 token 数，根据 EB 返回结果 is_truncated 来截断；
-     * content_filter：输出内容被截断、兜底、替换为**等；
-     * function_call：调用了 funtion call 功能；
-     */
-    finish_reason?: string;
-    /**
-     * 返回 flag 表示触发安全
-     */
-    flag?: number;
-    /**
-     * tool 使用信息，例如当使用 baidu_search 会返回
-     */
-    tools_info?: ToolsInfo;
-}
-
-export interface SseChoices {
-    /**
-     * choice 列表中的序号
-     */
-    index?: number;
-    /**
-     * 响应信息
-     */
-    delta?: ChatMessage;
-    /**
-     * 流式接口模式下会返回，表示当前子句是否是最后一句
-     */
-    is_end?: boolean;
-    /**
-     * 值为 true 表示用户输入存在安全风险，建议关闭当前会话，清理历史会话信息
-     */
-    need_clear_history?: boolean;
-    /**
-     * 当 need_clear_history 为 true 时，次字段会告知第几轮对话有敏感信息，如果是当前问题，ban_round = -1
-     */
-    ban_round?: number;
-    /**
-     * 由模型生成的函数调用，包含函数名称，和调用参数
-     */
-    function_call?: FunctionCall;
-    /**
-     * 搜索数据，请求参数 enable_citation 置 true 并且触发搜索时，会返回对应内容
-     */
-    search_info?: SearchInfo;
-    /**
-     * 输出内容标识，取值访问及定义如下：
-     * normal：输出内容完全由大模型生成，未触发截断、替换；
-     * stop：输出结果命中入参 stop 中指定的字段后被截断；
-     * length：达到了最大的 token 数，根据 EB 返回结果 is_truncated 来截断；
-     * content_filter：输出内容被截断、兜底、替换为**等；
-     * function_call：调用了 funtion call 功能；
-     */
-    finish_reason?: string;
-    /**
-     * 返回 flag 表示触发安全
-     */
-    flag?: number;
-    /**
-     * tool 使用信息，例如当使用 baidu_search 会返回
-     */
-    tools_info?: ToolsInfo;
-}
-
 export interface ChatRespV2 {
+    /**
+     * 模型ID
+     */
+    model?: string;
     /**
      * 响应列表
      * strem = false 时为 choices
@@ -471,7 +382,7 @@ export interface ChatRespV2 {
     choices?: Choices | SseChoices;
 }
 
-export interface ChatResp extends RespBase {
+export interface ChatResp extends RespBase, ChatRespV2 {
     /**
      * 当前生成的结果是否被截断
      */

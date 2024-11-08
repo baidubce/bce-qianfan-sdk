@@ -209,7 +209,10 @@ func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	}
 	if request.Type == bearerTokenRequest {
 		if GetConfig().BearerToken == "" {
-			GetBearerToken()
+			_, err := GetBearerToken()
+			if err != nil {
+				return err
+			}
 		}
 		request.Headers["Authorization"] = fmt.Sprintf("Bearer %s", GetConfig().BearerToken)
 		return nil

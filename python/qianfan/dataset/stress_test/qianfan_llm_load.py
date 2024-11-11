@@ -294,7 +294,7 @@ class QianfanCustomHttpSession(CustomHttpSession):
                         res["request"]["url"]
                     )
                 if res.get("body", {}).get("choices", None) is not None:
-                    res["body"]["choices"] = processed_resp.res_choices
+                    res["body"]["choices"] = list(processed_resp.res_choices.values())
 
                 self._write_result(res)
 
@@ -453,7 +453,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     ) -> _InnerResponseProcessRet:
         last_resp: Optional[QfResponse] = None
         merged_query = ""
-        res_choices: Dict[str, Dict[str, Any]] = {}
+        res_choices: Dict[int, Dict[str, Any]] = {}
         first_flag, all_empty = True, True
         clear_history = False
 
@@ -520,26 +520,15 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 if len(resp.body["choices"]) == 0:
                     break
                 stream_json = resp.body["choices"][0]
-                index = stream_json.get("index", "")
+                index = stream_json.get("index", -1)
                 if "delta" in stream_json:
                     content = stream_json["delta"].get("content", "")
                     merged_query += content
                     if index not in res_choices:
-                        if "delta" in stream_json and "content" in stream_json["delta"]:
-                            res_choices[index]["content"] = stream_json["delta"][
-                                "content"
-                            ]
-                        else:
-                            res_choices[index]["content"] = ""
-                    else:
-                        for k, v in stream_json.items():
-                            if k != "delta":
-                                res_choices[index][k] = v
-                        # 追加 'delta' 中的 'content'
-                        if "delta" in stream_json and "content" in stream_json["delta"]:
-                            res_choices[index]["content"] += stream_json["delta"][
-                                "content"
-                            ]
+                        res_choices[index] = {}
+                    choice = res_choices[index]
+                    choice.update(stream_json)
+                    choice["delta"]["content"] = merged_query
                 else:
                     self.exc = Exception("ERROR CODE 结果无法解析")
                     break

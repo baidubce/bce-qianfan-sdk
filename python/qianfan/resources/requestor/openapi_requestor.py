@@ -917,6 +917,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
         show_total_latency: bool = False,
+        **kwargs: Any,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         llm related api request
@@ -957,6 +958,7 @@ class PrivateAPIRequestor(QfAPIRequestor):
         data_postprocess: Callable[[QfResponse], QfResponse] = lambda x: x,
         retry_config: RetryConfig = RetryConfig(),
         show_total_latency: bool = False,
+        **kwargs: Any,
     ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         log_info(f"requesting llm api endpoint: {endpoint}")
 

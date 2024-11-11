@@ -18,7 +18,10 @@ try:
     from redis.asyncio import Redis as AsyncRedis
     from redis.exceptions import NoScriptError
 except ImportError:
-    log_warn("no redis installed, RedisRateLimiter unavailable")
+    log_warn(
+        "No redis installed, RedisRateLimiter unavailable. Ignore this warning if you"
+        " don't need to use qianfan SDK in distribution environment"
+    )
 
 from qianfan.resources.rate_limiter.base_rate_limiter import BaseRateLimiter
 

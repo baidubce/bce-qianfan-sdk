@@ -26,9 +26,11 @@ var defaultConfig = map[string]string{
 	"QIANFAN_SK":                                  "",
 	"QIANFAN_ACCESS_KEY":                          "",
 	"QIANFAN_SECRET_KEY":                          "",
+	"QIANFAN_BEARER_TOKEN":                        "",
 	"QIANFAN_BASE_URL":                            "https://aip.baidubce.com",
 	"QIANFAN_IAM_SIGN_EXPIRATION_SEC":             "300",
 	"QIANFAN_CONSOLE_BASE_URL":                    "https://qianfan.baidubce.com",
+	"QIANFAN_IAM_BASE_URL":                        "http://iam.bj.baidubce.com",
 	"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL":   "3600",
 	"QIANFAN_LLM_API_RETRY_COUNT":                 "1",
 	"QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR":        "0",
@@ -43,9 +45,11 @@ type Config struct {
 	AccessKey                     string  `mapstructure:"QIANFAN_ACCESS_KEY"`
 	SecretKey                     string  `mapstructure:"QIANFAN_SECRET_KEY"`
 	AccessToken                   string  `mapstructure:"QIANFAN_ACCESS_TOKEN"`
+	BearerToken                   string  `mapstructure:"QIANFAN_BEARER_TOKEN"`
 	BaseURL                       string  `mapstructure:"QIANFAN_BASE_URL"`
 	IAMSignExpirationSeconds      int     `mapstructure:"QIANFAN_IAM_SIGN_EXPIRATION_SEC"`
 	ConsoleBaseURL                string  `mapstructure:"QIANFAN_CONSOLE_BASE_URL"`
+	IAMBaseURL                    string  `mapstructure:"QIANFAN_IAM_BASE_URL"`
 	AccessTokenRefreshMinInterval int     `mapstructure:"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"`
 	LLMRetryCount                 int     `mapstructure:"QIANFAN_LLM_API_RETRY_COUNT"`
 	LLMRetryTimeout               float32 `mapstructure:"QIANFAN_LLM_API_RETRY_TIMEOUT"`

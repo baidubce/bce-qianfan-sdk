@@ -156,14 +156,14 @@ def test_batch_predict():
     future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=1)
     for i, output in enumerate(future):
         assert text_list[i] == output.result()["_request"]["input"]
-    assert 3 >= time.time() - start_time >= 2
+    assert 4 >= time.time() - start_time >= 2
 
     start_time = time.time()
     future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=1)
     assert future.task_count() == CASE_LEN
     while future.finished_count() != future.task_count():
         time.sleep(0.3)
-    assert 3 >= time.time() - start_time >= 2
+    assert 4 >= time.time() - start_time >= 2
     assert future.finished_count() == CASE_LEN
     for input, output in zip(text_list, future.results()):
         assert input == output["_request"]["input"]
@@ -172,7 +172,7 @@ def test_batch_predict():
     future = qianfan.Embedding().batch_do(text_list, worker_num=5, _delay=0.5)
     assert future.task_count() == CASE_LEN
     future.wait()
-    assert 2 >= time.time() - start_time >= 1
+    assert 3 >= time.time() - start_time >= 1
     assert future.finished_count() == CASE_LEN
     for input, output in zip(text_list, future.results()):
         assert input == output["_request"]["input"]

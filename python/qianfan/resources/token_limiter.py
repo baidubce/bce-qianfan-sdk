@@ -31,7 +31,7 @@ _MINUTE_DEAD = datetime.timedelta(minutes=1)
 class _MiniLocalTokenizer:
     @classmethod
     def count_tokens(
-        cls, text: str, han_tokens: float = 0.625, word_tokens: float = 1
+        cls, text: Optional[str], han_tokens: float = 0.625, word_tokens: float = 1
     ) -> int:
         """
         Calculate the token count for a given text using a local simulation.
@@ -41,6 +41,9 @@ class _MiniLocalTokenizer:
         The token count is computed as follows:
         (Chinese characters count) * 0.625 + (English word count * 1)
         """
+        # 在某些特殊情况下 text 仍然会为 None
+        if text is None:
+            return 0
         han_count = 0
         text_only_word = ""
         for ch in text:

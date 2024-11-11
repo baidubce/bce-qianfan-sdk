@@ -177,6 +177,8 @@ class TrainMode(str, Enum):
     """PostPretrain """
     DPO = "DPO"
     """DPO"""
+    KTO = "KTO"
+    """KTO"""
 
 
 class TrainParameterScale(str, Enum):
@@ -405,6 +407,7 @@ class V2:
         PromptSortedResponses: str = "PromptSortedresponses"
         Prompt: str = "Prompt"
         PromptImage: str = "PromptImage"
+        PromptImageResponse: str = "PromptImageResponse"
 
     class StorageType(str, Enum):
         Bos: str = "BOS"

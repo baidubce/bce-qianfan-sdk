@@ -6,6 +6,7 @@ import abc
 import json
 import re
 import time
+import traceback
 from typing import Any, Dict, Iterator, Literal, Optional
 
 from locust import constant, events, task
@@ -274,7 +275,13 @@ class QianfanCustomHttpSession(CustomHttpSession):
 
         if GlobalData.data["log"] == 1:
             if self.exc:
-                self._write_result({"error": str(self.exc)})
+                self._write_result(
+                    {
+                        "exception_type": str(type(self.exc)),
+                        "error": str(self.exc),
+                        "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
+                    }
+                )
             else:
                 if (
                     res.get("request", {}).get("headers", {}).get("Authorization", None)
@@ -486,15 +493,22 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 stream_json = resp["body"]
                 merged_query += stream_json.get("result", "")
                 clear_history = stream_json.get("need_clear_history", False)
-                if "result" in stream_json:
+                if "result" in stream_json and len(stream_json["result"]) != 0:
                     content = stream_json["result"]
+                elif "function_call" in stream_json:
+                    content = json.dumps(
+                        stream_json["function_call"], ensure_ascii=False
+                    )
+                    merged_query += content
                 elif "error_code" in stream_json and stream_json["error_code"] > 0:
                     self.exc = Exception(
                         "ERROR CODE {}".format(str(stream_json["error_code"]))
                     )
                     break
-                else:
+                elif len(merged_query) == 0:
                     self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+                else:
                     break
             else:
                 if "error_code" in resp.body and resp.body["error_code"] > 0:
@@ -811,6 +825,31 @@ class QianfanLLMLoadUser(CustomUser):
         ds = GlobalData.data["dataset"]
         self.input_column = ds.input_columns[0] if ds.input_columns else "prompt"
         self.output_column = ds.reference_column if ds.reference_column else "response"
+
+        # 暖机流程
+        def warmup() -> None:
+            data = ds.list(0)
+            body = self.client.transfer_data(
+                data, self.input_column, self.output_column
+            )
+            hyperparameters = GlobalData.data["hyperparameters"]
+            if hyperparameters is None:
+                hyperparameters = {}
+            keys_to_delete = [key for key in hyperparameters.keys() if key in body]
+            for key in keys_to_delete:
+                del hyperparameters[key]
+
+            args = {
+                "show_total_latency": True,
+                "stream": True,
+                **body,
+                **hyperparameters,
+            }
+            request_meta = self.client._prepare_request_meta({}, **args)
+            responses = self.client._get_request({}, **args)
+            self.client._process_responses(responses, request_meta)
+
+        warmup()
 
     @task
     def mytask(self) -> None:

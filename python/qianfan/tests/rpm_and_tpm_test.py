@@ -26,7 +26,7 @@ def test_charge():
 
     model = "ernie-4.0-8k"
     count = 10
-    resp = Charge.charge_tpm_credit(model, count)
+    resp = Charge.charge_tpm_credit(model, count, {"paymentTiming": "Postpaid"})
     assert resp["_request"]["model"] == model
     assert resp["_request"]["purchaseCount"] == count
     assert resp["_request"]["billing"]["paymentTiming"] == "Postpaid"

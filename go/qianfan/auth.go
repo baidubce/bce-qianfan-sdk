@@ -149,3 +149,32 @@ func (m *AuthManager) GetAccessTokenWithRefresh(ctx context.Context, ak, sk stri
 	GetConfig().AccessToken = resp.AccessToken
 	return resp.AccessToken, nil
 }
+
+type IAMBearerTokenResponse struct {
+	UserID     string `json:"userId"`
+	Token      string `json:"token"`
+	Status     string `json:"status"`
+	CreateTime string `json:"createTime"`
+	ExpireTime string `json:"expireTime"`
+	baseResponse
+}
+
+func (r *IAMBearerTokenResponse) GetErrorCode() string {
+	return "Get IAM Bearer Token Error"
+}
+
+func GetBearerToken() (string, error) {
+	resp := IAMBearerTokenResponse{}
+	req, err := NewIAMBearerTokenRequest("GET", "/v1/BCE-BEARER/token", nil)
+	if err != nil {
+		return "", err
+	}
+
+	err = newRequestor(makeOptions()).request(context.TODO(), req, &resp)
+	if err != nil {
+		return "", err
+	}
+	logger.Info("Get IAM Bearer Token Success")
+	GetConfig().BearerToken = resp.Token
+	return resp.Token, nil
+}

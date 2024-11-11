@@ -87,6 +87,64 @@ for {
 }
 ```
 
+### V2 调用
+
+千帆 Golang SDK 也同步支持了 V2 版本的调用方式，用户可以通过 `qianfan.NewChatCompletionV2()` 来创建对应的 V2 客户端。
+
+在使用 V2 版本时，用户需要传入 `qianfan.ChatCompletionV2Request{}` 结构体作为请求参数
+
+流式示例代码如下：
+
+```go
+chat := qianfan.NewChatCompletionV2()
+resp, err := chat.Stream(context.TODO(), &qianfan.ChatCompletionV2Request{
+    Model: "ernie-lite-8k",
+    Messages: []qianfan.ChatCompletionMessage{
+        {
+            Role:    "user",
+            Content: "你好",
+        },
+    },
+})
+
+if err != nil {
+    panic(err)
+}
+
+for !resp.IsEnd {
+    r := qianfan.ChatCompletionV2Response{}
+    err := resp.Recv(&r)
+    if err != nil {
+        panic(err)
+    }
+
+    if len(r.Choices) != 0 {
+        fmt.Println(r.Choices[0].Delta.Content)
+    }
+}
+```
+
+非流式情况下的调用示例如下所示：
+
+```go
+chat := qianfan.NewChatCompletionV2()
+resp, err := chat.Do(context.TODO(), &qianfan.ChatCompletionV2Request{
+    Model: "ernie-lite-8k",
+    Messages: []qianfan.ChatCompletionMessage{
+        {
+            Role:    "user",
+            Content: "你好",
+        },
+    },
+})
+
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(resp.Choices[0].Message)
+```
+
 ## Completion 续写
 
 对于不需要对话，仅需要根据 prompt 进行补全的场景来说，用户可以使用 `Completion` 来完成这一任务。

@@ -213,11 +213,16 @@ def _remove_access_token_url_parameter(url: str) -> str:
 
 class _InnerResponseProcessRet:
     def __init__(
-        self, request_meta: Dict, last_resp: Optional[QfResponse], merged_result: str
+        self,
+        request_meta: Dict,
+        last_resp: Optional[QfResponse],
+        merged_result: str,
+        res_choices: Dict,
     ):
         self.request_meta = request_meta
         self.last_resp = last_resp
         self.merged_result = merged_result
+        self.res_choices = res_choices
 
 
 class QianfanCustomHttpSession(CustomHttpSession):
@@ -288,6 +293,8 @@ class QianfanCustomHttpSession(CustomHttpSession):
                     res["request"]["url"] = _remove_access_token_url_parameter(
                         res["request"]["url"]
                     )
+                if res.get("body", {}).get("choices", None) is not None:
+                    res["body"]["choices"] = list(processed_resp.res_choices.values())
 
                 self._write_result(res)
 
@@ -446,6 +453,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     ) -> _InnerResponseProcessRet:
         last_resp: Optional[QfResponse] = None
         merged_query = ""
+        res_choices: Dict[int, Dict[str, Any]] = {}
         first_flag, all_empty = True, True
         clear_history = False
 
@@ -497,8 +505,10 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                         "ERROR CODE {}".format(str(stream_json["error_code"]))
                     )
                     break
-                else:
+                elif len(merged_query) == 0:
                     self.exc = Exception("ERROR CODE 结果无法解析")
+                    break
+                else:
                     break
             else:
                 if "error_code" in resp.body and resp.body["error_code"] > 0:
@@ -509,16 +519,19 @@ class ChatCompletionClient(QianfanCustomHttpSession):
 
                 if len(resp.body["choices"]) == 0:
                     break
-
                 stream_json = resp.body["choices"][0]
-                clear_history = stream_json.get("need_clear_history", False)
+                index = stream_json.get("index", -1)
                 if "delta" in stream_json:
                     content = stream_json["delta"].get("content", "")
                     merged_query += content
+                    if index not in res_choices:
+                        res_choices[index] = {}
+                    choice = res_choices[index]
+                    choice.update(stream_json)
+                    choice["delta"]["content"] = merged_query
                 else:
                     self.exc = Exception("ERROR CODE 结果无法解析")
                     break
-
             if len(content) != 0:
                 all_empty = False
 
@@ -533,8 +546,9 @@ class ChatCompletionClient(QianfanCustomHttpSession):
             not self.is_v2 and not last_resp["body"]["is_end"]
         ):
             self.exc = Exception("NOT 200 OR is_end is False")
-
-        return _InnerResponseProcessRet(request_meta, last_resp, merged_query)
+        return _InnerResponseProcessRet(
+            request_meta, last_resp, merged_query, res_choices
+        )
 
     def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
         if "messages" in kwargs:
@@ -686,7 +700,7 @@ class CompletionClient(QianfanCustomHttpSession):
                 )
                 break
 
-        return _InnerResponseProcessRet(request_meta, last_resp, merged_query)
+        return _InnerResponseProcessRet(request_meta, last_resp, merged_query, {})
 
     def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
         if "prompt" in kwargs:
@@ -800,6 +814,31 @@ class QianfanLLMLoadUser(CustomUser):
         ds = GlobalData.data["dataset"]
         self.input_column = ds.input_columns[0] if ds.input_columns else "prompt"
         self.output_column = ds.reference_column if ds.reference_column else "response"
+
+        # 暖机流程
+        def warmup() -> None:
+            data = ds.list(0)
+            body = self.client.transfer_data(
+                data, self.input_column, self.output_column
+            )
+            hyperparameters = GlobalData.data["hyperparameters"]
+            if hyperparameters is None:
+                hyperparameters = {}
+            keys_to_delete = [key for key in hyperparameters.keys() if key in body]
+            for key in keys_to_delete:
+                del hyperparameters[key]
+
+            args = {
+                "show_total_latency": True,
+                "stream": True,
+                **body,
+                **hyperparameters,
+            }
+            request_meta = self.client._prepare_request_meta({}, **args)
+            responses = self.client._get_request({}, **args)
+            self.client._process_responses(responses, request_meta)
+
+        warmup()
 
     @task
     def mytask(self) -> None:

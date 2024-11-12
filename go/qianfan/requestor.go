@@ -81,9 +81,11 @@ func convertToMap(body RequestBody) (map[string]interface{}, error) {
 // 请求类型，用于区分是模型的请求还是管控类请求
 // 在 QfRequest.Type 处被使用
 const (
-	authRequest    = "auth" // AccessToken 鉴权请求
-	modelRequest   = "model"
-	consoleRequest = "console"
+	authRequest             = "auth" // AccessToken 鉴权请求
+	modelRequest            = "model"
+	consoleRequest          = "console"
+	bearerTokenRequest      = "bearer"
+	fetchBearerTokenRequest = "fetchBearerToken"
 )
 
 // SDK 内部表示请求的类
@@ -109,6 +111,16 @@ func newAuthRequest(method string, url string, body RequestBody) (*QfRequest, er
 // 创建一个用于管控类请求的 Request
 func NewConsoleRequest(method string, url string, body RequestBody) (*QfRequest, error) {
 	return newRequest(consoleRequest, method, url, body)
+}
+
+// 创建一个使用Bearer Token鉴权的 Request
+func NewBearerTokenRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+	return newRequest(bearerTokenRequest, method, url, body)
+}
+
+// 创建一个使用Bearer Token鉴权的 Request
+func NewIAMBearerTokenRequest(method string, url string, body RequestBody) (*QfRequest, error) {
+	return newRequest(fetchBearerTokenRequest, method, url, body)
 }
 
 // 创建一个 Request，body 可以是任意实现了 RequestBody 接口的类型
@@ -193,6 +205,16 @@ func newRequestor(options *Options) *Requestor {
 
 func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 	if request.Type == authRequest {
+		return nil
+	}
+	if request.Type == bearerTokenRequest {
+		if GetConfig().BearerToken == "" {
+			_, err := GetBearerToken()
+			if err != nil {
+				return err
+			}
+		}
+		request.Headers["Authorization"] = fmt.Sprintf("Bearer %s", GetConfig().BearerToken)
 		return nil
 	}
 	if GetConfig().AK != "" && GetConfig().SK != "" {
@@ -288,6 +310,11 @@ func (r *Requestor) prepareRequest(ctx context.Context, request QfRequest) (*htt
 		request.Headers["request-source"] = versionIndicator
 	} else if request.Type == authRequest {
 		request.URL = GetConfig().BaseURL + request.URL
+	} else if request.Type == bearerTokenRequest {
+		request.URL = GetConfig().ConsoleBaseURL + request.URL
+		request.Headers["request-source"] = versionIndicator
+	} else if request.Type == fetchBearerTokenRequest {
+		request.URL = GetConfig().IAMBaseURL + request.URL
 	} else {
 		return nil, &InternalError{"unexpected request type: " + request.Type}
 	}
@@ -446,6 +473,12 @@ func (si *streamInternal) recv(resp QfResponse) error {
 	response := baseResponse{
 		Body:        eventData,
 		RawResponse: si.httpResponse,
+	}
+
+	if string(eventData) == "[DONE]" {
+		si.IsEnd = true
+		si.Close()
+		return nil
 	}
 
 	resp.SetResponse(response.Body, response.RawResponse)

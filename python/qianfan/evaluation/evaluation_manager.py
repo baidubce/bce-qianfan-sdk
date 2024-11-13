@@ -314,7 +314,6 @@ class EvaluationManager(BaseModel):
                 input_argument_dict["evalMode"] = (
                     input_argument_dict.get("evalMode", "") + "rule,"
                 )
-                input_argument_dict["autoRuleEvalConfig"] = {}
 
                 rule_list: List[str] = []
                 if evaluator.using_similarity:
@@ -322,12 +321,9 @@ class EvaluationManager(BaseModel):
                 if evaluator.using_accuracy:
                     rule_list.append("accuracy")
 
-                if not rule_list:
-                    err_msg = "no rule has been set despite using QianfanRuleEvaluator"
-                    log_error(err_msg)
-                    raise ValueError(err_msg)
-
-                input_argument_dict["autoRuleEvalConfig"]["scoreModes"] = rule_list
+                if rule_list:
+                    input_argument_dict["autoRuleEvalConfig"] = {}
+                    input_argument_dict["autoRuleEvalConfig"]["scoreModes"] = rule_list
 
                 # 添加停用词表
                 if evaluator.stop_words:
@@ -444,7 +440,7 @@ class EvaluationManager(BaseModel):
         self,
         llms: Sequence[Union[Model, Service]],
         dataset: Dataset,
-        download_when_doing_online: bool = True,
+        download_when_doing_online: bool = False,
         **kwargs: Any,
     ) -> Optional[EvaluationResult]:
         """
@@ -456,8 +452,9 @@ class EvaluationManager(BaseModel):
             dataset (Dataset):
                 The dataset on which models will be evaluated.
             download_when_doing_online (bool):
+                This arguments isn't available temporally.
                 whether download result dataset when doing online evaluation.
-                default to True
+                default to False.
             **kwargs (Any):
                 Other keyword arguments.
 

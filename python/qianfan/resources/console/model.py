@@ -1006,7 +1006,7 @@ class Model(object):
 
         @classmethod
         @console_api_request
-        def describe_model(cls, model_id: str) -> QfRequest:
+        def describe_model(cls, model_id: str, **kwargs: Any) -> QfRequest:
             """
             get the model detail
 

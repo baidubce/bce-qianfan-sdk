@@ -67,6 +67,7 @@ class Finetune(Trainer):
         previous_task_id: Optional[str] = None,
         previous_model: Optional[Any] = None,
         name: Optional[str] = None,
+        existed_model_set_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -111,6 +112,8 @@ class Finetune(Trainer):
                 An optional name for the training task.
             corpus_config: Optional[CorpusConfig] = None,
                 An optional corpus config for training.
+            existed_model_set_id: Optional[str]
+                An optional config for the publish model.
 
             **kwargs: Any additional keyword arguments.
 
@@ -132,6 +135,23 @@ class Finetune(Trainer):
 
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
+
+        self._context: Dict[str, Any] = {
+            "train_type": train_type,
+            "dataset": dataset,
+            "train_config": train_config,
+            "deploy_config": deploy_config,
+            "event_handler": event_handler,
+            "eval_dataset": eval_dataset,
+            "evaluators": evaluators,
+            "dataset_bos_path": dataset_bos_path,
+            "previous_trainer": previous_trainer,
+            "previous_task_id": previous_task_id,
+            "previous_model": previous_model,
+            "name": name,
+            "existed_model_set_id": existed_model_set_id,
+        }
+        self._context.update(kwargs)
 
         actions: List[BaseAction] = []
         # 校验dataset
@@ -271,6 +291,7 @@ class Finetune(Trainer):
             Trainer:
                 self, for chain invocation.
         """
+        self._context.update(kwargs)
         self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to run")
@@ -281,7 +302,7 @@ class Finetune(Trainer):
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
         try:
-            self.result[0] = self.ppls[0].exec(**kwargs)
+            self.result[0] = self.ppls[0].exec(**self._context)
         except Exception as e:
             self.result[0] = {"error": e}
             raise e

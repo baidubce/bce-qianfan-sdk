@@ -25,6 +25,7 @@ from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvalu
 from qianfan.model import Model, Service
 from qianfan.model.configs import DeployConfig
 from qianfan.resources.console import consts as console_consts
+from qianfan.resources.console.model import Model as ResourceModel
 from qianfan.trainer.base import (
     ActionState,
     BaseAction,
@@ -34,6 +35,8 @@ from qianfan.trainer.configs import (
     CorpusConfig,
     CorpusConfigItem,
     DatasetConfig,
+    ModelInfo,
+    ModelInfoMapping,
     PeftType,
     TrainConfig,
     TrainLimit,
@@ -50,7 +53,11 @@ from qianfan.utils import (
     utils,
 )
 from qianfan.utils.bos_uploader import is_valid_bos_path, parse_bos_path
-from qianfan.utils.utils import first_lower_case, snake_to_camel
+from qianfan.utils.utils import (
+    first_lower_case,
+    generate_letter_num_random_id,
+    snake_to_camel,
+)
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -959,12 +966,25 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """model object"""
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
         if self.task_id == "" or self.job_id == "":
             raise InvalidArgumentError("task_id or job_id must be set")
         self.task_id = input.get("task_id", "")
         self.job_id = input.get("job_id", "")
-        self.model = Model(task_id=self.task_id, job_id=self.job_id)
+
+        existed_model_set_id = kwargs.get("existed_model_set_id", None)
+        if existed_model_set_id is None:
+            model_info: ModelInfo = ModelInfoMapping[kwargs["train_type"]]
+            model_type = model_info.model_type.value
+            model_resp = ResourceModel.V2.create_custom_model_set(
+                f"ms_{generate_letter_num_random_id(11)}",
+                model_type,
+            )
+            existed_model_set_id = model_resp["result"]
+
+        self.model = Model(
+            task_id=self.task_id, job_id=self.job_id, set_id=existed_model_set_id
+        )
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:

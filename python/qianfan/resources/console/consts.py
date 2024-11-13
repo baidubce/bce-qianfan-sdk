@@ -285,12 +285,14 @@ class ServiceType(str, Enum):
 
 
 class FinetuneSupportModelType(str, Enum):
-    Text2Text: str = "text2text"
+    Text2Text: str = "Text2Text"
     """Text2Text Model"""
-    Text2Image: str = "text2image"
+    Text2Image: str = "Text2Image"
     """Text2Image Model"""
-    ImageUnderstanding: str = "imageUnderstanding"
+    ImageUnderstanding: str = "ImageUnderstanding"
     """Image Understanding Model"""
+    TextRepresentation: str = "TextRepresentation"
+    """Text Representation Model"""
 
 
 class FinetuneSupportHyperParameterType(str, Enum):
@@ -438,3 +440,8 @@ class V2:
         Stopping: str = "Stopping"
         Failed: str = "Failed"
         Stopped: str = "Stopped"
+
+    class ModelStatus(str, Enum):
+        Ready: str = "Ready"
+        Creating: str = "Creating"
+        Fail: str = "Fail"

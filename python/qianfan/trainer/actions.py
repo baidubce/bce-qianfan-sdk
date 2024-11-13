@@ -36,7 +36,7 @@ from qianfan.trainer.configs import (
     CorpusConfigItem,
     DatasetConfig,
     ModelInfo,
-    ModelInfoMapping,
+    ModelInfoMappingCollection,
     PeftType,
     TrainConfig,
     TrainLimit,
@@ -186,7 +186,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.corpus_config = corpus_config
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Dict[str, Any]:
         resp = self._exec(input, **kwargs)
         if resp.get("datasets") is None:
             return resp
@@ -625,7 +630,12 @@ class TrainAction(
         return self.train_config.validate_config(train_limit)
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Dict[str, Any]:
         """
         exec method for train action
 
@@ -966,15 +976,28 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """model object"""
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         if self.task_id == "" or self.job_id == "":
             raise InvalidArgumentError("task_id or job_id must be set")
         self.task_id = input.get("task_id", "")
         self.job_id = input.get("job_id", "")
 
-        existed_model_set_id = kwargs.get("existed_model_set_id", None)
+        assert context
+
+        existed_model_set_id = context.get("existed_model_set_id", None)
         if existed_model_set_id is None:
-            model_info: ModelInfo = ModelInfoMapping[kwargs["train_type"]]
+            model_name = context["train_type"]
+            model_info: Optional[ModelInfo] = None
+            for _, infos in ModelInfoMappingCollection.items():
+                if model_name in infos:
+                    model_info = infos[model_name]
+                    break
+            assert model_info
             model_type = model_info.model_type.value
             model_resp = ResourceModel.V2.create_custom_model_set(
                 f"ms_{generate_letter_num_random_id(11)}",
@@ -1115,7 +1138,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.deploy_config = deploy_config
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         # for resume
         if self._input is None:
             self._input = input
@@ -1294,7 +1322,12 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         )
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         """
         exec evaluation
 

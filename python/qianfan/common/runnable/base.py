@@ -39,7 +39,12 @@ class Executable(Generic[Input, Output], ABC):
     """
 
     @abstractmethod
-    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
+    def exec(
+        self,
+        input: Optional[Input] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Output:
         ...
 
 

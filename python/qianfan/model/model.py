@@ -85,11 +85,12 @@ class Model(
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
-        if id is None or set_id is None:
-            self.auto_complete_info()
 
     def exec(
-        self, input: Optional[Dict] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         model execution, for different model service type, please input
@@ -466,7 +467,10 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             raise InternalError("id type not supported")
 
     def exec(
-        self, input: Optional[Dict] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         exec

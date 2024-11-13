@@ -136,20 +136,25 @@ class Finetune(Trainer):
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
 
+        if "context" in kwargs:
+            del kwargs["context"]
+
         self._context: Dict[str, Any] = {
-            "train_type": train_type,
-            "dataset": dataset,
-            "train_config": train_config,
-            "deploy_config": deploy_config,
-            "event_handler": event_handler,
-            "eval_dataset": eval_dataset,
-            "evaluators": evaluators,
-            "dataset_bos_path": dataset_bos_path,
-            "previous_trainer": previous_trainer,
-            "previous_task_id": previous_task_id,
-            "previous_model": previous_model,
-            "name": name,
-            "existed_model_set_id": existed_model_set_id,
+            "context": {
+                "train_type": train_type,
+                "dataset": dataset,
+                "train_config": train_config,
+                "deploy_config": deploy_config,
+                "event_handler": event_handler,
+                "eval_dataset": eval_dataset,
+                "evaluators": evaluators,
+                "dataset_bos_path": dataset_bos_path,
+                "previous_trainer": previous_trainer,
+                "previous_task_id": previous_task_id,
+                "previous_model": previous_model,
+                "name": name,
+                "existed_model_set_id": existed_model_set_id,
+            }
         }
         self._context.update(kwargs)
 
@@ -291,6 +296,9 @@ class Finetune(Trainer):
             Trainer:
                 self, for chain invocation.
         """
+        if "context" in kwargs:
+            del kwargs["context"]
+
         self._context.update(kwargs)
         self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:

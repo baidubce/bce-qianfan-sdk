@@ -83,7 +83,10 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
     @with_event
     def exec(
-        self, input: Optional[Dict[str, Any]] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Dict[str, Any]:
         """
         Parameters:
@@ -93,12 +96,14 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             Dict[str, Any]: The output of the pipeline.
         """
         res: List[Any] = [{}]
+        if context is None:
+            context = {}
 
         def _exec_helper(res: List[Any]) -> None:
             if len(res) == 0:
                 return
             try:
-                res[0] = self.exec_from(input, 0, **kwargs)
+                res[0] = self.exec_from(input, 0, context=context, **kwargs)
             except Exception as e:
                 res[0] = e
 
@@ -121,7 +126,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self,
         input: Optional[Dict[str, Any]] = None,
         start: Optional[Union[int, str]] = 0,
-        **kwargs: Dict,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         if isinstance(start, str):
             start_idx = self.seq.index(start)

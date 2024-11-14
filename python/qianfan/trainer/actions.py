@@ -1003,7 +1003,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 f"ms_{generate_letter_num_random_id(11)}",
                 model_type,
             )
-            existed_model_set_id = model_resp["result"]
+            existed_model_set_id = model_resp["result"]["modelSetId"]
 
         self.model = Model(
             task_id=self.task_id, job_id=self.job_id, set_id=existed_model_set_id

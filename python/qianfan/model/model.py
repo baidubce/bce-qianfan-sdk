@@ -210,7 +210,7 @@ class Model(
             "taskId": self.task_id,
         }
         if self.step:
-            model_version_meta["step"] = self.step
+            model_version_meta["checkpointStep"] = self.step
         model_publish_resp = ResourceModel.V2.create_custom_model(
             self.set_id,
             console_const.CreateCustomModelSourceType.Train,

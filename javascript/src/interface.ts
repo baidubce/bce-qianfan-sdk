@@ -208,10 +208,6 @@ export interface SseChoices {
  */
 export interface ChatBodyV2 {
     /**
-     * appid 应用ID ，不传使用静默 appid
-     */
-    appid?: string;
-    /**
      * 是否开启排队抢占，错峰使用，开启后响应时间会有所增加，不保证 SLA
      * 默认 false
      * true 开启抢占

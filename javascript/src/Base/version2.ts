@@ -18,7 +18,7 @@ export interface FetchOptionsProps {
     /**
      * appid 应用ID ，不传使用静默 appid
      */
-    appid: string;
+    appid?: string;
     /**
      * 环境变量，可选值为 'node' 或 'browser'
      */

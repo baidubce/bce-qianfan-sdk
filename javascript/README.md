@@ -300,6 +300,58 @@ main();
   usage: { prompt_tokens: 2, completion_tokens: 8, total_tokens: 10 }
 }
 ```
+### V2 调用
+千帆 JavaScript SDK 也同步支持了 V2 版本的调用方式，用户可以通过配置 `version: 'v2'` 来创建对应的 V2 版本。
+用户需要配置QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY，可以配置appid（应用ID） ，不传使用静默 appid。
+
+非流式情况下的调用示例如下所示：
+```ts
+import {ChatCompletion} from "@baiducloud/qianfan";
+
+const client = new  ChatCompletion({
+       version: 'v2',
+        // appid: 'XXX'
+});
+async function main() {
+    const resp = await client.chat({
+        messages: [
+            {
+                role: 'user',
+                content: '今天深圳天气',
+            },
+        ],
+     }, "ernie-4.0-8k");
+    console.log(resp);
+    console.log(resp?.choices[0]?.message);
+}
+
+main();
+```
+流式示例代码如下：
+```ts
+import {ChatCompletion} from "@baiducloud/qianfan";
+
+const client = new  ChatCompletion({
+       version: 'v2',
+        // appid: 'XXX'
+});
+async function main() {
+    const resp = await client.chat({
+        messages: [
+            {
+                role: 'user',
+                content: '今天深圳天气',
+            },
+        ],
+        stream: true,
+     }, "ernie-4.0-8k");
+    for await (const chunk of resp) {
+        console.log(chunk?.choices[0]?.delta);
+    }
+}
+
+main();
+```
 
 ### 续写Completions
 

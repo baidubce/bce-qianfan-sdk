@@ -321,12 +321,36 @@ async function main() {
             },
         ],
      }, "ernie-4.0-8k");
-    console.log(resp);
-    console.log(resp?.choices[0]?.message);
+    console.log(resp?.choices);
 }
 
 main();
 ```
+
+```
+[
+  {
+    index: 0,
+    message: {
+      role: 'assistant',
+      content: '很抱歉，我无法直接获取实时的天气信息。建议您通过以下几种方式查询今天深圳的天气情况：\n' +
+        '\n' +
+        '1. 天气预报应用：您可以在手机应用商店下载天气预报应用，然后搜索“深圳”以获取当地的天气情况。\n' +
+        '\n' +
+        '2. 搜索引擎：在搜索引擎中输入“深圳今天天气”或“深圳天气预报”，通常可以找到相关的天气信息。\n' +
+        '\n' +
+        '3. 社交媒体：有些社交媒体平台会提供天气预报功能，您可以关注相关的账号或搜索相关话题以获取天气信息。\n' +
+        '\n' +
+        '4. 电视或广播：如果您正在家中，可以打开电视或广播，通常会有天气预报节目或新闻播报天气情况。\n' +
+        '\n' +
+        '请注意，天气情况可能会随时变化，建议您在出门前再次确认天气情况，以便做好相应的准备。'
+    },
+    finish_reason: 'normal',
+    flag: 0
+  }
+]
+```
+
 流式示例代码如下：
 ```ts
 import {ChatCompletion} from "@baiducloud/qianfan";
@@ -351,6 +375,23 @@ async function main() {
 }
 
 main();
+```
+
+```
+{ content: '很抱歉，' }
+{ content: '我无法直接' }
+{ content: '获取实时的' }
+{ content: '天气信息' }
+{ content: '。' }
+{ content: '但通常情况下' }
+{ content: '，您' }
+...
+{ content: '建议您直接' }
+{ content: '查看相关的' }
+{ content: '天气预报服务' }
+{ content: '或应用' }
+{ content: '。' }
+{ content: '' }
 ```
 
 ### 续写Completions

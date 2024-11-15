@@ -54,6 +54,7 @@ class PostPreTrain(Trainer):
         train_config: Optional[Union[TrainConfig, str]] = None,
         event_handler: Optional[EventHandler] = None,
         name: Optional[str] = None,
+        existed_model_set_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -75,6 +76,8 @@ class PostPreTrain(Trainer):
                 the training process
             name: Optional[str]
                 An optional name for the training task.
+            existed_model_set_id: Optional[str]
+                An optional config for the publish model.
 
             **kwargs: Any additional keyword arguments.
 
@@ -99,6 +102,13 @@ class PostPreTrain(Trainer):
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
 
+        self._context: Dict[str, Any] = {
+            "train_type": train_type,
+            "name": name,
+            "existed_model_set_id": existed_model_set_id,
+            **kwargs,
+        }
+
         actions: List[BaseAction] = []
         # 初始化load action
         assert dataset is not None
@@ -119,9 +129,13 @@ class PostPreTrain(Trainer):
             **kwargs,
         )
         actions.append(self.train_action)
+
+        if train_type is None:
+            self._context["train_type"] = self.train_action.train_type
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
+            context=self._context,
         )
         self.ppls = [ppl]
         self.result = [None]
@@ -159,6 +173,7 @@ class PostPreTrain(Trainer):
             Trainer:
                 self, for chain invocation.
         """
+        self._context.update(kwargs)
         self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to run")
@@ -168,7 +183,7 @@ class PostPreTrain(Trainer):
         kwargs["retry_count"] = kwargs.get(
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
-        self.result[0] = self.ppls[0].exec(**kwargs)
+        self.result[0] = self.ppls[0].exec(input=self.input, context=self._context)
         return self
 
     @property

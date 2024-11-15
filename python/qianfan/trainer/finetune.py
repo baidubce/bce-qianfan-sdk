@@ -129,6 +129,10 @@ class Finetune(Trainer):
         """
         if kwargs.get("pipeline") and isinstance(kwargs.get("pipeline"), Pipeline):
             self.from_ppl(kwargs.get("pipeline"))
+            if self.ppls[0]._context:
+                self._context = self.ppls[0]._context
+            else:
+                self._context = {}
             return
         # 设置name
         self.name = name
@@ -140,23 +144,13 @@ class Finetune(Trainer):
             del kwargs["context"]
 
         self._context: Dict[str, Any] = {
-            "context": {
-                "train_type": train_type,
-                "dataset": dataset,
-                "train_config": train_config,
-                "deploy_config": deploy_config,
-                "event_handler": event_handler,
-                "eval_dataset": eval_dataset,
-                "evaluators": evaluators,
-                "dataset_bos_path": dataset_bos_path,
-                "previous_trainer": previous_trainer,
-                "previous_task_id": previous_task_id,
-                "previous_model": previous_model,
-                "name": name,
-                "existed_model_set_id": existed_model_set_id,
-            }
+            "train_type": train_type,
+            "dataset_bos_path": dataset_bos_path,
+            "previous_task_id": previous_task_id,
+            "name": name,
+            "existed_model_set_id": existed_model_set_id,
+            **kwargs,
         }
-        self._context.update(kwargs)
 
         actions: List[BaseAction] = []
         # 校验dataset
@@ -249,10 +243,14 @@ class Finetune(Trainer):
                 event_handler=event_handler,
             )
             actions.append(self.eval_action)
+
+        if train_type is None:
+            self._context["train_type"] = self.train_action.train_type
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
             case_init_params={"case_type": Finetune.__name__},
+            context=self._context,
         )
         self.ppls = [ppl]
         self.result = [None]
@@ -296,9 +294,6 @@ class Finetune(Trainer):
             Trainer:
                 self, for chain invocation.
         """
-        if "context" in kwargs:
-            del kwargs["context"]
-
         self._context.update(kwargs)
         self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:
@@ -310,7 +305,7 @@ class Finetune(Trainer):
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
         try:
-            self.result[0] = self.ppls[0].exec(**self._context)
+            self.result[0] = self.ppls[0].exec(input=self.input, context=self._context)
         except Exception as e:
             self.result[0] = {"error": e}
             raise e

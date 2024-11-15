@@ -987,7 +987,7 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.task_id = input.get("task_id", "")
         self.job_id = input.get("job_id", "")
 
-        assert context
+        assert context is not None
 
         existed_model_set_id = context.get("existed_model_set_id", None)
         if existed_model_set_id is None:

@@ -77,7 +77,7 @@ def test_load_data_action():
 
 def test_train_action():
     ta = TrainAction(
-        train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.PostPretrain
+        train_type="ERNIE-Speed-8K", train_mode=console_consts.TrainMode.PostPretrain
     )
 
     with pytest.raises(errors.RequestError):
@@ -92,7 +92,9 @@ def test_train_action():
             }
         )
 
-    ta = TrainAction(train_type="ERNIE-Speed", train_mode=console_consts.TrainMode.SFT)
+    ta = TrainAction(
+        train_type="ERNIE-Speed-8K", train_mode=console_consts.TrainMode.SFT
+    )
     output = ta.exec(
         input={
             "datasets": {
@@ -110,7 +112,10 @@ def test_train_action():
 def test_model_publish_action():
     publish_action = ModelPublishAction()
 
-    output = publish_action.exec(input={"task_id": 47923, "job_id": 33512})
+    output = publish_action.exec(
+        input={"task_id": "47923", "job_id": "33512"},
+        context={"train_type": "ERNIE-Speed-8K"},
+    )
     assert isinstance(output, dict)
     assert "model_id" in output and "model_set_id" in output
 
@@ -211,7 +216,7 @@ def test_trainer_sft_with_deploy():
 
 
 def test_model_deploy():
-    svc = Model(set_id="1", version_id="1").deploy(
+    svc = Model(set_id="1", id="1").deploy(
         DeployConfig(
             endpoint_suffix="xxx",
             replicas=1,
@@ -350,7 +355,7 @@ def test_trainer_sft_with_eval():
     eval_ds = Dataset.load(source=qianfan_eval_data_source, organize_data_as_group=True)
     eh = MyEventHandler()
     sft_task = LLMFinetune(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=ds,
         train_config=train_config,
         event_handler=eh,
@@ -434,7 +439,7 @@ def test_train_config_validate():
 def test_ppt():
     ppt_ds = Dataset.load(qianfan_dataset_version_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=ppt_ds,
     )
     ppt_trainer.run()
@@ -445,7 +450,7 @@ def test_ppt():
 def test_ppt_with_sft():
     ppt_ds = Dataset.load(qianfan_dataset_version_id="ds-mock-generic")
     ppt_trainer = PostPreTrain(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=ppt_ds,
     )
     ppt_trainer.run()
@@ -496,7 +501,7 @@ def test_failed_sft_run():
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     sft_task = LLMFinetune(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=ds,
         train_config=train_config,
         name="mock_failed_task",
@@ -537,7 +542,7 @@ def test_persist():
     ds = Dataset.load(source=qianfan_data_source, organize_data_as_group=True)
 
     trainer = LLMFinetune(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=ds,
         train_config=train_config,
         train_extras={"newField": {"name": "111"}},
@@ -568,7 +573,7 @@ def test_persist():
                 "type": "TrainAction",
                 "init_params": {
                     "train_mode": "SFT",
-                    "train_type": "ERNIE-Speed",
+                    "train_type": "ERNIE-Speed-8K",
                     "train_config": {
                         "peft_type": "FullFineTuning",
                         "trainset_rate": 20,
@@ -586,6 +591,9 @@ def test_persist():
         ],
         "case_init_params": {
             "case_type": "Finetune"
+        },
+        "context": {
+            "train_type": "ERNIE-Speed-8K",
         }
     }
                 """)
@@ -608,7 +616,7 @@ def test_trainer_dataset_config():
     )
 
     trainer = Finetune(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=qf_ds_conf,
     )
     trainer.run()
@@ -624,7 +632,7 @@ def test_trainer_corpus_config():
     )
 
     trainer = Finetune(
-        train_type="ERNIE-Speed",
+        train_type="ERNIE-Speed-8K",
         dataset=qf_ds_conf,
         corpus_config=CorpusConfig(
             data_copy=True,

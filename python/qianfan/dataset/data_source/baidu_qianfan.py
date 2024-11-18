@@ -553,7 +553,6 @@ class QianfanDataSource(DataSource, BaseModel):
         storage_id: str,
         storage_path: str,
         file_name: str,
-        is_data_annotated: bool,
         storage_type: V2Consts.StorageType = V2Consts.StorageType.Bos,
         addition_info: Optional[Dict[str, Any]] = None,
         ak: Optional[str] = None,
@@ -567,7 +566,7 @@ class QianfanDataSource(DataSource, BaseModel):
         Args:
             name (str):
                 dataset name you want
-            template_type (DataTemplateType):
+            dataset_format (DatasetFormat):
                 template type applying to data set
             storage_id (str):
                 private BOS bucket name
@@ -575,8 +574,6 @@ class QianfanDataSource(DataSource, BaseModel):
                 private BOS file path
             file_name (str):
                 file need to upload
-            is_data_annotated (bool):
-                is data in bos annotated
             storage_type (Optional[DataStorageType]):
                 data storage type used to store your data, default to PrivateBos
             addition_info (Optional[Dict[str, Any]]):
@@ -620,7 +617,7 @@ class QianfanDataSource(DataSource, BaseModel):
 
         log_info("start to import data in bos")
         if not _create_import_data_task_and_wait_for_success(
-            source.id, is_data_annotated, f"/{storage_id}{storage_path}{file_name}"
+            source.id, False, f"/{storage_id}{storage_path}{file_name}"
         ):
             err_msg = "failed to create dataset from bos file"
             log_error(err_msg)

@@ -35,7 +35,7 @@ public class HttpRequest {
     private String url;
     private String method;
     private HttpEntity body;
-    private Map<String, String> headers = new LinkedHashMap<>();
+    private transient Map<String, String> headers = new LinkedHashMap<>();
 
     public String getUrl() {
         return url;

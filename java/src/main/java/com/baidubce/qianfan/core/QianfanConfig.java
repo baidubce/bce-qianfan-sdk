@@ -32,10 +32,12 @@ public class QianfanConfig {
     private static final String QIANFAN_SK = "QIANFAN_SK";
     private static final String QIANFAN_ACCESS_KEY = "QIANFAN_ACCESS_KEY";
     private static final String QIANFAN_SECRET_KEY = "QIANFAN_SECRET_KEY";
+    private static final String QIANFAN_INFER_VERSION = "QIANFAN_INFER_VERSION";
     private static final String QIANFAN_IAM_SIGN_EXPIRATION_SEC = "QIANFAN_IAM_SIGN_EXPIRATION_SEC";
     private static final String QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL";
     private static final String QIANFAN_BASE_URL = "QIANFAN_BASE_URL";
     private static final String QIANFAN_CONSOLE_API_BASE_URL = "QIANFAN_CONSOLE_API_BASE_URL";
+    private static final String QIANFAN_IAM_BASE_URL = "QIANFAN_IAM_BASE_URL";
     private static final String QIANFAN_LLM_API_RETRY_COUNT = "QIANFAN_LLM_API_RETRY_COUNT";
     private static final String QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL = "QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL";
     private static final String QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR = "QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR";
@@ -43,10 +45,12 @@ public class QianfanConfig {
     private static final String QIANFAN_QPS_LIMIT = "QIANFAN_QPS_LIMIT";
     private static final String QIANFAN_RPM_LIMIT = "QIANFAN_RPM_LIMIT";
 
+    private static final String DEFAULT_INFER_VERSION = "V1";
     private static final int DEFAULT_IAM_SIGN_EXPIRATION_SEC = 1800;
     private static final int DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = 3600;
     private static final String DEFAULT_BASE_URL = "https://aip.baidubce.com";
     private static final String DEFAULT_CONSOLE_API_BASE_URL = "https://qianfan.baidubce.com";
+    private static final String DEFAULT_IAM_BASE_URL = "https://iam.bj.baidubce.com";
     private static final String DEFAULT_LLM_API_RETRY_COUNT = "1";
     private static final String DEFAULT_LLM_API_RETRY_MAX_WAIT_INTERVAL = "120";
     private static final String DEFAULT_LLM_API_RETRY_BACKOFF_FACTOR = "0";
@@ -61,9 +65,11 @@ public class QianfanConfig {
 
     static {
         try {
+            defaultConfigMap.put(QIANFAN_INFER_VERSION, DEFAULT_INFER_VERSION);
             defaultConfigMap.put(QIANFAN_IAM_SIGN_EXPIRATION_SEC, String.valueOf(DEFAULT_IAM_SIGN_EXPIRATION_SEC));
             defaultConfigMap.put(QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL, String.valueOf(DEFAULT_ACCESS_TOKEN_REFRESH_MIN_INTERVAL));
             defaultConfigMap.put(QIANFAN_BASE_URL, DEFAULT_BASE_URL);
+            defaultConfigMap.put(QIANFAN_IAM_BASE_URL, DEFAULT_IAM_BASE_URL);
             defaultConfigMap.put(QIANFAN_CONSOLE_API_BASE_URL, DEFAULT_CONSOLE_API_BASE_URL);
             defaultConfigMap.put(QIANFAN_LLM_API_RETRY_COUNT, DEFAULT_LLM_API_RETRY_COUNT);
             defaultConfigMap.put(QIANFAN_LLM_API_RETRY_MAX_WAIT_INTERVAL, DEFAULT_LLM_API_RETRY_MAX_WAIT_INTERVAL);
@@ -99,6 +105,10 @@ public class QianfanConfig {
         return getString(QIANFAN_SECRET_KEY);
     }
 
+    public static String getQianfanInferVersion() {
+        return getString(QIANFAN_INFER_VERSION);
+    }
+
     public static Integer getIamSignExpirationSec() {
         return getInt(QIANFAN_IAM_SIGN_EXPIRATION_SEC);
     }
@@ -113,6 +123,10 @@ public class QianfanConfig {
 
     public static String getConsoleApiBaseUrl() {
         return getString(QIANFAN_CONSOLE_API_BASE_URL);
+    }
+
+    public static String getIAMBaseUrl() {
+        return getString(QIANFAN_IAM_BASE_URL);
     }
 
     public static RetryConfig getRetryConfig() {

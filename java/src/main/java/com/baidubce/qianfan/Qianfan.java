@@ -24,6 +24,8 @@ import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
+import com.baidubce.qianfan.model.chat.V2.ChatV2Request;
+import com.baidubce.qianfan.model.chat.V2.ChatV2Response;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
 import com.baidubce.qianfan.model.console.ConsoleRequest;
@@ -78,6 +80,14 @@ public class Qianfan {
     public StreamIterator<ChatResponse> chatCompletionStream(ChatRequest request) {
         request.setStream(true);
         return requestStream(request, ChatResponse.class);
+    }
+
+    public ChatV2Builder chatCompletionV2() {
+        return new ChatV2Builder(this);
+    }
+
+    public ChatV2Response chatCompletionV2(ChatV2Request request) {
+        return request(request, ChatV2Response.class);
     }
 
     public CompletionBuilder completion() {

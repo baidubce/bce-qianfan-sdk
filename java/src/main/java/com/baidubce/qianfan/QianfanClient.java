@@ -37,12 +37,14 @@ import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
 class QianfanClient {
     private static final String SDK_VERSION = "0.1.1";
     private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
     private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
+    private static final String QIANFAN_V2_URL_TEMPLATE = "%s/v2/chat/completions";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
@@ -98,11 +100,21 @@ class QianfanClient {
 
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
         String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
-        String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
+
+        String url;
+        if (auth.authType().equals(Auth.TYPE_V2)) {
+            url = String.format(QIANFAN_V2_URL_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl());
+        } else {
+            url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
+        }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
         HttpRequest request = HttpClient.request()
                 .post(url)
                 .body(baseRequest);
+
+        for (Map.Entry<String, String> entry : baseRequest.getHeaders().entrySet()) {
+            request.addHeader(entry.getKey(), entry.getValue());
+        }
         return auth.signRequest(request);
     }
 

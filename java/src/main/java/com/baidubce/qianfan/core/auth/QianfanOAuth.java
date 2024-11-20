@@ -46,6 +46,12 @@ public class QianfanOAuth implements IAuth {
     }
 
     @Override
+    public String authType() {
+        return Auth.TYPE_OAUTH;
+    }
+
+
+    @Override
     public HttpRequest signRequest(HttpRequest request) {
         String accessToken = getToken();
         String url = request.getUrl();

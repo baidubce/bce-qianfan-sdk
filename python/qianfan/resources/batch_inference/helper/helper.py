@@ -353,7 +353,7 @@ def wait_bf_task(
 
 class BatchInferenceHelper:
     # 使用正则表达式来匹配文件名和大小
-    jsonl_files_pattern = re.compile(r"(\d+)\s+(\S+\.(jsonl|json))")
+    jsonl_files_pattern = re.compile(r"(\d+)\s+(\S+\.(jsonl|json|txt))")
 
     def __init__(
         self,

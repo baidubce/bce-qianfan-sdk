@@ -53,7 +53,7 @@ public class QianfanV2Auth implements IAuth {
             BearTokenResponse bearTokenResponse = Json.deserialize(
                     response.getStringBody(), BearTokenResponse.class
             );
-            this.token = bearTokenResponse.getToken();
+            this.token = String.format("Bearer %s", bearTokenResponse.getToken());
             this.expiredTime = Instant.parse(bearTokenResponse.getExpireTime());
         } catch (QianfanException e) {
             throw e;
@@ -65,7 +65,9 @@ public class QianfanV2Auth implements IAuth {
     public String getToken() {
         if (this.isExpired()) {
             synchronized (this) {
-                this.applyNewBearToken();
+                if (this.isExpired()) {
+                    this.applyNewBearToken();
+                }
             }
         }
         return token;

@@ -1,11 +1,9 @@
-package com.baidubce.qianfan.model.chat.V2;
+package com.baidubce.qianfan.model.chat.V2.response;
 
 import com.google.gson.annotations.SerializedName;
 
-public class ChatChoice {
+public class BaseChoice<T extends BaseChoice<T>> {
     private Integer index;
-
-    private Message message;
 
     @SerializedName("finish_reason")
     private String finishReason;
@@ -19,39 +17,35 @@ public class ChatChoice {
         return index;
     }
 
-    public void setIndex(Integer index) {
+    public BaseChoice<T> setIndex(Integer index) {
         this.index = index;
-    }
-
-    public Message getMessage() {
-        return message;
-    }
-
-    public void setMessage(Message message) {
-        this.message = message;
+        return this;
     }
 
     public String getFinishReason() {
         return finishReason;
     }
 
-    public void setFinishReason(String finishReason) {
+    public BaseChoice<T> setFinishReason(String finishReason) {
         this.finishReason = finishReason;
+        return this;
     }
 
     public Integer getFlag() {
         return flag;
     }
 
-    public void setFlag(Integer flag) {
+    public BaseChoice<T> setFlag(Integer flag) {
         this.flag = flag;
+        return this;
     }
 
     public Integer getBanRound() {
         return banRound;
     }
 
-    public void setBanRound(Integer banRound) {
+    public BaseChoice<T> setBanRound(Integer banRound) {
         this.banRound = banRound;
+        return this;
     }
 }

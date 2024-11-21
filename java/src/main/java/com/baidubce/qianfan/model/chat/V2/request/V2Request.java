@@ -1,17 +1,20 @@
-package com.baidubce.qianfan.model.chat.V2;
+package com.baidubce.qianfan.model.chat.V2.request;
 
 import com.baidubce.qianfan.model.BaseRequest;
+import com.baidubce.qianfan.model.chat.V2.Message;
 import com.baidubce.qianfan.model.constant.ModelType;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class ChatV2Request extends BaseRequest<ChatV2Request> {
+public class V2Request extends BaseRequest<V2Request> {
     private List<Message> messages;
 
     private String appId;
 
-    private HashMap<String, Object> streamOptions;
+    private boolean stream;
+
+    private Map<String, Object> streamOptions;
 
     private Double temperature;
 
@@ -33,7 +36,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
 
     private List<Tool> tools;
 
-    private RequestToolChoice toolChoice;
+    private Object toolChoice;
 
     private Boolean parallelToolCalls;
 
@@ -46,7 +49,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return messages;
     }
 
-    public ChatV2Request setMessages(List<Message> messages) {
+    public V2Request setMessages(List<Message> messages) {
         this.messages = messages;
         return this;
     }
@@ -55,7 +58,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return appId;
     }
 
-    public ChatV2Request setAppId(String appId) {
+    public V2Request setAppId(String appId) {
         this.appId = appId;
         if (appId != null) {
             this.getHeaders().put("appid", appId);
@@ -63,11 +66,20 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return this;
     }
 
-    public HashMap<String, Object> getStreamOptions() {
+    public boolean isStream() {
+        return stream;
+    }
+
+    public V2Request setStream(boolean stream) {
+        this.stream = stream;
+        return this;
+    }
+
+    public Map<String, Object> getStreamOptions() {
         return streamOptions;
     }
 
-    public ChatV2Request setStreamOptions(HashMap<String, Object> streamOptions) {
+    public V2Request setStreamOptions(Map<String, Object> streamOptions) {
         this.streamOptions = streamOptions;
         return this;
     }
@@ -76,7 +88,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return temperature;
     }
 
-    public ChatV2Request setTemperature(Double temperature) {
+    public V2Request setTemperature(Double temperature) {
         this.temperature = temperature;
         return this;
     }
@@ -85,7 +97,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return topP;
     }
 
-    public ChatV2Request setTopP(Double topP) {
+    public V2Request setTopP(Double topP) {
         this.topP = topP;
         return this;
     }
@@ -94,7 +106,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return penaltyScore;
     }
 
-    public ChatV2Request setPenaltyScore(Double penaltyScore) {
+    public V2Request setPenaltyScore(Double penaltyScore) {
         this.penaltyScore = penaltyScore;
         return this;
     }
@@ -103,7 +115,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return maxCompletionTokens;
     }
 
-    public ChatV2Request setMaxCompletionTokens(Integer maxCompletionTokens) {
+    public V2Request setMaxCompletionTokens(Integer maxCompletionTokens) {
         this.maxCompletionTokens = maxCompletionTokens;
         return this;
     }
@@ -112,7 +124,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return seed;
     }
 
-    public ChatV2Request setSeed(Integer seed) {
+    public V2Request setSeed(Integer seed) {
         this.seed = seed;
         return this;
     }
@@ -121,7 +133,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return stop;
     }
 
-    public ChatV2Request setStop(List<String> stop) {
+    public V2Request setStop(List<String> stop) {
         this.stop = stop;
         return this;
     }
@@ -130,7 +142,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return user;
     }
 
-    public ChatV2Request setUser(String user) {
+    public V2Request setUser(String user) {
         this.user = user;
         return this;
     }
@@ -139,7 +151,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return frequencyPenalty;
     }
 
-    public ChatV2Request setFrequencyPenalty(Double frequencyPenalty) {
+    public V2Request setFrequencyPenalty(Double frequencyPenalty) {
         this.frequencyPenalty = frequencyPenalty;
         return this;
     }
@@ -148,7 +160,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return presencePenalty;
     }
 
-    public ChatV2Request setPresencePenalty(Double presencePenalty) {
+    public V2Request setPresencePenalty(Double presencePenalty) {
         this.presencePenalty = presencePenalty;
         return this;
     }
@@ -157,16 +169,16 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return tools;
     }
 
-    public ChatV2Request setTools(List<Tool> tools) {
+    public V2Request setTools(List<Tool> tools) {
         this.tools = tools;
         return this;
     }
 
-    public RequestToolChoice getToolChoice() {
+    public Object getToolChoice() {
         return toolChoice;
     }
 
-    public ChatV2Request setToolChoice(RequestToolChoice toolChoice) {
+    public V2Request setToolChoice(Object toolChoice) {
         this.toolChoice = toolChoice;
         return this;
     }
@@ -175,7 +187,7 @@ public class ChatV2Request extends BaseRequest<ChatV2Request> {
         return parallelToolCalls;
     }
 
-    public ChatV2Request setParallelToolCalls(Boolean parallelToolCalls) {
+    public V2Request setParallelToolCalls(Boolean parallelToolCalls) {
         this.parallelToolCalls = parallelToolCalls;
         return this;
     }

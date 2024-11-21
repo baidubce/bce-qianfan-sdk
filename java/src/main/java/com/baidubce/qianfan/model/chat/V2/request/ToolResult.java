@@ -1,4 +1,4 @@
-package com.baidubce.qianfan.model.chat.V2;
+package com.baidubce.qianfan.model.chat.V2.request;
 
 public class ToolResult {
     private String toolName;
@@ -11,23 +11,26 @@ public class ToolResult {
         return toolName;
     }
 
-    public void setToolName(String toolName) {
+    public ToolResult setToolName(String toolName) {
         this.toolName = toolName;
+        return this;
     }
 
     public String getToolCallId() {
         return toolCallId;
     }
 
-    public void setToolCallId(String toolCallId) {
+    public ToolResult setToolCallId(String toolCallId) {
         this.toolCallId = toolCallId;
+        return this;
     }
 
     public String getContent() {
         return content;
     }
 
-    public void setContent(String content) {
+    public ToolResult setContent(String content) {
         this.content = content;
+        return this;
     }
 }

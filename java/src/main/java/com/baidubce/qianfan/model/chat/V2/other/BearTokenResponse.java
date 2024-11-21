@@ -1,4 +1,4 @@
-package com.baidubce.qianfan.model.chat.V2;
+package com.baidubce.qianfan.model.chat.V2.other;
 
 import com.google.gson.annotations.SerializedName;
 

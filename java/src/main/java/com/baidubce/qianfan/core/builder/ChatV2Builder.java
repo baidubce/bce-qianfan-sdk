@@ -1,19 +1,21 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.Qianfan;
-import com.baidubce.qianfan.core.StreamIterator;
-import com.baidubce.qianfan.model.chat.ChatResponse;
 import com.baidubce.qianfan.model.chat.V2.*;
+import com.baidubce.qianfan.model.chat.V2.request.V2Request;
+import com.baidubce.qianfan.model.chat.V2.request.Tool;
+import com.baidubce.qianfan.model.chat.V2.request.ToolResult;
+import com.baidubce.qianfan.model.chat.V2.response.V2Response;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
     private final MessageV2Builder messageBuilder = new MessageV2Builder();
 
     private String appId;
 
-    private HashMap<String, Object> streamOptions;
+    private Map<String, Object> streamOptions;
 
     private Double temperature;
 
@@ -35,7 +37,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
 
     private List<Tool> tools;
 
-    private RequestToolChoice toolChoice;
+    private Object toolChoice;
 
     private Boolean parallelToolCalls;
 
@@ -92,7 +94,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
         return this;
     }
 
-    public ChatV2Builder toolChoice(RequestToolChoice toolChoice) {
+    public ChatV2Builder toolChoice(Object toolChoice) {
         this.toolChoice = toolChoice;
         return this;
     }
@@ -152,7 +154,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
         return this;
     }
 
-    public ChatV2Builder streamOptions(HashMap<String, Object> streamOptions) {
+    public ChatV2Builder streamOptions(Map<String, Object> streamOptions) {
         this.streamOptions = streamOptions;
         return this;
     }
@@ -162,9 +164,9 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
         return this;
     }
 
-    public ChatV2Request build() {
+    public V2Request build() {
         List<Message> messages = messageBuilder.build();
-        return new ChatV2Request()
+        return new V2Request()
                 .setModel(getModel())
                 .setMessages(messages)
                 .setAppId(appId)
@@ -183,7 +185,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
                 .setParallelToolCalls(parallelToolCalls);
     }
 
-    public ChatV2Response execute() {
+    public V2Response execute() {
         return super.getQianfan().chatCompletionV2(build());
     }
 }

@@ -1,14 +1,14 @@
 package com.baidubce.qianfan.model.chat.V2;
 
+import com.baidubce.qianfan.model.chat.V2.response.Function;
+
 public class ToolCall {
 
     private String id;
 
-    private String name;
+    public final String type = "function";
 
-    private String arguments;
-
-    public static final String type = "function";
+    private Function function;
 
     public String getId() {
         return id;
@@ -18,19 +18,11 @@ public class ToolCall {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public Function getFunction() {
+        return function;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getArguments() {
-        return arguments;
-    }
-
-    public void setArguments(String arguments) {
-        this.arguments = arguments;
+    public void setFunction(Function function) {
+        this.function = function;
     }
 }

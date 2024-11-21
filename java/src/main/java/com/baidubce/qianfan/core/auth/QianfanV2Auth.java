@@ -1,14 +1,13 @@
 package com.baidubce.qianfan.core.auth;
 
 import com.baidubce.qianfan.core.QianfanConfig;
-import com.baidubce.qianfan.model.chat.V2.BearTokenResponse;
+import com.baidubce.qianfan.model.chat.V2.other.BearTokenResponse;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.http.HttpRequest;
 import com.baidubce.qianfan.util.http.HttpResponse;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 

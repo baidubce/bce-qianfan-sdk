@@ -126,6 +126,8 @@ class Consts:
     FineTuneTaskDetailAction: str = "DescribeFineTuningTask"
     FineTuneStopTaskAction: str = "StopFineTuningTask"
     FineTuneSupportedModelsAction: str = "DescribeFineTuningSupportModels"
+    FineTuneDeleteTaskAction: str = "DeleteFineTuningTask"
+    FineTuneDeleteJobAction: str = "DeleteFineTuningJob"
     ModelV2BaseRouteAPI: str = "/v2/model"
     ModelCreateCustomModelSetAction: str = "CreateCustomModelSet"
     ModelDescribeSystemModelSetsAction: str = "DescribeSystemModelSets"

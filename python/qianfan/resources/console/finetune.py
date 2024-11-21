@@ -485,6 +485,70 @@ class FineTune(object):
 
         @classmethod
         @console_api_request
+        def delete_task(
+            cls,
+            task_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            delete the fine-tune task
+
+            Parameters:
+            task_id: str
+                task_id of the task.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneDeleteTaskAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "taskId": task_id,
+            }
+            return req
+
+        @classmethod
+        @console_api_request
+        def delete_job(
+            cls,
+            job_id: str,
+            **kwargs: Any,
+        ) -> QfRequest:
+            """
+            delete the fine-tune job
+
+            Parameters:
+            job_id: str
+                job_id of the job.
+            kwargs:
+                Additional keyword arguments that can be passed to customize
+                the request.
+
+            Note:
+            The `@console_api_request` decorator is applied to this method, enabling
+            it to send the generated QfRequest and return a QfResponse to the user.
+            """
+            req = QfRequest(
+                method="POST",
+                url=cls.base_api_route(),
+                query=_get_console_v2_query(Consts.FineTuneDeleteJobAction),
+            )
+            req.json_body = {
+                **kwargs,
+                "jobId": job_id,
+            }
+            return req
+
+        @classmethod
+        @console_api_request
         def supported_models(cls, **kwargs: Any) -> QfRequest:
             """
             get the supported models and training params for

@@ -360,6 +360,9 @@ export async function consoleAction({base_api_route, data, action}: ConsoleActio
 
 interface GetTokenProps {
     expireInSeconds?: number;
+    ak?: string;
+    sk?: string;
+    bce_token?: string;
 }
 
 interface TokenResp {
@@ -372,14 +375,14 @@ interface TokenResp {
 }
 
 async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
-    const {expireInSeconds: expireInSecondsInProps} = props || {};
+    const {expireInSeconds: expireInSecondsInProps, ak, sk, bce_token} = props || {};
     const config = getDefaultConfig();
     const {QIANFAN_BEAR_TOKEN_URL} = config;
     try {
         // 鉴权
         const httpClientConfig = getIAMConfig(
-            config.QIANFAN_ACCESS_KEY,
-            config.QIANFAN_SECRET_KEY,
+            ak || config.QIANFAN_ACCESS_KEY,
+            sk || config.QIANFAN_SECRET_KEY,
             QIANFAN_BEAR_TOKEN_URL
         );
         const client = new HttpClient(httpClientConfig);
@@ -390,7 +393,8 @@ async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
             params: {expireInSeconds},
             headers: {
                 ...DEFAULT_HEADERS,
-            }
+                ...(bce_token ? {'x-bce-security-token': bce_token} : {}),
+            },
         });
         const fetchInstance = new Fetch();
         const {url, ...rest} = fetchOptions;

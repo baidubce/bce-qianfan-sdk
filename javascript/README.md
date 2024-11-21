@@ -304,6 +304,15 @@ main();
 千帆 JavaScript SDK 也同步支持了 V2 版本的调用方式，用户可以通过配置 `version: 'v2'` 来创建对应的 V2 版本。
 用户需要配置QIANFAN_ACCESS_KEY 和 QIANFAN_SECRET_KEY，可以配置appid（应用ID） ，不传使用静默 appid。
 
+获取BearToken的示例代码如下：
+
+```ts
+import {getBearToken} from "@baiducloud/qianfan";
+
+const bearToken = await getBearToken();
+console.log(bearToken);
+```
+
 非流式情况下的调用示例如下所示：
 ```ts
 import {ChatCompletion} from "@baiducloud/qianfan";

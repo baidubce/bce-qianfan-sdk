@@ -594,9 +594,10 @@ class QianfanDataSource(DataSource, BaseModel):
         log_info("start to create dataset on qianfan from bos")
         storage_info_for_create: Dict[str, Any] = {}
 
+        storage_path = f"/{storage_path.strip('/')}/"
+        storage_id = storage_id.strip("/")
+
         if storage_type == V2Consts.StorageType.Bos:
-            storage_path = f"/{storage_path.strip('/')}/"
-            storage_id = storage_id.strip("/")
             storage_info_for_create = {
                 "storage_path": f"bos://{storage_id}{storage_path}",
             }
@@ -616,16 +617,20 @@ class QianfanDataSource(DataSource, BaseModel):
         )
 
         log_info("start to import data in bos")
-        if not _create_import_data_task_and_wait_for_success(
-            source.id, False, f"/{storage_id}{storage_path}{file_name}"
-        ):
-            err_msg = "failed to create dataset from bos file"
-            log_error(err_msg)
-            raise QianfanRequestError(err_msg)
+        try:
+            if not _create_import_data_task_and_wait_for_success(
+                source.id, False, f"bos:/{storage_id}{storage_path}{file_name}"
+            ):
+                err_msg = "failed to create dataset from bos file"
+                log_error(err_msg)
+                raise QianfanRequestError(err_msg)
 
-        if is_download_to_local is not None:
-            log_warn('parameter "is_download_to_local" has been set as deprecated')
-            source.download_when_init = is_download_to_local
+            if is_download_to_local is not None:
+                log_warn('parameter "is_download_to_local" has been set as deprecated')
+                source.download_when_init = is_download_to_local
+        except Exception as e:
+            Data.V2.delete_dataset(source.group_id)
+            raise e
 
         return source
 

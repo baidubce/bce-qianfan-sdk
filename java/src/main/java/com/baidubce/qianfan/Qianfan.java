@@ -18,15 +18,10 @@ package com.baidubce.qianfan;
 
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.builder.*;
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.BaseResponse;
 import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
 import com.baidubce.qianfan.model.chat.ChatResponse;
-import com.baidubce.qianfan.model.chat.V2.request.V2Request;
-import com.baidubce.qianfan.model.chat.V2.response.V2Response;
-import com.baidubce.qianfan.model.chat.V2.response.V2StreamResponse;
 import com.baidubce.qianfan.model.completion.CompletionRequest;
 import com.baidubce.qianfan.model.completion.CompletionResponse;
 import com.baidubce.qianfan.model.console.ConsoleRequest;
@@ -45,8 +40,7 @@ import com.baidubce.qianfan.model.rerank.RerankResponse;
 import java.lang.reflect.Type;
 
 
-public class Qianfan {
-    private final QianfanClient client;
+public class Qianfan extends QianfanBase {
 
     public Qianfan() {
         this.client = new QianfanClient();
@@ -70,6 +64,10 @@ public class Qianfan {
         return this;
     }
 
+    public QianfanV2 v2() {
+        return new QianfanV2(this.client.covertToV2());
+    }
+
     public ChatBuilder chatCompletion() {
         return new ChatBuilder(this);
     }
@@ -81,19 +79,6 @@ public class Qianfan {
     public StreamIterator<ChatResponse> chatCompletionStream(ChatRequest request) {
         request.setStream(true);
         return requestStream(request, ChatResponse.class);
-    }
-
-    public ChatV2Builder chatCompletionV2() {
-        return new ChatV2Builder(this);
-    }
-
-    public V2Response chatCompletionV2(V2Request request) {
-        return request(request, V2Response.class);
-    }
-
-    public StreamIterator<V2StreamResponse> chatCompletionV2Stream(V2Request request) {
-        request.setStream(true);
-        return requestStream(request, V2StreamResponse.class);
     }
 
     public CompletionBuilder completion() {
@@ -167,15 +152,4 @@ public class Qianfan {
         return consoleRequest(request, type);
     }
 
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
-        return client.request(request, responseClass);
-    }
-
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
-        return client.requestStream(request, responseClass);
-    }
-
-    public <T> ConsoleResponse<T> consoleRequest(ConsoleRequest request, Type type) {
-        return client.consoleRequest(request, type);
-    }
 }

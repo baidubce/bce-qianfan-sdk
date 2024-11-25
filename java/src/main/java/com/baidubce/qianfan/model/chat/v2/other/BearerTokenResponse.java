@@ -1,8 +1,8 @@
-package com.baidubce.qianfan.model.chat.V2.other;
+package com.baidubce.qianfan.model.chat.v2.other;
 
 import com.google.gson.annotations.SerializedName;
 
-public class BearTokenResponse {
+public class BearerTokenResponse {
     @SerializedName("userId")
     private String userId;
 

@@ -1,8 +1,8 @@
 package com.baidubce.qianfan.core.builder;
 
-import com.baidubce.qianfan.model.chat.V2.Message;
-import com.baidubce.qianfan.model.chat.V2.ToolCall;
-import com.baidubce.qianfan.model.chat.V2.request.ToolResult;
+import com.baidubce.qianfan.model.chat.v2.Message;
+import com.baidubce.qianfan.model.chat.v2.ToolCall;
+import com.baidubce.qianfan.model.chat.v2.request.ToolResult;
 import com.baidubce.qianfan.model.constant.V2.ChatRole;
 
 import java.util.ArrayList;

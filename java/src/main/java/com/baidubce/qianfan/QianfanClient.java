@@ -49,8 +49,8 @@ class QianfanClient {
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
 
-    private final IAuth auth;
-    private final ModelEndpointRetriever endpointRetriever;
+    private IAuth auth;
+    private ModelEndpointRetriever endpointRetriever;
     private RetryConfig retryConfig;
     private RateLimiter rateLimiter;
 
@@ -79,6 +79,12 @@ class QianfanClient {
 
     public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
         this.rateLimiter = new RateLimiter(rateLimitConfig);
+    }
+
+    public QianfanClient covertToV2() {
+        this.auth = auth.convertToV2();
+        this.endpointRetriever = new ModelEndpointRetriever(auth);
+        return this;
     }
 
     @SuppressWarnings("unchecked")

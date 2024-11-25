@@ -1,4 +1,4 @@
-package com.baidubce.qianfan.model.chat.V2.request;
+package com.baidubce.qianfan.model.chat.v2.request;
 
 public class ToolResult {
     private String toolName;

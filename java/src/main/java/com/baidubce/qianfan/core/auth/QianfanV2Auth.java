@@ -1,7 +1,7 @@
 package com.baidubce.qianfan.core.auth;
 
 import com.baidubce.qianfan.core.QianfanConfig;
-import com.baidubce.qianfan.model.chat.V2.other.BearTokenResponse;
+import com.baidubce.qianfan.model.chat.v2.other.BearerTokenResponse;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
 import com.baidubce.qianfan.util.Json;
@@ -32,6 +32,11 @@ public class QianfanV2Auth implements IAuth {
     }
 
     @Override
+    public IAuth convertToV2() {
+        return this;
+    }
+
+    @Override
     public HttpRequest signRequest(HttpRequest request) {
        return request
                 .addHeader("Content-Type", "application/json")
@@ -49,11 +54,11 @@ public class QianfanV2Auth implements IAuth {
         try {
             HttpResponse<String> response = iamRequest.executeString();
 
-            BearTokenResponse bearTokenResponse = Json.deserialize(
-                    response.getStringBody(), BearTokenResponse.class
+            BearerTokenResponse bearerTokenResponse = Json.deserialize(
+                    response.getStringBody(), BearerTokenResponse.class
             );
-            this.token = String.format("Bearer %s", bearTokenResponse.getToken());
-            this.expiredTime = Instant.parse(bearTokenResponse.getExpireTime());
+            this.token = String.format("Bearer %s", bearerTokenResponse.getToken());
+            this.expiredTime = Instant.parse(bearerTokenResponse.getExpireTime());
         } catch (QianfanException e) {
             throw e;
         } catch (Exception e) {

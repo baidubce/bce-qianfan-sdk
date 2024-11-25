@@ -1,7 +1,7 @@
-package com.baidubce.qianfan.model.chat.V2.request;
+package com.baidubce.qianfan.model.chat.v2.request;
 
 import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.chat.V2.Message;
+import com.baidubce.qianfan.model.chat.v2.Message;
 import com.baidubce.qianfan.model.constant.ModelType;
 
 import java.util.List;

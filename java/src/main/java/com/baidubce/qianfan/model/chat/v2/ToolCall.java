@@ -1,6 +1,6 @@
-package com.baidubce.qianfan.model.chat.V2;
+package com.baidubce.qianfan.model.chat.v2;
 
-import com.baidubce.qianfan.model.chat.V2.response.Function;
+import com.baidubce.qianfan.model.chat.v2.response.Function;
 
 public class ToolCall {
 

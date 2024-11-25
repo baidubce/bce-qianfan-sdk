@@ -1,4 +1,4 @@
-package com.baidubce.qianfan.model.chat.V2.response;
+package com.baidubce.qianfan.model.chat.v2.response;
 
 import java.util.List;
 

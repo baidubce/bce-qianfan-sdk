@@ -1,6 +1,6 @@
-package com.baidubce.qianfan.model.chat.V2.response;
+package com.baidubce.qianfan.model.chat.v2.response;
 
-import com.baidubce.qianfan.model.chat.V2.ToolCall;
+import com.baidubce.qianfan.model.chat.v2.ToolCall;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;

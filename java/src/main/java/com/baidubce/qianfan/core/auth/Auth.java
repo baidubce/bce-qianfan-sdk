@@ -34,7 +34,7 @@ public class Auth {
         String secretKey = QianfanConfig.getQianfanSecretKey();
         String version = QianfanConfig.getQianfanInferVersion();
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
-            if (version.equals("V2")) {
+            if (TYPE_V2.equals(version)) {
                 return create(TYPE_V2, accessKey, secretKey);
             }
             return create(TYPE_IAM, accessKey, secretKey);

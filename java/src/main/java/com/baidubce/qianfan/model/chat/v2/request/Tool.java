@@ -1,6 +1,6 @@
-package com.baidubce.qianfan.model.chat.V2.request;
+package com.baidubce.qianfan.model.chat.v2.request;
 
-public class ToolChoice {
+public class Tool {
     public final String type = "function";
 
     private Function function;
@@ -9,7 +9,7 @@ public class ToolChoice {
         return function;
     }
 
-    public ToolChoice setFunction(Function function) {
+    public Tool setFunction(Function function) {
         this.function = function;
         return this;
     }

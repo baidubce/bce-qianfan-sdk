@@ -1,6 +1,6 @@
-package com.baidubce.qianfan.model.chat.V2.response;
+package com.baidubce.qianfan.model.chat.v2.response;
 
-import com.baidubce.qianfan.model.chat.V2.Message;
+import com.baidubce.qianfan.model.chat.v2.Message;
 
 public class Choice extends BaseChoice<Choice> {
 

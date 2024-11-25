@@ -21,4 +21,5 @@ import com.baidubce.qianfan.util.http.HttpRequest;
 public interface IAuth {
     HttpRequest signRequest(HttpRequest request);
     String authType();
+    IAuth convertToV2();
 }

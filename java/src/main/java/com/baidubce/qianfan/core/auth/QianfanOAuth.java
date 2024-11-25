@@ -50,6 +50,10 @@ public class QianfanOAuth implements IAuth {
         return Auth.TYPE_OAUTH;
     }
 
+    @Override
+    public IAuth convertToV2() {
+        throw new AuthException("Can't convert OAuth to V2Auth");
+    }
 
     @Override
     public HttpRequest signRequest(HttpRequest request) {

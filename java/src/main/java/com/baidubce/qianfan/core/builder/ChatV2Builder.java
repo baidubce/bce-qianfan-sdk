@@ -1,11 +1,11 @@
 package com.baidubce.qianfan.core.builder;
 
-import com.baidubce.qianfan.Qianfan;
-import com.baidubce.qianfan.model.chat.V2.*;
-import com.baidubce.qianfan.model.chat.V2.request.V2Request;
-import com.baidubce.qianfan.model.chat.V2.request.Tool;
-import com.baidubce.qianfan.model.chat.V2.request.ToolResult;
-import com.baidubce.qianfan.model.chat.V2.response.V2Response;
+import com.baidubce.qianfan.QianfanV2;
+import com.baidubce.qianfan.model.chat.v2.*;
+import com.baidubce.qianfan.model.chat.v2.request.V2Request;
+import com.baidubce.qianfan.model.chat.v2.request.Tool;
+import com.baidubce.qianfan.model.chat.v2.request.ToolResult;
+import com.baidubce.qianfan.model.chat.v2.response.V2Response;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
         super();
     }
 
-    public ChatV2Builder(Qianfan qianfan) {
+    public ChatV2Builder(QianfanV2 qianfan) {
         super(qianfan);
     }
 
@@ -186,6 +186,6 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
     }
 
     public V2Response execute() {
-        return super.getQianfan().chatCompletionV2(build());
+        return super.getQianfanV2().chatCompletion(build());
     }
 }

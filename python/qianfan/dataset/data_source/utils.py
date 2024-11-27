@@ -25,7 +25,18 @@ import zipfile
 from enum import Enum
 from pathlib import Path
 from time import sleep
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 import pyarrow
 import requests
@@ -473,37 +484,91 @@ def _read_table_and_concat(reader: BaseReader) -> pyarrow.Table:
     return pyarrow.concat_tables(returned_table_list)
 
 
+def _merge_field_types(field_type1: Any, field_type2: Any) -> Any:
+    if pyarrow.types.is_struct(field_type1) and pyarrow.types.is_struct(field_type2):
+        return pyarrow.struct(_merge_schemas([field_type1, field_type2]))
+    elif pyarrow.types.is_list(field_type1) and pyarrow.types.is_list(field_type2):
+        return pyarrow.list_(
+            _merge_field_types(field_type1.value_type, field_type2.value_type)
+        )
+    elif pyarrow.types.is_large_list(field_type1) and pyarrow.types.is_large_list(
+        field_type2
+    ):
+        return pyarrow.large_list(
+            _merge_field_types(field_type1.value_type, field_type2.value_type)
+        )
+    else:
+        # 根据需要处理非兼容类型的冲突，这里假设保持原有字段类型
+        return field_type1
+
+
+def _merge_schemas(schemas: List[pyarrow.Schema]) -> pyarrow.Schema:
+    merged_fields: Dict[str, Any] = {}
+
+    for schema in schemas:
+        for field in schema:
+            if field.name in merged_fields:
+                # 合并字段类型
+                merged_fields[field.name] = pyarrow.field(
+                    field.name,
+                    _merge_field_types(merged_fields[field.name].type, field.type),
+                )
+            else:
+                # 如果字段不存在于 merged_fields 中，直接添加
+                merged_fields[field.name] = field
+
+    # 创建并返回一个新的 schema
+    return pyarrow.schema(list(merged_fields.values()))
+
+
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
     import filelock
 
     stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
+    final_schema: Optional[pyarrow.Schema] = None
 
     log_info(f"start to write arrow table to {cache_file_path}")
 
-    file_lock = filelock.FileLock(cache_file_path + ".lock")
-    file_lock.acquire()
+    with filelock.FileLock(cache_file_path + ".lock"):
+        if reader.is_resettable:
+            try:
+                schema_set: Set[pyarrow.Schema] = set()
+                for table in _build_table_from_reader(reader):
+                    assert isinstance(table, pyarrow.Table)
+                    schema_set.add(table.schema)
 
-    try:
-        for table in _build_table_from_reader(reader):
-            assert isinstance(table, pyarrow.Table)
-            if stream_writer is None:
-                stream_writer = pyarrow.ipc.new_stream(cache_file_path, table.schema)
+                final_schema = _merge_schemas(list(schema_set))
+                stream_writer = pyarrow.ipc.new_stream(cache_file_path, final_schema)
+                reader.reset()
 
-            stream_writer.write_table(table)
-    except pyarrow.lib.ArrowInvalid:
-        err_info = "multi-schema has been found between dataset entries"
-        log_error(err_info)
-        raise Exception(err_info)
+            except Exception as e:
+                log_error(f"an error has occurred during reading schema: {e}")
+                raise e
 
-    assert stream_writer
-    stream_writer.close()
-    file_lock.release()
+        try:
+            for table in _build_table_from_reader(reader, final_schema):
+                assert isinstance(table, pyarrow.Table)
+                if stream_writer is None:
+                    stream_writer = pyarrow.ipc.new_stream(
+                        cache_file_path, table.schema
+                    )
+
+                stream_writer.write_table(table)
+        except pyarrow.lib.ArrowInvalid:
+            err_info = "multi-schema has been found between dataset entries"
+            log_error(err_info)
+            raise Exception(err_info)
+
+        assert stream_writer
+        stream_writer.close()
 
     log_info("writing succeeded")
     return
 
 
-def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
+def _build_table_from_reader(
+    reader: BaseReader, schema: Optional[pyarrow.Schema] = None
+) -> pyarrow.Table:
     reader_type = type(reader)
     for elem_list in reader:
         if (
@@ -512,18 +577,18 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
             or (reader_type == JsonReader and isinstance(elem_list[0], dict))
             or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
         ):
-            table = pyarrow.Table.from_pylist(elem_list)
+            table = pyarrow.Table.from_pylist(elem_list, schema=schema)
         elif (
             reader_type == JsonLineReader or reader_type == JsonReader
         ) and isinstance(elem_list[0], list):
-            table = _construct_packed_table_from_nest_sequence(elem_list)
+            table = _construct_packed_table_from_nest_sequence(elem_list, schema=schema)
         elif reader_type == MapperReader:
             if isinstance(elem_list[0], (list, str)):
                 table = pyarrow.Table.from_pydict(
-                    {QianfanDatasetPackColumnName: elem_list}
+                    {QianfanDatasetPackColumnName: elem_list}, schema=schema
                 )
             elif isinstance(elem_list[0], dict):
-                table = pyarrow.Table.from_pylist(elem_list)
+                table = pyarrow.Table.from_pylist(elem_list, schema=schema)
             else:
                 err_msg = (
                     "get unsupported element type from the return value of map"

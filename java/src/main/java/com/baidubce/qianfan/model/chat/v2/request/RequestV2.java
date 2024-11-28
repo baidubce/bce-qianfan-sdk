@@ -7,7 +7,7 @@ import com.baidubce.qianfan.model.constant.ModelType;
 import java.util.List;
 import java.util.Map;
 
-public class V2Request extends BaseRequest<V2Request> {
+public class RequestV2 extends BaseRequest<RequestV2> {
     private List<Message> messages;
 
     private String appId;
@@ -49,7 +49,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return messages;
     }
 
-    public V2Request setMessages(List<Message> messages) {
+    public RequestV2 setMessages(List<Message> messages) {
         this.messages = messages;
         return this;
     }
@@ -58,7 +58,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return appId;
     }
 
-    public V2Request setAppId(String appId) {
+    public RequestV2 setAppId(String appId) {
         this.appId = appId;
         if (appId != null) {
             this.getHeaders().put("appid", appId);
@@ -70,7 +70,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return stream;
     }
 
-    public V2Request setStream(boolean stream) {
+    public RequestV2 setStream(boolean stream) {
         this.stream = stream;
         return this;
     }
@@ -79,7 +79,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return streamOptions;
     }
 
-    public V2Request setStreamOptions(Map<String, Object> streamOptions) {
+    public RequestV2 setStreamOptions(Map<String, Object> streamOptions) {
         this.streamOptions = streamOptions;
         return this;
     }
@@ -88,7 +88,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return temperature;
     }
 
-    public V2Request setTemperature(Double temperature) {
+    public RequestV2 setTemperature(Double temperature) {
         this.temperature = temperature;
         return this;
     }
@@ -97,7 +97,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return topP;
     }
 
-    public V2Request setTopP(Double topP) {
+    public RequestV2 setTopP(Double topP) {
         this.topP = topP;
         return this;
     }
@@ -106,7 +106,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return penaltyScore;
     }
 
-    public V2Request setPenaltyScore(Double penaltyScore) {
+    public RequestV2 setPenaltyScore(Double penaltyScore) {
         this.penaltyScore = penaltyScore;
         return this;
     }
@@ -115,7 +115,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return maxCompletionTokens;
     }
 
-    public V2Request setMaxCompletionTokens(Integer maxCompletionTokens) {
+    public RequestV2 setMaxCompletionTokens(Integer maxCompletionTokens) {
         this.maxCompletionTokens = maxCompletionTokens;
         return this;
     }
@@ -124,7 +124,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return seed;
     }
 
-    public V2Request setSeed(Integer seed) {
+    public RequestV2 setSeed(Integer seed) {
         this.seed = seed;
         return this;
     }
@@ -133,7 +133,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return stop;
     }
 
-    public V2Request setStop(List<String> stop) {
+    public RequestV2 setStop(List<String> stop) {
         this.stop = stop;
         return this;
     }
@@ -142,7 +142,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return user;
     }
 
-    public V2Request setUser(String user) {
+    public RequestV2 setUser(String user) {
         this.user = user;
         return this;
     }
@@ -151,7 +151,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return frequencyPenalty;
     }
 
-    public V2Request setFrequencyPenalty(Double frequencyPenalty) {
+    public RequestV2 setFrequencyPenalty(Double frequencyPenalty) {
         this.frequencyPenalty = frequencyPenalty;
         return this;
     }
@@ -160,7 +160,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return presencePenalty;
     }
 
-    public V2Request setPresencePenalty(Double presencePenalty) {
+    public RequestV2 setPresencePenalty(Double presencePenalty) {
         this.presencePenalty = presencePenalty;
         return this;
     }
@@ -169,7 +169,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return tools;
     }
 
-    public V2Request setTools(List<Tool> tools) {
+    public RequestV2 setTools(List<Tool> tools) {
         this.tools = tools;
         return this;
     }
@@ -178,7 +178,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return toolChoice;
     }
 
-    public V2Request setToolChoice(Object toolChoice) {
+    public RequestV2 setToolChoice(Object toolChoice) {
         this.toolChoice = toolChoice;
         return this;
     }
@@ -187,7 +187,7 @@ public class V2Request extends BaseRequest<V2Request> {
         return parallelToolCalls;
     }
 
-    public V2Request setParallelToolCalls(Boolean parallelToolCalls) {
+    public RequestV2 setParallelToolCalls(Boolean parallelToolCalls) {
         this.parallelToolCalls = parallelToolCalls;
         return this;
     }

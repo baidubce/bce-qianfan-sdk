@@ -3,7 +3,7 @@ package com.baidubce.qianfan.model.chat.v2.response;
 import com.baidubce.qianfan.model.BaseResponse;
 import com.baidubce.qianfan.model.chat.ChatUsage;
 
-public abstract class V2BaseResponse<T extends V2BaseResponse<T>> extends BaseResponse<T> {
+public abstract class BaseResponseV2<T extends BaseResponseV2<T>> extends BaseResponse<T> {
     private String model;
 
     private ChatUsage usage;
@@ -12,7 +12,7 @@ public abstract class V2BaseResponse<T extends V2BaseResponse<T>> extends BaseRe
         return model;
     }
 
-    public V2BaseResponse<T> setModel(String model) {
+    public BaseResponseV2<T> setModel(String model) {
         this.model = model;
         return this;
     }
@@ -21,7 +21,7 @@ public abstract class V2BaseResponse<T extends V2BaseResponse<T>> extends BaseRe
         return usage;
     }
 
-    public V2BaseResponse<T> setUsage(ChatUsage usage) {
+    public BaseResponseV2<T> setUsage(ChatUsage usage) {
         this.usage = usage;
         return this;
     }

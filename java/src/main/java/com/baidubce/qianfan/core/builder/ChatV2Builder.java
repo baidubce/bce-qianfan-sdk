@@ -2,10 +2,10 @@ package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.QianfanV2;
 import com.baidubce.qianfan.model.chat.v2.*;
-import com.baidubce.qianfan.model.chat.v2.request.V2Request;
+import com.baidubce.qianfan.model.chat.v2.request.RequestV2;
 import com.baidubce.qianfan.model.chat.v2.request.Tool;
 import com.baidubce.qianfan.model.chat.v2.request.ToolResult;
-import com.baidubce.qianfan.model.chat.v2.response.V2Response;
+import com.baidubce.qianfan.model.chat.v2.response.ResponseV2;
 
 import java.util.List;
 import java.util.Map;
@@ -164,9 +164,9 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
         return this;
     }
 
-    public V2Request build() {
+    public RequestV2 build() {
         List<Message> messages = messageBuilder.build();
-        return new V2Request()
+        return new RequestV2()
                 .setModel(getModel())
                 .setMessages(messages)
                 .setAppId(appId)
@@ -185,7 +185,7 @@ public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
                 .setParallelToolCalls(parallelToolCalls);
     }
 
-    public V2Response execute() {
+    public ResponseV2 execute() {
         return super.getQianfanV2().chatCompletion(build());
     }
 }

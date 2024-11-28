@@ -3,7 +3,7 @@ package com.baidubce.qianfan.core.builder;
 import com.baidubce.qianfan.model.chat.v2.Message;
 import com.baidubce.qianfan.model.chat.v2.ToolCall;
 import com.baidubce.qianfan.model.chat.v2.request.ToolResult;
-import com.baidubce.qianfan.model.constant.V2.ChatRole;
+import com.baidubce.qianfan.model.constant.v2.ChatRole;
 
 import java.util.ArrayList;
 import java.util.List;

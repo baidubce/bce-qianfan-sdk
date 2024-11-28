@@ -1,4 +1,4 @@
-package com.baidubce.qianfan.model.constant.V2;
+package com.baidubce.qianfan.model.constant.v2;
 
 public class ChatRole {
     public static final String USER = "user";

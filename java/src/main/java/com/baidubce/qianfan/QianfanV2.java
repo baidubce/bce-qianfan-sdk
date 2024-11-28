@@ -3,9 +3,9 @@ package com.baidubce.qianfan;
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.builder.ChatV2Builder;
-import com.baidubce.qianfan.model.chat.v2.request.V2Request;
-import com.baidubce.qianfan.model.chat.v2.response.V2Response;
-import com.baidubce.qianfan.model.chat.v2.response.V2StreamResponse;
+import com.baidubce.qianfan.model.chat.v2.request.RequestV2;
+import com.baidubce.qianfan.model.chat.v2.response.ResponseV2;
+import com.baidubce.qianfan.model.chat.v2.response.StreamResponseV2;
 
 public class QianfanV2 extends QianfanBase {
 
@@ -17,7 +17,7 @@ public class QianfanV2 extends QianfanBase {
         this.client = new QianfanClient(Auth.TYPE_V2, accessKey, secretKey);
     }
 
-    public QianfanV2(QianfanClient client) {
+    QianfanV2(QianfanClient client) {
         this.client = client;
     }
 
@@ -25,12 +25,12 @@ public class QianfanV2 extends QianfanBase {
         return new ChatV2Builder(this);
     }
 
-    public V2Response chatCompletion(V2Request request) {
-        return request(request, V2Response.class);
+    public ResponseV2 chatCompletion(RequestV2 request) {
+        return request(request, ResponseV2.class);
     }
 
-    public StreamIterator<V2StreamResponse> chatCompletionStream(V2Request request) {
+    public StreamIterator<StreamResponseV2> chatCompletionStream(RequestV2 request) {
         request.setStream(true);
-        return requestStream(request, V2StreamResponse.class);
+        return requestStream(request, StreamResponseV2.class);
     }
 }

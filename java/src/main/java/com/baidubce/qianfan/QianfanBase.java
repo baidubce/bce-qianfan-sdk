@@ -8,7 +8,7 @@ import com.baidubce.qianfan.model.console.ConsoleResponse;
 
 import java.lang.reflect.Type;
 
-abstract public class QianfanBase {
+public abstract class QianfanBase {
     protected QianfanClient client;
 
     protected QianfanBase() {}

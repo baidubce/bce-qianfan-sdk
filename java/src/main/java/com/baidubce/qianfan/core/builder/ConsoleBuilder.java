@@ -65,7 +65,8 @@ public class ConsoleBuilder {
     }
 
     public ConsoleResponse<Map<String, Object>> execute() {
-        return executeWithCheck(new TypeRef<Map<String, Object>>() {}.getType());
+        return executeWithCheck(new TypeRef<Map<String, Object>>() {
+        }.getType());
     }
 
     public <T> ConsoleResponse<T> execute(TypeRef<T> typeRef) {

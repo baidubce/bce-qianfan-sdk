@@ -1,7 +1,8 @@
 package com.baidubce.qianfan.core.builder;
 
 import com.baidubce.qianfan.QianfanV2;
-import com.baidubce.qianfan.model.chat.v2.*;
+import com.baidubce.qianfan.model.chat.v2.Message;
+import com.baidubce.qianfan.model.chat.v2.ToolCall;
 import com.baidubce.qianfan.model.chat.v2.request.RequestV2;
 import com.baidubce.qianfan.model.chat.v2.request.Tool;
 import com.baidubce.qianfan.model.chat.v2.request.ToolResult;
@@ -10,7 +11,7 @@ import com.baidubce.qianfan.model.chat.v2.response.ResponseV2;
 import java.util.List;
 import java.util.Map;
 
-public class ChatV2Builder extends BaseBuilder<ChatV2Builder> {
+public class ChatV2Builder extends BaseBuilderV2<ChatV2Builder> {
     private final MessageV2Builder messageBuilder = new MessageV2Builder();
 
     private String appId;

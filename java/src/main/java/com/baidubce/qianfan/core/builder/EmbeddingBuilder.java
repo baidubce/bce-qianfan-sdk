@@ -22,7 +22,7 @@ import com.baidubce.qianfan.model.embedding.EmbeddingResponse;
 
 import java.util.List;
 
-public class EmbeddingBuilder extends BaseBuilder<EmbeddingBuilder> {
+public class EmbeddingBuilder extends BaseBuilderV1<EmbeddingBuilder> {
     private List<String> input;
 
     public EmbeddingBuilder() {

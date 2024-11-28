@@ -58,7 +58,7 @@ public class Auth {
             return new QianfanOAuth(accessKey, secretKey);
         } else if (TYPE_V2.equals(type)) {
             return new QianfanV2Auth(accessKey, secretKey);
-        }else {
+        } else {
             throw new ValidationException("Unsupported auth type: " + type);
         }
     }

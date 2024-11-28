@@ -14,11 +14,10 @@ import java.time.Instant;
 public class QianfanV2Auth implements IAuth {
     private static final String BEAR_TOKEN_APPLY_URL = "%s/v1/BCE-BEARER/token?expireInSeconds=%d";
     private static final Duration FAILING_OFFSET = Duration.ofSeconds(10);
+    private final IAMAuth auth;
 
     private String token;
     private Instant expiredTime;
-
-    private final IAMAuth auth;
 
     private volatile long tokenExpireAt;
 
@@ -38,7 +37,7 @@ public class QianfanV2Auth implements IAuth {
 
     @Override
     public HttpRequest signRequest(HttpRequest request) {
-       return request
+        return request
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Authorization", getToken());
     }

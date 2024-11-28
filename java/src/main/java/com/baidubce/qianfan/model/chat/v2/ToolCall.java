@@ -4,9 +4,9 @@ import com.baidubce.qianfan.model.chat.v2.response.Function;
 
 public class ToolCall {
 
-    private String id;
-
     public final String type = "function";
+
+    private String id;
 
     private Function function;
 

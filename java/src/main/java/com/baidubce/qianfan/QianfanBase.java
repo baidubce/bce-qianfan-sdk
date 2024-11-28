@@ -11,7 +11,8 @@ import java.lang.reflect.Type;
 public abstract class QianfanBase {
     protected QianfanClient client;
 
-    protected QianfanBase() {}
+    protected QianfanBase() {
+    }
 
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return client.request(request, responseClass);

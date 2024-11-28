@@ -16,13 +16,9 @@
 
 package com.baidubce.qianfan.core.builder;
 
-import com.baidubce.qianfan.QianfanBase;
-
 import java.util.Map;
 
 abstract class BaseBuilder<T extends BaseBuilder<T>> {
-    protected QianfanBase qianfan;
-
     private String model;
 
     private String endpoint;
@@ -32,10 +28,6 @@ abstract class BaseBuilder<T extends BaseBuilder<T>> {
     private ExtraParameterBuilder extraParameterBuilder = new ExtraParameterBuilder();
 
     protected BaseBuilder() {
-    }
-
-    protected BaseBuilder(QianfanBase qianfan) {
-        this.qianfan = qianfan;
     }
 
     @SuppressWarnings("unchecked")

@@ -76,9 +76,6 @@ class QianfanDataSource(DataSource, BaseModel):
     download_when_init: Optional[bool] = Field(default=None)
     data_format_type: V2Consts.DatasetFormat
 
-    ak: Optional[str] = None
-    sk: Optional[str] = None
-
     def _get_transmission_bos_info(
         self,
         sup_storage_id: str = "",
@@ -116,8 +113,8 @@ class QianfanDataSource(DataSource, BaseModel):
 
     def _get_console_ak_and_sk(self) -> Tuple[str, str]:
         """get ak and sk from attribute or global config"""
-        ak = self.ak if self.ak else get_config().ACCESS_KEY
-        sk = self.sk if self.sk else get_config().SECRET_KEY
+        ak = get_config().ACCESS_KEY
+        sk = get_config().SECRET_KEY
         if not ak:
             err_msg = "no ak was provided"
             log_error(err_msg)
@@ -393,9 +390,6 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             pyarrow.Table: table retrieved from file
         """
-        if self.ak and self.sk:
-            kwargs["ak"] = self.ak
-            kwargs["sk"] = self.sk
         if not _check_is_any_data_existed_in_dataset(self.id, **kwargs):
             error = LookupError("no data exists in dataset")
             log_error(str(error))
@@ -455,8 +449,6 @@ class QianfanDataSource(DataSource, BaseModel):
         storage_type: V2Consts.StorageType = V2Consts.StorageType.SysStorage,
         storage_path: Optional[str] = None,
         addition_info: Optional[Dict[str, Any]] = None,
-        ak: Optional[str] = None,
-        sk: Optional[str] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
         log_info("start to create dataset on qianfan")
@@ -483,8 +475,6 @@ class QianfanDataSource(DataSource, BaseModel):
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
             data_format_type=dataset_format,
-            ak=ak,
-            sk=sk,
         )
 
         # 如果是私有的 BOS，还需要额外填充返回的 region 信息
@@ -502,8 +492,6 @@ class QianfanDataSource(DataSource, BaseModel):
         storage_type: V2Consts.StorageType = V2Consts.StorageType.SysStorage,
         storage_path: Optional[str] = None,
         addition_info: Optional[Dict[str, Any]] = None,
-        ak: Optional[str] = None,
-        sk: Optional[str] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
         """
@@ -519,10 +507,6 @@ class QianfanDataSource(DataSource, BaseModel):
                 needed when storage_type is PrivateBos, default to None
             addition_info (Optional[Dict[str, Any]]):
                 additional info you want to have，default to None
-            ak (Optional[str]):
-                console ak related to your dataset and bos，default to None
-            sk (Optional[str]):
-                console sk related to your dataset and bos，default to None
             kwargs (Any): other arguments
 
         Returns:
@@ -540,8 +524,6 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type,
             storage_path,
             addition_info,
-            ak,
-            sk,
             **kwargs,
         )
 
@@ -555,8 +537,6 @@ class QianfanDataSource(DataSource, BaseModel):
         file_name: str,
         storage_type: V2Consts.StorageType = V2Consts.StorageType.Bos,
         addition_info: Optional[Dict[str, Any]] = None,
-        ak: Optional[str] = None,
-        sk: Optional[str] = None,
         is_download_to_local: Optional[bool] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
@@ -578,10 +558,6 @@ class QianfanDataSource(DataSource, BaseModel):
                 data storage type used to store your data, default to PrivateBos
             addition_info (Optional[Dict[str, Any]]):
                 additional info you want to have，default to None
-            ak (Optional[str]):
-                console ak related to your dataset and bos，default to None
-            sk (Optional[str]):
-                console sk related to your dataset and bos，default to None
             is_download_to_local (Optional[bool]):
                 This parameter has been set as deprecated.
                 does dataset download file when initialize object，default to None
@@ -610,8 +586,6 @@ class QianfanDataSource(DataSource, BaseModel):
             dataset_format,
             storage_type,
             addition_info=addition_info,
-            ak=ak,
-            sk=sk,
             **storage_info_for_create,
             **kwargs,
         )
@@ -639,8 +613,6 @@ class QianfanDataSource(DataSource, BaseModel):
         cls,
         version_id: str,
         is_download_to_local: Optional[bool] = None,
-        ak: Optional[str] = None,
-        sk: Optional[str] = None,
         **kwargs: Any,
     ) -> "QianfanDataSource":
         """
@@ -652,10 +624,6 @@ class QianfanDataSource(DataSource, BaseModel):
             is_download_to_local (Optional[bool]):
                 This parameter has been set as deprecated.
                 does dataset download file when initialize object，default to None
-            ak (Optional[str]):
-                console ak related to your dataset and bos，default to None
-            sk (Optional[str]):
-                console sk related to your dataset and bos，default to None
             kwargs (Any): other arguments
 
         Returns:
@@ -663,9 +631,7 @@ class QianfanDataSource(DataSource, BaseModel):
         """
 
         # 获取数据集信息
-        qianfan_resp = Data.V2.get_dataset_version_info(
-            version_id, ak=ak, sk=sk, **kwargs
-        )["result"]
+        qianfan_resp = Data.V2.get_dataset_version_info(version_id, **kwargs)["result"]
 
         # 校验和推断各类对象
         data_format_type = V2Consts.DatasetFormat(qianfan_resp["dataFormat"])
@@ -694,8 +660,6 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             download_when_init=is_download_to_local,
             info={**qianfan_resp},
-            ak=ak,
-            sk=sk,
         )
 
         if storage_type == V2Consts.StorageType.Bos:

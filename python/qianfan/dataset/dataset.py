@@ -705,6 +705,14 @@ class Dataset(Table):
             self.inner_data_source_cache.data_format_type == V2Consts.DatasetFormat.Text
         )
 
+    def _is_dataset_can_be_processed_online(self) -> bool:
+        if not isinstance(self.inner_data_source_cache, QianfanDataSource):
+            return False
+        return self.inner_data_source_cache.data_format_type in [
+            V2Consts.DatasetFormat.Text,
+            V2Consts.DatasetFormat.PromptResponse,
+        ]
+
     def is_dataset_located_in_qianfan(self) -> bool:
         """
         tell whether current dataset is cloud-based dataset
@@ -722,6 +730,15 @@ class Dataset(Table):
             bool: whether current dataset is generic text dataset
         """
         return self._is_dataset_generic_text()
+
+    def is_dataset_can_be_processed_online(self) -> bool:
+        """
+        tell whether current dataset can be processed on qianfan
+
+        Returns:
+            bool: whether current dataset can be processed on qianfan
+        """
+        return self._is_dataset_can_be_processed_online()
 
     def start_online_data_process_task(self, operators: List[QianfanOperator]) -> str:
         """
@@ -1650,7 +1667,7 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        if self.is_dataset_generic_text():
+        if self.is_dataset_can_be_processed_online():
             err_msg = "can't start a batch run task on generic text dataset"
             log_error(err_msg)
             raise ValueError(err_msg)

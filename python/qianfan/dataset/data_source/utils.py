@@ -82,13 +82,40 @@ except ImportError:
     log_warn("python-dateutil not installed, only online function can be used")
 
 
-class ImageExtensionName(Enum):
-    """Enum for image extension name"""
+class PromptImageExtensionName(Enum):
+    """Enum for prompt image extension name"""
 
     Jpg = "jpg"
     Jpeg = "jpeg"
     Png = "png"
     Bmp = "bmp"
+
+
+class PromptImageResposeExtensionName(Enum):
+    """Enum for prompt image response extension name"""
+
+    Jpg = "jpg"
+    Jpeg = "jpeg"
+    Png = "png"
+    Webp = "webp"
+
+
+_dataset_format_type_2_suffix_map = {
+    V2Consts.DatasetFormat.PromptResponse: [
+        FormatType.Text,
+        FormatType.Jsonl,
+        FormatType.Csv,
+    ],
+    V2Consts.DatasetFormat.Text: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.DPOPromptChosenRejected: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.KTOPromptChosenRejected: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.PromptSortedResponses: [FormatType.Jsonl],
+    V2Consts.DatasetFormat.Prompt: [FormatType.Text, FormatType.Jsonl, FormatType.Csv],
+    V2Consts.DatasetFormat.PromptImage: [FormatType.Json],
+    V2Consts.DatasetFormat.PromptImageResponse: [FormatType.Jsonl],
+}
+
+__prompt_images_response_image_path_column_name = "images"
 
 
 class TaskDispatcher:
@@ -135,7 +162,9 @@ def _get_annotation_file_name(file_name: str) -> str:
 def _get_all_image_files_and_annotations_from_root(
     root: str, files: List[str]
 ) -> Tuple[List[str], List[Optional[Dict]]]:
-    image_extension_name_tuple = tuple([name.value for name in ImageExtensionName])
+    image_extension_name_tuple = tuple(
+        [name.value for name in PromptImageExtensionName]
+    )
 
     result_image_path_list: List[str] = []
     result_annotation_path_list: List[Optional[Dict]] = []
@@ -161,6 +190,31 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
     table_list: List[pyarrow.Table] = []
 
     for root, dirs, files in os.walk(path):
+        if "chat.jsonl" in files:
+            table = _get_a_pyarrow_table(
+                os.path.join(root, "chat.jsonl"), FormatType.Jsonl
+            )
+
+            def _add_root_prefix(col: Dict[str, Any]) -> Dict:
+                if __prompt_images_response_image_path_column_name in col:
+                    new_col = [
+                        [
+                            os.path.join(os.path.abspath(root), path)
+                            for path in path_list
+                        ]
+                        for path_list in col[
+                            __prompt_images_response_image_path_column_name
+                        ]
+                    ]
+                    col[__prompt_images_response_image_path_column_name] = new_col
+                return col
+
+            from qianfan.dataset.table import Table
+
+            sdk_table = Table(table)
+            sdk_table.col_map(_add_root_prefix)
+            return sdk_table.inner_table
+
         result = _get_all_image_files_and_annotations_from_root(root, files)
         table_list.append(
             pyarrow.Table.from_pydict(
@@ -209,6 +263,33 @@ def _collect_all_images_and_annotations_in_one_folder(
                 json.dump(annotation_info, f)
 
 
+def _collect_all_images_from_prompt_image_response_table(
+    table: pyarrow.Table, target_folder_path: str
+) -> None:
+    image_target_path = os.path.join(target_folder_path, "images")
+    os.makedirs(image_target_path, exist_ok=True)
+    table_list = table.to_pylist()
+
+    for entry in table_list:
+        if __prompt_images_response_image_path_column_name not in entry:
+            raise ValueError('no "images" column been found in dataset')
+
+        for i in range(len(entry[__prompt_images_response_image_path_column_name])):
+            file_path = entry[__prompt_images_response_image_path_column_name][i]
+            file_name = os.path.basename(file_path)
+            target_path = os.path.join(image_target_path, file_name)
+            shutil.copy(file_path, target_path)
+            file_path = f"images/{file_name}"
+            entry[__prompt_images_response_image_path_column_name][i] = file_path
+
+    with open(
+        os.path.join(target_folder_path, "chat.jsonl"), mode="w", encoding="utf8"
+    ) as f:
+        for entry in table_list:
+            json_str = json.dumps(entry, ensure_ascii=False)
+            f.write(f"{json_str}\n")
+
+
 class _DatasetCacheMetaInfo(BaseModel):
     """存储数据集缓存中的，单个文件的元信息"""
 
@@ -223,20 +304,21 @@ class _DatasetCacheMetaInfo(BaseModel):
 
 
 def _read_all_file_content_in_an_folder(
-    path: str, format_type: FormatType, **kwargs: Any
+    path: str, format_types: Union[FormatType, List[FormatType]], **kwargs: Any
 ) -> pyarrow.Table:
     """从文件夹里读取所有指定类型的的文件"""
     og_table_list: List[pyarrow.Table] = []
+    if not isinstance(format_types, list):
+        format_types = [format_types]
 
     # 如果是文件夹，则遍历读取
     for root, dirs, files in os.walk(path):
         for file_name in files:
-            if not file_name.endswith(format_type.value):
-                continue
-            file_path = os.path.join(root, file_name)
-
-            table = _get_a_pyarrow_table(file_path, format_type, **kwargs)
-            og_table_list.append(table)
+            for format_type in format_types:
+                if file_name.endswith(format_type.value):
+                    file_path = os.path.join(root, file_name)
+                    table = _get_a_pyarrow_table(file_path, format_type, **kwargs)
+                    og_table_list.append(table)
 
     og_table = pyarrow.concat_tables(og_table_list)
     assert isinstance(og_table, pyarrow.Table)
@@ -245,7 +327,7 @@ def _read_all_file_content_in_an_folder(
 
 
 def _read_all_file_from_zip(
-    path: str, format_type: FormatType, **kwargs: Any
+    path: str, format_types: Union[FormatType, List[FormatType]], **kwargs: Any
 ) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = "tmp_folder_path"
@@ -253,7 +335,7 @@ def _read_all_file_from_zip(
         with zipfile.ZipFile(path) as zip_file:
             zip_file.extractall(tmp_folder_path)
         return _read_all_file_content_in_an_folder(
-            tmp_folder_path, format_type, **kwargs
+            tmp_folder_path, format_types, **kwargs
         )
     finally:
         shutil.rmtree(tmp_folder_path, ignore_errors=True)
@@ -898,7 +980,7 @@ def _pack_a_table_into_file_for_uploading(
         if table.is_dataset_grouped() and should_use_qianfan_special_jsonl_format:
             table.pack()
 
-        if format_type != FormatType.Text2Image:
+        if format_type not in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             FileDataSource(
                 path=local_file_path,
                 file_format=format_type,
@@ -913,9 +995,14 @@ def _pack_a_table_into_file_for_uploading(
             # 这里需要手动删除上一次的中转文件夹
             # 避免重名带来的影响
             shutil.rmtree(local_file_path, ignore_errors=True)
-            _collect_all_images_and_annotations_in_one_folder(
-                table.inner_table, local_file_path
-            )
+            if format_type == FormatType.Text2Image:
+                _collect_all_images_and_annotations_in_one_folder(
+                    table.inner_table, local_file_path
+                )
+            else:
+                _collect_all_images_from_prompt_image_response_table(
+                    table.inner_table, local_file_path
+                )
     else:
         local_file_path = table.inner_data_source_cache.path
 

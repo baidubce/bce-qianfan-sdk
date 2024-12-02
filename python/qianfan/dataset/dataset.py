@@ -758,9 +758,10 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        if not self._is_dataset_generic_text():
-            # 如果数据集不是泛文本，也不支持清洗
-            err_msg = "can't process qianfan dataset which isn't GenericText type"
+        if not self.is_dataset_can_be_processed_online():
+            err_msg = (
+                "can't process qianfan dataset which isn't Text or PromptResponse type"
+            )
             log_error(err_msg)
             raise ValueError(err_msg)
 
@@ -1667,7 +1668,7 @@ class Dataset(Table):
             log_error(err_msg)
             raise ValueError(err_msg)
 
-        if self.is_dataset_can_be_processed_online():
+        if self.is_dataset_generic_text():
             err_msg = "can't start a batch run task on generic text dataset"
             log_error(err_msg)
             raise ValueError(err_msg)

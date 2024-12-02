@@ -20,7 +20,7 @@ import os
 import re
 import uuid
 import zipfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pyarrow
 
@@ -34,9 +34,11 @@ from qianfan.dataset.data_source.file import FileDataSource
 from qianfan.dataset.data_source.utils import (
     _check_is_any_data_existed_in_dataset,
     _collect_all_images_and_annotations_in_one_folder,
+    _collect_all_images_from_prompt_image_response_table,
     _create_export_data_task_and_wait_for_success,
     _create_import_data_task_and_wait_for_success,
     _create_release_data_task_and_wait_for_success,
+    _dataset_format_type_2_suffix_map,
     _datetime_parse_hook,
     _download_file_from_url_streamly,
     _get_a_pyarrow_table,
@@ -211,7 +213,10 @@ class QianfanDataSource(DataSource, BaseModel):
                 table.pack()
 
             # 如果不是文生图，则把数据转存一份到本地
-            if self.data_format_type != V2Consts.DatasetFormat.PromptImage:
+            if self.data_format_type not in [
+                V2Consts.DatasetFormat.PromptImage,
+                V2Consts.DatasetFormat.PromptImageResponse,
+            ]:
                 FileDataSource(
                     path=local_file_path,
                     file_format=self.format_type(),
@@ -224,9 +229,20 @@ class QianfanDataSource(DataSource, BaseModel):
 
             # 否则直接保存
             else:
-                _collect_all_images_and_annotations_in_one_folder(
-                    table.inner_table, local_file_path
-                )
+                if self.data_format_type == V2Consts.DatasetFormat.PromptImage:
+                    _collect_all_images_and_annotations_in_one_folder(
+                        table.inner_table, local_file_path
+                    )
+                elif (
+                    self.data_format_type == V2Consts.DatasetFormat.PromptImageResponse
+                ):
+                    _collect_all_images_from_prompt_image_response_table(
+                        table.inner_table, local_file_path
+                    )
+                else:
+                    raise Exception(
+                        f"unexpected Image Text type: {self.data_format_type.value}"
+                    )
         else:
             local_file_path = table.inner_data_source_cache.path
 
@@ -356,14 +372,16 @@ class QianfanDataSource(DataSource, BaseModel):
             log_error(f"an error occurred in fetch cache: {str(e)}")
             raise
 
-        if self.format_type() == V2Consts.DatasetFormat.PromptImage:
+        if self.format_type() in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             return _read_all_image_in_an_folder(content_path)
 
         if os.path.isfile(content_path):
             return _get_a_pyarrow_table(content_path, self.format_type())
 
         else:
-            return _read_all_file_content_in_an_folder(content_path, self.format_type())
+            return _read_all_file_content_in_an_folder(
+                content_path, self._get_format_type_list_for_reading()
+            )
 
     def load(self, **kwargs: Any) -> Optional[pyarrow.Table]:
         """
@@ -417,9 +435,13 @@ class QianfanDataSource(DataSource, BaseModel):
 
         if self.data_format_type in [
             V2Consts.DatasetFormat.PromptImage,
-            V2Consts.DatasetFormat.PromptImageResponse,
         ]:
             return FormatType.Text2Image
+
+        if self.data_format_type in [
+            V2Consts.DatasetFormat.PromptImageResponse,
+        ]:
+            return FormatType.Text2ImageResponse
 
         if self.data_format_type in [
             V2Consts.DatasetFormat.Text,
@@ -440,6 +462,9 @@ class QianfanDataSource(DataSource, BaseModel):
         # 文本都是 jsonl
         # 文生图都是 json
         raise NotImplementedError()
+
+    def _get_format_type_list_for_reading(self) -> List[FormatType]:
+        return _dataset_format_type_2_suffix_map[self.data_format_type]
 
     @classmethod
     def _create_bare_dataset(

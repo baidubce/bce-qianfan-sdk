@@ -186,7 +186,12 @@ class QianfanClient {
             rateLimiter.acquire(httpRequest.getUrl());
             HttpResponse<U> resp = reqProcessor.apply(httpRequest);
             if (resp.getCode() != HttpStatus.SUCCESS) {
-                throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
+                throw new RequestException(String.format(
+                        "Request failed with status code %d: %s\nheaders: %s",
+                        resp.getCode(),
+                        resp.getStringBody(),
+                        resp.getHeaders().toString()
+                ));
             }
             String contentType = resp.getHeaders().getOrDefault(ContentType.HEADER, "");
             if (contentType.startsWith(ContentType.APPLICATION_JSON)) {

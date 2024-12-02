@@ -19,8 +19,6 @@ public class QianfanV2Auth implements IAuth {
     private String token;
     private Instant expiredTime;
 
-    private volatile long tokenExpireAt;
-
     public QianfanV2Auth(String accessKey, String secretKey) {
         this.auth = new IAMAuth(accessKey, secretKey);
     }

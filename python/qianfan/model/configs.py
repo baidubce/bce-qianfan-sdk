@@ -1,8 +1,14 @@
+from enum import Enum
 from typing import Any, Optional
 
 from qianfan.model.consts import ServiceType
 from qianfan.resources.console import consts as console_consts
 from qianfan.utils.pydantic import BaseModel
+
+
+class PaymentType(str, Enum):
+    Prepaid = "Prepaid"
+    Postpaid = "Postpaid"
 
 
 class DeployConfig(BaseModel):
@@ -33,18 +39,46 @@ class DeployConfig(BaseModel):
     qps
     use default model service's qps if not set
     """
-    resource_type: str = "GPU-I-2"
+    resource_type: str = "GPU-1-1"
     """
     deploy config resource type
-    'GPU-I-2' or 'GPU-I-4', 'CPU-I-2'
     """
-    months: Optional[int] = None
+    region: Optional[str] = None
+    """
+    resource region
+    """
+    payment_type: str = PaymentType.Prepaid.value
+    """
+    billing payment type
+    """
+    months: int = 1
     """
     deploy months 
     """
-    hours: Optional[int] = 1
+    hours: Optional[int] = None
     """
+    deprecated, use months instead
     deploy hours
+    """
+    auto_renew: bool = False
+    """
+    whether renew service automatically when expired
+    """
+    auto_renew_time_unit: str = "month"
+    """
+    renew time unit
+    """
+    auto_renew_time: int = 1
+    """
+    renew time
+    """
+    charge_type: str = "ComputingUnit"
+    """
+    postpaid charge type
+    """
+    release_time: Optional[str] = None
+    """
+    postpaid release time
     """
     pool_type: console_consts.DeployPoolType = (
         console_consts.DeployPoolType.PrivateResource

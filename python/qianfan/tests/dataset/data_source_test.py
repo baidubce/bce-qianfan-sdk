@@ -23,7 +23,6 @@ from unittest.mock import patch
 import pytest
 from pytest_mock import MockerFixture
 
-from qianfan import get_config
 from qianfan.dataset import Dataset
 from qianfan.dataset.consts import (
     QianfanDatasetPackColumnName,

@@ -22,7 +22,7 @@ from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.config import get_config
 from qianfan.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.model.configs import DeployConfig
+from qianfan.model.configs import DeployConfig, PaymentType
 from qianfan.model.consts import ServiceType
 from qianfan.resources import (
     ChatCompletion,
@@ -551,18 +551,39 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.model is None:
             raise InvalidArgumentError("model not found")
         model = self.model
+
         if model.set_id is None or model.id is None:
             raise InvalidArgumentError("model set id | model id not found")
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy config not found")
+
         log_info(f"ready to deploy service with model {model.set_id}/{model.id}")
         model.auto_complete_info()
+
         res_config: Dict[str, Any] = {
             "type": self.deploy_config.resource_type,
             "replicasCount": self.deploy_config.replicas,
         }
         if self.deploy_config.qps is not None:
             res_config["qps"] = self.deploy_config.qps
+        if self.deploy_config.region is not None:
+            res_config["region"] = self.deploy_config.region
+
+        billing: Dict[str, Any] = {
+            "paymentTiming": self.deploy_config.payment_type,
+        }
+
+        if self.deploy_config.payment_type == PaymentType.Prepaid.value:
+            billing["reservationTimeUnit"] = "Month"
+            billing["reservationLength"] = self.deploy_config.months
+            billing["autoRenew"] = self.deploy_config.auto_renew
+            billing["autoRenewTimeUnit"] = self.deploy_config.auto_renew_time_unit
+            billing["autoRenewTime"] = self.deploy_config.auto_renew_time
+        elif self.deploy_config.payment_type == PaymentType.Postpaid.value:
+            billing["chargeType"] = self.deploy_config.charge_type
+            if self.deploy_config.release_time:
+                billing["release_time"] = self.deploy_config.release_time
+
         svc_publish_resp = api.Service.V2.create_service(
             model_set_id=model.set_id,
             model_id=model.id,
@@ -570,17 +591,7 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             url_suffix=self.deploy_config.endpoint_suffix
             or f"svc{model.set_id}_{model.id}",
             resource_config=res_config,
-            billing={
-                "paymentTiming": "Prepaid",
-                "reservation": {
-                    "reservationTimeUnit": (
-                        "Month" if self.deploy_config.months else "Hour"
-                    ),
-                    "reservationLength": (
-                        self.deploy_config.months or self.deploy_config.hours
-                    ),
-                },
-            },
+            billing=billing,
             **kwargs,
         )
 

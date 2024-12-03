@@ -344,7 +344,7 @@ class Model(
         model_comp_task_resp = ResourceModel.V2.create_model_comp_task(
             name=f"mco_{generate_letter_num_random_id(12)}",
             source_model_id=self.id,
-            config=config,
+            comp_config=config,
             model_set_id=self.set_id,
             description=f"mcomp_{self.id}_{strategy.value}_{weight}",
         )

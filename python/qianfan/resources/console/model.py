@@ -1152,7 +1152,7 @@ class Model(object):
             cls,
             name: str,
             source_model_id: str,
-            config: Dict[str, Any],
+            comp_config: Dict[str, Any],
             model_set_id: str,
             description: Optional[str] = None,
         ) -> QfRequest:
@@ -1164,7 +1164,7 @@ class Model(object):
                 compression task name
             source_model_id: str,
                 source_model version id, e.g. amv-xxxx
-            config: dict,
+            comp_config: dict,
                 configuration for compressing
             model_set_id: str,
                 target model set id, e.g. am-xxx
@@ -1188,7 +1188,7 @@ class Model(object):
                     "name": name,
                     "sourceModelId": source_model_id,
                     "modelSetId": model_set_id,
-                    "config": config,
+                    "config": comp_config,
                 },
             )
             if description is not None:

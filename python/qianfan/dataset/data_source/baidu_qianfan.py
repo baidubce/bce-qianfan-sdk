@@ -93,11 +93,11 @@ class QianfanDataSource(DataSource, BaseModel):
             assert self.storage_region
             assert self.storage_path
             storage_region = self.storage_region
-            match_result = re.search(r"^bos://(.*?)/(.*)/$", self.storage_path)
+            match_result = re.search(r"^bos:(/|//)(.*?)/(.*)/?$", self.storage_path)
             if match_result is None:
                 raise ValueError("no bos bucket and path found")
             groups = match_result.groups()
-            storage_id, storage_path = groups[0], groups[1]
+            storage_id, storage_path = groups[1], groups[2]
         elif self.storage_type == V2Consts.StorageType.SysStorage:
             err_msg = "don't support upload dataset to dataset which use platform bos"
             log_error(err_msg)

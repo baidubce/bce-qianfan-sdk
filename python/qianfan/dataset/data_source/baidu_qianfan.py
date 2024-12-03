@@ -245,6 +245,12 @@ class QianfanDataSource(DataSource, BaseModel):
                     )
         else:
             local_file_path = table.inner_data_source_cache.path
+            if not should_save_as_zip_file:
+                # 当用户没有安装 pyarrow 直接上传代码
+                # 且不需要压缩的时候，需要统一上传前后的扩展名
+                ext = os.path.splitext(local_file_path)[1]
+                if ext != "":
+                    remote_file_path = os.path.splitext(remote_file_path)[0] + ext
 
         # 如果是泛文本还需要打压缩包
         if should_save_as_zip_file:

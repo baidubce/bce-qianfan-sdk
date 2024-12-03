@@ -64,7 +64,7 @@ class DeployConfig(BaseModel):
     """
     whether renew service automatically when expired
     """
-    auto_renew_time_unit: str = "month"
+    auto_renew_time_unit: str = "Month"
     """
     renew time unit
     """

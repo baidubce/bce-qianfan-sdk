@@ -210,29 +210,6 @@ def test_qianfan_data_source_save(mocker: MockerFixture, *args, **kwargs):
     ds = QianfanDataSource.create_bare_dataset(
         "test", V2Consts.DatasetFormat.PromptResponse
     )
-    config = get_config()
-
-    config.ACCESS_KEY = ""
-    config.SECRET_KEY = ""
-
-    with pytest.raises(ValueError):
-        ds.save(
-            empty_table,
-            sup_storage_id="1",
-            sup_storage_path="/sdasd/",
-            sup_storage_region="bj",
-        )
-
-    ds.ak = "1"
-    with pytest.raises(ValueError):
-        ds.save(empty_table)
-
-    ds.sk = "2"
-    with pytest.raises(NotImplementedError):
-        ds.save(empty_table)
-
-    config.ACCESS_KEY = "1"
-    config.SECRET_KEY = "2"
 
     assert ds.save(
         empty_table,

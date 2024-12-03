@@ -574,11 +574,14 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         }
 
         if self.deploy_config.payment_type == PaymentType.Prepaid.value:
-            billing["reservationTimeUnit"] = "Month"
-            billing["reservationLength"] = self.deploy_config.months
-            billing["autoRenew"] = self.deploy_config.auto_renew
-            billing["autoRenewTimeUnit"] = self.deploy_config.auto_renew_time_unit
-            billing["autoRenewTime"] = self.deploy_config.auto_renew_time
+            reservation: Dict[str, Any] = {
+                "reservationTimeUnit": "Month",
+                "reservationLength": self.deploy_config.months,
+                "autoRenew": self.deploy_config.auto_renew,
+                "autoRenewTimeUnit": self.deploy_config.auto_renew_time_unit,
+                "autoRenewTime": self.deploy_config.auto_renew_time,
+            }
+            billing["reservation"] = reservation
         elif self.deploy_config.payment_type == PaymentType.Postpaid.value:
             billing["chargeType"] = self.deploy_config.charge_type
             if self.deploy_config.release_time:

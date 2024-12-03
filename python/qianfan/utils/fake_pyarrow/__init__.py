@@ -16,6 +16,7 @@ fake pyarrow package
 """
 
 from qianfan.utils.fake_pyarrow.functions import concat_tables
+from qianfan.utils.fake_pyarrow.lib import Schema
 from qianfan.utils.fake_pyarrow.table import ChunkedArray, Table
 from qianfan.utils.logging import log_warn
 
@@ -31,4 +32,5 @@ __all__ = [
     "concat_tables",
     "ChunkedArray",
     "is_fake",
+    "Schema",
 ]

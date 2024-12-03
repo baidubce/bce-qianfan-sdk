@@ -213,7 +213,8 @@ public class ModelEndpointRetriever {
         try {
             HttpResponse<ConsoleResponse<ListServiceResponse>> resp = auth.signRequest(HttpClient.request().post(url))
                     .body(new ListServiceRequest())
-                    .executeJson(new TypeRef<ConsoleResponse<ListServiceResponse>>() {});
+                    .executeJson(new TypeRef<ConsoleResponse<ListServiceResponse>>() {
+                    });
 
             if (resp.getCode() != 200) {
                 return;

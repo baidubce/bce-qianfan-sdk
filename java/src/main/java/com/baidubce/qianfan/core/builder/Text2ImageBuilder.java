@@ -20,7 +20,7 @@ import com.baidubce.qianfan.Qianfan;
 import com.baidubce.qianfan.model.image.Text2ImageRequest;
 import com.baidubce.qianfan.model.image.Text2ImageResponse;
 
-public class Text2ImageBuilder extends BaseBuilder<Text2ImageBuilder> {
+public class Text2ImageBuilder extends BaseBuilderV1<Text2ImageBuilder> {
     private String prompt;
 
     private String negativePrompt;

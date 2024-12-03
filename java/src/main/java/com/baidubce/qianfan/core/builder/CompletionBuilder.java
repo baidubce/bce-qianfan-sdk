@@ -23,7 +23,7 @@ import com.baidubce.qianfan.model.completion.CompletionResponse;
 
 import java.util.List;
 
-public class CompletionBuilder extends BaseBuilder<CompletionBuilder> {
+public class CompletionBuilder extends BaseBuilderV1<CompletionBuilder> {
     private String prompt;
 
     private Double temperature;

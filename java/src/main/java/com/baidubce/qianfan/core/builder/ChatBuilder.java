@@ -22,7 +22,7 @@ import com.baidubce.qianfan.model.chat.*;
 
 import java.util.List;
 
-public class ChatBuilder extends BaseBuilder<ChatBuilder> {
+public class ChatBuilder extends BaseBuilderV1<ChatBuilder> {
     private final MessageBuilder messageBuilder = new MessageBuilder();
 
     private Double temperature;

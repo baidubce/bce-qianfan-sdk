@@ -50,6 +50,16 @@ public class IAMAuth implements IAuth {
     }
 
     @Override
+    public String authType() {
+        return Auth.TYPE_IAM;
+    }
+
+    @Override
+    public IAuth convertToV2() {
+        return new QianfanV2Auth(accessKey, secretKey);
+    }
+
+    @Override
     public HttpRequest signRequest(HttpRequest request) {
         try {
             return request

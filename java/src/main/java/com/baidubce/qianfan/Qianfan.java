@@ -18,8 +18,6 @@ package com.baidubce.qianfan;
 
 import com.baidubce.qianfan.core.StreamIterator;
 import com.baidubce.qianfan.core.builder.*;
-import com.baidubce.qianfan.model.BaseRequest;
-import com.baidubce.qianfan.model.BaseResponse;
 import com.baidubce.qianfan.model.RateLimitConfig;
 import com.baidubce.qianfan.model.RetryConfig;
 import com.baidubce.qianfan.model.chat.ChatRequest;
@@ -42,8 +40,7 @@ import com.baidubce.qianfan.model.rerank.RerankResponse;
 import java.lang.reflect.Type;
 
 
-public class Qianfan {
-    private final QianfanClient client;
+public class Qianfan extends QianfanBase {
 
     public Qianfan() {
         this.client = new QianfanClient();
@@ -65,6 +62,10 @@ public class Qianfan {
     public Qianfan setRateLimitConfig(RateLimitConfig rateLimitConfig) {
         this.client.setRateLimitConfig(rateLimitConfig);
         return this;
+    }
+
+    public QianfanV2 v2() {
+        return new QianfanV2(this.client.covertToV2());
     }
 
     public ChatBuilder chatCompletion() {
@@ -151,15 +152,4 @@ public class Qianfan {
         return consoleRequest(request, type);
     }
 
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
-        return client.request(request, responseClass);
-    }
-
-    public <T extends BaseResponse<T>, U extends BaseRequest<U>> StreamIterator<T> requestStream(BaseRequest<U> request, Class<T> responseClass) {
-        return client.requestStream(request, responseClass);
-    }
-
-    public <T> ConsoleResponse<T> consoleRequest(ConsoleRequest request, Type type) {
-        return client.consoleRequest(request, type);
-    }
 }

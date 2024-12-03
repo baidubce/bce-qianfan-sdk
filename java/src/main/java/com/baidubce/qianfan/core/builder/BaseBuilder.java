@@ -16,14 +16,9 @@
 
 package com.baidubce.qianfan.core.builder;
 
-import com.baidubce.qianfan.Qianfan;
-import com.baidubce.qianfan.model.exception.ValidationException;
-
 import java.util.Map;
 
 abstract class BaseBuilder<T extends BaseBuilder<T>> {
-    private Qianfan qianfan;
-
     private String model;
 
     private String endpoint;
@@ -33,10 +28,6 @@ abstract class BaseBuilder<T extends BaseBuilder<T>> {
     private ExtraParameterBuilder extraParameterBuilder = new ExtraParameterBuilder();
 
     protected BaseBuilder() {
-    }
-
-    protected BaseBuilder(Qianfan qianfan) {
-        this.qianfan = qianfan;
     }
 
     @SuppressWarnings("unchecked")
@@ -73,15 +64,6 @@ abstract class BaseBuilder<T extends BaseBuilder<T>> {
     public T userId(String userId) {
         this.userId = userId;
         return (T) this;
-    }
-
-    protected Qianfan getQianfan() {
-        if (qianfan == null) {
-            throw new ValidationException("Qianfan client is not set. " +
-                    "please create builder from Qianfan client, " +
-                    "or use build() instead of execute() to get Request and send it by yourself.");
-        }
-        return qianfan;
     }
 
     protected String getModel() {

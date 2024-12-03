@@ -52,6 +52,11 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
         String event = sseIterator.next().replaceFirst("data: ", "");
         // Skip sse empty line
         sseIterator.next();
+
+        if (event.equals("[DONE]")) {
+            return null;
+        }
+
         T response = Json.deserialize(event, responseClass);
 
         // Set meta info for PluginResponse
@@ -70,7 +75,11 @@ public class StreamIterator<T extends BaseResponse<T>> implements Iterator<T>, C
         Objects.requireNonNull(action);
         try {
             while (hasNext()) {
-                action.accept(next());
+                T response = next();
+                if (response == null) {
+                    break;
+                }
+                action.accept(response);
             }
         } finally {
             sseIterator.silentlyClose();

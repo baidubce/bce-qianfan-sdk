@@ -22,7 +22,7 @@ import com.baidubce.qianfan.model.rerank.RerankResponse;
 
 import java.util.List;
 
-public class RerankBuilder extends BaseBuilder<RerankBuilder> {
+public class RerankBuilder extends BaseBuilderV1<RerankBuilder> {
     private String query;
 
     private List<String> documents;

@@ -23,6 +23,7 @@ import com.baidubce.qianfan.util.StringUtils;
 public class Auth {
     public static final String TYPE_IAM = "IAM";
     public static final String TYPE_OAUTH = "OAuth";
+    public static final String TYPE_V2 = "V2";
 
     private Auth() {
     }
@@ -31,7 +32,11 @@ public class Auth {
         // Prefer IAM
         String accessKey = QianfanConfig.getQianfanAccessKey();
         String secretKey = QianfanConfig.getQianfanSecretKey();
+        String version = QianfanConfig.getQianfanInferVersion();
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
+            if (TYPE_V2.equals(version)) {
+                return create(TYPE_V2, accessKey, secretKey);
+            }
             return create(TYPE_IAM, accessKey, secretKey);
         }
         String qianfanAK = QianfanConfig.getQianfanAk();
@@ -51,6 +56,8 @@ public class Auth {
             return new IAMAuth(accessKey, secretKey);
         } else if (TYPE_OAUTH.equals(type)) {
             return new QianfanOAuth(accessKey, secretKey);
+        } else if (TYPE_V2.equals(type)) {
+            return new QianfanV2Auth(accessKey, secretKey);
         } else {
             throw new ValidationException("Unsupported auth type: " + type);
         }

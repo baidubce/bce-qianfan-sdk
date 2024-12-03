@@ -28,14 +28,14 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 public class HttpRequest {
     private String url;
     private String method;
     private HttpEntity body;
-    private Map<String, String> headers = new LinkedHashMap<>();
+    private Map<String, String> headers = new HashMap<>();
 
     public String getUrl() {
         return url;

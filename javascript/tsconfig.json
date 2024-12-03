@@ -9,7 +9,8 @@
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "noEmit": false
+        "noEmit": false,
+        "declaration": true
     },
     "include": ["src"],
     "exclude": ["node_modules", "dist"]

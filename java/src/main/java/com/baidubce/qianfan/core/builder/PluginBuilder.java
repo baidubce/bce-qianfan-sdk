@@ -26,7 +26,7 @@ import com.baidubce.qianfan.model.plugin.PluginResponse;
 import java.util.List;
 import java.util.Map;
 
-public class PluginBuilder extends BaseBuilder<PluginBuilder> {
+public class PluginBuilder extends BaseBuilderV1<PluginBuilder> {
     private String query;
 
     private List<String> plugins;

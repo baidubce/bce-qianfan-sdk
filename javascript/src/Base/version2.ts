@@ -12,49 +12,90 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import HttpClient from '../HttpClient';
-import {getIAMConfig} from '../utils';
-import {FetchOptionsProps} from './version1';
+import {getBearToken} from '../utils';
+
+export interface FetchOptionsProps {
+    /**
+     * appid 应用ID ，不传使用静默 appid
+     */
+    appid?: string;
+    /**
+     * 环境变量，可选值为 'node' 或 'browser'
+     */
+    env: string;
+    /**
+     * 模型
+     */
+    model: string;
+    /**
+     * 请求体
+     */
+    requestBody: any;
+    /**
+     * 请求头
+     */
+    headers: Object;
+    /**
+     * Qianfan 访问密钥
+     */
+    qianfanAccessKey?: string;
+    /**
+     * Qianfan 密钥
+     */
+    qianfanSecretKey?: string;
+    /**
+     * Qianfan 基础 URL
+     */
+    qianfanV2BaseUrl?: string;
+}
+
 
 /**
- * 获取版本1的 Fetch 请求选项
+ * 获取版本2的 Fetch 请求选项
+ * 当前只支持Node
  *
  * @param {FetchOptionsProps} props 包含所需参数的对象
  * @returns Fetch 请求选项
- * @throws 当环境变量为 'node' 且未设置 AK/SK 或 Qianfan_ACCESS_KEY/Qianfan_SECRET_KEY 时，抛出错误
- * @throws 当环境变量为 'node' 且未找到对应模型时，抛出错误
- * @throws 当环境变量为 'browser' 且 baseUrl 包含了 'aip.baidubce.com' 时，抛出错误
- * @throws 当环境变量为 'browser' 且未找到对应模型时，抛出错误
  */
-export const getVersion2FetchOptions = async (props: FetchOptionsProps) => {
+export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
     const {
-        env,
         requestBody,
         headers,
         qianfanAccessKey,
         qianfanSecretKey,
-        qianfanBaseUrl,
-        qianfanConsoleApiBaseUrl,
+        qianfanV2BaseUrl,
+        appid,
+        model,
+        env,
     } = props;
 
-    // node 环境 - 检查 IAM 鉴权信息
-    if (env === 'node' && !(qianfanAccessKey && qianfanSecretKey)) {
-        throw new Error('使用 V2 版本的 API 请设置 QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+    // SDK JS V2 版本目前只支持node环境
+    if (env !== 'node') {
+        throw new Error('SDK(JS)-V2版本目前只支持node环境');
     }
-    // browser 环境 - 走代理
-    if (env === 'browser' && qianfanBaseUrl.includes('aip.baidubce.com')) {
-        throw new Error('请设置 proxy 的 baseUrl');
+    // 检查鉴权信息
+    if (!qianfanAccessKey || !qianfanSecretKey) {
+        throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
-    else {
-        const config = getIAMConfig(qianfanAccessKey, qianfanSecretKey, qianfanConsoleApiBaseUrl);
-        const client = new HttpClient(config);
-        const IAMPath = '/v2/chat';
-        const options = await client.getSignature({
-            httpMethod: 'POST',
-            path: IAMPath,
-            body: requestBody,
-            headers,
-        });
-        return options;
+    const {token: bear_token} = await getBearToken();
+    if (!bear_token) {
+        throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
+
+    const body = JSON.parse(requestBody);
+
+    return {
+        url: qianfanV2BaseUrl,
+        method: 'POST',
+        headers: {
+            ...headers,
+            Authorization: `Bearer ${bear_token}`,
+            appid,
+
+        },
+        body: JSON.stringify({
+            ...body,
+            model,
+        }),
+    };
 };

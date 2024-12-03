@@ -37,18 +37,20 @@ import com.baidubce.qianfan.util.function.ThrowingFunction;
 import com.baidubce.qianfan.util.http.*;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
 class QianfanClient {
     private static final String SDK_VERSION = "0.1.1";
     private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
     private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
+    private static final String QIANFAN_V2_URL_TEMPLATE = "%s/v2/chat/completions";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
 
-    private final IAuth auth;
-    private final ModelEndpointRetriever endpointRetriever;
+    private IAuth auth;
+    private ModelEndpointRetriever endpointRetriever;
     private RetryConfig retryConfig;
     private RateLimiter rateLimiter;
 
@@ -79,6 +81,12 @@ class QianfanClient {
         this.rateLimiter = new RateLimiter(rateLimitConfig);
     }
 
+    public QianfanClient covertToV2() {
+        this.auth = auth.convertToV2();
+        this.endpointRetriever = new ModelEndpointRetriever(auth);
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends BaseResponse<T>, U extends BaseRequest<U>> T request(BaseRequest<U> request, Class<T> responseClass) {
         return request(
@@ -98,11 +106,21 @@ class QianfanClient {
 
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
         String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
-        String url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
+
+        String url;
+        if (auth.authType().equals(Auth.TYPE_V2)) {
+            url = String.format(QIANFAN_V2_URL_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl());
+        } else {
+            url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
+        }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);
         HttpRequest request = HttpClient.request()
                 .post(url)
                 .body(baseRequest);
+
+        for (Map.Entry<String, String> entry : baseRequest.getHeaders().entrySet()) {
+            request.addHeader(entry.getKey(), entry.getValue());
+        }
         return auth.signRequest(request);
     }
 
@@ -168,7 +186,12 @@ class QianfanClient {
             rateLimiter.acquire(httpRequest.getUrl());
             HttpResponse<U> resp = reqProcessor.apply(httpRequest);
             if (resp.getCode() != HttpStatus.SUCCESS) {
-                throw new RequestException(String.format("Request failed with status code %d: %s", resp.getCode(), resp.getStringBody()));
+                throw new RequestException(String.format(
+                        "Request failed with status code %d: %s\nheaders: %s",
+                        resp.getCode(),
+                        resp.getStringBody(),
+                        resp.getHeaders().toString()
+                ));
             }
             String contentType = resp.getHeaders().getOrDefault(ContentType.HEADER, "");
             if (contentType.startsWith(ContentType.APPLICATION_JSON)) {

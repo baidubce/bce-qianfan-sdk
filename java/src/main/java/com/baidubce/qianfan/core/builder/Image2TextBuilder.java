@@ -23,7 +23,7 @@ import com.baidubce.qianfan.model.image.Image2TextResponse;
 
 import java.util.List;
 
-public class Image2TextBuilder extends BaseBuilder<Image2TextBuilder> {
+public class Image2TextBuilder extends BaseBuilderV1<Image2TextBuilder> {
     private String prompt;
 
     private String image;

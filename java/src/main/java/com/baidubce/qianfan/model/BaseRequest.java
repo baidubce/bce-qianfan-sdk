@@ -40,6 +40,8 @@ public abstract class BaseRequest<T extends BaseRequest<T>> {
      */
     private Map<String, Object> extraParameters = new HashMap<>();
 
+    private Map<String, String> headers = new HashMap<>();
+
     public abstract String getType();
 
     public String getModel() {
@@ -79,6 +81,16 @@ public abstract class BaseRequest<T extends BaseRequest<T>> {
     @SuppressWarnings("unchecked")
     public T setExtraParameters(Map<String, Object> extraParameters) {
         this.extraParameters = extraParameters;
+        return (T) this;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setHeaders(Map<String, String> headers) {
+        this.headers = headers;
         return (T) this;
     }
 }

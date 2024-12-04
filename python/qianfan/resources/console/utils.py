@@ -24,6 +24,7 @@ from qianfan.consts import Consts
 from qianfan.errors import InvalidArgumentError
 from qianfan.resources.requestor.console_requestor import ConsoleAPIRequestor
 from qianfan.resources.typing import ParamSpec, QfRequest, QfResponse, RetryConfig
+from qianfan.utils import log_error
 from qianfan.version import VERSION
 
 P = ParamSpec("P")
@@ -67,9 +68,18 @@ def console_api_request(func: Callable[P, QfRequest]) -> Callable[P, QfResponse]
         )
         req = func(*args, **kwargs)
         req.headers["request-source"] = f"qianfan_py_sdk_v{VERSION}"
-        return ConsoleAPIRequestor(**kwargs)._request_console_api(
+        resp = ConsoleAPIRequestor(**kwargs)._request_console_api(
             req, ak, sk, retry_config
         )
+        if resp is not None and "code" in resp.body:
+            url = resp.request.url if resp.request is not None else ""
+            log_error(
+                f"request {url} failed. "
+                f"response headers: {resp.headers}. "
+                f"response body {resp.body}"
+            )
+
+        return resp
 
     return inner
 

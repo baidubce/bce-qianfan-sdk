@@ -93,7 +93,7 @@ class QianfanDataSource(DataSource, BaseModel):
             assert self.storage_region
             assert self.storage_path
             storage_region = self.storage_region
-            match_result = re.search(r"^bos:(/|//)(.*?)/(.*)/?$", self.storage_path)
+            match_result = re.search(r"^bos:(//|/)(.*?)/(.*)/?$", self.storage_path)
             if match_result is None:
                 raise ValueError("no bos bucket and path found")
             groups = match_result.groups()
@@ -110,6 +110,9 @@ class QianfanDataSource(DataSource, BaseModel):
         # 此 path 必须以 / 结尾，为了防止用户没有加上，这里特判
         if storage_path[-1] != "/":
             storage_path += "/"
+
+        if storage_path[0] != "/":
+            storage_path = "/" + storage_path
 
         return storage_id, storage_path, storage_region
 

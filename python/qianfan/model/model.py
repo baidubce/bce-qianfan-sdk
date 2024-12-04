@@ -595,6 +595,11 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             or f"svc{model.set_id}_{model.id}",
             resource_config=res_config,
             billing=billing,
+            description=(
+                self.deploy_config.description
+                if self.deploy_config.description
+                else None
+            ),
             **kwargs,
         )
 

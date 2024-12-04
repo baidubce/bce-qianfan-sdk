@@ -14,7 +14,7 @@
 ```python
 from qianfan.model import Model
 
-m = Model(version_id="amv-xx")
+m = Model(id="amv-xx")
 ```
 2. 通过`trainer.run()`完成训练之后直接通过`trainer.output`获得：
 ```python
@@ -32,7 +32,7 @@ from qianfan.model import Model
 from qianfan.dataset import Dataset
 
 ds = Dataset.load(qianfan_dataset_version_id="ds-xx")
-m = Model(version_id="amv-xx")
+m = Model(id="amv-xx")
 
 m.batch_inference(dataset=ds)
 ```
@@ -48,18 +48,13 @@ from qianfan.evaluation.evaluator import QianfanRuleEvaluator
 from qianfan.evaluation import EvaluationManager
 
 ds = Dataset.load(qianfan_dataset_version_id="ds-xxx")
-m = Model(version_id="amv-xx")
+m = Model(id="amv-xx")
 
 # 千帆平台规则评估器:
 qianfan_evaluators = [
     QianfanRuleEvaluator(using_accuracy=True, using_similarity=True),
 ]
-em = EvaluationManager(qianfan_evaluators=qianfan_evaluators
-em = EvaluationManager(
-    qianfan_evaluators=qianfan_evaluators
-    # local_evaluators=[...]
-)
-)
+em = EvaluationManager(qianfan_evaluators=qianfan_evaluators)
 result = em.eval([m], ds)
 ```
 
@@ -71,7 +66,7 @@ result = em.eval([m], ds)
 from qianfan import ChatCompletion
 from qianfan.model import Model, Service
 from qianfan.model.consts import ServiceType
-from qianfan.resources.console.consts import DeployPoolType
+from qianfan.model.configs import DeployConfig, PaymentType
 
 m = Model(version_id="amv-xxx")
 #m.auto_complete_info() to fix if model id not found
@@ -79,9 +74,9 @@ sft_svc: Service = m.deploy(DeployConfig(
     name="your_service_name",
     endpoint_suffix="your_sdk_suffix",
     replicas=1, # 副本数， 与qps强绑定
-    pool_type=DeployPoolType.PrivateResource, # 私有资源池
     service_type=ServiceType.Chat,
-    hours=1, # 预付费购买的时长
+    payment_type=PaymentType.Prepaid.value,
+    months=1, # 预付费购买的时长
 ))
 
 ### 使用Service调用部署好的模型服务
@@ -100,7 +95,7 @@ sft_chat_resp["result"]
 from qianfan.model import Model
 from qianfan.resources.console import consts as console_consts
 
-m: Model = Model(version_id="amv-ws1pi3cqx9m1")
+m: Model = Model(id="amv-ws1pi3cqx9m1")
 new_model: Model = m.compress(
     strategy=console_consts.ModelCompStrategy.Quantization,
     weight=console_consts.ModelQuantizationWeight.INT8PTQ,

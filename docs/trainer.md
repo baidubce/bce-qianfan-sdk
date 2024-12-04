@@ -63,8 +63,8 @@ ppt_sft_trainer = LLMFinetune(
         max_seq_len=4096,
         peft_type=PeftType.ALL,
     ),
-    name="qianfantrainer01"
-previous_trainer = trainer,
+    name="qianfantrainer01",
+    previous_trainer = trainer,
 )
 
 ppt_sft_trainer.run()
@@ -178,7 +178,7 @@ trainer = LLMFinetune(
         epochs=1,
         batch_size=1,
         learning_rate=0.00002,
-    )
+    ),
     event_handler=eh,
 )
 trainer.run()

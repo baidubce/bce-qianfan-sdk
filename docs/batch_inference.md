@@ -123,7 +123,7 @@ Dataset 还支持使用平台上预置的模型或者用户训练完成的模型
 # 加载千帆平台上的数据集
 qianfan_ds = Dataset.load(qianfan_dataset_version_id=cloud_dataset_id)
 
-result = qianfan_ds.test_using_llm(model_version_id="amv-qb8ijukaish3")
+result = qianfan_ds.test_using_llm(model_id="amv-qb8ijukaish3")
 print(result[0])
 ```
 

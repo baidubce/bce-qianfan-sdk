@@ -77,6 +77,7 @@ class QianfanDataSource(DataSource, BaseModel):
     # 这个参数现已废弃，为保证向前兼容性暂时保留，请勿使用
     download_when_init: Optional[bool] = Field(default=None)
     data_format_type: V2Consts.DatasetFormat
+    file_format_type: Optional[FormatType] = Field(default=None)
 
     def _get_transmission_bos_info(
         self,
@@ -431,6 +432,9 @@ class QianfanDataSource(DataSource, BaseModel):
         Returns:
             DatasetFormat: format type binding to qianfan data source
         """
+        if self.file_format_type:
+            return self.file_format_type
+
         assert self.data_format_type
 
         if self.data_format_type in [
@@ -467,10 +471,7 @@ class QianfanDataSource(DataSource, BaseModel):
         TextOnly -> Jsonl
         MultiModel -> Json
         """
-        # 不支持设置，和数据集类型绑定
-        # 文本都是 jsonl
-        # 文生图都是 json
-        raise NotImplementedError()
+        self.file_format_type = format_type
 
     def _get_format_type_list_for_reading(self) -> List[FormatType]:
         return _dataset_format_type_2_suffix_map[self.data_format_type]
@@ -509,6 +510,7 @@ class QianfanDataSource(DataSource, BaseModel):
                 {**qianfan_resp, **addition_info} if addition_info else {**qianfan_resp}
             ),
             data_format_type=dataset_format,
+            file_format_type=kwargs.get("file_format_type", None),
         )
 
         # 如果是私有的 BOS，还需要额外填充返回的 region 信息

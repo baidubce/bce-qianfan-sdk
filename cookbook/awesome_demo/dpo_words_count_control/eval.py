@@ -5,7 +5,7 @@ import re
 from qianfan.dataset import Dataset
 
 def eval(version_id, ds):
-    result_ds = ds.test_using_llm(model_version_id=version_id)
+    result_ds = ds.test_using_llm(model_id=version_id)
     res = []
     for i in result_ds:
         

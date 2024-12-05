@@ -83,7 +83,7 @@ class QianfanEvaluator(Evaluator):
 class QianfanRefereeEvaluator(QianfanEvaluator):
     """qianfan referee evaluator config class"""
 
-    app_id: int
+    api_name: str = "EB3.5"
     prompt_metrics: str = Field(default=QianfanRefereeEvaluatorDefaultMetrics)
     prompt_steps: str = Field(default=QianfanRefereeEvaluatorDefaultSteps)
     prompt_max_score: int = Field(default=QianfanRefereeEvaluatorDefaultMaxScore)

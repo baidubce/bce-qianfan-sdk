@@ -501,6 +501,9 @@ func (r *Requestor) requestStream(ctx context.Context, request *QfRequest) (*str
 		if err != nil {
 			return nil, err
 		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("request http error with %d: %s", resp.StatusCode, resp.Status)
+		}
 		return resp, nil
 	}
 

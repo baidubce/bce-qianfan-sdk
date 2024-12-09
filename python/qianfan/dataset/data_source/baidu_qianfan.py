@@ -117,10 +117,18 @@ class QianfanDataSource(DataSource, BaseModel):
 
         return storage_id, storage_path, storage_region
 
-    def _get_console_ak_and_sk(self) -> Tuple[str, str]:
+    def _get_console_ak_and_sk(self, **kwargs: Any) -> Tuple[str, str]:
         """get ak and sk from attribute or global config"""
-        ak = get_config().ACCESS_KEY
-        sk = get_config().SECRET_KEY
+        if kwargs.get("sup_ak"):
+            ak = kwargs["sup_ak"]
+        else:
+            ak = get_config().ACCESS_KEY
+
+        if kwargs.get("sup_sk"):
+            sk = kwargs["sup_sk"]
+        else:
+            sk = get_config().SECRET_KEY
+
         if not ak:
             err_msg = "no ak was provided"
             log_error(err_msg)
@@ -186,7 +194,7 @@ class QianfanDataSource(DataSource, BaseModel):
             V2Consts.DatasetFormat.PromptImageResponse,
         ]
 
-        ak, sk = self._get_console_ak_and_sk()
+        ak, sk = self._get_console_ak_and_sk(**kwargs)
 
         # 获取存储信息和鉴权信息
         storage_id, storage_path, storage_region = self._get_transmission_bos_info(

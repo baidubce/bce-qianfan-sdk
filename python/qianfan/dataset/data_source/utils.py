@@ -691,7 +691,7 @@ def _build_table_from_reader(
 def zip_file_or_folder(path: str) -> str:
     folder_name: str = os.path.split(os.path.abspath(path))[1]
 
-    if folder_name.rfind(".") != 0:
+    if folder_name.rfind(".") != -1:
         # 去除文件内的后缀名
         folder_name = folder_name[0 : folder_name.rfind(".")]
         # 去除文件前的英文句号
@@ -699,7 +699,7 @@ def zip_file_or_folder(path: str) -> str:
 
     # 如果是文件夹，则直接调用对应的函数处理
     if os.path.isdir(path):
-        return shutil.make_archive(folder_name, "zip", root_dir=path)
+        return shutil.make_archive(path, "zip", root_dir=path)
 
     # 不然得要手动处理文件
     zip_file_name = f"{folder_name}.zip"

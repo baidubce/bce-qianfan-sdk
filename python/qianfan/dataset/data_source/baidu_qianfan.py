@@ -704,6 +704,7 @@ class QianfanDataSource(DataSource, BaseModel):
             storage_type=storage_type,
             download_when_init=is_download_to_local,
             info={**qianfan_resp},
+            file_format_type=kwargs.get("file_format_type", None),
         )
 
         if storage_type == V2Consts.StorageType.Bos:

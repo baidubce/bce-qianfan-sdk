@@ -164,8 +164,8 @@ class FileDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been written successfully
         """
-        if self.save_as_folder and self.file_format == FormatType.Text:
-            return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+        # 有可能文件路径的父文件夹不存在，得先创建
+        os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
 
         if self.file_format == FormatType.Text2Image:
             _collect_all_images_and_annotations_in_one_folder(
@@ -179,8 +179,10 @@ class FileDataSource(DataSource, BaseModel):
             )
             return True
 
-        # 有可能文件路径的父文件夹不存在，得先创建
-        os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
+        if self.save_as_folder:
+            if self.file_format == FormatType.Text:
+                return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+            return self._write_in_batch_for_folder(table, batch_size, **kwargs)
 
         with open(
             self.path,
@@ -202,6 +204,40 @@ class FileDataSource(DataSource, BaseModel):
             # Json 格式的时候需要特判
             if self.file_format == FormatType.Json:
                 f.write("\n]")
+
+        return True
+
+    def _write_in_batch_for_folder(
+        self,
+        table: Table,
+        batch_size: int = 10000,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
+    ) -> bool:
+        os.makedirs(self.path, exist_ok=True)
+
+        for i in range(0, table.row_number(), batch_size):
+            with open(
+                os.path.join(self.path, f"data_{i}.{self.format_type().value}"),
+                mode="w",
+                encoding=(
+                    encoding() if self.file_format != FormatType.Csv else "utf-8-sig"
+                ),
+            ) as f:
+                # Json 格式的时候需要特判
+                if self.file_format == FormatType.Json:
+                    f.write("[\n")
+
+                self._write_as_format(
+                    f,
+                    table.list(slice(i, i + batch_size - 1)),
+                    0,
+                    use_qianfan_special_jsonl_format,
+                )
+
+                # Json 格式的时候需要特判
+                if self.file_format == FormatType.Json:
+                    f.write("\n]")
 
         return True
 

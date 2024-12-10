@@ -94,7 +94,7 @@ class CsvReader(BaseReader):
             mode="r",
             encoding="utf-8-sig" if encoding() == "utf-8" else encoding(),
         )
-        self.data_stream = csv.DictReader(self.fd, **kwargs)
+        self.data_stream = csv.DictReader(self.fd)
         self.kwargs = kwargs
 
     def _get_an_element(self, index: int) -> Any:

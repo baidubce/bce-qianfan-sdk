@@ -41,6 +41,7 @@ from qianfan.dataset.data_source.utils import (
     _dataset_format_type_2_suffix_map,
     _datetime_parse_hook,
     _download_file_from_url_streamly,
+    _extract_all_with_utf8,
     _get_a_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_image_in_an_folder,
@@ -329,8 +330,8 @@ class QianfanDataSource(DataSource, BaseModel):
                 log_error(str(error))
                 raise error
 
-            # 解压到本地
-            zip_f.extractall(content_path)
+        # 解压到本地
+        _extract_all_with_utf8(bin_path, content_path)
 
         log_info(f"unzip dataset to path {content_path} successfully")
         with open(info_path, mode="w", encoding=encoding()) as f:

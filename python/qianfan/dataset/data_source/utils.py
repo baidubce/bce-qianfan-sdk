@@ -228,14 +228,34 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
     return pyarrow.concat_tables(table_list)
 
 
+def _extract_all_with_utf8(zip_file_path: str, extract_to_dir: str) -> None:
+    # 打开 ZIP 文件
+    with zipfile.ZipFile(zip_file_path, "r") as zip_file:
+        # 遍历 ZIP 文件中的每一个文件
+        for info in zip_file.infolist():
+            # 处理文件名以确保使用 UTF-8 编码
+            file_name = info.filename.encode("cp437").decode("utf-8")
+
+            # 目标文件的完整路径
+            target_path = os.path.join(extract_to_dir, file_name)
+
+            # 如果是目录，则创建目录
+            if info.is_dir():
+                os.makedirs(target_path, exist_ok=True)
+            else:
+                # 如果是文件，确保目录存在，然后解压文件
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                with zip_file.open(info) as source, open(target_path, "wb") as target:
+                    target.write(source.read())
+
+
 def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = os.path.join(
         _merge_custom_path(QianfanDatasetText2ImageUnzipCacheDir),
         f"image_dataset_folder_{uuid.uuid4()}",
     )
-    with zipfile.ZipFile(path) as zip_file:
-        zip_file.extractall(tmp_folder_path)
+    _extract_all_with_utf8(path, tmp_folder_path)
     return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)
 
 
@@ -332,8 +352,7 @@ def _read_all_file_from_zip(
     """从压缩包中读取所有的文件"""
     tmp_folder_path = "tmp_folder_path"
     try:
-        with zipfile.ZipFile(path) as zip_file:
-            zip_file.extractall(tmp_folder_path)
+        _extract_all_with_utf8(path, tmp_folder_path)
         return _read_all_file_content_in_an_folder(
             tmp_folder_path, format_types, **kwargs
         )

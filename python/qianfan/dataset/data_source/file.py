@@ -124,7 +124,11 @@ class FileDataSource(DataSource, BaseModel):
             raise ValueError(err_msg)
 
     def _save_generic_text_into_folder(
-        self, table: Table, batch_size: int = 10, **kwargs: Any
+        self,
+        table: Table,
+        batch_size: int = 10,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
     ) -> bool:
         os.makedirs(self.path, exist_ok=True)
 
@@ -136,7 +140,20 @@ class FileDataSource(DataSource, BaseModel):
                     mode="w",
                     encoding=encoding(),
                 ) as f:
-                    f.write(table_slice[j])
+                    # Json 格式的时候需要特判
+                    if self.file_format == FormatType.Json:
+                        f.write("[\n")
+
+                    self._write_as_format(
+                        f,
+                        table_slice[j],
+                        0,
+                        use_qianfan_special_jsonl_format,
+                    )
+
+                    # Json 格式的时候需要特判
+                    if self.file_format == FormatType.Json:
+                        f.write("\n]")
 
         return True
 

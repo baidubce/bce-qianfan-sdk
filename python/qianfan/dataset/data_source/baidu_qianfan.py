@@ -284,8 +284,6 @@ class QianfanDataSource(DataSource, BaseModel):
         log_info("uploading data to user BOS finished")
 
         upload_data_from_bos_to_qianfan(
-            bos_helper,
-            should_save_as_zip_file,
             self.id,
             storage_id,
             remote_file_path,

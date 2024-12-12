@@ -73,7 +73,7 @@ from qianfan.resources.console.consts import (
     DataTemplateType,
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
-from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
+from qianfan.utils.bos_uploader import generate_bos_file_path
 from qianfan.utils.pydantic import BaseModel
 
 try:
@@ -779,33 +779,19 @@ def _create_import_data_task_and_wait_for_success(
 
 
 def upload_data_from_bos_to_qianfan(
-    bos_helper: BosHelper,
-    is_zip_file: bool,
     qianfan_dataset_id: str,
     storage_id: str,
     remote_file_path: str,
     is_annotated: bool = False,
 ) -> None:
     # 如果不是压缩包，则直接导入
-    if not is_zip_file:
-        complete_file_path = generate_bos_file_path(storage_id, remote_file_path)
-        if not _create_import_data_task_and_wait_for_success(
-            qianfan_dataset_id, is_annotated, complete_file_path
-        ):
-            err_msg = "import data from bos file failed"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-    # 不然需要创建分享链接导入
-    else:
-        shared_str = bos_helper.get_bos_file_shared_url(remote_file_path, storage_id)
-        log_info(f"get shared file url: {shared_str}")
-        if not _create_import_data_task_and_wait_for_success(
-            qianfan_dataset_id, is_annotated, shared_str, DataSourceType.SharedZipUrl
-        ):
-            err_msg = "import data from shared zip url failed"
-            log_error(err_msg)
-            raise ValueError(err_msg)
+    complete_file_path = generate_bos_file_path(storage_id, remote_file_path)
+    if not _create_import_data_task_and_wait_for_success(
+        qianfan_dataset_id, is_annotated, complete_file_path
+    ):
+        err_msg = "import data from bos file failed"
+        log_error(err_msg)
+        raise ValueError(err_msg)
 
 
 def _get_qianfan_dataset_type_tuple(

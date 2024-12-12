@@ -83,7 +83,6 @@ from qianfan.errors import ValidationError
 from qianfan.resources import Data, Model
 from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.utils import log_debug, log_error, log_info, log_warn
-from qianfan.utils.bos_uploader import BosHelper
 
 
 # 装饰器，用来阻塞部分对云上数据集（非本地）的操作请求
@@ -227,10 +226,7 @@ class Dataset(Table):
         if isinstance(self.inner_data_source_cache, BosDataSource) and isinstance(
             source, QianfanDataSource
         ):
-            bos_helper = BosHelper(region=self.inner_data_source_cache.region)
             upload_data_from_bos_to_qianfan(
-                bos_helper,
-                self.inner_data_source_cache.bos_file_path.find(".zip") != -1,
                 source.id,
                 self.inner_data_source_cache.bucket,
                 self.inner_data_source_cache.bos_file_path,

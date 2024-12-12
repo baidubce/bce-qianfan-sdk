@@ -39,6 +39,9 @@ class Trainer(ABC):
     result: List[Any] = []
     """pipeline running results, which may be an error or an object"""
 
+    _context: Dict[str, Any] = {}
+    """a context object for distribution info among actions"""
+
     @abstractmethod
     def run(self, **kwargs: Any) -> "Trainer":
         """

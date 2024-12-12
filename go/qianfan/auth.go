@@ -209,7 +209,7 @@ func (m *BearerTokenManager) GetAccessTokenWithRefresh() (string, error) {
 
 	token := m.token
 
-	if token != nil && (m.isPreset || token.ExpireTime.Sub(time.Now()) > token.ExpireTimeBuff) {
+	if token != nil && (m.isPreset || time.Until(token.ExpireTime) > token.ExpireTimeBuff) {
 		return token.token, nil
 	}
 

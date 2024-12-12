@@ -29,6 +29,8 @@ var defaultConfig = map[string]string{
 	"QIANFAN_BEARER_TOKEN":                        "",
 	"QIANFAN_BASE_URL":                            "https://aip.baidubce.com",
 	"QIANFAN_IAM_SIGN_EXPIRATION_SEC":             "300",
+	"QIANFAN_BEARER_TOKEN_EXPIRATION_SEC":         "3600",
+	"QIANFAN_BEARER_TOKEN_REFRESH_ADVANCE":        "60",
 	"QIANFAN_CONSOLE_BASE_URL":                    "https://qianfan.baidubce.com",
 	"QIANFAN_IAM_BASE_URL":                        "http://iam.bj.baidubce.com",
 	"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL":   "3600",
@@ -48,6 +50,8 @@ type Config struct {
 	BearerToken                   string  `mapstructure:"QIANFAN_BEARER_TOKEN"`
 	BaseURL                       string  `mapstructure:"QIANFAN_BASE_URL"`
 	IAMSignExpirationSeconds      int     `mapstructure:"QIANFAN_IAM_SIGN_EXPIRATION_SEC"`
+	BearerTokenExpirationSeconds  int     `mapstructure:"QIANFAN_BEARER_TOKEN_EXPIRATION_SEC"`
+	BearerTokenRefreshAdvance     int     `mapstructure:"QIANFAN_BEARER_TOKEN_REFRESH_ADVANCE"`
 	ConsoleBaseURL                string  `mapstructure:"QIANFAN_CONSOLE_BASE_URL"`
 	IAMBaseURL                    string  `mapstructure:"QIANFAN_IAM_BASE_URL"`
 	AccessTokenRefreshMinInterval int     `mapstructure:"QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"`

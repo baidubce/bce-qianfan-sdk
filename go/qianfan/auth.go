@@ -164,8 +164,64 @@ func (r *IAMBearerTokenResponse) GetErrorCode() string {
 }
 
 func GetBearerToken() (string, error) {
+	return GetBearerTokenManager().GetAccessTokenWithRefresh()
+}
+
+type BearerToken struct {
+	token          string
+	ExpireTime     time.Time
+	ExpireTimeBuff time.Duration
+}
+
+var _bearerTokenManager *BearerTokenManager
+var _bearerTokenManagerInitOnce sync.Once
+
+type BearerTokenManager struct {
+	token    *BearerToken
+	lock     sync.Mutex
+	isPreset bool
+	*Requestor
+}
+
+func GetBearerTokenManager() *BearerTokenManager {
+	_bearerTokenManagerInitOnce.Do(func() {
+		_bearerTokenManager = &BearerTokenManager{
+			lock:      sync.Mutex{},
+			Requestor: newRequestor(makeOptions()),
+		}
+
+		token := GetConfig().BearerToken
+		if token != "" {
+			_bearerTokenManager.token = &BearerToken{
+				token: token,
+			}
+			_bearerTokenManager.isPreset = true
+		} else {
+			_bearerTokenManager.isPreset = false
+		}
+	})
+	return _bearerTokenManager
+}
+
+func (m *BearerTokenManager) GetAccessTokenWithRefresh() (string, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	token := m.token
+
+	if token != nil && (m.isPreset || time.Until(token.ExpireTime) > token.ExpireTimeBuff) {
+		return token.token, nil
+	}
+
 	resp := IAMBearerTokenResponse{}
-	req, err := NewIAMBearerTokenRequest("GET", "/v1/BCE-BEARER/token", nil)
+	req, err := NewIAMBearerTokenRequest(
+		"GET",
+		fmt.Sprintf(
+			"/v1/BCE-BEARER/token?expireInSeconds=%d",
+			GetConfig().BearerTokenExpirationSeconds,
+		),
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -175,6 +231,20 @@ func GetBearerToken() (string, error) {
 		return "", err
 	}
 	logger.Info("Get IAM Bearer Token Success")
-	GetConfig().BearerToken = resp.Token
-	return resp.Token, nil
+
+	expireTime, err := time.Parse(time.RFC3339, resp.ExpireTime)
+	if err != nil {
+		logger.Errorf("Parse IAM Bearer Token Expire Time Failed: %s", err)
+		return "", err
+	}
+
+	token = &BearerToken{
+		token:          resp.Token,
+		ExpireTime:     expireTime,
+		ExpireTimeBuff: time.Duration(GetConfig().BearerTokenRefreshAdvance) * time.Second,
+	}
+
+	m.token = token
+	GetConfig().BearerToken = token.token
+	return token.token, nil
 }

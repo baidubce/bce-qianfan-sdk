@@ -208,13 +208,11 @@ func (r *Requestor) addAuthInfo(ctx context.Context, request *QfRequest) error {
 		return nil
 	}
 	if request.Type == bearerTokenRequest {
-		if GetConfig().BearerToken == "" {
-			_, err := GetBearerToken()
-			if err != nil {
-				return err
-			}
+		token, err := GetBearerToken()
+		if err != nil {
+			return err
 		}
-		request.Headers["Authorization"] = fmt.Sprintf("Bearer %s", GetConfig().BearerToken)
+		request.Headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
 		return nil
 	}
 	if GetConfig().AK != "" && GetConfig().SK != "" {

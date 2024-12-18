@@ -487,17 +487,16 @@ class QfAPIRequestor(BaseAPIRequestor):
 
             def _list_generator(generator: Iterator) -> Any:
                 data: Queue[QfResponse] = Queue()
-                cond = threading.Condition()
-                is_closed = False
+                is_closed = threading.Event()
+
+                is_stress_test = (
+                    os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true"
+                )
 
                 def _inner_worker() -> None:
-                    nonlocal is_closed
-                    with cond:
-                        for res in generator:
-                            data.put(res)
-                            cond.notify()
-                        is_closed = True
-                        cond.notify()
+                    for res in generator:
+                        data.put(res)
+                    is_closed.set()
 
                 if self._sync_reading_thread_count is not None:
                     task = self._sync_reading_thread_pool.submit(_inner_worker)
@@ -505,21 +504,22 @@ class QfAPIRequestor(BaseAPIRequestor):
                     t = threading.Thread(target=_inner_worker, daemon=True)
                     t.start()
 
-                with cond:
-                    while True:
-                        while not data.empty():
-                            try:
-                                yield data.get_nowait()
-                            except queue.Empty:
-                                continue
-                        if is_closed:
-                            break
-                        cond.wait()
+                if is_stress_test:
+                    is_closed.wait()
 
-                if self._sync_reading_thread_count is None:
-                    t.join()
-                else:
+                while True:
+                    while not data.empty():
+                        try:
+                            yield data.get_nowait()
+                        except queue.Empty:
+                            continue
+                    if is_closed.is_set():
+                        break
+
+                if self._sync_reading_thread_count is not None:
                     task.done()
+                else:
+                    t.join()
 
             if stream:
                 generator = self._compensate_token_usage_stream(

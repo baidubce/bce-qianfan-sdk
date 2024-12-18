@@ -27,19 +27,22 @@ type ChatCompletionV2 struct {
 // chat 模型的请求结构体
 type ChatCompletionV2Request struct {
 	BaseRequestBody     `mapstructure:"-"`
-	Model               string                  `mapstructure:"model"`                           // 模型ID
-	Messages            []ChatCompletionMessage `mapstructure:"messages"`                        // 聊天上下文信息
-	StreamOption        *StreamOption           `mapstructure:"stream_option,omitempty"`         // 流式选项
-	Temperature         float64                 `mapstructure:"temperature,omitempty"`           // 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定，范围 (0, 1.0]，不能为0
-	TopP                float64                 `mapstructure:"top_p,omitempty"`                 // 影响输出文本的多样性，取值越大，生成文本的多样性越强。取值范围 [0, 1.0]
-	PenaltyScore        float64                 `mapstructure:"penalty_score,omitempty"`         // 通过对已生成的token增加惩罚，减少重复生成的现象。说明：值越大表示惩罚越大，取值范围：[1.0, 2.0]
-	MaxCompletionTokens int                     `mapstructure:"max_completion_tokens,omitempty"` // 指定模型最大输出token数
-	ResponseFormat      string                  `mapstructure:"response_format,omitempty"`       // 指定响应内容的格式
-	Seed                int                     `mapstructure:"seed,omitempty"`                  // 随机种子
-	Stop                []string                `mapstructure:"stop,omitempty"`                  // 生成停止标识，当模型生成结果以stop中某个元素结尾时，停止文本生成
-	User                string                  `mapstructure:"user,omitempty"`                  // 表示最终用户的唯一标识符
-	FrequencyPenalty    float64                 `mapstructure:"frequency_penalty,omitempty"`     // 指定频率惩罚，用于控制生成文本的重复程度。取值范围 [0.0,
-	PresencePenalty     float64                 `mapstructure:"presence_penalty,omitempty"`      // 指定存在惩罚，用于控制生成文本的重复程度。取值范围 [0.0         int                     `mapstructure:"num_samples,omitempty"`      // 指定采样次数，取值范围 [1, 20]
+	Model               string                    `mapstructure:"model"`                           // 模型ID
+	Messages            []ChatCompletionV2Message `mapstructure:"messages"`                        // 聊天上下文信息
+	StreamOptions       *StreamOptions            `mapstructure:"stream_options,omitempty"`        // 流式选项
+	Temperature         float64                   `mapstructure:"temperature,omitempty"`           // 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定，范围 (0, 1.0]，不能为0
+	TopP                float64                   `mapstructure:"top_p,omitempty"`                 // 影响输出文本的多样性，取值越大，生成文本的多样性越强。取值范围 [0, 1.0]
+	PenaltyScore        float64                   `mapstructure:"penalty_score,omitempty"`         // 通过对已生成的token增加惩罚，减少重复生成的现象。说明：值越大表示惩罚越大，取值范围：[1.0, 2.0]
+	MaxCompletionTokens int                       `mapstructure:"max_completion_tokens,omitempty"` // 指定模型最大输出token数
+	Seed                int                       `mapstructure:"seed,omitempty"`                  // 随机种子
+	Stop                []string                  `mapstructure:"stop,omitempty"`                  // 生成停止标识，当模型生成结果以stop中某个元素结尾时，停止文本生成
+	User                string                    `mapstructure:"user,omitempty"`                  // 表示最终用户的唯一标识符
+	FrequencyPenalty    float64                   `mapstructure:"frequency_penalty,omitempty"`     // 指定频率惩罚，用于控制生成文本的重复程度。取值范围 [0.0,
+	PresencePenalty     float64                   `mapstructure:"presence_penalty,omitempty"`      // 指定存在惩罚，用于控制生成文本的重复程度。取值范围 [0.0         int                     `mapstructure:"num_samples,omitempty"`      // 指定采样次数，取值范围 [1, 20]
+	Tools               []Tool                    `mapstructure:"tools,omitempty"`
+	ToolChoice          any                       `mapstructure:"tool_choice,omitempty"`
+	ParallelToolCalls   bool                      `mapstructure:"parallel_tool_calls,omitempty"` // 是否并行调用工具
+	ResponseFormat      *ResponseFormat           `mapstructure:"response_format,omitempty"`
 }
 
 type ChatCompletionV2Response struct {
@@ -53,30 +56,66 @@ type ChatCompletionV2Response struct {
 	Error   *ChatCompletionV2Error   `mapstructure:"error"`   // 错误信息
 }
 type ChatCompletionV2Choice struct {
-	Index        int                   `mapstructure:"index"`         // 生成结果索引
-	Message      ChatCompletionMessage `mapstructure:"message"`       // 生成结果
-	Delta        ChatCompletionV2Delta `mapstructure:"delta"`         // 生成结果
-	FinishReason string                `mapstructure:"finish_reason"` // 生成结果的分数
-	Flag         int                   `mapstructure:"flag"`          // 生成结果的标志
-	BanRound     int                   `mapstructure:"ban_round"`     // 生成结果
+	Index        int                     `mapstructure:"index"`         // 生成结果索引
+	Message      ChatCompletionV2Message `mapstructure:"message"`       // 生成结果
+	Delta        ChatCompletionV2Delta   `mapstructure:"delta"`         // 生成结果
+	FinishReason string                  `mapstructure:"finish_reason"` // 生成结果的分数
+	Flag         int                     `mapstructure:"flag"`          // 生成结果的标志
+	BanRound     int                     `mapstructure:"ban_round"`     // 生成结果
+}
+
+type ChatCompletionV2Message struct {
+	Role       string     `mapstructure:"role" json:"role,omitempty"`
+	Content    string     `mapstructure:"content,omitempty" json:"content,omitempty"`
+	Name       string     `mapstructure:"name" json:"name,omitempty"`
+	ToolCalls  []ToolCall `mapstructure:"tool_calls,omitempty" json:"tool_calls,omitempty"` // 函数调用
+	ToolCallId string     `mapstructure:"tool_call_id,omitempty" json:"tool_call_id,omitempty"`
 }
 
 type ChatCompletionV2Delta struct {
-	Content string `mapstructure:"content"` // 生成结果
+	Content   string     `mapstructure:"content"`              // 生成结果
+	ToolCalls []ToolCall `mapstructure:"tool_calls,omitempty"` // 函数调用
 }
 
-type StreamOption struct {
-	IncludeUsage bool `mapstructure:"include_usage"` //流式响应是否输出usage
+type StreamOptions struct {
+	IncludeUsage bool `mapstructure:"include_usage,omitempty" json:"include_usage,omitempty"` //流式响应是否输出usage
+}
+
+type FunctionV2 struct {
+	Name        string `mapstructure:"name" json:"name,omitempty"`
+	Description string `mapstructure:"description" json:"description,omitempty"`
+	Parameters  any    `mapstructure:"parameters" json:"parameters,omitempty"`
+}
+
+type FunctionCallV2 struct {
+	Name      string `mapstructure:"name,omitempty" json:"name,omitempty"`
+	Arguments string `mapstructure:"arguments,omitempty" json:"arguments,omitempty"`
+}
+
+type Tool struct {
+	ToolType string     `mapstructure:"type" json:"type,omitempty"`
+	Function FunctionV2 `mapstructure:"function" json:"function,omitempty"`
+}
+
+type ResponseFormat struct {
+	FormatType string `mapstructure:"type" json:"type,omitempty"`
+	JsonSchema any    `mapstructure:"json_schema" json:"json_schema,omitempty"`
+}
+
+type ToolCall struct {
+	Id       string         `mapstructure:"id" json:"id,omitempty"`
+	ToolType string         `mapstructure:"type" json:"type,omitempty"`
+	Function FunctionCallV2 `mapstructure:"function" json:"function,omitempty"`
 }
 
 type ChatCompletionV2Error struct {
-	Code string `mapstructure:"code"`
-	Msg  string `mapstructure:"msg"`
-	Type string `mapstructure:"type"`
+	Code    string `mapstructure:"code"`
+	Message string `mapstructure:"message"`
+	Type    string `mapstructure:"type"`
 }
 
 func (c *ChatCompletionV2Response) GetErrorCode() string {
-	return c.Error.Msg
+	return c.Error.Message
 }
 
 type ChatCompletionV2ResponseStream struct {
@@ -144,10 +183,12 @@ func (c *ChatCompletionV2) Stream(ctx context.Context, request *ChatCompletionV2
 	}
 	return resp, err
 }
+
 func newChatCompletionV2ResponseStream(si *streamInternal) (*ChatCompletionV2ResponseStream, error) {
 	s := &ChatCompletionV2ResponseStream{streamInternal: si}
 	return s, nil
 }
+
 func (c *ChatCompletionV2) stream(ctx context.Context, request *ChatCompletionV2Request) (*ChatCompletionV2ResponseStream, error) {
 	do := func() (*ChatCompletionV2ResponseStream, error) {
 		url := "/v2/chat/completions"

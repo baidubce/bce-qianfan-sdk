@@ -135,7 +135,7 @@ func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*Model
 		return nil, runErr
 	}
 
-	if resp.ModelAPIError.ErrorMsg != "" {
+	if resp != nil && resp.ModelAPIError.ErrorMsg != "" {
 		return nil, fmt.Errorf(
 			"code: %d, message: %s",
 			resp.ModelAPIError.ErrorCode,

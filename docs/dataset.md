@@ -329,6 +329,10 @@ new_data_source = target_data_source.create_new_version()
 ds_qianfan.save(qianfan_dataset_version_id=new_data_source.id)
 ```
 
+如果在上传时遭遇导出数据集到千帆失败的问题，可能是由于数据集文件的格式与默认的上传文件格式不匹配导致的
+
+以 Prompt Response 类型的数据集举例，SDK 默认的上传文件格式为 Jsonl。如果用户需要上传 CSV 格式的数据，需要手动指定 `file_format_type=FormatType.Csv` 的入参。其它类型的数据集以此类推
+
 #### 千帆数据源
 
 和从文件系统导入一致，千帆 Python SDK 也同样内置了千帆数据源，用作数据集 `load` 或者 `save` 操作的入参。目前 SDK 支持用户在本地全新创建一个千帆数据源，代表在千帆平台上创建一个新的数据集组，默认包含一个数据集；或者在本地创建一个千帆数据源以代表平台上已经存在的数据集。

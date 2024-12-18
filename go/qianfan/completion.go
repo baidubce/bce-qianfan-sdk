@@ -16,6 +16,7 @@ package qianfan
 
 import (
 	"context"
+	"fmt"
 )
 
 // Completion 模型请求的参数结构体，但并非每个模型都完整支持如下参数，具体是否支持以 API 文档为准
@@ -133,6 +134,15 @@ func (c *Completion) Do(ctx context.Context, request *CompletionRequest) (*Model
 	if runErr != nil {
 		return nil, runErr
 	}
+
+	if resp.ModelAPIError.ErrorMsg != "" {
+		return nil, fmt.Errorf(
+			"code: %d, message: %s",
+			resp.ModelAPIError.ErrorCode,
+			resp.ModelAPIError.ErrorMsg,
+		)
+	}
+
 	return resp, err
 }
 

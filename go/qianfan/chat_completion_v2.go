@@ -16,6 +16,7 @@ package qianfan
 
 import (
 	"context"
+	"fmt"
 )
 
 // 用于 chat v2 类型模型的结构体
@@ -38,7 +39,7 @@ type ChatCompletionV2Request struct {
 	Stop                []string                  `mapstructure:"stop,omitempty"`                  // 生成停止标识，当模型生成结果以stop中某个元素结尾时，停止文本生成
 	User                string                    `mapstructure:"user,omitempty"`                  // 表示最终用户的唯一标识符
 	FrequencyPenalty    float64                   `mapstructure:"frequency_penalty,omitempty"`     // 指定频率惩罚，用于控制生成文本的重复程度。取值范围 [0.0,
-	PresencePenalty     float64                   `mapstructure:"presence_penalty,omitempty"`      // 指定存在惩罚，用于控制生成文本的重复程度。取值范围 [0.0         int                     `mapstructure:"num_samples,omitempty"`      // 指定采样次数，取值范围 [1, 20]
+	PresencePenalty     float64                   `mapstructure:"presence_penalty,omitempty"`      // 指定存在惩罚，用于控制生成文本的重复程度。
 	Tools               []Tool                    `mapstructure:"tools,omitempty"`
 	ToolChoice          any                       `mapstructure:"tool_choice,omitempty"`
 	ParallelToolCalls   bool                      `mapstructure:"parallel_tool_calls,omitempty"` // 是否并行调用工具
@@ -158,6 +159,15 @@ func (c *ChatCompletionV2) do(ctx context.Context, request *ChatCompletionV2Requ
 
 		if err != nil {
 			return nil, err
+		}
+
+		if resp.Error != nil {
+			return nil, fmt.Errorf(
+				"code: %s, type: %s, message: %s",
+				resp.Error.Code,
+				resp.Error.Type,
+				resp.Error.Message,
+			)
 		}
 
 		return &resp, nil

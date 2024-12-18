@@ -107,7 +107,7 @@ select = [
   "I",  # isort
 ]
 typing-modules = ["qianfan.resources.typing"]
-exclude = ["qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py"]
+exclude = ["qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py", "qianfan/tests/utils/mock_supported_model_list.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = ["PLW1514"]
@@ -118,7 +118,7 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
-exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py"]
+exclude = ["qianfan/tests", "qianfan/utils/pydantic", "qianfan/__init__.py", "qianfan/extensions/guidance/_qianfan.py", "qianfan/tests/utils/mock_supported_model_list.py"]
 
 
 [build-system]

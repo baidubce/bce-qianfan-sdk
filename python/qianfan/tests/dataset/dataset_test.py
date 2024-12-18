@@ -33,7 +33,7 @@ from qianfan.dataset.schema import (
     QianfanSortedConversation,
 )
 from qianfan.dataset.table import Table
-from qianfan.resources.console.consts import DataTemplateType
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.utils.pydantic import BaseModel
 
 
@@ -128,7 +128,7 @@ def test_dataset_create():
 
 def test_dataset_online_process():
     qianfan_data_source = QianfanDataSource.create_bare_dataset(
-        "test", DataTemplateType.GenericText
+        "test", V2Consts.DatasetFormat.Text
     )
     dataset = Dataset.load(source=qianfan_data_source)
     assert dataset.online_data_process(
@@ -171,19 +171,13 @@ def test_branch_save(*args, **kwargs):
     ds.unpack()
     ds.save(fake_data_source)
 
-    from qianfan.tests.dataset.data_source_test import (
-        create_an_empty_qianfan_datasource,
+    fake_qianfan_data_source = QianfanDataSource.create_bare_dataset(
+        "test",
+        V2Consts.DatasetFormat.PromptResponse,
+        V2Consts.StorageType.Bos,
+        "bos://are/you/ok/",
     )
-
-    fake_qianfan_data_source = create_an_empty_qianfan_datasource()
     ds = Dataset.create_from_pyobj([{"prompt": "nihao", "response": [["hello"]]}])
 
     ds.save(fake_qianfan_data_source)
     ds.save(FakeDataSource(origin_data="", format=FormatType.Json))
-
-    fake_qianfan_data_source = create_an_empty_qianfan_datasource()
-    fake_qianfan_data_source.data_format_type = FormatType.Text
-    fake_qianfan_data_source.template_type = DataTemplateType.GenericText
-    fake_qianfan_data_source.project_type = DataTemplateType.GenericText
-    ds = Dataset.create_from_pyobj({QianfanDatasetPackColumnName: ["wenben"]})
-    ds.save(fake_qianfan_data_source)

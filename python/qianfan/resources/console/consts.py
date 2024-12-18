@@ -285,12 +285,14 @@ class ServiceType(str, Enum):
 
 
 class FinetuneSupportModelType(str, Enum):
-    Text2Text: str = "text2text"
+    Text2Text: str = "Text2Text"
     """Text2Text Model"""
-    Text2Image: str = "text2image"
+    Text2Image: str = "Text2Image"
     """Text2Image Model"""
-    ImageUnderstanding: str = "imageUnderstanding"
+    ImageUnderstanding: str = "ImageUnderstanding"
     """Image Understanding Model"""
+    TextRepresentation: str = "TextRepresentation"
+    """Text Representation Model"""
 
 
 class FinetuneSupportHyperParameterType(str, Enum):
@@ -412,3 +414,34 @@ class V2:
     class StorageType(str, Enum):
         Bos: str = "BOS"
         SysStorage: str = "sysStorage"
+
+    class DatasetPublishStatus(str, Enum):
+        Unpublished: str = "Unpublished"
+        Publishing: str = "Publishing"
+        Published: str = "Published"
+        PublishFailed: str = "PublishFailed"
+
+    class DatasetImportTaskStatus(str, Enum):
+        Importing: str = "Importing"
+        ImportFinished: str = "ImportFinished"
+        ImportFailed: str = "ImportFailed"
+
+    class DatasetExportTaskStatus(str, Enum):
+        Exporting: str = "Exporting"
+        ExportFinished: str = "ExportFinished"
+        ExportFailed: str = "ExportFailed"
+
+    class EvalTaskStatus(str, Enum):
+        Queued: str = "Queued"
+        Running: str = "Running"
+        RunningWithManualBegin: str = "RunningWithManualBegin"
+        RunningWithMetricsCalculating: str = "RunningWithMetricsCalculating"
+        Succeeded: str = "Succeeded"
+        Stopping: str = "Stopping"
+        Failed: str = "Failed"
+        Stopped: str = "Stopped"
+
+    class ModelStatus(str, Enum):
+        Ready: str = "Ready"
+        Creating: str = "Creating"
+        Fail: str = "Fail"

@@ -15,18 +15,21 @@
 """
     Mock server for unit test
 """
+import copy
 import io
 
 # disable line too long lint error in this file
 # ruff: noqa: E501
 import json
 import random
+import string
 import threading
 import time
 import zipfile
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
+from typing import Any, Dict, List
 
 import flask
 import requests
@@ -34,6 +37,9 @@ from flask import Flask, request, send_file
 
 from qianfan.consts import APIErrorCode, Consts
 from qianfan.resources.console import consts as console_consts
+from qianfan.tests.utils.mock_supported_model_list import (
+    _MOCK_SUPPORTED_MODEL_LIST_JSON,
+)
 from qianfan.utils.utils import generate_letter_num_random_id
 
 app = Flask(__name__)
@@ -1004,24 +1010,164 @@ def model_v2():
     action = request.args.get(Consts.ConsoleAPIQueryAction)
     json_body = request.json
     action_handler = {
-        Consts.ModelDescribeModelSetAction: model_v2_model_set_detail,
+        Consts.ModelCreateCustomModelSetAction: model_v2_create_custom_model_set,
+        Consts.ModelDescribeSystemModelSetsAction: model_v2_describe_system_model_sets,
+        Consts.ModelDescribeCustomModelSetsAction: model_v2_describe_custom_model_sets,
+        Consts.ModelDescribeModelSetAction: model_v2_describe_model_set,
+        Consts.ModelDeleteModelSetAction: model_v2_delete_model_set,
+        Consts.ModelCreateCustomModelAction: model_v2_create_custom_model,
+        Consts.ModelDescribeModelAction: model_v2_describe_model,
     }
     return action_handler.get(action)(body=json_body)
 
 
-def model_v2_model_set_detail(body):
-    return {
-        "requestId": "fe0268a7-0d07-46ac-b195-36ca5be2d761",
-        "result": {
-            "modelSetId": "am-m0t1zde3x111",
-            "modelSetName": "ad111",
-            "source": "UserCreate",
-            "modelType": "Text2Text",
-            "createTime": "2024-06-04T18:38:59+08:00",
-            "modifyTime": "2024-06-04T18:38:59+08:00",
-            "modelIds": ["amv-34qkndzjf111"],
-        },
-    }
+def model_v2_create_custom_model_set(body: Dict):
+    return json_response(
+        {
+            "requestId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "result": {
+                "modelSetId": "am-asdgasf123",
+            },
+        }
+    )
+
+
+def model_v2_describe_system_model_sets(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "systemModelSetList": [
+                    {
+                        "modelSetId": "am-j05zi5ebfqf1",
+                        "modelSetName": "bce-reranker-base",
+                        "modelType": "",
+                        "description": (
+                            "由网易有道开发的跨语种语义表征算法模型，"
+                            "擅长优化语义搜索结果和语义相关顺序精排，"
+                            "支持中英日韩四门语言，覆盖常见业务领域，支持长package"
+                            " rerank(512~32k)。"
+                            "[了解更多>](https://huggingface.co/maidalun1020/bce-reranker-base_v1)"
+                        ),
+                        "modelCount": 1,
+                        "modifyTime": "2024-03-22T17:13:33+08:00",
+                        "modelIds": ["amv-4u0rw8juur1p"],
+                    }
+                ],
+                "pageInfo": {
+                    "marker": "am-n50985crhqq3",
+                    "maxKeys": 1,
+                    "isTruncated": False,
+                },
+            },
+        }
+    )
+
+
+def model_v2_describe_custom_model_sets(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "customModelSetList": [
+                    {
+                        "modelSetName": "clc_test_1",
+                        "modelSetId": "am-gn7txxxf",
+                        "modelType": "大语言模型",
+                        "labels": None,
+                        "createTime": "2023-12-29T14:30:32+08:00",
+                        "modelCount": 1,
+                        "modelIds": ["amv-irrrsmxabb6r"],
+                    },
+                    {
+                        "modelSetName": "clc_test",
+                        "modelSetId": "am-gn7tssxxxf",
+                        "modelType": "大语言模型",
+                        "labels": None,
+                        "createTime": "2023-12-29T14:28:33+08:00",
+                        "modelCount": 1,
+                        "modelIds": ["amv-k8npfy0yz90r"],
+                    },
+                ],
+                "pageInfo": {"marker": "am-n50xxx", "maxKeys": 1, "isTruncated": False},
+            },
+        }
+    )
+
+
+def model_v2_describe_model_set(body: Dict):
+    model_set_name = body.get("modelSetName", "cl_test_hf1")
+    model_set_id = body.get("modelSetId", "am-upqiuctdx15t")
+
+    return json_response(
+        {
+            "requestId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "result": {
+                "modelSetId": model_set_id,
+                "modelSetName": model_set_name,
+                "source": "UserCreate",
+                "modelType": "Text2Text",
+                "description": "",
+                "createTime": "0001-01-01T00:00:00Z",
+                "modifyTime": "0001-01-01T00:00:00Z",
+                "modelIds": ["amv-cbm3kwsw053v"],
+            },
+        }
+    )
+
+
+def model_v2_delete_model_set(body: Dict):
+    return json_response(
+        {"requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4", "result": {}}
+    )
+
+
+def model_v2_create_custom_model(body: Dict):
+    return json_response(
+        {
+            "requestId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "result": {"modelSetId": "am-5sxpz4xn25uw", "modelId": "amv-21qxxr97z8fp"},
+        }
+    )
+
+
+def model_v2_describe_model(body: Dict):
+    model_id = body.get("modelId", "amv-sxw7atka4jk0")
+    return json_response(
+        {
+            "requestId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "result": {
+                "modelSetId": "am-txtetnsfq9sb",
+                "modelSetName": "chatglm32k_v10",
+                "modelId": model_id,
+                "modelName": "V2",
+                "model": "LLaVA-v1.6-13B",
+                "description": "clc_test_publish_chatglm32k_v10",
+                "sourceInfo": {"sourceType": "Train", "trainTaskId": "task-xxxx"},
+                "status": "Ready",
+                "endpointType": "chat",
+                "ioTokens": "",
+                "createTime": "2023-12-15T16:30:06+08:00",
+                "modifyTime": "2024-01-04T16:10:45+08:00",
+                "isSupportDeploy": True,
+                "isSupportModelComp": False,
+                "isSupportEvaluation": True,
+                "resourceConfig": {"resourceId": "prl-yqec88en7r08"},
+                "advancedSettings": {
+                    "strategy": "Quantization",
+                    "weight": "W8A8C4-PTQ",
+                    "samplingStrategy": "multinomialSampling",
+                    "contextLength": 8,
+                    "shards": 1,
+                    "topLogprobs": 5,
+                },
+                "modelCompConfigs": {
+                    "strategy": "Sparsity",
+                    "sparsityRatio": 0.5,
+                },
+            },
+        }
+    )
 
 
 @app.route(Consts.FineTuneV2BaseRouteAPI, methods=["POST"])
@@ -1236,154 +1382,7 @@ def finetune_v2_stop_task(body):
 
 
 def finetune_v2_supported_models(body):
-    return json_response(
-        {
-            "requestId": "754dc75c-3515-4ddd-88ff-59caaaaabbbb",
-            "result": [
-                {
-                    "model": "ERNIE-Speed-8K",
-                    "modelType": "text2text",
-                    "supportTrainMode": [
-                        {
-                            "supportParameterScale": [
-                                {
-                                    "parameterScale": "FullFineTuning",
-                                    "supportHyperParameterConfig": [
-                                        {
-                                            "key": "epoch",
-                                            "type": "int",
-                                            "checkType": "range",
-                                            "checkValue": [1, 50],
-                                            "default": 1,
-                                        },
-                                        {
-                                            "checkType": "range",
-                                            "checkValue": [0.0001, 0.1],
-                                            "default": 0.01,
-                                            "key": "weightDecay",
-                                            "type": "float",
-                                        },
-                                        {
-                                            "key": "learningRate",
-                                            "type": "float",
-                                            "checkType": "range",
-                                            "checkValue": [1e-06, 4e-05],
-                                            "default": 3e-05,
-                                        },
-                                    ],
-                                },
-                                {
-                                    "parameterScale": "FullFineTuning",
-                                    "supportHyperParameterConfig": [
-                                        {
-                                            "key": "epoch",
-                                            "type": "int",
-                                            "checkType": "range",
-                                            "checkValue": [1, 50],
-                                            "default": 1,
-                                        },
-                                        {
-                                            "checkType": "range",
-                                            "checkValue": [0.0001, 0.1],
-                                            "default": 0.01,
-                                            "key": "custom_key",
-                                            "type": "float",
-                                        },
-                                        {
-                                            "key": "learningRate",
-                                            "type": "float",
-                                            "checkType": "range",
-                                            "checkValue": [1e-06, 4e-05],
-                                            "default": 3e-05,
-                                        },
-                                        {
-                                            "key": "maxSeqLen",
-                                            "type": "int",
-                                            "checkType": "choice",
-                                            "checkValue": [512, 1024, 2048, 4096, 8192],
-                                            "default": 4096,
-                                        },
-                                    ],
-                                },
-                                {
-                                    "parameterScale": "LoRA",
-                                    "supportHyperParameterConfig": [
-                                        {
-                                            "key": "epoch",
-                                            "type": "int",
-                                            "checkType": "range",
-                                            "checkValue": [1, 50],
-                                            "default": 1,
-                                        },
-                                        {
-                                            "checkType": "choice",
-                                            "checkValue": ["True", "False"],
-                                            "default": "True",
-                                            "key": "loraAllLinear",
-                                            "type": "string",
-                                        },
-                                        {
-                                            "key": "learningRate",
-                                            "type": "float",
-                                            "checkType": "range",
-                                            "checkValue": [1e-06, 4e-05],
-                                            "default": 3e-05,
-                                        },
-                                        {
-                                            "key": "maxSeqLen",
-                                            "type": "int",
-                                            "checkType": "choice",
-                                            "checkValue": [512, 1024, 2048, 4096, 8192],
-                                            "default": 4096,
-                                        },
-                                    ],
-                                },
-                            ],
-                            "trainMode": "SFT",
-                        },
-                        {
-                            "supportParameterScale": [
-                                {
-                                    "parameterScale": "FullFineTuning",
-                                    "supportHyperParameterConfig": [
-                                        {
-                                            "key": "epoch",
-                                            "type": "int",
-                                            "checkType": "range",
-                                            "checkValue": [1, 50],
-                                            "default": 1,
-                                        },
-                                        {
-                                            "checkType": "choice",
-                                            "checkValue": [4096, 8192],
-                                            "default": 4096,
-                                            "key": "maxSeqLenb",
-                                            "type": "int",
-                                        },
-                                        {
-                                            "key": "learningRate",
-                                            "type": "float",
-                                            "checkType": "range",
-                                            "checkValue": [1e-06, 4e-05],
-                                            "default": 3e-05,
-                                        },
-                                        {
-                                            "key": "maxSeqLen",
-                                            "type": "int",
-                                            "checkType": "choice",
-                                            "checkValue": [512, 1024, 2048, 4096, 8192],
-                                            "default": 4096,
-                                        },
-                                    ],
-                                }
-                            ],
-                            "trainMode": "PostPretrain",
-                        },
-                    ],
-                }
-            ],
-        }
-    )
+    return json_response(json.loads(_MOCK_SUPPORTED_MODEL_LIST_JSON))
 
 
 @app.route(Consts.DatasetV2OfflineBatchInferenceAPI, methods=["POST"])
@@ -4475,6 +4474,519 @@ def reranker(model_name):
             "created": 1714094015,
             "results": res,
             "usage": {"prompt_tokens": 22, "total_tokens": 22},
+        }
+    )
+
+
+@app.route(Consts.DatasetV2BaseRouteAPI, methods=["POST"])
+def dataset_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.DatasetV2CreateDatasetAction: dataset_v2_create_dataset,
+        Consts.DatasetV2GetDatasetListAction: dataset_v2_describe_datasets,
+        Consts.DatasetV2DeleteDatasetAction: dataset_v2_delete_dataset,
+        Consts.DatasetV2CreateDatasetVersionAction: dataset_v2_create_dataset_version,
+        Consts.DatasetV2GetDatasetVersionInfoAction: (
+            dataset_v2_describe_dataset_version
+        ),
+        Consts.DatasetV2DeleteDatasetVersionAction: dataset_v2_delete_dataset_version,
+        Consts.DatasetV2PublishDatasetVersionAction: dataset_v2_publish_dataset_version,
+        Consts.DatasetV2GetDatasetVersionListAction: (
+            dataset_v2_describe_dataset_versions
+        ),
+        Consts.DatasetV2CreateDatasetVersionImportTaskAction: (
+            dataset_v2_create_import_task
+        ),
+        Consts.DatasetV2GetDatasetVersionImportTaskInfoAction: (
+            dataset_v2_describe_import_task
+        ),
+        Consts.DatasetV2CreateDatasetVersionExportTaskAction: (
+            dataset_v2_create_export_task
+        ),
+        Consts.DatasetV2GetDatasetVersionExportTaskInfoAction: (
+            dataset_v2_describe_export_task
+        ),
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+def _generate_random_string(length):
+    # 定义可以用来生成字符串的字符集，包括字母和数字
+    characters = string.ascii_letters + string.digits
+    # 使用 random.choices 从字符集中随机选择指定数量的字符
+    random_string = "".join(random.choices(characters, k=length))
+    return random_string
+
+
+def _get_current_timestamp():
+    # 创建代表东八区（+08:00）的时区对象
+    tz_offset = timezone(timedelta(hours=8))
+
+    # 获取当前时间，并应用时区偏移
+    now = datetime.now(tz_offset)
+
+    timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    return timestamp_str
+
+
+_v2_dataset_id_version_map: Dict[str, List[str]] = {}
+_v2_dataset_map: Dict[str, Dict[str, Any]] = {}
+
+
+def dataset_v2_create_dataset(body: Dict):
+    dataset_id_suffix = _generate_random_string(10)
+
+    dataset_id = f"dg-{dataset_id_suffix}"
+    dataset_version_id = f"ds-{dataset_id_suffix}"
+
+    result_dict = {
+        "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+        "result": {
+            "versionId": dataset_version_id,
+            "datasetId": dataset_id,
+            "datasetName": body.get("datasetName", ""),
+            "versionNumber": 1,
+            "dataFormat": body.get("dataFormat", ""),
+            "storageType": body.get("storageType", ""),
+            "storagePath": body.get("storagePath", ""),
+            "createTime": _get_current_timestamp(),
+            "sizeMB": 513.42,
+            "description": "中文医疗问答数据集第一版",
+            "characterCount": 111,
+            "sampleCount": 10,
+            "annotationProgress": "1/10",
+            "importStatus": "Created",
+            "publishStatus": "Unpublished",
+            "publishProgress": "0",
+            "creator": "accountName",
+            "modifyTime": _get_current_timestamp(),
+        },
+    }
+
+    if body.get("storageType", "") == "sysStorage":
+        del result_dict["result"]["storagePath"]
+
+    version_list = _v2_dataset_id_version_map.get(dataset_id, [])
+    version_list.append(dataset_version_id)
+    _v2_dataset_id_version_map[dataset_id] = version_list
+    _v2_dataset_map[dataset_version_id] = result_dict
+
+    return json_response(result_dict)
+
+
+def dataset_v2_describe_datasets(body: Dict):
+    result_dict = {
+        "requestId": "b4f5f3f2-307e-41d6-5afc-a6708cfa286b",
+        "result": {
+            "pageInfo": {
+                "marker": "",
+                "maxKeys": 2,
+                "isTruncated": False,
+                "nextMarker": "dg-xxx",
+                "pageReverse": False,
+            },
+            "datasets": [
+                {
+                    "datasetId": "dg-xxx",
+                    "datasetName": "helloDatasetList1",
+                    "dataFormat": "PromptResponse",
+                },
+                {
+                    "datasetId": "dg-xxx",
+                    "datasetName": "helloDatasetList2",
+                    "dataFormat": "PromptImage",
+                },
+            ],
+        },
+    }
+
+    return json_response(result_dict)
+
+
+def dataset_v2_delete_dataset(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_create_dataset_version(body: Dict):
+    dataset_id = body["datasetId"]
+    dataset_version_id_suffix = _generate_random_string(10)
+    new_version_id = f"ds-{dataset_version_id_suffix}"
+
+    version_list = _v2_dataset_id_version_map.get(dataset_id, [])
+    if len(version_list) == 0:
+        return json_response(
+            {
+                "requestId": "6ba7b810-xxxc04fd430c8",
+                "code": "AccessDenied",
+                "message": "Access denied.",
+            }
+        )
+
+    old_version_id = version_list[-1]
+    version_list.append(new_version_id)
+    _v2_dataset_id_version_map[dataset_id] = version_list
+
+    new_dataset_dict = copy.deepcopy(_v2_dataset_map[old_version_id])
+    result = new_dataset_dict["result"]
+    result["versionId"] = new_version_id
+    result["versionNumber"] = result["versionNumber"] + 1
+    result["createTime"] = _get_current_timestamp()
+    result["modifyTime"] = _get_current_timestamp()
+    new_dataset_dict["result"] = result
+
+    _v2_dataset_map[new_version_id] = new_dataset_dict
+
+    return json_response(new_dataset_dict)
+
+
+def dataset_v2_describe_dataset_version(body: Dict):
+    version_id = body["versionId"]
+    if version_id in _v2_dataset_map:
+        return json_response(_v2_dataset_map.get(version_id, {}))
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "datasetId": "dg-xxx",
+                "datasetName": "ChineseMedicalDialogueData中文医疗问答数据集",
+                "dataFormat": (
+                    "PromptResponse" if version_id != "ds-mock-generic" else "Text"
+                ),
+                "versionId": version_id,
+                "versionNumber": 1,
+                "createTime": "2023-09-08 17:10:11",
+                "modifyTime": "2023-10-25 20:45:23",
+                "storageType": "sysStorage",
+                "sizeMB": 513.42,
+                "description": "中文医疗问答数据集第一版",
+                "characterCount": 111,
+                "sampleCount": 10,
+                "annotationProgress": "1/10",
+                "importStatus": "Created",
+                "publishStatus": "Unpublished",
+                "publishProgress": "0",
+                "creator": "accountName",
+            },
+        }
+    )
+
+
+def dataset_v2_delete_dataset_version(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_publish_dataset_version(body: Dict):
+    version_id = body["versionId"]
+
+    if version_id in _v2_dataset_map:
+        dataset_dict = _v2_dataset_map[version_id]
+        dataset_dict["result"]["publishStatus"] = "Published"
+        dataset_dict["result"]["publishProgress"] = "100%"
+        _v2_dataset_map[version_id] = dataset_dict
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": True,
+        }
+    )
+
+
+def dataset_v2_describe_dataset_versions(body: Dict):
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": {
+                "pageInfo": {
+                    "marker": "",
+                    "maxKeys": 2,
+                    "isTruncated": True,
+                    "nextMarker": "ds-xxx",
+                    "pageReverse": False,
+                },
+                "datasetId": "dg-xxx",
+                "datasetName": "helloDatasetDetail",
+                "dataFormat": "PromptResponse",
+                "datasetVersions": [
+                    {
+                        "versionId": "ds-ck73i9r6423t1rzm",
+                        "versionNumber": 1,
+                        "description": "",
+                        "storageType": "sysStorage",
+                        "sizeMB": 0.05,
+                        "sampleCount": 35,
+                        "characterCount": 111,
+                        "annotationProgress": "35/35",
+                        "importStatus": "Importing",
+                        "publishStatus": "Unpublished",
+                        "creator": "accountName",
+                        "createTime": "2024-07-24 21:29:44",
+                        "modifyTime": "2024-07-24 21:29:50",
+                    },
+                    {
+                        "versionId": "ds-yx9ajxk2s80m84m4",
+                        "versionNumber": 2,
+                        "description": "",
+                        "storageType": "BOS",
+                        "storagePath": "bos:/{your_bucket}/{you_dir}",
+                        "sizeMB": 0.02,
+                        "sampleCount": 35,
+                        "characterCount": 111,
+                        "annotationProgress": "35/35",
+                        "importStatus": "Importing",
+                        "publishStatus": "Unpublished",
+                        "creator": "accountName",
+                        "createTime": "2024-07-24 23:12:43",
+                        "modifyTime": "2024-07-24 23:13:35",
+                    },
+                ],
+            },
+        }
+    )
+
+
+def dataset_v2_create_import_task(body: Dict):
+    task_id_suffix = _generate_random_string(10)
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": f"task-{task_id_suffix}",
+        }
+    )
+
+
+def dataset_v2_describe_import_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "febaf751-7725-4a8b-5699-a966b82dd676",
+            "result": {
+                "versionId": "ds-sshcwxmh5uk9t17w",
+                "importStatus": "ImportFinished",
+                "progress": "100%",
+                "sizeMB": 0.01,
+                "sampleCount": 10,
+                "creator": "accountName",
+                "startTime": "2024-08-06 11:17:50",
+                "finishTime": "2024-08-06 11:18:01",
+                "errDownloadUrl": "",
+            },
+        }
+    )
+
+
+def dataset_v2_create_export_task(body: Dict):
+    task_id_suffix = _generate_random_string(10)
+
+    return json_response(
+        {
+            "requestId": "1bef3f87-c5b2-4419-936b-50f9884f10d4",
+            "result": f"task-{task_id_suffix}",
+        }
+    )
+
+
+def dataset_v2_describe_export_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "bdb7afcc-d9a4-4804-7587-8d9afaa53007",
+            "result": {
+                "storageType": "sysStorage",
+                "storagePath": "bos:/bucketName/some/path/exportFileName.zip",
+                "sizeMB": 0.05,
+                "sampleCount": 55,
+                "exportStatus": "ExportFinished",
+                "progress": "100%",
+                "creator": "accountName",
+                "startTime": "2024-08-01 10:31:48",
+                "finishTime": "2024-08-01 10:31:58",
+                "downloadUrl": "http://127.0.0.1:8866/url",
+            },
+        }
+    )
+
+
+@app.route(Consts.ModelEvalV2API, methods=["POST"])
+def eval_v2():
+    action = request.args.get(Consts.ConsoleAPIQueryAction)
+    json_body = request.json
+    action_handler = {
+        Consts.ModelEvalV2Create: eval_v2_create_eval_task,
+        Consts.ModelEvalV2DescribeTasks: eval_v2_describe_eval_tasks,
+        Consts.ModelEvalV2DescribeTask: eval_v2_describe_eval_task,
+        Consts.ModelEvalV2DescribeTaskReport: eval_v2_describe_eval_task_report,
+        Consts.ModelEvalV2DeleteTask: eval_v2_delete_eval_task,
+    }
+    return action_handler.get(action)(body=json_body)
+
+
+_eval_task_id_map: Dict[str, Any] = {}
+
+
+def eval_v2_create_eval_task(body: Dict):
+    task_id = f"ame-_{_generate_random_string(7)}"
+
+    _eval_task_id_map[task_id] = body
+    return json_response(
+        {
+            "requestId": "df3986c5-70bd-40d9-bedf-6db65ef137d8",
+            "result": task_id,
+        }
+    )
+
+
+def eval_v2_describe_eval_tasks(body: Dict):
+    return json_response(
+        {
+            "requestId": "55244c61-3b25-40be-af34-ee6c4675e965",
+            "result": {
+                "evalTaskList": [
+                    {
+                        "taskId": "ame-nfw1fxxxxx",
+                        "taskName": "sandboxdd",
+                        "evalType": "auto",
+                        "evalMode": "rule",
+                        "description": "sfasf",
+                        "createTime": "2023-05-31 23:34:38",
+                    }
+                ],
+                "pageInfo": {"marker": "", "maxKeys": 100, "isTruncated": False},
+            },
+        }
+    )
+
+
+def eval_v2_describe_eval_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "81252b33-a63e-4231-93cb-8df1f2720a0d",
+            "result": {
+                "taskId": "ame-4kvnxxxxx",
+                "taskName": "自动评估_停止测试0910",
+                "description": "",
+                "state": "Succeeded",
+                "evalObjectConfig": {
+                    "evalModelConfig": {
+                        "versionId": "ds-mwmk3mwkxxxxx",
+                        "storageType": "BOS",
+                        "storagePath": "bos:/aip-static/123",
+                        "evalModelConfigList": [
+                            {
+                                "modelId": "amv-6j6ixxxxx",
+                                "isBaseline": False,
+                                "promptTemplate": "",
+                                "params": {},
+                            },
+                            {
+                                "modelId": "amv-tts8vxxxx",
+                                "isBaseline": False,
+                                "promptTemplate": "",
+                                "params": {},
+                            },
+                        ],
+                    }
+                },
+                "evalConfig": {
+                    "evalMode": "rule",
+                    "autoRuleEvalConfig": {
+                        "scoreModes": ["similarity", "accuracy"],
+                        "stopWordList": None,
+                        "stopWordsPath": "",
+                    },
+                },
+                "inferDatasetList": [
+                    {
+                        "inferDatasetId": "ds-sueg3fqxxxxx",
+                        "modelId": "amv-6j6is3sp166h",
+                    },
+                    {"inferDatasetId": "ds-ecwqqjxxxxx", "modelId": "amv-tts8v6re61hp"},
+                ],
+                "createTime": "2024-09-10 11:52:53",
+                "updateTime": "2024-09-10 16:52:25",
+            },
+        }
+    )
+
+
+def eval_v2_describe_eval_task_report(body: Dict):
+    return json_response(
+        {
+            "requestId": "d60a00c4-a724-4851-96e5-b4dc3b258ca0",
+            "result": [
+                {
+                    "taskId": "ame-4kvnxxxx",
+                    "taskName": "自动评估_停止测试0910",
+                    "modelId": "amv-tts8v6re61hp",
+                    "inferDatasetId": "ds-ecwqqjb787dk1vm6",
+                    "evalObjectType": "service",
+                    "evalMode": "rule",
+                    "effectMetric": {
+                        "accuracy": 0,
+                        "f1Score": 0.34983957,
+                        "rouge_1": 0.33882716,
+                        "rouge_2": 0.15241386,
+                        "rouge_l": 0.26100817,
+                        "bleu4": 0.09671887,
+                        "avgJudgeScore": 0,
+                        "stdJudgeScore": 0,
+                        "medianJudgeScore": 0,
+                        "scoreDistribution": None,
+                        "manualAvgScore": 0,
+                        "goodCaseProportion": 0,
+                        "subjectiveImpression": "",
+                        "manualScoreDistribution": None,
+                        "gsbDistribution": None,
+                    },
+                },
+                {
+                    "taskId": "ame-4kvnxxxx",
+                    "taskName": "自动评估_停止测试0910",
+                    "modelId": "amv-6j6is3sp166h",
+                    "inferDatasetId": "ds-sueg3fqnd14h9kqt",
+                    "evalObjectType": "service",
+                    "evalMode": "rule",
+                    "effectMetric": {
+                        "accuracy": 0,
+                        "f1Score": 0.34691638,
+                        "rouge_1": 0.32689363,
+                        "rouge_2": 0.13487022,
+                        "rouge_l": 0.25140443,
+                        "bleu4": 0.087691635,
+                        "edit_dist": 331.97778,
+                        "embedding_dist": 0.16930991,
+                        "avgJudgeScore": 0,
+                        "stdJudgeScore": 0,
+                        "medianJudgeScore": 0,
+                        "scoreDistribution": None,
+                        "manualAvgScore": 0,
+                        "goodCaseProportion": 0,
+                        "subjectiveImpression": "",
+                        "manualScoreDistribution": None,
+                        "gsbDistribution": None,
+                    },
+                },
+            ],
+        }
+    )
+
+
+def eval_v2_delete_eval_task(body: Dict):
+    return json_response(
+        {
+            "requestId": "c8d2afee-b307-471a-80ab-9b08b36f2272",
+            "result": {},
         }
     )
 

@@ -169,11 +169,3 @@ def test_finetune_v2_stop_task():
     task_id = resp["result"]["taskId"]
     resp = FineTune.V2.stop_task(task_id=task_id)
     assert resp["result"]
-
-
-def test_finetune_v2_supported_models():
-    resp = FineTune.V2.supported_models()
-    assert len(resp["result"]) == 1
-    assert resp["result"][0]["model"]
-    assert resp["result"][0]["modelType"]
-    assert resp["result"][0]["supportTrainMode"]

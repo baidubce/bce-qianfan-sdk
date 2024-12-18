@@ -234,7 +234,11 @@ def _extract_all_with_utf8(zip_file_path: str, extract_to_dir: str) -> None:
         # 遍历 ZIP 文件中的每一个文件
         for info in zip_file.infolist():
             # 处理文件名以确保使用 UTF-8 编码
-            file_name = info.filename.encode("cp437").decode("utf-8")
+            try:
+                file_name = info.filename.encode("cp437").decode("utf-8")
+            except UnicodeEncodeError:
+                log_info("can't encode with cp437, try utf-8 directly")
+                file_name = info.filename
 
             # 目标文件的完整路径
             target_path = os.path.join(extract_to_dir, file_name)

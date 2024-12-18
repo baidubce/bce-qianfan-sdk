@@ -115,7 +115,6 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         _, resp = next(responses)
         if "json" in resp.headers.get("content-type", "") or resp.status_code != 200:
-            log_error(f"received non-200 status code: {resp.status_code}")
             try:
                 status_code = resp.status_code
                 body, resp = next(responses)

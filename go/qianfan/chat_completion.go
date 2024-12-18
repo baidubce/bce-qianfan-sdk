@@ -16,6 +16,7 @@ package qianfan
 
 import (
 	"context"
+	"fmt"
 	"unicode/utf8"
 )
 
@@ -328,6 +329,15 @@ func (c *ChatCompletion) Do(ctx context.Context, request *ChatCompletionRequest)
 	if runErr != nil {
 		return nil, runErr
 	}
+
+	if resp != nil && resp.ModelAPIError.ErrorMsg != "" {
+		return nil, fmt.Errorf(
+			"code: %d, message: %s",
+			resp.ModelAPIError.ErrorCode,
+			resp.ModelAPIError.ErrorMsg,
+		)
+	}
+
 	return resp, err
 }
 

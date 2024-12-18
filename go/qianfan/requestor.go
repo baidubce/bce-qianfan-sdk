@@ -416,6 +416,10 @@ func (si *streamInternal) reset() error {
 	return nil
 }
 
+func (si *streamInternal) RawResponse() *http.Response {
+	return si.httpResponse
+}
+
 // 关闭流
 func (si *streamInternal) Close() {
 	_ = si.httpResponse.Body.Close()
@@ -444,7 +448,10 @@ func (si *streamInternal) recv(resp QfResponse) error {
 			if !si.scanner.Scan() {
 				si.IsEnd = true
 				si.Close()
-				return si.scanner.Err()
+				if si.scanner.Err() != nil || len(eventData) == 0 {
+					return si.scanner.Err()
+				}
+				break
 			}
 
 			line := si.scanner.Bytes()
@@ -458,12 +465,14 @@ func (si *streamInternal) recv(resp QfResponse) error {
 			if i := bytes.Index(line, []byte("event")); i != -1 {
 				continue
 			}
-			if i := bytes.IndexRune(line, ':'); i != -1 {
+			if i := bytes.IndexRune(line, ':'); si.httpResponse.StatusCode == http.StatusOK && i != -1 {
 				// field = line[:i]
 				value = line[i+1:]
 				if len(value) != 0 && value[0] == ' ' {
 					value = value[1:]
 				}
+			} else {
+				value = line[:]
 			}
 			eventData = append(eventData, value...)
 		}
@@ -498,9 +507,6 @@ func (r *Requestor) requestStream(ctx context.Context, request *QfRequest) (*str
 		resp, err := r.client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("request http error with %d: %s", resp.StatusCode, resp.Status)
 		}
 		return resp, nil
 	}

@@ -489,6 +489,10 @@ class QfAPIRequestor(BaseAPIRequestor):
                 data: Queue[QfResponse] = Queue()
                 is_closed = threading.Event()
 
+                is_stress_test = (
+                    os.environ.get("QIANFAN_ENABLE_STRESS_TEST", "false") == "true"
+                )
+
                 def _inner_worker() -> None:
                     for res in generator:
                         data.put(res)
@@ -499,6 +503,9 @@ class QfAPIRequestor(BaseAPIRequestor):
                 else:
                     t = threading.Thread(target=_inner_worker, daemon=True)
                     t.start()
+
+                if is_stress_test:
+                    is_closed.wait()
 
                 while True:
                     while not data.empty():

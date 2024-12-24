@@ -17,6 +17,7 @@
 package com.baidubce.qianfan.util.http;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -26,7 +27,7 @@ public class SSEIterator implements Iterator<String>, Closeable {
     private String nextLine = null;
 
     public SSEIterator(InputStream stream, AutoCloseable closeable) {
-        this.reader = new BufferedReader(new InputStreamReader(stream));
+        this.reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
         this.closeable = closeable;
     }
 

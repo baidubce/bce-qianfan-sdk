@@ -54,6 +54,10 @@ public class Qianfan extends QianfanBase {
         this.client = new QianfanClient(type, accessKey, secretKey);
     }
 
+    public Qianfan(String bearerToken) {
+        this.client = new QianfanClient(bearerToken);
+    }
+
     public Qianfan setRetryConfig(RetryConfig retryConfig) {
         this.client.setRetryConfig(retryConfig);
         return this;

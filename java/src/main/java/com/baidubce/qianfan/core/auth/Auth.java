@@ -19,6 +19,7 @@ package com.baidubce.qianfan.core.auth;
 import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.model.exception.ValidationException;
 import com.baidubce.qianfan.util.StringUtils;
+import org.apache.hc.client5.http.auth.BearerToken;
 
 public class Auth {
     public static final String TYPE_IAM = "IAM";
@@ -33,6 +34,12 @@ public class Auth {
         String accessKey = QianfanConfig.getQianfanAccessKey();
         String secretKey = QianfanConfig.getQianfanSecretKey();
         String version = QianfanConfig.getQianfanInferVersion();
+        String bearerToken = QianfanConfig.getQianfanBearerToken();
+
+        if (StringUtils.isNotEmpty(bearerToken) && TYPE_V2.equals(version)) {
+            return create(bearerToken);
+        }
+
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
             if (TYPE_V2.equals(version)) {
                 return create(TYPE_V2, accessKey, secretKey);
@@ -49,6 +56,10 @@ public class Auth {
 
     public static IAuth create(String accessKey, String secretKey) {
         return create(TYPE_IAM, accessKey, secretKey);
+    }
+
+    public static IAuth create(String bearerToken) {
+        return new QianfanV2Auth(bearerToken);
     }
 
     public static IAuth create(String type, String accessKey, String secretKey) {

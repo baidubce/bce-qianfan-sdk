@@ -32,6 +32,7 @@ public class QianfanConfig {
     private static final String QIANFAN_SK = "QIANFAN_SK";
     private static final String QIANFAN_ACCESS_KEY = "QIANFAN_ACCESS_KEY";
     private static final String QIANFAN_SECRET_KEY = "QIANFAN_SECRET_KEY";
+    private static final String QIANFAN_BEARER_TOKEN = "QIANFAN_BEARER_TOKEN";
     private static final String QIANFAN_INFER_VERSION = "QIANFAN_INFER_VERSION";
     private static final String QIANFAN_IAM_SIGN_EXPIRATION_SEC = "QIANFAN_IAM_SIGN_EXPIRATION_SEC";
     private static final String QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL";
@@ -103,6 +104,10 @@ public class QianfanConfig {
 
     public static String getQianfanSecretKey() {
         return getString(QIANFAN_SECRET_KEY);
+    }
+
+    public static String getQianfanBearerToken() {
+        return getString(QIANFAN_BEARER_TOKEN);
     }
 
     public static String getQianfanInferVersion() {

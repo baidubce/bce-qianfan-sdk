@@ -37,10 +37,12 @@ jobs:
           - '3.10'
           - '3.11'
         exclude:
+          - { python-version: "3.7", os: "ubuntu-latest" }
           - { python-version: "3.7", os: "macos-latest" }
           - { python-version: "3.8", os: "macos-latest" }
           - { python-version: "3.9", os: "macos-latest" }
         include:
+          - { python-version: "3.7", os: "ubuntu-" }
           - { python-version: "3.7", os: "macos-13" }
           - { python-version: "3.8", os: "macos-13" }
           - { python-version: "3.9", os: "macos-13" }
@@ -53,7 +55,7 @@ jobs:
           python-version: ${{matrix.python-version}}
       - name: Install Poetry
         run: |
-          pip install poetry==1.8.2
+          pip install 'poetry~=1.0'
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       - name: Get Poetry version
         run: poetry --version

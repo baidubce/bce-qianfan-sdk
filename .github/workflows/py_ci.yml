@@ -53,7 +53,7 @@ jobs:
           python-version: ${{matrix.python-version}}
       - name: Install Poetry
         run: |
-          pip install poetry
+          pip install poetry==1.8.2
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       - name: Get Poetry version
         run: poetry --version

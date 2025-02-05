@@ -35,7 +35,7 @@ jobs:
       - name: Install latest version of Poetry
         if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
-          pip install poetry
+          pip install poetry==1.8.2
       - name: Add Poetry to $PATH
         run: |
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH

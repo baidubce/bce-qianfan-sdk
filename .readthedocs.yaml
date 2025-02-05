@@ -11,7 +11,7 @@ build:
     python: "3.11"
   jobs:
     post_create_environment:
-      - pip install poetry
+      - pip install 'poetry~=1.0'
       - poetry config virtualenvs.create false
     post_install:
       - make install

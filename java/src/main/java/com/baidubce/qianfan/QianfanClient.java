@@ -40,7 +40,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 class QianfanClient {
-    private static final String SDK_VERSION = "0.1.3";
+    private static final String SDK_VERSION = "0.1.4";
     private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
     private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
@@ -105,12 +105,11 @@ class QianfanClient {
     }
 
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
-        String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
-
         String url;
         if (auth.authType().equals(Auth.TYPE_V2)) {
             url = String.format(QIANFAN_V2_URL_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl());
         } else {
+            String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
             url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);
         }
         baseRequest.getExtraParameters().put(EXTRA_PARAM_REQUEST_SOURCE, REQUEST_SOURCE);

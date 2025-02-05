@@ -25,6 +25,7 @@ public class Auth {
     public static final String TYPE_IAM = "IAM";
     public static final String TYPE_OAUTH = "OAuth";
     public static final String TYPE_V2 = "V2";
+    public static final String TYPE_BEARER = "BEARER";
 
     private Auth() {
     }
@@ -36,7 +37,7 @@ public class Auth {
         String version = QianfanConfig.getQianfanInferVersion();
         String bearerToken = QianfanConfig.getQianfanBearerToken();
 
-        if (StringUtils.isNotEmpty(bearerToken) && TYPE_V2.equals(version)) {
+        if (StringUtils.isNotEmpty(bearerToken) && TYPE_BEARER.equals(version)) {
             return create(bearerToken);
         }
 
@@ -63,7 +64,9 @@ public class Auth {
     }
 
     public static IAuth create(String type, String accessKey, String secretKey) {
-        if (TYPE_IAM.equals(type)) {
+        if (TYPE_BEARER.equals(type)) {
+            return new QianfanV2Auth(accessKey);
+        } else if (TYPE_IAM.equals(type)) {
             return new IAMAuth(accessKey, secretKey);
         } else if (TYPE_OAUTH.equals(type)) {
             return new QianfanOAuth(accessKey, secretKey);

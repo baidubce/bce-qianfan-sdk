@@ -2190,6 +2190,7 @@ class ChatCompletion(VersionBase):
             assert isinstance(resp, QfResponse)
             result = Completion.parse_obj(resp.body)
             result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            result.raw = resp.body
             return result
         else:
             assert isinstance(resp, Iterator)
@@ -2252,6 +2253,7 @@ class ChatCompletion(VersionBase):
             assert isinstance(resp, QfResponse)
             result = Completion.parse_obj(resp.body)
             result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            result.raw = resp.body
             return result
         else:
             assert isinstance(resp, AsyncIterator)
@@ -2263,6 +2265,7 @@ class ChatCompletion(VersionBase):
         for r in resp:
             result = CompletionChunk.parse_obj(r.body)
             result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            result.raw = r.body
             yield result
 
     async def _acreate_completion_stream(
@@ -2271,6 +2274,7 @@ class ChatCompletion(VersionBase):
         async for r in resp:
             result = CompletionChunk.parse_obj(r.body)
             result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            result.raw = r.body
             yield result
 
     def _convert_v2_request_to_v1(self, request: Any) -> Any:

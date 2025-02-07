@@ -30,7 +30,7 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: |
-          pip3 install poetry
+          pip3 install 'poetry~=1.0'
           poetry lock --no-update
       - name: run lint
         run: make lint

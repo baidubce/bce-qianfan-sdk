@@ -453,6 +453,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
     ) -> _InnerResponseProcessRet:
         last_resp: Optional[QfResponse] = None
         merged_query = ""
+        merged_reasoning_content = ""
         res_choices: Dict[int, Dict[str, Any]] = {}
         first_flag, all_empty = True, True
         clear_history = False
@@ -523,17 +524,25 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                 index = stream_json.get("index", -1)
                 if "delta" in stream_json:
                     content = stream_json["delta"].get("content", "")
-                    merged_query += content
+                    reasoning_content = stream_json["delta"].get(
+                        "reasoning_content", ""
+                    )
+                    merged_query += content if content is not None else ""
+                    merged_reasoning_content += (
+                        reasoning_content if reasoning_content is not None else ""
+                    )
                     if index not in res_choices:
                         res_choices[index] = {}
                     choice = res_choices[index]
                     choice.update(stream_json)
                     choice["delta"]["content"] = merged_query
+                    choice["delta"]["reasoning_content"] = merged_reasoning_content
                 else:
                     self.exc = Exception("ERROR CODE 结果无法解析")
                     break
-            if len(content) != 0:
-                all_empty = False
+
+        if len(merged_query) != 0:
+            all_empty = False
 
         assert last_resp is not None
         if all_empty and not clear_history:
@@ -675,7 +684,9 @@ class CompletionClient(QianfanCustomHttpSession):
                 request_meta["output_tokens"] = 0
 
             stream_json = resp["body"]
-            merged_query += stream_json["result"]
+            merged_query += (
+                stream_json["result"] if stream_json["result"] is not None else ""
+            )
             if first_flag:
                 request_meta["first_token_latency"] = resp.statistic[
                     "first_token_latency"

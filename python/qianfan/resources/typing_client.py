@@ -15,7 +15,7 @@
 client typing
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from typing_extensions import Literal
 
@@ -45,6 +45,8 @@ class SearchResult(BaseModel):
 class ChatCompletionMessage(BaseModel):
     content: Optional[str] = None
     """The contents of the message."""
+
+    reasoning_content: Optional[str] = None
 
     role: Literal["assistant"]
     """The role of the author of this message."""
@@ -128,10 +130,14 @@ class Completion(BaseModel):
 
     statistic: Optional[CompletionStatistic] = None
 
+    raw: Any = None
+
 
 class ChoiceDelta(BaseModel):
     content: Optional[str] = None
     """The contents of the message."""
+
+    reasoning_content: Optional[str] = None
 
     tool_calls: Optional[List[ToolCall]] = None
 
@@ -185,3 +191,5 @@ class CompletionChunk(BaseModel):
     statistic: Optional[CompletionStatistic] = None
 
     web_search: Optional[SearchResult] = None
+
+    raw: Any = None

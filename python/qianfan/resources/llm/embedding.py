@@ -13,19 +13,22 @@
 # limitations under the License.
 
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, List, Optional, Type, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel, DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
+    BaseResource,
     BaseResourceV1,
+    BaseResourceV2,
     BatchRequestFuture,
+    VersionBase,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
-class Embedding(BaseResourceV1):
+class _EmbeddingV1(BaseResourceV1):
     """
     QianFan Embedding is an agent for calling QianFan embedding API.
     """
@@ -103,10 +106,8 @@ class Embedding(BaseResourceV1):
         """
         if stream is True:
             raise errors.InvalidArgumentError("Stream is not supported for embedding")
-        if "texts" not in kwargs:
+        if "input" not in kwargs:
             raise errors.ArgumentNotFoundError("input not found in kwargs")
-        kwargs["input"] = kwargs["texts"]
-        del kwargs["texts"]
         return super()._generate_body(model, stream, **kwargs)
 
     def _convert_endpoint(self, model: Optional[str], endpoint: str) -> str:
@@ -126,7 +127,7 @@ class Embedding(BaseResourceV1):
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
-    ) -> Union[QfResponse, Iterator[QfResponse]]:
+    ) -> QfResponse:
         """
         Generate embeddings for a list of input texts using a specified model.
 
@@ -160,11 +161,11 @@ class Embedding(BaseResourceV1):
         ```
 
         """
-        kwargs["texts"] = texts
+        kwargs["input"] = texts
         if request_id is not None:
             kwargs["request_id"] = request_id
 
-        return self._do(
+        resp = self._do(
             model,
             stream,
             retry_count,
@@ -173,6 +174,8 @@ class Embedding(BaseResourceV1):
             endpoint=endpoint,
             **kwargs,
         )
+        assert isinstance(resp, QfResponse)
+        return resp
 
     async def ado(
         self,
@@ -185,7 +188,7 @@ class Embedding(BaseResourceV1):
         request_id: Optional[str] = None,
         backoff_factor: float = DefaultValue.RetryBackoffFactor,
         **kwargs: Any,
-    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+    ) -> QfResponse:
         """
         Async generate embeddings for a list of input texts using a specified model.
 
@@ -219,11 +222,11 @@ class Embedding(BaseResourceV1):
         ```
 
         """
-        kwargs["texts"] = texts
+        kwargs["input"] = texts
         if request_id is not None:
             kwargs["request_id"] = request_id
 
-        return await self._ado(
+        resp = await self._ado(
             model,
             stream,
             retry_count,
@@ -232,6 +235,9 @@ class Embedding(BaseResourceV1):
             endpoint=endpoint,
             **kwargs,
         )
+
+        assert isinstance(resp, QfResponse)
+        return resp
 
     def batch_do(
         self,
@@ -298,3 +304,104 @@ class Embedding(BaseResourceV1):
         """
         tasks = [self.ado(texts=texts, **kwargs) for texts in texts_list]
         return await self._abatch_request(tasks, worker_num)
+
+
+class _EmbeddingV2(BaseResourceV2):
+    def do(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        kwargs["input"] = texts
+        if user is not None:
+            kwargs["user"] = user
+
+        resp = self._do(
+            model,
+            **kwargs,
+        )
+        assert isinstance(resp, QfResponse)
+        return resp
+
+    async def ado(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        kwargs["input"] = texts
+        if user is not None:
+            kwargs["user"] = user
+
+        resp = await self._ado(
+            model,
+            **kwargs,
+        )
+        assert isinstance(resp, QfResponse)
+        return resp
+
+    @classmethod
+    def _default_model(cls) -> str:
+        return DefaultLLMModel.EmbeddingV2
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "embeddings"
+
+    def _api_path(self) -> str:
+        return self.config.EMBEDDING_V2_API_ROUTE
+
+
+class Embedding(VersionBase):
+    _real: Union[_EmbeddingV1, _EmbeddingV2]
+
+    @classmethod
+    def _real_base(cls, version: str, **kwargs: Any) -> Type[BaseResource]:
+        if version == "1":
+            return _EmbeddingV1
+        elif version == "2":
+            return _EmbeddingV2
+        else:
+            pass
+        raise errors.InvalidArgumentError("Invalid version")
+
+    def do(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return self._real.do(texts=texts, model=model, endpoint=endpoint, **kwargs)
+
+    async def ado(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return await self._real.ado(
+            texts=texts, model=model, endpoint=endpoint, **kwargs
+        )
+
+    def create(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return self.do(texts=texts, model=model, user=user, **kwargs)
+
+    async def acreate(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return await self.ado(texts=texts, model=model, user=user, **kwargs)

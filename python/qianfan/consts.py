@@ -269,6 +269,7 @@ class Consts:
     PrivateResourceResizeComputeUnitParam: str = "ResizeComputeUnit"
 
     ChatV2API: str = "/v2/chat/completions"
+    EmbeddingV2API: str = "/v2/embeddings"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
 
     STREAM_RESPONSE_PREFIX: str = "data: "
@@ -363,6 +364,7 @@ class DefaultValue:
     CacheDir: str = str(Path.home() / ".qianfan_cache")
     DisableCache: bool = False
     ChatV2ApiRoute: str = Consts.ChatV2API
+    EmbeddingV2ApiRoute: str = Consts.EmbeddingV2API
 
 
 class DefaultLLMModel:
@@ -375,6 +377,7 @@ class DefaultLLMModel:
     Embedding = "Embedding-V1"
     Text2Image = "Stable-Diffusion-XL"
     ChatCompletionV2 = "ernie-lite-8k"
+    EmbeddingV2 = "embedding-v1"
 
 
 class PromptSceneType(int, enum.Enum):

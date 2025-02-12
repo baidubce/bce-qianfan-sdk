@@ -138,6 +138,7 @@ class Config(BaseSettings):
     DISABLE_CACHE: bool = Field(default=DefaultValue.DisableCache)
     CACHE_DIR: str = Field(default=DefaultValue.CacheDir)
     CHAT_V2_API_ROUTE: str = Field(default=DefaultValue.ChatV2ApiRoute)
+    EMBEDDING_V2_API_ROUTE: str = Field(default=DefaultValue.EmbeddingV2ApiRoute)
 
     def auth_key(self) -> str:
         auth_keys = (

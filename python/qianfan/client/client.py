@@ -14,6 +14,7 @@
 
 from typing import Any, Optional
 
+from qianfan import Embedding
 from qianfan.config import Config, get_config
 from qianfan.consts import DefaultValue
 from qianfan.resources import ChatCompletion
@@ -83,6 +84,10 @@ class Qianfan:
     @property
     def completions(self) -> "ChatCompletion":
         return ChatCompletion(config=self.config, version=2)
+
+    @property
+    def embedding(self) -> "Embedding":
+        return Embedding(config=self.config, version=2)
 
 
 class Chat:

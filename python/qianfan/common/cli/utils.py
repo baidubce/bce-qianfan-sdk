@@ -33,6 +33,7 @@ from rich.text import Text
 
 import qianfan
 import qianfan.resources.llm.chat_completion
+import qianfan.resources.llm.embedding
 import qianfan.utils.logging as qianfan_logging
 from qianfan import QfResponse
 from qianfan.resources.llm.base import BaseResource
@@ -45,7 +46,7 @@ command_to_resource_type: Dict[str, Type[BaseResource]] = {
     "chat": qianfan.resources.llm.chat_completion._ChatCompletionV1,
     "txt2img": qianfan.Text2Image,
     "completion": qianfan.Completion,
-    "embedding": qianfan.Embedding,
+    "embedding": qianfan.resources.llm.embedding._EmbeddingV1,
 }
 
 

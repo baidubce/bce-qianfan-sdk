@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from functools import partial
-from typing import Any, AsyncIterator, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel, DefaultValue
@@ -279,7 +279,7 @@ class _EmbeddingV1(BaseResourceV1):
         texts_list: List[List[str]],
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+    ) -> List[QfResponse]:
         """
         Async batch generate embeddings for a list of input texts using a specified
         model.
@@ -303,7 +303,7 @@ class _EmbeddingV1(BaseResourceV1):
 
         """
         tasks = [self.ado(texts=texts, **kwargs) for texts in texts_list]
-        return await self._abatch_request(tasks, worker_num)
+        return await self._abatch_request(tasks, worker_num)  # type: ignore
 
 
 class _EmbeddingV2(BaseResourceV2):
@@ -353,6 +353,25 @@ class _EmbeddingV2(BaseResourceV2):
 
     def _api_path(self) -> str:
         return self.config.EMBEDDING_V2_API_ROUTE
+
+    def batch_do(
+        self,
+        texts_list: List[List[str]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        task_list = [partial(self.do, texts=texts, **kwargs) for texts in texts_list]
+
+        return self._batch_request(task_list, worker_num)
+
+    async def abatch_do(
+        self,
+        texts_list: List[List[str]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[QfResponse]:
+        tasks = [self.ado(texts=texts, **kwargs) for texts in texts_list]
+        return await self._abatch_request(tasks, worker_num)  # type: ignore
 
 
 class Embedding(VersionBase):
@@ -405,3 +424,19 @@ class Embedding(VersionBase):
         **kwargs: Any,
     ) -> QfResponse:
         return await self.ado(texts=texts, model=model, user=user, **kwargs)
+
+    def batch_do(
+        self,
+        texts_list: List[List[str]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        return self._real.batch_do(texts_list, worker_num, **kwargs)
+
+    async def abatch_do(
+        self,
+        texts_list: List[List[str]],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[QfResponse]:
+        return await self._real.abatch_do(texts_list, worker_num, **kwargs)

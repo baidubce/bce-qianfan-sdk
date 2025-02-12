@@ -66,6 +66,10 @@ class QianfanClient {
         this(Auth.create(type, accessKey, secretKey));
     }
 
+    public QianfanClient(String bearerToken) {
+        this(Auth.create(bearerToken));
+    }
+
     private QianfanClient(IAuth auth) {
         this.auth = auth;
         this.endpointRetriever = new ModelEndpointRetriever(auth);

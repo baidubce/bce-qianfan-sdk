@@ -17,6 +17,10 @@ public class QianfanV2 extends QianfanBase {
         this.client = new QianfanClient(Auth.TYPE_V2, accessKey, secretKey);
     }
 
+    public QianfanV2(String bearerToken) {
+        this.client = new QianfanClient(bearerToken);
+    }
+
     QianfanV2(QianfanClient client) {
         this.client = client;
     }

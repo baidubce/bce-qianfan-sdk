@@ -271,6 +271,10 @@ class VersionBase(object):
         setattr(self, "_with_raw_response", True)
         return self
 
+    @property
+    def _is_raw(self) -> bool:
+        return hasattr(self, "_with_raw_response") and self._with_raw_response
+
 
 class BaseResource(object):
     _runtime_models_info = {}  # type: ignore

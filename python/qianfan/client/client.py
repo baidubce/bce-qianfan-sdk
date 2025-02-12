@@ -14,7 +14,7 @@
 
 from typing import Any, Optional
 
-from qianfan import Embedding
+from qianfan import Embedding, Reranker
 from qianfan.config import Config, get_config
 from qianfan.consts import DefaultValue
 from qianfan.resources import ChatCompletion
@@ -88,6 +88,9 @@ class Qianfan:
     @property
     def embedding(self) -> "Embedding":
         return Embedding(config=self.config, version=2)
+
+    def reranker(self) -> "Reranker":
+        return Reranker(config=self.config, version=2)
 
 
 class Chat:

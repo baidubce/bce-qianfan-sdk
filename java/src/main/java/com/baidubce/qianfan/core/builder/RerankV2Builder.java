@@ -3,6 +3,7 @@ package com.baidubce.qianfan.core.builder;
 import com.baidubce.qianfan.QianfanV2;
 import com.baidubce.qianfan.model.rerank.v2.RerankRequestV2;
 import com.baidubce.qianfan.model.rerank.v2.RerankResponseV2;
+import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class RerankV2Builder extends BaseBuilderV2<RerankV2Builder> {
 
     private List<String> documents;
 
+    @SerializedName("top_n")
     private Integer topN;
 
     private String user;

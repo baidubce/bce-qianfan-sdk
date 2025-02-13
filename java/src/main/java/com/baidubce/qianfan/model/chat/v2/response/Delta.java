@@ -8,6 +8,9 @@ import java.util.List;
 public class Delta {
     private String content;
 
+    @SerializedName("reasoning_content")
+    private String reasoningContent;
+
     @SerializedName("tool_calls")
     private List<ToolCall> toolCalls;
 
@@ -17,6 +20,16 @@ public class Delta {
 
     public Delta setContent(String content) {
         this.content = content;
+        return this;
+    }
+
+
+    public String getReasoningContent() {
+        return reasoningContent;
+    }
+
+    public Delta setReasoningContent(String reasoningContent) {
+        this.reasoningContent = reasoningContent;
         return this;
     }
 

@@ -16,6 +16,8 @@
 
 package com.baidubce.qianfan.model;
 
+import com.baidubce.qianfan.util.http.HttpResponse;
+
 import java.util.Map;
 
 public abstract class BaseResponse<T extends BaseResponse<T>> {
@@ -38,6 +40,8 @@ public abstract class BaseResponse<T extends BaseResponse<T>> {
      * HTTP Response Headers
      */
     private Map<String, String> headers;
+
+    private HttpResponse<Object> rawResponse;
 
     public String getId() {
         return id;
@@ -72,6 +76,15 @@ public abstract class BaseResponse<T extends BaseResponse<T>> {
 
     public BaseResponse<T> setHeaders(Map<String, String> headers) {
         this.headers = headers;
+        return this;
+    }
+
+    public HttpResponse<Object> getRawResponse() {
+        return rawResponse;
+    }
+
+    public BaseResponse<T> setRawResponse(HttpResponse<Object> rawResponse) {
+        this.rawResponse = rawResponse;
         return this;
     }
 }

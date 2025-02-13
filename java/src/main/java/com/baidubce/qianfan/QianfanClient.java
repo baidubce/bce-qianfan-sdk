@@ -92,7 +92,7 @@ class QianfanClient {
         return request(
                 request,
                 req -> req.executeJson(responseClass),
-                resp -> (T) ((T) resp.getBody()).setHeaders(resp.getHeaders())
+                resp -> (T) ((T) resp.getBody()).setHeaders(resp.getHeaders()).setRawResponse(resp)
         );
     }
 

@@ -19,12 +19,12 @@ public class EmbeddingV2Builder extends BaseBuilderV2<EmbeddingV2Builder> {
         super(qianfan);
     }
 
-    public EmbeddingV2Builder setInput(List<String> input) {
+    public EmbeddingV2Builder input(List<String> input) {
         this.input = input;
         return this;
     }
 
-    public EmbeddingV2Builder setUser(String user) {
+    public EmbeddingV2Builder user(String user) {
         this.user = user;
         return this;
     }

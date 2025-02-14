@@ -47,6 +47,10 @@ export interface FetchOptionsProps {
      * Qianfan 基础 URL
      */
     qianfanV2BaseUrl?: string;
+    /**
+     * 访问令牌
+     */
+    bear_token?: string;
 }
 
 
@@ -58,7 +62,7 @@ export interface FetchOptionsProps {
  * @returns Fetch 请求选项
  */
 export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
-    const {
+    let {
         requestBody,
         headers,
         qianfanAccessKey,
@@ -67,6 +71,7 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
         appid,
         model,
         env,
+        bear_token,
     } = props;
 
     // SDK JS V2 版本目前只支持node环境
@@ -77,7 +82,10 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
     if (!qianfanAccessKey || !qianfanSecretKey) {
         throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
-    const {token: bear_token} = await getBearToken();
+    if (!bear_token) {
+        let {token} = await getBearToken();
+        bear_token = token;
+    }
     if (!bear_token) {
         throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }

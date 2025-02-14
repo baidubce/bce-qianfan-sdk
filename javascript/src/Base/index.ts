@@ -52,6 +52,7 @@ export class BaseClient {
         QIANFAN_ACCESS_KEY?: string;
         QIANFAN_SECRET_KEY?: string;
         QIANFAN_BASE_URL?: string;
+        QIANFAN_access_token?: string;
         QIANFAN_CONSOLE_API_BASE_URL?: string;
         QIANFAN_LLM_API_RETRY_TIMEOUT?: string;
         QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR?: string;
@@ -72,6 +73,7 @@ export class BaseClient {
         this.qianfanSecretKey = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
         this.Endpoint = options?.Endpoint;
         this.qianfanBaseUrl = options?.QIANFAN_BASE_URL ?? defaultConfig.QIANFAN_BASE_URL;
+        this.access_token = options?.QIANFAN_access_token ?? defaultConfig.QIANFAN_access_token;
         this.qianfanConsoleApiBaseUrl
             = options?.QIANFAN_CONSOLE_API_BASE_URL ?? defaultConfig.QIANFAN_CONSOLE_API_BASE_URL;
         this.qianfanV2BaseUrl = options?.QIANFAN_V2_BASE_URL ?? defaultConfig.QIANFAN_V2_BASE_URL;
@@ -168,6 +170,7 @@ export class BaseClient {
                 appid: this.appid,
                 model,
                 env: getCurrentEnvironment(),
+                bear_token: this.access_token,
             });
         }
         else {

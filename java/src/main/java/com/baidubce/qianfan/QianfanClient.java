@@ -24,12 +24,15 @@ import com.baidubce.qianfan.core.auth.Auth;
 import com.baidubce.qianfan.core.auth.IAMAuth;
 import com.baidubce.qianfan.core.auth.IAuth;
 import com.baidubce.qianfan.model.*;
+import com.baidubce.qianfan.model.chat.v2.request.RequestV2;
 import com.baidubce.qianfan.model.console.ConsoleRequest;
 import com.baidubce.qianfan.model.console.ConsoleResponse;
+import com.baidubce.qianfan.model.embedding.v2.EmbeddingRequestV2;
 import com.baidubce.qianfan.model.exception.ApiException;
 import com.baidubce.qianfan.model.exception.AuthException;
 import com.baidubce.qianfan.model.exception.QianfanException;
 import com.baidubce.qianfan.model.exception.RequestException;
+import com.baidubce.qianfan.model.rerank.v2.RerankRequestV2;
 import com.baidubce.qianfan.util.Json;
 import com.baidubce.qianfan.util.ParameterizedTypeImpl;
 import com.baidubce.qianfan.util.StringUtils;
@@ -44,7 +47,9 @@ class QianfanClient {
     private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
     private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";
-    private static final String QIANFAN_V2_URL_TEMPLATE = "%s/v2/chat/completions";
+    private static final String QIANFAN_V2_CHAT_URL_TEMPLATE = "%s/v2/chat/completions";
+    private static final String QIANFAN_V2_EMBEDDING_URL_TEMPLATE = "%s/v2/embeddings";
+    private static final String QIANFAN_V2_RERANK_URL_TEMPLATE = "%s/v2/rerankers";
     private static final String EXTRA_PARAM_REQUEST_SOURCE = "request_source";
     private static final String REQUEST_SOURCE_PREFIX = "qianfan_java_sdk_v";
     private static final String REQUEST_SOURCE = REQUEST_SOURCE_PREFIX + SDK_VERSION;
@@ -107,7 +112,16 @@ class QianfanClient {
     private <T extends BaseRequest<T>> HttpRequest createHttpRequest(BaseRequest<T> baseRequest) {
         String url;
         if (auth.authType().equals(Auth.TYPE_V2)) {
-            url = String.format(QIANFAN_V2_URL_TEMPLATE, QianfanConfig.getConsoleApiBaseUrl());
+            String baseUrl = QianfanConfig.getConsoleApiBaseUrl();
+            if (baseRequest instanceof RequestV2) {
+                url = String.format(QIANFAN_V2_CHAT_URL_TEMPLATE, baseUrl);
+            } else if (baseRequest instanceof EmbeddingRequestV2) {
+                url = String.format(QIANFAN_V2_EMBEDDING_URL_TEMPLATE, baseUrl);
+            } else if (baseRequest instanceof RerankRequestV2) {
+                url = String.format(QIANFAN_V2_RERANK_URL_TEMPLATE, baseUrl);
+            } else {
+                throw new IllegalStateException("Construct request failed with unknown request type");
+            }
         } else {
             String finalEndpoint = endpointRetriever.getEndpoint(baseRequest.getType(), baseRequest.getModel(), baseRequest.getEndpoint());
             url = String.format(QIANFAN_URL_TEMPLATE, QianfanConfig.getBaseUrl(), finalEndpoint);

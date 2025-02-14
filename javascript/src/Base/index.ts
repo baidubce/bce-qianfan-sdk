@@ -43,7 +43,7 @@ export class BaseClient {
     protected version?: string;
     protected appid?: string;
     access_token = '';
-    bear_token = '';
+    bearer_token = '';
     expires_in = 0;
 
     constructor(options?: {
@@ -52,7 +52,7 @@ export class BaseClient {
         QIANFAN_ACCESS_KEY?: string;
         QIANFAN_SECRET_KEY?: string;
         QIANFAN_BASE_URL?: string;
-        QIANFAN_access_token?: string;
+        QIANFAN_BEARER_TOKEN?: string;
         QIANFAN_CONSOLE_API_BASE_URL?: string;
         QIANFAN_LLM_API_RETRY_TIMEOUT?: string;
         QIANFAN_LLM_API_RETRY_BACKOFF_FACTOR?: string;
@@ -73,7 +73,7 @@ export class BaseClient {
         this.qianfanSecretKey = options?.QIANFAN_SECRET_KEY ?? defaultConfig.QIANFAN_SECRET_KEY;
         this.Endpoint = options?.Endpoint;
         this.qianfanBaseUrl = options?.QIANFAN_BASE_URL ?? defaultConfig.QIANFAN_BASE_URL;
-        this.access_token = options?.QIANFAN_access_token ?? defaultConfig.QIANFAN_access_token;
+        this.bearer_token = options?.QIANFAN_BEARER_TOKEN ?? defaultConfig.QIANFAN_BEARER_TOKEN;
         this.qianfanConsoleApiBaseUrl
             = options?.QIANFAN_CONSOLE_API_BASE_URL ?? defaultConfig.QIANFAN_CONSOLE_API_BASE_URL;
         this.qianfanV2BaseUrl = options?.QIANFAN_V2_BASE_URL ?? defaultConfig.QIANFAN_V2_BASE_URL;
@@ -170,7 +170,7 @@ export class BaseClient {
                 appid: this.appid,
                 model,
                 env: getCurrentEnvironment(),
-                bear_token: this.access_token,
+                bearer_token: this.bearer_token,
             });
         }
         else {

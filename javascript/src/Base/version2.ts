@@ -50,7 +50,7 @@ export interface FetchOptionsProps {
     /**
      * 访问令牌
      */
-    bear_token?: string;
+    bearer_token?: string;
 }
 
 
@@ -62,7 +62,7 @@ export interface FetchOptionsProps {
  * @returns Fetch 请求选项
  */
 export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
-    let {
+    const {
         requestBody,
         headers,
         qianfanAccessKey,
@@ -71,8 +71,8 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
         appid,
         model,
         env,
-        bear_token,
     } = props;
+    let {bearer_token} = props;
 
     // SDK JS V2 版本目前只支持node环境
     if (env !== 'node') {
@@ -82,14 +82,15 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
     if (!qianfanAccessKey || !qianfanSecretKey) {
         throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
     }
-    if (!bear_token) {
+    if (!bearer_token) {
         let {token} = await getBearToken();
-        bear_token = token;
+        if (!token) {
+            throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY或直接设置BEARER_TOKEN');
+        }
+        else {
+            bearer_token = token;
+        }
     }
-    if (!bear_token) {
-        throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
-    }
-
     const body = JSON.parse(requestBody);
 
     return {
@@ -97,7 +98,7 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
         method: 'POST',
         headers: {
             ...headers,
-            Authorization: `Bearer ${bear_token}`,
+            Authorization: `Bearer ${bearer_token}`,
             appid,
 
         },

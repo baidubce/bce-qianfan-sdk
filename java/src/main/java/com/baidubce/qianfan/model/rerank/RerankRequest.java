@@ -18,6 +18,7 @@ package com.baidubce.qianfan.model.rerank;
 
 import com.baidubce.qianfan.model.BaseRequest;
 import com.baidubce.qianfan.model.constant.ModelType;
+import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class RerankRequest extends BaseRequest<RerankRequest> {
     /**
      * 返回的最相关文本的数量，默认为document的数量
      */
+    @SerializedName("top_n")
     private Integer topN;
 
 

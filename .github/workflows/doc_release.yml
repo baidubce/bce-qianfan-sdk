@@ -38,14 +38,14 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: |
-          pip3 install poetry
+          pip3 install 'poetry~=1.0'
           cd python && poetry lock --no-update
           make install
       - name: Build docs
         run: |
           make doc
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: './output/docs/_build/html'
       - name: Deploy to GitHub Pages

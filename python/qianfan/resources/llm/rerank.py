@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, Union
 
+from qianfan import errors
 from qianfan.consts import DefaultValue
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
+    BaseResource,
     BaseResourceV1,
+    BaseResourceV2,
+    VersionBase,
 )
 from qianfan.resources.typing import JsonBody, QfLLMInfo, QfResponse
 
 
-class Reranker(BaseResourceV1):
+class _RerankerV1(BaseResourceV1):
     """
     QianFan Reranker is an agent for calling QianFan reranker API.
     """
@@ -201,3 +205,166 @@ class Reranker(BaseResourceV1):
 
         assert isinstance(resp, QfResponse)
         return resp
+
+
+class _RerankerV2(BaseResourceV2):
+    def _api_path(self) -> str:
+        return self.config.RERANKER_V2_API_ROUTE
+
+    @classmethod
+    def _default_model(cls) -> str:
+        return "bce-reranker-base_v1"
+
+    @classmethod
+    def api_type(cls) -> str:
+        return "reranker"
+
+    def _generate_body(
+        self, model: Optional[str], stream: bool, **kwargs: Any
+    ) -> JsonBody:
+        """
+        Reranker needs to transform body (`_query` -> `query`)
+        """
+        body = super()._generate_body(model, stream, **kwargs)
+        # "query" is conflict with QfRequest.query in params, so "_query" is
+        # the argument in SDK so we need to change "_query" back to "query" here
+        body["query"] = body["_query"]
+        del body["_query"]
+        return body
+
+    def do(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        kwargs["_query"] = query
+        kwargs["documents"] = documents
+
+        if top_n is not None:
+            kwargs["top_n"] = top_n
+
+        if user is not None:
+            kwargs["user"] = user
+
+        resp = self._do(
+            model,
+            **kwargs,
+        )
+        assert isinstance(resp, QfResponse)
+        return resp
+
+    async def ado(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        kwargs["_query"] = query
+        kwargs["documents"] = documents
+
+        if top_n is not None:
+            kwargs["top_n"] = top_n
+
+        if user is not None:
+            kwargs["user"] = user
+
+        resp = await self._ado(
+            model,
+            **kwargs,
+        )
+
+        assert isinstance(resp, QfResponse)
+        return resp
+
+
+class Reranker(VersionBase):
+    _real: Union[_RerankerV1, _RerankerV2]
+
+    @classmethod
+    def _real_base(cls, version: str, **kwargs: Any) -> Type[BaseResource]:
+        if version == "1":
+            return _RerankerV1
+        elif version == "2":
+            return _RerankerV2
+        else:
+            pass
+        raise errors.InvalidArgumentError("Invalid version")
+
+    def do(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return self._real.do(
+            query=query,
+            documents=documents,
+            top_n=top_n,
+            model=model,
+            user=user,
+            **kwargs,
+        )
+
+    async def ado(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return await self._real.ado(
+            query=query,
+            documents=documents,
+            top_n=top_n,
+            model=model,
+            user=user,
+            **kwargs,
+        )
+
+    def create(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return self.do(
+            query=query,
+            documents=documents,
+            top_n=top_n,
+            model=model,
+            user=user,
+            **kwargs,
+        )
+
+    async def acreate(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: Optional[int] = None,
+        model: Optional[str] = None,
+        user: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        return await self.ado(
+            query=query,
+            documents=documents,
+            top_n=top_n,
+            model=model,
+            user=user,
+            **kwargs,
+        )

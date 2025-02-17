@@ -190,6 +190,8 @@ os.environ['QIANFAN_BEARER_TOKEN'] = 'your_bearer_token'
 
 ```python
 import os
+from qianfan.resources import IAM
+
 os.environ['QIANFAN_ACCESS_KEY'] = 'your_access_key'
 os.environ['QIANFAN_SECRET_KEY'] = 'your_secret_key'
 

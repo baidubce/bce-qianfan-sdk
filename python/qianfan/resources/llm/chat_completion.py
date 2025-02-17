@@ -2153,25 +2153,6 @@ class ChatCompletion(VersionBase):
         truncate_overlong_msgs: bool = False,
         **kwargs: Any,
     ) -> Union[Completion, Iterator[CompletionChunk], QfResponse, Iterator[QfResponse]]:
-        if hasattr(self, "_with_raw_response") and self._with_raw_response:
-            raw = True
-        else:
-            raw = False
-        if self._version == "1" or raw:
-            return self.do(
-                messages=messages,
-                endpoint=endpoint,
-                model=model,
-                stream=stream,
-                retry_count=retry_count,
-                request_timeout=request_timeout,
-                request_id=request_id,
-                backoff_factor=backoff_factor,
-                auto_concat_truncate=auto_concat_truncate,
-                truncated_continue_prompt=truncated_continue_prompt,
-                truncate_overlong_msgs=truncate_overlong_msgs,
-                **kwargs,
-            )
         resp = self.do(
             messages=messages,
             endpoint=endpoint,
@@ -2186,10 +2167,15 @@ class ChatCompletion(VersionBase):
             truncate_overlong_msgs=truncate_overlong_msgs,
             **kwargs,
         )
+
+        if self._version == "1" or self._is_raw:
+            return resp
+
         if not stream:
             assert isinstance(resp, QfResponse)
             result = Completion.parse_obj(resp.body)
             result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            result.raw = resp.body
             return result
         else:
             assert isinstance(resp, Iterator)
@@ -2215,25 +2201,6 @@ class ChatCompletion(VersionBase):
         QfResponse,
         AsyncIterator[QfResponse],
     ]:
-        if hasattr(self, "_with_raw_response") and self._with_raw_response:
-            raw = True
-        else:
-            raw = False
-        if self._version == "1" or raw:
-            return await self.ado(
-                messages=messages,
-                endpoint=endpoint,
-                model=model,
-                stream=stream,
-                retry_count=retry_count,
-                request_timeout=request_timeout,
-                request_id=request_id,
-                backoff_factor=backoff_factor,
-                auto_concat_truncate=auto_concat_truncate,
-                truncated_continue_prompt=truncated_continue_prompt,
-                truncate_overlong_msgs=truncate_overlong_msgs,
-                **kwargs,
-            )
         resp = await self.ado(
             messages=messages,
             endpoint=endpoint,
@@ -2248,10 +2215,15 @@ class ChatCompletion(VersionBase):
             truncate_overlong_msgs=truncate_overlong_msgs,
             **kwargs,
         )
+
+        if self._version == "1" or self._is_raw:
+            return resp
+
         if not stream:
             assert isinstance(resp, QfResponse)
             result = Completion.parse_obj(resp.body)
             result.statistic = CompletionStatistic.parse_obj(resp.statistic)
+            result.raw = resp.body
             return result
         else:
             assert isinstance(resp, AsyncIterator)
@@ -2263,6 +2235,7 @@ class ChatCompletion(VersionBase):
         for r in resp:
             result = CompletionChunk.parse_obj(r.body)
             result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            result.raw = r.body
             yield result
 
     async def _acreate_completion_stream(
@@ -2271,6 +2244,7 @@ class ChatCompletion(VersionBase):
         async for r in resp:
             result = CompletionChunk.parse_obj(r.body)
             result.statistic = CompletionStatistic.parse_obj(r.statistic)
+            result.raw = r.body
             yield result
 
     def _convert_v2_request_to_v1(self, request: Any) -> Any:

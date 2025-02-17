@@ -13,7 +13,7 @@ type EmbeddingV2Request struct {
 	BaseRequestBody `mapstructure:"-"`
 	Model           string   `mapstructure:"model"`
 	Input           []string `mapstructure:"input"` // 输入的文本列表
-	User            string   `mapstructure:"user"`
+	User            string   `mapstructure:"user,omitempty"`
 }
 
 type EmbeddingV2Data struct {
@@ -63,7 +63,7 @@ func (c *EmbeddingV2) Do(ctx context.Context, request *EmbeddingV2Request) (*Emb
 
 func (c *EmbeddingV2) do(ctx context.Context, request *EmbeddingV2Request) (*EmbeddingV2Response, error) {
 	do := func() (*EmbeddingV2Response, error) {
-		req, err := NewModelRequest("POST", EmbeddingV2API, request)
+		req, err := NewBearerTokenRequest("POST", EmbeddingV2API, request)
 		if err != nil {
 			return nil, err
 		}

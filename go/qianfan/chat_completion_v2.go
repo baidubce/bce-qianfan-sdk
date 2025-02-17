@@ -146,10 +146,7 @@ func (c *ChatCompletionV2) Do(ctx context.Context, request *ChatCompletionV2Requ
 
 func (c *ChatCompletionV2) do(ctx context.Context, request *ChatCompletionV2Request) (*ChatCompletionV2Response, error) {
 	do := func() (*ChatCompletionV2Response, error) {
-
-		url := "/v2/chat/completions"
-
-		req, err := NewBearerTokenRequest("POST", url, request)
+		req, err := NewBearerTokenRequest("POST", ChatV2API, request)
 		if err != nil {
 			return nil, err
 		}

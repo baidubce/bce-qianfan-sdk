@@ -64,3 +64,8 @@ const (
 
 	ConsoleInternalErrorErrCode = 500000
 )
+
+const (
+	ChatV2API      = "/v2/chat/completions"
+	EmbeddingV2API = "/v2/embeddings"
+)

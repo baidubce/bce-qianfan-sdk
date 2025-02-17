@@ -15,12 +15,24 @@ public class QianfanV2Auth implements IAuth {
     private static final String BEAR_TOKEN_APPLY_URL = "%s/v1/BCE-BEARER/token?expireInSeconds=%d";
     private static final Duration FAILING_OFFSET = Duration.ofSeconds(10);
     private final IAMAuth auth;
+    private final Boolean isPreset;
 
     private String token;
     private Instant expiredTime;
 
     public QianfanV2Auth(String accessKey, String secretKey) {
         this.auth = new IAMAuth(accessKey, secretKey);
+        this.isPreset = false;
+    }
+
+    public QianfanV2Auth(String token) {
+        this.auth = null;
+        this.token = token;
+        this.isPreset = true;
+
+        if (!this.token.startsWith("Bearer ")) {
+            this.token = "Bearer " + this.token;
+        }
     }
 
     @Override
@@ -64,7 +76,7 @@ public class QianfanV2Auth implements IAuth {
     }
 
     public String getToken() {
-        if (this.isExpired()) {
+        if (!this.isPreset && this.isExpired()) {
             synchronized (this) {
                 if (this.isExpired()) {
                     this.applyNewBearToken();

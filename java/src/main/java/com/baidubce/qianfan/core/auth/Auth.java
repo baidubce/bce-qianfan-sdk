@@ -19,11 +19,13 @@ package com.baidubce.qianfan.core.auth;
 import com.baidubce.qianfan.core.QianfanConfig;
 import com.baidubce.qianfan.model.exception.ValidationException;
 import com.baidubce.qianfan.util.StringUtils;
+import org.apache.hc.client5.http.auth.BearerToken;
 
 public class Auth {
     public static final String TYPE_IAM = "IAM";
     public static final String TYPE_OAUTH = "OAuth";
     public static final String TYPE_V2 = "V2";
+    public static final String TYPE_BEARER = "BEARER";
 
     private Auth() {
     }
@@ -33,6 +35,12 @@ public class Auth {
         String accessKey = QianfanConfig.getQianfanAccessKey();
         String secretKey = QianfanConfig.getQianfanSecretKey();
         String version = QianfanConfig.getQianfanInferVersion();
+        String bearerToken = QianfanConfig.getQianfanBearerToken();
+
+        if (StringUtils.isNotEmpty(bearerToken) && TYPE_BEARER.equals(version)) {
+            return create(bearerToken);
+        }
+
         if (StringUtils.isNotEmpty(accessKey) && StringUtils.isNotEmpty(secretKey)) {
             if (TYPE_V2.equals(version)) {
                 return create(TYPE_V2, accessKey, secretKey);
@@ -51,8 +59,14 @@ public class Auth {
         return create(TYPE_IAM, accessKey, secretKey);
     }
 
+    public static IAuth create(String bearerToken) {
+        return new QianfanV2Auth(bearerToken);
+    }
+
     public static IAuth create(String type, String accessKey, String secretKey) {
-        if (TYPE_IAM.equals(type)) {
+        if (TYPE_BEARER.equals(type)) {
+            return new QianfanV2Auth(accessKey);
+        } else if (TYPE_IAM.equals(type)) {
             return new IAMAuth(accessKey, secretKey);
         } else if (TYPE_OAUTH.equals(type)) {
             return new QianfanOAuth(accessKey, secretKey);

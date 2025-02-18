@@ -24,6 +24,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     QIANFAN_SK: '',
     QIANFAN_ACCESS_KEY: '',
     QIANFAN_SECRET_KEY: '',
+    QIANFAN_BEARER_TOKEN: '',
     QIANFAN_BASE_URL: 'https://aip.baidubce.com',
     QIANFAN_CONSOLE_API_BASE_URL: 'https://qianfan.baidubce.com',
     QIANFAN_BEAR_TOKEN_URL: 'http://iam.bj.baidubce.com/v1/BCE-BEARER/token',

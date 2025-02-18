@@ -78,14 +78,15 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
     if (env !== 'node') {
         throw new Error('SDK(JS)-V2版本目前只支持node环境');
     }
-    // 检查鉴权信息
-    if (!qianfanAccessKey || !qianfanSecretKey) {
-        throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
-    }
+
     if (!bearer_token) {
+        // 检查鉴权信息
+        if (!qianfanAccessKey || !qianfanSecretKey) {
+            throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY或BEARER_TOKEN');
+        }
         let {token} = await getBearToken();
         if (!token) {
-            throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY或直接设置BEARER_TOKEN');
+            throw new Error('生成 BearerToken 出错，请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
         }
         else {
             bearer_token = token;

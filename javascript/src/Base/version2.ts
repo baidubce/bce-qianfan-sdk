@@ -47,6 +47,10 @@ export interface FetchOptionsProps {
      * Qianfan 基础 URL
      */
     qianfanV2BaseUrl?: string;
+    /**
+     * 访问令牌
+     */
+    bearer_token?: string;
 }
 
 
@@ -68,20 +72,26 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
         model,
         env,
     } = props;
+    let {bearer_token} = props;
 
     // SDK JS V2 版本目前只支持node环境
     if (env !== 'node') {
         throw new Error('SDK(JS)-V2版本目前只支持node环境');
     }
-    // 检查鉴权信息
-    if (!qianfanAccessKey || !qianfanSecretKey) {
-        throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
-    }
-    const {token: bear_token} = await getBearToken();
-    if (!bear_token) {
-        throw new Error('请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
-    }
 
+    if (!bearer_token) {
+        // 检查鉴权信息
+        if (!qianfanAccessKey || !qianfanSecretKey) {
+            throw new Error('请设置QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY或BEARER_TOKEN');
+        }
+        let {token} = await getBearToken();
+        if (!token) {
+            throw new Error('生成 BearerToken 出错，请设置正确的QIANFAN_ACCESS_KEY/QIANFAN_SECRET_KEY');
+        }
+        else {
+            bearer_token = token;
+        }
+    }
     const body = JSON.parse(requestBody);
 
     return {
@@ -89,7 +99,7 @@ export const getFetchOptionsV2 = async (props: FetchOptionsProps) => {
         method: 'POST',
         headers: {
             ...headers,
-            Authorization: `Bearer ${bear_token}`,
+            Authorization: `Bearer ${bearer_token}`,
             appid,
 
         },

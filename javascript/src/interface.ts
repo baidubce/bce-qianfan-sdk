@@ -18,6 +18,7 @@ export interface DefaultConfig {
     QIANFAN_ACCESS_KEY: string;
     QIANFAN_SECRET_KEY: string;
     QIANFAN_BASE_URL: string;
+    QIANFAN_BEARER_TOKEN: string;
     QIANFAN_CONSOLE_API_BASE_URL: string;
     QIANFAN_BEAR_TOKEN_URL: string;
     QIANFAN_V2_BASE_URL: string;

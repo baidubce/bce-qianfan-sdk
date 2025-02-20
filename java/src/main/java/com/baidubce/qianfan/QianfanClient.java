@@ -43,7 +43,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 class QianfanClient {
-    private static final String SDK_VERSION = "0.1.5";
+    private static final String SDK_VERSION = "0.1.6";
     private static final String CONSOLE_URL_NO_ACTION_TEMPLATE = "%s%s";
     private static final String CONSOLE_URL_ACTION_TEMPLATE = "%s%s?Action=%s";
     private static final String QIANFAN_URL_TEMPLATE = "%s/rpc/2.0/ai_custom/v1/wenxinworkshop%s";

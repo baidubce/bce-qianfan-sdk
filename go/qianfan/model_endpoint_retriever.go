@@ -45,6 +45,7 @@ func getModelEndpointRetriever() *modelEndpointRetriever {
 			"chat":        ChatModelEndpoint,
 			"completions": CompletionModelEndpoint,
 			"embeddings":  EmbeddingEndpoint,
+			"reranker":    ReRankerEndpoint,
 			"text2image":  Text2ImageEndpoint,
 			"image2text":  make(map[string]string),
 		}

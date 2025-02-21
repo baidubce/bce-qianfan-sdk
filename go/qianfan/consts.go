@@ -30,7 +30,13 @@ const (
 	DefaultChatCompletionModel = "ERNIE-Lite-8K"
 	DefaultCompletionModel     = "ERNIE-Lite-8K"
 	DefaultEmbeddingModel      = "Embedding-V1"
+	DefaultReRankerModel       = "bce-reranker-base_v1"
 	DefaultText2ImageModel     = "Stable-Diffusion-XL"
+)
+
+// v2可以使用的预制模型
+const (
+	DefaultReRankerV2Model = "bce-reranker-base"
 )
 
 // API 错误码
@@ -68,4 +74,5 @@ const (
 const (
 	ChatV2API      = "/v2/chat/completions"
 	EmbeddingV2API = "/v2/embeddings"
+	ReRankerV2API  = "/v2/rerankers"
 )

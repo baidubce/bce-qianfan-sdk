@@ -42,9 +42,9 @@ from qianfan.dataset.data_source.chunk_reader import JsonLineReader
 from qianfan.dataset.data_source.utils import (
     _download_file_from_url_streamly,
 )
+from qianfan.dataset.dataset_utils import _wait_evaluation_finished
 from qianfan.dataset.local_data_operators.base import BaseLocalMapOperator
 from qianfan.errors import QianfanError
-from qianfan.evaluation.consts import QianfanRefereeEvaluatorPromptTemplate
 from qianfan.evaluation.evaluation_result import EvaluationResult
 from qianfan.evaluation.evaluator import (
     LocalEvaluator,
@@ -55,11 +55,12 @@ from qianfan.evaluation.evaluator import (
 )
 from qianfan.model import Model, Service
 from qianfan.resources import Model as ResourceModel
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.resources.console.consts import (
     EvaluationResultExportTaskStatus,
-    EvaluationTaskStatus,
 )
-from qianfan.utils import log_debug, log_error, log_info, log_warn
+from qianfan.resources.console.eval import Eval
+from qianfan.utils import log_error, log_info, log_warn
 from qianfan.utils.pydantic import BaseModel, Field, root_validator
 from qianfan.utils.utils import generate_letter_num_random_id
 
@@ -282,6 +283,7 @@ class EvaluationManager(BaseModel):
                 input_argument_dict["evalMode"] = (
                     input_argument_dict.get("evalMode", "") + "manual,"
                 )
+                input_argument_dict["manualEvalConfig"] = {}
 
                 # 超过 4 个指标则截断，对齐平台
                 dimensions = evaluator.evaluation_dimensions[:]
@@ -303,7 +305,9 @@ class EvaluationManager(BaseModel):
 
                     input_dimension_list.append(input_dimension_dict)
 
-                input_argument_dict["evaluationDimension"] = input_dimension_list
+                input_argument_dict["manualEvalConfig"][
+                    "evalDimension"
+                ] = input_dimension_list
 
             # 如果处理的是基于规则的评估
             if isinstance(evaluator, QianfanRuleEvaluator):
@@ -317,29 +321,29 @@ class EvaluationManager(BaseModel):
                 if evaluator.using_accuracy:
                     rule_list.append("accuracy")
 
-                if not rule_list:
-                    err_msg = "no rule has been set despite using QianfanRuleEvaluator"
-                    log_error(err_msg)
-                    raise ValueError(err_msg)
-
-                input_argument_dict["scoreModes"] = rule_list
+                if rule_list:
+                    input_argument_dict["autoRuleEvalConfig"] = {}
+                    input_argument_dict["autoRuleEvalConfig"]["scoreModes"] = rule_list
 
                 # 添加停用词表
                 if evaluator.stop_words:
-                    input_argument_dict["stopWordsPath"] = evaluator.stop_words
+                    input_argument_dict["autoRuleEvalConfig"][
+                        "stopWordList"
+                    ] = evaluator.stop_words
 
             # 如果处理的是基于裁判员的打分
             if isinstance(evaluator, QianfanRefereeEvaluator):
                 input_argument_dict["evalMode"] = (
                     input_argument_dict.get("evalMode", "") + "model,"
                 )
-                input_argument_dict["appId"] = evaluator.app_id
-                input_argument_dict["prompt"] = {
-                    "templateName": "裁判员模型打分模板 (含参考答案)",
-                    "templateContent": QianfanRefereeEvaluatorPromptTemplate,
-                    "metric": evaluator.prompt_metrics,
-                    "steps": evaluator.prompt_steps,
-                    "maxScore": evaluator.prompt_max_score,
+
+                input_argument_dict["autoModelEvalConfig"] = {
+                    "apiName": evaluator.api_name,
+                    "prompt": {
+                        "metric": evaluator.prompt_metrics,
+                        "steps": evaluator.prompt_steps,
+                        "maxScore": evaluator.prompt_max_score,
+                    },
                 }
 
         input_argument_dict["evalMode"] = input_argument_dict.get("evalMode", "").strip(
@@ -354,52 +358,34 @@ class EvaluationManager(BaseModel):
         dataset_id: str,
         eval_config: Dict[str, Any],
         **kwargs: Any,
-    ) -> EvaluationTaskStatus:
+    ) -> V2Consts.EvalTaskStatus:
         model_objs: List[Model] = llms  # type: ignore
         for i in range(len(model_objs)):
             model_objs[i].auto_complete_info()
 
-        resp_body = ResourceModel.create_evaluation_task(
-            name=f"sdk_eval_{generate_letter_num_random_id(11)}",
-            version_info=[
-                {"modelId": model.set_id, "modelVersionId": model.id}
-                for model in model_objs
-            ],
-            dataset_id=dataset_id,
+        resp_body = Eval.V2.create_eval_task(
+            task_name=f"sdk_eval_{generate_letter_num_random_id(11)}",
+            eval_object_type="model",
+            eval_object_config={
+                "evalModelConfig": {
+                    "versionId": dataset_id,
+                    "evalModelConfigList": [
+                        {"modelId": model.id} for model in model_objs
+                    ],
+                }
+            },
             eval_config=eval_config,
             **kwargs,
         ).body
 
-        eval_id = resp_body["result"]["evalIdStr"]
-        task_url = f"https://console.bce.baidu.com/qianfan/modelcenter/model/eval/detail/task/{eval_id}"
+        eval_id = resp_body["result"]
         self.task_id = eval_id
 
-        log_info(f"please check webpage {task_url} to get further information")
+        log_info(f"start to polling status of evaluation task {eval_id}")
 
-        # 开始轮询任务进度
-        while True:
-            eval_info = ResourceModel.get_evaluation_info(eval_id)
-            eval_state = EvaluationTaskStatus(eval_info["result"]["state"])
-
-            log_debug(f"current evaluation task info: {eval_info}")
-            log_info(f"current eval_state: {eval_state}")
-
-            if eval_state not in [
-                EvaluationTaskStatus.Pending,
-                EvaluationTaskStatus.Doing,
-            ]:
-                break
-            time.sleep(get_config().EVALUATION_ONLINE_POLLING_INTERVAL)
-
-        if eval_state not in [
-            EvaluationTaskStatus.DoingWithManualBegin,
-            EvaluationTaskStatus.Done,
-        ]:
-            err_msg = f"can't finish evaluation task and failed with state {eval_state}"
-            log_error(err_msg)
-            raise QianfanError(err_msg)
-
-        return eval_state
+        _wait_evaluation_finished(eval_id)
+        eval_state = Eval.V2.describe_eval_task(eval_id)["result"]["state"]
+        return V2Consts.EvalTaskStatus(eval_state)
 
     def eval_only(
         self,
@@ -454,7 +440,7 @@ class EvaluationManager(BaseModel):
         self,
         llms: Sequence[Union[Model, Service]],
         dataset: Dataset,
-        download_when_doing_online: bool = True,
+        download_when_doing_online: bool = False,
         **kwargs: Any,
     ) -> Optional[EvaluationResult]:
         """
@@ -466,8 +452,9 @@ class EvaluationManager(BaseModel):
             dataset (Dataset):
                 The dataset on which models will be evaluated.
             download_when_doing_online (bool):
+                This arguments isn't available temporally.
                 whether download result dataset when doing online evaluation.
-                default to True
+                default to False.
             **kwargs (Any):
                 Other keyword arguments.
 
@@ -615,21 +602,22 @@ class EvaluationManager(BaseModel):
             )
 
             # 如果是进入人工评估阶段，则返回空
-            if eval_state == EvaluationTaskStatus.DoingWithManualBegin:
+            if eval_state == V2Consts.EvalTaskStatus.RunningWithManualBegin:
                 log_warn("can't fetch any metrics due to manual mode has been set")
                 return None
 
             assert self.task_id
-            result_list = ResourceModel.get_evaluation_result(self.task_id)["result"]
+            result_list = Eval.V2.describe_eval_task_report(self.task_id)["result"]
             metric_list: Dict[str, Dict[str, Any]] = {
-                f'{result["modelName"]}_{result["modelVersion"]}': result[
-                    "effectMetric"
-                ]
-                for result in result_list
+                result["modelId"]: result["effectMetric"] for result in result_list
             }
 
             if not download_when_doing_online:
                 return EvaluationResult(metrics=metric_list)
+
+            # 暂时没有下列代码的等价平替，先 return 终止掉流程
+            # 直接返回问答集
+            return EvaluationResult(metrics=metric_list)
 
             export_task_id = ResourceModel.create_evaluation_result_export_task(
                 self.task_id, **kwargs

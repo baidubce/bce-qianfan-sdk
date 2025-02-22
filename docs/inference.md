@@ -581,9 +581,9 @@ import os
 
 client = Qianfan(
     access_key='your_access_key',
-    secret_key='your_secret_key'
+    secret_key='your_secret_key',
     # api_key='', # 如果传入了access_key和secret_key，则不需要传入api_key
-    app_id='your_app_id'
+    app_id='your_app_id',
 )
 
 

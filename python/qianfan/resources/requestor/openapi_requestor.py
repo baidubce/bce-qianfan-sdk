@@ -142,7 +142,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                     break
                 _check_if_status_code_is_200(resp, self.config)
                 body_str = body.decode("utf-8")
-                if body_str == "":
+                if body_str == "" or body_str.startswith(tuple(Consts.IgnoringList)):
                     continue
                 if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
                     # event indicator for the type of data

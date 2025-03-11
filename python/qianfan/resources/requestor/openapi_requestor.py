@@ -20,6 +20,7 @@ import copy
 import json
 import os
 import queue
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -142,13 +143,15 @@ class QfAPIRequestor(BaseAPIRequestor):
                     break
                 _check_if_status_code_is_200(resp, self.config)
                 body_str = body.decode("utf-8")
-                if body_str == "" or body_str.startswith(tuple(Consts.IgnoringList)):
+                if body_str.strip() == "" or body_str.startswith(
+                    tuple(Consts.IgnoringList)
+                ):
                     continue
-                if body_str.startswith(Consts.STREAM_RESPONSE_EVENT_PREFIX):
+                if re.match(Consts.STREAM_RESPONSE_EVENT_PREFIX, body_str):
                     # event indicator for the type of data
-                    event = body_str[len(Consts.STREAM_RESPONSE_EVENT_PREFIX) :]
+                    event = re.sub(Consts.STREAM_RESPONSE_EVENT_PREFIX, "", body_str)
                     continue
-                elif not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
+                elif not re.match(Consts.STREAM_RESPONSE_PREFIX, body_str):
                     try:
                         # the response might be error message in json format
                         json_body = json.loads(body_str)
@@ -171,7 +174,7 @@ class QfAPIRequestor(BaseAPIRequestor):
                     raise errors.RequestError(
                         f"got unexpected stream response from server: {body_str}"
                     )
-                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
+                body_str = re.sub(Consts.STREAM_RESPONSE_PREFIX, "", body_str)
                 if body_str != Consts.V2_STREAM_RESPONSE_END_NOTE:
                     json_body = json.loads(body_str)
                 else:
@@ -244,15 +247,22 @@ class QfAPIRequestor(BaseAPIRequestor):
 
         async def iter() -> AsyncIterator[QfResponse]:
             nonlocal responses
+            event = ""
             token_refreshed = False
             count = 0
             async for body, resp in responses:
                 count += 1
                 _async_check_if_status_code_is_200(resp)
                 body_str = body.decode("utf-8")
-                if body_str.strip() == "":
+                if body_str.strip() == "" or body_str.startswith(
+                    tuple(Consts.IgnoringList)
+                ):
                     continue
-                if not body_str.startswith(Consts.STREAM_RESPONSE_PREFIX):
+                if re.match(Consts.STREAM_RESPONSE_EVENT_PREFIX, body_str):
+                    # event indicator for the type of data
+                    event = re.sub(Consts.STREAM_RESPONSE_EVENT_PREFIX, "", body_str)
+                    continue
+                elif not re.match(Consts.STREAM_RESPONSE_PREFIX, body_str):
                     try:
                         # the response might be error message in json format
                         json_body: Dict[str, Any] = json.loads(body_str)
@@ -272,11 +282,14 @@ class QfAPIRequestor(BaseAPIRequestor):
                     raise errors.RequestError(
                         f"got unexpected stream response from server: {body_str}"
                     )
-                body_str = body_str[len(Consts.STREAM_RESPONSE_PREFIX) :]
+                body_str = re.sub(Consts.STREAM_RESPONSE_PREFIX, "", body_str)
                 if not body_str.startswith(Consts.V2_STREAM_RESPONSE_END_NOTE):
                     json_body = json.loads(body_str)
                 else:
                     return
+                if event != "":
+                    json_body["_event"] = event
+                    event = ""
                 parsed = await self._parse_async_response(json_body, resp)
                 parsed.request = QfRequest.from_aiohttp(resp.request_info)
                 parsed.request.json_body = copy.deepcopy(request.json_body)

@@ -457,6 +457,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
         res_choices: Dict[int, Dict[str, Any]] = {}
         first_flag, all_empty = True, True
         clear_history = False
+        reasoning_field_key = "reasoning_content"
 
         for resp in responses:
             last_resp = resp
@@ -527,6 +528,12 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     reasoning_content = stream_json["delta"].get(
                         "reasoning_content", ""
                     )
+
+                    if reasoning_content == "":
+                        reasoning_content = stream_json["delta"].get("reasoning", "")
+                        if reasoning_content != "":
+                            reasoning_field_key = "reasoning"
+
                     merged_query += content if content is not None else ""
                     merged_reasoning_content += (
                         reasoning_content if reasoning_content is not None else ""
@@ -536,7 +543,7 @@ class ChatCompletionClient(QianfanCustomHttpSession):
                     choice = res_choices[index]
                     choice.update(stream_json)
                     choice["delta"]["content"] = merged_query
-                    choice["delta"]["reasoning_content"] = merged_reasoning_content
+                    choice["delta"][reasoning_field_key] = merged_reasoning_content
                 else:
                     self.exc = Exception("ERROR CODE 结果无法解析")
                     break

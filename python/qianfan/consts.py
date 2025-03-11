@@ -18,7 +18,7 @@ Consts used in qianfan sdk
 
 import enum
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from qianfan.version import VERSION
 
@@ -273,8 +273,8 @@ class Consts:
     RerankerV2API: str = "/v2/rerankers"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
 
-    STREAM_RESPONSE_PREFIX: str = "data: "
-    STREAM_RESPONSE_EVENT_PREFIX: str = "event: "
+    STREAM_RESPONSE_PREFIX: str = r"^data:\s*"
+    STREAM_RESPONSE_EVENT_PREFIX: str = r"^event:\s*"
     V2_STREAM_RESPONSE_END_NOTE: str = "[DONE]"
     XRequestID: str = "Request_id"
     XResponseID: str = "X-Baidu-Request-Id"
@@ -285,6 +285,8 @@ class Consts:
     QianfanLLMModelsListCacheKey = "qianfan_llm_models"
 
     DateTimeFormat = "%Y-%m-%dT%H:%M:%SZ"
+
+    IgnoringList: List[str] = [": OPENROUTER PROCESSING", ": keep-alive"]
 
 
 class DefaultValue:

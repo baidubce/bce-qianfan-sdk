@@ -165,7 +165,7 @@ func newRequestFromMap(requestType string, method string, urlStr string, body ma
 // 所有回复类型的基类
 type baseResponse struct {
 	Body        []byte
-	RawResponse *http.Response
+	RawResponse *http.Response `json:"-"`
 }
 
 // 所有回复类型需实现的接口

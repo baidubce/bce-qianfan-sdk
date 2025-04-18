@@ -45,6 +45,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         post_actions: Sequence[BaseAction] = [],
         event_handler: Optional[EventHandler] = None,
         case_init_params: Optional[Dict] = None,
+        context: Optional[Dict] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -80,10 +81,14 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self._stop: bool = False
         self._last_output: Optional[Dict[str, Any]] = None
         self._case_init_params = case_init_params
+        self._context = context
 
     @with_event
     def exec(
-        self, input: Optional[Dict[str, Any]] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Dict[str, Any]:
         """
         Parameters:
@@ -98,7 +103,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             if len(res) == 0:
                 return
             try:
-                res[0] = self.exec_from(input, 0, **kwargs)
+                res[0] = self.exec_from(input, 0, context=context, **kwargs)
             except Exception as e:
                 res[0] = e
 
@@ -121,7 +126,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self,
         input: Optional[Dict[str, Any]] = None,
         start: Optional[Union[int, str]] = 0,
-        **kwargs: Dict,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         if isinstance(start, str):
             start_idx = self.seq.index(start)
@@ -132,6 +137,11 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                 "pipeline start must be index of sequence or key of action"
             )
         self._stop = False
+        if self._context:
+            self._context.update(kwargs.get("context", {}))
+        if "context" in kwargs:
+            del kwargs["context"]
+
         FilePersister.save(self)
         output: Dict[str, Any] = copy.deepcopy(input) if input is not None else {}
         for i, k in enumerate(self.seq):
@@ -146,7 +156,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
                     {"action": k, "ppl_id": self.id},
                 )
             self.current_action = k
-            output = self.actions[k].exec(input=output, **kwargs)
+            output = self.actions[k].exec(input=output, context=self._context, **kwargs)
             FilePersister.save(self)
             if output is not None:
                 err = output.get("error")
@@ -227,9 +237,9 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
         meta: Dict[str, Any] = {
             "id": self.id,
             "current_action": self.current_action,
-            # "output": self._last_output,
+            "process_id": self.process_id if self.process_id else os.getpid(),
+            "context": self._context,
         }
-        meta["process_id"] = self.process_id if self.process_id else os.getpid()
         actions = []
         for action_id in self.seq:
             action_meta = self.actions[action_id]._action_dict()
@@ -269,6 +279,7 @@ class Pipeline(BaseAction[Dict[str, Any], Dict[str, Any]]):
             id=meta.get("id"),
             actions=actions,
             case_init_params=meta.get("case_init_params"),
+            context=meta.get("context", {}),
         )
         assert isinstance(meta.get("current_action", ""), str)
         ppl.process_id = meta.get("process_id", "")

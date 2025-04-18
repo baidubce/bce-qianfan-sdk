@@ -70,7 +70,7 @@ def load_dataset(path: str, **kwargs: Any) -> Dataset:
     """Load dataset from platform or local file based on the format of path."""
     qianfan_dataset_id = extract_id_from_path(path)
     if qianfan_dataset_id:
-        return Dataset.load(qianfan_dataset_id=qianfan_dataset_id, **kwargs)
+        return Dataset.load(qianfan_dataset_version_id=qianfan_dataset_id, **kwargs)
     return Dataset.load(data_file=path, **kwargs)
 
 
@@ -171,7 +171,7 @@ def save(
         region = client_utils.bos_bucket_region(bucket)
         with console.status("Saving dataset to platform..."):
             src_dataset.save(
-                qianfan_dataset_id=dst_dataset_id,
+                qianfan_dataset_version_id=dst_dataset_id,
                 sup_storage_id=bucket,
                 sup_storage_path=path,
                 sup_storage_region=region,

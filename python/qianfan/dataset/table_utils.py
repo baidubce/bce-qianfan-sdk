@@ -37,4 +37,7 @@ def _construct_table_from_nest_sequence(
 def _construct_packed_table_from_nest_sequence(
     json_data_list: Sequence, **kwargs: Any
 ) -> pyarrow.Table:
-    return pyarrow.Table.from_pydict({QianfanDatasetPackColumnName: json_data_list})
+    schema: Any = kwargs.get("schema", None)
+    return pyarrow.Table.from_pydict(
+        {QianfanDatasetPackColumnName: json_data_list}, schema=schema
+    )

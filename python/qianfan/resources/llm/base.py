@@ -1119,13 +1119,11 @@ class BaseResourceV2(BaseResource):
         self,
         model: Optional[str] = None,
         app_id: Optional[str] = None,
-        bearer_token: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self._model = model
         self._app_id = app_id or self.config.APP_ID
-        self._bearer_token = bearer_token
         self._client = QfAPIV2Requestor(**kwargs)
 
     def _request(

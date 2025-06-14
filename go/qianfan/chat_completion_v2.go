@@ -74,8 +74,8 @@ type ChatCompletionV2Message struct {
 }
 
 type ChatCompletionV2Delta struct {
-	Content   string     `mapstructure:"content"`              // 生成结果
-	ToolCalls []ToolCall `mapstructure:"tool_calls,omitempty"` // 函数调用
+	Content   string     `mapstructure:"content"`                                          // 生成结果
+	ToolCalls []ToolCall `mapstructure:"tool_calls,omitempty" json:"tool_calls,omitempty"` // 函数调用
 }
 
 type StreamOptions struct {
@@ -104,6 +104,7 @@ type ResponseFormat struct {
 }
 
 type ToolCall struct {
+	Index    int            `mapstructure:"index" json:"index,omitempty"`
 	Id       string         `mapstructure:"id" json:"id,omitempty"`
 	ToolType string         `mapstructure:"type" json:"type,omitempty"`
 	Function FunctionCallV2 `mapstructure:"function" json:"function,omitempty"`

@@ -26,6 +26,7 @@ from qianfan.config import encoding
 from qianfan.dataset.data_source.base import DataSource, FormatType
 from qianfan.dataset.data_source.utils import (
     _collect_all_images_and_annotations_in_one_folder,
+    _collect_all_images_from_prompt_image_response_table,
     _get_a_pyarrow_table,
     _read_all_file_content_in_an_folder,
     _read_all_file_from_zip,
@@ -123,7 +124,11 @@ class FileDataSource(DataSource, BaseModel):
             raise ValueError(err_msg)
 
     def _save_generic_text_into_folder(
-        self, table: Table, batch_size: int = 10, **kwargs: Any
+        self,
+        table: Table,
+        batch_size: int = 10,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
     ) -> bool:
         os.makedirs(self.path, exist_ok=True)
 
@@ -135,7 +140,20 @@ class FileDataSource(DataSource, BaseModel):
                     mode="w",
                     encoding=encoding(),
                 ) as f:
-                    f.write(table_slice[j])
+                    # Json 格式的时候需要特判
+                    if self.file_format == FormatType.Json:
+                        f.write("[\n")
+
+                    self._write_as_format(
+                        f,
+                        table_slice[j],
+                        0,
+                        use_qianfan_special_jsonl_format,
+                    )
+
+                    # Json 格式的时候需要特判
+                    if self.file_format == FormatType.Json:
+                        f.write("\n]")
 
         return True
 
@@ -163,8 +181,8 @@ class FileDataSource(DataSource, BaseModel):
         Returns:
             bool: has data been written successfully
         """
-        if self.save_as_folder and self.file_format == FormatType.Text:
-            return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+        # 有可能文件路径的父文件夹不存在，得先创建
+        os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
 
         if self.file_format == FormatType.Text2Image:
             _collect_all_images_and_annotations_in_one_folder(
@@ -172,8 +190,16 @@ class FileDataSource(DataSource, BaseModel):
             )
             return True
 
-        # 有可能文件路径的父文件夹不存在，得先创建
-        os.makedirs(os.path.abspath(os.path.dirname(self.path)), exist_ok=True)
+        if self.file_format == FormatType.Text2ImageResponse:
+            _collect_all_images_from_prompt_image_response_table(
+                table.inner_table, self.path
+            )
+            return True
+
+        if self.save_as_folder:
+            if self.file_format == FormatType.Text:
+                return self._save_generic_text_into_folder(table, batch_size, **kwargs)
+            return self._write_in_batch_for_folder(table, batch_size, **kwargs)
 
         with open(
             self.path,
@@ -195,6 +221,40 @@ class FileDataSource(DataSource, BaseModel):
             # Json 格式的时候需要特判
             if self.file_format == FormatType.Json:
                 f.write("\n]")
+
+        return True
+
+    def _write_in_batch_for_folder(
+        self,
+        table: Table,
+        batch_size: int = 10000,
+        use_qianfan_special_jsonl_format: bool = False,
+        **kwargs: Any,
+    ) -> bool:
+        os.makedirs(self.path, exist_ok=True)
+
+        for i in range(0, table.row_number(), batch_size):
+            with open(
+                os.path.join(self.path, f"data_{i}.{self.format_type().value}"),
+                mode="w",
+                encoding=(
+                    encoding() if self.file_format != FormatType.Csv else "utf-8-sig"
+                ),
+            ) as f:
+                # Json 格式的时候需要特判
+                if self.file_format == FormatType.Json:
+                    f.write("[\n")
+
+                self._write_as_format(
+                    f,
+                    table.list(slice(i, i + batch_size - 1)),
+                    0,
+                    use_qianfan_special_jsonl_format,
+                )
+
+                # Json 格式的时候需要特判
+                if self.file_format == FormatType.Json:
+                    f.write("\n]")
 
         return True
 
@@ -232,7 +292,7 @@ class FileDataSource(DataSource, BaseModel):
             return None
 
         # 特判文生图
-        if self.file_format is FormatType.Text2Image:
+        if self.file_format in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             if zipfile.is_zipfile(self.path):
                 return _read_all_image_from_zip(self.path, **kwargs)
 

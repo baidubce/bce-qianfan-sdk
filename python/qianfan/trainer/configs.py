@@ -518,7 +518,9 @@ def _parse_model_info_list(
             support_peft_types=[],
             specific_peft_types_params_limit={},
             model_type=console_consts.FinetuneSupportModelType(
-                info.get("modelType", console_consts.FinetuneSupportModelType.Text2Text)
+                info.get(
+                    "modelType", console_consts.FinetuneSupportModelType.Text2Text.value
+                )
             ),
         )
         has_train_mode = False

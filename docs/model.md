@@ -4,7 +4,7 @@
 
 ## 模型管理：
 
-在[model_management](model_management.md)中我们可以通过基本的模型管理管控API进行模型的发布、查询等操作。简单来说，`model_version_id`贯穿了整个模型生命周期，在模型发布后，必须知道`model_version_id`才能进行后续的推理，评估，部署等操作。
+在[model_management](model_management.md)中我们可以通过基本的模型管理管控API进行模型的发布、查询等操作。简单来说，`model_id`贯穿了整个模型生命周期，在模型发布后，必须知道`model_id`才能进行后续的推理，评估，部署等操作。
 
 而`Model`是千帆SDK对模型管理进行抽象和封装，开发者可以通过`Model`对象结合`Dataset`，`Evaluation`等模块实现批量推理，评估等逻辑。
 
@@ -14,7 +14,7 @@
 ```python
 from qianfan.model import Model
 
-m = Model(version_id="amv-xx")
+m = Model(id="amv-xx")
 ```
 2. 通过`trainer.run()`完成训练之后直接通过`trainer.output`获得：
 ```python
@@ -31,8 +31,8 @@ m = trainer.output["model"]
 from qianfan.model import Model
 from qianfan.dataset import Dataset
 
-ds = Dataset.load(qianfan_dataset_id="ds-xx")
-m = Model(version_id="amv-xx")
+ds = Dataset.load(qianfan_dataset_version_id="ds-xx")
+m = Model(id="amv-xx")
 
 m.batch_inference(dataset=ds)
 ```
@@ -47,41 +47,36 @@ from qianfan.model import Model
 from qianfan.evaluation.evaluator import QianfanRuleEvaluator
 from qianfan.evaluation import EvaluationManager
 
-ds = Dataset.load(qianfan_dataset_id="ds-xxx")
-m = Model(version_id="amv-xx")
+ds = Dataset.load(qianfan_dataset_version_id="ds-xxx")
+m = Model(id="amv-xx")
 
 # 千帆平台规则评估器:
 qianfan_evaluators = [
     QianfanRuleEvaluator(using_accuracy=True, using_similarity=True),
 ]
-em = EvaluationManager(qianfan_evaluators=qianfan_evaluators
-em = EvaluationManager(
-    qianfan_evaluators=qianfan_evaluators
-    # local_evaluators=[...]
-)
-)
+em = EvaluationManager(qianfan_evaluators=qianfan_evaluators)
 result = em.eval([m], ds)
 ```
 
 ## 基于`Model`进行服务部署
 
-千帆SDK支持了代码层面将模型的部署成服务的能力，开发者在训练后或是希望使用预置模型自行发布的服务的时候可以使用`Model.deploy()`完成，以下是一个使用预付费发布指定`model_version_id`模型服务的例子：
+千帆SDK支持了代码层面将模型的部署成服务的能力，开发者在训练后或是希望使用预置模型自行发布的服务的时候可以使用`Model.deploy()`完成，以下是一个使用预付费发布指定`model_id`模型服务的例子：
 
 ```python
 from qianfan import ChatCompletion
 from qianfan.model import Model, Service
 from qianfan.model.consts import ServiceType
-from qianfan.resources.console.consts import DeployPoolType
+from qianfan.model.configs import DeployConfig, PaymentType
 
-m = Model(version_id="amv-xxx")
+m = Model(id="amv-xxx")
 #m.auto_complete_info() to fix if model id not found
 sft_svc: Service = m.deploy(DeployConfig(
     name="your_service_name",
     endpoint_suffix="your_sdk_suffix",
     replicas=1, # 副本数， 与qps强绑定
-    pool_type=DeployPoolType.PrivateResource, # 私有资源池
     service_type=ServiceType.Chat,
-    hours=1, # 预付费购买的时长
+    payment_type=PaymentType.Prepaid.value,
+    months=1, # 预付费购买的时长
 ))
 
 ### 使用Service调用部署好的模型服务
@@ -94,13 +89,13 @@ sft_chat_resp["result"]
 
 ## 基于`Model`进行模型压缩
 
-千帆SDK支持了代码层面将模型进行压缩的能力，开发者在针对`训练后的模型`希望进行模型压缩以提高模型性能的场景，可以使用`Model.compress()`完成，以下是一个使用量化INT8-PTQ压缩指定`model_version_id`模型的例子：
+千帆SDK支持了代码层面将模型进行压缩的能力，开发者在针对`训练后的模型`希望进行模型压缩以提高模型性能的场景，可以使用`Model.compress()`完成，以下是一个使用量化INT8-PTQ压缩指定`model_id`模型的例子：
 
 ```python
 from qianfan.model import Model
 from qianfan.resources.console import consts as console_consts
 
-m: Model = Model(version_id="amv-ws1pi3cqx9m1")
+m: Model = Model(id="amv-ws1pi3cqx9m1")
 new_model: Model = m.compress(
     strategy=console_consts.ModelCompStrategy.Quantization,
     weight=console_consts.ModelQuantizationWeight.INT8PTQ,

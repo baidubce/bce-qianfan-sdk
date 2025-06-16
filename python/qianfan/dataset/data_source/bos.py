@@ -98,7 +98,7 @@ class BosDataSource(DataSource, BaseModel):
             should_use_qianfan_special_jsonl_format = False
 
         # 如果是文生图，则需要强制上压缩包
-        if self.format_type() == FormatType.Text2Image:
+        if self.format_type() in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             should_save_as_zip_file = True
 
         assert self.ak
@@ -242,7 +242,7 @@ class BosDataSource(DataSource, BaseModel):
     def _read_from_cache(self, is_read_from_zip: bool, **kwargs: Any) -> pyarrow.Table:
         cache_content_path = self._get_downloaded_content_cache_path()
 
-        if self.format_type() == FormatType.Text2Image:
+        if self.format_type() in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             return _read_all_image_from_zip(cache_content_path)
 
         if is_read_from_zip:

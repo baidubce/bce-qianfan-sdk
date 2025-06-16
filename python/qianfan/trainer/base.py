@@ -69,7 +69,12 @@ class BaseAction(ExecuteSerializable[Input, Output], Persistent, ABC):
         return cls._load_from_dict(meta)
 
     @abstractmethod
-    def exec(self, input: Optional[Input] = None, **kwargs: Dict) -> Output:
+    def exec(
+        self,
+        input: Optional[Input] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Output:
         """
         exec is a abstract method for execute action.
 

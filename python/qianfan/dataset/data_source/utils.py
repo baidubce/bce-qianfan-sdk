@@ -25,7 +25,18 @@ import zipfile
 from enum import Enum
 from pathlib import Path
 from time import sleep
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 import pyarrow
 import requests
@@ -54,18 +65,15 @@ from qianfan.dataset.data_source.chunk_reader import (
 from qianfan.dataset.table_utils import _construct_packed_table_from_nest_sequence
 from qianfan.errors import QianfanRequestError
 from qianfan.resources import Data
+from qianfan.resources.console.consts import V2 as V2Consts
 from qianfan.resources.console.consts import (
-    DataExportDestinationType,
-    DataExportStatus,
-    DataImportStatus,
     DataProjectType,
-    DataReleaseStatus,
     DataSetType,
     DataSourceType,
     DataTemplateType,
 )
 from qianfan.utils import log_debug, log_error, log_info, log_warn
-from qianfan.utils.bos_uploader import BosHelper, generate_bos_file_path
+from qianfan.utils.bos_uploader import generate_bos_file_path
 from qianfan.utils.pydantic import BaseModel
 
 try:
@@ -74,13 +82,40 @@ except ImportError:
     log_warn("python-dateutil not installed, only online function can be used")
 
 
-class ImageExtensionName(Enum):
-    """Enum for image extension name"""
+class PromptImageExtensionName(Enum):
+    """Enum for prompt image extension name"""
 
     Jpg = "jpg"
     Jpeg = "jpeg"
     Png = "png"
     Bmp = "bmp"
+
+
+class PromptImageResposeExtensionName(Enum):
+    """Enum for prompt image response extension name"""
+
+    Jpg = "jpg"
+    Jpeg = "jpeg"
+    Png = "png"
+    Webp = "webp"
+
+
+_dataset_format_type_2_suffix_map = {
+    V2Consts.DatasetFormat.PromptResponse: [
+        FormatType.Text,
+        FormatType.Jsonl,
+        FormatType.Csv,
+    ],
+    V2Consts.DatasetFormat.Text: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.DPOPromptChosenRejected: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.KTOPromptChosenRejected: [FormatType.Text, FormatType.Jsonl],
+    V2Consts.DatasetFormat.PromptSortedResponses: [FormatType.Jsonl],
+    V2Consts.DatasetFormat.Prompt: [FormatType.Text, FormatType.Jsonl, FormatType.Csv],
+    V2Consts.DatasetFormat.PromptImage: [FormatType.Json],
+    V2Consts.DatasetFormat.PromptImageResponse: [FormatType.Jsonl],
+}
+
+__prompt_images_response_image_path_column_name = "images"
 
 
 class TaskDispatcher:
@@ -127,7 +162,9 @@ def _get_annotation_file_name(file_name: str) -> str:
 def _get_all_image_files_and_annotations_from_root(
     root: str, files: List[str]
 ) -> Tuple[List[str], List[Optional[Dict]]]:
-    image_extension_name_tuple = tuple([name.value for name in ImageExtensionName])
+    image_extension_name_tuple = tuple(
+        [name.value for name in PromptImageExtensionName]
+    )
 
     result_image_path_list: List[str] = []
     result_annotation_path_list: List[Optional[Dict]] = []
@@ -153,6 +190,31 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
     table_list: List[pyarrow.Table] = []
 
     for root, dirs, files in os.walk(path):
+        if "chat.jsonl" in files:
+            table = _get_a_pyarrow_table(
+                os.path.join(root, "chat.jsonl"), FormatType.Jsonl
+            )
+
+            def _add_root_prefix(col: Dict[str, Any]) -> Dict:
+                if __prompt_images_response_image_path_column_name in col:
+                    new_col = [
+                        [
+                            os.path.join(os.path.abspath(root), path)
+                            for path in path_list
+                        ]
+                        for path_list in col[
+                            __prompt_images_response_image_path_column_name
+                        ]
+                    ]
+                    col[__prompt_images_response_image_path_column_name] = new_col
+                return col
+
+            from qianfan.dataset.table import Table
+
+            sdk_table = Table(table)
+            sdk_table.col_map(_add_root_prefix)
+            return sdk_table.inner_table
+
         result = _get_all_image_files_and_annotations_from_root(root, files)
         table_list.append(
             pyarrow.Table.from_pydict(
@@ -166,14 +228,38 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
     return pyarrow.concat_tables(table_list)
 
 
+def _extract_all_with_utf8(zip_file_path: str, extract_to_dir: str) -> None:
+    # 打开 ZIP 文件
+    with zipfile.ZipFile(zip_file_path, "r") as zip_file:
+        # 遍历 ZIP 文件中的每一个文件
+        for info in zip_file.infolist():
+            # 处理文件名以确保使用 UTF-8 编码
+            try:
+                file_name = info.filename.encode("cp437").decode("utf-8")
+            except UnicodeEncodeError:
+                log_info("can't encode with cp437, try utf-8 directly")
+                file_name = info.filename
+
+            # 目标文件的完整路径
+            target_path = os.path.join(extract_to_dir, file_name)
+
+            # 如果是目录，则创建目录
+            if info.is_dir():
+                os.makedirs(target_path, exist_ok=True)
+            else:
+                # 如果是文件，确保目录存在，然后解压文件
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                with zip_file.open(info) as source, open(target_path, "wb") as target:
+                    target.write(source.read())
+
+
 def _read_all_image_from_zip(path: str, **kwargs: Any) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = os.path.join(
         _merge_custom_path(QianfanDatasetText2ImageUnzipCacheDir),
         f"image_dataset_folder_{uuid.uuid4()}",
     )
-    with zipfile.ZipFile(path) as zip_file:
-        zip_file.extractall(tmp_folder_path)
+    _extract_all_with_utf8(path, tmp_folder_path)
     return _read_all_image_in_an_folder(tmp_folder_path, **kwargs)
 
 
@@ -201,6 +287,33 @@ def _collect_all_images_and_annotations_in_one_folder(
                 json.dump(annotation_info, f)
 
 
+def _collect_all_images_from_prompt_image_response_table(
+    table: pyarrow.Table, target_folder_path: str
+) -> None:
+    image_target_path = os.path.join(target_folder_path, "images")
+    os.makedirs(image_target_path, exist_ok=True)
+    table_list = table.to_pylist()
+
+    for entry in table_list:
+        if __prompt_images_response_image_path_column_name not in entry:
+            raise ValueError('no "images" column been found in dataset')
+
+        for i in range(len(entry[__prompt_images_response_image_path_column_name])):
+            file_path = entry[__prompt_images_response_image_path_column_name][i]
+            file_name = os.path.basename(file_path)
+            target_path = os.path.join(image_target_path, file_name)
+            shutil.copy(file_path, target_path)
+            file_path = f"images/{file_name}"
+            entry[__prompt_images_response_image_path_column_name][i] = file_path
+
+    with open(
+        os.path.join(target_folder_path, "chat.jsonl"), mode="w", encoding="utf8"
+    ) as f:
+        for entry in table_list:
+            json_str = json.dumps(entry, ensure_ascii=False)
+            f.write(f"{json_str}\n")
+
+
 class _DatasetCacheMetaInfo(BaseModel):
     """存储数据集缓存中的，单个文件的元信息"""
 
@@ -215,20 +328,21 @@ class _DatasetCacheMetaInfo(BaseModel):
 
 
 def _read_all_file_content_in_an_folder(
-    path: str, format_type: FormatType, **kwargs: Any
+    path: str, format_types: Union[FormatType, List[FormatType]], **kwargs: Any
 ) -> pyarrow.Table:
     """从文件夹里读取所有指定类型的的文件"""
     og_table_list: List[pyarrow.Table] = []
+    if not isinstance(format_types, list):
+        format_types = [format_types]
 
     # 如果是文件夹，则遍历读取
     for root, dirs, files in os.walk(path):
         for file_name in files:
-            if not file_name.endswith(format_type.value):
-                continue
-            file_path = os.path.join(root, file_name)
-
-            table = _get_a_pyarrow_table(file_path, format_type, **kwargs)
-            og_table_list.append(table)
+            for format_type in format_types:
+                if file_name.endswith(format_type.value):
+                    file_path = os.path.join(root, file_name)
+                    table = _get_a_pyarrow_table(file_path, format_type, **kwargs)
+                    og_table_list.append(table)
 
     og_table = pyarrow.concat_tables(og_table_list)
     assert isinstance(og_table, pyarrow.Table)
@@ -237,15 +351,14 @@ def _read_all_file_content_in_an_folder(
 
 
 def _read_all_file_from_zip(
-    path: str, format_type: FormatType, **kwargs: Any
+    path: str, format_types: Union[FormatType, List[FormatType]], **kwargs: Any
 ) -> pyarrow.Table:
     """从压缩包中读取所有的文件"""
     tmp_folder_path = "tmp_folder_path"
     try:
-        with zipfile.ZipFile(path) as zip_file:
-            zip_file.extractall(tmp_folder_path)
+        _extract_all_with_utf8(path, tmp_folder_path)
         return _read_all_file_content_in_an_folder(
-            tmp_folder_path, format_type, **kwargs
+            tmp_folder_path, format_types, **kwargs
         )
     finally:
         shutil.rmtree(tmp_folder_path, ignore_errors=True)
@@ -476,37 +589,91 @@ def _read_table_and_concat(reader: BaseReader) -> pyarrow.Table:
     return pyarrow.concat_tables(returned_table_list)
 
 
+def _merge_field_types(field_type1: Any, field_type2: Any) -> Any:
+    if pyarrow.types.is_struct(field_type1) and pyarrow.types.is_struct(field_type2):
+        return pyarrow.struct(_merge_schemas([field_type1, field_type2]))
+    elif pyarrow.types.is_list(field_type1) and pyarrow.types.is_list(field_type2):
+        return pyarrow.list_(
+            _merge_field_types(field_type1.value_type, field_type2.value_type)
+        )
+    elif pyarrow.types.is_large_list(field_type1) and pyarrow.types.is_large_list(
+        field_type2
+    ):
+        return pyarrow.large_list(
+            _merge_field_types(field_type1.value_type, field_type2.value_type)
+        )
+    else:
+        # 根据需要处理非兼容类型的冲突，这里假设保持原有字段类型
+        return field_type1
+
+
+def _merge_schemas(schemas: List[pyarrow.Schema]) -> pyarrow.Schema:
+    merged_fields: Dict[str, Any] = {}
+
+    for schema in schemas:
+        for field in schema:
+            if field.name in merged_fields:
+                # 合并字段类型
+                merged_fields[field.name] = pyarrow.field(
+                    field.name,
+                    _merge_field_types(merged_fields[field.name].type, field.type),
+                )
+            else:
+                # 如果字段不存在于 merged_fields 中，直接添加
+                merged_fields[field.name] = field
+
+    # 创建并返回一个新的 schema
+    return pyarrow.schema(list(merged_fields.values()))
+
+
 def _write_table_to_arrow_file(cache_file_path: str, reader: BaseReader) -> None:
     import filelock
 
     stream_writer: Optional[pyarrow.ipc.RecordBatchStreamWriter] = None
+    final_schema: Optional[pyarrow.Schema] = None
 
     log_info(f"start to write arrow table to {cache_file_path}")
 
-    file_lock = filelock.FileLock(cache_file_path + ".lock")
-    file_lock.acquire()
+    with filelock.FileLock(cache_file_path + ".lock"):
+        if reader.is_resettable:
+            try:
+                schema_set: Set[pyarrow.Schema] = set()
+                for table in _build_table_from_reader(reader):
+                    assert isinstance(table, pyarrow.Table)
+                    schema_set.add(table.schema)
 
-    try:
-        for table in _build_table_from_reader(reader):
-            assert isinstance(table, pyarrow.Table)
-            if stream_writer is None:
-                stream_writer = pyarrow.ipc.new_stream(cache_file_path, table.schema)
+                final_schema = _merge_schemas(list(schema_set))
+                stream_writer = pyarrow.ipc.new_stream(cache_file_path, final_schema)
+                reader.reset()
 
-            stream_writer.write_table(table)
-    except pyarrow.lib.ArrowInvalid:
-        err_info = "multi-schema has been found between dataset entries"
-        log_error(err_info)
-        raise Exception(err_info)
+            except Exception as e:
+                log_error(f"an error has occurred during reading schema: {e}")
+                raise e
 
-    assert stream_writer
-    stream_writer.close()
-    file_lock.release()
+        try:
+            for table in _build_table_from_reader(reader, final_schema):
+                assert isinstance(table, pyarrow.Table)
+                if stream_writer is None:
+                    stream_writer = pyarrow.ipc.new_stream(
+                        cache_file_path, table.schema
+                    )
+
+                stream_writer.write_table(table)
+        except pyarrow.lib.ArrowInvalid:
+            err_info = "multi-schema has been found between dataset entries"
+            log_error(err_info)
+            raise Exception(err_info)
+
+        assert stream_writer
+        stream_writer.close()
 
     log_info("writing succeeded")
     return
 
 
-def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
+def _build_table_from_reader(
+    reader: BaseReader, schema: Optional[pyarrow.Schema] = None
+) -> pyarrow.Table:
     reader_type = type(reader)
     for elem_list in reader:
         if (
@@ -515,18 +682,18 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
             or (reader_type == JsonReader and isinstance(elem_list[0], dict))
             or (reader_type == JsonLineReader and isinstance(elem_list[0], dict))
         ):
-            table = pyarrow.Table.from_pylist(elem_list)
+            table = pyarrow.Table.from_pylist(elem_list, schema=schema)
         elif (
             reader_type == JsonLineReader or reader_type == JsonReader
         ) and isinstance(elem_list[0], list):
-            table = _construct_packed_table_from_nest_sequence(elem_list)
+            table = _construct_packed_table_from_nest_sequence(elem_list, schema=schema)
         elif reader_type == MapperReader:
             if isinstance(elem_list[0], (list, str)):
                 table = pyarrow.Table.from_pydict(
-                    {QianfanDatasetPackColumnName: elem_list}
+                    {QianfanDatasetPackColumnName: elem_list}, schema=schema
                 )
             elif isinstance(elem_list[0], dict):
-                table = pyarrow.Table.from_pylist(elem_list)
+                table = pyarrow.Table.from_pylist(elem_list, schema=schema)
             else:
                 err_msg = (
                     "get unsupported element type from the return value of map"
@@ -547,7 +714,7 @@ def _build_table_from_reader(reader: BaseReader) -> pyarrow.Table:
 def zip_file_or_folder(path: str) -> str:
     folder_name: str = os.path.split(os.path.abspath(path))[1]
 
-    if folder_name.rfind(".") != 0:
+    if folder_name.rfind(".") != -1:
         # 去除文件内的后缀名
         folder_name = folder_name[0 : folder_name.rfind(".")]
         # 去除文件前的英文句号
@@ -555,7 +722,7 @@ def zip_file_or_folder(path: str) -> str:
 
     # 如果是文件夹，则直接调用对应的函数处理
     if os.path.isdir(path):
-        return shutil.make_archive(folder_name, "zip", root_dir=path)
+        return shutil.make_archive(path, "zip", root_dir=path)
 
     # 不然得要手动处理文件
     zip_file_name = f"{folder_name}.zip"
@@ -584,33 +751,30 @@ def _get_data_format_from_template_type(template_type: DataTemplateType) -> Form
 
 
 def _create_import_data_task_and_wait_for_success(
-    dataset_id: str,
+    version_id: str,
     is_annotated: bool,
     file_path: str,
     source_type: DataSourceType = DataSourceType.PrivateBos,
 ) -> bool:
     """创建并且监听导出任务直到完成"""
 
-    Data.create_data_import_task(
-        dataset_id,
-        is_annotated,
-        source_type,
-        file_path,
+    create_resp = Data.V2.create_dataset_version_import_task(
+        version_id,
+        [file_path],
     )
+
+    task_id = create_resp["result"]
 
     log_info("successfully create importing task")
     while True:
         sleep(get_config().IMPORT_STATUS_POLLING_INTERVAL)
         log_info("polling import task status")
-        qianfan_resp = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
+        qianfan_resp = Data.V2.get_dataset_version_import_task_info(task_id)["result"]
         status = qianfan_resp["importStatus"]
-        if status in [
-            DataImportStatus.NotStarted.value,
-            DataImportStatus.Running.value,
-        ]:
+        if status == V2Consts.DatasetImportTaskStatus.Importing.value:
             log_info(f"import status: {status}, keep polling")
             continue
-        elif status == DataImportStatus.Finished.value:
+        elif status == V2Consts.DatasetImportTaskStatus.ImportFinished.value:
             log_info("import succeed")
             return True
         else:
@@ -619,33 +783,19 @@ def _create_import_data_task_and_wait_for_success(
 
 
 def upload_data_from_bos_to_qianfan(
-    bos_helper: BosHelper,
-    is_zip_file: bool,
     qianfan_dataset_id: str,
     storage_id: str,
     remote_file_path: str,
     is_annotated: bool = False,
 ) -> None:
     # 如果不是压缩包，则直接导入
-    if not is_zip_file:
-        complete_file_path = generate_bos_file_path(storage_id, remote_file_path)
-        if not _create_import_data_task_and_wait_for_success(
-            qianfan_dataset_id, is_annotated, complete_file_path
-        ):
-            err_msg = "import data from bos file failed"
-            log_error(err_msg)
-            raise ValueError(err_msg)
-
-    # 不然需要创建分享链接导入
-    else:
-        shared_str = bos_helper.get_bos_file_shared_url(remote_file_path, storage_id)
-        log_info(f"get shared file url: {shared_str}")
-        if not _create_import_data_task_and_wait_for_success(
-            qianfan_dataset_id, is_annotated, shared_str, DataSourceType.SharedZipUrl
-        ):
-            err_msg = "import data from shared zip url failed"
-            log_error(err_msg)
-            raise ValueError(err_msg)
+    complete_file_path = generate_bos_file_path(storage_id, remote_file_path)
+    if not _create_import_data_task_and_wait_for_success(
+        qianfan_dataset_id, is_annotated, complete_file_path
+    ):
+        err_msg = "import data from bos file failed"
+        log_error(err_msg)
+        raise ValueError(err_msg)
 
 
 def _get_qianfan_dataset_type_tuple(
@@ -708,11 +858,15 @@ def _datetime_parse_hook(obj: Any) -> Union[datetime.datetime, str]:
     return obj
 
 
-def _check_is_any_data_existed_in_dataset(dataset_id: str, **kwargs: Any) -> bool:
+def _check_is_any_data_existed_in_dataset(
+    dataset_version_id: str, **kwargs: Any
+) -> bool:
     """检查远端数据集是否为空"""
 
-    qianfan_resp = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
-    return qianfan_resp["entityCount"] != 0
+    qianfan_resp = Data.V2.get_dataset_version_info(dataset_version_id, **kwargs)[
+        "result"
+    ]
+    return qianfan_resp["sampleCount"] != 0
 
 
 def _check_data_and_zip_file_valid(
@@ -730,31 +884,38 @@ def _check_data_and_zip_file_valid(
 
 
 def _create_export_data_task_and_wait_for_success(
-    dataset_id: str, **kwargs: Any
-) -> None:
+    dataset_id: str,
+    storage_type: V2Consts.StorageType = V2Consts.StorageType.SysStorage,
+    path: str = "",
+    **kwargs: Any,
+) -> str:
     log_info("start to export dataset")
-    Data.create_dataset_export_task(
-        dataset_id, DataExportDestinationType.PlatformBos, **kwargs
+    create_resp = Data.V2.create_dataset_version_export_task(
+        dataset_id, storage_type, path, **kwargs
     )
     log_info("create dataset export task successfully")
+
+    task_id = create_resp["result"]
 
     # 轮巡导出状态
     while True:
         sleep(get_config().EXPORT_STATUS_POLLING_INTERVAL)
         log_info("polling export task status")
-        info = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
+        info = Data.V2.get_dataset_version_export_task_info(task_id, **kwargs)["result"]
         status = info["exportStatus"]
 
-        if status == DataExportStatus.Finished.value:
+        if status == V2Consts.DatasetExportTaskStatus.ExportFinished.value:
             log_info("export succeed")
             break
-        elif status == DataExportStatus.Running.value:
+        elif status == V2Consts.DatasetExportTaskStatus.Exporting.value:
             log_info(f"export status: {status}, keep polling")
             continue
-        elif status == DataExportStatus.Failed.value:
+        elif status == V2Consts.DatasetExportTaskStatus.ExportFailed.value:
             error = QianfanRequestError(f"export dataset failed with status {status}")
             log_error(str(error))
             raise error
+
+    return task_id
 
 
 def _download_file_from_url_streamly(
@@ -781,25 +942,25 @@ def _download_file_from_url_streamly(
 
 
 def _create_release_data_task_and_wait_for_success(
-    dataset_id: str, **kwargs: Any
+    version_id: str, **kwargs: Any
 ) -> bool:
-    info = Data.get_dataset_info(dataset_id, **kwargs)["result"]["versionInfo"]
+    info = Data.V2.get_dataset_version_info(version_id, **kwargs)["result"]
 
-    status = info["releaseStatus"]
-    if status == DataReleaseStatus.Finished:
+    status = info["publishStatus"]
+    if status == V2Consts.DatasetPublishStatus.Published.value:
         return True
 
-    Data.release_dataset(dataset_id, **kwargs)
+    Data.V2.publish_dataset_version(version_id, **kwargs)
     while True:
         sleep(get_config().RELEASE_STATUS_POLLING_INTERVAL)
 
-        info = Data.get_dataset_info(dataset_id)["result"]["versionInfo"]
-        status = info["releaseStatus"]
+        info = Data.V2.get_dataset_version_info(version_id, **kwargs)["result"]
+        status = info["publishStatus"]
 
-        if status == DataReleaseStatus.Running:
+        if status == V2Consts.DatasetPublishStatus.Publishing.value:
             log_info("data releasing, keep polling")
             continue
-        elif status == DataReleaseStatus.Failed:
+        elif status == V2Consts.DatasetPublishStatus.PublishFailed.value:
             message = f"data releasing failed with error code {info['releaseErrCode']}"
             log_error(message)
             return False
@@ -828,7 +989,7 @@ def _pack_a_table_into_file_for_uploading(
         if table.is_dataset_grouped() and should_use_qianfan_special_jsonl_format:
             table.pack()
 
-        if format_type != FormatType.Text2Image:
+        if format_type not in [FormatType.Text2Image, FormatType.Text2ImageResponse]:
             FileDataSource(
                 path=local_file_path,
                 file_format=format_type,
@@ -843,9 +1004,14 @@ def _pack_a_table_into_file_for_uploading(
             # 这里需要手动删除上一次的中转文件夹
             # 避免重名带来的影响
             shutil.rmtree(local_file_path, ignore_errors=True)
-            _collect_all_images_and_annotations_in_one_folder(
-                table.inner_table, local_file_path
-            )
+            if format_type == FormatType.Text2Image:
+                _collect_all_images_and_annotations_in_one_folder(
+                    table.inner_table, local_file_path
+                )
+            else:
+                _collect_all_images_from_prompt_image_response_table(
+                    table.inner_table, local_file_path
+                )
     else:
         local_file_path = table.inner_data_source_cache.path
 

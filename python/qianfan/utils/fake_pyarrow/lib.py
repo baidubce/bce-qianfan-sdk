@@ -19,3 +19,8 @@ fake pyarrow lib
 class ArrowInvalid(Exception):
     # do nothing
     ...
+
+
+class Schema:
+    # do nothing
+    ...

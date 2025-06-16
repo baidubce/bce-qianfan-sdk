@@ -74,7 +74,7 @@ from qianfan.dataset import Dataset
 ds = Dataset.load(data_file="path/to/dataset_file.jsonl")
 
 # 从千帆导入
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds = Dataset.load(qianfan_dataset_version_id="your_dataset_version_id")
 ```
 
 ### 处理数据集
@@ -107,7 +107,7 @@ print(ds.filter(filter_func).map(map_func).list())
 new_ds = ds.save(data_file="path/to/local_file.csv")
 
 # 导出到千帆平台
-new_ds = ds.save(qianfan_dataset_id="your_dataset_id")
+new_ds = ds.save(qianfan_dataset_version_id="your_dataset_version_id")
 
 # 或者导出到它导入的地方
 new_ds = ds.save()
@@ -269,7 +269,7 @@ new_ds = ds.save(data_file="file.json", batch_size=100)
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_version_id")
 print(ds_qianfan.list())
 ```
 
@@ -280,7 +280,7 @@ print(ds_qianfan.list())
 ```python
 from qianfan.dataset import Dataset
 
-ds_local = Dataset.load(qianfan_dataset_id="your_dataset_id").save(data_file="your_file_path")
+ds_local = Dataset.load(qianfan_dataset_version_id="your_dataset_version_id").save(data_file="your_file_path")
 print(ds_local.list())
 ```
 
@@ -292,48 +292,62 @@ print(ds_local.list())
 
   主要的参数包括：
   + name: 千帆平台数据集名称
-  + template_type: 千帆平台数据集模板类型
+  + dataset_format: 千帆平台数据集类型
   + storage_type: 千帆平台数据集存储类型
 
 ```python
+from qianfan.resources.console.consts import V2 as V2Consts
+
 ds_qianfan.save(
   qianfan_dataset_create_args={
     "name": "example_name",
-    "template_type": DataTemplateType.NonSortedConversation,
-    "storage_type": DataStorageType.PrivateBos,
-    "storage_id": "your_bucket_name",
-    "storage_path": "/your_desired_dataset_path/",
+    "dataset_format":  V2Consts.DatasetFormat.PromptResponse,
+    "storage_type": V2Consts.StorageType.Bos,
+    "storage_path": "bos://bucket/dir/"
   },
 )
 ```
 
-> 以 `sup` 开头的参数为辅助上传数据集时用到的 Bos 信息。当且仅当目标的千帆数据集使用公共存储（公共 BOS，对应 `DataStorageType.PublicBos`）数据时需要填写，详情见下
+> 以 `sup` 开头的参数为辅助上传数据集时用到的 Bos 信息。当且仅当目标的千帆数据集使用公共存储（公共 BOS，对应 `V2Consts.StorageType.SysStorage`）数据时需要填写，详情见下
 
-+ 另一种导出方式是增量导出到已经存在的数据集当中：填写 `save` 函数的 `qianfan_dataset_id` 参数（和 `load` 方法一致）。如果是导出到原本导入的数据集，则可以忽略 `qianfan_dataset_id` 参数。
++ 另一种导出方式是导出到事先创建好的数据集当中：填写 `save` 函数的 `qianfan_dataset_version_id` 参数（和 `load` 方法一致）。如果是导出到原本创建为对象的数据集，则可以忽略 `qianfan_dataset_version_id` 参数。
 
 ```python
-ds_qianfan.save(qianfan_dataset_id="your_dataset_id")
-# 如果是导出到原本导入的数据集，可以忽略该参数
+ds_qianfan.save(qianfan_dataset_version_id="your_dataset_version_id")
+# 如果是导出到原本创建为对象数据集，可以忽略该参数
 ds_qianfan.save()
 ```
 
-​		这种导出方式目前暂不支持导出到新数据集版本进行覆盖导出。若用户有覆盖导出的需求，请使用方式一。
++ 还有一种导出方式是直接导出到数据集的新版本中，这个要求用户使用 `QianfanDataSource` 来创建新的数据集版本。有关 `QianfanDataSource` 的介绍见下
+
+```python
+from qianfan.dataset.data_source import QianfanDataSource
+
+target_data_source = QianfanDataSource.get_existed_dataset(version_id="your_version_id")
+new_data_source = target_data_source.create_new_version()
+
+ds_qianfan.save(qianfan_dataset_version_id=new_data_source.id)
+```
+
+如果在上传时遭遇导出数据集到千帆失败的问题，可能是由于数据集文件的格式与默认的上传文件格式不匹配导致的
+
+以 Prompt Response 类型的数据集举例，SDK 默认的上传文件格式为 Jsonl。如果用户需要上传 CSV 格式的数据，需要手动指定 `file_format_type=FormatType.Csv` 的入参。其它类型的数据集以此类推
 
 #### 千帆数据源
 
 和从文件系统导入一致，千帆 Python SDK 也同样内置了千帆数据源，用作数据集 `load` 或者 `save` 操作的入参。目前 SDK 支持用户在本地全新创建一个千帆数据源，代表在千帆平台上创建一个新的数据集组，默认包含一个数据集；或者在本地创建一个千帆数据源以代表平台上已经存在的数据集。
 
 ```python
-from qianfan.dataset import DataTemplateType
 from qianfan.dataset.data_source import QianfanDataSource
+from qianfan.resources.console.consts import V2 as V2Consts
 
 # 创建一个映射到已存在的数据集的千帆数据源
-data_source = QianfanDataSource.get_existed_dataset("your_dataset_id")
+data_source = QianfanDataSource.get_existed_dataset("your_dataset_version_id")
 
 # 创建一个全新的数据源，同时在平台创建一个新的数据集组
 data_source = QianfanDataSource.create_bare_dataset(
   "data_group_name",
-  DataTemplateType.NonSortedConversation
+  V2Consts.DatasetFormat.PromptResponse,
 )
 ```
 
@@ -343,11 +357,11 @@ data_source = QianfanDataSource.create_bare_dataset(
 #### 导出格式
 
 为了能够将数据集导出到千帆平台，被导出的数据集应该符合一定的格式要求。我们在下面列出了对应数据集类型的单条数据集格式:
-+ Prompt+Response: `[{"prompt": "", "response": [[""]]}]`
-+ Prompt+多Response排序: `[{"prompt": "", "response": [["", "", ...]]}]`
-+ 纯文本: `""`
-+ Prompt集: `{"prompt": ""}`
-+ Prompt集+图片: `{"annotation": "", "image_path": "path/to/image_file"}`
++ PromptResponse: `[{"prompt": "", "response": [[""]]}]`
++ PromptSortedResponses: `[{"prompt": "", "response": [["", "", ...]]}]`
++ Text: `""`
++ Prompt: `{"prompt": ""}`
++ PromptImage: `{"annotation": "", "image_path": "path/to/image_file"}`
 
 ### 从 HuggingFace 数据集导入
 
@@ -412,7 +426,7 @@ ds_pyarrow_table = Dataset.create_from_pyarrow_table(Table.from_pandas(...))
 除此之外，当用户以 jsonl \ txt 格式导入类数组形式文件，或者导入的是千帆平台的数据集时，SDK 支持传入 `organize_data_as_group` 参数，来指定将数据集组织成 SDK 内部的二维表格形式。这种格式包含了分组信息。并且可以通过 `pack()` 与 `unpack()` 函数进行格式之间的互相转换。
 
 ```python
-ds = Dataset.load(qianfan_dataset_id="your_dataset_id", organize_data_as_group=True)
+ds = Dataset.load(qianfan_dataset_version_id="your_dataset_id", organize_data_as_group=True)
 ```
 
 设置 `organize_data_as_group=True` 或使用 `unpack()` 函数得到的千帆平台的数据集格式如下所示
@@ -548,7 +562,7 @@ print(ds[["column_name1", "column_name3"]])
 ```python
 from qianfan.dataset import Dataset
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 
 # 单独检视某一实体
 print(ds_qianfan[0])
@@ -605,19 +619,19 @@ ds = ds \
 ```python
 from qianfan.dataset import Dataset
 from qianfan.dataset.qianfan_data_operators import (
-  RemoveInvisibleCharacter,
-  FilterCheckNumberWords,
-  DeduplicationSimhash,
-  ReplaceEmails,
+    RemoveInvisibleCharacter,
+    FilterCheckNumberWords,
+    DeduplicationSimhash,
+    ReplaceEmails,
 )
 
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id")
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id")
 
 ds_qianfan.online_data_process([
-  RemoveInvisibleCharacter(),
-  FilterCheckNumberWords(number_words_max_cutoff=1024),
-  DeduplicationSimhash(distance=5),
-  ReplaceEmails()
+    RemoveInvisibleCharacter(),
+    FilterCheckNumberWords(number_words_max_cutoff=1024),
+    DeduplicationSimhash(distance=5),
+    ReplaceEmails()
 ])
 ```
 
@@ -632,13 +646,11 @@ from qianfan.dataset.schema import QianfanNonSortedConversation
 schema = QianfanNonSortedConversation()
 
 # 在 load 时使用
-ds_qianfan = Dataset.load(qianfan_dataset_id="your_dataset_id", schema=schema)
+ds_qianfan = Dataset.load(qianfan_dataset_version_id="your_dataset_id", schema=schema)
 
 # 在 save 时使用
 # 如果在 load 时就已经传入了 schema ，
-# 则默认使用 load 的 schema 进行校验
-# 额外传入则会覆盖原有的 schema，
-# 使用新的 schema 进行校验
+# 则使用 load 的 schema 进行校验
 ds_qianfan.save(schema=schema)
 
 # 单独使用

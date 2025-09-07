@@ -48,6 +48,7 @@ class Config(BaseSettings):
     IAM_SIGN_EXPIRATION_SEC: int = Field(default=DefaultValue.IAMSignExpirationSeconds)
     CONSOLE_API_BASE_URL: str = Field(default=DefaultValue.ConsoleAPIBaseURL)
     IAM_BASE_URL: str = Field(default=DefaultValue.IAMBaseURL)
+    BATCH_ONLINE_BASE_URL: str = Field(default=DefaultValue.BatchOnlineBaseURL)
     ACCESS_TOKEN_REFRESH_MIN_INTERVAL: float = Field(
         default=DefaultValue.AccessTokenRefreshMinInterval
     )
@@ -291,6 +292,23 @@ def SecretKey(secret_key: str) -> None:
         The Secret Key to be set for console API authentication.
     """
     get_config().SECRET_KEY = secret_key
+
+
+def APIKey(api_key: str) -> None:
+    """
+    Set the api Key for llm api call authentication.
+
+    This function allows you to set the Secret Key that will be used for authentication
+    throughout the entire SDK. The secret Key can be acquired from the baidu bce
+    console:
+    https://console.bce.baidu.com/iam/#/iam/apikey/list
+
+    Parameters:
+      api_key (str):
+        The api Key to be set for llm api call authentication.
+    """
+    get_config().BEARER_TOKEN = api_key
+
 
 
 def encoding() -> str:

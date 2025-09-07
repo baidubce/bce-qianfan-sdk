@@ -69,12 +69,14 @@ class Env:
     AccessKey: str = "QIANFAN_ACCESS_KEY"
     SecretKey: str = "QIANFAN_SECRET_KEY"
     AccessToken: str = "QIANFAN_ACCESS_TOKEN"
+    BearerToken: str = "QIANFAN_BEARER_TOKEN"
     BaseURL: str = "QIANFAN_BASE_URL"
     DisableErnieBotSDK: str = "QIANFAN_DISABLE_EB_SDK"
     AuthTimeout: str = "QIANFAN_AUTH_TIMEOUT"
     IAMSignExpirationSeconds: str = "QIANFAN_IAM_SIGN_EXPIRATION_SEC"
     ConsoleAPIBaseURL: str = "QIANFAN_CONSOLE_API_BASE_URL"
     IAMBaseURL: str = "QIANFAN_IAM_BASE_URL"
+    BatchOnlineBaseURL: str = "QIANFAN_BATCH_ONLINE_BASE_URL"
     AccessTokenRefreshMinInterval: str = "QIANFAN_ACCESS_TOKEN_REFRESH_MIN_INTERVAL"
     InferResourceRefreshMinInterval: str = "QIANFAN_INFER_RESOURCE_REFRESH_MIN_INTERVAL"
     EnablePrivate: str = "QIANFAN_ENABLE_PRIVATE"
@@ -288,6 +290,9 @@ class Consts:
 
     IgnoringList: List[str] = [": OPENROUTER PROCESSING", ": keep-alive"]
 
+    MAX_RETRY_DELAY = 300 # 单位秒
+    INITIAL_RETRY_DELAY = 1 # 单位秒
+
 
 class DefaultValue:
     """
@@ -306,6 +311,7 @@ class DefaultValue:
     IAMSignExpirationSeconds: int = 300
     ConsoleAPIBaseURL: str = "https://qianfan.baidubce.com"
     IAMBaseURL: str = "https://iam.bj.baidubce.com"
+    BatchOnlineBaseURL: str = "https://qianfan.bj.baidubce.com/v2"
     AccessTokenRefreshMinInterval: float = 3600
     BearerTokenExpiredInterval: int = 43200
     InferResourceRefreshMinInterval: float = 600

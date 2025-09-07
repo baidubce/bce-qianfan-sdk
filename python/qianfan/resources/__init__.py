@@ -51,4 +51,5 @@ __all__ = [
     "QfResponse",
     "Memory",
     "IAM",
+    "BatchChat",
 ]

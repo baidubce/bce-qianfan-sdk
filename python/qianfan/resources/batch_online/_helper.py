@@ -26,11 +26,6 @@ def request_with_retry(
             return func(*args, **kwargs)
         except APIConnectionError:
             wait_time = _calculate_retry_wait_time(retry_times)
-            log.debug(
-                "Retry due to connection error, wait time: %is, retry times: %i",
-                waitTime,
-                retry_times,
-            )
 
             if datetime.now() + timedelta(seconds=wait_time) > deadline:
                 raise RequestTimeoutError(None, None)
@@ -59,11 +54,6 @@ async def async_request_with_retry(
             return await func(*args, **kwargs)
         except APIConnectionError:
             wait_time = _calculate_retry_wait_time(retry_times)
-            log.debug(
-                "Retry due to connection error, wait time: %is, retry times: %i",
-                waitTime,
-                retry_times,
-            )
 
             if datetime.now() + timedelta(seconds=wait_time) > deadline:
                 raise RequestTimeoutError(None, None)

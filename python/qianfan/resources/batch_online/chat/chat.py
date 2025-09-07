@@ -1,4 +1,3 @@
-
 from .completions import AsyncCompletions, Completions
 
 class Chat():

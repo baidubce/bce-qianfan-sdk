@@ -1,4 +1,3 @@
-
 from .generations import AsyncGenerations, Generations
 
 class Images():

@@ -2037,6 +2037,10 @@ class ChatCompletion(VersionBase):
 
         task_list: List[Callable]
 
+        # set api path to v2 batch
+        if isinstance(self._real, _ChatCompletionV2):
+            self._real.config.CHAT_V2_API_ROUTE = self._real.config.BATCH_CHAT_V2_API_ROUTE
+
         if messages_list:
             task_list = [
                 partial(worker, self.do, messages=messages, **kwargs)
@@ -2110,6 +2114,10 @@ class ChatCompletion(VersionBase):
                 show_total_latency = True
 
         task_list: List[Callable]
+
+        # set api path to v2 batch
+        if isinstance(self._real, _ChatCompletionV2):
+            self._real.config.CHAT_V2_API_ROUTE = self._real.config.BATCH_CHAT_V2_API_ROUTE
 
         async def worker(
             inner_func: Callable, **kwargs: Any

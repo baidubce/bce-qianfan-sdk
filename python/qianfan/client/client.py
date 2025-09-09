@@ -92,6 +92,9 @@ class Qianfan:
     def reranker(self) -> "Reranker":
         return Reranker(config=self.config, version=2)
 
+    def images(self) -> "Images":
+        return Images(config=self.config, version=2)
+
 
 class Chat:
     _client: Qianfan

@@ -270,8 +270,8 @@ class Consts:
 
     ChatV2API: str = "/v2/chat/completions"
     BatchChatV2API: str = "/v2/batch/chat/completions"
-    ImagesGenerationsV2API: str = "/v2/batch/images/generations"
-    BatchImagesGenerationsV2API: str = "/v2/images/generations"
+    ImagesGenerationsV2API: str = "/v2/images/generations"
+    BatchImagesGenerationsV2API: str = "/v2/batch/images/generations"
 
     EmbeddingV2API: str = "/v2/embeddings"
     RerankerV2API: str = "/v2/rerankers"

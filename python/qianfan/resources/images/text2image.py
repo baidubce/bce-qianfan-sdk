@@ -352,8 +352,8 @@ class _Text2ImageV2(BaseResourceV2):
         **kwargs: Any,
     ) -> List[QfResponse]:
 
-        task_list = [partial(self.do, prompt=prompt, model=model, **kwargs) for prompt in prompt_list]
-        return await self._real.abatch_do(texts_list, worker_num, **kwargs)
+        task_list = [self.ado(prompt=prompt, model=model, **kwargs) for prompt in prompt_list]
+        return await self._abatch_request(task_list, worker_num)
 
 
 class Text2Image(VersionBase):

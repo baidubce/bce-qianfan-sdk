@@ -14,7 +14,7 @@
 
 from typing import Any, Optional
 
-from qianfan import Embedding, Reranker, Text2Image
+from qianfan import Embedding, Reranker
 from qianfan.config import Config, get_config
 from qianfan.consts import DefaultValue
 from qianfan.resources import ChatCompletion

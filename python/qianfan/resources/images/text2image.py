@@ -13,11 +13,10 @@
 # limitations under the License.
 
 import base64
-
-import qianfan.errors as errors
 from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union, Type
 
+import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,

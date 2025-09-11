@@ -14,7 +14,7 @@
 
 from typing import Any, Optional
 
-from qianfan import Embedding, Reranker
+from qianfan import Embedding, Reranker, Text2Image
 from qianfan.config import Config, get_config
 from qianfan.consts import DefaultValue
 from qianfan.resources import ChatCompletion
@@ -91,9 +91,6 @@ class Qianfan:
 
     def reranker(self) -> "Reranker":
         return Reranker(config=self.config, version=2)
-
-    def images(self) -> "Images":
-        return Images(config=self.config, version=2)
 
 
 class Chat:

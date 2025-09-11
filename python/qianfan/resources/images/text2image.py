@@ -32,7 +32,6 @@ from qianfan.resources.typing import QfLLMInfo, QfResponse
 class _Text2ImageV1(BaseResourceV1):
     """
     QianFan Text2Image API Resource
-
     """
 
     def _self_supported_models(self) -> Dict[str, QfLLMInfo]:

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import base64
+
+import qianfan.errors as errors
 from functools import partial
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union, Type
 
@@ -373,7 +375,7 @@ class Text2Image(VersionBase):
         endpoint: Optional[str] = None,
         **kwargs: Any,
     ) -> QfResponse:
-        return self._real.do(texts=texts, model=model, endpoint=endpoint, **kwargs)
+        return self._real.do(prompt=prompt, model=model, endpoint=endpoint, **kwargs)
 
     async def ado(
         self,
@@ -383,7 +385,7 @@ class Text2Image(VersionBase):
         **kwargs: Any,
     ) -> QfResponse:
         return await self._real.ado(
-            texts=texts, model=model, endpoint=endpoint, **kwargs
+            prompt=prompt, model=model, endpoint=endpoint, **kwargs
         )
 
     def batch_do(

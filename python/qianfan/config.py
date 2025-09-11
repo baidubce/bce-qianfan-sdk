@@ -141,8 +141,12 @@ class Config(BaseSettings):
     CHAT_V2_API_ROUTE: str = Field(default=DefaultValue.ChatV2ApiRoute)
     BATCH_CHAT_V2_API_ROUTE: str = Field(default=DefaultValue.BatchChatV2ApiRoute)
 
-    IMAGES_GENERATIONS_V2_API_ROUTE: str = Field(default=DefaultValue.ImagesGenerationsV2API)
-    BATCH_IMAGES_GENERATIONS_V2_API_ROUTE: str = Field(default=DefaultValue.BatchImagesGenerationsV2API)
+    IMAGES_GENERATIONS_V2_API_ROUTE: str = Field(
+        default=DefaultValue.ImagesGenerationsV2API
+    )
+    BATCH_IMAGES_GENERATIONS_V2_API_ROUTE: str = Field(
+        default=DefaultValue.BatchImagesGenerationsV2API
+    )
 
     EMBEDDING_V2_API_ROUTE: str = Field(default=DefaultValue.EmbeddingV2ApiRoute)
     RERANKER_V2_API_ROUTE: str = Field(default=DefaultValue.RerankerV2ApiRoute)

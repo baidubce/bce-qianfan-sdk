@@ -298,7 +298,6 @@ class _Text2ImageV1(BaseResourceV1):
 
 
 class _Text2ImageV2(BaseResourceV2):
-
     @classmethod
     def api_type(cls) -> str:
         return "text2image"
@@ -320,7 +319,6 @@ class _Text2ImageV2(BaseResourceV2):
         assert isinstance(resp, QfResponse)
         return resp
 
-
     async def ado(
         self,
         prompt: str,
@@ -330,7 +328,6 @@ class _Text2ImageV2(BaseResourceV2):
         kwargs["prompt"] = prompt
         return await self._ado(model=model, **kwargs)
 
-
     def batch_do(
         self,
         prompt_list: List[str],
@@ -338,11 +335,12 @@ class _Text2ImageV2(BaseResourceV2):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
-
-        task_list = [partial(self.do, prompt= prompt, model= model, **kwargs) for prompt in prompt_list]
+        task_list = [
+            partial(self.do, prompt=prompt, model=model, **kwargs)
+            for prompt in prompt_list
+        ]
 
         return self._batch_request(task_list, worker_num)
-
 
     async def abatch_do(
         self,
@@ -351,8 +349,9 @@ class _Text2ImageV2(BaseResourceV2):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[QfResponse]:
-
-        task_list = [self.ado(prompt=prompt, model=model, **kwargs) for prompt in prompt_list]
+        task_list = [
+            self.ado(prompt=prompt, model=model, **kwargs) for prompt in prompt_list
+        ]
         return await self._abatch_request(task_list, worker_num)
 
 
@@ -384,7 +383,8 @@ class Text2Image(VersionBase):
         **kwargs: Any,
     ) -> QfResponse:
         return await self._real.ado(
-            texts=texts, model=model, endpoint=endpoint, **kwargs)
+            texts=texts, model=model, endpoint=endpoint, **kwargs
+        )
 
     def batch_do(
         self,
@@ -392,10 +392,11 @@ class Text2Image(VersionBase):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
-
         # set api path to v2 batch
         if isinstance(self._real, _Text2ImageV2):
-            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
+                self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            )
 
         return self._real.batch_do(prompt_list, worker_num, **kwargs)
 
@@ -405,8 +406,9 @@ class Text2Image(VersionBase):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[QfResponse]:
-
         if isinstance(self._real, _Text2ImageV2):
-            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
+                self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            )
 
         return await self._real.abatch_do(prompt_list, worker_num, **kwargs)

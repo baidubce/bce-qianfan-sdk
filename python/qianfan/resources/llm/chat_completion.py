@@ -2039,7 +2039,9 @@ class ChatCompletion(VersionBase):
 
         # set api path to v2 batch
         if isinstance(self._real, _ChatCompletionV2):
-            self._real.config.CHAT_V2_API_ROUTE = self._real.config.BATCH_CHAT_V2_API_ROUTE
+            self._real.config.CHAT_V2_API_ROUTE = (
+                self._real.config.BATCH_CHAT_V2_API_ROUTE
+            )
 
         if messages_list:
             task_list = [
@@ -2117,7 +2119,9 @@ class ChatCompletion(VersionBase):
 
         # set api path to v2 batch
         if isinstance(self._real, _ChatCompletionV2):
-            self._real.config.CHAT_V2_API_ROUTE = self._real.config.BATCH_CHAT_V2_API_ROUTE
+            self._real.config.CHAT_V2_API_ROUTE = (
+                self._real.config.BATCH_CHAT_V2_API_ROUTE
+            )
 
         async def worker(
             inner_func: Callable, **kwargs: Any

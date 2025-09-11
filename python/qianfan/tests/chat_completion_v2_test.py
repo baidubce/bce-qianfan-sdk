@@ -26,9 +26,7 @@ import qianfan.tests.utils
 from qianfan.consts import Consts
 from qianfan.tests.utils import EnvHelper
 
-TEST_BEARER_TOKEN = (
-    ""
-)
+TEST_BEARER_TOKEN = ""
 TEST_MODEL = "ernie-unit-test"
 
 TEST_MESSAGE = [
@@ -93,28 +91,34 @@ def process_response(results):
             print(block)
             print()
 
-        result_list.append({
-            "request_body": block.request.json_body,
-            "llm_output": llm_ret,
-            "first_token_latency": block.statistic["first_token_latency"],
-            "total_latency": block.statistic["total_latency"],
-        })
+        result_list.append(
+            {
+                "request_body": block.request.json_body,
+                "llm_output": llm_ret,
+                "first_token_latency": block.statistic["first_token_latency"],
+                "total_latency": block.statistic["total_latency"],
+            }
+        )
 
     return result_list
 
 
 def test_bacth_completion():
-    chat_client = qianfan.ChatCompletion(version="2",model="ernie-speed-8k") # deepseek-v3
+    chat_client = qianfan.ChatCompletion(
+        version="2", model="ernie-speed-8k"
+    )  # deepseek-v3
 
     task_list = [
         {
             "messages": [{"content": "你好，你是谁", "role": "user"}],
-            "system": "你是一个善于助人的客服"
+            "system": "你是一个善于助人的客服",
         }
     ]
 
     # 批量请求
-    results = chat_client.batch_do(body_list=task_list,enable_reading_buffer=True).results()
+    results = chat_client.batch_do(
+        body_list=task_list, enable_reading_buffer=True
+    ).results()
 
     print(results)
 

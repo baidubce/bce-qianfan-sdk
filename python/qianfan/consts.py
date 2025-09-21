@@ -269,6 +269,10 @@ class Consts:
     PrivateResourceResizeComputeUnitParam: str = "ResizeComputeUnit"
 
     ChatV2API: str = "/v2/chat/completions"
+    BatchChatV2API: str = "/v2/batch/chat/completions"
+    ImagesGenerationsV2API: str = "/v2/images/generations"
+    BatchImagesGenerationsV2API: str = "/v2/batch/images/generations"
+
     EmbeddingV2API: str = "/v2/embeddings"
     RerankerV2API: str = "/v2/rerankers"
     IAMBearerTokenAPI: str = "/v1/BCE-BEARER/token"
@@ -367,8 +371,11 @@ class DefaultValue:
     CacheDir: str = str(Path.home() / ".qianfan_cache")
     DisableCache: bool = False
     ChatV2ApiRoute: str = Consts.ChatV2API
+    BatchChatV2ApiRoute: str = Consts.BatchChatV2API
     EmbeddingV2ApiRoute: str = Consts.EmbeddingV2API
     RerankerV2ApiRoute: str = Consts.RerankerV2API
+    ImagesGenerationsV2API: str = Consts.ImagesGenerationsV2API
+    BatchImagesGenerationsV2API: str = Consts.BatchImagesGenerationsV2API
 
 
 class DefaultLLMModel:

@@ -14,18 +14,22 @@
 
 import base64
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Type, Union
 
+import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
+    BaseResource,
     BaseResourceV1,
+    BaseResourceV2,
     BatchRequestFuture,
+    VersionBase,
 )
 from qianfan.resources.typing import QfLLMInfo, QfResponse
 
 
-class Text2Image(BaseResourceV1):
+class _Text2ImageV1(BaseResourceV1):
     """
     QianFan Text2Image API Resource
 
@@ -292,3 +296,115 @@ class Text2Image(BaseResourceV1):
         """
         tasks = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
         return await self._abatch_request(tasks, worker_num)
+
+
+class _Text2ImageV2(BaseResourceV2):
+    @classmethod
+    def api_type(cls) -> str:
+        return "text2image"
+
+    def _api_path(self) -> str:
+        return self.config.IMAGES_GENERATIONS_V2_API_ROUTE
+
+    def do(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> QfResponse:
+        kwargs["prompt"] = prompt
+        resp = self._do(
+            model,
+            **kwargs,
+        )
+        assert isinstance(resp, QfResponse)
+        return resp
+
+    async def ado(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        kwargs["prompt"] = prompt
+        return await self._ado(model=model, **kwargs)
+
+    def batch_do(
+        self,
+        prompt_list: List[str],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        task_list = [
+            partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
+        ]
+
+        return self._batch_request(task_list, worker_num)
+
+    async def abatch_do(
+        self,
+        prompt_list: List[str],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        task_list = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
+        return await self._abatch_request(task_list, worker_num)
+
+
+class Text2Image(VersionBase):
+    _real: Union[_Text2ImageV1, _Text2ImageV2]
+
+    @classmethod
+    def _real_base(cls, version: str, **kwargs: Any) -> Type[BaseResource]:
+        if version == "1":
+            return _Text2ImageV1
+        elif version == "2":
+            return _Text2ImageV2
+        raise errors.InvalidArgumentError("Invalid version")
+
+    def do(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
+        return self._real.do(prompt=prompt, model=model, endpoint=endpoint, **kwargs)
+
+    async def ado(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
+        return await self._real.ado(
+            prompt=prompt, model=model, endpoint=endpoint, **kwargs
+        )
+
+    def batch_do(
+        self,
+        prompt_list: List[str],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> BatchRequestFuture:
+        # set api path to v2 batch
+        if isinstance(self._real, _Text2ImageV2):
+            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
+                self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            )
+
+        return self._real.batch_do(prompt_list, worker_num, **kwargs)
+
+    async def abatch_do(
+        self,
+        prompt_list: List[str],
+        worker_num: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
+        if isinstance(self._real, _Text2ImageV2):
+            self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
+                self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE
+            )
+
+        return await self._real.abatch_do(prompt_list, worker_num, **kwargs)

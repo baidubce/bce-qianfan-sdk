@@ -14,17 +14,17 @@
 
 import base64
 from functools import partial
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union, Type
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Type, Union
 
 import qianfan.errors as errors
 from qianfan.consts import DefaultLLMModel
 from qianfan.resources.llm.base import (
     UNSPECIFIED_MODEL,
-    VersionBase,
     BaseResource,
     BaseResourceV1,
     BaseResourceV2,
     BatchRequestFuture,
+    VersionBase,
 )
 from qianfan.resources.typing import QfLLMInfo, QfResponse
 
@@ -32,6 +32,7 @@ from qianfan.resources.typing import QfLLMInfo, QfResponse
 class _Text2ImageV1(BaseResourceV1):
     """
     QianFan Text2Image API Resource
+
     """
 
     def _self_supported_models(self) -> Dict[str, QfLLMInfo]:

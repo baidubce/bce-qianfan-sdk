@@ -325,19 +325,18 @@ class _Text2ImageV2(BaseResourceV2):
         prompt: str,
         model: Optional[str] = None,
         **kwargs: Any,
-    ) -> QfResponse:
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         kwargs["prompt"] = prompt
         return await self._ado(model=model, **kwargs)
 
     def batch_do(
         self,
         prompt_list: List[str],
-        model: Optional[str] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> BatchRequestFuture:
         task_list = [
-            partial(self.do, prompt=prompt, model=model, **kwargs)
+            partial(self.do, prompt=prompt, **kwargs)
             for prompt in prompt_list
         ]
 
@@ -346,12 +345,11 @@ class _Text2ImageV2(BaseResourceV2):
     async def abatch_do(
         self,
         prompt_list: List[str],
-        model: Optional[str] = None,
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[QfResponse]:
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         task_list = [
-            self.ado(prompt=prompt, model=model, **kwargs) for prompt in prompt_list
+            self.ado(prompt=prompt, **kwargs) for prompt in prompt_list
         ]
         return await self._abatch_request(task_list, worker_num)
 
@@ -373,7 +371,7 @@ class Text2Image(VersionBase):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         **kwargs: Any,
-    ) -> QfResponse:
+    ) -> Union[QfResponse, Iterator[QfResponse]]:
         return self._real.do(prompt=prompt, model=model, endpoint=endpoint, **kwargs)
 
     async def ado(
@@ -382,7 +380,7 @@ class Text2Image(VersionBase):
         model: Optional[str] = None,
         endpoint: Optional[str] = None,
         **kwargs: Any,
-    ) -> QfResponse:
+    ) -> Union[QfResponse, AsyncIterator[QfResponse]]:
         return await self._real.ado(
             prompt=prompt, model=model, endpoint=endpoint, **kwargs
         )
@@ -406,7 +404,7 @@ class Text2Image(VersionBase):
         prompt_list: List[str],
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[QfResponse]:
+    ) -> List[Union[QfResponse, Iterator[QfResponse]]]:
         if isinstance(self._real, _Text2ImageV2):
             self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
                 self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE

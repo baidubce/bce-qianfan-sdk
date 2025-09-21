@@ -336,8 +336,7 @@ class _Text2ImageV2(BaseResourceV2):
         **kwargs: Any,
     ) -> BatchRequestFuture:
         task_list = [
-            partial(self.do, prompt=prompt, **kwargs)
-            for prompt in prompt_list
+            partial(self.do, prompt=prompt, **kwargs) for prompt in prompt_list
         ]
 
         return self._batch_request(task_list, worker_num)
@@ -348,9 +347,7 @@ class _Text2ImageV2(BaseResourceV2):
         worker_num: Optional[int] = None,
         **kwargs: Any,
     ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
-        task_list = [
-            self.ado(prompt=prompt, **kwargs) for prompt in prompt_list
-        ]
+        task_list = [self.ado(prompt=prompt, **kwargs) for prompt in prompt_list]
         return await self._abatch_request(task_list, worker_num)
 
 

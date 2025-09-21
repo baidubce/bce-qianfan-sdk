@@ -401,7 +401,7 @@ class Text2Image(VersionBase):
         prompt_list: List[str],
         worker_num: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Union[QfResponse, Iterator[QfResponse]]]:
+    ) -> List[Union[QfResponse, AsyncIterator[QfResponse]]]:
         if isinstance(self._real, _Text2ImageV2):
             self._real.config.IMAGES_GENERATIONS_V2_API_ROUTE = (
                 self._real.config.BATCH_IMAGES_GENERATIONS_V2_API_ROUTE

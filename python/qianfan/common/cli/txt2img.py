@@ -74,8 +74,9 @@ def txt2img_entry(
         )
         raise typer.Exit(1)
 
-    client = create_client(qianfan.resources.images.text2image._Text2ImageV1, model,
-                           endpoint)
+    client = create_client(
+        qianfan.resources.images.text2image._Text2ImageV1, model, endpoint
+    )
     kwargs: Dict[str, Any] = {}
 
     if negative_prompt != "":

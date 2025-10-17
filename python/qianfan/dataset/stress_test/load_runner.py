@@ -2,7 +2,6 @@
 QianfanLocustRunner
 """
 
-
 import logging
 import os
 import time
@@ -36,23 +35,23 @@ def model_details(endpoint: str) -> Optional[Dict[str, Any]]:
 
 
 def determine_dataset_format(
-    dataset: List[Union[Dict[str, str], List[Dict[str, str]], str]]
+        dataset: List[Union[Dict[str, str], List[Dict[str, str]], str]]
 ) -> Optional[str]:
     try:
         # 检查类型1：列表，包含字典，字典有 'prompt' 和 'response' 键
         if isinstance(dataset, list) and all(
-            isinstance(item, dict) and "prompt" in item and "response" in item
-            for item in dataset
+                isinstance(item, dict) and "prompt" in item and "response" in item
+                for item in dataset
         ):
             return "json"
 
         # 检查类型2：列表，包含列表，这些列表中包含字典，字典有 'prompt' 键
         if isinstance(dataset, list) and all(
-            isinstance(item, list)
-            and all(
-                isinstance(sub_item, dict) and "prompt" in sub_item for sub_item in item
-            )
-            for item in dataset
+                isinstance(item, list)
+                and all(
+                    isinstance(sub_item, dict) and "prompt" in sub_item for sub_item in item
+                )
+                for item in dataset
         ):
             return "jsonl"
 
@@ -75,25 +74,25 @@ class QianfanLocustRunner(LocustRunner):
     locust_file = os.path.abspath(os.path.dirname(__file__)) + "/qianfan_llm_load.py"
 
     def __init__(
-        self,
-        dataset: Dataset,
-        model: Optional[str] = None,
-        endpoint: Optional[str] = None,
-        model_type: str = "ChatCompletion",
-        user_num: int = 1,
-        worker_num: int = 1,
-        runtime: str = "1m",
-        spawn_rate: int = 1,
-        recording: bool = True,
-        record_dir: Optional[str] = None,
-        hyperparameters: Optional[Dict[str, Any]] = None,
-        rounds: int = 1,
-        interval: Optional[int] = 0,
-        first_latency_threshold: Optional[float] = 100,
-        round_latency_threshold: Optional[float] = 1000,
-        success_rate_threshold: Optional[float] = 0,
-        model_info: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
+            self,
+            dataset: Dataset,
+            model: Optional[str] = None,
+            endpoint: Optional[str] = None,
+            model_type: str = "ChatCompletion",
+            user_num: int = 1,
+            worker_num: int = 1,
+            runtime: str = "1m",
+            spawn_rate: int = 1,
+            recording: bool = True,
+            record_dir: Optional[str] = None,
+            hyperparameters: Optional[Dict[str, Any]] = None,
+            rounds: int = 1,
+            interval: Optional[int] = 0,
+            first_latency_threshold: Optional[float] = 100,
+            round_latency_threshold: Optional[float] = 1000,
+            success_rate_threshold: Optional[float] = 0,
+            model_info: Optional[Dict[str, Any]] = None,
+            **kwargs: Any,
     ):
         if model is not None:
             host = model

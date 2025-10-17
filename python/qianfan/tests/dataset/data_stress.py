@@ -6,8 +6,8 @@ from dataset import Dataset
 
 class StressTestCase(unittest.TestCase):
     def setUp(self):
-        self.path ="text"
-        with open(self.path,"w+") as f:
+        self.path = "text"
+        with open(self.path, "w+") as f:
             f.write('''人体最重要的有机物质是什么？
 化学中PH值用来表示什么？
 如何看待第一次世界大战？
@@ -17,7 +17,6 @@ class StressTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.path):
             os.remove(self.path)
-
 
     def test_stress(self):
         ds = Dataset.load(data_file=self.path)

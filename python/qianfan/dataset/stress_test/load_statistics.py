@@ -193,7 +193,7 @@ def gen_brief(
             else 0
         ),
         "OutputStringLengthPerSecond": (
-            round(output_str_length_tuple[0] / (lat_tuple[0] / 1000), 2)
+            round(output_tk_tuple[0] / ((lat_tuple[0] / 1000) - (first_lat_tuple[0] / 1000)), 2)
             if lat_tuple[0] != 0
             else 0
         ),

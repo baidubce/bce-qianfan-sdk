@@ -275,13 +275,11 @@ class QianfanCustomHttpSession(CustomHttpSession):
 
         if GlobalData.data["log"] == 1:
             if self.exc:
-                self._write_result(
-                    {
-                        "exception_type": str(type(self.exc)),
-                        "error": str(self.exc),
-                        "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
-                    }
-                )
+                self._write_result({
+                    "exception_type": str(type(self.exc)),
+                    "error": str(self.exc),
+                    "stack": "\n".join(traceback.format_tb(self.exc.__traceback__)),
+                })
             else:
                 if (
                     res.get("request", {}).get("headers", {}).get("Authorization", None)
@@ -328,16 +326,13 @@ class QianfanCustomHttpSession(CustomHttpSession):
     @abc.abstractmethod
     def _process_responses(
         self, responses: Iterator[QfResponse], request_meta: Dict
-    ) -> _InnerResponseProcessRet:
-        ...
+    ) -> _InnerResponseProcessRet: ...
 
     @abc.abstractmethod
-    def _prepare_request_meta(self, context: Dict, **kwargs: Any) -> Dict:
-        ...
+    def _prepare_request_meta(self, context: Dict, **kwargs: Any) -> Dict: ...
 
     @abc.abstractmethod
-    def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]:
-        ...
+    def _get_request(self, context: Dict, **kwargs: Any) -> Iterator[QfResponse]: ...
 
     def qianfan_request(
         self, context: Optional[Dict[str, Any]] = None, **kwargs: Any
@@ -378,21 +373,17 @@ class QianfanCustomHttpSession(CustomHttpSession):
 
     def _transfer_jsonl(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
     def _transfer_json(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
     def _transfer_txt(
         self, data: Any, input_column: str, output_column: str, **kwargs: Any
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
-    def _transfer_body(self, data: Any) -> Any:
-        ...
+    def _transfer_body(self, data: Any) -> Any: ...
 
     def _write_result(self, res: Dict) -> None:
         res_json = json.dumps(res, ensure_ascii=False)

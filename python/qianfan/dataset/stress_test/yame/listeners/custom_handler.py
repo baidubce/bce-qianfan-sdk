@@ -78,14 +78,12 @@ class CustomStatsCSVFileWriter(locust.stats.StatsCSVFileWriter):
     def _failures_data_rows(self, csv_writer: locust.stats.CSVWriter) -> None:
         """Write failures csv data row."""
         for stats_error in locust.stats.sort_stats(self.stats.errors):
-            csv_writer.writerow(
-                [
-                    stats_error.method,
-                    stats_error.name,
-                    StatsError.parse_error(stats_error.error),
-                    stats_error.occurrences,
-                ]
-            )
+            csv_writer.writerow([
+                stats_error.method,
+                stats_error.name,
+                StatsError.parse_error(stats_error.error),
+                stats_error.occurrences,
+            ])
 
     def _stats_history_data_rows(
         self, csv_writer: locust.stats.CSVWriter, now: float

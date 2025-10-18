@@ -250,14 +250,10 @@ class OpenAIApdater(object):
         while i < len(input):
             self.qianfan_req_post_process(qianfan_request)
             request_list.append(
-                self.qianfan_req_post_process(
-                    {
-                        "texts": input[
-                            i : min(i + self.EmbeddingBatchSize, len(input))
-                        ],
-                        **qianfan_request,
-                    }
-                )
+                self.qianfan_req_post_process({
+                    "texts": input[i : min(i + self.EmbeddingBatchSize, len(input))],
+                    **qianfan_request,
+                })
             )
             i += self.EmbeddingBatchSize
 
@@ -293,13 +289,11 @@ class OpenAIApdater(object):
             if "function_call" in resp and (
                 "functions" in openai_request or "tools" in openai_request
             ):
-                choice["message"]["tool_calls"] = [
-                    {
-                        "id": resp["function_call"]["name"],
-                        "type": "function",
-                        "function": resp["function_call"],
-                    }
-                ]
+                choice["message"]["tool_calls"] = [{
+                    "id": resp["function_call"]["name"],
+                    "type": "function",
+                    "function": resp["function_call"],
+                }]
 
                 choice["message"]["content"] = None
                 choice["message"]["function_call"] = resp["function_call"]
@@ -444,12 +438,10 @@ class OpenAIApdater(object):
         Embedding Wrapper API
         """
         qianfan_request_list = self.convert_openai_embedding_request(request)
-        res = await asyncio.gather(
-            *[
-                self._embed_client.ado(**qianfan_request)
-                for qianfan_request in (qianfan_request_list)
-            ]
-        )
+        res = await asyncio.gather(*[
+            self._embed_client.ado(**qianfan_request)
+            for qianfan_request in (qianfan_request_list)
+        ])
 
         result = self.qianfan_embedding_response_to_openai(request, res)
         return result
@@ -483,39 +475,31 @@ class OpenAIApdater(object):
                 }
                 for j in range(n):
                     yield {
-                        "choices": [
-                            {
-                                "index": j,
-                                "delta": {"role": "assistant", "content": ""},
-                                "logprobs": None,
-                                "finish_reason": None,
-                            }
-                        ],
+                        "choices": [{
+                            "index": j,
+                            "delta": {"role": "assistant", "content": ""},
+                            "logprobs": None,
+                            "finish_reason": None,
+                        }],
                         **base,
                     }
-            choices: List[Dict] = [
-                {
-                    "index": i,
-                    "delta": {"content": res["result"]},
-                    "logprobs": None,
-                    "finish_reason": (
-                        None
-                        if not res["is_end"]
-                        else res.get("finish_reason", "normal")
-                    ),
-                }
-            ]
+            choices: List[Dict] = [{
+                "index": i,
+                "delta": {"content": res["result"]},
+                "logprobs": None,
+                "finish_reason": (
+                    None if not res["is_end"] else res.get("finish_reason", "normal")
+                ),
+            }]
             if "function_call" in res and (
                 "functions" in openai_request or "tools" in openai_request
             ):
-                choices[0]["delta"]["tool_calls"] = [
-                    {
-                        "index": 0,
-                        "id": res["function_call"]["name"],
-                        "type": "function",
-                        "function": res["function_call"],
-                    }
-                ]
+                choices[0]["delta"]["tool_calls"] = [{
+                    "index": 0,
+                    "id": res["function_call"]["name"],
+                    "type": "function",
+                    "function": res["function_call"],
+                }]
 
                 choices[0]["delta"]["content"] = None
                 choices[0]["delta"]["finish_reason"] = "tool_calls"
@@ -574,26 +558,20 @@ class OpenAIApdater(object):
                 )
                 for j in range(n):
                     yield {
-                        "choices": [
-                            {
-                                "index": j,
-                                "delta": {"text": ""},
-                                "logprobs": None,
-                                "finish_reason": None,
-                            }
-                        ],
+                        "choices": [{
+                            "index": j,
+                            "delta": {"text": ""},
+                            "logprobs": None,
+                            "finish_reason": None,
+                        }],
                         **base,
                     }
-            choices = [
-                {
-                    "index": i,
-                    "delta": {"text": res["result"]},
-                    "logprobs": None,
-                    "finish_reason": (
-                        None if not res["is_end"] else res["finish_reason"]
-                    ),
-                }
-            ]
+            choices = [{
+                "index": i,
+                "delta": {"text": res["result"]},
+                "logprobs": None,
+                "finish_reason": None if not res["is_end"] else res["finish_reason"],
+            }]
 
             yield {
                 "choices": choices,

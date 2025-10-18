@@ -8,11 +8,11 @@ class StressTestCase(unittest.TestCase):
     def setUp(self):
         self.path = "text"
         with open(self.path, "w+") as f:
-            f.write('''人体最重要的有机物质是什么？
+            f.write("""人体最重要的有机物质是什么？
 化学中PH值用来表示什么？
 如何看待第一次世界大战？
 如何看待第二次世界大战？
-第一个登上月球的人是谁？''')
+第一个登上月球的人是谁？""")
 
     def tearDown(self):
         if os.path.exists(self.path):
@@ -43,5 +43,5 @@ class StressTestCase(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

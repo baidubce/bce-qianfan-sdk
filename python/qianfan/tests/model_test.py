@@ -79,12 +79,10 @@ def test_create_evaluation_task():
                 "steps": "steps",
                 "maxScore": 12,
             },
-            "evaluationDimension": [
-                {
-                    "dimension": "dimension",
-                    "description": "description",
-                }
-            ],
+            "evaluationDimension": [{
+                "dimension": "dimension",
+                "description": "description",
+            }],
         },
     )
 

@@ -195,12 +195,10 @@ def test_generate_multiturn_stream():
     sqfg = qianfan.ChatCompletion()
     MAX_TURNS = 2
     for model in QIANFAN_SUPPORT_CHAT_MODEL:
-        messages = [
-            {
-                "role": "user",
-                "content": TEST_MULTITURN_MESSAGES[0],
-            }
-        ]
+        messages = [{
+            "role": "user",
+            "content": TEST_MULTITURN_MESSAGES[0],
+        }]
         for turn in range(0, MAX_TURNS):
             resp = sqfg.do(
                 model=model,
@@ -286,12 +284,10 @@ async def test_generate_multiturn_stream_async():
     sqfg = qianfan.ChatCompletion()
     MAX_TURNS = 2
     for model in QIANFAN_SUPPORT_CHAT_MODEL:
-        messages = [
-            {
-                "role": "user",
-                "content": TEST_MULTITURN_MESSAGES[0],
-            }
-        ]
+        messages = [{
+            "role": "user",
+            "content": TEST_MULTITURN_MESSAGES[0],
+        }]
         for turn in range(0, MAX_TURNS):
             resp = await sqfg.ado(
                 model=model,
@@ -783,17 +779,15 @@ def test_function_chat():
     def get_current_weather(location):
         return "25度"
 
-    func_list = [
-        {
-            "name": "get_current_weather",
-            "description": "获取一个地区的天气情况",
-            "parameters": {
-                "type": "object",
-                "properties": {"location": {"type": "string", "description": "地点"}},
-                "required": ["location"],
-            },
-        }
-    ]
+    func_list = [{
+        "name": "get_current_weather",
+        "description": "获取一个地区的天气情况",
+        "parameters": {
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "地点"}},
+            "required": ["location"],
+        },
+    }]
     f = qianfan.Function()
     query = "请帮我查一下上海的气温"
     msgs = qianfan.QfMessages()
@@ -837,17 +831,15 @@ async def test_async_function_chat():
     def get_current_weather(location):
         return "25度"
 
-    func_list = [
-        {
-            "name": "get_current_weather",
-            "description": "获取一个地区的天气情况",
-            "parameters": {
-                "type": "object",
-                "properties": {"location": {"type": "string", "description": "地点"}},
-                "required": ["location"],
-            },
-        }
-    ]
+    func_list = [{
+        "name": "get_current_weather",
+        "description": "获取一个地区的天气情况",
+        "parameters": {
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "地点"}},
+            "required": ["location"],
+        },
+    }]
     f = qianfan.Function()
     query = "请帮我查一下上海的气温"
     msgs = qianfan.QfMessages()

@@ -381,12 +381,10 @@ class Charge(object):
         }
 
         if auto_renew_time_unit is not None and auto_renew_time is not None:
-            req.json_body.update(
-                {
-                    "autoRenewTimeUnit": auto_renew_time_unit,
-                    "autoRenewTime": auto_renew_time,
-                }
-            )
+            req.json_body.update({
+                "autoRenewTimeUnit": auto_renew_time_unit,
+                "autoRenewTime": auto_renew_time,
+            })
 
         return req
 

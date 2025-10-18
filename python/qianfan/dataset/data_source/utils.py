@@ -155,12 +155,10 @@ def _read_all_image_in_an_folder(path: str, **kwargs: Any) -> pyarrow.Table:
     for root, dirs, files in os.walk(path):
         result = _get_all_image_files_and_annotations_from_root(root, files)
         table_list.append(
-            pyarrow.Table.from_pydict(
-                {
-                    Text2ImagePathColumnName: result[0],
-                    Text2ImageAnnotationColumnName: result[1],
-                }
-            )
+            pyarrow.Table.from_pydict({
+                Text2ImagePathColumnName: result[0],
+                Text2ImageAnnotationColumnName: result[1],
+            })
         )
 
     return pyarrow.concat_tables(table_list)

@@ -1980,12 +1980,9 @@ class Dataset(Table):
                 )
             else:
                 input_str_list.append(
-                    "\n".join(
-                        [
-                            input_dict[column_name][i]
-                            for column_name in self.input_columns
-                        ]
-                    )
+                    "\n".join([
+                        input_dict[column_name][i] for column_name in self.input_columns
+                    ])
                 )
 
         return input_str_list
@@ -2033,12 +2030,10 @@ class Dataset(Table):
                 reference = _extract_string(chat[i][reference_column])
 
                 if i != len(chat) - 1:
-                    input_messages.append(
-                        {
-                            "role": QfRole.Assistant.value,
-                            "content": reference,
-                        }
-                    )
+                    input_messages.append({
+                        "role": QfRole.Assistant.value,
+                        "content": reference,
+                    })
                 else:
                     reference_list.append(reference)
 

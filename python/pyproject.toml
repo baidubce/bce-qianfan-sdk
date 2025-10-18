@@ -66,8 +66,8 @@ fastapi = { version = ">=0.85.0", optional = true }
 uvicorn = { version = ">=0.15.0", optional = true }
 filelock = { version = ">=3.7.0", optional = true }
 gevent = [
-    { version = ">=20.9.0, <22.10.2", markers = "python == 3.7", optional = true },
-    { version = ">=22.10.2, <24.0.0", markers = "python >= 3.8", optional = true }
+    { version = ">=20.9.0, <22.10.2", python = " =3.7", optional = true },
+    { version = ">=22.10.2, <24.0.0", python = ">= 3.8", optional = true }
 ]
 
 [tool.poetry.scripts]

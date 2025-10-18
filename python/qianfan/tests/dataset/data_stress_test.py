@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from dataset import Dataset
+from qianfan.dataset.dataset  import Dataset
 
 
 class StressTestCase(unittest.TestCase):

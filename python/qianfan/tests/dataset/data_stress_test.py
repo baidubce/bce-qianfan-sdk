@@ -14,7 +14,7 @@ class StressTestCase(unittest.TestCase):
 如何看待第二次世界大战？
 第一个登上月球的人是谁？""")
 
-        os.environ["QIANFAN_ENABLE_STRESS_TEST"] = 'true'
+        os.environ["QIANFAN_ENABLE_STRESS_TEST"] = "true"
 
     def tearDown(self):
         if os.path.exists(self.path):

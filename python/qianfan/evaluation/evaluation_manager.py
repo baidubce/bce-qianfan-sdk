@@ -79,11 +79,13 @@ def _convert_the_value_in_evaluation_into_str(json_line_path: str) -> str:
                     # 判断是否包含 judge_reason，如果包含则退出
                     if "evaluation" not in single_entry or (
                         not is_judge_reason_existed_checked
-                        and not any([
-                            v == "judge_reason"
-                            for item in single_entry["evaluation"]
-                            for _, v in item.items()
-                        ])
+                        and not any(
+                            [
+                                v == "judge_reason"
+                                for item in single_entry["evaluation"]
+                                for _, v in item.items()
+                            ]
+                        )
                     ):
                         return json_line_path
 
@@ -551,12 +553,14 @@ class EvaluationManager(BaseModel):
 
             for index, response_list in llm_response_list.items():
                 index_tag_column = [llm_tags[index] for _ in range(len(response_list))]
-                ds = dataset.create_from_pyobj({
-                    LLMTagColumnName: index_tag_column,
-                    input_column_name: llm_input_list,
-                    OldReferenceColumnName: expected_output_list,
-                    LLMOutputColumnName: response_list,
-                })
+                ds = dataset.create_from_pyobj(
+                    {
+                        LLMTagColumnName: index_tag_column,
+                        input_column_name: llm_input_list,
+                        OldReferenceColumnName: expected_output_list,
+                        LLMOutputColumnName: response_list,
+                    }
+                )
 
                 metrics_ds = dataset.create_from_pyobj(
                     llm_evaluation_result_dict[index]

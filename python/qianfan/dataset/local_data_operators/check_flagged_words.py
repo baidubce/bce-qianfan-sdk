@@ -113,9 +113,13 @@ class LocalCheckFlaggedWordsFilter(BaseLocalFilterOperator):
                     self.words_augmentation_join_char,
                 )
 
-            flagged_words_ratio = len([
-                word for word in words + augmentation if word in self.flagged_words_set
-            ]) / len(words)
+            flagged_words_ratio = len(
+                [
+                    word
+                    for word in words + augmentation
+                    if word in self.flagged_words_set
+                ]
+            ) / len(words)
 
         if flagged_words_ratio > 1.0:
             flagged_words_ratio = 1.0

@@ -512,19 +512,25 @@ class Prompt(HubSerializable):
         API Doc: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/olr8svd33
         """
         operations = []
-        operations.append({
-            "opType": 1,
-            "payload": 1 if optimize_quality else 0,
-        })
-        operations.append({
-            "opType": 2,
-            "payload": 1 if simplify_prompt else 0,
-        })
+        operations.append(
+            {
+                "opType": 1,
+                "payload": 1 if optimize_quality else 0,
+            }
+        )
+        operations.append(
+            {
+                "opType": 2,
+                "payload": 1 if simplify_prompt else 0,
+            }
+        )
         operations.append({"opType": 3, "payload": iteration_round})
-        operations.append({
-            "opType": 4,
-            "payload": 1 if enable_cot else 0,
-        })
+        operations.append(
+            {
+                "opType": 4,
+                "payload": 1 if enable_cot else 0,
+            }
+        )
         resp = PromptResource.create_optimiztion_task(
             self.template,
             operations,
@@ -634,10 +640,12 @@ class Prompt(HubSerializable):
             log_info(f"Feedback input: {repr(feedback_input)}")
             # get feedback from model
             feedback = client.do(
-                messages=[{
-                    "role": "user",
-                    "content": feedback_input,
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": feedback_input,
+                    }
+                ],
                 **optimize_config,
             )
             assert isinstance(feedback, QfResponse)
@@ -647,17 +655,21 @@ class Prompt(HubSerializable):
                 current_prompt=current_prompt.template,
                 samples=sample_str,
                 feedback=feedback["result"],
-                variables=" ".join([
-                    f"{left_identifier}{var}{right_identifier}"
-                    for var in self.variables
-                ]),
+                variables=" ".join(
+                    [
+                        f"{left_identifier}{var}{right_identifier}"
+                        for var in self.variables
+                    ]
+                ),
             )[0]
             log_info(f"Update input: {repr(update_input)}")
             update_resp = client.do(
-                messages=[{
-                    "role": "user",
-                    "content": update_input,
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": update_input,
+                    }
+                ],
                 **optimize_config,
             )
             assert isinstance(update_resp, QfResponse)
@@ -693,10 +705,12 @@ class Prompt(HubSerializable):
         resp = client.do(
             simplify_prompt.render(
                 current_prompt=self.template,
-                variables=" ".join([
-                    f"{left_identifier}{var}{right_identifier}"
-                    for var in self.variables
-                ]),
+                variables=" ".join(
+                    [
+                        f"{left_identifier}{var}{right_identifier}"
+                        for var in self.variables
+                    ]
+                ),
             )[0],
             **config,
         )

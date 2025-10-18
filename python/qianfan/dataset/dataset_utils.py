@@ -411,10 +411,12 @@ def _start_an_evaluation_task_for_model_batch_inference(
 
     resp = Model.create_evaluation_task(
         name=f"model_run_{generate_letter_num_random_id()}",
-        version_info=[{
-            "modelId": model_set_id,
-            "modelVersionId": model_id,
-        }],
+        version_info=[
+            {
+                "modelId": model_set_id,
+                "modelVersionId": model_id,
+            }
+        ],
         dataset_id=data_source.id,
         eval_config={
             "evalMode": "manual",

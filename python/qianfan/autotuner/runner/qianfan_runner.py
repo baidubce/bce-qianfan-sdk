@@ -117,19 +117,23 @@ class QianfanRunner(InferRunner):
                 r = results_list[j][i]
 
                 if isinstance(r, Exception):
-                    results.append({
-                        "output": None,
-                        "stat": {"exception": repr(r)},
-                    })
+                    results.append(
+                        {
+                            "output": None,
+                            "stat": {"exception": repr(r)},
+                        }
+                    )
                     continue
                 assert isinstance(r, QfResponse)
-                results.append({
-                    "output": r["result"],
-                    "stat": {
-                        **r["usage"],
-                        **r.statistic,
-                    },
-                })
+                results.append(
+                    {
+                        "output": r["result"],
+                        "stat": {
+                            **r["usage"],
+                            **r.statistic,
+                        },
+                    }
+                )
             ret.append({"input": input, "expect": reference, "results": results})
         return ret
 

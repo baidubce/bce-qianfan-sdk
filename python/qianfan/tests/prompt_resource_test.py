@@ -281,16 +281,20 @@ def test_evaluate_summary():
     """
     Test evaluate score
     """
-    data = [{
-        "prompt": "请帮我计算一下{formula}等于多少？只返回计算结果",
-        "scene": [{
-            "variables": {"formula": "45+43"},
-            "expected_target": "88",
-            "response": "计算结果为： 45+43=88",
-            "new_prompt": "请帮我计算一下45+43等于多少？只返回计算结果",
-        }],
-        "response_list": ["response1", "response2"],
-    }]
+    data = [
+        {
+            "prompt": "请帮我计算一下{formula}等于多少？只返回计算结果",
+            "scene": [
+                {
+                    "variables": {"formula": "45+43"},
+                    "expected_target": "88",
+                    "response": "计算结果为： 45+43=88",
+                    "new_prompt": "请帮我计算一下45+43等于多少？只返回计算结果",
+                }
+            ],
+            "response_list": ["response1", "response2"],
+        }
+    ]
     resp = Prompt.evaluation_summary(data + data + data)
 
     response = resp["result"]["responses"]

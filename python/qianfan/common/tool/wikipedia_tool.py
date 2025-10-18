@@ -66,10 +66,12 @@ class WikipediaTool(BaseTool):
         for result_title in search_results[: self.max_results]:
             wiki_content = self._get_wiki_content(result_title)
             if wiki_content:
-                results.append({
-                    "title": result_title,
-                    "content": wiki_content[: self.wiki_max_length],
-                })
+                results.append(
+                    {
+                        "title": result_title,
+                        "content": wiki_content[: self.wiki_max_length],
+                    }
+                )
 
         total_length = 0
         for result in results:

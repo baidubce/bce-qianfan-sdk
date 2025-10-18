@@ -2252,14 +2252,16 @@ class ChatCompletion(VersionBase):
         return request
 
     def _convert_v2_response_to_v1(self, response: QfResponse) -> QfResponse:
-        response.body["choices"] = [{
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": response["result"],
-            },
-            "need_clear_history": response["need_clear_history"],
-        }]
+        response.body["choices"] = [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": response["result"],
+                },
+                "need_clear_history": response["need_clear_history"],
+            }
+        ]
         return response
 
     def _convert_v2_response_to_v1_stream(

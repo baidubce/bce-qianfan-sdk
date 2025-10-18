@@ -120,10 +120,12 @@ def test_generate_multiturn_stream():
     sqfg = qianfan.ChatCompletion(version=2)
     MAX_TURNS = 2
 
-    messages = [{
-        "role": "user",
-        "content": TEST_MULTITURN_MESSAGES[0],
-    }]
+    messages = [
+        {
+            "role": "user",
+            "content": TEST_MULTITURN_MESSAGES[0],
+        }
+    ]
     for turn in range(0, MAX_TURNS):
         resp = sqfg.do(
             model=TEST_MODEL,
@@ -204,10 +206,12 @@ async def test_generate_multiturn_stream_async():
     sqfg = qianfan.ChatCompletion(version=2)
     MAX_TURNS = 2
 
-    messages = [{
-        "role": "user",
-        "content": TEST_MULTITURN_MESSAGES[0],
-    }]
+    messages = [
+        {
+            "role": "user",
+            "content": TEST_MULTITURN_MESSAGES[0],
+        }
+    ]
     for turn in range(0, MAX_TURNS):
         resp = await sqfg.ado(
             model=TEST_MODEL,

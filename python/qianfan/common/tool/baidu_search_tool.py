@@ -66,16 +66,18 @@ class BaiduSearchTool(BaseTool):
         """
         query = parameters["search_query"]
         tool_params: Dict[str, Any] = {
-            "tools": [{
-                "type": "tool",
-                "tool": {
-                    "name": "baidu_search",
-                    "baidu_search": {
-                        "channel": self.channel,
-                        "top_n": self.top_n,
+            "tools": [
+                {
+                    "type": "tool",
+                    "tool": {
+                        "name": "baidu_search",
+                        "baidu_search": {
+                            "channel": self.channel,
+                            "top_n": self.top_n,
+                        },
                     },
-                },
-            }],
+                }
+            ],
             "tool_choice": {
                 "type": "tool",
                 "tool": {
@@ -87,10 +89,12 @@ class BaiduSearchTool(BaseTool):
             resp = self.client.do(prompt=query, **tool_params)
         else:  # isinstance(self.client, ChatCompletion)
             resp = self.client.do(
-                messages=[{
-                    "role": "user",
-                    "content": query,
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": query,
+                    }
+                ],
                 **tool_params
             )
         assert isinstance(resp, QfResponse)

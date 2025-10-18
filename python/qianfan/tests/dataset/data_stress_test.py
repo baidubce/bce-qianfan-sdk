@@ -19,6 +19,7 @@ class StressTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.path):
             os.remove(self.path)
+        os.environ.pop("QIANFAN_ENABLE_STRESS_TEST", None)
 
     def test_stress(self):
         ds = Dataset.load(data_file=self.path)

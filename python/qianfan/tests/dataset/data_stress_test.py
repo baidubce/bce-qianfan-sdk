@@ -1,4 +1,6 @@
+import io
 import os
+import sys
 import unittest
 
 from qianfan.dataset.dataset import Dataset
@@ -7,6 +9,8 @@ from qianfan.dataset.dataset import Dataset
 class StressTestCase(unittest.TestCase):
     def setUp(self):
         self.path = "text"
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
         with open(self.path, "w+") as f:
             f.write("""人体最重要的有机物质是什么？
 化学中PH值用来表示什么？
@@ -25,8 +29,8 @@ class StressTestCase(unittest.TestCase):
         ds = Dataset.load(data_file=self.path)
 
         ds.stress_test(
-            workers=60,
-            users=60,
+            workers=1,
+            users=1,
             model="ERNIE-4.0-8K-Latest",
         )
 

@@ -42,7 +42,6 @@ jobs:
           - { python-version: "3.8", os: "macos-latest" }
           - { python-version: "3.9", os: "macos-latest" }
         include:
-          - { python-version: "3.7", os: "ubuntu-latest" }
           - { python-version: "3.7", os: "macos-13" }
           - { python-version: "3.8", os: "macos-13" }
           - { python-version: "3.9", os: "macos-13" }

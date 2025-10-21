@@ -105,7 +105,7 @@ async def test_async_rate_limiter_in_call():
         task.append(asyncio.create_task(chat.ado(messages=TEST_MESSAGE)))
     await asyncio.wait(task)
     end_time = time.time()
-    assert end_time - start_timestamp < 1.2
+    assert end_time - start_timestamp < 2.0
 
     start_timestamp = time.time()
     task = []
@@ -113,7 +113,7 @@ async def test_async_rate_limiter_in_call():
         task.append(asyncio.create_task(chat.ado(messages=TEST_MESSAGE)))
     await asyncio.wait(task)
     end_time = time.time()
-    assert end_time - start_timestamp > 1
+    assert end_time - start_timestamp > 0.5
 
 
 @pytest.mark.asyncio

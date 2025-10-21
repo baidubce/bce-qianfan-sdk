@@ -18,7 +18,6 @@
 import pytest
 
 import qianfan
-import qianfan.tests.utils
 
 _QUERY = "北京的天气"
 _DOCUMENTS = ["北京今天12.5度，北风，阴天", "北京美食很多"]

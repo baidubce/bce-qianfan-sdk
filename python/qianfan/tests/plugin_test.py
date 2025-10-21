@@ -18,7 +18,6 @@
 import pytest
 
 import qianfan
-import qianfan.tests.utils
 from qianfan.resources import QfMessages
 
 TEST_MESSAGE = [

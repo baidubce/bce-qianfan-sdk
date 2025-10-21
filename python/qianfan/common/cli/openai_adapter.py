@@ -33,7 +33,6 @@ def entry(
     api_key: Optional[str],
 ) -> None:
     import rich
-    import uvicorn
     import uvicorn.config
     from rich.markdown import Markdown
 

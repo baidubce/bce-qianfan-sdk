@@ -21,7 +21,6 @@ import time
 import pytest
 
 import qianfan
-import qianfan.tests.utils
 
 
 def test_image2text_generate():

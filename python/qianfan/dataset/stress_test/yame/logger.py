@@ -6,7 +6,6 @@ yame logger
 
 import logging
 import logging.config
-import logging.handlers
 import socket
 from logging import Filter
 from typing import Any, Dict

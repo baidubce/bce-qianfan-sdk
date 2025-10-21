@@ -3,7 +3,6 @@ import json
 import os
 from typing import Any, Optional
 
-import dateutil
 import pyarrow
 
 from qianfan.config import encoding

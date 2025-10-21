@@ -22,7 +22,6 @@ import time
 import pytest
 
 import qianfan
-import qianfan.tests.utils
 from qianfan.tests.utils import EnvHelper, fake_access_token
 
 QIANFAN_SUPPORT_EMBEDDING_MODEL = {"Embedding-V1"}

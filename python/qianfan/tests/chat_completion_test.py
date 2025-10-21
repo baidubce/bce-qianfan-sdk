@@ -24,7 +24,6 @@ import time
 import pytest
 
 import qianfan
-import qianfan.tests.utils
 from qianfan.consts import Consts
 from qianfan.tests.utils import EnvHelper, fake_access_token
 

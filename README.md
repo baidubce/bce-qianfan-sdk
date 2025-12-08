@@ -156,6 +156,46 @@ resp = chat_comp.do(
 print(resp["result"])
 ```
 
+### OpenAI SDK兼容介绍
+千帆模型服务提供了与OpenAI兼容的使用方式，用户只需调整api_key、base_url、model等参数，就可以通过OpenAI SDK调用千帆模型推理服务。
+
+#### base_url说明
+base_url指模型服务的请求地址。通过该地址，可以请求服务提供的功能或数据。当使用OpenAI兼容接口调用千帆模型服务时，需要配置base_url。
+
++ 需要配置的base_url如下：https://qianfan.baidubce.com/v2
+
+#### API Key说明
+API_Key是在调用推理服务API时使用，查看API Key，此API Key永久有效。获取步骤如下：
+1. [登录百度千帆-系统管理-创建API Key](https://console.bce.baidu.com/qianfan/ais/console/apiKey)
+2. 点击创建API Key
+如果已有API Key，可跳过此步骤。如需创建，点击创建按钮，可选择全部权限或自定义权限-模型服务权限。
+<img src="https://bce.bdstatic.com/doc/bce-doc/qianfan/image_81c07ce.png" width="240" height="240">
+
+3. 配置资源
+配置API Key对应的V2版本应用对应的appid，即对应appid可以使用API Key调用推理服务V2版本接口。
+<img src="https://bce.bdstatic.com/doc/bce-doc/qianfan/image_0ad22e6.png" width="240" height="240">
+
++ 全部应用身份，表示appid对应的V2版本应用，都可以使用该API Key。
++ 自定义应用身份，表示特定V2应用对应的appid，可以使用该API Key。
+
+4. 点击确定
+5. 在API Key列表查看API Key值
+<img src="https://bce.bdstatic.com/doc/bce-doc/qianfan/image_89340d4.png" width="240" height="240">
+
+#### appid说明
+支持通过自定义header方式入参appid，通过appid区分调用量和账单，具体是否用方式参考：[多应用管理](https://cloud.baidu.com/doc/qianfan-docs/s/4m8r4x5ej)
+
+#### 支持的模型列表  
+目前推理服务V2版本兼容通过OpenAI方式调用，支持模型清单请查看 [开始使用-模型列表](https://cloud.baidu.com/doc/qianfan/s/rmh4stp0j)
+
+#### SDK支持清单
++ [Python](https://cloud.baidu.com/doc/qianfan-docs/s/Fm9l6ocai)
++ [Java](https://cloud.baidu.com/doc/qianfan-docs/s/nm9l6oc8e)
++ [Go](https://cloud.baidu.com/doc/qianfan/s/Hmh4suq26)
++ [Node.js](https://cloud.baidu.com/doc/qianfan-docs/s/Nm9l6oc5m)
++ [Node.js](https://cloud.baidu.com/doc/qianfan-docs/s/mm9l6occh) 
+
+
 ### 大模型训练
 
 在预置模型无法满足业务场景时，可使用大模型精调和预训练接口，来定制专属大模型。大致流程可分为：准备数据(Dataset) -> 训练(Trainer) -> 模型评估(Evaluation) -> 服务(Service)；

@@ -18,7 +18,7 @@ import {Headers} from './Fetch/nodeFetch';
 import {BASE_PATH, DEFAULT_CONFIG, DEFAULT_HEADERS} from './constant';
 import {IAMConfig, QfLLMInfoMap, ReqBody, DefaultConfig} from './interface';
 import * as packageJson from '../package.json';
-
+import dotenv from 'dotenv';
 /**
  * 获取当前运行环境
  *
@@ -146,7 +146,7 @@ export function getDefaultConfig(): DefaultConfig {
     if (getCurrentEnvironment() === 'browser') {
         return {...DEFAULT_CONFIG};
     }
-    require('dotenv').config();
+    dotenv.config();
     const obj: Record<string, string> = {};
     for (const key of envVariables) {
         const value = process.env[key];
@@ -386,7 +386,7 @@ async function fetchBearToken(props?: GetTokenProps): Promise<TokenResp> {
             QIANFAN_BEAR_TOKEN_URL
         );
         const client = new HttpClient(httpClientConfig);
-        const expireInSeconds = typeof expireInSecondsInProps === 'number' ? expireInSecondsInProps : 100000
+        const expireInSeconds = typeof expireInSecondsInProps === 'number' ? expireInSecondsInProps : 100000;
         const fetchOptions = await client.getSignature({
             httpMethod: 'GET',
             path: QIANFAN_BEAR_TOKEN_URL,

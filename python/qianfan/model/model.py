@@ -22,7 +22,7 @@ from qianfan.common.runnable.base import ExecuteSerializable
 from qianfan.config import get_config
 from qianfan.dataset import Dataset
 from qianfan.errors import InternalError, InvalidArgumentError
-from qianfan.model.configs import DeployConfig
+from qianfan.model.configs import DeployConfig, PaymentType
 from qianfan.model.consts import ServiceType
 from qianfan.resources import (
     ChatCompletion,
@@ -85,11 +85,12 @@ class Model(
         self.task_id = task_id
         self.job_id = job_id
         self.name = name
-        if id is None or set_id is None:
-            self.auto_complete_info()
 
     def exec(
-        self, input: Optional[Dict] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         model execution, for different model service type, please input
@@ -143,8 +144,10 @@ class Model(
                 arbitrary arguments
         """
         if self.id:
-            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
-            self.set_id = model_detail_resp["result"].get("modelIdStr")
+            model_detail_resp = ResourceModel.V2.describe_model(
+                model_id=self.id, **kwargs
+            )
+            self.set_id = model_detail_resp["result"].get("modelSetId")
         elif self.set_id:
             list_resp = ResourceModel.V2.describe_model_set(
                 model_set_id=self.set_id, **kwargs
@@ -168,45 +171,22 @@ class Model(
         """
         if self.id:
             # already released
-            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
-            self.set_id = model_detail_resp["result"]["modelIdStr"]
-            self.task_id = model_detail_resp["result"]["sourceExtra"][
-                "trainSourceExtra"
-            ]["taskId"]
-            self.job_id = model_detail_resp["result"]["sourceExtra"][
-                "trainSourceExtra"
-            ]["runId"]
-            log_info(f"check model {self.set_id}/{self.id} published...")
-            if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
-                self._wait_for_publish(**kwargs)
-        elif self.set_id:
-            list_resp = ResourceModel.V2.describe_model_set(
-                model_set_id=self.set_id, **kwargs
+            model_detail_resp = ResourceModel.V2.describe_model(
+                model_id=self.id, **kwargs
             )
-            if len(list_resp["result"]["modelIds"]) == 0:
-                raise InvalidArgumentError(
-                    "not model version matched, please train and publish first"
-                )
-            log_info("model publish get the first version in model list as default")
-            self.id = list_resp["result"]["modelIds"][0]
-            if self.id is None:
-                raise InvalidArgumentError("model version id not found")
-            model_detail_resp = ResourceModel.detail(model_version_id=self.id, **kwargs)
-            self.task_id = model_detail_resp["result"]["sourceExtra"][
-                "trainSourceExtra"
-            ]["taskId"]
-            self.job_id = model_detail_resp["result"]["sourceExtra"][
-                "trainSourceExtra"
-            ]["runId"]
-            if model_detail_resp["result"]["state"] != console_const.ModelState.Ready:
+            self.set_id = model_detail_resp["result"]["modelSetId"]
+            self.task_id = model_detail_resp["result"]["sourceInfo"]["trainTaskId"]
+            log_info(f"check model {self.set_id}/{self.id} published...")
+            if (
+                model_detail_resp["result"]["status"]
+                != console_const.V2.ModelStatus.Ready.value
+            ):
                 self._wait_for_publish(**kwargs)
+                return self
         # 检查是否训练完成
-        log_info(
-            f"check train job: {self.task_id}/{self.job_id} status before publishing"
-            " model"
-        )
-        if self.task_id is None or self.job_id is None:
-            raise InvalidArgumentError("task id or job id not found")
+        log_info(f"check train job: {self.task_id} status before publishing model")
+        if self.task_id is None or self.set_id is None:
+            raise InvalidArgumentError("task id or model set id not found")
         # 判断训练任务已经训练完成：
         while True:
             job_status_resp = api.FineTune.V2.task_detail(
@@ -227,18 +207,16 @@ class Model(
             name if name != "" else f"m_{generate_letter_num_random_id(12)}"
         )
         model_version_meta: Dict[str, Any] = {
-            "taskId": self.job_id,
-            "iterationId": self.task_id,
+            "taskId": self.task_id,
         }
         if self.step:
-            model_version_meta["step"] = self.step
-        model_publish_resp = ResourceModel.publish(
-            is_new=True,
-            model_name=self.model_name,
-            version_meta=model_version_meta,
-            **kwargs,
+            model_version_meta["checkpointStep"] = self.step
+        model_publish_resp = ResourceModel.V2.create_custom_model(
+            self.set_id,
+            console_const.CreateCustomModelSourceType.Train,
+            train_meta=model_version_meta,
         )
-        self.set_id = model_publish_resp["result"]["modelIDStr"]
+        self.set_id = model_publish_resp["result"]["modelSetId"]
 
         if self.set_id is None:
             raise InvalidArgumentError("model id not found")
@@ -272,13 +250,15 @@ class Model(
         if self.id is None:
             raise InvalidArgumentError("model version id not found")
         while True:
-            model_detail_info = ResourceModel.detail(model_version_id=self.id, **kwargs)
-            model_version_state = model_detail_info["result"]["state"]
+            model_detail_info = ResourceModel.V2.describe_model(
+                model_id=self.id, **kwargs
+            )
+            model_version_state = model_detail_info["result"]["status"]
             log_debug(f"check model publish status: {model_version_state}")
-            if model_version_state == console_const.ModelState.Ready:
+            if model_version_state == console_const.V2.ModelStatus.Ready.value:
                 log_info(f"model {self.set_id}/{self.id} published successfully")
                 break
-            elif model_version_state == console_const.ModelState.Fail:
+            elif model_version_state == console_const.V2.ModelStatus.Fail:
                 raise InternalError(
                     "model published failed, check error msg and retry."
                     f" {model_detail_info}"
@@ -364,7 +344,7 @@ class Model(
         model_comp_task_resp = ResourceModel.V2.create_model_comp_task(
             name=f"mco_{generate_letter_num_random_id(12)}",
             source_model_id=self.id,
-            config=config,
+            comp_config=config,
             model_set_id=self.set_id,
             description=f"mcomp_{self.id}_{strategy.value}_{weight}",
         )
@@ -487,7 +467,10 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             raise InternalError("id type not supported")
 
     def exec(
-        self, input: Optional[Dict] = None, **kwargs: Dict
+        self,
+        input: Optional[Dict] = None,
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
     ) -> Union[QfResponse, Iterator[QfResponse]]:
         """
         exec
@@ -568,18 +551,42 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
         if self.model is None:
             raise InvalidArgumentError("model not found")
         model = self.model
+
         if model.set_id is None or model.id is None:
             raise InvalidArgumentError("model set id | model id not found")
         if self.deploy_config is None:
             raise InvalidArgumentError("deploy config not found")
+
         log_info(f"ready to deploy service with model {model.set_id}/{model.id}")
         model.auto_complete_info()
+
         res_config: Dict[str, Any] = {
             "type": self.deploy_config.resource_type,
             "replicasCount": self.deploy_config.replicas,
         }
         if self.deploy_config.qps is not None:
             res_config["qps"] = self.deploy_config.qps
+        if self.deploy_config.region is not None:
+            res_config["region"] = self.deploy_config.region
+
+        billing: Dict[str, Any] = {
+            "paymentTiming": self.deploy_config.payment_type,
+        }
+
+        if self.deploy_config.payment_type == PaymentType.Prepaid.value:
+            reservation: Dict[str, Any] = {
+                "reservationTimeUnit": "Month",
+                "reservationLength": self.deploy_config.months,
+                "autoRenew": self.deploy_config.auto_renew,
+                "autoRenewTimeUnit": self.deploy_config.auto_renew_time_unit,
+                "autoRenewTime": self.deploy_config.auto_renew_time,
+            }
+            billing["reservation"] = reservation
+        elif self.deploy_config.payment_type == PaymentType.Postpaid.value:
+            billing["chargeType"] = self.deploy_config.charge_type
+            if self.deploy_config.release_time:
+                billing["release_time"] = self.deploy_config.release_time
+
         svc_publish_resp = api.Service.V2.create_service(
             model_set_id=model.set_id,
             model_id=model.id,
@@ -587,17 +594,12 @@ class Service(ExecuteSerializable[Dict, Union[QfResponse, Iterator[QfResponse]]]
             url_suffix=self.deploy_config.endpoint_suffix
             or f"svc{model.set_id}_{model.id}",
             resource_config=res_config,
-            billing={
-                "paymentTiming": "Prepaid",
-                "reservation": {
-                    "reservationTimeUnit": (
-                        "Month" if self.deploy_config.months else "Hour"
-                    ),
-                    "reservationLength": (
-                        self.deploy_config.months or self.deploy_config.hours
-                    ),
-                },
-            },
+            billing=billing,
+            description=(
+                self.deploy_config.description
+                if self.deploy_config.description
+                else None
+            ),
             **kwargs,
         )
 

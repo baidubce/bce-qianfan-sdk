@@ -149,11 +149,15 @@ class BosHelper:
 
 
 def generate_bos_file_path(bucket_name: str, absolute_path: str) -> str:
-    return f"bos:/{bucket_name}{absolute_path}"
+    bucket_name = bucket_name.strip("/")
+    absolute_path = absolute_path.lstrip("/")
+    return f"bos:/{bucket_name}/{absolute_path}"
 
 
 def generate_bos_file_parent_path(bucket_name: str, absolute_path: str) -> str:
-    p = Path(f"/{bucket_name}{absolute_path}")
+    bucket_name = bucket_name.strip("/")
+    absolute_path = absolute_path.lstrip("/")
+    p = Path(f"/{bucket_name}/{absolute_path}")
     return f"bos:{p.parent}"
 
 

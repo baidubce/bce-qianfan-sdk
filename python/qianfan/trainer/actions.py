@@ -25,6 +25,7 @@ from qianfan.evaluation.evaluator import Evaluator, LocalEvaluator, QianfanEvalu
 from qianfan.model import Model, Service
 from qianfan.model.configs import DeployConfig
 from qianfan.resources.console import consts as console_consts
+from qianfan.resources.console.model import Model as ResourceModel
 from qianfan.trainer.base import (
     ActionState,
     BaseAction,
@@ -34,6 +35,8 @@ from qianfan.trainer.configs import (
     CorpusConfig,
     CorpusConfigItem,
     DatasetConfig,
+    ModelInfo,
+    ModelInfoMappingCollection,
     PeftType,
     TrainConfig,
     TrainLimit,
@@ -50,7 +53,11 @@ from qianfan.utils import (
     utils,
 )
 from qianfan.utils.bos_uploader import is_valid_bos_path, parse_bos_path
-from qianfan.utils.utils import first_lower_case, snake_to_camel
+from qianfan.utils.utils import (
+    first_lower_case,
+    generate_letter_num_random_id,
+    snake_to_camel,
+)
 
 
 class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
@@ -92,7 +99,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     def __init__(
         self,
         dataset: Union[DatasetConfig, Dataset, str, List[str]],
-        dataset_template: Optional[console_consts.DataTemplateType] = None,
+        dataset_format_type: Optional[console_consts.V2.DatasetFormat] = None,
         corpus_config: Optional[CorpusConfig] = None,
         **kwargs: Any,
     ) -> None:
@@ -157,11 +164,11 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         elif isinstance(dataset.inner_data_source_cache, QianfanDataSource):
             qf_data_src = cast(QianfanDataSource, dataset.inner_data_source_cache)
             if (
-                dataset_template is not None
-                and qf_data_src.template_type != dataset_template
+                dataset_format_type is not None
+                and qf_data_src.data_format_type != dataset_format_type
             ):
                 raise InvalidArgumentError(
-                    f"dataset must be `{dataset_template}` template."
+                    f"dataset must be `{dataset_format_type}` template."
                 )
             self.datasets = [dataset.inner_data_source_cache]
         elif isinstance(dataset.inner_data_source_cache, BosDataSource):
@@ -179,7 +186,12 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
             self.corpus_config = corpus_config
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Dict[str, Any]:
         resp = self._exec(input, **kwargs)
         if resp.get("datasets") is None:
             return resp
@@ -295,7 +307,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         dataset_src_type = dataset_result.get("sourceType")
         for ds_dict in dataset_result.get("versions", []):
             if dataset_src_type == console_consts.TrainDatasetSourceType.Platform.value:
-                ds = Dataset.load(qianfan_dataset_id=ds_dict.get("versionId"))
+                ds = Dataset.load(qianfan_dataset_version_id=ds_dict.get("versionId"))
                 if ds.inner_data_source_cache:
                     res.append(
                         ds.inner_data_source_cache,
@@ -324,7 +336,7 @@ class LoadDataSetAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
 
         Returns:
             Dict[str, Any]: datasets meta_info including
-            dataset_id and dataset_type.
+            version_id and dataset_type.
         """
         log_debug("[load_dataset_action] dataset loading resumed")
         return self._exec(**kwargs)
@@ -618,7 +630,12 @@ class TrainAction(
         return self.train_config.validate_config(train_limit)
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Dict,
+    ) -> Dict[str, Any]:
         """
         exec method for train action
 
@@ -959,12 +976,38 @@ class ModelPublishAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
     """model object"""
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         if self.task_id == "" or self.job_id == "":
             raise InvalidArgumentError("task_id or job_id must be set")
         self.task_id = input.get("task_id", "")
         self.job_id = input.get("job_id", "")
-        self.model = Model(task_id=self.task_id, job_id=self.job_id)
+
+        assert context is not None
+
+        existed_model_set_id = context.get("existed_model_set_id", None)
+        if existed_model_set_id is None:
+            model_name = context["train_type"]
+            model_info: Optional[ModelInfo] = None
+            for _, infos in ModelInfoMappingCollection.items():
+                if model_name in infos:
+                    model_info = infos[model_name]
+                    break
+            assert model_info
+            model_type = model_info.model_type.value
+            model_resp = ResourceModel.V2.create_custom_model_set(
+                f"ms_{generate_letter_num_random_id(11)}",
+                model_type,
+            )
+            existed_model_set_id = model_resp["result"]["modelSetId"]
+
+        self.model = Model(
+            task_id=self.task_id, job_id=self.job_id, set_id=existed_model_set_id
+        )
         return self._exec(input, **kwargs)
 
     def _exec(self, input: Dict[str, Any] = {}, **kwargs: Dict) -> Dict[str, Any]:
@@ -1095,7 +1138,12 @@ class DeployAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         self.deploy_config = deploy_config
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         # for resume
         if self._input is None:
             self._input = input
@@ -1274,7 +1322,12 @@ class EvaluateAction(BaseAction[Dict[str, Any], Dict[str, Any]]):
         )
 
     @with_event
-    def exec(self, input: Dict[str, Any] = {}, **kwargs: Any) -> Dict[str, Any]:
+    def exec(
+        self,
+        input: Dict[str, Any] = {},
+        context: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         """
         exec evaluation
 

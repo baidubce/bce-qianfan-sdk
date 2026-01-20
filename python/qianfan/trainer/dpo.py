@@ -64,6 +64,7 @@ class DPO(Trainer):
         previous_trainer: Optional[Trainer] = None,
         previous_task_id: Optional[str] = None,
         name: Optional[str] = None,
+        existed_model_set_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -98,6 +99,8 @@ class DPO(Trainer):
                 An optional previous task id for incremental training.
             name: Optional[str]
                 An optional name for the training task.
+            existed_model_set_id: Optional[str]
+                An optional config for the publish model.
 
             **kwargs: Any additional keyword arguments.
 
@@ -119,6 +122,15 @@ class DPO(Trainer):
 
         if isinstance(train_config, str):
             train_config = TrainConfig.load(train_config)
+
+        self._context: Dict[str, Any] = {
+            "train_type": train_type,
+            "dataset_bos_path": dataset_bos_path,
+            "previous_task_id": previous_task_id,
+            "name": name,
+            "existed_model_set_id": existed_model_set_id,
+            **kwargs,
+        }
 
         actions: List[BaseAction] = []
         # 校验dataset
@@ -193,10 +205,14 @@ class DPO(Trainer):
                 event_handler=event_handler,
             )
             actions.append(self.eval_action)
+
+        if train_type is None:
+            self._context["train_type"] = self.train_action.train_type
         ppl = Pipeline(
             actions=actions,
             event_handler=event_handler,
             case_init_params={"case_type": DPO.__name__},
+            context=self._context,
         )
         self.ppls = [ppl]
         self.result = [None]
@@ -240,6 +256,7 @@ class DPO(Trainer):
             Trainer:
                 self, for chain invocation.
         """
+        self._context.update(kwargs)
         self.input: Any = kwargs.get("input")
         if len(self.ppls) != 1:
             raise InvalidArgumentError("invalid pipeline to run")
@@ -250,7 +267,7 @@ class DPO(Trainer):
             "retry_count", get_config().TRAINER_STATUS_POLLING_RETRY_TIMES
         )
         try:
-            self.result[0] = self.ppls[0].exec(**kwargs)
+            self.result[0] = self.ppls[0].exec(input=self.input, context=self._context)
         except Exception as e:
             self.result[0] = {"error": e}
             raise e

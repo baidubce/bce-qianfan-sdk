@@ -157,10 +157,10 @@ def run(
     enable_referee_evaluator: bool = typer.Option(
         False, help="Enable referee evaluator."
     ),
-    app_id: Optional[int] = typer.Option(
+    api_name: Optional[str] = typer.Option(
         None,
         help=(
-            "The appid to which the model belongs to. The model will be used to"
+            "The api_name to which the model belongs to. The model will be used to"
             " evaluate the results."
         ),
         rich_help_panel=REFEREE_EVALUATOR_PANEL,
@@ -215,12 +215,12 @@ def run(
             )
         )
     if enable_referee_evaluator:
-        if app_id is None:
+        if api_name is None:
             print_error_msg("App_id is required for referee evaluator.")
             raise typer.Exit(1)
         evaluators.append(
             QianfanRefereeEvaluator(
-                app_id=app_id,
+                api_name=api_name,
                 prompt_metrics=prompt_metrics,
                 prompt_steps=prompt_steps,
                 prompt_max_score=prompt_max_score,

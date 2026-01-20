@@ -60,6 +60,14 @@ class BaseReader(ABC):
 
         return data_list
 
+    @property
+    def is_resettable(self) -> bool:
+        return False
+
+    @abstractmethod
+    def reset(self) -> None:
+        """reset this reader to head"""
+
     @abstractmethod
     def _get_an_element(self, index: int) -> Any:
         """get an element for reader"""
@@ -86,7 +94,7 @@ class CsvReader(BaseReader):
             mode="r",
             encoding="utf-8-sig" if encoding() == "utf-8" else encoding(),
         )
-        self.data_stream = csv.DictReader(self.fd, **kwargs)
+        self.data_stream = csv.DictReader(self.fd)
 
     def _get_an_element(self, index: int) -> Any:
         try:
@@ -101,6 +109,19 @@ class CsvReader(BaseReader):
             raise StopIteration
         return data
 
+    @property
+    def is_resettable(self) -> bool:
+        return True
+
+    def reset(self) -> None:
+        self.fd.close()
+        self.fd = open(
+            self.file_path,
+            mode="r",
+            encoding="utf-8-sig" if encoding() == "utf-8" else encoding(),
+        )
+        self.data_stream = csv.DictReader(self.fd)
+
 
 class JsonReader(BaseReader):
     def __init__(
@@ -113,12 +134,23 @@ class JsonReader(BaseReader):
         super().__init__(chunk_size, **kwargs)
 
         self.file_path = file_path
-        self.fd = open(file_path, mode="r", encoding=encoding())
+        self.element_json_path = element_json_path
 
-        self.ijson_object = ijson.items(self.fd, element_json_path, use_float=True)
+        self.fd = open(file_path, mode="r", encoding=encoding())
+        self.ijson_object = ijson.items(self.fd, self.element_json_path, use_float=True)
 
     def _get_an_element(self, index: int) -> Any:
         return next(self.ijson_object)
+
+    @property
+    def is_resettable(self) -> bool:
+        return True
+
+    def reset(self) -> None:
+        self.fd.close()
+        self.fd = open(self.file_path, mode="r", encoding=encoding())
+
+        self.ijson_object = ijson.items(self.fd, self.element_json_path, use_float=True)
 
 
 class JsonLineReader(BaseReader):
@@ -133,6 +165,14 @@ class JsonLineReader(BaseReader):
         if not data:
             raise StopIteration
         return json.loads(data)
+
+    @property
+    def is_resettable(self) -> bool:
+        return True
+
+    def reset(self) -> None:
+        self.fd.close()
+        self.fd = open(self.file_path, mode="r", encoding=encoding())
 
 
 class TextReader(BaseReader):
@@ -191,6 +231,13 @@ class TextReader(BaseReader):
             return self._get_an_element(index)
 
         return {QianfanDatasetPackColumnName: content}
+
+    @property
+    def is_resettable(self) -> bool:
+        return False
+
+    def reset(self) -> None:
+        raise NotImplementedError("TextReader can't be reset")
 
 
 class MapperReader(BaseReader):
@@ -285,6 +332,13 @@ class MapperReader(BaseReader):
             data = self.queue.get(timeout=5)
 
         return data[1]
+
+    @property
+    def is_resettable(self) -> bool:
+        return False
+
+    def reset(self) -> None:
+        raise NotImplementedError("MapperReader can't be reset")
 
     @override
     def get_chunk(self, chunk_size: int = 0) -> List[Any]:

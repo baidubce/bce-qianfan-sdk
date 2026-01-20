@@ -46,7 +46,7 @@ class FilePersister(Persister):
     def _ensure_cache_existed(cls) -> Path:
         FileTmpPath = Path(get_config().CACHE_DIR) / "file_tmp/"
         if not path.exists(FileTmpPath):
-            makedirs(FileTmpPath)
+            makedirs(FileTmpPath, exist_ok=True)
         return FileTmpPath
 
     @classmethod

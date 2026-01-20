@@ -20,6 +20,7 @@ import typer
 from rich.console import Console
 
 import qianfan
+import qianfan.resources.images.text2image
 from qianfan import QfResponse
 from qianfan.common.cli.utils import (
     create_client,
@@ -73,7 +74,9 @@ def txt2img_entry(
         )
         raise typer.Exit(1)
 
-    client = create_client(qianfan.Text2Image, model, endpoint)
+    client = create_client(
+        qianfan.resources.images.text2image._Text2ImageV1, model, endpoint
+    )
     kwargs: Dict[str, Any] = {}
 
     if negative_prompt != "":

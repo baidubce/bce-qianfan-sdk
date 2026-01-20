@@ -32,6 +32,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 import qianfan
+import qianfan.resources.images.text2image
 import qianfan.resources.llm.chat_completion
 import qianfan.resources.llm.embedding
 import qianfan.utils.logging as qianfan_logging
@@ -44,7 +45,7 @@ from qianfan.utils.utils import camel_to_snake, snake_to_camel
 BaseResourceType = TypeVar("BaseResourceType", bound=BaseResource)
 command_to_resource_type: Dict[str, Type[BaseResource]] = {
     "chat": qianfan.resources.llm.chat_completion._ChatCompletionV1,
-    "txt2img": qianfan.Text2Image,
+    "txt2img": qianfan.resources.images.text2image._Text2ImageV1,
     "completion": qianfan.Completion,
     "embedding": qianfan.resources.llm.embedding._EmbeddingV1,
 }

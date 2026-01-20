@@ -26,9 +26,7 @@ import qianfan.tests.utils
 from qianfan.consts import Consts
 from qianfan.tests.utils import EnvHelper
 
-TEST_BEARER_TOKEN = (
-    "bce-v3/ALTAK-JZasis7GfnokSLLXykKHj/054c2e64c06db4d6019f0dbfc964e90aa3fc3ddd"
-)
+TEST_BEARER_TOKEN = ""
 TEST_MODEL = "ernie-unit-test"
 
 TEST_MESSAGE = [
@@ -75,6 +73,57 @@ def test_generate():
     request = resp["_request"]
     assert request["messages"] == TEST_MESSAGE
     assert request["model"] == TEST_MODEL
+
+
+def process_response(results):
+    # 对批量推理的结果做读取
+    result_list = []
+    for result in results:
+        llm_ret = ""
+
+        if isinstance(result, Exception):
+            continue
+
+        for block in result:
+            llm_ret += block.body.get("result", "")
+
+            print()
+            print(block)
+            print()
+
+        result_list.append(
+            {
+                "request_body": block.request.json_body,
+                "llm_output": llm_ret,
+                "first_token_latency": block.statistic["first_token_latency"],
+                "total_latency": block.statistic["total_latency"],
+            }
+        )
+
+    return result_list
+
+
+def test_bacth_completion():
+    chat_client = qianfan.ChatCompletion(
+        version="2", model="ernie-speed-8k"
+    )  # deepseek-v3
+
+    task_list = [
+        {
+            "messages": [{"content": "你好，你是谁", "role": "user"}],
+            "system": "你是一个善于助人的客服",
+        }
+    ]
+
+    # 批量请求
+    results = chat_client.batch_do(
+        body_list=task_list, enable_reading_buffer=True
+    ).results()
+
+    print(results)
+
+    for result in results:
+        print(result.body)
 
 
 def test_custom_args():

@@ -42,7 +42,7 @@ def pytest_addoption(parser):
     parser.addoption("--default-fd", default="")
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def env_set(request):
     """
     根据命令行参数设置环境变量，测试结束时会删除环境变量。
@@ -53,14 +53,18 @@ def env_set(request):
     Returns:
 
     """
-    del_quote = lambda x: x.replace('"', '').replace("'", '')
+    del_quote = lambda x: x.replace('"', "").replace("'", "")
     env_dict = {}
-    if request.config.getoption('--env') != '{}':
+    if request.config.getoption("--env") != "{}":
         env_dict.update(json.loads(request.config.getoption("--env")))
-    if request.config.getoption('--keywords') != '{}':
-        os.environ['KEYWORDS_DICT'] = request.config.getoption("--keywords")
+    if request.config.getoption("--keywords") != "{}":
+        os.environ["KEYWORDS_DICT"] = request.config.getoption("--keywords")
 
-    other_env = {'RetryCount': '3', 'QIANFAN_QPS_LIMIT': '1', 'QIANFAN_LLM_API_RETRY_COUNT': '3'}
+    other_env = {
+        "RetryCount": "3",
+        "QIANFAN_QPS_LIMIT": "1",
+        "QIANFAN_LLM_API_RETRY_COUNT": "3",
+    }
     for key, value in env_dict.items():
         os.environ[key] = del_quote(value)
     for key, value in other_env.items():
@@ -70,8 +74,8 @@ def env_set(request):
     for key in env_dict:
         if key in os.environ:
             del os.environ[key]
-    if os.environ.get('KEYWORDS_DICT'):
-        del os.environ['KEYWORDS_DICT']
+    if os.environ.get("KEYWORDS_DICT"):
+        del os.environ["KEYWORDS_DICT"]
     for key in other_env:
         if key in os.environ:
             del os.environ[key]
@@ -86,7 +90,7 @@ def default_df(request):
     Returns:
         default_fd (bool): True表示使用项目根目录相对路径，False则为当前目录相对路径
     """
-    return request.config.getoption('--default-fd') == ''
+    return request.config.getoption("--default-fd") == ""
 
 
 @pytest.fixture(scope="function")
@@ -98,8 +102,8 @@ def cli_reg(request):
     Returns:
         cli_reg (str): 测试文件路径通配符，为相对路径，以目录cookbook为起始。
     """
-    if request.config.getoption('--reg') != '':
-        return request.config.getoption("--reg").replace('"', '').replace("'", '')
+    if request.config.getoption("--reg") != "":
+        return request.config.getoption("--reg").replace('"', "").replace("'", "")
     else:
         return ""
 
@@ -114,14 +118,16 @@ def cli_params(request):
         cli_params (dict): 测试的参数，json格式字符串转字典。
     """
     params_dict = {}
-    if request.config.getoption('--params') != '':
+    if request.config.getoption("--params") != "":
         try:
             params_dict = json.loads(request.config.getoption("--params"))
         except json.decoder.JSONDecodeError:
-            logging.error(f"params json format error {request.config.getoption('--params')}")
+            logging.error(
+                f"params json format error {request.config.getoption('--params')}"
+            )
             params_dict = {}
         except Exception as e:
-            logging.error(f'params unknown error {e}')
+            logging.error(f"params unknown error {e}")
             params_dict = {}
         return params_dict
     else:
@@ -141,7 +147,7 @@ def executor(request):
 
     """
     root_dir = request.config.getoption("--root-dir")
-    if root_dir == '':
-        root_dir = '../..'
+    if root_dir == "":
+        root_dir = "../.."
     with CookbookExecutor(root_dir) as e:
         yield e
